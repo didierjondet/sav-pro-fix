@@ -1,10 +1,13 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Menu, Settings, User, Bell } from 'lucide-react';
+import { Menu, Settings, User, Bell, LogOut } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 
@@ -14,6 +17,7 @@ interface HeaderProps {
 }
 
 export function Header({ onMenuClick, isMobileMenuOpen }: HeaderProps) {
+  const { user, signOut } = useAuth();
   return (
     <header className="bg-card border-b border-border shadow-sm">
       <div className="flex items-center justify-between h-16 px-4">
@@ -49,13 +53,15 @@ export function Header({ onMenuClick, isMobileMenuOpen }: HeaderProps) {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
+              <DropdownMenuLabel>{user?.email}</DropdownMenuLabel>
+              <DropdownMenuSeparator />
               <DropdownMenuItem>
                 <Settings className="mr-2 h-4 w-4" />
                 Paramètres
               </DropdownMenuItem>
-              <DropdownMenuItem>
-                <User className="mr-2 h-4 w-4" />
-                Mon profil
+              <DropdownMenuItem onClick={signOut}>
+                <LogOut className="mr-2 h-4 w-4" />
+                Déconnexion
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

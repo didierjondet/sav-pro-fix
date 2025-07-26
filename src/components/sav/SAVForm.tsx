@@ -7,6 +7,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Separator } from '@/components/ui/separator';
 import { Plus, Trash2 } from 'lucide-react';
+import { useSAVCases } from '@/hooks/useSAVCases';
+import { useCustomers } from '@/hooks/useCustomers';
+import { useParts } from '@/hooks/useParts';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface CustomerInfo {
   firstName: string;
@@ -30,7 +34,11 @@ interface SelectedPart {
   quantity: number;
 }
 
-export function SAVForm() {
+interface SAVFormProps {
+  onSuccess?: () => void;
+}
+
+export function SAVForm({ onSuccess }: SAVFormProps) {
   const [savType, setSavType] = useState<'client' | 'internal'>('client');
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({
     firstName: '',
@@ -46,6 +54,12 @@ export function SAVForm() {
     problemDescription: '',
   });
   const [selectedParts, setSelectedParts] = useState<SelectedPart[]>([]);
+  const [loading, setLoading] = useState(false);
+  
+  const { user } = useAuth();
+  const { createCase } = useSAVCases();
+  const { createCustomer } = useCustomers();
+  const { parts } = useParts();
 
   const addPart = () => {
     setSelectedParts([
@@ -71,10 +85,73 @@ export function SAVForm() {
     );
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implement form submission
-    console.log({ savType, customerInfo, deviceInfo, selectedParts });
+    if (!user) return;
+    
+    setLoading(true);
+    
+    try {
+      let customerId = null;
+      
+      // Create customer if SAV client
+      if (savType === 'client') {
+        const { data: customer, error: customerError } = await createCustomer({
+          first_name: customerInfo.firstName,
+          last_name: customerInfo.lastName,
+          email: customerInfo.email,
+          phone: customerInfo.phone,
+          address: customerInfo.address,
+        });
+        if (customerError) throw customerError;
+        customerId = customer.id;
+      }
+      
+      // Calculate totals
+      const totalTimeMinutes = selectedParts.reduce((acc, part) => acc + part.timeMinutes, 0);
+      const totalCost = selectedParts.reduce((acc, part) => {
+        const partData = parts.find(p => p.name === part.name);
+        return acc + (partData?.selling_price || 0) * part.quantity;
+      }, 0);
+      
+      // Create SAV case
+      const { error: caseError } = await createCase({
+        sav_type: savType,
+        customer_id: customerId,
+        device_brand: deviceInfo.brand,
+        device_model: deviceInfo.model,
+        device_imei: deviceInfo.imei || null,
+        problem_description: deviceInfo.problemDescription,
+        total_time_minutes: totalTimeMinutes,
+        total_cost: totalCost,
+        status: 'pending',
+      });
+      
+      if (caseError) throw caseError;
+      
+      // Reset form
+      setSavType('client');
+      setCustomerInfo({
+        firstName: '',
+        lastName: '',
+        email: '',
+        phone: '',
+        address: '',
+      });
+      setDeviceInfo({
+        brand: '',
+        model: '',
+        imei: '',
+        problemDescription: '',
+      });
+      setSelectedParts([]);
+      
+      onSuccess?.();
+    } catch (error: any) {
+      console.error('Error creating SAV case:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -290,8 +367,8 @@ export function SAVForm() {
         <Button type="button" variant="outline">
           Annuler
         </Button>
-        <Button type="submit">
-          Créer le dossier SAV
+        <Button type="submit" disabled={loading}>
+          {loading ? 'Création...' : 'Créer le dossier SAV'}
         </Button>
       </div>
     </form>
