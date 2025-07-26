@@ -14,16 +14,360 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      customers: {
+        Row: {
+          address: string | null
+          created_at: string
+          email: string | null
+          first_name: string
+          id: string
+          last_name: string
+          phone: string | null
+          shop_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string
+          email?: string | null
+          first_name: string
+          id?: string
+          last_name: string
+          phone?: string | null
+          shop_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
+          email?: string | null
+          first_name?: string
+          id?: string
+          last_name?: string
+          phone?: string | null
+          shop_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customers_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      parts: {
+        Row: {
+          created_at: string
+          id: string
+          min_stock: number | null
+          name: string
+          purchase_price: number | null
+          quantity: number | null
+          reference: string | null
+          selling_price: number | null
+          shop_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          min_stock?: number | null
+          name: string
+          purchase_price?: number | null
+          quantity?: number | null
+          reference?: string | null
+          selling_price?: number | null
+          shop_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          min_stock?: number | null
+          name?: string
+          purchase_price?: number | null
+          quantity?: number | null
+          reference?: string | null
+          selling_price?: number | null
+          shop_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parts_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          first_name: string | null
+          id: string
+          last_name: string | null
+          phone: string | null
+          role: Database["public"]["Enums"]["user_role"]
+          shop_id: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          first_name?: string | null
+          id?: string
+          last_name?: string | null
+          phone?: string | null
+          role?: Database["public"]["Enums"]["user_role"]
+          shop_id?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          first_name?: string | null
+          id?: string
+          last_name?: string | null
+          phone?: string | null
+          role?: Database["public"]["Enums"]["user_role"]
+          shop_id?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sav_cases: {
+        Row: {
+          case_number: string
+          created_at: string
+          customer_id: string | null
+          device_brand: string | null
+          device_imei: string | null
+          device_model: string | null
+          id: string
+          problem_description: string | null
+          repair_notes: string | null
+          sav_type: Database["public"]["Enums"]["sav_type"]
+          shop_id: string | null
+          status: Database["public"]["Enums"]["sav_status"]
+          technician_id: string | null
+          total_cost: number | null
+          total_time_minutes: number | null
+          updated_at: string
+        }
+        Insert: {
+          case_number: string
+          created_at?: string
+          customer_id?: string | null
+          device_brand?: string | null
+          device_imei?: string | null
+          device_model?: string | null
+          id?: string
+          problem_description?: string | null
+          repair_notes?: string | null
+          sav_type: Database["public"]["Enums"]["sav_type"]
+          shop_id?: string | null
+          status?: Database["public"]["Enums"]["sav_status"]
+          technician_id?: string | null
+          total_cost?: number | null
+          total_time_minutes?: number | null
+          updated_at?: string
+        }
+        Update: {
+          case_number?: string
+          created_at?: string
+          customer_id?: string | null
+          device_brand?: string | null
+          device_imei?: string | null
+          device_model?: string | null
+          id?: string
+          problem_description?: string | null
+          repair_notes?: string | null
+          sav_type?: Database["public"]["Enums"]["sav_type"]
+          shop_id?: string | null
+          status?: Database["public"]["Enums"]["sav_status"]
+          technician_id?: string | null
+          total_cost?: number | null
+          total_time_minutes?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sav_cases_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sav_cases_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sav_cases_technician_id_fkey"
+            columns: ["technician_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sav_parts: {
+        Row: {
+          created_at: string
+          id: string
+          part_id: string | null
+          quantity: number
+          sav_case_id: string | null
+          time_minutes: number | null
+          unit_price: number | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          part_id?: string | null
+          quantity?: number
+          sav_case_id?: string | null
+          time_minutes?: number | null
+          unit_price?: number | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          part_id?: string | null
+          quantity?: number
+          sav_case_id?: string | null
+          time_minutes?: number | null
+          unit_price?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sav_parts_part_id_fkey"
+            columns: ["part_id"]
+            isOneToOne: false
+            referencedRelation: "parts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sav_parts_sav_case_id_fkey"
+            columns: ["sav_case_id"]
+            isOneToOne: false
+            referencedRelation: "sav_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sav_status_history: {
+        Row: {
+          changed_by: string | null
+          created_at: string
+          id: string
+          notes: string | null
+          sav_case_id: string | null
+          status: Database["public"]["Enums"]["sav_status"]
+        }
+        Insert: {
+          changed_by?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          sav_case_id?: string | null
+          status: Database["public"]["Enums"]["sav_status"]
+        }
+        Update: {
+          changed_by?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          sav_case_id?: string | null
+          status?: Database["public"]["Enums"]["sav_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sav_status_history_changed_by_fkey"
+            columns: ["changed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sav_status_history_sav_case_id_fkey"
+            columns: ["sav_case_id"]
+            isOneToOne: false
+            referencedRelation: "sav_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shops: {
+        Row: {
+          address: string | null
+          created_at: string
+          email: string | null
+          id: string
+          name: string
+          phone: string | null
+          sms_credits: number | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name: string
+          phone?: string | null
+          sms_credits?: number | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string
+          phone?: string | null
+          sms_credits?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      generate_case_number: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
     }
     Enums: {
-      [_ in never]: never
+      sav_status:
+        | "pending"
+        | "in_progress"
+        | "testing"
+        | "ready"
+        | "delivered"
+        | "cancelled"
+      sav_type: "client" | "internal"
+      user_role: "super_admin" | "shop_admin" | "technician"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +494,17 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      sav_status: [
+        "pending",
+        "in_progress",
+        "testing",
+        "ready",
+        "delivered",
+        "cancelled",
+      ],
+      sav_type: ["client", "internal"],
+      user_role: ["super_admin", "shop_admin", "technician"],
+    },
   },
 } as const
