@@ -323,6 +323,7 @@ export type Database = {
           id: string
           name: string
           phone: string | null
+          slug: string | null
           sms_credits: number | null
           updated_at: string
         }
@@ -333,6 +334,7 @@ export type Database = {
           id?: string
           name: string
           phone?: string | null
+          slug?: string | null
           sms_credits?: number | null
           updated_at?: string
         }
@@ -343,6 +345,7 @@ export type Database = {
           id?: string
           name?: string
           phone?: string | null
+          slug?: string | null
           sms_credits?: number | null
           updated_at?: string
         }
@@ -355,6 +358,10 @@ export type Database = {
     Functions: {
       generate_case_number: {
         Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      generate_shop_slug: {
+        Args: { shop_name: string }
         Returns: string
       }
       get_current_user_role: {
