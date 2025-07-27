@@ -119,11 +119,36 @@ export function useSAVCases() {
     }
   };
 
+  const deleteCase = async (caseId: string) => {
+    try {
+      const { error } = await supabase
+        .from('sav_cases')
+        .delete()
+        .eq('id', caseId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Succès",
+        description: "Dossier SAV supprimé avec succès",
+      });
+
+      fetchCases();
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
   return {
     cases,
     loading,
     createCase,
     updateCaseStatus,
+    deleteCase,
     refetch: fetchCases,
   };
 }

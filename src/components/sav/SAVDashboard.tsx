@@ -30,7 +30,7 @@ const statusConfig = {
 export function SAVDashboard() {
   const [searchTerm, setSearchTerm] = useState('');
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const { cases, loading, updateCaseStatus } = useSAVCases();
+  const { cases, loading, updateCaseStatus, deleteCase } = useSAVCases();
   const navigate = useNavigate();
 
   const filteredCases = cases.filter(
@@ -179,11 +179,18 @@ export function SAVDashboard() {
                             <Eye className="mr-2 h-4 w-4" />
                             Voir détails
                           </DropdownMenuItem>
-                          <DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => navigate(`/sav/${case_.id}`)}>
                             <Edit className="mr-2 h-4 w-4" />
                             Modifier
                           </DropdownMenuItem>
-                          <DropdownMenuItem className="text-destructive">
+                          <DropdownMenuItem 
+                            className="text-destructive"
+                            onClick={() => {
+                              if (confirm('Êtes-vous sûr de vouloir supprimer ce dossier SAV ?')) {
+                                deleteCase(case_.id);
+                              }
+                            }}
+                          >
                             <Trash2 className="mr-2 h-4 w-4" />
                             Supprimer
                           </DropdownMenuItem>
