@@ -47,9 +47,9 @@ export default function Parts() {
     (part.reference && part.reference.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
-  const lowStockParts = parts.filter(part => part.quantity <= part.min_stock);
-  const totalValue = parts.reduce((sum, part) => sum + ((part.purchase_price || 0) * part.quantity), 0);
-  const totalParts = parts.reduce((sum, part) => sum + part.quantity, 0);
+  const lowStockParts = parts.filter(part => (part.quantity || 0) <= (part.min_stock || 0));
+  const totalValue = parts.reduce((sum, part) => sum + ((part.purchase_price || 0) * (part.quantity || 0)), 0);
+  const totalParts = parts.reduce((sum, part) => sum + (part.quantity || 0), 0);
 
   const handleCreatePart = async (data: any) => {
     return await createPart(data);
