@@ -102,6 +102,7 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
           email: customerInfo.email,
           phone: customerInfo.phone,
           address: customerInfo.address,
+          shop_id: user.user_metadata?.shop_id,
         });
         if (customerError) throw customerError;
         customerId = customer.id;
@@ -125,6 +126,7 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
         total_time_minutes: totalTimeMinutes,
         total_cost: totalCost,
         status: 'pending',
+        shop_id: user.user_metadata?.shop_id,
       });
       
       if (caseError) throw caseError;

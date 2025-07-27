@@ -43,7 +43,7 @@ export function useCustomers() {
     fetchCustomers();
   }, []);
 
-  const createCustomer = async (customerData: Omit<Customer, 'id' | 'created_at' | 'updated_at' | 'shop_id'>) => {
+  const createCustomer = async (customerData: Omit<Customer, 'id' | 'created_at' | 'updated_at'>) => {
     try {
       const { data, error } = await supabase
         .from('customers')
