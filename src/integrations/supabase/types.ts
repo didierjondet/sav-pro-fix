@@ -357,6 +357,22 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      get_current_user_role: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      get_current_user_shop_id: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      is_shop_admin: {
+        Args: { check_user_id?: string }
+        Returns: boolean
+      }
+      is_super_admin: {
+        Args: { check_user_id?: string }
+        Returns: boolean
+      }
     }
     Enums: {
       sav_status:
