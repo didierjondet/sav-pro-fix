@@ -9,6 +9,8 @@ import Auth from "./pages/Auth";
 import Settings from "./pages/Settings";
 import SAVList from "./pages/SAVList";
 import NewSAV from "./pages/NewSAV";
+import SAVDetail from "./pages/SAVDetail";
+import TrackSAV from "./pages/TrackSAV";
 import Parts from "./pages/Parts";
 import Quotes from "./pages/Quotes";
 import Customers from "./pages/Customers";
@@ -33,6 +35,8 @@ const App = () => (
             <Route path="/settings" element={<Settings />} />
             <Route path="/sav" element={<SAVList />} />
             <Route path="/sav/new" element={<NewSAV />} />
+            <Route path="/sav/:id" element={<SAVDetail />} />
+            <Route path="/track/:caseNumber" element={<TrackSAV />} />
             <Route path="/parts" element={<Parts />} />
             <Route path="/quotes" element={<Quotes />} />
             <Route path="/orders" element={<Orders />} />
