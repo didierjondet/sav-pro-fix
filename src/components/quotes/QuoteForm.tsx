@@ -1,0 +1,294 @@
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { useParts } from '@/hooks/useParts';
+import { Search, Plus, Trash2, ArrowLeft } from 'lucide-react';
+import { QuoteItem } from '@/hooks/useQuotes';
+
+interface QuoteFormProps {
+  onSubmit: (data: any) => Promise<{ data: any; error: any }>;
+  onCancel: () => void;
+}
+
+export function QuoteForm({ onSubmit, onCancel }: QuoteFormProps) {
+  const { parts } = useParts();
+  const [customerName, setCustomerName] = useState('');
+  const [customerEmail, setCustomerEmail] = useState('');
+  const [customerPhone, setCustomerPhone] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedItems, setSelectedItems] = useState<QuoteItem[]>([]);
+
+  const filteredParts = parts.filter(part =>
+    part.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (part.reference && part.reference.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
+
+  const addPartToQuote = (partId: string) => {
+    const part = parts.find(p => p.id === partId);
+    if (!part) return;
+
+    const existingItem = selectedItems.find(item => item.part_id === partId);
+    if (existingItem) {
+      setSelectedItems(items =>
+        items.map(item =>
+          item.part_id === partId
+            ? { ...item, quantity: item.quantity + 1, total_price: (item.quantity + 1) * item.unit_price }
+            : item
+        )
+      );
+    } else {
+      const newItem: QuoteItem = {
+        part_id: part.id,
+        part_name: part.name,
+        part_reference: part.reference,
+        quantity: 1,
+        unit_price: part.selling_price || 0,
+        total_price: part.selling_price || 0,
+      };
+      setSelectedItems(items => [...items, newItem]);
+    }
+    setSearchTerm('');
+  };
+
+  const updateQuantity = (partId: string, quantity: number) => {
+    if (quantity <= 0) {
+      removePartFromQuote(partId);
+      return;
+    }
+
+    setSelectedItems(items =>
+      items.map(item =>
+        item.part_id === partId
+          ? { ...item, quantity, total_price: quantity * item.unit_price }
+          : item
+      )
+    );
+  };
+
+  const updateUnitPrice = (partId: string, unitPrice: number) => {
+    setSelectedItems(items =>
+      items.map(item =>
+        item.part_id === partId
+          ? { ...item, unit_price: unitPrice, total_price: item.quantity * unitPrice }
+          : item
+      )
+    );
+  };
+
+  const removePartFromQuote = (partId: string) => {
+    setSelectedItems(items => items.filter(item => item.part_id !== partId));
+  };
+
+  const totalAmount = selectedItems.reduce((sum, item) => sum + item.total_price, 0);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!customerName.trim()) {
+      alert('Le nom du client est requis');
+      return;
+    }
+
+    if (selectedItems.length === 0) {
+      alert('Veuillez ajouter au moins une pièce au devis');
+      return;
+    }
+
+    const { error } = await onSubmit({
+      customer_name: customerName,
+      customer_email: customerEmail || null,
+      customer_phone: customerPhone || null,
+      items: selectedItems,
+      total_amount: totalAmount,
+      status: 'draft'
+    });
+
+    if (!error) {
+      onCancel();
+    }
+  };
+
+  return (
+    <div className="max-w-4xl mx-auto">
+      <div className="flex items-center gap-4 mb-6">
+        <Button variant="outline" onClick={onCancel}>
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Retour
+        </Button>
+        <h1 className="text-2xl font-bold">Nouveau devis</h1>
+      </div>
+
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Informations client */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Informations client</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <Label htmlFor="customerName">Nom du client *</Label>
+              <Input
+                id="customerName"
+                value={customerName}
+                onChange={(e) => setCustomerName(e.target.value)}
+                required
+              />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="customerEmail">Email</Label>
+                <Input
+                  id="customerEmail"
+                  type="email"
+                  value={customerEmail}
+                  onChange={(e) => setCustomerEmail(e.target.value)}
+                />
+              </div>
+              <div>
+                <Label htmlFor="customerPhone">Téléphone</Label>
+                <Input
+                  id="customerPhone"
+                  value={customerPhone}
+                  onChange={(e) => setCustomerPhone(e.target.value)}
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Recherche de pièces */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Ajouter des pièces</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="relative mb-4">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+              <Input
+                placeholder="Rechercher une pièce par nom ou référence..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+
+            {searchTerm && (
+              <div className="space-y-2 mb-4 max-h-60 overflow-y-auto">
+                {filteredParts.map((part) => (
+                  <div
+                    key={part.id}
+                    className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted cursor-pointer"
+                    onClick={() => addPartToQuote(part.id)}
+                  >
+                    <div>
+                      <p className="font-medium">{part.name}</p>
+                      {part.reference && (
+                        <p className="text-sm text-muted-foreground">Réf: {part.reference}</p>
+                      )}
+                      <p className="text-sm text-muted-foreground">
+                        Prix: {(part.selling_price || 0).toFixed(2)}€
+                      </p>
+                    </div>
+                    <Button type="button" size="sm">
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+                {filteredParts.length === 0 && (
+                  <p className="text-muted-foreground text-center py-4">
+                    Aucune pièce trouvée
+                  </p>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Pièces sélectionnées */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Pièces du devis</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {selectedItems.length === 0 ? (
+              <p className="text-muted-foreground text-center py-4">
+                Aucune pièce ajoutée au devis
+              </p>
+            ) : (
+              <div className="space-y-4">
+                {selectedItems.map((item) => (
+                  <div key={item.part_id} className="flex items-center gap-4 p-4 border rounded-lg">
+                    <div className="flex-1">
+                      <p className="font-medium">{item.part_name}</p>
+                      {item.part_reference && (
+                        <Badge variant="outline">Réf: {item.part_reference}</Badge>
+                      )}
+                    </div>
+                    
+                    <div className="flex items-center gap-2">
+                      <Label>Qté:</Label>
+                      <Input
+                        type="number"
+                        min="1"
+                        value={item.quantity}
+                        onChange={(e) => updateQuantity(item.part_id, parseInt(e.target.value) || 0)}
+                        className="w-20"
+                      />
+                    </div>
+                    
+                    <div className="flex items-center gap-2">
+                      <Label>Prix unitaire:</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={item.unit_price}
+                        onChange={(e) => updateUnitPrice(item.part_id, parseFloat(e.target.value) || 0)}
+                        className="w-24"
+                      />
+                      <span>€</span>
+                    </div>
+                    
+                    <div className="text-right">
+                      <p className="font-medium">{item.total_price.toFixed(2)}€</p>
+                    </div>
+                    
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => removePartFromQuote(item.part_id)}
+                      className="text-destructive hover:text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+                
+                <div className="border-t pt-4">
+                  <div className="flex justify-between items-center text-lg font-bold">
+                    <span>Total:</span>
+                    <span>{totalAmount.toFixed(2)}€</span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Actions */}
+        <div className="flex justify-end gap-4">
+          <Button type="button" variant="outline" onClick={onCancel}>
+            Annuler
+          </Button>
+          <Button type="submit">
+            Créer le devis
+          </Button>
+        </div>
+      </form>
+    </div>
+  );
+}

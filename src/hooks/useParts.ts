@@ -46,9 +46,20 @@ export function useParts() {
 
   const createPart = async (partData: Omit<Part, 'id' | 'created_at' | 'updated_at' | 'shop_id'>) => {
     try {
+      // Get current user's shop_id
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('shop_id')
+        .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
+        .single();
+
+      if (!profile?.shop_id) {
+        throw new Error('Shop non trouvé pour cet utilisateur');
+      }
+
       const { data, error } = await supabase
         .from('parts')
-        .insert([partData])
+        .insert([{ ...partData, shop_id: profile.shop_id }])
         .select()
         .single();
 
