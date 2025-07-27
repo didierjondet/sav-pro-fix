@@ -22,7 +22,7 @@ export default function Parts() {
       <div className="min-h-screen bg-background">
         <Header onMenuClick={() => setSidebarOpen(true)} isMobileMenuOpen={sidebarOpen} />
         <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-        <main className="md:ml-64 px-6 pb-6 pt-6">
+        <main className="md:ml-64 px-6 pb-6">
           <div className="text-center py-8">Chargement...</div>
         </main>
       </div>
@@ -34,7 +34,7 @@ export default function Parts() {
       <Header onMenuClick={() => setSidebarOpen(true)} isMobileMenuOpen={sidebarOpen} />
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       
-      <main className="md:ml-64 px-6 pb-6 pt-6">
+      <main className="md:ml-64 px-6 pb-6">
         <div className="max-w-7xl mx-auto">
           <div className="flex justify-between items-center mb-6">
             <h1 className="text-2xl font-bold">Stock des pièces détachées</h1>
