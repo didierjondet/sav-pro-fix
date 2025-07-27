@@ -73,6 +73,16 @@ const Index = () => {
           
           <main className="flex-1 overflow-y-auto p-6">
             {renderContent()}
+            
+            {/* Lien discret pour super admin */}
+            <div className="fixed bottom-4 left-4">
+              <button
+                onClick={() => window.location.href = '/landing'}
+                className="text-xs text-muted-foreground opacity-30 hover:opacity-100 transition-opacity"
+              >
+                •
+              </button>
+            </div>
           </main>
         </div>
       </div>
