@@ -281,11 +281,17 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Footer */}
+      {/* Footer avec lien super admin */}
       <footer className="bg-gray-900 py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center text-gray-400">
             <p>&copy; 2024 SAV Pro. Tous droits réservés.</p>
+            <button
+              onClick={() => window.location.href = '/auth?admin=1'}
+              className="text-xs text-gray-600 hover:text-gray-400 mt-2 opacity-50 hover:opacity-100 transition-opacity"
+            >
+              Administration
+            </button>
           </div>
         </div>
       </footer>
