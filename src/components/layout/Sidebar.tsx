@@ -5,7 +5,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useSAVCases } from '@/hooks/useSAVCases';
 import { useProfile } from '@/hooks/useProfile';
 import {
-  Wrench,
+  
   Package,
   Users,
   BarChart3,
@@ -27,7 +27,7 @@ const navigation = [
   { name: 'Dossiers SAV', href: '/sav', icon: FileText },
   { name: 'Stock pièces', href: '/parts', icon: Package },
   { name: 'Clients', href: '/customers', icon: Users },
-  { name: 'Réparations', href: '/repairs', icon: Wrench },
+  
 ];
 
 export function Sidebar({ isOpen, onClose }: SidebarProps) {

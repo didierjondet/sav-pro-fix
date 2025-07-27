@@ -11,7 +11,7 @@ import SAVList from "./pages/SAVList";
 import NewSAV from "./pages/NewSAV";
 import Parts from "./pages/Parts";
 import Customers from "./pages/Customers";
-import Repairs from "./pages/Repairs";
+
 import Landing from "./pages/Landing";
 import SuperAdmin from "./pages/SuperAdmin";
 import NotFound from "./pages/NotFound";
@@ -33,7 +33,7 @@ const App = () => (
             <Route path="/sav/new" element={<NewSAV />} />
             <Route path="/parts" element={<Parts />} />
             <Route path="/customers" element={<Customers />} />
-            <Route path="/repairs" element={<Repairs />} />
+            
             <Route path="/super-admin" element={<SuperAdmin />} />
             <Route path="/landing" element={<Landing />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
