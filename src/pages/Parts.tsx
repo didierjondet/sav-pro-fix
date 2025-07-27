@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { useParts, Part } from '@/hooks/useParts';
 import { PartForm } from '@/components/parts/PartForm';
 import { StockAdjustment } from '@/components/parts/StockAdjustment';
+import { ImportStock } from '@/components/parts/ImportStock';
 import {
   Dialog,
   DialogContent,
@@ -26,7 +27,8 @@ import {
   TrendingUp,
   TrendingDown,
   BarChart3,
-  Eye
+  Eye,
+  Upload
 } from 'lucide-react';
 
 export default function Parts() {
@@ -36,8 +38,9 @@ export default function Parts() {
   const [editingPart, setEditingPart] = useState<Part | null>(null);
   const [deletingPart, setDeletingPart] = useState<Part | null>(null);
   const [adjustingPart, setAdjustingPart] = useState<Part | null>(null);
+  const [showImport, setShowImport] = useState(false);
   
-  const { parts, loading, createPart, updatePart, deletePart, adjustStock } = useParts();
+  const { parts, loading, createPart, updatePart, deletePart, adjustStock, refetch } = useParts();
 
   const filteredParts = parts.filter(part =>
     part.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -89,14 +92,20 @@ export default function Parts() {
           <Header onMenuClick={() => setSidebarOpen(true)} isMobileMenuOpen={sidebarOpen} />
           <main className="flex-1 overflow-y-auto p-6">
             <div className="max-w-7xl mx-auto">
-              {!showForm && !editingPart ? (
+              {!showForm && !editingPart && !showImport ? (
                 <>
                   <div className="flex justify-between items-center mb-6">
                     <h1 className="text-2xl font-bold">Gestion des stocks</h1>
-                    <Button onClick={() => setShowForm(true)}>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Ajouter une pièce
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button variant="outline" onClick={() => setShowImport(true)}>
+                        <Upload className="h-4 w-4 mr-2" />
+                        Importer CSV/Excel
+                      </Button>
+                      <Button onClick={() => setShowForm(true)}>
+                        <Plus className="h-4 w-4 mr-2" />
+                        Ajouter une pièce
+                      </Button>
+                    </div>
                   </div>
 
                   {/* Statistiques */}
@@ -279,6 +288,11 @@ export default function Parts() {
                     )}
                   </div>
                 </>
+              ) : showImport ? (
+                <ImportStock
+                  onBack={() => setShowImport(false)}
+                  onRefresh={refetch}
+                />
               ) : (
                 <PartForm
                   initialData={editingPart || undefined}
