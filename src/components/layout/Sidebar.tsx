@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useSAVCases } from '@/hooks/useSAVCases';
+import { useProfile } from '@/hooks/useProfile';
 import {
   Wrench,
   Package,
@@ -12,6 +13,7 @@ import {
   Settings,
   X,
   Plus,
+  Shield,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -32,6 +34,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const { cases } = useSAVCases();
+  const { profile } = useProfile();
 
   // Calculate status counts
   const statusCounts = cases.reduce((acc, savCase) => {
@@ -89,6 +92,24 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                   </Button>
                 );
               })}
+              
+              {/* Super Admin Link */}
+              {profile?.role === 'super_admin' && (
+                <Button
+                  variant={location.pathname === '/super-admin' ? 'default' : 'ghost'}
+                  className={cn(
+                    'w-full justify-start',
+                    location.pathname === '/super-admin' && 'bg-primary text-primary-foreground'
+                  )}
+                  onClick={() => {
+                    navigate('/super-admin');
+                    onClose();
+                  }}
+                >
+                  <Shield className="mr-3 h-5 w-5" />
+                  Super Admin
+                </Button>
+              )}
             </nav>
 
             <div className="mt-8 p-4 bg-muted rounded-lg">
