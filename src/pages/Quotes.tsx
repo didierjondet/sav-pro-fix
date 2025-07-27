@@ -5,8 +5,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { useQuotes } from '@/hooks/useQuotes';
+import { useQuotes, Quote } from '@/hooks/useQuotes';
 import { QuoteForm } from '@/components/quotes/QuoteForm';
+import { QuoteView } from '@/components/quotes/QuoteView';
+import { generateQuotePDF } from '@/utils/pdfGenerator';
+import { useToast } from '@/hooks/use-toast';
 import {
   Dialog,
   DialogContent,
@@ -30,9 +33,11 @@ export default function Quotes() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [showForm, setShowForm] = useState(false);
-  const [deletingQuote, setDeletingQuote] = useState<any>(null);
+  const [deletingQuote, setDeletingQuote] = useState<Quote | null>(null);
+  const [viewingQuote, setViewingQuote] = useState<Quote | null>(null);
   
   const { quotes, loading, createQuote, deleteQuote } = useQuotes();
+  const { toast } = useToast();
 
   const filteredQuotes = quotes.filter(quote =>
     quote.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -49,6 +54,34 @@ export default function Quotes() {
     if (!error) {
       setDeletingQuote(null);
     }
+  };
+
+  const handleViewQuote = (quote: Quote) => {
+    setViewingQuote(quote);
+  };
+
+  const handleDownloadPDF = (quote: Quote) => {
+    try {
+      generateQuotePDF(quote);
+      toast({
+        title: "PDF généré",
+        description: "Le PDF du devis a été généré avec succès",
+      });
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de générer le PDF",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleSendEmail = (quote: Quote) => {
+    // TODO: Implémenter l'envoi d'email
+    toast({
+      title: "Fonctionnalité à venir",
+      description: "L'envoi par email sera bientôt disponible",
+    });
   };
 
   const getStatusColor = (status: string) => {
@@ -181,16 +214,28 @@ export default function Quotes() {
                               </div>
                               
                               <div className="flex items-center gap-2 ml-4">
-                                <Button variant="outline" size="sm">
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => handleViewQuote(quote)}
+                                >
                                   <Eye className="h-4 w-4 mr-1" />
                                   Voir
                                 </Button>
-                                <Button variant="outline" size="sm">
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => handleDownloadPDF(quote)}
+                                >
                                   <Download className="h-4 w-4 mr-1" />
                                   PDF
                                 </Button>
                                 {quote.customer_email && (
-                                  <Button variant="outline" size="sm">
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm"
+                                    onClick={() => handleSendEmail(quote)}
+                                  >
                                     <Mail className="h-4 w-4 mr-1" />
                                     Envoyer
                                   </Button>
@@ -218,6 +263,15 @@ export default function Quotes() {
                   onCancel={() => setShowForm(false)}
                 />
               )}
+
+              {/* Dialog de vue détaillée */}
+              <QuoteView
+                quote={viewingQuote}
+                isOpen={!!viewingQuote}
+                onClose={() => setViewingQuote(null)}
+                onDownloadPDF={handleDownloadPDF}
+                onSendEmail={handleSendEmail}
+              />
 
               {/* Dialog de suppression */}
               <Dialog open={!!deletingQuote} onOpenChange={() => setDeletingQuote(null)}>
