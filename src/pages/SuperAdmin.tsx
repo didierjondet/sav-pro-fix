@@ -300,11 +300,15 @@ export default function SuperAdmin() {
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
-        <Header onMenuClick={() => setSidebarOpen(true)} isMobileMenuOpen={sidebarOpen} />
-        <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-        <main className="md:ml-64 px-6 pb-6">
-          <div className="text-center py-8">Chargement...</div>
-        </main>
+        <div className="flex h-screen">
+          <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+          <div className="flex-1 flex flex-col overflow-hidden">
+            <Header onMenuClick={() => setSidebarOpen(true)} isMobileMenuOpen={sidebarOpen} />
+            <main className="flex-1 overflow-y-auto p-6">
+              <div className="text-center py-8">Chargement...</div>
+            </main>
+          </div>
+        </div>
       </div>
     );
   }
@@ -318,11 +322,12 @@ export default function SuperAdmin() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header onMenuClick={() => setSidebarOpen(true)} isMobileMenuOpen={sidebarOpen} />
-      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      
-      <main className="md:ml-64 px-6 pb-6">
-        <div className="max-w-7xl mx-auto">
+      <div className="flex h-screen">
+        <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <Header onMenuClick={() => setSidebarOpen(true)} isMobileMenuOpen={sidebarOpen} />
+          <main className="flex-1 overflow-y-auto p-6">
+            <div className="max-w-7xl mx-auto">
           <div className="flex items-center gap-2 mb-6">
             <Shield className="h-6 w-6 text-blue-600" />
             <h1 className="text-2xl font-bold">Administration Super Utilisateur</h1>
@@ -792,8 +797,10 @@ export default function SuperAdmin() {
               </div>
             </TabsContent>
           </Tabs>
+            </div>
+          </main>
         </div>
-      </main>
+      </div>
     </div>
   );
 }
