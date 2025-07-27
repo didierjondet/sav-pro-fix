@@ -2,6 +2,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useSAVCases } from '@/hooks/useSAVCases';
 import {
   Wrench,
   Package,
@@ -30,6 +31,15 @@ const navigation = [
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const navigate = useNavigate();
   const location = useLocation();
+  const { cases } = useSAVCases();
+
+  // Calculate status counts
+  const statusCounts = cases.reduce((acc, savCase) => {
+    if (savCase.status === 'pending') acc.pending++;
+    else if (savCase.status === 'in_progress') acc.inProgress++;
+    else if (['delivered', 'ready'].includes(savCase.status)) acc.completed++;
+    return acc;
+  }, { pending: 0, inProgress: 0, completed: 0 });
   return (
     <>
       {/* Mobile overlay */}
@@ -88,15 +98,15 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span>En attente</span>
-                  <span className="font-medium">12</span>
+                  <span className="font-medium">{statusCounts.pending}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span>En cours</span>
-                  <span className="font-medium">8</span>
+                  <span className="font-medium">{statusCounts.inProgress}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span>Terminés</span>
-                  <span className="font-medium">156</span>
+                  <span className="font-medium">{statusCounts.completed}</span>
                 </div>
               </div>
             </div>

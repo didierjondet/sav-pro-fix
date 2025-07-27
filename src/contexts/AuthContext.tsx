@@ -25,6 +25,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
+        
+        // Redirect to settings after first signup
+        if (event === 'SIGNED_IN' && session?.user) {
+          // Check if this is a new user (just signed up)
+          const isNewUser = session.user.created_at === session.user.updated_at;
+          if (isNewUser) {
+            setTimeout(() => {
+              window.location.href = '/settings';
+            }, 1000);
+          }
+        }
       }
     );
 

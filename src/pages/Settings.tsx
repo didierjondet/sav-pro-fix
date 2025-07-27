@@ -9,6 +9,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
+import { useShop } from '@/hooks/useShop';
+import { useProfile } from '@/hooks/useProfile';
 import { supabase } from '@/integrations/supabase/client';
 import { 
   Store, 
@@ -38,13 +40,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
-interface Shop {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  address: string;
-}
 
 interface Profile {
   id: string;
@@ -61,30 +56,21 @@ export default function Settings() {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [shop, setShop] = useState<Shop | null>(null);
+  const { shop, updateShop: updateShopData } = useShop();
+  const { profile, refetch: refetchProfile } = useProfile();
   const [profiles, setProfiles] = useState<Profile[]>([]);
-  const [currentUserProfile, setCurrentUserProfile] = useState<Profile | null>(null);
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState<'admin' | 'technician' | 'super_admin' | 'shop_admin'>('technician');
 
   useEffect(() => {
     if (user) {
-      fetchData();
+      fetchProfiles();
     }
   }, [user]);
 
-  const fetchData = async () => {
+  const fetchProfiles = async () => {
     try {
-      // Fetch shop data
-      const { data: shopData, error: shopError } = await supabase
-        .from('shops')
-        .select('*')
-        .single();
-
-      if (shopError) throw shopError;
-      setShop(shopData);
-
       // Fetch profiles
       const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
@@ -93,10 +79,6 @@ export default function Settings() {
 
       if (profilesError) throw profilesError;
       setProfiles(profilesData || []);
-
-      // Find current user profile
-      const currentProfile = profilesData?.find(p => p.user_id === user?.id);
-      setCurrentUserProfile(currentProfile || null);
 
     } catch (error: any) {
       toast({
@@ -109,47 +91,28 @@ export default function Settings() {
     }
   };
 
-  const updateShop = async (updatedShop: Partial<Shop>) => {
-    if (!shop) return;
-    
+  const updateShop = async (updatedShop: Partial<any>) => {
     setSaving(true);
     try {
-      const { error } = await supabase
-        .from('shops')
-        .update(updatedShop)
-        .eq('id', shop.id);
-
-      if (error) throw error;
-
-      setShop({ ...shop, ...updatedShop });
-      toast({
-        title: "Succès",
-        description: "Informations du magasin mises à jour",
-      });
-    } catch (error: any) {
-      toast({
-        title: "Erreur",
-        description: error.message,
-        variant: "destructive",
-      });
+      await updateShopData(updatedShop);
     } finally {
       setSaving(false);
     }
   };
 
   const updateProfile = async (updatedProfile: Partial<Profile>) => {
-    if (!currentUserProfile) return;
+    if (!profile) return;
     
     setSaving(true);
     try {
       const { error } = await supabase
         .from('profiles')
         .update(updatedProfile)
-        .eq('id', currentUserProfile.id);
+        .eq('id', profile.id);
 
       if (error) throw error;
 
-      setCurrentUserProfile({ ...currentUserProfile, ...updatedProfile });
+      await refetchProfile();
       toast({
         title: "Succès",
         description: "Profil mis à jour",
@@ -174,7 +137,7 @@ export default function Settings() {
 
       if (error) throw error;
 
-      setProfiles(profiles.filter(p => p.id !== profileId));
+      fetchProfiles();
       toast({
         title: "Succès",
         description: "Utilisateur supprimé",
@@ -188,7 +151,7 @@ export default function Settings() {
     }
   };
 
-  const isAdmin = currentUserProfile?.role === 'admin';
+  const isAdmin = profile?.role === 'admin';
 
   if (loading) {
     return (
@@ -210,7 +173,7 @@ export default function Settings() {
       </div>
 
       <Tabs defaultValue="shop" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="shop" className="flex items-center gap-2">
             <Store className="h-4 w-4" />
             Magasin
@@ -218,6 +181,10 @@ export default function Settings() {
           <TabsTrigger value="profile" className="flex items-center gap-2">
             <Users className="h-4 w-4" />
             Mon Profil
+          </TabsTrigger>
+          <TabsTrigger value="sms" className="flex items-center gap-2">
+            <Mail className="h-4 w-4" />
+            Crédits SMS
           </TabsTrigger>
           {isAdmin && (
             <TabsTrigger value="users" className="flex items-center gap-2">
@@ -241,7 +208,7 @@ export default function Settings() {
                 <Input
                   id="shop-name"
                   value={shop?.name || ''}
-                  onChange={(e) => setShop(shop ? { ...shop, name: e.target.value } : null)}
+                  onChange={(e) => shop ? updateShop({ name: e.target.value }) : null}
                   disabled={!isAdmin}
                 />
               </div>
@@ -251,7 +218,7 @@ export default function Settings() {
                   id="shop-email"
                   type="email"
                   value={shop?.email || ''}
-                  onChange={(e) => setShop(shop ? { ...shop, email: e.target.value } : null)}
+                  onChange={(e) => shop ? updateShop({ email: e.target.value }) : null}
                   disabled={!isAdmin}
                 />
               </div>
@@ -260,7 +227,7 @@ export default function Settings() {
                 <Input
                   id="shop-phone"
                   value={shop?.phone || ''}
-                  onChange={(e) => setShop(shop ? { ...shop, phone: e.target.value } : null)}
+                  onChange={(e) => shop ? updateShop({ phone: e.target.value }) : null}
                   disabled={!isAdmin}
                 />
               </div>
@@ -269,15 +236,59 @@ export default function Settings() {
                 <Textarea
                   id="shop-address"
                   value={shop?.address || ''}
-                  onChange={(e) => setShop(shop ? { ...shop, address: e.target.value } : null)}
+                  onChange={(e) => shop ? updateShop({ address: e.target.value }) : null}
                   disabled={!isAdmin}
                 />
               </div>
               {isAdmin && (
-                <Button onClick={() => updateShop(shop!)} disabled={saving}>
+                <Button onClick={() => shop && updateShop(shop)} disabled={saving}>
                   {saving ? 'Sauvegarde...' : 'Sauvegarder'}
                 </Button>
               )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="sms">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Mail className="h-5 w-5" />
+                Gestion des Crédits SMS
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
+                <div>
+                  <h3 className="font-medium">Crédits disponibles</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Nombre de SMS restants pour les notifications clients
+                  </p>
+                </div>
+                <div className="text-right">
+                  <div className="text-2xl font-bold">{shop?.sms_credits || 0}</div>
+                  <div className="text-sm text-muted-foreground">SMS</div>
+                </div>
+              </div>
+              
+              <div className="space-y-4">
+                <div className="p-4 border rounded-lg">
+                  <h4 className="font-medium mb-2">Acheter des crédits SMS</h4>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Cette fonctionnalité sera bientôt disponible. Vous pourrez acheter des crédits SMS pour envoyer des notifications automatiques à vos clients.
+                  </p>
+                  <Button disabled>
+                    Acheter des crédits
+                  </Button>
+                </div>
+                
+                <div className="p-4 border rounded-lg">
+                  <h4 className="font-medium mb-2">Historique d'utilisation</h4>
+                  <p className="text-sm text-muted-foreground">
+                    L'historique de vos envois SMS sera affiché ici.
+                  </p>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -293,20 +304,16 @@ export default function Settings() {
                   <Label htmlFor="first-name">Prénom</Label>
                   <Input
                     id="first-name"
-                    value={currentUserProfile?.first_name || ''}
-                    onChange={(e) => setCurrentUserProfile(
-                      currentUserProfile ? { ...currentUserProfile, first_name: e.target.value } : null
-                    )}
+                    value={profile?.first_name || ''}
+                    onChange={(e) => profile && updateProfile({ first_name: e.target.value })}
                   />
                 </div>
                 <div>
                   <Label htmlFor="last-name">Nom</Label>
                   <Input
                     id="last-name"
-                    value={currentUserProfile?.last_name || ''}
-                    onChange={(e) => setCurrentUserProfile(
-                      currentUserProfile ? { ...currentUserProfile, last_name: e.target.value } : null
-                    )}
+                    value={profile?.last_name || ''}
+                    onChange={(e) => profile && updateProfile({ last_name: e.target.value })}
                   />
                 </div>
               </div>
@@ -314,13 +321,11 @@ export default function Settings() {
                 <Label htmlFor="phone">Téléphone</Label>
                 <Input
                   id="phone"
-                  value={currentUserProfile?.phone || ''}
-                  onChange={(e) => setCurrentUserProfile(
-                    currentUserProfile ? { ...currentUserProfile, phone: e.target.value } : null
-                  )}
+                  value={profile?.phone || ''}
+                  onChange={(e) => profile && updateProfile({ phone: e.target.value })}
                 />
               </div>
-              <Button onClick={() => updateProfile(currentUserProfile!)} disabled={saving}>
+              <Button onClick={() => profile && updateProfile(profile)} disabled={saving}>
                 {saving ? 'Sauvegarde...' : 'Sauvegarder'}
               </Button>
             </CardContent>
