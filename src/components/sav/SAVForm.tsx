@@ -6,12 +6,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Separator } from '@/components/ui/separator';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, Search } from 'lucide-react';
 import { useSAVCases } from '@/hooks/useSAVCases';
 import { useCustomers } from '@/hooks/useCustomers';
 import { useParts } from '@/hooks/useParts';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProfile } from '@/hooks/useProfile';
+import { Badge } from '@/components/ui/badge';
 
 interface CustomerInfo {
   firstName: string;
@@ -30,9 +31,14 @@ interface DeviceInfo {
 
 interface SelectedPart {
   id: string;
+  part_id?: string; // ID de la pièce du stock, null pour champ libre
   name: string;
+  reference?: string;
   timeMinutes: number;
   quantity: number;
+  unitPrice: number;
+  availableStock?: number;
+  isCustom: boolean; // true pour les champs libres
 }
 
 interface SAVFormProps {
@@ -56,6 +62,7 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
   });
   const [selectedParts, setSelectedParts] = useState<SelectedPart[]>([]);
   const [loading, setLoading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
   
   const { user } = useAuth();
   const { profile } = useProfile();
@@ -63,7 +70,43 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
   const { createCustomer } = useCustomers();
   const { parts } = useParts();
 
-  const addPart = () => {
+  // Filtrer les pièces en fonction de la recherche
+  const filteredParts = parts.filter(part =>
+    part.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (part.reference && part.reference.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
+
+  // Ajouter une pièce du stock
+  const addPartFromStock = (part: any) => {
+    const existingPart = selectedParts.find(p => p.part_id === part.id);
+    
+    if (existingPart && !existingPart.isCustom) {
+      // Incrémenter la quantité si la pièce existe déjà
+      setSelectedParts(selectedParts.map(p =>
+        p.part_id === part.id ? { ...p, quantity: p.quantity + 1 } : p
+      ));
+    } else {
+      // Ajouter nouvelle pièce du stock
+      setSelectedParts([
+        ...selectedParts,
+        {
+          id: Date.now().toString(),
+          part_id: part.id,
+          name: part.name,
+          reference: part.reference,
+          timeMinutes: 0,
+          quantity: 1,
+          unitPrice: part.selling_price || 0,
+          availableStock: part.quantity,
+          isCustom: false,
+        },
+      ]);
+    }
+    setSearchTerm('');
+  };
+
+  // Ajouter une pièce libre (champ libre)
+  const addCustomPart = () => {
     setSelectedParts([
       ...selectedParts,
       {
@@ -71,6 +114,8 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
         name: '',
         timeMinutes: 0,
         quantity: 1,
+        unitPrice: 0,
+        isCustom: true,
       },
     ]);
   };
@@ -112,10 +157,7 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
       
       // Calculate totals
       const totalTimeMinutes = selectedParts.reduce((acc, part) => acc + part.timeMinutes, 0);
-      const totalCost = selectedParts.reduce((acc, part) => {
-        const partData = parts.find(p => p.name === part.name);
-        return acc + (partData?.selling_price || 0) * part.quantity;
-      }, 0);
+      const totalCost = selectedParts.reduce((acc, part) => acc + part.unitPrice * part.quantity, 0);
       
       // Create SAV case
       const { error: caseError } = await createCase({
@@ -303,66 +345,194 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle>Pièces détachées</CardTitle>
-            <Button type="button" onClick={addPart} size="sm">
+            <Button type="button" onClick={addCustomPart} size="sm" variant="outline">
               <Plus className="mr-2 h-4 w-4" />
-              Ajouter une pièce
+              Ajouter pièce libre
             </Button>
           </div>
         </CardHeader>
-        <CardContent>
-          {selectedParts.length === 0 ? (
-            <p className="text-muted-foreground text-center py-4">
-              Aucune pièce ajoutée. Cliquez sur "Ajouter une pièce" pour commencer.
-            </p>
-          ) : (
-            <div className="space-y-4">
-              {selectedParts.map((part, index) => (
-                <div key={part.id}>
-                  {index > 0 && <Separator className="my-4" />}
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-                    <div className="md:col-span-2">
-                      <Label htmlFor={`part-name-${part.id}`}>Nom de la pièce</Label>
-                      <Input
-                        id={`part-name-${part.id}`}
-                        value={part.name}
-                        onChange={(e) => updatePart(part.id, 'name', e.target.value)}
-                        placeholder="Ex: Écran LCD"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor={`part-time-${part.id}`}>Temps (minutes)</Label>
-                      <Input
-                        id={`part-time-${part.id}`}
-                        type="number"
-                        min="0"
-                        value={part.timeMinutes}
-                        onChange={(e) => updatePart(part.id, 'timeMinutes', parseInt(e.target.value) || 0)}
-                      />
-                    </div>
-                    <div className="flex items-end space-x-2">
+        <CardContent className="space-y-4">
+          {/* Recherche de pièces en stock */}
+          <div>
+            <Label htmlFor="part-search">Rechercher une pièce en stock</Label>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+              <Input
+                id="part-search"
+                placeholder="Nom ou référence de la pièce..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            
+            {/* Résultats de recherche */}
+            {searchTerm && (
+              <div className="mt-2 max-h-40 overflow-y-auto border rounded-md">
+                {filteredParts.length === 0 ? (
+                  <div className="p-3">
+                    <p className="text-sm text-muted-foreground mb-2">Aucune pièce trouvée en stock</p>
+                    <Button 
+                      type="button" 
+                      size="sm" 
+                      variant="outline"
+                      onClick={addCustomPart}
+                      className="w-full"
+                    >
+                      <Plus className="mr-2 h-3 w-3" />
+                      Ajouter "{searchTerm}" comme pièce libre
+                    </Button>
+                  </div>
+                ) : (
+                  filteredParts.slice(0, 10).map((part) => (
+                    <div
+                      key={part.id}
+                      className="flex items-center justify-between p-3 hover:bg-muted/50 cursor-pointer border-b last:border-b-0"
+                      onClick={() => addPartFromStock(part)}
+                    >
                       <div className="flex-1">
-                        <Label htmlFor={`part-qty-${part.id}`}>Quantité</Label>
-                        <Input
-                          id={`part-qty-${part.id}`}
-                          type="number"
-                          min="1"
-                          value={part.quantity}
-                          onChange={(e) => updatePart(part.id, 'quantity', parseInt(e.target.value) || 1)}
-                        />
+                        <div className="font-medium">{part.name}</div>
+                        {part.reference && (
+                          <div className="text-sm text-muted-foreground">Réf: {part.reference}</div>
+                        )}
                       </div>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="icon"
-                        onClick={() => removePart(part.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      <div className="flex items-center gap-2">
+                        <Badge variant={part.quantity === 0 ? 'destructive' : part.quantity <= 5 ? 'default' : 'secondary'}>
+                          Stock: {part.quantity}
+                        </Badge>
+                        <Button size="sm" variant="outline">
+                          <Plus className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
+
+          <Separator />
+
+          {/* Pièces sélectionnées */}
+          <div>
+            <h4 className="font-medium mb-3">Pièces sélectionnées</h4>
+            {selectedParts.length === 0 ? (
+              <p className="text-muted-foreground text-center py-4">
+                Aucune pièce ajoutée. Utilisez la recherche ci-dessus ou ajoutez une pièce libre.
+              </p>
+            ) : (
+              <div className="space-y-4">
+                {selectedParts.map((part, index) => (
+                  <div key={part.id}>
+                    {index > 0 && <Separator className="my-4" />}
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            {part.isCustom ? (
+                              <Badge variant="outline">Pièce libre</Badge>
+                            ) : (
+                              <Badge variant="secondary">En stock</Badge>
+                            )}
+                            {!part.isCustom && part.availableStock !== undefined && (
+                              <Badge variant={part.availableStock === 0 ? 'destructive' : part.availableStock <= 5 ? 'default' : 'secondary'}>
+                                Stock: {part.availableStock}
+                              </Badge>
+                            )}
+                          </div>
+                          {part.reference && (
+                            <div className="text-sm text-muted-foreground mt-1">Réf: {part.reference}</div>
+                          )}
+                        </div>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          onClick={() => removePart(part.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div>
+                          <Label htmlFor={`part-name-${part.id}`}>Nom de la pièce</Label>
+                          <Input
+                            id={`part-name-${part.id}`}
+                            value={part.name}
+                            onChange={(e) => updatePart(part.id, 'name', e.target.value)}
+                            placeholder="Ex: Écran LCD"
+                            disabled={!part.isCustom}
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor={`part-qty-${part.id}`}>Quantité</Label>
+                          <Input
+                            id={`part-qty-${part.id}`}
+                            type="number"
+                            min="1"
+                            value={part.quantity}
+                            onChange={(e) => updatePart(part.id, 'quantity', parseInt(e.target.value) || 1)}
+                          />
+                          {!part.isCustom && part.availableStock !== undefined && part.quantity > part.availableStock && (
+                            <div className="text-xs text-destructive mt-1">
+                              Quantité demandée supérieure au stock
+                            </div>
+                          )}
+                        </div>
+                        <div>
+                          <Label htmlFor={`part-time-${part.id}`}>Temps (minutes)</Label>
+                          <Input
+                            id={`part-time-${part.id}`}
+                            type="number"
+                            min="0"
+                            value={part.timeMinutes}
+                            onChange={(e) => updatePart(part.id, 'timeMinutes', parseInt(e.target.value) || 0)}
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor={`part-price-${part.id}`}>Prix unitaire (€)</Label>
+                          <Input
+                            id={`part-price-${part.id}`}
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={part.unitPrice}
+                            onChange={(e) => updatePart(part.id, 'unitPrice', parseFloat(e.target.value) || 0)}
+                            disabled={!part.isCustom}
+                          />
+                        </div>
+                      </div>
                     </div>
                   </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Résumé */}
+          {selectedParts.length > 0 && (
+            <>
+              <Separator />
+              <div className="bg-muted/50 p-4 rounded-lg">
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="font-medium">Total pièces: </span>
+                    <span>{selectedParts.reduce((acc, part) => acc + part.quantity, 0)}</span>
+                  </div>
+                  <div>
+                    <span className="font-medium">Temps total: </span>
+                    <span>{selectedParts.reduce((acc, part) => acc + part.timeMinutes, 0)} min</span>
+                  </div>
+                  <div className="md:col-span-2">
+                    <span className="font-medium">Coût total: </span>
+                    <span className="font-bold">
+                      {selectedParts.reduce((acc, part) => acc + (part.quantity * part.unitPrice), 0).toFixed(2)}€
+                    </span>
+                  </div>
                 </div>
-              ))}
-            </div>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>
