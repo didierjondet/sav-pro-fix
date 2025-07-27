@@ -367,7 +367,7 @@ export type Database = {
         | "delivered"
         | "cancelled"
       sav_type: "client" | "internal"
-      user_role: "super_admin" | "shop_admin" | "technician"
+      user_role: "super_admin" | "shop_admin" | "technician" | "admin"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -504,7 +504,7 @@ export const Constants = {
         "cancelled",
       ],
       sav_type: ["client", "internal"],
-      user_role: ["super_admin", "shop_admin", "technician"],
+      user_role: ["super_admin", "shop_admin", "technician", "admin"],
     },
   },
 } as const
