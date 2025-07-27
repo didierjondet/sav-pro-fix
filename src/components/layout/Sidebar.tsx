@@ -1,6 +1,7 @@
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Wrench,
   Package,
@@ -18,15 +19,17 @@ interface SidebarProps {
 }
 
 const navigation = [
-  { name: 'Tableau de bord', href: '#', icon: BarChart3, current: true },
-  { name: 'Nouveau SAV', href: '#', icon: Plus, current: false },
-  { name: 'Dossiers SAV', href: '#', icon: FileText, current: false },
-  { name: 'Stock pièces', href: '#', icon: Package, current: false },
-  { name: 'Clients', href: '#', icon: Users, current: false },
-  { name: 'Réparations', href: '#', icon: Wrench, current: false },
+  { name: 'Tableau de bord', href: '/', icon: BarChart3 },
+  { name: 'Nouveau SAV', href: '/sav/new', icon: Plus },
+  { name: 'Dossiers SAV', href: '/sav', icon: FileText },
+  { name: 'Stock pièces', href: '/parts', icon: Package },
+  { name: 'Clients', href: '/customers', icon: Users },
+  { name: 'Réparations', href: '/repairs', icon: Wrench },
 ];
 
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
+  const navigate = useNavigate();
+  const location = useLocation();
   return (
     <>
       {/* Mobile overlay */}
@@ -57,14 +60,19 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             <nav className="space-y-2">
               {navigation.map((item) => {
                 const Icon = item.icon;
+                const isActive = location.pathname === item.href;
                 return (
                   <Button
                     key={item.name}
-                    variant={item.current ? 'default' : 'ghost'}
+                    variant={isActive ? 'default' : 'ghost'}
                     className={cn(
                       'w-full justify-start',
-                      item.current && 'bg-primary text-primary-foreground'
+                      isActive && 'bg-primary text-primary-foreground'
                     )}
+                    onClick={() => {
+                      navigate(item.href);
+                      onClose();
+                    }}
                   >
                     <Icon className="mr-3 h-5 w-5" />
                     {item.name}
@@ -95,7 +103,14 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
           </ScrollArea>
 
           <div className="p-4 border-t border-border">
-            <Button variant="ghost" className="w-full justify-start">
+            <Button 
+              variant="ghost" 
+              className="w-full justify-start"
+              onClick={() => {
+                navigate('/settings');
+                onClose();
+              }}
+            >
               <Settings className="mr-3 h-5 w-5" />
               Paramètres
             </Button>

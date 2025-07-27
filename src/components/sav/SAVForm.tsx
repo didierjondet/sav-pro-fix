@@ -11,6 +11,7 @@ import { useSAVCases } from '@/hooks/useSAVCases';
 import { useCustomers } from '@/hooks/useCustomers';
 import { useParts } from '@/hooks/useParts';
 import { useAuth } from '@/contexts/AuthContext';
+import { useProfile } from '@/hooks/useProfile';
 
 interface CustomerInfo {
   firstName: string;
@@ -57,6 +58,7 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
   const [loading, setLoading] = useState(false);
   
   const { user } = useAuth();
+  const { profile } = useProfile();
   const { createCase } = useSAVCases();
   const { createCustomer } = useCustomers();
   const { parts } = useParts();
@@ -102,7 +104,7 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
           email: customerInfo.email,
           phone: customerInfo.phone,
           address: customerInfo.address,
-          shop_id: user.user_metadata?.shop_id,
+          shop_id: profile?.shop_id,
         });
         if (customerError) throw customerError;
         customerId = customer.id;
@@ -126,7 +128,7 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
         total_time_minutes: totalTimeMinutes,
         total_cost: totalCost,
         status: 'pending',
-        shop_id: user.user_metadata?.shop_id,
+        shop_id: profile?.shop_id,
       });
       
       if (caseError) throw caseError;
