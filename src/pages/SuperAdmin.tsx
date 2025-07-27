@@ -47,6 +47,7 @@ interface Shop {
   email: string;
   phone: string;
   address: string;
+  slug: string;
   sms_credits: number;
   created_at: string;
   total_users?: number;
@@ -490,7 +491,7 @@ export default function SuperAdmin() {
                                 </Badge>
                               </div>
                               
-                              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm text-muted-foreground">
+                              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm text-muted-foreground mb-2">
                                 <div>
                                   <span className="font-medium">Email: </span>
                                   <span>{shop.email}</span>
@@ -508,6 +509,35 @@ export default function SuperAdmin() {
                                   <span>{shop.total_revenue?.toFixed(2)}€</span>
                                 </div>
                               </div>
+                              
+                              {shop.slug && (
+                                <div className="flex items-center gap-2 bg-muted/50 p-3 rounded-lg">
+                                  <div className="flex-1">
+                                    <span className="font-medium text-sm">URL du magasin: </span>
+                                    <a 
+                                      href={`${window.location.origin}/${shop.slug}`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-primary hover:underline font-mono text-sm"
+                                    >
+                                      {window.location.origin}/{shop.slug}
+                                    </a>
+                                  </div>
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm"
+                                    onClick={() => {
+                                      navigator.clipboard.writeText(`${window.location.origin}/${shop.slug}`);
+                                      toast({
+                                        title: "Copié !",
+                                        description: "L'URL a été copiée dans le presse-papiers",
+                                      });
+                                    }}
+                                  >
+                                    Copier
+                                  </Button>
+                                </div>
+                              )}
                             </div>
                             
                             <div className="flex items-center gap-2 ml-4">
