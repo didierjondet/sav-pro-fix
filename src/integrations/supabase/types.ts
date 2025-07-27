@@ -394,6 +394,42 @@ export type Database = {
           },
         ]
       }
+      sav_messages: {
+        Row: {
+          created_at: string
+          id: string
+          message: string
+          read_by_client: boolean
+          read_by_shop: boolean
+          sav_case_id: string
+          sender_name: string
+          sender_type: string
+          shop_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message: string
+          read_by_client?: boolean
+          read_by_shop?: boolean
+          sav_case_id: string
+          sender_name: string
+          sender_type: string
+          shop_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string
+          read_by_client?: boolean
+          read_by_shop?: boolean
+          sav_case_id?: string
+          sender_name?: string
+          sender_type?: string
+          shop_id?: string
+        }
+        Relationships: []
+      }
       sav_parts: {
         Row: {
           created_at: string
