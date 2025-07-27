@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Plus, Search, Filter, MoreHorizontal, Eye, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -30,6 +31,7 @@ export function SAVDashboard() {
   const [searchTerm, setSearchTerm] = useState('');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const { cases, loading, updateCaseStatus } = useSAVCases();
+  const navigate = useNavigate();
 
   const filteredCases = cases.filter(
     (case_) =>
@@ -173,7 +175,7 @@ export function SAVDashboard() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => window.location.href = `/sav/${case_.id}`}>
+                          <DropdownMenuItem onClick={() => navigate(`/sav/${case_.id}`)}>
                             <Eye className="mr-2 h-4 w-4" />
                             Voir détails
                           </DropdownMenuItem>
