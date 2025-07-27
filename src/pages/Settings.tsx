@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { Header } from '@/components/layout/Header';
+import { Sidebar } from '@/components/layout/Sidebar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
@@ -56,6 +58,7 @@ export default function Settings() {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const { shop, updateShop: updateShopData } = useShop();
   const { profile, refetch: refetchProfile } = useProfile();
   const [profiles, setProfiles] = useState<Profile[]>([]);
@@ -155,22 +158,31 @@ export default function Settings() {
 
   if (loading) {
     return (
-      <div className="container mx-auto p-6">
-        <div className="flex items-center gap-2 mb-6">
-          <SettingsIcon className="h-6 w-6" />
-          <h1 className="text-2xl font-bold">Paramètres</h1>
-        </div>
-        <div className="text-center py-8">Chargement...</div>
+      <div className="min-h-screen bg-background">
+        <Header onMenuClick={() => setSidebarOpen(true)} isMobileMenuOpen={sidebarOpen} />
+        <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+        <main className="md:ml-64 px-6 pb-6">
+          <div className="flex items-center gap-2 mb-6">
+            <SettingsIcon className="h-6 w-6" />
+            <h1 className="text-2xl font-bold">Paramètres</h1>
+          </div>
+          <div className="text-center py-8">Chargement...</div>
+        </main>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto p-6 max-w-4xl">
-      <div className="flex items-center gap-2 mb-6">
-        <SettingsIcon className="h-6 w-6" />
-        <h1 className="text-2xl font-bold">Paramètres</h1>
-      </div>
+    <div className="min-h-screen bg-background">
+      <Header onMenuClick={() => setSidebarOpen(true)} isMobileMenuOpen={sidebarOpen} />
+      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      
+      <main className="md:ml-64 px-6 pb-6">
+        <div className="max-w-4xl mx-auto">
+          <div className="flex items-center gap-2 mb-6">
+            <SettingsIcon className="h-6 w-6" />
+            <h1 className="text-2xl font-bold">Paramètres</h1>
+          </div>
 
       <Tabs defaultValue="shop" className="space-y-6">
         <TabsList className="grid w-full grid-cols-4">
@@ -208,7 +220,6 @@ export default function Settings() {
                 <Input
                   id="shop-name"
                   value={shop?.name || ''}
-                  onChange={(e) => shop ? updateShop({ name: e.target.value }) : null}
                   disabled={!isAdmin}
                 />
               </div>
@@ -218,7 +229,6 @@ export default function Settings() {
                   id="shop-email"
                   type="email"
                   value={shop?.email || ''}
-                  onChange={(e) => shop ? updateShop({ email: e.target.value }) : null}
                   disabled={!isAdmin}
                 />
               </div>
@@ -227,7 +237,6 @@ export default function Settings() {
                 <Input
                   id="shop-phone"
                   value={shop?.phone || ''}
-                  onChange={(e) => shop ? updateShop({ phone: e.target.value }) : null}
                   disabled={!isAdmin}
                 />
               </div>
@@ -236,12 +245,33 @@ export default function Settings() {
                 <Textarea
                   id="shop-address"
                   value={shop?.address || ''}
-                  onChange={(e) => shop ? updateShop({ address: e.target.value }) : null}
                   disabled={!isAdmin}
                 />
               </div>
               {isAdmin && (
-                <Button onClick={() => shop && updateShop(shop)} disabled={saving}>
+                <Button 
+                  onClick={async () => {
+                    setSaving(true);
+                    try {
+                      const formData = new FormData();
+                      const form = document.querySelector('form') as HTMLFormElement;
+                      const inputs = form?.querySelectorAll('input, textarea');
+                      const shopData: any = {};
+                      
+                      inputs?.forEach((input: any) => {
+                        if (input.id === 'shop-name') shopData.name = input.value;
+                        if (input.id === 'shop-email') shopData.email = input.value;
+                        if (input.id === 'shop-phone') shopData.phone = input.value;
+                        if (input.id === 'shop-address') shopData.address = input.value;
+                      });
+                      
+                      await updateShop(shopData);
+                    } finally {
+                      setSaving(false);
+                    }
+                  }} 
+                  disabled={saving}
+                >
                   {saving ? 'Sauvegarde...' : 'Sauvegarder'}
                 </Button>
               )}
@@ -444,6 +474,8 @@ export default function Settings() {
           </TabsContent>
         )}
       </Tabs>
+        </div>
+      </main>
     </div>
   );
 }
