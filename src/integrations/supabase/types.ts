@@ -149,6 +149,48 @@ export type Database = {
           },
         ]
       }
+      quotes: {
+        Row: {
+          created_at: string
+          customer_email: string | null
+          customer_name: string
+          customer_phone: string | null
+          id: string
+          items: Json
+          quote_number: string
+          shop_id: string
+          status: string
+          total_amount: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          customer_email?: string | null
+          customer_name: string
+          customer_phone?: string | null
+          id?: string
+          items?: Json
+          quote_number: string
+          shop_id: string
+          status?: string
+          total_amount?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          customer_email?: string | null
+          customer_name?: string
+          customer_phone?: string | null
+          id?: string
+          items?: Json
+          quote_number?: string
+          shop_id?: string
+          status?: string
+          total_amount?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       sav_cases: {
         Row: {
           case_number: string
@@ -357,6 +399,10 @@ export type Database = {
     }
     Functions: {
       generate_case_number: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      generate_quote_number: {
         Args: Record<PropertyKey, never>
         Returns: string
       }

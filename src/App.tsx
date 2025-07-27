@@ -10,6 +10,7 @@ import Settings from "./pages/Settings";
 import SAVList from "./pages/SAVList";
 import NewSAV from "./pages/NewSAV";
 import Parts from "./pages/Parts";
+import Quotes from "./pages/Quotes";
 import Customers from "./pages/Customers";
 
 import Landing from "./pages/Landing";
@@ -32,6 +33,7 @@ const App = () => (
             <Route path="/sav" element={<SAVList />} />
             <Route path="/sav/new" element={<NewSAV />} />
             <Route path="/parts" element={<Parts />} />
+            <Route path="/quotes" element={<Quotes />} />
             <Route path="/customers" element={<Customers />} />
             
             <Route path="/super-admin" element={<SuperAdmin />} />

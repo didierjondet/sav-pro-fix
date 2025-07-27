@@ -33,12 +33,12 @@ export function useQuotes() {
   const fetchQuotes = async () => {
     try {
       const { data, error } = await supabase
-        .from('quotes')
+        .from('quotes' as any)
         .select('*')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setQuotes(data || []);
+      setQuotes((data as any) || []);
     } catch (error: any) {
       toast({
         title: "Erreur",
@@ -68,7 +68,7 @@ export function useQuotes() {
       }
 
       const { data, error } = await supabase
-        .from('quotes')
+        .from('quotes' as any)
         .insert([{ ...quoteData, shop_id: profile.shop_id }])
         .select()
         .single();
@@ -95,7 +95,7 @@ export function useQuotes() {
   const updateQuote = async (quoteId: string, quoteData: Partial<Quote>) => {
     try {
       const { error } = await supabase
-        .from('quotes')
+        .from('quotes' as any)
         .update(quoteData)
         .eq('id', quoteId);
 
@@ -121,7 +121,7 @@ export function useQuotes() {
   const deleteQuote = async (quoteId: string) => {
     try {
       const { error } = await supabase
-        .from('quotes')
+        .from('quotes' as any)
         .delete()
         .eq('id', quoteId);
 

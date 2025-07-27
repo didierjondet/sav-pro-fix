@@ -26,8 +26,8 @@ const navigation = [
   { name: 'Nouveau SAV', href: '/sav/new', icon: Plus },
   { name: 'Dossiers SAV', href: '/sav', icon: FileText },
   { name: 'Stock pièces', href: '/parts', icon: Package },
+  { name: 'Devis', href: '/quotes', icon: FileText },
   { name: 'Clients', href: '/customers', icon: Users },
-  
 ];
 
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
