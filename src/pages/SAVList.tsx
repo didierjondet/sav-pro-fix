@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Header } from '@/components/layout/Header';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { SAVDashboard } from '@/components/sav/SAVDashboard';
@@ -13,7 +14,8 @@ import {
   CheckCircle,
   AlertCircle,
   Package,
-  User
+  User,
+  Trash2
 } from 'lucide-react';
 
 const statusColors = {
@@ -36,7 +38,8 @@ const statusLabels = {
 
 export default function SAVList() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { cases, loading } = useSAVCases();
+  const { cases, loading, deleteCase } = useSAVCases();
+  const navigate = useNavigate();
 
   if (loading) {
     return (
@@ -64,7 +67,7 @@ export default function SAVList() {
             <div className="max-w-7xl mx-auto">
               <div className="flex justify-between items-center mb-6">
                 <h1 className="text-2xl font-bold">Dossiers SAV</h1>
-                <Button onClick={() => window.location.href = '/sav/new'}>
+                <Button onClick={() => navigate('/sav/new')}>
                   Nouveau dossier SAV
                 </Button>
               </div>
@@ -74,7 +77,7 @@ export default function SAVList() {
               <Card>
                 <CardContent className="text-center py-8">
                   <p className="text-muted-foreground">Aucun dossier SAV trouvé</p>
-                  <Button className="mt-4" onClick={() => window.location.href = '/sav/new'}>
+                  <Button className="mt-4" onClick={() => navigate('/sav/new')}>
                     Créer le premier dossier
                   </Button>
                 </CardContent>
@@ -122,13 +125,26 @@ export default function SAVList() {
                       </div>
                       
                       <div className="flex items-center gap-2 ml-4">
-                        <Button variant="outline" size="sm">
+                        <Button variant="outline" size="sm" onClick={() => navigate(`/sav/${savCase.id}`)}>
                           <Eye className="h-4 w-4 mr-1" />
                           Voir
                         </Button>
-                        <Button variant="outline" size="sm">
+                        <Button variant="outline" size="sm" onClick={() => navigate(`/sav/${savCase.id}`)}>
                           <Edit className="h-4 w-4 mr-1" />
                           Modifier
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => {
+                            if (confirm('Êtes-vous sûr de vouloir supprimer ce dossier SAV ?')) {
+                              deleteCase(savCase.id);
+                            }
+                          }}
+                          className="text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4 mr-1" />
+                          Supprimer
                         </Button>
                       </div>
                     </div>
