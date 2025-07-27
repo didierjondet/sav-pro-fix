@@ -8,12 +8,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useSAVCases } from '@/hooks/useSAVCases';
-import { QrCode, ExternalLink, ArrowLeft } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { QrCode, ExternalLink, ArrowLeft, Copy, Share } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export default function SAVDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { cases, loading } = useSAVCases();
   const [savCase, setSavCase] = useState<any>(null);
@@ -33,8 +35,28 @@ export default function SAVDetail() {
 
   const generateQRCode = async () => {
     const url = generateTrackingUrl();
-    // Open QR code generator (you can integrate a QR code library here)
+    // Open QR code generator
     window.open(`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(url)}`, '_blank');
+    toast({
+      title: "QR Code généré",
+      description: "Le QR Code s'ouvre dans un nouvel onglet",
+    });
+  };
+
+  const copyTrackingUrl = async () => {
+    try {
+      await navigator.clipboard.writeText(generateTrackingUrl());
+      toast({
+        title: "Lien copié",
+        description: "Le lien de suivi a été copié dans le presse-papier",
+      });
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de copier le lien",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleStatusUpdated = () => {
@@ -155,43 +177,54 @@ export default function SAVDetail() {
               </Card>
 
               {/* Client Tracking */}
-              {savCase.sav_type === 'client' && (
                 <Card>
                   <CardHeader>
-                    <CardTitle>Suivi client</CardTitle>
+                    <CardTitle className="flex items-center gap-2">
+                      <Share className="h-5 w-5" />
+                      Partage client
+                    </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="flex items-center gap-4">
-                      <div className="flex-1">
-                        <label className="text-sm font-medium">Lien de suivi</label>
-                        <div className="mt-1 p-2 bg-muted rounded border text-sm break-all">
-                          {generateTrackingUrl()}
-                        </div>
+                    <div>
+                      <label className="text-sm font-medium">Lien de suivi pour le client</label>
+                      <div className="mt-2 p-3 bg-muted rounded-lg border text-sm break-all">
+                        {generateTrackingUrl()}
                       </div>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            navigator.clipboard.writeText(generateTrackingUrl());
-                          }}
-                        >
-                          <ExternalLink className="h-4 w-4 mr-2" />
-                          Copier
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={generateQRCode}
-                        >
-                          <QrCode className="h-4 w-4 mr-2" />
-                          QR Code
-                        </Button>
-                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Le client pourra suivre l'état de sa réparation et communiquer avec vous via ce lien
+                      </p>
+                    </div>
+                    <div className="flex gap-2 flex-wrap">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={copyTrackingUrl}
+                        className="flex-1 sm:flex-initial"
+                      >
+                        <Copy className="h-4 w-4 mr-2" />
+                        Copier le lien
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={generateQRCode}
+                        className="flex-1 sm:flex-initial"
+                      >
+                        <QrCode className="h-4 w-4 mr-2" />
+                        Générer QR Code
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => window.open(generateTrackingUrl(), '_blank')}
+                        className="flex-1 sm:flex-initial"
+                      >
+                        <ExternalLink className="h-4 w-4 mr-2" />
+                        Prévisualiser
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
-              )}
 
               {/* Status Management and Messaging */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
