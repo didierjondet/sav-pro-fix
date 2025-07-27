@@ -23,14 +23,14 @@ export function useNotifications() {
   const fetchNotifications = async () => {
     try {
       const { data, error } = await supabase
-        .from('notifications' as any)
+        .from('notifications')
         .select('*')
         .order('created_at', { ascending: false })
         .limit(50);
 
       if (error) throw error;
       
-      const notifs = data || [];
+      const notifs = (data as Notification[]) || [];
       setNotifications(notifs);
       setUnreadCount(notifs.filter(n => !n.read).length);
     } catch (error: any) {
@@ -58,7 +58,7 @@ export function useNotifications() {
       }
 
       const { data, error } = await supabase
-        .from('notifications' as any)
+        .from('notifications')
         .insert([{
           ...notification,
           shop_id: profile.shop_id,
@@ -80,7 +80,7 @@ export function useNotifications() {
   const markAsRead = async (notificationId: string) => {
     try {
       const { error } = await supabase
-        .from('notifications' as any)
+        .from('notifications')
         .update({ read: true })
         .eq('id', notificationId);
 
@@ -94,7 +94,7 @@ export function useNotifications() {
   const markAllAsRead = async () => {
     try {
       const { error } = await supabase
-        .from('notifications' as any)
+        .from('notifications')
         .update({ read: true })
         .eq('read', false);
 

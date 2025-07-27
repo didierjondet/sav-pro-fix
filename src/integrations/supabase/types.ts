@@ -58,6 +58,130 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          created_at: string
+          id: string
+          message: string
+          part_id: string | null
+          read: boolean
+          sav_case_id: string | null
+          shop_id: string
+          title: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message: string
+          part_id?: string | null
+          read?: boolean
+          sav_case_id?: string | null
+          shop_id: string
+          title: string
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string
+          part_id?: string | null
+          read?: boolean
+          sav_case_id?: string | null
+          shop_id?: string
+          title?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_part_id_fkey"
+            columns: ["part_id"]
+            isOneToOne: false
+            referencedRelation: "parts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_sav_case_id_fkey"
+            columns: ["sav_case_id"]
+            isOneToOne: false
+            referencedRelation: "sav_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      order_items: {
+        Row: {
+          created_at: string
+          id: string
+          ordered: boolean
+          part_id: string
+          part_name: string
+          part_reference: string | null
+          priority: string
+          quantity_needed: number
+          quote_id: string | null
+          reason: string
+          sav_case_id: string | null
+          shop_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          ordered?: boolean
+          part_id: string
+          part_name: string
+          part_reference?: string | null
+          priority?: string
+          quantity_needed?: number
+          quote_id?: string | null
+          reason: string
+          sav_case_id?: string | null
+          shop_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          ordered?: boolean
+          part_id?: string
+          part_name?: string
+          part_reference?: string | null
+          priority?: string
+          quantity_needed?: number
+          quote_id?: string | null
+          reason?: string
+          sav_case_id?: string | null
+          shop_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_items_part_id_fkey"
+            columns: ["part_id"]
+            isOneToOne: false
+            referencedRelation: "parts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_items_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_items_sav_case_id_fkey"
+            columns: ["sav_case_id"]
+            isOneToOne: false
+            referencedRelation: "sav_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       parts: {
         Row: {
           created_at: string

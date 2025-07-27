@@ -27,6 +27,7 @@ const navigation = [
   { name: 'Dossiers SAV', href: '/sav', icon: FileText },
   { name: 'Stock pièces', href: '/parts', icon: Package },
   { name: 'Devis', href: '/quotes', icon: FileText },
+  { name: 'Commandes', href: '/orders', icon: Package },
   { name: 'Clients', href: '/customers', icon: Users },
 ];
 

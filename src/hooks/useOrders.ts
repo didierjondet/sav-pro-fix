@@ -31,7 +31,7 @@ export function useOrders() {
   const fetchOrderItems = async () => {
     try {
       const { data, error } = await supabase
-        .from('order_items' as any)
+        .from('order_items')
         .select(`
           *,
           part:parts(*)
@@ -39,7 +39,7 @@ export function useOrders() {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setOrderItems(data || []);
+      setOrderItems((data as OrderItemWithPart[]) || []);
     } catch (error: any) {
       console.error('Error fetching order items:', error);
       toast({
@@ -79,8 +79,8 @@ export function useOrders() {
       if (existingItem) {
         // Update quantity
         const { error } = await supabase
-          .from('order_items' as any)
-          .update({ 
+          .from('order_items')
+          .update({
             quantity_needed: existingItem.quantity_needed + orderData.quantity_needed,
             priority: orderData.priority 
           })
@@ -90,7 +90,7 @@ export function useOrders() {
       } else {
         // Create new item
         const { data, error } = await supabase
-          .from('order_items' as any)
+          .from('order_items')
           .insert([{
             ...orderData,
             shop_id: profile.shop_id,
@@ -118,7 +118,7 @@ export function useOrders() {
   const markAsOrdered = async (itemId: string) => {
     try {
       const { error } = await supabase
-        .from('order_items' as any)
+        .from('order_items')
         .update({ ordered: true })
         .eq('id', itemId);
 
@@ -142,7 +142,7 @@ export function useOrders() {
   const removeFromOrder = async (itemId: string) => {
     try {
       const { error } = await supabase
-        .from('order_items' as any)
+        .from('order_items')
         .delete()
         .eq('id', itemId);
 
