@@ -34,7 +34,6 @@ interface SelectedPart {
   part_id?: string; // ID de la pièce du stock, null pour champ libre
   name: string;
   reference?: string;
-  timeMinutes: number;
   quantity: number;
   unitPrice: number;
   availableStock?: number;
@@ -94,7 +93,6 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
           part_id: part.id,
           name: part.name,
           reference: part.reference,
-          timeMinutes: 0,
           quantity: 1,
           unitPrice: part.selling_price || 0,
           availableStock: part.quantity,
@@ -112,7 +110,6 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
       {
         id: Date.now().toString(),
         name: '',
-        timeMinutes: 0,
         quantity: 1,
         unitPrice: 0,
         isCustom: true,
@@ -156,7 +153,7 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
       }
       
       // Calculate totals
-      const totalTimeMinutes = selectedParts.reduce((acc, part) => acc + part.timeMinutes, 0);
+      const totalTimeMinutes = 0; // Suppression du calcul du temps
       const totalCost = selectedParts.reduce((acc, part) => acc + part.unitPrice * part.quantity, 0);
       
       // Create SAV case
@@ -454,7 +451,7 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
                         </Button>
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
                           <Label htmlFor={`part-name-${part.id}`}>Nom de la pièce</Label>
                           <Input
@@ -479,16 +476,6 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
                               Quantité demandée supérieure au stock
                             </div>
                           )}
-                        </div>
-                        <div>
-                          <Label htmlFor={`part-time-${part.id}`}>Temps (minutes)</Label>
-                          <Input
-                            id={`part-time-${part.id}`}
-                            type="number"
-                            min="0"
-                            value={part.timeMinutes}
-                            onChange={(e) => updatePart(part.id, 'timeMinutes', parseInt(e.target.value) || 0)}
-                          />
                         </div>
                         <div>
                           <Label htmlFor={`part-price-${part.id}`}>Prix unitaire (€)</Label>
@@ -519,10 +506,6 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
                   <div>
                     <span className="font-medium">Total pièces: </span>
                     <span>{selectedParts.reduce((acc, part) => acc + part.quantity, 0)}</span>
-                  </div>
-                  <div>
-                    <span className="font-medium">Temps total: </span>
-                    <span>{selectedParts.reduce((acc, part) => acc + part.timeMinutes, 0)} min</span>
                   </div>
                   <div className="md:col-span-2">
                     <span className="font-medium">Coût total: </span>
