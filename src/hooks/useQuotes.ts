@@ -38,8 +38,16 @@ export function useQuotes() {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setQuotes((data as any) || []);
+      
+      // Parse JSON items field
+      const parsedData = (data as any[])?.map(quote => ({
+        ...quote,
+        items: typeof quote.items === 'string' ? JSON.parse(quote.items) : quote.items
+      })) || [];
+      
+      setQuotes(parsedData);
     } catch (error: any) {
+      console.error('Error fetching quotes:', error);
       toast({
         title: "Erreur",
         description: "Impossible de charger les devis",
@@ -56,6 +64,8 @@ export function useQuotes() {
 
   const createQuote = async (quoteData: Omit<Quote, 'id' | 'created_at' | 'updated_at' | 'shop_id' | 'quote_number'>) => {
     try {
+      console.log('Creating quote with data:', quoteData);
+      
       // Get current user's shop_id
       const { data: profile } = await supabase
         .from('profiles')
@@ -67,11 +77,28 @@ export function useQuotes() {
         throw new Error('Shop non trouvé pour cet utilisateur');
       }
 
+      console.log('Shop ID found:', profile.shop_id);
+
+      // Prepare data for insertion with JSON serialization
+      const insertData = {
+        customer_name: quoteData.customer_name,
+        customer_email: quoteData.customer_email,
+        customer_phone: quoteData.customer_phone,
+        items: JSON.stringify(quoteData.items), // Ensure JSON serialization
+        total_amount: quoteData.total_amount,
+        status: quoteData.status,
+        shop_id: profile.shop_id
+      };
+
+      console.log('Insert data prepared:', insertData);
+
       const { data, error } = await supabase
         .from('quotes' as any)
-        .insert([{ ...quoteData, shop_id: profile.shop_id }])
+        .insert([insertData])
         .select()
         .single();
+
+      console.log('Supabase response:', { data, error });
 
       if (error) throw error;
 
@@ -83,6 +110,7 @@ export function useQuotes() {
       fetchQuotes();
       return { data, error: null };
     } catch (error: any) {
+      console.error('Error creating quote:', error);
       toast({
         title: "Erreur",
         description: error.message,
