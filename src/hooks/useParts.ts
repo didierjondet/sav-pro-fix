@@ -89,11 +89,97 @@ export function useParts() {
     }
   };
 
+  const updatePart = async (partId: string, partData: Partial<Omit<Part, 'id' | 'created_at' | 'updated_at' | 'shop_id'>>) => {
+    try {
+      const { error } = await supabase
+        .from('parts')
+        .update(partData)
+        .eq('id', partId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Succès",
+        description: "Pièce mise à jour",
+      });
+
+      fetchParts();
+      return { error: null };
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error.message,
+        variant: "destructive",
+      });
+      return { error };
+    }
+  };
+
+  const deletePart = async (partId: string) => {
+    try {
+      const { error } = await supabase
+        .from('parts')
+        .delete()
+        .eq('id', partId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Succès",
+        description: "Pièce supprimée",
+      });
+
+      fetchParts();
+      return { error: null };
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error.message,
+        variant: "destructive",
+      });
+      return { error };
+    }
+  };
+
+  const adjustStock = async (partId: string, adjustment: number, reason?: string) => {
+    try {
+      const part = parts.find(p => p.id === partId);
+      if (!part) throw new Error("Pièce introuvable");
+
+      const newQuantity = Math.max(0, part.quantity + adjustment);
+      
+      const { error } = await supabase
+        .from('parts')
+        .update({ quantity: newQuantity })
+        .eq('id', partId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Succès",
+        description: `Stock ${adjustment > 0 ? 'ajouté' : 'retiré'} : ${Math.abs(adjustment)} unité(s)`,
+      });
+
+      fetchParts();
+      return { error: null };
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error.message,
+        variant: "destructive",
+      });
+      return { error };
+    }
+  };
+
   return {
     parts,
     loading,
     createPart,
+    updatePart,
+    deletePart,
     updatePartQuantity,
+    adjustStock,
     refetch: fetchParts,
   };
 }
