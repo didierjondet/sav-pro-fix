@@ -646,6 +646,10 @@ export type Database = {
         Args: { p_shop_id: string }
         Returns: Json
       }
+      ensure_super_admin_profile: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       generate_case_number: {
         Args: Record<PropertyKey, never>
         Returns: string
