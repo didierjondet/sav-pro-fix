@@ -262,86 +262,142 @@ export default function SuperAdmin() {
     try {
       console.log('Starting shop deletion for ID:', shopId);
       
-      // Supprimer en cascade toutes les données du magasin dans l'ordre correct
-      console.log('Deleting sav_parts for shop', shopId);
-      const { error: savPartsError } = await supabase
-        .from('sav_parts')
-        .delete()
-        .eq('sav_case_id', 
-          `(SELECT id FROM sav_cases WHERE shop_id = '${shopId}')`
-        );
-      
-      console.log('Deleting sav_status_history for shop', shopId);
-      const { error: savStatusError } = await supabase
-        .from('sav_status_history')
-        .delete()
-        .eq('sav_case_id', 
-          `(SELECT id FROM sav_cases WHERE shop_id = '${shopId}')`
-        );
+      // D'abord récupérer tous les sav_cases pour ce magasin
+      console.log('Fetching sav_cases for shop', shopId);
+      const { data: savCases, error: fetchError } = await supabase
+        .from('sav_cases')
+        .select('id')
+        .eq('shop_id', shopId);
 
+      if (fetchError) {
+        console.error('Error fetching sav_cases:', fetchError);
+        throw fetchError;
+      }
+
+      const savCaseIds = savCases?.map(sc => sc.id) || [];
+      console.log('Found sav_cases:', savCaseIds);
+
+      // Supprimer sav_parts qui référencent ces sav_cases
+      if (savCaseIds.length > 0) {
+        console.log('Deleting sav_parts for sav_cases', savCaseIds);
+        const { error: savPartsError } = await supabase
+          .from('sav_parts')
+          .delete()
+          .in('sav_case_id', savCaseIds);
+        
+        if (savPartsError) {
+          console.error('Error deleting sav_parts:', savPartsError);
+          throw savPartsError;
+        }
+
+        // Supprimer sav_status_history qui référencent ces sav_cases
+        console.log('Deleting sav_status_history for sav_cases', savCaseIds);
+        const { error: savStatusError } = await supabase
+          .from('sav_status_history')
+          .delete()
+          .in('sav_case_id', savCaseIds);
+        
+        if (savStatusError) {
+          console.error('Error deleting sav_status_history:', savStatusError);
+          throw savStatusError;
+        }
+      }
+
+      // Supprimer parts
       console.log('Deleting parts for shop', shopId);
       const { error: partsError } = await supabase
         .from('parts')
         .delete()
         .eq('shop_id', shopId);
 
-      if (partsError) throw partsError;
+      if (partsError) {
+        console.error('Error deleting parts:', partsError);
+        throw partsError;
+      }
 
+      // Supprimer customers
       console.log('Deleting customers for shop', shopId);
       const { error: customersError } = await supabase
         .from('customers')
         .delete()
         .eq('shop_id', shopId);
 
-      if (customersError) throw customersError;
+      if (customersError) {
+        console.error('Error deleting customers:', customersError);
+        throw customersError;
+      }
 
+      // Supprimer quotes
       console.log('Deleting quotes for shop', shopId);
       const { error: quotesError } = await supabase
         .from('quotes')
         .delete()
         .eq('shop_id', shopId);
 
-      if (quotesError) throw quotesError;
+      if (quotesError) {
+        console.error('Error deleting quotes:', quotesError);
+        throw quotesError;
+      }
 
+      // Supprimer order_items
       console.log('Deleting order_items for shop', shopId);
       const { error: orderItemsError } = await supabase
         .from('order_items')
         .delete()
         .eq('shop_id', shopId);
 
-      if (orderItemsError) throw orderItemsError;
+      if (orderItemsError) {
+        console.error('Error deleting order_items:', orderItemsError);
+        throw orderItemsError;
+      }
 
+      // Supprimer notifications
       console.log('Deleting notifications for shop', shopId);
       const { error: notificationsError } = await supabase
         .from('notifications')
         .delete()
         .eq('shop_id', shopId);
 
-      if (notificationsError) throw notificationsError;
+      if (notificationsError) {
+        console.error('Error deleting notifications:', notificationsError);
+        throw notificationsError;
+      }
 
+      // Supprimer sav_messages
       console.log('Deleting sav_messages for shop', shopId);
       const { error: messagesError } = await supabase
         .from('sav_messages')
         .delete()
         .eq('shop_id', shopId);
 
-      if (messagesError) throw messagesError;
+      if (messagesError) {
+        console.error('Error deleting sav_messages:', messagesError);
+        throw messagesError;
+      }
 
+      // Supprimer sav_cases
       console.log('Deleting sav_cases for shop', shopId);
       const { error: savCasesError } = await supabase
         .from('sav_cases')
         .delete()
         .eq('shop_id', shopId);
 
-      if (savCasesError) throw savCasesError;
+      if (savCasesError) {
+        console.error('Error deleting sav_cases:', savCasesError);
+        throw savCasesError;
+      }
 
+      // Supprimer profiles
       console.log('Deleting profiles for shop', shopId);
       const { error: profilesError } = await supabase
         .from('profiles')
         .delete()
         .eq('shop_id', shopId);
 
-      if (profilesError) throw profilesError;
+      if (profilesError) {
+        console.error('Error deleting profiles:', profilesError);
+        throw profilesError;
+      }
 
       // Enfin supprimer le magasin lui-même
       console.log('Deleting shop', shopId);
@@ -350,7 +406,10 @@ export default function SuperAdmin() {
         .delete()
         .eq('id', shopId);
 
-      if (shopError) throw shopError;
+      if (shopError) {
+        console.error('Error deleting shop:', shopError);
+        throw shopError;
+      }
 
       // Vérifier que le magasin a bien été supprimé
       const { data: verificationData, error: verificationError } = await supabase
