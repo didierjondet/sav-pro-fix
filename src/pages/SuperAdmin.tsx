@@ -127,9 +127,39 @@ export default function SuperAdmin() {
 
   useEffect(() => {
     if (user) {
-      fetchData();
+      checkSuperAdminAccess();
     }
   }, [user]);
+
+  const checkSuperAdminAccess = async () => {
+    try {
+      // Vérifier si l'utilisateur est super admin
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('user_id', user?.id)
+        .single();
+
+      if (error || !profile || profile.role !== 'super_admin') {
+        toast({
+          title: "Accès refusé",
+          description: "Vous n'êtes pas autorisé à accéder à cette page",
+          variant: "destructive",
+        });
+        window.location.href = '/';
+        return;
+      }
+
+      await fetchData();
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de vérifier les permissions",
+        variant: "destructive",
+      });
+      setLoading(false);
+    }
+  };
 
   const fetchData = async () => {
     try {
