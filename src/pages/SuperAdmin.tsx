@@ -1,7 +1,5 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { Header } from '@/components/layout/Header';
-import { Sidebar } from '@/components/layout/Sidebar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -25,7 +23,9 @@ import {
   DollarSign,
   Unlock,
   MessageSquare,
-  AlertTriangle
+  AlertTriangle,
+  Zap,
+  Globe
 } from 'lucide-react';
 import {
   Dialog,
@@ -88,7 +88,6 @@ export default function SuperAdmin() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   
   const [shops, setShops] = useState<Shop[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
@@ -306,60 +305,6 @@ export default function SuperAdmin() {
     }
   };
 
-  const updateShopQuota = async (shopId: string, newQuota: number) => {
-    try {
-      const { error } = await supabase
-        .from('shops')
-        .update({ sms_credits_allocated: newQuota })
-        .eq('id', shopId);
-
-      if (error) throw error;
-
-      await fetchData();
-      
-      toast({
-        title: "Succès",
-        description: "Quota SAV mis à jour",
-      });
-    } catch (error: any) {
-      toast({
-        title: "Erreur",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  };
-
-  const toggleShopBlocking = async (shopId: string, isBlocked: boolean) => {
-    try {
-      // Pour le moment, nous utilisons une logique simple basée sur les crédits SMS
-      // Si on débloque, on remet les crédits SMS utilisés à 0
-      const updateData = isBlocked 
-        ? { sms_credits_used: 999999 } // Bloquer en mettant un nombre très élevé
-        : { sms_credits_used: 0 }; // Débloquer en remettant à zéro
-
-      const { error } = await supabase
-        .from('shops')
-        .update(updateData)
-        .eq('id', shopId);
-
-      if (error) throw error;
-
-      await fetchData();
-      
-      toast({
-        title: "Succès",
-        description: isBlocked ? "Magasin bloqué" : "Magasin débloqué",
-      });
-    } catch (error: any) {
-      toast({
-        title: "Erreur",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
-  };
-
   const addSmsCredits = async (shopId: string, additionalCredits: number) => {
     try {
       const shop = shops.find(s => s.id === shopId);
@@ -391,15 +336,10 @@ export default function SuperAdmin() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background">
-        <div className="flex h-screen">
-          <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-          <div className="flex-1 flex flex-col overflow-hidden">
-            <Header onMenuClick={() => setSidebarOpen(true)} isMobileMenuOpen={sidebarOpen} />
-            <main className="flex-1 overflow-y-auto p-6">
-              <div className="text-center py-8">Chargement...</div>
-            </main>
-          </div>
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-400 mx-auto mb-4"></div>
+          <p className="text-white text-lg">Chargement du panneau Super Admin...</p>
         </div>
       </div>
     );
@@ -413,656 +353,518 @@ export default function SuperAdmin() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="flex h-screen">
-        <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <Header onMenuClick={() => setSidebarOpen(true)} isMobileMenuOpen={sidebarOpen} />
-          <main className="flex-1 overflow-y-auto p-6">
-            <div className="max-w-7xl mx-auto">
-          <div className="flex items-center gap-2 mb-6">
-            <Shield className="h-6 w-6 text-blue-600" />
-            <h1 className="text-2xl font-bold">Administration Super Utilisateur</h1>
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+      {/* Header spécial Super Admin */}
+      <div className="bg-black/20 backdrop-blur-sm border-b border-white/10 sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl shadow-lg">
+                <Crown className="h-8 w-8 text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+                  <Globe className="h-6 w-6" />
+                  Super Administration
+                </h1>
+                <p className="text-purple-200">Panneau de contrôle réseau SAV Pro</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="text-right">
+                <p className="text-white font-medium">{user?.email}</p>
+                <p className="text-xs text-purple-300 flex items-center gap-1">
+                  <Zap className="h-3 w-3" />
+                  Super Administrateur
+                </p>
+              </div>
+              <Button 
+                variant="outline" 
+                size="sm"
+                className="bg-white/10 border-white/20 text-white hover:bg-white/20 transition-all duration-200"
+                onClick={() => window.location.href = '/landing'}
+              >
+                Retour Landing
+              </Button>
+            </div>
           </div>
+        </div>
+      </div>
 
-          {/* Dashboard Overview */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Total Magasins</p>
-                    <p className="text-2xl font-bold">{totalStats.totalShops}</p>
-                  </div>
-                  <Store className="h-8 w-8 text-blue-600" />
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Total Utilisateurs</p>
-                    <p className="text-2xl font-bold">{totalStats.totalUsers}</p>
-                  </div>
-                  <Users className="h-8 w-8 text-green-600" />
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Chiffre d'affaires</p>
-                    <p className="text-2xl font-bold">{totalStats.totalRevenue.toFixed(2)}€</p>
-                  </div>
-                  <DollarSign className="h-8 w-8 text-yellow-600" />
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Total Dossiers SAV</p>
-                    <p className="text-2xl font-bold">{totalStats.totalCases}</p>
-                  </div>
-                  <Activity className="h-8 w-8 text-purple-600" />
-                </div>
-              </CardContent>
-            </Card>
+      <main className="max-w-7xl mx-auto px-6 py-8">
+        {/* Hero Section */}
+        <div className="mb-8 text-center">
+          <div className="flex items-center justify-center gap-3 mb-4">
+            <Shield className="h-10 w-10 text-purple-400" />
+            <div>
+              <h2 className="text-4xl font-bold text-white">Administration du Réseau</h2>
+              <p className="text-xl text-purple-200">Gestion centralisée de tous les magasins et utilisateurs</p>
+            </div>
           </div>
+        </div>
 
-          <Tabs defaultValue="shops" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="shops" className="flex items-center gap-2">
-                <Store className="h-4 w-4" />
-                Gestion Magasins
-              </TabsTrigger>
-              <TabsTrigger value="users" className="flex items-center gap-2">
-                <Users className="h-4 w-4" />
-                Gestion Utilisateurs
-              </TabsTrigger>
-              <TabsTrigger value="unblock" className="flex items-center gap-2">
-                <Unlock className="h-4 w-4" />
-                Déblocage & Quotas
-              </TabsTrigger>
-              <TabsTrigger value="statistics" className="flex items-center gap-2">
-                <BarChart3 className="h-4 w-4" />
-                Statistiques
-              </TabsTrigger>
-            </TabsList>
+        {/* Dashboard Overview - Design distinctif */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <Card className="bg-gradient-to-br from-blue-500/20 to-blue-600/20 border-blue-500/30 backdrop-blur-sm">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-blue-100 font-medium">Total Magasins</p>
+                  <p className="text-3xl font-bold text-white">{totalStats.totalShops}</p>
+                </div>
+                <div className="p-3 bg-blue-500/30 rounded-lg">
+                  <Store className="h-8 w-8 text-blue-200" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card className="bg-gradient-to-br from-green-500/20 to-green-600/20 border-green-500/30 backdrop-blur-sm">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-green-100 font-medium">Total Utilisateurs</p>
+                  <p className="text-3xl font-bold text-white">{totalStats.totalUsers}</p>
+                </div>
+                <div className="p-3 bg-green-500/30 rounded-lg">
+                  <Users className="h-8 w-8 text-green-200" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card className="bg-gradient-to-br from-yellow-500/20 to-yellow-600/20 border-yellow-500/30 backdrop-blur-sm">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-yellow-100 font-medium">Chiffre d'affaires</p>
+                  <p className="text-3xl font-bold text-white">{totalStats.totalRevenue.toFixed(2)}€</p>
+                </div>
+                <div className="p-3 bg-yellow-500/30 rounded-lg">
+                  <DollarSign className="h-8 w-8 text-yellow-200" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card className="bg-gradient-to-br from-purple-500/20 to-purple-600/20 border-purple-500/30 backdrop-blur-sm">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-purple-100 font-medium">Total Dossiers SAV</p>
+                  <p className="text-3xl font-bold text-white">{totalStats.totalCases}</p>
+                </div>
+                <div className="p-3 bg-purple-500/30 rounded-lg">
+                  <Activity className="h-8 w-8 text-purple-200" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
-            {/* Shops Management */}
-            <TabsContent value="shops">
-              <Card>
-                <CardHeader>
-                  <div className="flex justify-between items-center">
-                    <CardTitle className="flex items-center gap-2">
-                      <Store className="h-5 w-5" />
-                      Gestion des Magasins
-                    </CardTitle>
-                    <Dialog open={isCreateShopOpen} onOpenChange={setIsCreateShopOpen}>
-                      <DialogTrigger asChild>
-                        <Button>
-                          <Plus className="h-4 w-4 mr-2" />
-                          Créer un magasin
+        <Tabs defaultValue="shops" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-3 bg-black/20 border-white/10">
+            <TabsTrigger value="shops" className="flex items-center gap-2 data-[state=active]:bg-purple-500/20 data-[state=active]:text-white text-purple-200">
+              <Store className="h-4 w-4" />
+              Gestion Magasins
+            </TabsTrigger>
+            <TabsTrigger value="users" className="flex items-center gap-2 data-[state=active]:bg-purple-500/20 data-[state=active]:text-white text-purple-200">
+              <Users className="h-4 w-4" />
+              Gestion Utilisateurs
+            </TabsTrigger>
+            <TabsTrigger value="statistics" className="flex items-center gap-2 data-[state=active]:bg-purple-500/20 data-[state=active]:text-white text-purple-200">
+              <BarChart3 className="h-4 w-4" />
+              Statistiques
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Shops Management */}
+          <TabsContent value="shops">
+            <Card className="bg-black/20 border-white/10 backdrop-blur-sm">
+              <CardHeader>
+                <div className="flex justify-between items-center">
+                  <CardTitle className="flex items-center gap-2 text-white">
+                    <Store className="h-5 w-5" />
+                    Gestion des Magasins
+                  </CardTitle>
+                  <Dialog open={isCreateShopOpen} onOpenChange={setIsCreateShopOpen}>
+                    <DialogTrigger asChild>
+                      <Button className="bg-purple-600 hover:bg-purple-700">
+                        <Plus className="h-4 w-4 mr-2" />
+                        Créer un magasin
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="bg-slate-900 border-slate-700 text-white">
+                      <DialogHeader>
+                        <DialogTitle>Créer un nouveau magasin</DialogTitle>
+                        <DialogDescription className="text-slate-300">
+                          Créez un nouveau magasin pour un client.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <div>
+                          <Label htmlFor="shop-name" className="text-white">Nom du magasin</Label>
+                          <Input
+                            id="shop-name"
+                            value={newShop.name}
+                            onChange={(e) => setNewShop({...newShop, name: e.target.value})}
+                            className="bg-slate-800 border-slate-600 text-white"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="shop-email" className="text-white">Email</Label>
+                          <Input
+                            id="shop-email"
+                            type="email"
+                            value={newShop.email}
+                            onChange={(e) => setNewShop({...newShop, email: e.target.value})}
+                            className="bg-slate-800 border-slate-600 text-white"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="shop-phone" className="text-white">Téléphone</Label>
+                          <Input
+                            id="shop-phone"
+                            value={newShop.phone}
+                            onChange={(e) => setNewShop({...newShop, phone: e.target.value})}
+                            className="bg-slate-800 border-slate-600 text-white"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="shop-address" className="text-white">Adresse</Label>
+                          <Textarea
+                            id="shop-address"
+                            value={newShop.address}
+                            onChange={(e) => setNewShop({...newShop, address: e.target.value})}
+                            className="bg-slate-800 border-slate-600 text-white"
+                          />
+                        </div>
+                      </div>
+                      <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsCreateShopOpen(false)}>
+                          Annuler
                         </Button>
-                      </DialogTrigger>
-                      <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>Créer un nouveau magasin</DialogTitle>
-                          <DialogDescription>
-                            Créez un nouveau magasin pour un client.
-                          </DialogDescription>
-                        </DialogHeader>
-                        <div className="space-y-4">
+                        <Button onClick={createShop} className="bg-purple-600 hover:bg-purple-700">
+                          Créer le magasin
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {shops.map((shop) => (
+                    <Card key={shop.id} className="bg-white/5 border-white/10 hover:bg-white/10 transition-all duration-200">
+                      <CardContent className="p-6">
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-4 mb-2">
+                              <h3 className="font-semibold text-lg text-white">{shop.name}</h3>
+                              <Badge variant="outline" className="border-purple-400 text-purple-300">
+                                {shop.total_users} utilisateur(s)
+                              </Badge>
+                              <Badge variant="outline" className="border-blue-400 text-blue-300">
+                                {shop.total_sav_cases} dossier(s) SAV
+                              </Badge>
+                            </div>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm mb-2">
+                              <div className="text-slate-300">
+                                <span className="font-medium">Email: </span>
+                                <span>{shop.email}</span>
+                              </div>
+                              <div className="text-slate-300">
+                                <span className="font-medium">Téléphone: </span>
+                                <span>{shop.phone}</span>
+                              </div>
+                              <div className="text-slate-300">
+                                <span className="font-medium">CA: </span>
+                                <span>{shop.total_revenue?.toFixed(2)}€</span>
+                              </div>
+                            </div>
+                            
+                            {shop.slug && (
+                              <div className="flex items-center gap-2 bg-black/20 p-3 rounded-lg">
+                                <div className="flex-1">
+                                  <span className="font-medium text-sm text-slate-300">URL du magasin: </span>
+                                  <a 
+                                    href={`${window.location.origin}/${shop.slug}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-purple-400 hover:text-purple-300 font-mono text-sm"
+                                  >
+                                    {window.location.origin}/{shop.slug}
+                                  </a>
+                                </div>
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  className="border-white/20 text-white hover:bg-white/10"
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(`${window.location.origin}/${shop.slug}`);
+                                    toast({
+                                      title: "Copié !",
+                                      description: "L'URL a été copiée dans le presse-papiers",
+                                    });
+                                  }}
+                                >
+                                  Copier
+                                </Button>
+                              </div>
+                            )}
+                          </div>
+                          
+                          <div className="flex items-center gap-2 ml-4">
+                            <Button variant="outline" size="sm" className="border-white/20 text-white hover:bg-white/10">
+                              <Edit className="h-4 w-4 mr-1" />
+                              Modifier
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="border-red-400/50 text-red-400 hover:bg-red-500/20"
+                              onClick={() => deleteShop(shop.id)}
+                            >
+                              <Trash2 className="h-4 w-4 mr-1" />
+                              Supprimer
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Users Management */}
+          <TabsContent value="users">
+            <Card className="bg-black/20 border-white/10 backdrop-blur-sm">
+              <CardHeader>
+                <div className="flex justify-between items-center">
+                  <CardTitle className="flex items-center gap-2 text-white">
+                    <Users className="h-5 w-5" />
+                    Gestion des Utilisateurs
+                  </CardTitle>
+                  <Dialog open={isCreateUserOpen} onOpenChange={setIsCreateUserOpen}>
+                    <DialogTrigger asChild>
+                      <Button className="bg-purple-600 hover:bg-purple-700">
+                        <Plus className="h-4 w-4 mr-2" />
+                        Créer un utilisateur
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="bg-slate-900 border-slate-700 text-white max-w-md">
+                      <DialogHeader>
+                        <DialogTitle>Créer un nouvel utilisateur</DialogTitle>
+                        <DialogDescription className="text-slate-300">
+                          Créez un nouvel utilisateur et assignez-le à un magasin.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <div>
+                          <Label htmlFor="user-email" className="text-white">Email</Label>
+                          <Input
+                            id="user-email"
+                            type="email"
+                            value={newUser.email}
+                            onChange={(e) => setNewUser({...newUser, email: e.target.value})}
+                            className="bg-slate-800 border-slate-600 text-white"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="user-password" className="text-white">Mot de passe</Label>
+                          <Input
+                            id="user-password"
+                            type="password"
+                            value={newUser.password}
+                            onChange={(e) => setNewUser({...newUser, password: e.target.value})}
+                            className="bg-slate-800 border-slate-600 text-white"
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
                           <div>
-                            <Label htmlFor="shop-name">Nom du magasin</Label>
+                            <Label htmlFor="user-firstname" className="text-white">Prénom</Label>
                             <Input
-                              id="shop-name"
-                              value={newShop.name}
-                              onChange={(e) => setNewShop({...newShop, name: e.target.value})}
+                              id="user-firstname"
+                              value={newUser.first_name}
+                              onChange={(e) => setNewUser({...newUser, first_name: e.target.value})}
+                              className="bg-slate-800 border-slate-600 text-white"
                             />
                           </div>
                           <div>
-                            <Label htmlFor="shop-email">Email</Label>
+                            <Label htmlFor="user-lastname" className="text-white">Nom</Label>
                             <Input
-                              id="shop-email"
-                              type="email"
-                              value={newShop.email}
-                              onChange={(e) => setNewShop({...newShop, email: e.target.value})}
-                            />
-                          </div>
-                          <div>
-                            <Label htmlFor="shop-phone">Téléphone</Label>
-                            <Input
-                              id="shop-phone"
-                              value={newShop.phone}
-                              onChange={(e) => setNewShop({...newShop, phone: e.target.value})}
-                            />
-                          </div>
-                          <div>
-                            <Label htmlFor="shop-address">Adresse</Label>
-                            <Textarea
-                              id="shop-address"
-                              value={newShop.address}
-                              onChange={(e) => setNewShop({...newShop, address: e.target.value})}
-                            />
-                          </div>
-                          <div>
-                            <Label htmlFor="sms-credits">Crédits SMS</Label>
-                            <Input
-                              id="sms-credits"
-                              type="number"
-                              value={newShop.sms_credits}
-                              onChange={(e) => setNewShop({...newShop, sms_credits: parseInt(e.target.value)})}
+                              id="user-lastname"
+                              value={newUser.last_name}
+                              onChange={(e) => setNewUser({...newUser, last_name: e.target.value})}
+                              className="bg-slate-800 border-slate-600 text-white"
                             />
                           </div>
                         </div>
-                        <DialogFooter>
-                          <Button variant="outline" onClick={() => setIsCreateShopOpen(false)}>
-                            Annuler
-                          </Button>
-                          <Button onClick={createShop}>
-                            Créer le magasin
-                          </Button>
-                        </DialogFooter>
-                      </DialogContent>
-                    </Dialog>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {shops.map((shop) => (
-                      <Card key={shop.id} className="hover:shadow-md transition-shadow">
-                        <CardContent className="p-6">
-                          <div className="flex items-center justify-between">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-4 mb-2">
-                                <h3 className="font-semibold text-lg">{shop.name}</h3>
-                                <Badge variant="outline">
-                                  {shop.total_users} utilisateur(s)
-                                </Badge>
-                                <Badge variant="outline">
-                                  {shop.total_sav_cases} dossier(s) SAV
-                                </Badge>
-                              </div>
-                              
-                              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm text-muted-foreground mb-2">
-                                <div>
-                                  <span className="font-medium">Email: </span>
-                                  <span>{shop.email}</span>
-                                </div>
-                                <div>
-                                  <span className="font-medium">Téléphone: </span>
-                                  <span>{shop.phone}</span>
-                                </div>
-                                <div>
-                                  <span className="font-medium">Crédits SMS: </span>
-                                  <span>{shop.sms_credits}</span>
-                                </div>
-                                <div>
-                                  <span className="font-medium">CA: </span>
-                                  <span>{shop.total_revenue?.toFixed(2)}€</span>
-                                </div>
-                              </div>
-                              
-                              {shop.slug && (
-                                <div className="flex items-center gap-2 bg-muted/50 p-3 rounded-lg">
-                                  <div className="flex-1">
-                                    <span className="font-medium text-sm">URL du magasin: </span>
-                                    <a 
-                                      href={`${window.location.origin}/${shop.slug}`}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="text-primary hover:underline font-mono text-sm"
-                                    >
-                                      {window.location.origin}/{shop.slug}
-                                    </a>
-                                  </div>
-                                  <Button 
-                                    variant="outline" 
-                                    size="sm"
-                                    onClick={() => {
-                                      navigator.clipboard.writeText(`${window.location.origin}/${shop.slug}`);
-                                      toast({
-                                        title: "Copié !",
-                                        description: "L'URL a été copiée dans le presse-papiers",
-                                      });
-                                    }}
-                                  >
-                                    Copier
-                                  </Button>
-                                </div>
-                              )}
+                        <div>
+                          <Label htmlFor="user-shop" className="text-white">Magasin</Label>
+                          <Select value={newUser.shop_id} onValueChange={(value) => setNewUser({...newUser, shop_id: value})}>
+                            <SelectTrigger className="bg-slate-800 border-slate-600 text-white">
+                              <SelectValue placeholder="Sélectionner un magasin" />
+                            </SelectTrigger>
+                            <SelectContent className="bg-slate-800 border-slate-700">
+                              {shops.map(shop => (
+                                <SelectItem key={shop.id} value={shop.id} className="text-white focus:bg-slate-700">
+                                  {shop.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label htmlFor="user-role" className="text-white">Rôle</Label>
+                          <Select value={newUser.role} onValueChange={(value: any) => setNewUser({...newUser, role: value})}>
+                            <SelectTrigger className="bg-slate-800 border-slate-600 text-white">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent className="bg-slate-800 border-slate-700">
+                              <SelectItem value="admin" className="text-white focus:bg-slate-700">Administrateur</SelectItem>
+                              <SelectItem value="technician" className="text-white focus:bg-slate-700">Technicien</SelectItem>
+                              <SelectItem value="super_admin" className="text-white focus:bg-slate-700">Super Admin</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsCreateUserOpen(false)}>
+                          Annuler
+                        </Button>
+                        <Button onClick={createUser} className="bg-purple-600 hover:bg-purple-700">
+                          Créer l'utilisateur
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {profiles.map((profile) => (
+                    <Card key={profile.id} className="bg-white/5 border-white/10 hover:bg-white/10 transition-all duration-200">
+                      <CardContent className="p-6">
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-4 mb-2">
+                              <h3 className="font-semibold text-lg text-white">
+                                {profile.first_name} {profile.last_name}
+                              </h3>
+                              <Badge variant={profile.role === 'super_admin' ? 'default' : profile.role === 'admin' ? 'secondary' : 'outline'} 
+                                className={profile.role === 'super_admin' ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white' : ''}>
+                                {profile.role === 'super_admin' && <Crown className="h-3 w-3 mr-1" />}
+                                {profile.role === 'super_admin' ? 'Super Admin' : 
+                                 profile.role === 'admin' ? 'Administrateur' : 'Technicien'}
+                              </Badge>
                             </div>
                             
-                            <div className="flex items-center gap-2 ml-4">
-                              <Button variant="outline" size="sm">
-                                <Edit className="h-4 w-4 mr-1" />
-                                Modifier
-                              </Button>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-slate-300">
+                              <div>
+                                <span className="font-medium">Magasin: </span>
+                                <span>{profile.shop?.name || 'N/A'}</span>
+                              </div>
+                              <div>
+                                <span className="font-medium">Email: </span>
+                                <span>{profile.shop?.email || 'N/A'}</span>
+                              </div>
+                              <div>
+                                <span className="font-medium">Téléphone: </span>
+                                <span>{profile.phone}</span>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div className="flex items-center gap-2 ml-4">
+                            <Button variant="outline" size="sm" className="border-white/20 text-white hover:bg-white/10">
+                              <Edit className="h-4 w-4 mr-1" />
+                              Modifier
+                            </Button>
+                            {profile.role !== 'super_admin' && (
                               <Button 
                                 variant="outline" 
                                 size="sm" 
-                                className="text-destructive hover:text-destructive"
-                                onClick={() => deleteShop(shop.id)}
+                                className="border-red-400/50 text-red-400 hover:bg-red-500/20"
+                                onClick={() => deleteUser(profile.id, profile.user_id)}
                               >
                                 <Trash2 className="h-4 w-4 mr-1" />
                                 Supprimer
                               </Button>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            {/* Users Management */}
-            <TabsContent value="users">
-              <Card>
-                <CardHeader>
-                  <div className="flex justify-between items-center">
-                    <CardTitle className="flex items-center gap-2">
-                      <Users className="h-5 w-5" />
-                      Gestion des Utilisateurs
-                    </CardTitle>
-                    <Dialog open={isCreateUserOpen} onOpenChange={setIsCreateUserOpen}>
-                      <DialogTrigger asChild>
-                        <Button>
-                          <Plus className="h-4 w-4 mr-2" />
-                          Créer un utilisateur
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>Créer un nouvel utilisateur</DialogTitle>
-                          <DialogDescription>
-                            Créez un nouvel utilisateur et assignez-le à un magasin.
-                          </DialogDescription>
-                        </DialogHeader>
-                        <div className="space-y-4">
-                          <div>
-                            <Label htmlFor="user-email">Email</Label>
-                            <Input
-                              id="user-email"
-                              type="email"
-                              value={newUser.email}
-                              onChange={(e) => setNewUser({...newUser, email: e.target.value})}
-                            />
-                          </div>
-                          <div>
-                            <Label htmlFor="user-password">Mot de passe</Label>
-                            <Input
-                              id="user-password"
-                              type="password"
-                              value={newUser.password}
-                              onChange={(e) => setNewUser({...newUser, password: e.target.value})}
-                            />
-                          </div>
-                          <div className="grid grid-cols-2 gap-4">
-                            <div>
-                              <Label htmlFor="user-firstname">Prénom</Label>
-                              <Input
-                                id="user-firstname"
-                                value={newUser.first_name}
-                                onChange={(e) => setNewUser({...newUser, first_name: e.target.value})}
-                              />
-                            </div>
-                            <div>
-                              <Label htmlFor="user-lastname">Nom</Label>
-                              <Input
-                                id="user-lastname"
-                                value={newUser.last_name}
-                                onChange={(e) => setNewUser({...newUser, last_name: e.target.value})}
-                              />
-                            </div>
-                          </div>
-                          <div>
-                            <Label htmlFor="user-phone">Téléphone</Label>
-                            <Input
-                              id="user-phone"
-                              value={newUser.phone}
-                              onChange={(e) => setNewUser({...newUser, phone: e.target.value})}
-                            />
-                          </div>
-                          <div>
-                            <Label htmlFor="user-shop">Magasin</Label>
-                            <Select value={newUser.shop_id} onValueChange={(value) => setNewUser({...newUser, shop_id: value})}>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Sélectionner un magasin" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {shops.map(shop => (
-                                  <SelectItem key={shop.id} value={shop.id}>
-                                    {shop.name}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div>
-                            <Label htmlFor="user-role">Rôle</Label>
-                            <Select value={newUser.role} onValueChange={(value: any) => setNewUser({...newUser, role: value})}>
-                              <SelectTrigger>
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="admin">Administrateur</SelectItem>
-                                <SelectItem value="technician">Technicien</SelectItem>
-                                <SelectItem value="super_admin">Super Admin</SelectItem>
-                              </SelectContent>
-                            </Select>
+                            )}
                           </div>
                         </div>
-                        <DialogFooter>
-                          <Button variant="outline" onClick={() => setIsCreateUserOpen(false)}>
-                            Annuler
-                          </Button>
-                          <Button onClick={createUser}>
-                            Créer l'utilisateur
-                          </Button>
-                        </DialogFooter>
-                      </DialogContent>
-                    </Dialog>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {profiles.map((profile) => (
-                      <Card key={profile.id} className="hover:shadow-md transition-shadow">
-                        <CardContent className="p-6">
-                          <div className="flex items-center justify-between">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-4 mb-2">
-                                <h3 className="font-semibold text-lg">
-                                  {profile.first_name} {profile.last_name}
-                                </h3>
-                                <Badge variant={profile.role === 'super_admin' ? 'default' : profile.role === 'admin' ? 'secondary' : 'outline'}>
-                                  {profile.role === 'super_admin' && <Crown className="h-3 w-3 mr-1" />}
-                                  {profile.role === 'super_admin' ? 'Super Admin' : 
-                                   profile.role === 'admin' ? 'Administrateur' : 'Technicien'}
-                                </Badge>
-                              </div>
-                              
-                              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-muted-foreground">
-                                <div>
-                                  <span className="font-medium">Magasin: </span>
-                                  <span>{profile.shop?.name || 'N/A'}</span>
-                                </div>
-                                <div>
-                                  <span className="font-medium">Email: </span>
-                                  <span>{profile.shop?.email || 'N/A'}</span>
-                                </div>
-                                <div>
-                                  <span className="font-medium">Téléphone: </span>
-                                  <span>{profile.phone}</span>
-                                </div>
-                              </div>
-                            </div>
-                            
-                            <div className="flex items-center gap-2 ml-4">
-                              <Button variant="outline" size="sm">
-                                <Edit className="h-4 w-4 mr-1" />
-                                Modifier
-                              </Button>
-                              {profile.role !== 'super_admin' && (
-                                <Button 
-                                  variant="outline" 
-                                  size="sm" 
-                                  className="text-destructive hover:text-destructive"
-                                  onClick={() => deleteUser(profile.id, profile.user_id)}
-                                >
-                                  <Trash2 className="h-4 w-4 mr-1" />
-                                  Supprimer
-                                </Button>
-                              )}
-                            </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Statistics */}
+          <TabsContent value="statistics">
+            <Card className="bg-black/20 border-white/10 backdrop-blur-sm">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-white">
+                  <TrendingUp className="h-5 w-5" />
+                  Statistiques par Magasin
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {shops.map((shop) => (
+                    <Card key={shop.id} className="bg-white/5 border-white/10">
+                      <CardContent className="p-6">
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                          <div>
+                            <h4 className="font-medium text-white">{shop.name}</h4>
+                            <p className="text-sm text-slate-400">{shop.email}</p>
                           </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            {/* Unblock & Quotas Management */}
-            <TabsContent value="unblock">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Unlock className="h-5 w-5" />
-                    Gestion des Déblocages et Quotas
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-6">
-                    {shops.map((shop) => {
-                      const isBlocked = shop.subscription_tier === 'free' && 
-                        (shop.active_sav_count >= 15 || shop.sms_credits_used >= shop.sms_credits_allocated);
-                      const savQuotaReached = shop.active_sav_count >= 15;
-                      const smsQuotaReached = shop.sms_credits_used >= shop.sms_credits_allocated;
-
-                      return (
-                        <Card key={shop.id} className={`${isBlocked ? 'border-red-200 bg-red-50' : ''}`}>
-                          <CardContent className="p-6">
-                            <div className="space-y-4">
-                              {/* Header du magasin */}
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-4">
-                                  <h3 className="font-semibold text-lg">{shop.name}</h3>
-                                  <Badge variant={shop.subscription_tier === 'free' ? 'secondary' : 'default'}>
-                                    {shop.subscription_tier === 'free' ? 'Gratuit' : 
-                                     shop.subscription_tier === 'premium' ? 'Premium' : 'Enterprise'}
-                                  </Badge>
-                                  {isBlocked && (
-                                    <Badge variant="destructive" className="flex items-center gap-1">
-                                      <AlertTriangle className="h-3 w-3" />
-                                      Bloqué
-                                    </Badge>
-                                  )}
-                                </div>
-                                <div className="text-sm text-muted-foreground">
-                                  {shop.email}
-                                </div>
-                              </div>
-
-                              {/* Statuts des quotas */}
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <Card className={savQuotaReached ? 'border-red-200 bg-red-50' : 'border-green-200 bg-green-50'}>
-                                  <CardContent className="p-4">
-                                    <div className="flex items-center justify-between">
-                                      <div>
-                                        <div className="font-medium">Dossiers SAV Actifs</div>
-                                        <div className="text-2xl font-bold">
-                                          {shop.active_sav_count} / 15
-                                        </div>
-                                      </div>
-                                      <Activity className={`h-6 w-6 ${savQuotaReached ? 'text-red-600' : 'text-green-600'}`} />
-                                    </div>
-                                    {savQuotaReached && (
-                                      <div className="text-sm text-red-600 mt-2">
-                                        Quota SAV dépassé !
-                                      </div>
-                                    )}
-                                  </CardContent>
-                                </Card>
-
-                                <Card className={smsQuotaReached ? 'border-red-200 bg-red-50' : 'border-blue-200 bg-blue-50'}>
-                                  <CardContent className="p-4">
-                                    <div className="flex items-center justify-between">
-                                      <div>
-                                        <div className="font-medium">Crédits SMS</div>
-                                        <div className="text-2xl font-bold">
-                                          {shop.sms_credits_used} / {shop.sms_credits_allocated}
-                                        </div>
-                                      </div>
-                                      <MessageSquare className={`h-6 w-6 ${smsQuotaReached ? 'text-red-600' : 'text-blue-600'}`} />
-                                    </div>
-                                    {smsQuotaReached && (
-                                      <div className="text-sm text-red-600 mt-2">
-                                        Quota SMS dépassé !
-                                      </div>
-                                    )}
-                                  </CardContent>
-                                </Card>
-                              </div>
-
-                              {/* Actions de déblocage */}
-                              <div className="border-t pt-4">
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                  {/* Déblocage général */}
-                                  <div className="space-y-2">
-                                    <Label className="text-sm font-medium">Déblocage général</Label>
-                                    <div className="flex items-center space-x-2">
-                                      <Switch
-                                        checked={!isBlocked}
-                                        onCheckedChange={(checked) => toggleShopBlocking(shop.id, !checked)}
-                                      />
-                                      <span className="text-sm">
-                                        {isBlocked ? 'Bloqué' : 'Débloqué'}
-                                      </span>
-                                    </div>
-                                  </div>
-
-                                  {/* Ajout de crédits SMS */}
-                                  <div className="space-y-2">
-                                    <Label className="text-sm font-medium">Ajouter crédits SMS</Label>
-                                    <div className="flex gap-2">
-                                      <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => addSmsCredits(shop.id, 50)}
-                                      >
-                                        +50
-                                      </Button>
-                                      <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => addSmsCredits(shop.id, 100)}
-                                      >
-                                        +100
-                                      </Button>
-                                      <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => addSmsCredits(shop.id, 500)}
-                                      >
-                                        +500
-                                      </Button>
-                                    </div>
-                                  </div>
-
-                                  {/* Augmentation quota SAV */}
-                                  <div className="space-y-2">
-                                    <Label className="text-sm font-medium">Quota SAV maximum</Label>
-                                    <div className="flex gap-2">
-                                      <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => updateShopQuota(shop.id, 25)}
-                                      >
-                                        25 SAV
-                                      </Button>
-                                      <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => updateShopQuota(shop.id, 50)}
-                                      >
-                                        50 SAV
-                                      </Button>
-                                      <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => updateShopQuota(shop.id, 100)}
-                                      >
-                                        100 SAV
-                                      </Button>
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      );
-                    })}
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            {/* Statistics */}
-            <TabsContent value="statistics">
-              <div className="grid gap-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <TrendingUp className="h-5 w-5" />
-                      Statistiques par Magasin
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      {shops.map((shop) => (
-                        <Card key={shop.id} className="p-4">
-                          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                            <div>
-                              <h4 className="font-medium">{shop.name}</h4>
-                              <p className="text-sm text-muted-foreground">{shop.email}</p>
-                            </div>
-                            <div className="text-center">
-                              <div className="text-2xl font-bold text-blue-600">{shop.total_sav_cases}</div>
-                              <div className="text-sm text-muted-foreground">Dossiers SAV</div>
-                            </div>
-                            <div className="text-center">
-                              <div className="text-2xl font-bold text-green-600">{shop.total_revenue?.toFixed(2)}€</div>
-                              <div className="text-sm text-muted-foreground">Chiffre d'affaires</div>
-                            </div>
-                            <div className="text-center">
-                              <div className="text-2xl font-bold text-purple-600">{shop.average_case_value?.toFixed(2)}€</div>
-                              <div className="text-sm text-muted-foreground">Panier moyen</div>
-                            </div>
+                          <div className="text-center">
+                            <div className="text-2xl font-bold text-blue-400">{shop.total_sav_cases}</div>
+                            <div className="text-sm text-slate-400">Dossiers SAV</div>
                           </div>
-                          
-                          <div className="mt-4 grid grid-cols-4 gap-2 text-sm">
-                            <div className="text-center">
-                              <div className="font-medium text-yellow-600">{shop.pending_cases}</div>
-                              <div className="text-muted-foreground">En attente</div>
-                            </div>
-                            <div className="text-center">
-                              <div className="font-medium text-blue-600">{shop.in_progress_cases}</div>
-                              <div className="text-muted-foreground">En cours</div>
-                            </div>
-                            <div className="text-center">
-                              <div className="font-medium text-green-600">{shop.ready_cases}</div>
-                              <div className="text-muted-foreground">Prêt</div>
-                            </div>
-                            <div className="text-center">
-                              <div className="font-medium text-gray-600">{shop.delivered_cases}</div>
-                              <div className="text-muted-foreground">Livré</div>
-                            </div>
+                          <div className="text-center">
+                            <div className="text-2xl font-bold text-green-400">{shop.total_revenue?.toFixed(2)}€</div>
+                            <div className="text-sm text-slate-400">Chiffre d'affaires</div>
                           </div>
-                        </Card>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            </TabsContent>
-          </Tabs>
-            </div>
-          </main>
-        </div>
-      </div>
+                          <div className="text-center">
+                            <div className="text-2xl font-bold text-purple-400">{shop.average_case_value?.toFixed(2)}€</div>
+                            <div className="text-sm text-slate-400">Panier moyen</div>
+                          </div>
+                        </div>
+                        
+                        <div className="mt-4 grid grid-cols-4 gap-2 text-sm">
+                          <div className="text-center">
+                            <div className="font-medium text-yellow-400">{shop.pending_cases}</div>
+                            <div className="text-slate-400">En attente</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="font-medium text-blue-400">{shop.in_progress_cases}</div>
+                            <div className="text-slate-400">En cours</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="font-medium text-green-400">{shop.ready_cases}</div>
+                            <div className="text-slate-400">Prêt</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="font-medium text-slate-400">{shop.delivered_cases}</div>
+                            <div className="text-slate-400">Livré</div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </main>
     </div>
   );
 }
