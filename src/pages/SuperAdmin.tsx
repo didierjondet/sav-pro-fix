@@ -22,7 +22,10 @@ import {
   Shield,
   TrendingUp,
   Activity,
-  DollarSign
+  DollarSign,
+  Unlock,
+  MessageSquare,
+  AlertTriangle
 } from 'lucide-react';
 import {
   Dialog,
@@ -40,6 +43,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 
 interface Shop {
   id: string;
@@ -49,6 +53,10 @@ interface Shop {
   address: string;
   slug: string;
   sms_credits: number;
+  subscription_tier: string;
+  sms_credits_allocated: number;
+  sms_credits_used: number;
+  active_sav_count: number;
   created_at: string;
   total_users?: number;
   total_sav_cases?: number;
@@ -58,6 +66,7 @@ interface Shop {
   delivered_cases?: number;
   total_revenue?: number;
   average_case_value?: number;
+  is_blocked?: boolean;
 }
 
 interface Profile {
@@ -297,6 +306,89 @@ export default function SuperAdmin() {
     }
   };
 
+  const updateShopQuota = async (shopId: string, newQuota: number) => {
+    try {
+      const { error } = await supabase
+        .from('shops')
+        .update({ sms_credits_allocated: newQuota })
+        .eq('id', shopId);
+
+      if (error) throw error;
+
+      await fetchData();
+      
+      toast({
+        title: "Succès",
+        description: "Quota SAV mis à jour",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const toggleShopBlocking = async (shopId: string, isBlocked: boolean) => {
+    try {
+      // Pour le moment, nous utilisons une logique simple basée sur les crédits SMS
+      // Si on débloque, on remet les crédits SMS utilisés à 0
+      const updateData = isBlocked 
+        ? { sms_credits_used: 999999 } // Bloquer en mettant un nombre très élevé
+        : { sms_credits_used: 0 }; // Débloquer en remettant à zéro
+
+      const { error } = await supabase
+        .from('shops')
+        .update(updateData)
+        .eq('id', shopId);
+
+      if (error) throw error;
+
+      await fetchData();
+      
+      toast({
+        title: "Succès",
+        description: isBlocked ? "Magasin bloqué" : "Magasin débloqué",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const addSmsCredits = async (shopId: string, additionalCredits: number) => {
+    try {
+      const shop = shops.find(s => s.id === shopId);
+      if (!shop) throw new Error("Magasin non trouvé");
+
+      const { error } = await supabase
+        .from('shops')
+        .update({ 
+          sms_credits_allocated: shop.sms_credits_allocated + additionalCredits 
+        })
+        .eq('id', shopId);
+
+      if (error) throw error;
+
+      await fetchData();
+      
+      toast({
+        title: "Succès",
+        description: `${additionalCredits} crédits SMS ajoutés`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
@@ -385,7 +477,7 @@ export default function SuperAdmin() {
           </div>
 
           <Tabs defaultValue="shops" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="shops" className="flex items-center gap-2">
                 <Store className="h-4 w-4" />
                 Gestion Magasins
@@ -393,6 +485,10 @@ export default function SuperAdmin() {
               <TabsTrigger value="users" className="flex items-center gap-2">
                 <Users className="h-4 w-4" />
                 Gestion Utilisateurs
+              </TabsTrigger>
+              <TabsTrigger value="unblock" className="flex items-center gap-2">
+                <Unlock className="h-4 w-4" />
+                Déblocage & Quotas
               </TabsTrigger>
               <TabsTrigger value="statistics" className="flex items-center gap-2">
                 <BarChart3 className="h-4 w-4" />
@@ -733,6 +829,172 @@ export default function SuperAdmin() {
                         </CardContent>
                       </Card>
                     ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Unblock & Quotas Management */}
+            <TabsContent value="unblock">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Unlock className="h-5 w-5" />
+                    Gestion des Déblocages et Quotas
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-6">
+                    {shops.map((shop) => {
+                      const isBlocked = shop.subscription_tier === 'free' && 
+                        (shop.active_sav_count >= 15 || shop.sms_credits_used >= shop.sms_credits_allocated);
+                      const savQuotaReached = shop.active_sav_count >= 15;
+                      const smsQuotaReached = shop.sms_credits_used >= shop.sms_credits_allocated;
+
+                      return (
+                        <Card key={shop.id} className={`${isBlocked ? 'border-red-200 bg-red-50' : ''}`}>
+                          <CardContent className="p-6">
+                            <div className="space-y-4">
+                              {/* Header du magasin */}
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-4">
+                                  <h3 className="font-semibold text-lg">{shop.name}</h3>
+                                  <Badge variant={shop.subscription_tier === 'free' ? 'secondary' : 'default'}>
+                                    {shop.subscription_tier === 'free' ? 'Gratuit' : 
+                                     shop.subscription_tier === 'premium' ? 'Premium' : 'Enterprise'}
+                                  </Badge>
+                                  {isBlocked && (
+                                    <Badge variant="destructive" className="flex items-center gap-1">
+                                      <AlertTriangle className="h-3 w-3" />
+                                      Bloqué
+                                    </Badge>
+                                  )}
+                                </div>
+                                <div className="text-sm text-muted-foreground">
+                                  {shop.email}
+                                </div>
+                              </div>
+
+                              {/* Statuts des quotas */}
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <Card className={savQuotaReached ? 'border-red-200 bg-red-50' : 'border-green-200 bg-green-50'}>
+                                  <CardContent className="p-4">
+                                    <div className="flex items-center justify-between">
+                                      <div>
+                                        <div className="font-medium">Dossiers SAV Actifs</div>
+                                        <div className="text-2xl font-bold">
+                                          {shop.active_sav_count} / 15
+                                        </div>
+                                      </div>
+                                      <Activity className={`h-6 w-6 ${savQuotaReached ? 'text-red-600' : 'text-green-600'}`} />
+                                    </div>
+                                    {savQuotaReached && (
+                                      <div className="text-sm text-red-600 mt-2">
+                                        Quota SAV dépassé !
+                                      </div>
+                                    )}
+                                  </CardContent>
+                                </Card>
+
+                                <Card className={smsQuotaReached ? 'border-red-200 bg-red-50' : 'border-blue-200 bg-blue-50'}>
+                                  <CardContent className="p-4">
+                                    <div className="flex items-center justify-between">
+                                      <div>
+                                        <div className="font-medium">Crédits SMS</div>
+                                        <div className="text-2xl font-bold">
+                                          {shop.sms_credits_used} / {shop.sms_credits_allocated}
+                                        </div>
+                                      </div>
+                                      <MessageSquare className={`h-6 w-6 ${smsQuotaReached ? 'text-red-600' : 'text-blue-600'}`} />
+                                    </div>
+                                    {smsQuotaReached && (
+                                      <div className="text-sm text-red-600 mt-2">
+                                        Quota SMS dépassé !
+                                      </div>
+                                    )}
+                                  </CardContent>
+                                </Card>
+                              </div>
+
+                              {/* Actions de déblocage */}
+                              <div className="border-t pt-4">
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                  {/* Déblocage général */}
+                                  <div className="space-y-2">
+                                    <Label className="text-sm font-medium">Déblocage général</Label>
+                                    <div className="flex items-center space-x-2">
+                                      <Switch
+                                        checked={!isBlocked}
+                                        onCheckedChange={(checked) => toggleShopBlocking(shop.id, !checked)}
+                                      />
+                                      <span className="text-sm">
+                                        {isBlocked ? 'Bloqué' : 'Débloqué'}
+                                      </span>
+                                    </div>
+                                  </div>
+
+                                  {/* Ajout de crédits SMS */}
+                                  <div className="space-y-2">
+                                    <Label className="text-sm font-medium">Ajouter crédits SMS</Label>
+                                    <div className="flex gap-2">
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => addSmsCredits(shop.id, 50)}
+                                      >
+                                        +50
+                                      </Button>
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => addSmsCredits(shop.id, 100)}
+                                      >
+                                        +100
+                                      </Button>
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => addSmsCredits(shop.id, 500)}
+                                      >
+                                        +500
+                                      </Button>
+                                    </div>
+                                  </div>
+
+                                  {/* Augmentation quota SAV */}
+                                  <div className="space-y-2">
+                                    <Label className="text-sm font-medium">Quota SAV maximum</Label>
+                                    <div className="flex gap-2">
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => updateShopQuota(shop.id, 25)}
+                                      >
+                                        25 SAV
+                                      </Button>
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => updateShopQuota(shop.id, 50)}
+                                      >
+                                        50 SAV
+                                      </Button>
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => updateShopQuota(shop.id, 100)}
+                                      >
+                                        100 SAV
+                                      </Button>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
                   </div>
                 </CardContent>
               </Card>
