@@ -45,8 +45,8 @@ const App = () => (
             <Route path="/customers" element={<Customers />} />
             
             <Route path="/super-admin" element={<SuperAdmin />} />
+            <Route path="/network-admin" element={<NetworkManagement />} />
             <Route path="/subscription" element={<Subscription />} />
-            <Route path="/network-management" element={<NetworkManagement />} />
             <Route path="/landing" element={<Landing />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />

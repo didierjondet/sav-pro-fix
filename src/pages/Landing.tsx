@@ -287,7 +287,7 @@ export default function Landing() {
           <div className="text-center text-gray-400">
             <p>&copy; 2024 SAV Pro. Tous droits réservés.</p>
             <button
-              onClick={() => window.location.href = '/super-admin'}
+              onClick={() => window.location.href = '/network-admin'}
               className="text-xs text-gray-600 hover:text-gray-400 mt-2 opacity-50 hover:opacity-100 transition-opacity"
             >
               Administration
