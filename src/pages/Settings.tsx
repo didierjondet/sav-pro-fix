@@ -437,8 +437,9 @@ export default function Settings() {
                               if (!inviteEmail || !shop) return;
                               
                               try {
-                                const { data, error } = await supabase.rpc('create_profile_only', {
+                                const { data, error } = await supabase.rpc('create_user_for_shop', {
                                   p_email: inviteEmail,
+                                  p_password: 'motdepasse123', // Mot de passe temporaire
                                   p_first_name: '',
                                   p_last_name: '',
                                   p_phone: '',

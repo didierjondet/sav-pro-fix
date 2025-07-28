@@ -128,29 +128,22 @@ export default function ShopManagementDialog({ shop, isOpen, onClose, onUpdate }
 
     setLoading(true);
     try {
-      // Créer l'utilisateur via l'API Supabase Admin
-      const { data: { user }, error: signUpError } = await supabase.auth.admin.createUser({
-        email: newUserEmail,
-        password: newUserPassword,
-        email_confirm: true
+      // Utiliser la nouvelle fonction qui fonctionne pour les super admins
+      const { data, error } = await supabase.rpc('create_user_for_shop', {
+        p_email: newUserEmail,
+        p_password: newUserPassword,
+        p_first_name: '',
+        p_last_name: '',
+        p_phone: '',
+        p_role: newUserRole,
+        p_shop_id: shop.id
       });
 
-      if (signUpError) throw signUpError;
-
-      // Créer le profil
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert({
-          user_id: user.id,
-          shop_id: shop.id,
-          role: newUserRole
-        });
-
-      if (profileError) throw profileError;
+      if (error) throw error;
 
       toast({
         title: "Succès",
-        description: "Utilisateur créé avec succès",
+        description: "Profil utilisateur créé avec succès",
       });
 
       setNewUserEmail('');
