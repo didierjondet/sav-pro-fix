@@ -646,6 +646,18 @@ export type Database = {
         Args: { p_shop_id: string }
         Returns: Json
       }
+      create_user_with_profile: {
+        Args: {
+          p_email: string
+          p_password: string
+          p_first_name: string
+          p_last_name: string
+          p_phone: string
+          p_role: Database["public"]["Enums"]["user_role"]
+          p_shop_id: string
+        }
+        Returns: string
+      }
       ensure_super_admin_profile: {
         Args: Record<PropertyKey, never>
         Returns: undefined

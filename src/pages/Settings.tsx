@@ -433,14 +433,39 @@ export default function Settings() {
                             <Button variant="outline" onClick={() => setIsInviteDialogOpen(false)}>
                               Annuler
                             </Button>
-                            <Button onClick={() => {
-                              toast({
-                                title: "Fonctionnalité à venir",
-                                description: "L'invitation d'utilisateurs sera bientôt disponible",
-                              });
-                              setIsInviteDialogOpen(false);
+                            <Button onClick={async () => {
+                              if (!inviteEmail || !shop) return;
+                              
+                              try {
+                                const { data, error } = await supabase.rpc('create_user_with_profile', {
+                                  p_email: inviteEmail,
+                                  p_password: 'motdepasse123', // Mot de passe temporaire
+                                  p_first_name: '',
+                                  p_last_name: '',
+                                  p_phone: '',
+                                  p_role: inviteRole,
+                                  p_shop_id: shop.id
+                                });
+
+                                if (error) throw error;
+
+                                toast({
+                                  title: "Succès",
+                                  description: "Utilisateur créé avec succès avec le mot de passe 'motdepasse123'",
+                                });
+                                
+                                setInviteEmail('');
+                                setIsInviteDialogOpen(false);
+                                fetchProfiles();
+                              } catch (error: any) {
+                                toast({
+                                  title: "Erreur",
+                                  description: error.message,
+                                  variant: "destructive",
+                                });
+                              }
                             }}>
-                              Envoyer l'invitation
+                              Créer l'utilisateur
                             </Button>
                           </DialogFooter>
                         </DialogContent>
