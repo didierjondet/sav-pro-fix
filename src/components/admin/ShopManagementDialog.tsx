@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -34,7 +34,12 @@ import {
   Zap,
   AlertTriangle,
   Unlock,
-  Lock
+  Lock,
+  UserPlus,
+  Trash2,
+  Key,
+  Mail,
+  Shield
 } from 'lucide-react';
 
 interface Shop {
@@ -76,10 +81,169 @@ export default function ShopManagementDialog({ shop, isOpen, onClose, onUpdate }
   const [smsCreditsToAdd, setSmsCreditsToAdd] = useState('');
   const [newSubscriptionTier, setNewSubscriptionTier] = useState(shop?.subscription_tier || 'free');
   const [isBlocked, setIsBlocked] = useState(shop?.is_blocked || false);
+  const [users, setUsers] = useState<any[]>([]);
+  const [newUserEmail, setNewUserEmail] = useState('');
+  const [newUserPassword, setNewUserPassword] = useState('');
+  const [newUserRole, setNewUserRole] = useState<'admin' | 'technician'>('technician');
+
+  useEffect(() => {
+    if (shop?.id) {
+      fetchUsers();
+    }
+  }, [shop?.id]);
 
   if (!shop) return null;
 
   const currentTier = SUBSCRIPTION_TIERS.find(tier => tier.id === shop.subscription_tier);
+
+  const fetchUsers = async () => {
+    if (!shop) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('shop_id', shop.id);
+
+      if (error) throw error;
+      setUsers(data || []);
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de charger les utilisateurs",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleCreateUser = async () => {
+    if (!newUserEmail || !newUserPassword) {
+      toast({
+        title: "Erreur",
+        description: "Email et mot de passe requis",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // Créer l'utilisateur via l'API Supabase Admin
+      const { data: { user }, error: signUpError } = await supabase.auth.admin.createUser({
+        email: newUserEmail,
+        password: newUserPassword,
+        email_confirm: true
+      });
+
+      if (signUpError) throw signUpError;
+
+      // Créer le profil
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .insert({
+          user_id: user.id,
+          shop_id: shop.id,
+          role: newUserRole
+        });
+
+      if (profileError) throw profileError;
+
+      toast({
+        title: "Succès",
+        description: "Utilisateur créé avec succès",
+      });
+
+      setNewUserEmail('');
+      setNewUserPassword('');
+      setNewUserRole('technician');
+      fetchUsers();
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUpdateUserRole = async (userId: string, newRole: 'admin' | 'technician' | 'super_admin' | 'shop_admin') => {
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ role: newRole })
+        .eq('user_id', userId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Succès",
+        description: "Rôle mis à jour",
+      });
+
+      fetchUsers();
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResetPassword = async (userId: string, email: string) => {
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.admin.updateUserById(userId, {
+        password: "nouveaumotdepasse123"
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Succès",
+        description: "Mot de passe réinitialisé à 'nouveaumotdepasse123'",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteUser = async (userId: string) => {
+    if (!confirm("Êtes-vous sûr de vouloir supprimer cet utilisateur ?")) return;
+
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.admin.deleteUser(userId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Succès",
+        description: "Utilisateur supprimé",
+      });
+
+      fetchUsers();
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleUpdateSubscription = async () => {
     if (!shop) return;
@@ -228,10 +392,11 @@ export default function ShopManagementDialog({ shop, isOpen, onClose, onUpdate }
         </DialogHeader>
 
         <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="overview">Vue d'ensemble</TabsTrigger>
             <TabsTrigger value="subscription">Abonnement</TabsTrigger>
             <TabsTrigger value="sms">Crédits SMS</TabsTrigger>
+            <TabsTrigger value="users">Utilisateurs</TabsTrigger>
             <TabsTrigger value="restrictions">Restrictions</TabsTrigger>
           </TabsList>
 
@@ -413,6 +578,114 @@ export default function ShopManagementDialog({ shop, isOpen, onClose, onUpdate }
                 >
                   Réinitialiser l'utilisation SMS
                 </Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="users" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="h-5 w-5" />
+                  Gestion des utilisateurs
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-4">
+                  <Label>Créer un nouvel utilisateur</Label>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <Input
+                      type="email"
+                      placeholder="Email"
+                      value={newUserEmail}
+                      onChange={(e) => setNewUserEmail(e.target.value)}
+                    />
+                    <Input
+                      type="password"
+                      placeholder="Mot de passe"
+                      value={newUserPassword}
+                      onChange={(e) => setNewUserPassword(e.target.value)}
+                    />
+                    <Select value={newUserRole} onValueChange={(value: 'admin' | 'technician') => setNewUserRole(value)}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="technician">Technicien</SelectItem>
+                        <SelectItem value="admin">Admin</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <Button onClick={handleCreateUser} disabled={loading} className="w-full">
+                    <UserPlus className="h-4 w-4 mr-2" />
+                    Créer l'utilisateur
+                  </Button>
+                </div>
+
+                <Separator />
+
+                <div className="space-y-2">
+                  <Label>Utilisateurs existants</Label>
+                  <div className="space-y-3">
+                    {users.map((user) => (
+                      <Card key={user.id} className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              <Shield className="h-4 w-4" />
+                              <span className="font-medium">
+                                {user.first_name} {user.last_name}
+                              </span>
+                              <Badge variant={user.role === 'admin' ? 'default' : 'secondary'}>
+                                {user.role === 'admin' ? 'Admin' : 'Technicien'}
+                              </Badge>
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                              ID: {user.user_id}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Select 
+                              value={user.role} 
+                              onValueChange={(value: 'admin' | 'technician' | 'super_admin' | 'shop_admin') => 
+                                handleUpdateUserRole(user.user_id, value)
+                              }
+                            >
+                              <SelectTrigger className="w-32">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="technician">Technicien</SelectItem>
+                                <SelectItem value="admin">Admin</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleResetPassword(user.user_id, user.email)}
+                              disabled={loading}
+                            >
+                              <Key className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => handleDeleteUser(user.user_id)}
+                              disabled={loading}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </Card>
+                    ))}
+                    {users.length === 0 && (
+                      <div className="text-center text-muted-foreground py-4">
+                        Aucun utilisateur trouvé
+                      </div>
+                    )}
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
