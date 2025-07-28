@@ -449,10 +449,10 @@ export default function SuperAdmin() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-950 via-slate-900 to-teal-950 flex items-center justify-center">
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-400 mx-auto mb-4"></div>
-          <p className="text-white text-lg">Chargement du panneau Super Admin...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-slate-700 text-lg">Chargement du panneau Super Admin...</p>
         </div>
       </div>
     );
@@ -466,27 +466,27 @@ export default function SuperAdmin() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-950 via-slate-900 to-teal-950">
+    <div className="min-h-screen bg-slate-50">
       {/* Header spécial Super Admin */}
-      <div className="bg-black/20 backdrop-blur-sm border-b border-white/10 sticky top-0 z-50">
+      <div className="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div className="p-3 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-xl shadow-lg">
-                <Crown className="h-8 w-8 text-white" />
+              <div className="p-3 bg-primary rounded-xl shadow-lg">
+                <Crown className="h-8 w-8 text-primary-foreground" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+                <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
                   <Globe className="h-6 w-6" />
                   Super Administration
                 </h1>
-                <p className="text-emerald-200">Panneau de contrôle réseau SAV Pro</p>
+                <p className="text-slate-600">Panneau de contrôle réseau SAV Pro</p>
               </div>
             </div>
             <div className="flex items-center gap-4">
               <div className="text-right">
-                <p className="text-white font-medium">{user?.email}</p>
-                <p className="text-xs text-emerald-300 flex items-center gap-1">
+                <p className="text-slate-900 font-medium">{user?.email}</p>
+                <p className="text-xs text-primary flex items-center gap-1">
                   <Zap className="h-3 w-3" />
                   Super Administrateur
                 </p>
@@ -494,7 +494,7 @@ export default function SuperAdmin() {
               <Button 
                 variant="outline" 
                 size="sm"
-                className="bg-white/10 border-white/20 text-white hover:bg-white/20 transition-all duration-200"
+                className="border-slate-300 text-slate-700 hover:bg-slate-100"
                 onClick={() => window.location.href = '/landing'}
               >
                 Retour Landing
@@ -508,67 +508,67 @@ export default function SuperAdmin() {
         {/* Hero Section */}
         <div className="mb-8 text-center">
           <div className="flex items-center justify-center gap-3 mb-4">
-            <Shield className="h-10 w-10 text-emerald-400" />
+            <Shield className="h-10 w-10 text-primary" />
             <div>
-              <h2 className="text-4xl font-bold text-white">Administration du Réseau</h2>
-              <p className="text-xl text-emerald-200">Gestion centralisée de tous les magasins et utilisateurs</p>
+              <h2 className="text-4xl font-bold text-slate-900">Administration du Réseau</h2>
+              <p className="text-xl text-slate-600">Gestion centralisée de tous les magasins et utilisateurs</p>
             </div>
           </div>
         </div>
 
         {/* Dashboard Overview - Design distinctif */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <Card className="bg-gradient-to-br from-cyan-500/20 to-blue-600/20 border-cyan-500/30 backdrop-blur-sm">
+          <Card className="bg-white border-slate-200 shadow-sm hover:shadow-md transition-shadow">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-cyan-100 font-medium">Total Magasins</p>
-                  <p className="text-3xl font-bold text-white">{totalStats.totalShops}</p>
+                  <p className="text-slate-600 font-medium">Total Magasins</p>
+                  <p className="text-3xl font-bold text-slate-900">{totalStats.totalShops}</p>
                 </div>
-                <div className="p-3 bg-cyan-500/30 rounded-lg">
-                  <Store className="h-8 w-8 text-cyan-200" />
+                <div className="p-3 bg-blue-100 rounded-lg">
+                  <Store className="h-8 w-8 text-blue-600" />
                 </div>
               </div>
             </CardContent>
           </Card>
           
-          <Card className="bg-gradient-to-br from-emerald-500/20 to-teal-600/20 border-emerald-500/30 backdrop-blur-sm">
+          <Card className="bg-white border-slate-200 shadow-sm hover:shadow-md transition-shadow">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-emerald-100 font-medium">Total Utilisateurs</p>
-                  <p className="text-3xl font-bold text-white">{totalStats.totalUsers}</p>
+                  <p className="text-slate-600 font-medium">Total Utilisateurs</p>
+                  <p className="text-3xl font-bold text-slate-900">{totalStats.totalUsers}</p>
                 </div>
-                <div className="p-3 bg-emerald-500/30 rounded-lg">
-                  <Users className="h-8 w-8 text-emerald-200" />
+                <div className="p-3 bg-emerald-100 rounded-lg">
+                  <Users className="h-8 w-8 text-emerald-600" />
                 </div>
               </div>
             </CardContent>
           </Card>
           
-          <Card className="bg-gradient-to-br from-amber-500/20 to-orange-600/20 border-amber-500/30 backdrop-blur-sm">
+          <Card className="bg-white border-slate-200 shadow-sm hover:shadow-md transition-shadow">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-amber-100 font-medium">Chiffre d'affaires</p>
-                  <p className="text-3xl font-bold text-white">{totalStats.totalRevenue.toFixed(2)}€</p>
+                  <p className="text-slate-600 font-medium">Chiffre d'affaires</p>
+                  <p className="text-3xl font-bold text-slate-900">{totalStats.totalRevenue.toFixed(2)}€</p>
                 </div>
-                <div className="p-3 bg-amber-500/30 rounded-lg">
-                  <DollarSign className="h-8 w-8 text-amber-200" />
+                <div className="p-3 bg-yellow-100 rounded-lg">
+                  <DollarSign className="h-8 w-8 text-yellow-600" />
                 </div>
               </div>
             </CardContent>
           </Card>
           
-          <Card className="bg-gradient-to-br from-indigo-500/20 to-purple-600/20 border-indigo-500/30 backdrop-blur-sm">
+          <Card className="bg-white border-slate-200 shadow-sm hover:shadow-md transition-shadow">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-indigo-100 font-medium">Total Dossiers SAV</p>
-                  <p className="text-3xl font-bold text-white">{totalStats.totalCases}</p>
+                  <p className="text-slate-600 font-medium">Total Dossiers SAV</p>
+                  <p className="text-3xl font-bold text-slate-900">{totalStats.totalCases}</p>
                 </div>
-                <div className="p-3 bg-indigo-500/30 rounded-lg">
-                  <Activity className="h-8 w-8 text-indigo-200" />
+                <div className="p-3 bg-purple-100 rounded-lg">
+                  <Activity className="h-8 w-8 text-purple-600" />
                 </div>
               </div>
             </CardContent>
@@ -576,16 +576,16 @@ export default function SuperAdmin() {
         </div>
 
         <Tabs defaultValue="shops" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3 bg-black/20 border-white/10">
-            <TabsTrigger value="shops" className="flex items-center gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-white text-emerald-200">
+          <TabsList className="grid w-full grid-cols-3 bg-white border-slate-200">
+            <TabsTrigger value="shops" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-slate-700">
               <Store className="h-4 w-4" />
               Gestion Magasins
             </TabsTrigger>
-            <TabsTrigger value="users" className="flex items-center gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-white text-emerald-200">
+            <TabsTrigger value="users" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-slate-700">
               <Users className="h-4 w-4" />
               Gestion Utilisateurs
             </TabsTrigger>
-            <TabsTrigger value="statistics" className="flex items-center gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-white text-emerald-200">
+            <TabsTrigger value="statistics" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-slate-700">
               <BarChart3 className="h-4 w-4" />
               Statistiques
             </TabsTrigger>
@@ -593,10 +593,10 @@ export default function SuperAdmin() {
 
           {/* Shops Management */}
           <TabsContent value="shops">
-            <Card className="bg-black/20 border-white/10 backdrop-blur-sm">
+            <Card className="bg-white border-slate-200 shadow-sm">
               <CardHeader>
                 <div className="flex justify-between items-center">
-                  <CardTitle className="flex items-center gap-2 text-white">
+                  <CardTitle className="flex items-center gap-2 text-slate-900">
                     <Store className="h-5 w-5" />
                     Gestion des Magasins
                   </CardTitle>
@@ -727,44 +727,44 @@ export default function SuperAdmin() {
               <CardContent>
                 <div className="space-y-4">
                   {shops.map((shop) => (
-                    <Card key={shop.id} className="bg-white/5 border-white/10 hover:bg-white/10 transition-all duration-200">
+                    <Card key={shop.id} className="bg-white border-slate-200 hover:shadow-md transition-all duration-200">
                       <CardContent className="p-6">
                         <div className="flex items-center justify-between">
                           <div className="flex-1">
                             <div className="flex items-center gap-4 mb-2">
-                              <h3 className="font-semibold text-lg text-white">{shop.name}</h3>
-                              <Badge variant="outline" className="border-emerald-400 text-emerald-300">
+                              <h3 className="font-semibold text-lg text-slate-900">{shop.name}</h3>
+                              <Badge variant="outline" className="border-emerald-600 text-emerald-700">
                                 {shop.total_users} utilisateur(s)
                               </Badge>
-                              <Badge variant="outline" className="border-cyan-400 text-cyan-300">
+                              <Badge variant="outline" className="border-blue-600 text-blue-700">
                                 {shop.total_sav_cases} dossier(s) SAV
                               </Badge>
                             </div>
                             
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm mb-2">
-                              <div className="text-slate-300">
+                              <div className="text-slate-700">
                                 <span className="font-medium">Email: </span>
                                 <span>{shop.email}</span>
                               </div>
-                              <div className="text-slate-300">
+                              <div className="text-slate-700">
                                 <span className="font-medium">Téléphone: </span>
                                 <span>{shop.phone}</span>
                               </div>
-                              <div className="text-slate-300">
+                              <div className="text-slate-700">
                                 <span className="font-medium">CA: </span>
                                 <span>{shop.total_revenue?.toFixed(2)}€</span>
                               </div>
                             </div>
                             
                             {shop.slug && (
-                              <div className="flex items-center gap-2 bg-black/20 p-3 rounded-lg">
+                              <div className="flex items-center gap-2 bg-slate-100 p-3 rounded-lg">
                                 <div className="flex-1">
-                                  <span className="font-medium text-sm text-slate-300">URL du magasin: </span>
+                                  <span className="font-medium text-sm text-slate-700">URL du magasin: </span>
                                   <a 
                                     href={`${window.location.origin}/${shop.slug}`}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="text-emerald-400 hover:text-emerald-300 font-mono text-sm"
+                                    className="text-primary hover:text-primary/80 font-mono text-sm"
                                   >
                                     {window.location.origin}/{shop.slug}
                                   </a>
@@ -772,7 +772,7 @@ export default function SuperAdmin() {
                                 <Button 
                                   variant="outline" 
                                   size="sm"
-                                  className="border-white/20 text-white hover:bg-white/10"
+                                  className="border-slate-300 text-slate-700 hover:bg-slate-100"
                                   onClick={() => {
                                     navigator.clipboard.writeText(`${window.location.origin}/${shop.slug}`);
                                     toast({
@@ -791,7 +791,7 @@ export default function SuperAdmin() {
                             <Button 
                               variant="outline" 
                               size="sm" 
-                              className="border-white/20 text-white hover:bg-white/10"
+                              className="border-slate-300 text-slate-700 hover:bg-slate-100"
                               onClick={() => editShop(shop)}
                             >
                               <Edit className="h-4 w-4 mr-1" />
@@ -802,19 +802,19 @@ export default function SuperAdmin() {
                                 <Button 
                                   variant="outline" 
                                   size="sm" 
-                                  className="border-red-400/50 text-red-400 hover:bg-red-500/20"
+                                  className="border-red-300 text-red-600 hover:bg-red-50"
                                 >
                                   <Trash2 className="h-4 w-4 mr-1" />
                                   Supprimer
                                 </Button>
                               </AlertDialogTrigger>
-                              <AlertDialogContent className="bg-slate-900 border-red-500/20">
+                              <AlertDialogContent className="bg-white border-red-200">
                                 <AlertDialogHeader>
-                                  <AlertDialogTitle className="text-white flex items-center gap-2">
-                                    <AlertTriangle className="h-5 w-5 text-red-400" />
+                                  <AlertDialogTitle className="text-slate-900 flex items-center gap-2">
+                                    <AlertTriangle className="h-5 w-5 text-red-500" />
                                     Supprimer le magasin "{shop.name}"
                                   </AlertDialogTitle>
-                                  <AlertDialogDescription className="text-slate-300">
+                                  <AlertDialogDescription className="text-slate-600">
                                     <div className="space-y-2">
                                       <p>Cette action est irréversible et supprimera définitivement :</p>
                                       <ul className="list-disc list-inside space-y-1 text-sm">
@@ -825,14 +825,14 @@ export default function SuperAdmin() {
                                         <li>Tous les clients et devis</li>
                                         <li>Toutes les notifications et messages</li>
                                       </ul>
-                                      <p className="font-medium text-red-400 mt-3">
+                                      <p className="font-medium text-red-600 mt-3">
                                         Voulez-vous vraiment continuer ?
                                       </p>
                                     </div>
                                   </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
-                                  <AlertDialogCancel className="bg-slate-800 border-slate-600 text-white hover:bg-slate-700">
+                                  <AlertDialogCancel className="bg-slate-100 border-slate-300 text-slate-700 hover:bg-slate-200">
                                     Annuler
                                   </AlertDialogCancel>
                                   <AlertDialogAction 
@@ -856,10 +856,10 @@ export default function SuperAdmin() {
 
           {/* Users Management */}
           <TabsContent value="users">
-            <Card className="bg-black/20 border-white/10 backdrop-blur-sm">
+            <Card className="bg-white border-slate-200 shadow-sm">
               <CardHeader>
                 <div className="flex justify-between items-center">
-                  <CardTitle className="flex items-center gap-2 text-white">
+                  <CardTitle className="flex items-center gap-2 text-slate-900">
                     <Users className="h-5 w-5" />
                     Gestion des Utilisateurs
                   </CardTitle>
@@ -962,23 +962,23 @@ export default function SuperAdmin() {
               <CardContent>
                 <div className="space-y-4">
                   {profiles.map((profile) => (
-                    <Card key={profile.id} className="bg-white/5 border-white/10 hover:bg-white/10 transition-all duration-200">
+                    <Card key={profile.id} className="bg-white border-slate-200 hover:shadow-md transition-all duration-200">
                       <CardContent className="p-6">
                         <div className="flex items-center justify-between">
                           <div className="flex-1">
                             <div className="flex items-center gap-4 mb-2">
-                              <h3 className="font-semibold text-lg text-white">
+                              <h3 className="font-semibold text-lg text-slate-900">
                                 {profile.first_name} {profile.last_name}
                               </h3>
                                <Badge variant={profile.role === 'super_admin' ? 'default' : profile.role === 'admin' ? 'secondary' : 'outline'} 
-                                 className={profile.role === 'super_admin' ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white' : ''}>
+                                 className={profile.role === 'super_admin' ? 'bg-primary text-primary-foreground' : ''}>
                                 {profile.role === 'super_admin' && <Crown className="h-3 w-3 mr-1" />}
                                 {profile.role === 'super_admin' ? 'Super Admin' : 
                                  profile.role === 'admin' ? 'Administrateur' : 'Technicien'}
                               </Badge>
                             </div>
                             
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-slate-300">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-slate-600">
                               <div>
                                 <span className="font-medium">Magasin: </span>
                                 <span>{profile.shop?.name || 'N/A'}</span>
@@ -995,7 +995,7 @@ export default function SuperAdmin() {
                           </div>
                           
                           <div className="flex items-center gap-2 ml-4">
-                            <Button variant="outline" size="sm" className="border-white/20 text-white hover:bg-white/10">
+                            <Button variant="outline" size="sm" className="border-slate-300 text-slate-700 hover:bg-slate-100">
                               <Edit className="h-4 w-4 mr-1" />
                               Modifier
                             </Button>
@@ -1003,7 +1003,7 @@ export default function SuperAdmin() {
                               <Button 
                                 variant="outline" 
                                 size="sm" 
-                                className="border-red-400/50 text-red-400 hover:bg-red-500/20"
+                                className="border-red-300 text-red-600 hover:bg-red-50"
                                 onClick={() => deleteUser(profile.id, profile.user_id)}
                               >
                                 <Trash2 className="h-4 w-4 mr-1" />
@@ -1022,9 +1022,9 @@ export default function SuperAdmin() {
 
           {/* Statistics */}
           <TabsContent value="statistics">
-            <Card className="bg-black/20 border-white/10 backdrop-blur-sm">
+            <Card className="bg-white border-slate-200 shadow-sm">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-white">
+                <CardTitle className="flex items-center gap-2 text-slate-900">
                   <TrendingUp className="h-5 w-5" />
                   Statistiques par Magasin
                 </CardTitle>
@@ -1032,43 +1032,43 @@ export default function SuperAdmin() {
               <CardContent>
                 <div className="space-y-4">
                   {shops.map((shop) => (
-                    <Card key={shop.id} className="bg-white/5 border-white/10">
+                    <Card key={shop.id} className="bg-white border-slate-200">
                       <CardContent className="p-6">
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                           <div>
-                            <h4 className="font-medium text-white">{shop.name}</h4>
-                            <p className="text-sm text-slate-400">{shop.email}</p>
+                            <h4 className="font-medium text-slate-900">{shop.name}</h4>
+                            <p className="text-sm text-slate-600">{shop.email}</p>
                           </div>
                           <div className="text-center">
-                            <div className="text-2xl font-bold text-blue-400">{shop.total_sav_cases}</div>
-                            <div className="text-sm text-slate-400">Dossiers SAV</div>
+                            <div className="text-2xl font-bold text-blue-600">{shop.total_sav_cases}</div>
+                            <div className="text-sm text-slate-600">Dossiers SAV</div>
                           </div>
                           <div className="text-center">
-                            <div className="text-2xl font-bold text-green-400">{shop.total_revenue?.toFixed(2)}€</div>
-                            <div className="text-sm text-slate-400">Chiffre d'affaires</div>
+                            <div className="text-2xl font-bold text-green-600">{shop.total_revenue?.toFixed(2)}€</div>
+                            <div className="text-sm text-slate-600">Chiffre d'affaires</div>
                           </div>
                           <div className="text-center">
-                            <div className="text-2xl font-bold text-purple-400">{shop.average_case_value?.toFixed(2)}€</div>
-                            <div className="text-sm text-slate-400">Panier moyen</div>
+                            <div className="text-2xl font-bold text-purple-600">{shop.average_case_value?.toFixed(2)}€</div>
+                            <div className="text-sm text-slate-600">Panier moyen</div>
                           </div>
                         </div>
                         
                         <div className="mt-4 grid grid-cols-4 gap-2 text-sm">
                           <div className="text-center">
-                            <div className="font-medium text-yellow-400">{shop.pending_cases}</div>
-                            <div className="text-slate-400">En attente</div>
+                            <div className="font-medium text-yellow-600">{shop.pending_cases}</div>
+                            <div className="text-slate-600">En attente</div>
                           </div>
                           <div className="text-center">
-                            <div className="font-medium text-blue-400">{shop.in_progress_cases}</div>
-                            <div className="text-slate-400">En cours</div>
+                            <div className="font-medium text-blue-600">{shop.in_progress_cases}</div>
+                            <div className="text-slate-600">En cours</div>
                           </div>
                           <div className="text-center">
-                            <div className="font-medium text-green-400">{shop.ready_cases}</div>
-                            <div className="text-slate-400">Prêt</div>
+                            <div className="font-medium text-green-600">{shop.ready_cases}</div>
+                            <div className="text-slate-600">Prêt</div>
                           </div>
                           <div className="text-center">
-                            <div className="font-medium text-slate-400">{shop.delivered_cases}</div>
-                            <div className="text-slate-400">Livré</div>
+                            <div className="font-medium text-slate-600">{shop.delivered_cases}</div>
+                            <div className="text-slate-600">Livré</div>
                           </div>
                         </div>
                       </CardContent>
