@@ -37,6 +37,17 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -93,6 +104,8 @@ export default function SuperAdmin() {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [isCreateShopOpen, setIsCreateShopOpen] = useState(false);
   const [isCreateUserOpen, setIsCreateUserOpen] = useState(false);
+  const [isEditShopOpen, setIsEditShopOpen] = useState(false);
+  const [editingShop, setEditingShop] = useState<Shop | null>(null);
   
   const [newShop, setNewShop] = useState({
     name: '',
@@ -202,20 +215,120 @@ export default function SuperAdmin() {
     }
   };
 
+  const editShop = (shop: Shop) => {
+    setEditingShop(shop);
+    setNewShop({
+      name: shop.name,
+      email: shop.email || '',
+      phone: shop.phone || '',
+      address: shop.address || '',
+      sms_credits: shop.sms_credits
+    });
+    setIsEditShopOpen(true);
+  };
+
+  const updateShop = async () => {
+    if (!editingShop) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('shops')
+        .update(newShop)
+        .eq('id', editingShop.id)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setShops(shops.map(shop => shop.id === editingShop.id ? { ...shop, ...data } : shop));
+      setIsEditShopOpen(false);
+      setEditingShop(null);
+      setNewShop({ name: '', email: '', phone: '', address: '', sms_credits: 100 });
+      
+      toast({
+        title: "Succès",
+        description: "Magasin mis à jour avec succès",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
   const deleteShop = async (shopId: string) => {
     try {
-      const { error } = await supabase
+      // Supprimer en cascade toutes les données du magasin
+      const { error: partsError } = await supabase
+        .from('parts')
+        .delete()
+        .eq('shop_id', shopId);
+
+      if (partsError) throw partsError;
+
+      const { error: customersError } = await supabase
+        .from('customers')
+        .delete()
+        .eq('shop_id', shopId);
+
+      if (customersError) throw customersError;
+
+      const { error: quotesError } = await supabase
+        .from('quotes')
+        .delete()
+        .eq('shop_id', shopId);
+
+      if (quotesError) throw quotesError;
+
+      const { error: orderItemsError } = await supabase
+        .from('order_items')
+        .delete()
+        .eq('shop_id', shopId);
+
+      if (orderItemsError) throw orderItemsError;
+
+      const { error: notificationsError } = await supabase
+        .from('notifications')
+        .delete()
+        .eq('shop_id', shopId);
+
+      if (notificationsError) throw notificationsError;
+
+      const { error: messagesError } = await supabase
+        .from('sav_messages')
+        .delete()
+        .eq('shop_id', shopId);
+
+      if (messagesError) throw messagesError;
+
+      const { error: savCasesError } = await supabase
+        .from('sav_cases')
+        .delete()
+        .eq('shop_id', shopId);
+
+      if (savCasesError) throw savCasesError;
+
+      const { error: profilesError } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('shop_id', shopId);
+
+      if (profilesError) throw profilesError;
+
+      const { error: shopError } = await supabase
         .from('shops')
         .delete()
         .eq('id', shopId);
 
-      if (error) throw error;
+      if (shopError) throw shopError;
 
       setShops(shops.filter(shop => shop.id !== shopId));
       
       toast({
         title: "Succès",
-        description: "Magasin supprimé",
+        description: "Magasin et toutes ses données supprimés",
       });
     } catch (error: any) {
       toast({
@@ -550,6 +663,65 @@ export default function SuperAdmin() {
                       </DialogFooter>
                     </DialogContent>
                   </Dialog>
+
+                  {/* Dialog pour modifier un magasin */}
+                  <Dialog open={isEditShopOpen} onOpenChange={setIsEditShopOpen}>
+                    <DialogContent className="bg-slate-900 border-slate-700 text-white">
+                      <DialogHeader>
+                        <DialogTitle>Modifier le magasin</DialogTitle>
+                        <DialogDescription className="text-slate-300">
+                          Modifiez les informations du magasin.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <div>
+                          <Label htmlFor="edit-shop-name" className="text-white">Nom du magasin</Label>
+                          <Input
+                            id="edit-shop-name"
+                            value={newShop.name}
+                            onChange={(e) => setNewShop({...newShop, name: e.target.value})}
+                            className="bg-slate-800 border-slate-600 text-white"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="edit-shop-email" className="text-white">Email</Label>
+                          <Input
+                            id="edit-shop-email"
+                            type="email"
+                            value={newShop.email}
+                            onChange={(e) => setNewShop({...newShop, email: e.target.value})}
+                            className="bg-slate-800 border-slate-600 text-white"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="edit-shop-phone" className="text-white">Téléphone</Label>
+                          <Input
+                            id="edit-shop-phone"
+                            value={newShop.phone}
+                            onChange={(e) => setNewShop({...newShop, phone: e.target.value})}
+                            className="bg-slate-800 border-slate-600 text-white"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="edit-shop-address" className="text-white">Adresse</Label>
+                          <Textarea
+                            id="edit-shop-address"
+                            value={newShop.address}
+                            onChange={(e) => setNewShop({...newShop, address: e.target.value})}
+                            className="bg-slate-800 border-slate-600 text-white"
+                          />
+                        </div>
+                      </div>
+                      <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsEditShopOpen(false)}>
+                          Annuler
+                        </Button>
+                        <Button onClick={updateShop} className="bg-purple-600 hover:bg-purple-700">
+                          Sauvegarder
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
                 </div>
               </CardHeader>
               <CardContent>
@@ -615,20 +787,63 @@ export default function SuperAdmin() {
                             )}
                           </div>
                           
-                          <div className="flex items-center gap-2 ml-4">
-                            <Button variant="outline" size="sm" className="border-white/20 text-white hover:bg-white/10">
-                              <Edit className="h-4 w-4 mr-1" />
-                              Modifier
-                            </Button>
+                           <div className="flex items-center gap-2 ml-4">
                             <Button 
                               variant="outline" 
                               size="sm" 
-                              className="border-red-400/50 text-red-400 hover:bg-red-500/20"
-                              onClick={() => deleteShop(shop.id)}
+                              className="border-white/20 text-white hover:bg-white/10"
+                              onClick={() => editShop(shop)}
                             >
-                              <Trash2 className="h-4 w-4 mr-1" />
-                              Supprimer
+                              <Edit className="h-4 w-4 mr-1" />
+                              Modifier
                             </Button>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button 
+                                  variant="outline" 
+                                  size="sm" 
+                                  className="border-red-400/50 text-red-400 hover:bg-red-500/20"
+                                >
+                                  <Trash2 className="h-4 w-4 mr-1" />
+                                  Supprimer
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent className="bg-slate-900 border-red-500/20">
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle className="text-white flex items-center gap-2">
+                                    <AlertTriangle className="h-5 w-5 text-red-400" />
+                                    Supprimer le magasin "{shop.name}"
+                                  </AlertDialogTitle>
+                                  <AlertDialogDescription className="text-slate-300">
+                                    <div className="space-y-2">
+                                      <p>Cette action est irréversible et supprimera définitivement :</p>
+                                      <ul className="list-disc list-inside space-y-1 text-sm">
+                                        <li>Le magasin et ses informations</li>
+                                        <li>Tous les utilisateurs associés ({shop.total_users})</li>
+                                        <li>Tous les dossiers SAV ({shop.total_sav_cases})</li>
+                                        <li>Tous les articles et stocks</li>
+                                        <li>Tous les clients et devis</li>
+                                        <li>Toutes les notifications et messages</li>
+                                      </ul>
+                                      <p className="font-medium text-red-400 mt-3">
+                                        Voulez-vous vraiment continuer ?
+                                      </p>
+                                    </div>
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel className="bg-slate-800 border-slate-600 text-white hover:bg-slate-700">
+                                    Annuler
+                                  </AlertDialogCancel>
+                                  <AlertDialogAction 
+                                    onClick={() => deleteShop(shop.id)}
+                                    className="bg-red-600 hover:bg-red-700"
+                                  >
+                                    Supprimer définitivement
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
                           </div>
                         </div>
                       </CardContent>
