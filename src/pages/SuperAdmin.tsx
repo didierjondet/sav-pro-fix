@@ -449,9 +449,9 @@ export default function SuperAdmin() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-indigo-950 via-slate-900 to-teal-950 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-400 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-400 mx-auto mb-4"></div>
           <p className="text-white text-lg">Chargement du panneau Super Admin...</p>
         </div>
       </div>
@@ -466,13 +466,13 @@ export default function SuperAdmin() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-950 via-slate-900 to-teal-950">
       {/* Header spécial Super Admin */}
       <div className="bg-black/20 backdrop-blur-sm border-b border-white/10 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div className="p-3 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl shadow-lg">
+              <div className="p-3 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-xl shadow-lg">
                 <Crown className="h-8 w-8 text-white" />
               </div>
               <div>
@@ -480,13 +480,13 @@ export default function SuperAdmin() {
                   <Globe className="h-6 w-6" />
                   Super Administration
                 </h1>
-                <p className="text-purple-200">Panneau de contrôle réseau SAV Pro</p>
+                <p className="text-emerald-200">Panneau de contrôle réseau SAV Pro</p>
               </div>
             </div>
             <div className="flex items-center gap-4">
               <div className="text-right">
                 <p className="text-white font-medium">{user?.email}</p>
-                <p className="text-xs text-purple-300 flex items-center gap-1">
+                <p className="text-xs text-emerald-300 flex items-center gap-1">
                   <Zap className="h-3 w-3" />
                   Super Administrateur
                 </p>
@@ -508,67 +508,67 @@ export default function SuperAdmin() {
         {/* Hero Section */}
         <div className="mb-8 text-center">
           <div className="flex items-center justify-center gap-3 mb-4">
-            <Shield className="h-10 w-10 text-purple-400" />
+            <Shield className="h-10 w-10 text-emerald-400" />
             <div>
               <h2 className="text-4xl font-bold text-white">Administration du Réseau</h2>
-              <p className="text-xl text-purple-200">Gestion centralisée de tous les magasins et utilisateurs</p>
+              <p className="text-xl text-emerald-200">Gestion centralisée de tous les magasins et utilisateurs</p>
             </div>
           </div>
         </div>
 
         {/* Dashboard Overview - Design distinctif */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <Card className="bg-gradient-to-br from-blue-500/20 to-blue-600/20 border-blue-500/30 backdrop-blur-sm">
+          <Card className="bg-gradient-to-br from-cyan-500/20 to-blue-600/20 border-cyan-500/30 backdrop-blur-sm">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-blue-100 font-medium">Total Magasins</p>
+                  <p className="text-cyan-100 font-medium">Total Magasins</p>
                   <p className="text-3xl font-bold text-white">{totalStats.totalShops}</p>
                 </div>
-                <div className="p-3 bg-blue-500/30 rounded-lg">
-                  <Store className="h-8 w-8 text-blue-200" />
+                <div className="p-3 bg-cyan-500/30 rounded-lg">
+                  <Store className="h-8 w-8 text-cyan-200" />
                 </div>
               </div>
             </CardContent>
           </Card>
           
-          <Card className="bg-gradient-to-br from-green-500/20 to-green-600/20 border-green-500/30 backdrop-blur-sm">
+          <Card className="bg-gradient-to-br from-emerald-500/20 to-teal-600/20 border-emerald-500/30 backdrop-blur-sm">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-green-100 font-medium">Total Utilisateurs</p>
+                  <p className="text-emerald-100 font-medium">Total Utilisateurs</p>
                   <p className="text-3xl font-bold text-white">{totalStats.totalUsers}</p>
                 </div>
-                <div className="p-3 bg-green-500/30 rounded-lg">
-                  <Users className="h-8 w-8 text-green-200" />
+                <div className="p-3 bg-emerald-500/30 rounded-lg">
+                  <Users className="h-8 w-8 text-emerald-200" />
                 </div>
               </div>
             </CardContent>
           </Card>
           
-          <Card className="bg-gradient-to-br from-yellow-500/20 to-yellow-600/20 border-yellow-500/30 backdrop-blur-sm">
+          <Card className="bg-gradient-to-br from-amber-500/20 to-orange-600/20 border-amber-500/30 backdrop-blur-sm">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-yellow-100 font-medium">Chiffre d'affaires</p>
+                  <p className="text-amber-100 font-medium">Chiffre d'affaires</p>
                   <p className="text-3xl font-bold text-white">{totalStats.totalRevenue.toFixed(2)}€</p>
                 </div>
-                <div className="p-3 bg-yellow-500/30 rounded-lg">
-                  <DollarSign className="h-8 w-8 text-yellow-200" />
+                <div className="p-3 bg-amber-500/30 rounded-lg">
+                  <DollarSign className="h-8 w-8 text-amber-200" />
                 </div>
               </div>
             </CardContent>
           </Card>
           
-          <Card className="bg-gradient-to-br from-purple-500/20 to-purple-600/20 border-purple-500/30 backdrop-blur-sm">
+          <Card className="bg-gradient-to-br from-indigo-500/20 to-purple-600/20 border-indigo-500/30 backdrop-blur-sm">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-purple-100 font-medium">Total Dossiers SAV</p>
+                  <p className="text-indigo-100 font-medium">Total Dossiers SAV</p>
                   <p className="text-3xl font-bold text-white">{totalStats.totalCases}</p>
                 </div>
-                <div className="p-3 bg-purple-500/30 rounded-lg">
-                  <Activity className="h-8 w-8 text-purple-200" />
+                <div className="p-3 bg-indigo-500/30 rounded-lg">
+                  <Activity className="h-8 w-8 text-indigo-200" />
                 </div>
               </div>
             </CardContent>
@@ -577,15 +577,15 @@ export default function SuperAdmin() {
 
         <Tabs defaultValue="shops" className="space-y-6">
           <TabsList className="grid w-full grid-cols-3 bg-black/20 border-white/10">
-            <TabsTrigger value="shops" className="flex items-center gap-2 data-[state=active]:bg-purple-500/20 data-[state=active]:text-white text-purple-200">
+            <TabsTrigger value="shops" className="flex items-center gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-white text-emerald-200">
               <Store className="h-4 w-4" />
               Gestion Magasins
             </TabsTrigger>
-            <TabsTrigger value="users" className="flex items-center gap-2 data-[state=active]:bg-purple-500/20 data-[state=active]:text-white text-purple-200">
+            <TabsTrigger value="users" className="flex items-center gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-white text-emerald-200">
               <Users className="h-4 w-4" />
               Gestion Utilisateurs
             </TabsTrigger>
-            <TabsTrigger value="statistics" className="flex items-center gap-2 data-[state=active]:bg-purple-500/20 data-[state=active]:text-white text-purple-200">
+            <TabsTrigger value="statistics" className="flex items-center gap-2 data-[state=active]:bg-emerald-500/20 data-[state=active]:text-white text-emerald-200">
               <BarChart3 className="h-4 w-4" />
               Statistiques
             </TabsTrigger>
@@ -602,7 +602,7 @@ export default function SuperAdmin() {
                   </CardTitle>
                   <Dialog open={isCreateShopOpen} onOpenChange={setIsCreateShopOpen}>
                     <DialogTrigger asChild>
-                      <Button className="bg-purple-600 hover:bg-purple-700">
+                      <Button className="bg-emerald-600 hover:bg-emerald-700">
                         <Plus className="h-4 w-4 mr-2" />
                         Créer un magasin
                       </Button>
@@ -657,7 +657,7 @@ export default function SuperAdmin() {
                         <Button variant="outline" onClick={() => setIsCreateShopOpen(false)}>
                           Annuler
                         </Button>
-                        <Button onClick={createShop} className="bg-purple-600 hover:bg-purple-700">
+                        <Button onClick={createShop} className="bg-emerald-600 hover:bg-emerald-700">
                           Créer le magasin
                         </Button>
                       </DialogFooter>
@@ -716,7 +716,7 @@ export default function SuperAdmin() {
                         <Button variant="outline" onClick={() => setIsEditShopOpen(false)}>
                           Annuler
                         </Button>
-                        <Button onClick={updateShop} className="bg-purple-600 hover:bg-purple-700">
+                        <Button onClick={updateShop} className="bg-emerald-600 hover:bg-emerald-700">
                           Sauvegarder
                         </Button>
                       </DialogFooter>
@@ -733,10 +733,10 @@ export default function SuperAdmin() {
                           <div className="flex-1">
                             <div className="flex items-center gap-4 mb-2">
                               <h3 className="font-semibold text-lg text-white">{shop.name}</h3>
-                              <Badge variant="outline" className="border-purple-400 text-purple-300">
+                              <Badge variant="outline" className="border-emerald-400 text-emerald-300">
                                 {shop.total_users} utilisateur(s)
                               </Badge>
-                              <Badge variant="outline" className="border-blue-400 text-blue-300">
+                              <Badge variant="outline" className="border-cyan-400 text-cyan-300">
                                 {shop.total_sav_cases} dossier(s) SAV
                               </Badge>
                             </div>
@@ -764,7 +764,7 @@ export default function SuperAdmin() {
                                     href={`${window.location.origin}/${shop.slug}`}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="text-purple-400 hover:text-purple-300 font-mono text-sm"
+                                    className="text-emerald-400 hover:text-emerald-300 font-mono text-sm"
                                   >
                                     {window.location.origin}/{shop.slug}
                                   </a>
@@ -865,7 +865,7 @@ export default function SuperAdmin() {
                   </CardTitle>
                   <Dialog open={isCreateUserOpen} onOpenChange={setIsCreateUserOpen}>
                     <DialogTrigger asChild>
-                      <Button className="bg-purple-600 hover:bg-purple-700">
+                      <Button className="bg-emerald-600 hover:bg-emerald-700">
                         <Plus className="h-4 w-4 mr-2" />
                         Créer un utilisateur
                       </Button>
@@ -951,7 +951,7 @@ export default function SuperAdmin() {
                         <Button variant="outline" onClick={() => setIsCreateUserOpen(false)}>
                           Annuler
                         </Button>
-                        <Button onClick={createUser} className="bg-purple-600 hover:bg-purple-700">
+                        <Button onClick={createUser} className="bg-emerald-600 hover:bg-emerald-700">
                           Créer l'utilisateur
                         </Button>
                       </DialogFooter>
@@ -970,8 +970,8 @@ export default function SuperAdmin() {
                               <h3 className="font-semibold text-lg text-white">
                                 {profile.first_name} {profile.last_name}
                               </h3>
-                              <Badge variant={profile.role === 'super_admin' ? 'default' : profile.role === 'admin' ? 'secondary' : 'outline'} 
-                                className={profile.role === 'super_admin' ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white' : ''}>
+                               <Badge variant={profile.role === 'super_admin' ? 'default' : profile.role === 'admin' ? 'secondary' : 'outline'} 
+                                 className={profile.role === 'super_admin' ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white' : ''}>
                                 {profile.role === 'super_admin' && <Crown className="h-3 w-3 mr-1" />}
                                 {profile.role === 'super_admin' ? 'Super Admin' : 
                                  profile.role === 'admin' ? 'Administrateur' : 'Technicien'}
