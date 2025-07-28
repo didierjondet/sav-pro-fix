@@ -154,7 +154,8 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
       
       // Calculate totals
       const totalTimeMinutes = 0; // Suppression du calcul du temps
-      const totalCost = selectedParts.reduce((acc, part) => acc + part.unitPrice * part.quantity, 0);
+      // Pour les SAV internes, ne pas compter les prix TTC dans le chiffre d'affaires
+      const totalCost = savType === 'internal' ? 0 : selectedParts.reduce((acc, part) => acc + part.unitPrice * part.quantity, 0);
       
       // Create SAV case
       const { error: caseError } = await createCase({

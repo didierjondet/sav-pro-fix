@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Menu, Settings, User, Bell, LogOut } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
+import { useShop } from '@/hooks/useShop';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,6 +20,7 @@ interface HeaderProps {
 
 export function Header({ onMenuClick, isMobileMenuOpen }: HeaderProps) {
   const { user, signOut } = useAuth();
+  const { shop } = useShop();
   return (
     <header className="bg-card border-b border-border shadow-sm">
       <div className="flex items-center justify-between h-16 px-4">
@@ -35,7 +37,14 @@ export function Header({ onMenuClick, isMobileMenuOpen }: HeaderProps) {
             <div className="w-8 h-8 bg-gradient-to-br from-primary to-primary-glow rounded-lg flex items-center justify-center">
               <span className="text-primary-foreground font-bold text-sm">S</span>
             </div>
-            <h1 className="text-xl font-bold text-foreground">SAV Pro</h1>
+            <div className="flex flex-col">
+              <h1 className="text-xl font-bold text-foreground">SAV Pro</h1>
+              {shop && (
+                <span className="text-sm text-muted-foreground font-medium">
+                  {shop.name}
+                </span>
+              )}
+            </div>
           </div>
         </div>
 
