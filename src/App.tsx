@@ -19,6 +19,7 @@ import Landing from "./pages/Landing";
 import Orders from "./pages/Orders";
 import SuperAdmin from "./pages/SuperAdmin";
 import Subscription from "./pages/Subscription";
+import CreateShop from "./pages/CreateShop";
 
 import NotFound from "./pages/NotFound";
 
@@ -46,6 +47,7 @@ const App = () => (
             
             <Route path="/super-admin" element={<SuperAdmin />} />
             <Route path="/subscription" element={<Subscription />} />
+            <Route path="/create-shop" element={<CreateShop />} />
             <Route path="/landing" element={<Landing />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />

@@ -26,15 +26,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(session?.user ?? null);
         setLoading(false);
         
-        // Redirect to settings after first signup
+        // Redirect new users to shop creation
         if (event === 'SIGNED_IN' && session?.user) {
-          // Check if this is a new user (just signed up)
-          const isNewUser = session.user.created_at === session.user.updated_at;
-          if (isNewUser) {
-            setTimeout(() => {
-              window.location.href = '/settings';
-            }, 1000);
-          }
+          // Check if user has a profile
+          supabase
+            .from('profiles')
+            .select('id')
+            .eq('user_id', session.user.id)
+            .single()
+            .then(({ data, error }) => {
+              if (error || !data) {
+                // No profile found, redirect to shop creation
+                setTimeout(() => {
+                  window.location.href = '/create-shop';
+                }, 1000);
+              }
+            });
         }
       }
     );
