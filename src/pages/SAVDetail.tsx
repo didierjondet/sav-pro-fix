@@ -60,8 +60,11 @@ export default function SAVDetail() {
   };
 
   const handleStatusUpdated = () => {
-    // Refresh the case data
-    window.location.reload();
+    // Refetch the case data instead of reloading the page
+    const updatedCase = cases.find(c => c.id === id);
+    if (updatedCase) {
+      setSavCase(updatedCase);
+    }
   };
 
   if (loading) {
@@ -177,6 +180,7 @@ export default function SAVDetail() {
               </Card>
 
               {/* Client Tracking */}
+              {savCase.sav_type === 'client' && (
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
@@ -225,6 +229,7 @@ export default function SAVDetail() {
                     </div>
                   </CardContent>
                 </Card>
+              )}
 
               {/* Status Management and Messaging */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

@@ -57,6 +57,27 @@ export function useSAVCases() {
 
   useEffect(() => {
     fetchCases();
+
+    // Set up realtime listener for SAV cases
+    const channel = supabase
+      .channel('sav-cases-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'sav_cases'
+        },
+        (payload) => {
+          console.log('SAV case change detected:', payload);
+          fetchCases(); // Refetch all cases when any change occurs
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const createCase = async (caseData: any) => {

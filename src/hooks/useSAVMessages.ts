@@ -48,6 +48,30 @@ export function useSAVMessages(savCaseId?: string) {
 
   useEffect(() => {
     fetchMessages();
+
+    if (!savCaseId) return;
+
+    // Set up realtime listener for messages
+    const channel = supabase
+      .channel(`sav-messages-${savCaseId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'sav_messages',
+          filter: `sav_case_id=eq.${savCaseId}`
+        },
+        (payload) => {
+          console.log('Message change detected:', payload);
+          fetchMessages(); // Refetch messages when any change occurs
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [savCaseId]);
 
   const sendMessage = async (message: string, senderName: string, senderType: 'shop' | 'client' = 'shop') => {

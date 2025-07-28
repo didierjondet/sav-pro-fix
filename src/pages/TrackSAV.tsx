@@ -88,6 +88,28 @@ export default function TrackSAV() {
   useEffect(() => {
     if (caseNumber) {
       fetchSAVCase();
+
+      // Set up realtime listener for SAV case updates
+      const caseChannel = supabase
+        .channel(`sav-case-${caseNumber}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'sav_cases',
+            filter: `case_number=eq.${caseNumber}`
+          },
+          (payload) => {
+            console.log('SAV case update detected:', payload);
+            fetchSAVCase(); // Refetch case data when status changes
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(caseChannel);
+      };
     }
   }, [caseNumber]);
 
