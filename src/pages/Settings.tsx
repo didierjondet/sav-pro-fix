@@ -437,9 +437,8 @@ export default function Settings() {
                               if (!inviteEmail || !shop) return;
                               
                               try {
-                                const { data, error } = await supabase.rpc('create_user_with_profile', {
+                                const { data, error } = await supabase.rpc('create_profile_only', {
                                   p_email: inviteEmail,
-                                  p_password: 'motdepasse123', // Mot de passe temporaire
                                   p_first_name: '',
                                   p_last_name: '',
                                   p_phone: '',
@@ -451,7 +450,7 @@ export default function Settings() {
 
                                 toast({
                                   title: "Succès",
-                                  description: "Utilisateur créé avec succès avec le mot de passe 'motdepasse123'",
+                                  description: "Profil utilisateur créé. L'utilisateur pourra se connecter quand il s'inscrira avec cet email.",
                                 });
                                 
                                 setInviteEmail('');
@@ -465,7 +464,7 @@ export default function Settings() {
                                 });
                               }
                             }}>
-                              Créer l'utilisateur
+                              Créer le profil
                             </Button>
                           </DialogFooter>
                         </DialogContent>

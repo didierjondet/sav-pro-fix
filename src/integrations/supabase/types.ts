@@ -646,6 +646,17 @@ export type Database = {
         Args: { p_shop_id: string }
         Returns: Json
       }
+      create_profile_only: {
+        Args: {
+          p_email: string
+          p_first_name: string
+          p_last_name: string
+          p_phone: string
+          p_role: Database["public"]["Enums"]["user_role"]
+          p_shop_id: string
+        }
+        Returns: string
+      }
       create_user_with_profile: {
         Args: {
           p_email: string
