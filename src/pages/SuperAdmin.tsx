@@ -36,6 +36,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import ShopManagementDialog from '@/components/admin/ShopManagementDialog';
+import SubscriptionPlansManager from '@/components/admin/SubscriptionPlansManager';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -106,6 +108,8 @@ export default function SuperAdmin() {
   const [isCreateUserOpen, setIsCreateUserOpen] = useState(false);
   const [isEditShopOpen, setIsEditShopOpen] = useState(false);
   const [editingShop, setEditingShop] = useState<Shop | null>(null);
+  const [isShopManagementOpen, setIsShopManagementOpen] = useState(false);
+  const [selectedShop, setSelectedShop] = useState<Shop | null>(null);
   
   const [newShop, setNewShop] = useState({
     name: '',
@@ -225,6 +229,11 @@ export default function SuperAdmin() {
       sms_credits: shop.sms_credits
     });
     setIsEditShopOpen(true);
+  };
+
+  const openShopManagement = (shop: Shop) => {
+    setSelectedShop(shop);
+    setIsShopManagementOpen(true);
   };
 
   const updateShop = async () => {
@@ -688,7 +697,7 @@ export default function SuperAdmin() {
         </div>
 
         <Tabs defaultValue="shops" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3 bg-white border-slate-200">
+          <TabsList className="grid w-full grid-cols-4 bg-white border-slate-200">
             <TabsTrigger value="shops" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-slate-700">
               <Store className="h-4 w-4" />
               Gestion Magasins
@@ -696,6 +705,10 @@ export default function SuperAdmin() {
             <TabsTrigger value="users" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-slate-700">
               <Users className="h-4 w-4" />
               Gestion Utilisateurs
+            </TabsTrigger>
+            <TabsTrigger value="plans" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-slate-700">
+              <Crown className="h-4 w-4" />
+              Plans d'abonnement
             </TabsTrigger>
             <TabsTrigger value="statistics" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-slate-700">
               <BarChart3 className="h-4 w-4" />
@@ -900,6 +913,15 @@ export default function SuperAdmin() {
                           </div>
                           
                            <div className="flex items-center gap-2 ml-4">
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="border-slate-300 text-slate-700 hover:bg-slate-100"
+                              onClick={() => openShopManagement(shop)}
+                            >
+                              <Crown className="h-4 w-4 mr-1" />
+                              Gérer
+                            </Button>
                             <Button 
                               variant="outline" 
                               size="sm" 
@@ -1132,6 +1154,11 @@ export default function SuperAdmin() {
             </Card>
           </TabsContent>
 
+          {/* Plans d'abonnement */}
+          <TabsContent value="plans">
+            <SubscriptionPlansManager />
+          </TabsContent>
+
           {/* Statistics */}
           <TabsContent value="statistics">
             <Card className="bg-white border-slate-200 shadow-sm">
@@ -1191,6 +1218,14 @@ export default function SuperAdmin() {
             </Card>
           </TabsContent>
         </Tabs>
+
+        {/* Dialog de gestion du magasin */}
+        <ShopManagementDialog
+          shop={selectedShop}
+          isOpen={isShopManagementOpen}
+          onClose={() => setIsShopManagementOpen(false)}
+          onUpdate={fetchData}
+        />
       </main>
     </div>
   );

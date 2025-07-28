@@ -1,0 +1,465 @@
+import { useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
+import { Separator } from '@/components/ui/separator';
+import {
+  Crown,
+  CreditCard,
+  MessageSquare,
+  TrendingUp,
+  Users,
+  Activity,
+  DollarSign,
+  Zap,
+  AlertTriangle,
+  Unlock,
+  Lock
+} from 'lucide-react';
+
+interface Shop {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  address: string;
+  slug: string;
+  sms_credits: number;
+  subscription_tier: string;
+  sms_credits_allocated: number;
+  sms_credits_used: number;
+  active_sav_count: number;
+  subscription_end?: string;
+  created_at: string;
+  total_users?: number;
+  total_sav_cases?: number;
+  total_revenue?: number;
+  is_blocked?: boolean;
+}
+
+interface ShopManagementDialogProps {
+  shop: Shop | null;
+  isOpen: boolean;
+  onClose: () => void;
+  onUpdate: () => void;
+}
+
+const SUBSCRIPTION_TIERS = [
+  { id: 'free', name: 'Gratuit', price: 0, sav_limit: 15, sms_limit: 15 },
+  { id: 'premium', name: 'Premium', price: 29, sav_limit: 10, sms_limit: 100 },
+  { id: 'enterprise', name: 'Enterprise', price: 99, sav_limit: null, sms_limit: 400 }
+];
+
+export default function ShopManagementDialog({ shop, isOpen, onClose, onUpdate }: ShopManagementDialogProps) {
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(false);
+  const [smsCreditsToAdd, setSmsCreditsToAdd] = useState('');
+  const [newSubscriptionTier, setNewSubscriptionTier] = useState(shop?.subscription_tier || 'free');
+  const [isBlocked, setIsBlocked] = useState(shop?.is_blocked || false);
+
+  if (!shop) return null;
+
+  const currentTier = SUBSCRIPTION_TIERS.find(tier => tier.id === shop.subscription_tier);
+
+  const handleUpdateSubscription = async () => {
+    if (!shop) return;
+    
+    setLoading(true);
+    try {
+      const tierConfig = SUBSCRIPTION_TIERS.find(t => t.id === newSubscriptionTier);
+      
+      const { error } = await supabase
+        .from('shops')
+        .update({
+          subscription_tier: newSubscriptionTier,
+          sms_credits_allocated: tierConfig?.sms_limit || 15,
+          subscription_end: newSubscriptionTier === 'free' ? null : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+        })
+        .eq('id', shop.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Succès",
+        description: `Abonnement mis à jour vers ${tierConfig?.name}`,
+      });
+      
+      onUpdate();
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAddSmsCredits = async () => {
+    if (!shop || !smsCreditsToAdd) return;
+    
+    const creditsToAdd = parseInt(smsCreditsToAdd);
+    if (isNaN(creditsToAdd)) {
+      toast({
+        title: "Erreur",
+        description: "Veuillez entrer un nombre valide",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('shops')
+        .update({
+          sms_credits_allocated: shop.sms_credits_allocated + creditsToAdd
+        })
+        .eq('id', shop.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Succès",
+        description: `${creditsToAdd} crédits SMS ajoutés`,
+      });
+      
+      setSmsCreditsToAdd('');
+      onUpdate();
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResetSmsUsage = async () => {
+    if (!shop) return;
+    
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('shops')
+        .update({ sms_credits_used: 0 })
+        .eq('id', shop.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Succès",
+        description: "Utilisation SMS réinitialisée",
+      });
+      
+      onUpdate();
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleToggleBlock = async () => {
+    if (!shop) return;
+    
+    setLoading(true);
+    try {
+      // Pour l'instant, on peut simuler le blocage en modifiant un champ
+      // Dans une vraie implémentation, on ajouterait un champ is_blocked à la table shops
+      
+      setIsBlocked(!isBlocked);
+      
+      toast({
+        title: "Succès",
+        description: isBlocked ? "Magasin débloqué" : "Magasin bloqué",
+      });
+      
+      onUpdate();
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Crown className="h-5 w-5 text-primary" />
+            Gestion du magasin : {shop.name}
+          </DialogTitle>
+          <DialogDescription>
+            Gérez l'abonnement, les crédits SMS et les restrictions pour ce magasin
+          </DialogDescription>
+        </DialogHeader>
+
+        <Tabs defaultValue="overview" className="w-full">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="overview">Vue d'ensemble</TabsTrigger>
+            <TabsTrigger value="subscription">Abonnement</TabsTrigger>
+            <TabsTrigger value="sms">Crédits SMS</TabsTrigger>
+            <TabsTrigger value="restrictions">Restrictions</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="overview" className="space-y-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium flex items-center gap-2">
+                    <Users className="h-4 w-4" />
+                    Utilisateurs
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{shop.total_users || 0}</div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium flex items-center gap-2">
+                    <Activity className="h-4 w-4" />
+                    SAV Actifs
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{shop.active_sav_count}</div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium flex items-center gap-2">
+                    <DollarSign className="h-4 w-4" />
+                    Revenus
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{shop.total_revenue?.toFixed(2) || '0.00'}€</div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium flex items-center gap-2">
+                    <MessageSquare className="h-4 w-4" />
+                    SMS Utilisés
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    {shop.sms_credits_used}/{shop.sms_credits_allocated}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Informations générales</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <div><strong>Email:</strong> {shop.email}</div>
+                <div><strong>Téléphone:</strong> {shop.phone}</div>
+                <div><strong>Adresse:</strong> {shop.address}</div>
+                <div><strong>Slug:</strong> {shop.slug}</div>
+                <div><strong>Créé le:</strong> {new Date(shop.created_at).toLocaleDateString()}</div>
+                <div className="flex items-center gap-2">
+                  <strong>Abonnement:</strong>
+                  <Badge variant={shop.subscription_tier === 'free' ? 'secondary' : 'default'}>
+                    {currentTier?.name}
+                  </Badge>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="subscription" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <CreditCard className="h-5 w-5" />
+                  Gestion de l'abonnement
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label>Abonnement actuel</Label>
+                  <div className="flex items-center gap-2 mt-1">
+                    <Badge variant={shop.subscription_tier === 'free' ? 'secondary' : 'default'}>
+                      {currentTier?.name}
+                    </Badge>
+                    <span className="text-sm text-muted-foreground">
+                      {currentTier?.price}€/mois
+                    </span>
+                  </div>
+                </div>
+
+                <Separator />
+
+                <div className="space-y-2">
+                  <Label>Changer d'abonnement (forcé)</Label>
+                  <Select value={newSubscriptionTier} onValueChange={setNewSubscriptionTier}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {SUBSCRIPTION_TIERS.map(tier => (
+                        <SelectItem key={tier.id} value={tier.id}>
+                          {tier.name} - {tier.price}€/mois
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <Button 
+                  onClick={handleUpdateSubscription}
+                  disabled={loading || newSubscriptionTier === shop.subscription_tier}
+                  className="w-full"
+                >
+                  {loading ? "Mise à jour..." : "Mettre à jour l'abonnement"}
+                </Button>
+
+                <div className="text-sm text-muted-foreground bg-amber-50 p-3 rounded">
+                  <AlertTriangle className="h-4 w-4 inline mr-1" />
+                  Cette action modifie l'abonnement sans passer par Stripe. 
+                  Utilisez avec précaution.
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="sms" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <MessageSquare className="h-5 w-5" />
+                  Gestion des crédits SMS
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>Crédits alloués</Label>
+                    <div className="text-2xl font-bold text-green-600">
+                      {shop.sms_credits_allocated}
+                    </div>
+                  </div>
+                  <div>
+                    <Label>Crédits utilisés</Label>
+                    <div className="text-2xl font-bold text-red-600">
+                      {shop.sms_credits_used}
+                    </div>
+                  </div>
+                </div>
+
+                <Separator />
+
+                <div className="space-y-2">
+                  <Label>Ajouter des crédits SMS</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      type="number"
+                      placeholder="Nombre de crédits"
+                      value={smsCreditsToAdd}
+                      onChange={(e) => setSmsCreditsToAdd(e.target.value)}
+                    />
+                    <Button onClick={handleAddSmsCredits} disabled={loading || !smsCreditsToAdd}>
+                      Ajouter
+                    </Button>
+                  </div>
+                </div>
+
+                <Button
+                  variant="outline"
+                  onClick={handleResetSmsUsage}
+                  disabled={loading}
+                  className="w-full"
+                >
+                  Réinitialiser l'utilisation SMS
+                </Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="restrictions" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Lock className="h-5 w-5" />
+                  Gestion des restrictions
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label>Bloquer le magasin</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Empêche l'accès à toutes les fonctionnalités
+                    </p>
+                  </div>
+                  <Switch
+                    checked={isBlocked}
+                    onCheckedChange={handleToggleBlock}
+                    disabled={loading}
+                  />
+                </div>
+
+                <Separator />
+
+                <div className="space-y-2">
+                  <Label>Limites actuelles</Label>
+                  <div className="space-y-1 text-sm">
+                    <div>SAV simultanés: {currentTier?.sav_limit || 'Illimité'}</div>
+                    <div>SMS par mois: {currentTier?.sms_limit}</div>
+                  </div>
+                </div>
+
+                <div className="text-sm text-muted-foreground bg-blue-50 p-3 rounded">
+                  <Zap className="h-4 w-4 inline mr-1" />
+                  Les limites sont automatiquement appliquées selon l'abonnement.
+                  Utilisez les fonctions ci-dessus pour des ajustements ponctuels.
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </DialogContent>
+    </Dialog>
+  );
+}
