@@ -14,6 +14,7 @@ import {
   X,
   Plus,
   Shield,
+  CreditCard,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -29,6 +30,7 @@ const navigation = [
   { name: 'Devis', href: '/quotes', icon: FileText },
   { name: 'Commandes', href: '/orders', icon: Package },
   { name: 'Clients', href: '/customers', icon: Users },
+  { name: 'Abonnement', href: '/subscription', icon: CreditCard },
 ];
 
 export function Sidebar({ isOpen, onClose }: SidebarProps) {

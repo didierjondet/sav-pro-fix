@@ -58,6 +58,33 @@ export type Database = {
           },
         ]
       }
+      global_sms_credits: {
+        Row: {
+          created_at: string
+          id: string
+          remaining_credits: number | null
+          total_credits: number | null
+          updated_at: string
+          used_credits: number | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          remaining_credits?: number | null
+          total_credits?: number | null
+          updated_at?: string
+          used_credits?: number | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          remaining_credits?: number | null
+          total_credits?: number | null
+          updated_at?: string
+          used_credits?: number | null
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           created_at: string
@@ -519,6 +546,7 @@ export type Database = {
       }
       shops: {
         Row: {
+          active_sav_count: number | null
           address: string | null
           created_at: string
           email: string | null
@@ -527,9 +555,14 @@ export type Database = {
           phone: string | null
           slug: string | null
           sms_credits: number | null
+          sms_credits_allocated: number | null
+          sms_credits_used: number | null
+          subscription_end: string | null
+          subscription_tier: string | null
           updated_at: string
         }
         Insert: {
+          active_sav_count?: number | null
           address?: string | null
           created_at?: string
           email?: string | null
@@ -538,9 +571,14 @@ export type Database = {
           phone?: string | null
           slug?: string | null
           sms_credits?: number | null
+          sms_credits_allocated?: number | null
+          sms_credits_used?: number | null
+          subscription_end?: string | null
+          subscription_tier?: string | null
           updated_at?: string
         }
         Update: {
+          active_sav_count?: number | null
           address?: string | null
           created_at?: string
           email?: string | null
@@ -549,7 +587,53 @@ export type Database = {
           phone?: string | null
           slug?: string | null
           sms_credits?: number | null
+          sms_credits_allocated?: number | null
+          sms_credits_used?: number | null
+          subscription_end?: string | null
+          subscription_tier?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      subscribers: {
+        Row: {
+          active_sav_count: number | null
+          created_at: string
+          email: string
+          id: string
+          sms_credits_used: number | null
+          stripe_customer_id: string | null
+          subscribed: boolean
+          subscription_end: string | null
+          subscription_tier: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          active_sav_count?: number | null
+          created_at?: string
+          email: string
+          id?: string
+          sms_credits_used?: number | null
+          stripe_customer_id?: string | null
+          subscribed?: boolean
+          subscription_end?: string | null
+          subscription_tier?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          active_sav_count?: number | null
+          created_at?: string
+          email?: string
+          id?: string
+          sms_credits_used?: number | null
+          stripe_customer_id?: string | null
+          subscribed?: boolean
+          subscription_end?: string | null
+          subscription_tier?: string | null
+          updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -558,6 +642,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_subscription_limits: {
+        Args: { p_shop_id: string }
+        Returns: Json
+      }
       generate_case_number: {
         Args: Record<PropertyKey, never>
         Returns: string
@@ -585,6 +673,10 @@ export type Database = {
       is_super_admin: {
         Args: { check_user_id?: string }
         Returns: boolean
+      }
+      reset_monthly_sms_credits: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
       }
     }
     Enums: {

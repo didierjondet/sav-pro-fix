@@ -18,6 +18,8 @@ import Customers from "./pages/Customers";
 import Landing from "./pages/Landing";
 import Orders from "./pages/Orders";
 import SuperAdmin from "./pages/SuperAdmin";
+import Subscription from "./pages/Subscription";
+import NetworkManagement from "./pages/NetworkManagement";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -43,6 +45,8 @@ const App = () => (
             <Route path="/customers" element={<Customers />} />
             
             <Route path="/super-admin" element={<SuperAdmin />} />
+            <Route path="/subscription" element={<Subscription />} />
+            <Route path="/network-management" element={<NetworkManagement />} />
             <Route path="/landing" element={<Landing />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
