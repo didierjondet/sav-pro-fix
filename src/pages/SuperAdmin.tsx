@@ -260,7 +260,26 @@ export default function SuperAdmin() {
 
   const deleteShop = async (shopId: string) => {
     try {
-      // Supprimer en cascade toutes les données du magasin
+      console.log('Starting shop deletion for ID:', shopId);
+      
+      // Supprimer en cascade toutes les données du magasin dans l'ordre correct
+      console.log('Deleting sav_parts for shop', shopId);
+      const { error: savPartsError } = await supabase
+        .from('sav_parts')
+        .delete()
+        .eq('sav_case_id', 
+          `(SELECT id FROM sav_cases WHERE shop_id = '${shopId}')`
+        );
+      
+      console.log('Deleting sav_status_history for shop', shopId);
+      const { error: savStatusError } = await supabase
+        .from('sav_status_history')
+        .delete()
+        .eq('sav_case_id', 
+          `(SELECT id FROM sav_cases WHERE shop_id = '${shopId}')`
+        );
+
+      console.log('Deleting parts for shop', shopId);
       const { error: partsError } = await supabase
         .from('parts')
         .delete()
@@ -268,6 +287,7 @@ export default function SuperAdmin() {
 
       if (partsError) throw partsError;
 
+      console.log('Deleting customers for shop', shopId);
       const { error: customersError } = await supabase
         .from('customers')
         .delete()
@@ -275,6 +295,7 @@ export default function SuperAdmin() {
 
       if (customersError) throw customersError;
 
+      console.log('Deleting quotes for shop', shopId);
       const { error: quotesError } = await supabase
         .from('quotes')
         .delete()
@@ -282,6 +303,7 @@ export default function SuperAdmin() {
 
       if (quotesError) throw quotesError;
 
+      console.log('Deleting order_items for shop', shopId);
       const { error: orderItemsError } = await supabase
         .from('order_items')
         .delete()
@@ -289,6 +311,7 @@ export default function SuperAdmin() {
 
       if (orderItemsError) throw orderItemsError;
 
+      console.log('Deleting notifications for shop', shopId);
       const { error: notificationsError } = await supabase
         .from('notifications')
         .delete()
@@ -296,6 +319,7 @@ export default function SuperAdmin() {
 
       if (notificationsError) throw notificationsError;
 
+      console.log('Deleting sav_messages for shop', shopId);
       const { error: messagesError } = await supabase
         .from('sav_messages')
         .delete()
@@ -303,6 +327,7 @@ export default function SuperAdmin() {
 
       if (messagesError) throw messagesError;
 
+      console.log('Deleting sav_cases for shop', shopId);
       const { error: savCasesError } = await supabase
         .from('sav_cases')
         .delete()
@@ -310,6 +335,7 @@ export default function SuperAdmin() {
 
       if (savCasesError) throw savCasesError;
 
+      console.log('Deleting profiles for shop', shopId);
       const { error: profilesError } = await supabase
         .from('profiles')
         .delete()
@@ -317,6 +343,8 @@ export default function SuperAdmin() {
 
       if (profilesError) throw profilesError;
 
+      // Enfin supprimer le magasin lui-même
+      console.log('Deleting shop', shopId);
       const { error: shopError } = await supabase
         .from('shops')
         .delete()
@@ -324,16 +352,41 @@ export default function SuperAdmin() {
 
       if (shopError) throw shopError;
 
+      // Vérifier que le magasin a bien été supprimé
+      const { data: verificationData, error: verificationError } = await supabase
+        .from('shops')
+        .select('id')
+        .eq('id', shopId);
+
+      if (verificationError) {
+        console.error('Error verifying deletion:', verificationError);
+        throw verificationError;
+      }
+
+      if (verificationData && verificationData.length > 0) {
+        throw new Error('Le magasin n\'a pas été supprimé correctement');
+      }
+
+      console.log('Shop deletion completed successfully');
+
+      // Mettre à jour l'état local uniquement après confirmation de la suppression
       setShops(shops.filter(shop => shop.id !== shopId));
       
       toast({
         title: "Succès",
         description: "Magasin et toutes ses données supprimés",
       });
+
+      // Recharger les données après un délai pour s'assurer de la cohérence
+      setTimeout(() => {
+        fetchData();
+      }, 1000);
+      
     } catch (error: any) {
+      console.error('Deletion error:', error);
       toast({
         title: "Erreur",
-        description: error.message,
+        description: error.message || "Erreur lors de la suppression",
         variant: "destructive",
       });
     }
