@@ -25,7 +25,8 @@ import {
   MessageSquare,
   AlertTriangle,
   Zap,
-  Globe
+  Globe,
+  HelpCircle,
 } from 'lucide-react';
 import {
   Dialog,
@@ -763,7 +764,7 @@ export default function SuperAdmin() {
         </div>
 
         <Tabs defaultValue="shops" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 bg-white border-slate-200">
+          <TabsList className="grid w-full grid-cols-5 bg-white border-slate-200">
             <TabsTrigger value="shops" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-slate-700">
               <Store className="h-4 w-4" />
               Gestion Magasins
@@ -779,6 +780,10 @@ export default function SuperAdmin() {
             <TabsTrigger value="statistics" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-slate-700">
               <BarChart3 className="h-4 w-4" />
               Statistiques
+            </TabsTrigger>
+            <TabsTrigger value="support" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-slate-700">
+              <HelpCircle className="h-4 w-4" />
+              Support
             </TabsTrigger>
           </TabsList>
 
@@ -1328,6 +1333,25 @@ export default function SuperAdmin() {
                       </CardContent>
                     </Card>
                   ))}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Support Management */}
+          <TabsContent value="support">
+            <Card className="bg-white border-slate-200 shadow-sm">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-slate-900">
+                  <HelpCircle className="h-5 w-5" />
+                  Gestion du Support
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-8 text-slate-600">
+                  <HelpCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p className="text-lg font-medium">Interface de support en développement</p>
+                  <p>Les magasins peuvent créer des tickets depuis leur espace Support</p>
                 </div>
               </CardContent>
             </Card>

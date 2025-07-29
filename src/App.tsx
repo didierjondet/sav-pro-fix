@@ -20,6 +20,7 @@ import Landing from "./pages/Landing";
 import Orders from "./pages/Orders";
 import SuperAdmin from "./pages/SuperAdmin";
 import Subscription from "./pages/Subscription";
+import Support from "./pages/Support";
 // CreateShop page supprimée - création automatique par trigger
 
 import NotFound from "./pages/NotFound";
@@ -46,6 +47,7 @@ const App = () => (
             <Route path="/quotes" element={<Quotes />} />
             <Route path="/orders" element={<Orders />} />
             <Route path="/customers" element={<Customers />} />
+            <Route path="/support" element={<Support />} />
             
             <Route path="/super-admin" element={<SuperAdmin />} />
             <Route path="/subscription" element={<Subscription />} />

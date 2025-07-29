@@ -15,6 +15,7 @@ import {
   Plus,
   Shield,
   CreditCard,
+  HelpCircle,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -30,6 +31,7 @@ const navigation = [
   { name: 'Devis', href: '/quotes', icon: FileText },
   { name: 'Commandes', href: '/orders', icon: Package },
   { name: 'Clients', href: '/customers', icon: Users },
+  { name: 'Support', href: '/support', icon: HelpCircle },
   { name: 'Abonnement', href: '/subscription', icon: CreditCard },
 ];
 
