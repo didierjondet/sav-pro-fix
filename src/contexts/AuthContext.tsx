@@ -26,31 +26,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(session?.user ?? null);
         setLoading(false);
         
-        // Redirection après connexion/inscription
-        if (event === 'SIGNED_IN' && session?.user) {
-          // Vérifier si l'utilisateur a un profil et son rôle
-          supabase
-            .from('profiles')
-            .select('id, role, shop_id')
-            .eq('user_id', session.user.id)
-            .single()
-            .then(({ data, error }) => {
-              if (error) {
-                console.error('Error checking profile:', error);
-                // Pas de profil trouvé, rediriger vers création de boutique
-                window.location.href = '/create-shop';
-              } else if (!data) {
-                // Pas de profil, rediriger vers création de boutique
-                window.location.href = '/create-shop';
-              } else if (data.role === 'super_admin') {
-                // Super admin vers panel admin
-                window.location.href = '/super-admin';
-              } else {
-                // Utilisateur normal vers dashboard
-                window.location.href = '/';
-              }
-            });
-        }
       }
     );
 
