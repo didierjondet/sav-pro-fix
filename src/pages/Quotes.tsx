@@ -94,9 +94,16 @@ export default function Quotes() {
   const handleStatusChange = async (quote: Quote, newStatus: Quote['status']) => {
     const result = await updateQuote(quote.id, { status: newStatus });
     if (!result.error) {
+      let description = `Le devis ${quote.quote_number} est maintenant ${getStatusText(newStatus)}`;
+      
+      // Message spécial pour les devis acceptés
+      if (newStatus === 'accepted') {
+        description += '. Le client sera automatiquement ajouté à votre base de données.';
+      }
+      
       toast({
         title: "Statut mis à jour",
-        description: `Le devis ${quote.quote_number} est maintenant ${getStatusText(newStatus)}`,
+        description: description,
       });
     }
   };
