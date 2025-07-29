@@ -52,8 +52,7 @@ export function useSupport() {
         .from('support_tickets')
         .select(`
           *,
-          shop:shops(name, email),
-          creator:profiles!support_tickets_created_by_fkey(first_name, last_name, user_id)
+          shop:shops(name, email)
         `)
         .order('created_at', { ascending: false });
 
