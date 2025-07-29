@@ -95,7 +95,14 @@ export default function Support() {
   );
 
   const handleCreateTicket = async () => {
+    console.log('handleCreateTicket called with:', {
+      subject: newTicketSubject,
+      description: newTicketDescription,
+      priority: newTicketPriority
+    });
+
     if (!newTicketSubject.trim() || !newTicketDescription.trim()) {
+      console.log('Validation failed - missing required fields');
       toast({
         title: "Erreur",
         description: "Veuillez remplir tous les champs obligatoires",
@@ -104,11 +111,14 @@ export default function Support() {
       return;
     }
 
+    console.log('Calling createTicket...');
     const result = await createTicket({
       subject: newTicketSubject,
       description: newTicketDescription,
       priority: newTicketPriority,
     });
+
+    console.log('createTicket result:', result);
 
     if (!result.error) {
       setNewTicketSubject('');
