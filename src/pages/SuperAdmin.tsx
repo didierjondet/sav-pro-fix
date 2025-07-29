@@ -110,6 +110,9 @@ export default function SuperAdmin() {
   const [editingShop, setEditingShop] = useState<Shop | null>(null);
   const [isShopManagementOpen, setIsShopManagementOpen] = useState(false);
   const [selectedShop, setSelectedShop] = useState<Shop | null>(null);
+  const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
+  const [selectedUserForPassword, setSelectedUserForPassword] = useState<Profile | null>(null);
+  const [newPassword, setNewPassword] = useState('');
   
   const [newShop, setNewShop] = useState({
     name: '',
@@ -483,28 +486,21 @@ export default function SuperAdmin() {
 
   const createUser = async () => {
     try {
-      // Create auth user
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-        email: newUser.email,
-        password: newUser.password,
-        email_confirm: true
-      });
-
-      if (authError) throw authError;
-
-      // Create profile
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert([{
-          user_id: authData.user.id,
-          shop_id: newUser.shop_id,
+      const { data, error } = await supabase.functions.invoke('admin-user-management', {
+        body: {
+          action: 'create',
+          email: newUser.email,
+          password: newUser.password,
           first_name: newUser.first_name,
           last_name: newUser.last_name,
           phone: newUser.phone,
-          role: newUser.role
-        }]);
+          role: newUser.role,
+          shop_id: newUser.shop_id
+        }
+      });
 
-      if (profileError) throw profileError;
+      if (error) throw error;
+      if (data.error) throw new Error(data.error);
 
       await fetchData();
       setIsCreateUserOpen(false);
@@ -525,7 +521,7 @@ export default function SuperAdmin() {
     } catch (error: any) {
       toast({
         title: "Erreur",
-        description: error.message,
+        description: error.message || "Erreur lors de la création de l'utilisateur",
         variant: "destructive",
       });
     }
@@ -533,28 +529,59 @@ export default function SuperAdmin() {
 
   const deleteUser = async (profileId: string, userId: string) => {
     try {
-      // Delete profile
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .delete()
-        .eq('id', profileId);
+      const { data, error } = await supabase.functions.invoke('admin-user-management', {
+        body: {
+          action: 'delete',
+          user_id: userId,
+          profile_id: profileId
+        }
+      });
 
-      if (profileError) throw profileError;
-
-      // Delete auth user
-      const { error: authError } = await supabase.auth.admin.deleteUser(userId);
-      if (authError) throw authError;
+      if (error) throw error;
+      if (data.error) throw new Error(data.error);
 
       setProfiles(profiles.filter(profile => profile.id !== profileId));
       
       toast({
         title: "Succès",
-        description: "Utilisateur supprimé",
+        description: "Utilisateur supprimé avec succès",
       });
     } catch (error: any) {
       toast({
         title: "Erreur",
-        description: error.message,
+        description: error.message || "Erreur lors de la suppression de l'utilisateur",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const changeUserPassword = async () => {
+    if (!selectedUserForPassword || !newPassword) return;
+
+    try {
+      const { data, error } = await supabase.functions.invoke('admin-user-management', {
+        body: {
+          action: 'update_password',
+          user_id: selectedUserForPassword.user_id,
+          new_password: newPassword
+        }
+      });
+
+      if (error) throw error;
+      if (data.error) throw new Error(data.error);
+
+      setIsChangePasswordOpen(false);
+      setSelectedUserForPassword(null);
+      setNewPassword('');
+      
+      toast({
+        title: "Succès",
+        description: "Mot de passe modifié avec succès",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error.message || "Erreur lors de la modification du mot de passe",
         variant: "destructive",
       });
     }
@@ -1112,6 +1139,47 @@ export default function SuperAdmin() {
                       </DialogFooter>
                     </DialogContent>
                   </Dialog>
+
+                  {/* Dialog pour changer le mot de passe */}
+                  <Dialog open={isChangePasswordOpen} onOpenChange={setIsChangePasswordOpen}>
+                    <DialogContent className="bg-slate-900 border-slate-700 text-white max-w-md">
+                      <DialogHeader>
+                        <DialogTitle>Changer le mot de passe</DialogTitle>
+                        <p className="text-slate-400">
+                          {selectedUserForPassword && `${selectedUserForPassword.first_name} ${selectedUserForPassword.last_name}`}
+                        </p>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <div>
+                          <Label htmlFor="new-password" className="text-white">Nouveau mot de passe</Label>
+                          <Input
+                            id="new-password"
+                            type="password"
+                            value={newPassword}
+                            onChange={(e) => setNewPassword(e.target.value)}
+                            className="bg-slate-800 border-slate-600 text-white"
+                            placeholder="Entrez le nouveau mot de passe"
+                          />
+                        </div>
+                      </div>
+                      <DialogFooter>
+                        <Button variant="outline" onClick={() => {
+                          setIsChangePasswordOpen(false);
+                          setSelectedUserForPassword(null);
+                          setNewPassword('');
+                        }}>
+                          Annuler
+                        </Button>
+                        <Button 
+                          onClick={changeUserPassword} 
+                          className="bg-blue-600 hover:bg-blue-700"
+                          disabled={!newPassword}
+                        >
+                          Changer le mot de passe
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
                 </div>
               </CardHeader>
               <CardContent>
@@ -1150,9 +1218,17 @@ export default function SuperAdmin() {
                           </div>
                           
                           <div className="flex items-center gap-2 ml-4">
-                            <Button variant="outline" size="sm" className="border-slate-300 text-slate-700 hover:bg-slate-100">
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="border-blue-300 text-blue-600 hover:bg-blue-50"
+                              onClick={() => {
+                                setSelectedUserForPassword(profile);
+                                setIsChangePasswordOpen(true);
+                              }}
+                            >
                               <Edit className="h-4 w-4 mr-1" />
-                              Modifier
+                              Mot de passe
                             </Button>
                             {profile.role !== 'super_admin' && (
                               <Button 
