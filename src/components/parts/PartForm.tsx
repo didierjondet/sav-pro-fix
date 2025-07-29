@@ -29,6 +29,7 @@ export function PartForm({ initialData, onSubmit, onCancel, isEdit = false }: Pa
       selling_price: initialData?.selling_price || 0,
       quantity: initialData?.quantity || 0,
       min_stock: initialData?.min_stock || 5,
+      notes: initialData?.notes || '',
     }
   });
 
@@ -124,6 +125,16 @@ export function PartForm({ initialData, onSubmit, onCancel, isEdit = false }: Pa
                 placeholder="5"
               />
             </div>
+          </div>
+
+          <div>
+            <Label htmlFor="notes">Notes</Label>
+            <Textarea
+              id="notes"
+              {...register('notes')}
+              placeholder="Notes ou commentaires sur cette pièce..."
+              rows={3}
+            />
           </div>
 
           <div className="flex gap-2 justify-end">

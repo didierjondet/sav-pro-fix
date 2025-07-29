@@ -215,6 +215,7 @@ export type Database = {
           id: string
           min_stock: number | null
           name: string
+          notes: string | null
           purchase_price: number | null
           quantity: number | null
           reference: string | null
@@ -227,6 +228,7 @@ export type Database = {
           id?: string
           min_stock?: number | null
           name: string
+          notes?: string | null
           purchase_price?: number | null
           quantity?: number | null
           reference?: string | null
@@ -239,6 +241,7 @@ export type Database = {
           id?: string
           min_stock?: number | null
           name?: string
+          notes?: string | null
           purchase_price?: number | null
           quantity?: number | null
           reference?: string | null

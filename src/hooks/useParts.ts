@@ -10,6 +10,7 @@ export interface Part {
   selling_price?: number;
   quantity: number;
   min_stock: number;
+  notes?: string;
   shop_id: string;
   created_at: string;
   updated_at: string;
