@@ -21,6 +21,13 @@ const Index = () => {
     }
   }, [user, loading, navigate]);
 
+  // Rediriger les super admins vers /super-admin
+  useEffect(() => {
+    if (profile?.role === 'super_admin') {
+      navigate('/super-admin');
+    }
+  }, [profile, navigate]);
+
   if (loading || profileLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
