@@ -11,6 +11,7 @@ import { useSAVCases } from '@/hooks/useSAVCases';
 import { useToast } from '@/hooks/use-toast';
 import { QrCode, ExternalLink, ArrowLeft, Copy, Share } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { SAVPartsEditor } from '@/components/sav/SAVPartsEditor';
 
 export default function SAVDetail() {
   const { id } = useParams<{ id: string }>();
@@ -143,6 +144,16 @@ export default function SAVDetail() {
                   <Badge variant={statusConfig[savCase.status as keyof typeof statusConfig]?.variant || 'secondary'}>
                     {statusConfig[savCase.status as keyof typeof statusConfig]?.label || savCase.status}
                   </Badge>
+                  <SAVPartsEditor 
+                    savCaseId={savCase.id} 
+                    onPartsUpdated={() => {
+                      // Rafraîchir les données du dossier SAV
+                      const updatedCase = cases.find(c => c.id === id);
+                      if (updatedCase) {
+                        setSavCase(updatedCase);
+                      }
+                    }} 
+                  />
                 </div>
               </div>
 
