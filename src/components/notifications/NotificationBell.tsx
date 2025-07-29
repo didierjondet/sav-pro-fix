@@ -21,12 +21,10 @@ export function NotificationBell() {
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
-      case 'stock_alert':
-        return '⚠️';
-      case 'order_needed':
-        return '📦';
-      default:
-        return '📢';
+      case 'stock_alert': return '📦';
+      case 'order_needed': return '🛒';  
+      case 'support_message': return '💬';
+      default: return '🔔';
     }
   };
 

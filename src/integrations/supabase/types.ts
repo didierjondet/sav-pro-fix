@@ -94,6 +94,7 @@ export type Database = {
           read: boolean
           sav_case_id: string | null
           shop_id: string
+          support_ticket_id: string | null
           title: string
           type: string
           updated_at: string
@@ -106,6 +107,7 @@ export type Database = {
           read?: boolean
           sav_case_id?: string | null
           shop_id: string
+          support_ticket_id?: string | null
           title: string
           type: string
           updated_at?: string
@@ -118,6 +120,7 @@ export type Database = {
           read?: boolean
           sav_case_id?: string | null
           shop_id?: string
+          support_ticket_id?: string | null
           title?: string
           type?: string
           updated_at?: string
@@ -135,6 +138,13 @@ export type Database = {
             columns: ["sav_case_id"]
             isOneToOne: false
             referencedRelation: "sav_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_support_ticket_id_fkey"
+            columns: ["support_ticket_id"]
+            isOneToOne: false
+            referencedRelation: "support_tickets"
             referencedColumns: ["id"]
           },
         ]
