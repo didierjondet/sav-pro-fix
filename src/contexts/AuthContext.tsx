@@ -26,7 +26,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(session?.user ?? null);
         setLoading(false);
         
-        // Handle redirections after sign in
+        // Only redirect on SIGNED_IN event, not on other state changes
         if (event === 'SIGNED_IN' && session?.user) {
           // Check if user has a profile and their role
           supabase
@@ -37,7 +37,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             .then(({ data, error }) => {
               if (error) {
                 console.error('Error checking profile:', error);
-                // On error, try to redirect to shop creation
+                // On error, redirect to shop creation
                 window.location.href = '/create-shop';
               } else if (!data) {
                 // No profile found, redirect to shop creation
