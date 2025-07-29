@@ -98,7 +98,7 @@ interface Profile {
 }
 
 export default function SuperAdmin() {
-  const { user, signOut } = useAuth();
+  const { user, signOut, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   
@@ -133,10 +133,15 @@ export default function SuperAdmin() {
   });
 
   useEffect(() => {
+    if (!user && !authLoading) {
+      window.location.href = '/auth';
+      return;
+    }
+    
     if (user) {
       fetchData();
     }
-  }, [user]);
+  }, [user, authLoading]);
 
   const fetchData = async () => {
     try {
