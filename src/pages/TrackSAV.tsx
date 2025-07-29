@@ -266,8 +266,8 @@ export default function TrackSAV() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <ScrollArea className="h-96 w-full pr-4">
-              <div className="space-y-4">
+            <ScrollArea className="h-[500px] w-full pr-4 border rounded-lg bg-gray-50/50">
+              <div className="p-4 space-y-4">
                 {messages.length === 0 ? (
                   <div className="text-center text-muted-foreground">
                     Aucun message pour l'instant.

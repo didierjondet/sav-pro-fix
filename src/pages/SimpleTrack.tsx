@@ -361,17 +361,17 @@ export default function SimpleTrack() {
           </Card>
 
           {/* Section de messagerie */}
-          <Card className="flex flex-col h-fit max-h-[600px]">
+          <Card className="flex flex-col">
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2">
                 <MessageSquare className="h-5 w-5" />
                 Messages avec le magasin
               </CardTitle>
             </CardHeader>
-            <CardContent className="flex-1 flex flex-col min-h-0">
+            <CardContent className="flex-1 flex flex-col">
               {/* Liste des messages */}
-              <ScrollArea className="flex-1 mb-4 max-h-80">
-                <div className="space-y-3">
+              <ScrollArea className="h-[500px] w-full pr-4 mb-4 border rounded-lg bg-gray-50/50">
+                <div className="p-4 space-y-3">
                   {messages.length === 0 ? (
                     <div className="text-center text-gray-500 py-8">
                       <MessageSquare className="h-12 w-12 mx-auto mb-2 text-gray-300" />
