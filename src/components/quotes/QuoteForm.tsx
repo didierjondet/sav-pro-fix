@@ -53,6 +53,18 @@ export function QuoteForm({ onSubmit, onCancel }: QuoteFormProps) {
     setSearchTerm('');
   };
 
+  const addCustomItem = () => {
+    const newItem: QuoteItem = {
+      part_id: `custom-${Date.now()}`,
+      part_name: '',
+      part_reference: '',
+      quantity: 1,
+      unit_price: 0,
+      total_price: 0,
+    };
+    setSelectedItems(items => [...items, newItem]);
+  };
+
   const updateQuantity = (partId: string, quantity: number) => {
     if (quantity <= 0) {
       removePartFromQuote(partId);
@@ -73,6 +85,26 @@ export function QuoteForm({ onSubmit, onCancel }: QuoteFormProps) {
       items.map(item =>
         item.part_id === partId
           ? { ...item, unit_price: unitPrice, total_price: item.quantity * unitPrice }
+          : item
+      )
+    );
+  };
+
+  const updateItemName = (partId: string, name: string) => {
+    setSelectedItems(items =>
+      items.map(item =>
+        item.part_id === partId
+          ? { ...item, part_name: name }
+          : item
+      )
+    );
+  };
+
+  const updateItemReference = (partId: string, reference: string) => {
+    setSelectedItems(items =>
+      items.map(item =>
+        item.part_id === partId
+          ? { ...item, part_reference: reference }
           : item
       )
     );
@@ -204,6 +236,13 @@ export function QuoteForm({ onSubmit, onCancel }: QuoteFormProps) {
                 )}
               </div>
             )}
+
+            <div className="mt-4">
+              <Button type="button" onClick={addCustomItem} variant="outline" className="w-full">
+                <Plus className="h-4 w-4 mr-2" />
+                Ajouter une ligne personnalisée
+              </Button>
+            </div>
           </CardContent>
         </Card>
 
@@ -219,54 +258,93 @@ export function QuoteForm({ onSubmit, onCancel }: QuoteFormProps) {
               </p>
             ) : (
               <div className="space-y-4">
-                {selectedItems.map((item) => (
-                  <div key={item.part_id} className="flex items-center gap-4 p-4 border rounded-lg">
-                    <div className="flex-1">
-                      <p className="font-medium">{item.part_name}</p>
-                      {item.part_reference && (
-                        <Badge variant="outline">Réf: {item.part_reference}</Badge>
+                {selectedItems.map((item) => {
+                  const isCustomItem = item.part_id.toString().startsWith('custom-');
+                  
+                  return (
+                    <div key={item.part_id} className="flex flex-col gap-4 p-4 border rounded-lg">
+                      {isCustomItem && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <Label>Nom du produit/service:</Label>
+                            <Input
+                              value={item.part_name}
+                              onChange={(e) => updateItemName(item.part_id, e.target.value)}
+                              placeholder="Ex: Main d'œuvre, Diagnostic..."
+                            />
+                          </div>
+                          <div>
+                            <Label>Référence (optionnel):</Label>
+                            <Input
+                              value={item.part_reference || ''}
+                              onChange={(e) => updateItemReference(item.part_id, e.target.value)}
+                              placeholder="Référence ou code"
+                            />
+                          </div>
+                        </div>
                       )}
+                      
+                      <div className="flex items-center gap-4">
+                        <div className="flex-1">
+                          {!isCustomItem && (
+                            <>
+                              <p className="font-medium">{item.part_name}</p>
+                              {item.part_reference && (
+                                <Badge variant="outline">Réf: {item.part_reference}</Badge>
+                              )}
+                            </>
+                          )}
+                          {isCustomItem && item.part_name && (
+                            <>
+                              <p className="font-medium">{item.part_name}</p>
+                              {item.part_reference && (
+                                <Badge variant="outline">Réf: {item.part_reference}</Badge>
+                              )}
+                            </>
+                          )}
+                        </div>
+                        
+                        <div className="flex items-center gap-2">
+                          <Label>Qté:</Label>
+                          <Input
+                            type="number"
+                            min="1"
+                            value={item.quantity}
+                            onChange={(e) => updateQuantity(item.part_id, parseInt(e.target.value) || 0)}
+                            className="w-20"
+                          />
+                        </div>
+                        
+                        <div className="flex items-center gap-2">
+                          <Label>Prix unitaire:</Label>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={item.unit_price}
+                            onChange={(e) => updateUnitPrice(item.part_id, parseFloat(e.target.value) || 0)}
+                            className="w-24"
+                          />
+                          <span>€</span>
+                        </div>
+                        
+                        <div className="text-right">
+                          <p className="font-medium">{item.total_price.toFixed(2)}€</p>
+                        </div>
+                        
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => removePartFromQuote(item.part_id)}
+                          className="text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
-                    
-                    <div className="flex items-center gap-2">
-                      <Label>Qté:</Label>
-                      <Input
-                        type="number"
-                        min="1"
-                        value={item.quantity}
-                        onChange={(e) => updateQuantity(item.part_id, parseInt(e.target.value) || 0)}
-                        className="w-20"
-                      />
-                    </div>
-                    
-                    <div className="flex items-center gap-2">
-                      <Label>Prix unitaire:</Label>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        value={item.unit_price}
-                        onChange={(e) => updateUnitPrice(item.part_id, parseFloat(e.target.value) || 0)}
-                        className="w-24"
-                      />
-                      <span>€</span>
-                    </div>
-                    
-                    <div className="text-right">
-                      <p className="font-medium">{item.total_price.toFixed(2)}€</p>
-                    </div>
-                    
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => removePartFromQuote(item.part_id)}
-                      className="text-destructive hover:text-destructive"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
+                  );
+                })}
                 
                 <div className="border-t pt-4">
                   <div className="flex justify-between items-center text-lg font-bold">
