@@ -26,21 +26,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(session?.user ?? null);
         setLoading(false);
         
-        // Redirect users based on their role
+        // Handle redirections after sign in
         if (event === 'SIGNED_IN' && session?.user) {
           // Check if user has a profile and their role
           supabase
             .from('profiles')
-            .select('id, role')
+            .select('id, role, shop_id')
             .eq('user_id', session.user.id)
             .single()
             .then(({ data, error }) => {
-              if (error || !data) {
+              if (error) {
+                console.error('Error checking profile:', error);
+                // On error, try to redirect to shop creation
+                window.location.href = '/create-shop';
+              } else if (!data) {
                 // No profile found, redirect to shop creation
                 window.location.href = '/create-shop';
               } else if (data.role === 'super_admin') {
-                // Super admin should go to super admin panel immediately
-                console.log('Redirecting super admin to super admin panel');
+                // Super admin should go to super admin panel
+                console.log('Super admin detected, redirecting to /super-admin');
                 window.location.href = '/super-admin';
               } else {
                 // Regular users go to dashboard
