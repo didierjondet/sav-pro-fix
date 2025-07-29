@@ -18,8 +18,6 @@ export interface SAVMessage {
 export function useSAVMessages(savCaseId?: string) {
   const [messages, setMessages] = useState<SAVMessage[]>([]);
   const [loading, setLoading] = useState(true);
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-  const [caseNumber, setCaseNumber] = useState<string>('');
   const { toast } = useToast();
   const { createSAVMessageNotification } = useNotifications();
 
@@ -51,30 +49,6 @@ export function useSAVMessages(savCaseId?: string) {
   };
 
   useEffect(() => {
-    const initializeData = async () => {
-      // Get current user ID
-      const { data: { user } } = await supabase.auth.getUser();
-      setCurrentUserId(user?.id || null);
-
-      // Get case number if savCaseId exists
-      if (savCaseId) {
-        try {
-          const { data: savCase } = await supabase
-            .from('sav_cases')
-            .select('case_number')
-            .eq('id', savCaseId)
-            .single();
-          
-          if (savCase) {
-            setCaseNumber(savCase.case_number);
-          }
-        } catch (error) {
-          console.error('Error fetching case number:', error);
-        }
-      }
-    };
-
-    initializeData();
     fetchMessages();
 
     if (!savCaseId) return;
@@ -85,39 +59,40 @@ export function useSAVMessages(savCaseId?: string) {
       .on(
         'postgres_changes',
         {
-          event: 'INSERT',
+          event: '*',
           schema: 'public',
           table: 'sav_messages',
           filter: `sav_case_id=eq.${savCaseId}`
         },
         async (payload) => {
-          console.log('New SAV message detected:', payload);
+          console.log('SAV message change detected:', payload);
           
-          // Check if the message is from someone else
-          const newMessage = payload.new as SAVMessage;
-          if (newMessage.sender_type === 'client' && currentUserId) {
-            // Create notification for new client message
-            await createSAVMessageNotification(
-              savCaseId,
-              caseNumber,
-              'client'
-            );
+          // Si c'est un nouveau message d'un client, créer une notification
+          if (payload.eventType === 'INSERT') {
+            const newMessage = payload.new as SAVMessage;
+            if (newMessage.sender_type === 'client') {
+              try {
+                // Récupérer le numéro de cas pour la notification
+                const { data: savCase } = await supabase
+                  .from('sav_cases')
+                  .select('case_number')
+                  .eq('id', savCaseId)
+                  .single();
+                
+                if (savCase) {
+                  await createSAVMessageNotification(
+                    savCaseId,
+                    savCase.case_number,
+                    'client'
+                  );
+                }
+              } catch (error) {
+                console.error('Error creating SAV notification:', error);
+              }
+            }
           }
           
-          fetchMessages(); // Refetch messages when new message arrives
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'sav_messages',
-          filter: `sav_case_id=eq.${savCaseId}`
-        },
-        (payload) => {
-          console.log('SAV message updated:', payload);
-          fetchMessages();
+          fetchMessages(); // Refetch messages when any change occurs
         }
       )
       .subscribe();
@@ -125,7 +100,7 @@ export function useSAVMessages(savCaseId?: string) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [savCaseId, currentUserId, caseNumber, createSAVMessageNotification]);
+  }, [savCaseId]);
 
   const sendMessage = async (message: string, senderName: string, senderType: 'shop' | 'client' = 'shop') => {
     if (!savCaseId) return;
