@@ -166,7 +166,12 @@ export default function SuperAdmin() {
         .from('sav_cases')
         .select('shop_id, status, total_cost, sav_type');
 
+      const { data: quotesData, error: quotesError } = await supabase
+        .from('quotes')
+        .select('shop_id, status, total_amount');
+
       if (savCasesError) throw savCasesError;
+      if (quotesError) throw quotesError;
 
       // Process shop statistics
       const shopsWithStats = shopsData?.map(shop => {

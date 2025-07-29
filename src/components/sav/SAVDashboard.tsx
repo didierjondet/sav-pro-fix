@@ -15,6 +15,7 @@ import {
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { SAVForm } from './SAVForm';
 import { useSAVCases } from '@/hooks/useSAVCases';
+import { useQuotes } from '@/hooks/useQuotes';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
@@ -31,6 +32,7 @@ export function SAVDashboard() {
   const [searchTerm, setSearchTerm] = useState('');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const { cases, loading, updateCaseStatus, deleteCase } = useSAVCases();
+  const { quotes } = useQuotes();
   const navigate = useNavigate();
 
   const filteredCases = cases.filter(
@@ -101,7 +103,8 @@ export function SAVDashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {cases.filter(c => c.sav_type !== 'internal').reduce((acc, c) => acc + (c.total_cost || 0), 0).toFixed(2)}€
+              {(cases.filter(c => c.sav_type !== 'internal').reduce((acc, c) => acc + (c.total_cost || 0), 0) + 
+                quotes.filter(q => q.status === 'accepted').reduce((acc, q) => acc + (q.total_amount || 0), 0)).toFixed(2)}€
             </div>
             <p className="text-xs text-muted-foreground">Chiffre d'affaires</p>
           </CardContent>

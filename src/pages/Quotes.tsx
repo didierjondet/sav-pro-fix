@@ -11,6 +11,13 @@ import { QuoteView } from '@/components/quotes/QuoteView';
 import { generateQuotePDF } from '@/utils/pdfGenerator';
 import { useToast } from '@/hooks/use-toast';
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -36,7 +43,7 @@ export default function Quotes() {
   const [deletingQuote, setDeletingQuote] = useState<Quote | null>(null);
   const [viewingQuote, setViewingQuote] = useState<Quote | null>(null);
   
-  const { quotes, loading, createQuote, deleteQuote } = useQuotes();
+  const { quotes, loading, createQuote, deleteQuote, updateQuote } = useQuotes();
   const { toast } = useToast();
 
   const filteredQuotes = quotes.filter(quote =>
@@ -84,12 +91,25 @@ export default function Quotes() {
     });
   };
 
+  const handleStatusChange = async (quote: Quote, newStatus: Quote['status']) => {
+    const result = await updateQuote(quote.id, { status: newStatus });
+    if (!result.error) {
+      toast({
+        title: "Statut mis à jour",
+        description: `Le devis ${quote.quote_number} est maintenant ${getStatusText(newStatus)}`,
+      });
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'draft': return 'default';
-      case 'sent': return 'secondary';
+      case 'pending_review': return 'secondary';
+      case 'sent': return 'outline';
+      case 'under_negotiation': return 'secondary';
       case 'accepted': return 'default';
       case 'rejected': return 'destructive';
+      case 'expired': return 'outline';
       default: return 'default';
     }
   };
@@ -97,9 +117,12 @@ export default function Quotes() {
   const getStatusText = (status: string) => {
     switch (status) {
       case 'draft': return 'Brouillon';
+      case 'pending_review': return 'En révision';
       case 'sent': return 'Envoyé';
+      case 'under_negotiation': return 'En négociation';
       case 'accepted': return 'Accepté';
       case 'rejected': return 'Refusé';
+      case 'expired': return 'Expiré';
       default: return status;
     }
   };
@@ -182,6 +205,23 @@ export default function Quotes() {
                                   <Badge variant={getStatusColor(quote.status)}>
                                     {getStatusText(quote.status)}
                                   </Badge>
+                                  <Select
+                                    value={quote.status}
+                                    onValueChange={(value) => handleStatusChange(quote, value as Quote['status'])}
+                                  >
+                                    <SelectTrigger className="w-40">
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="draft">Brouillon</SelectItem>
+                                      <SelectItem value="pending_review">En révision</SelectItem>
+                                      <SelectItem value="sent">Envoyé</SelectItem>
+                                      <SelectItem value="under_negotiation">En négociation</SelectItem>
+                                      <SelectItem value="accepted">Accepté</SelectItem>
+                                      <SelectItem value="rejected">Refusé</SelectItem>
+                                      <SelectItem value="expired">Expiré</SelectItem>
+                                    </SelectContent>
+                                  </Select>
                                 </div>
                                 
                                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm text-muted-foreground">

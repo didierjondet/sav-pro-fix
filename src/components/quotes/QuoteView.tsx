@@ -19,9 +19,12 @@ export function QuoteView({ quote, isOpen, onClose, onDownloadPDF, onSendEmail }
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'draft': return 'default';
-      case 'sent': return 'secondary';
+      case 'pending_review': return 'secondary';
+      case 'sent': return 'outline';
+      case 'under_negotiation': return 'secondary';
       case 'accepted': return 'default';
       case 'rejected': return 'destructive';
+      case 'expired': return 'outline';
       default: return 'default';
     }
   };
@@ -29,9 +32,12 @@ export function QuoteView({ quote, isOpen, onClose, onDownloadPDF, onSendEmail }
   const getStatusText = (status: string) => {
     switch (status) {
       case 'draft': return 'Brouillon';
+      case 'pending_review': return 'En révision';
       case 'sent': return 'Envoyé';
+      case 'under_negotiation': return 'En négociation';
       case 'accepted': return 'Accepté';
       case 'rejected': return 'Refusé';
+      case 'expired': return 'Expiré';
       default: return status;
     }
   };

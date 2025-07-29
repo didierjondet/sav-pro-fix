@@ -19,7 +19,7 @@ export interface Quote {
   customer_phone?: string;
   items: QuoteItem[];
   total_amount: number;
-  status: 'draft' | 'sent' | 'accepted' | 'rejected';
+  status: 'draft' | 'pending_review' | 'sent' | 'under_negotiation' | 'accepted' | 'rejected' | 'expired';
   shop_id: string;
   created_at: string;
   updated_at: string;

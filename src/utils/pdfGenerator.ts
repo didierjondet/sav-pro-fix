@@ -158,9 +158,12 @@ export const generateQuotePDF = (quote: Quote) => {
 const getStatusText = (status: string) => {
   switch (status) {
     case 'draft': return 'Brouillon';
+    case 'pending_review': return 'En révision';
     case 'sent': return 'Envoyé';
+    case 'under_negotiation': return 'En négociation';
     case 'accepted': return 'Accepté';
     case 'rejected': return 'Refusé';
+    case 'expired': return 'Expiré';
     default: return status;
   }
 };
