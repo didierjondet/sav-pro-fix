@@ -23,7 +23,9 @@ import {
   UserPlus,
   Trash2,
   Crown,
-  Settings as SettingsIcon 
+  Settings as SettingsIcon,
+  Copy,
+  Key 
 } from 'lucide-react';
 import {
   Dialog,
@@ -111,6 +113,7 @@ export default function Settings() {
       const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
         .select('*')
+        .neq('role', 'super_admin') // Filtrer les super admins
         .order('created_at', { ascending: false });
 
       if (profilesError) throw profilesError;
@@ -187,6 +190,16 @@ export default function Settings() {
     }
   };
 
+  const copyShopCode = () => {
+    if (!shop?.id) return;
+    
+    navigator.clipboard.writeText(shop.id);
+    toast({
+      title: "Succès",
+      description: "Code magasin copié dans le presse-papiers",
+    });
+  };
+
   const isAdmin = profile?.role === 'admin';
 
   if (loading) {
@@ -244,7 +257,7 @@ export default function Settings() {
               )}
             </TabsList>
 
-            <TabsContent value="shop">
+            <TabsContent value="shop" className="space-y-6">
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -295,6 +308,39 @@ export default function Settings() {
                       {saving ? 'Sauvegarde...' : 'Sauvegarder'}
                     </Button>
                   )}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Key className="h-5 w-5" />
+                    Code d'Invitation
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="p-4 bg-muted rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="font-medium">Code magasin</h3>
+                        <p className="text-sm text-muted-foreground">
+                          Partagez ce code pour permettre à d'autres utilisateurs de rejoindre votre magasin
+                        </p>
+                      </div>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={copyShopCode}
+                        className="flex items-center gap-2"
+                      >
+                        <Copy className="h-4 w-4" />
+                        Copier
+                      </Button>
+                    </div>
+                    <div className="mt-3 p-3 bg-background border rounded font-mono text-sm">
+                      {shop?.id || 'Chargement...'}
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
             </TabsContent>
