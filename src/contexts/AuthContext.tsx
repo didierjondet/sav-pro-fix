@@ -19,18 +19,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Nettoyer complètement au démarrage si nécessaire
+    const forceCleanup = () => {
+      Object.keys(localStorage).forEach((key) => {
+        if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
+          localStorage.removeItem(key);
+        }
+      });
+    };
+
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
+        console.log('Auth event:', event, 'User:', session?.user?.email);
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
         
+        if (event === 'SIGNED_OUT') {
+          forceCleanup();
+          setUser(null);
+          setSession(null);
+        }
       }
     );
 
     // Check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log('Existing session:', session?.user?.email);
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
@@ -62,26 +78,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     try {
-      // Nettoyer l'état local avant la déconnexion
+      console.log('Déconnexion en cours...');
+      
+      // Nettoyer immédiatement l'état local
       setUser(null);
       setSession(null);
       
-      // Nettoyer le stockage local
+      // Nettoyer TOUT le localStorage Supabase
       Object.keys(localStorage).forEach((key) => {
-        if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
+        if (key.startsWith('supabase') || key.includes('sb-') || key.includes('auth')) {
           localStorage.removeItem(key);
+          console.log('Supprimé:', key);
         }
       });
       
-      // Déconnexion globale
+      // Nettoyer sessionStorage aussi
+      Object.keys(sessionStorage).forEach((key) => {
+        if (key.startsWith('supabase') || key.includes('sb-') || key.includes('auth')) {
+          sessionStorage.removeItem(key);
+        }
+      });
+      
+      // Déconnexion Supabase avec scope global
       await supabase.auth.signOut({ scope: 'global' });
       
-      // Redirection forcée
-      window.location.href = '/auth';
+      // Redirection forcée avec rechargement complet
+      window.location.replace('/auth');
+      
     } catch (error) {
       console.error('Erreur de déconnexion:', error);
-      // Même en cas d'erreur, rediriger vers la page d'auth
-      window.location.href = '/auth';
+      // Force le nettoyage même en cas d'erreur
+      localStorage.clear();
+      sessionStorage.clear();
+      window.location.replace('/auth');
     }
   };
 
