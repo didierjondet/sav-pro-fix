@@ -37,16 +37,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             .then(({ data, error }) => {
               if (error || !data) {
                 // No profile found, redirect to shop creation
-                setTimeout(() => {
-                  window.location.href = '/create-shop';
-                }, 1000);
+                window.location.href = '/create-shop';
               } else if (data.role === 'super_admin') {
-                // Super admin should go to super admin panel
-                setTimeout(() => {
-                  window.location.href = '/super-admin';
-                }, 1000);
+                // Super admin should go to super admin panel immediately
+                console.log('Redirecting super admin to super admin panel');
+                window.location.href = '/super-admin';
+              } else {
+                // Regular users go to dashboard
+                window.location.href = '/';
               }
-              // Other users stay on current page or go to dashboard
             });
         }
       }
