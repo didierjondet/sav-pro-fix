@@ -143,15 +143,17 @@ export function useOrders() {
 
   const fetchPartsNeedingRestock = async () => {
     try {
-      // Récupérer toutes les pièces dont le stock est en dessous du minimum
+      // Récupérer toutes les pièces et filtrer côté client
       const { data: parts, error } = await supabase
         .from('parts')
-        .select('*')
-        .lt('quantity', 'min_stock');
+        .select('*');
 
       if (error) throw error;
 
-      const restockNeeded = parts?.map(part => ({
+      // Filtrer les pièces qui ont besoin d'être réapprovisionnées
+      const partsNeedingStock = parts?.filter(part => part.quantity < part.min_stock) || [];
+
+      const restockNeeded = partsNeedingStock.map(part => ({
         id: `restock-${part.id}`,
         part_id: part.id,
         part_name: part.name,
@@ -164,8 +166,9 @@ export function useOrders() {
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
         part: part
-      })) || [];
+      }));
 
+      console.log('Parts needing restock:', restockNeeded.length);
       setPartsNeedingRestock(restockNeeded);
     } catch (error: any) {
       console.error('Error fetching parts needing restock:', error);
