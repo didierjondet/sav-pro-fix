@@ -26,12 +26,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(session?.user ?? null);
         setLoading(false);
         
-        // Redirect new users to shop creation
+        // Redirect users based on their role
         if (event === 'SIGNED_IN' && session?.user) {
-          // Check if user has a profile
+          // Check if user has a profile and their role
           supabase
             .from('profiles')
-            .select('id')
+            .select('id, role')
             .eq('user_id', session.user.id)
             .single()
             .then(({ data, error }) => {
@@ -40,7 +40,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 setTimeout(() => {
                   window.location.href = '/create-shop';
                 }, 1000);
+              } else if (data.role === 'super_admin') {
+                // Super admin should go to super admin panel
+                setTimeout(() => {
+                  window.location.href = '/super-admin';
+                }, 1000);
               }
+              // Other users stay on current page or go to dashboard
             });
         }
       }
