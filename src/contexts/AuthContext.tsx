@@ -61,8 +61,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
-    window.location.href = '/auth';
+    try {
+      // Nettoyer l'état local avant la déconnexion
+      setUser(null);
+      setSession(null);
+      
+      // Nettoyer le stockage local
+      Object.keys(localStorage).forEach((key) => {
+        if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
+          localStorage.removeItem(key);
+        }
+      });
+      
+      // Déconnexion globale
+      await supabase.auth.signOut({ scope: 'global' });
+      
+      // Redirection forcée
+      window.location.href = '/auth';
+    } catch (error) {
+      console.error('Erreur de déconnexion:', error);
+      // Même en cas d'erreur, rediriger vers la page d'auth
+      window.location.href = '/auth';
+    }
   };
 
   const value = {
