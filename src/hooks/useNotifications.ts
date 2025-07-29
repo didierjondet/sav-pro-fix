@@ -4,11 +4,12 @@ import { useToast } from '@/hooks/use-toast';
 
 export interface Notification {
   id: string;
-  type: 'stock_alert' | 'order_needed' | 'general';
+  type: 'stock_alert' | 'order_needed' | 'general' | 'support_message';
   title: string;
   message: string;
   sav_case_id?: string;
   part_id?: string;
+  support_ticket_id?: string;
   read: boolean;
   created_at: string;
   shop_id: string;
@@ -120,12 +121,37 @@ export function useNotifications() {
     });
   };
 
+  const createSupportMessageNotification = async (ticketId: string, subject: string, senderType: 'shop' | 'admin') => {
+    const title = senderType === 'admin' ? 'Nouveau message du support' : 'Nouvelle réponse client';
+    const message = `Nouveau message dans le ticket: ${subject}`;
+    
+    // Play notification sound
+    try {
+      const audio = new Audio('/notification.mp3');
+      audio.volume = 0.3;
+      audio.play().catch(() => {
+        // Fallback to system notification sound
+        console.log('🔔 Support notification');
+      });
+    } catch (error) {
+      console.log('🔔 Support notification');
+    }
+    
+    return await createNotification({
+      type: 'support_message',
+      title,
+      message,
+      support_ticket_id: ticketId
+    });
+  };
+
   return {
     notifications,
     loading,
     unreadCount,
     createNotification,
     createStockAlert,
+    createSupportMessageNotification,
     markAsRead,
     markAllAsRead,
     refetch: fetchNotifications,
