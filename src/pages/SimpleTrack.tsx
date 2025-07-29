@@ -99,6 +99,44 @@ export default function SimpleTrack() {
     }
   }, [slug]);
 
+  // Écouter les mises à jour en temps réel du dossier SAV
+  useEffect(() => {
+    if (!savCase?.id) return;
+
+    const channel = supabase
+      .channel('sav-case-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'sav_cases',
+          filter: `id=eq.${savCase.id}`
+        },
+        (payload) => {
+          console.log('SAV case updated:', payload);
+          // Mettre à jour le dossier SAV avec les nouvelles données
+          setSavCase((prevCase) => {
+            if (prevCase) {
+              return { ...prevCase, ...payload.new };
+            }
+            return prevCase;
+          });
+
+          // Afficher une notification de mise à jour
+          toast({
+            title: "Dossier mis à jour",
+            description: "Le statut de votre dossier a été mis à jour automatiquement",
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [savCase?.id, toast]);
+
   const fetchSAVCase = async () => {
     try {
       setLoading(true);
