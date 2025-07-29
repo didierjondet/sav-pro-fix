@@ -180,7 +180,10 @@ export default function Support() {
                 <h1 className="text-2xl font-bold">Support technique</h1>
                 <Dialog open={showNewTicketDialog} onOpenChange={setShowNewTicketDialog}>
                   <DialogTrigger asChild>
-                    <Button>
+                    <Button onClick={() => {
+                      console.log('Nouveau ticket button clicked');
+                      setShowNewTicketDialog(true);
+                    }}>
                       <Plus className="h-4 w-4 mr-2" />
                       Nouveau ticket
                     </Button>
@@ -227,7 +230,15 @@ export default function Support() {
                         <Button variant="outline" onClick={() => setShowNewTicketDialog(false)}>
                           Annuler
                         </Button>
-                        <Button onClick={handleCreateTicket}>
+                        <Button onClick={() => {
+                          console.log('Créer le ticket button clicked');
+                          console.log('Current values:', {
+                            subject: newTicketSubject,
+                            description: newTicketDescription,
+                            priority: newTicketPriority
+                          });
+                          handleCreateTicket();
+                        }}>
                           Créer le ticket
                         </Button>
                       </div>
