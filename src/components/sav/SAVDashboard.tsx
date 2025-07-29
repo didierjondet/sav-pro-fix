@@ -101,7 +101,7 @@ export function SAVDashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {cases.reduce((acc, c) => acc + (c.total_cost || 0), 0).toFixed(2)}€
+              {cases.filter(c => c.sav_type !== 'internal').reduce((acc, c) => acc + (c.total_cost || 0), 0).toFixed(2)}€
             </div>
             <p className="text-xs text-muted-foreground">Chiffre d'affaires</p>
           </CardContent>

@@ -164,7 +164,7 @@ export default function SuperAdmin() {
       // Fetch SAV cases for statistics
       const { data: savCasesData, error: savCasesError } = await supabase
         .from('sav_cases')
-        .select('shop_id, status, total_cost');
+        .select('shop_id, status, total_cost, sav_type');
 
       if (savCasesError) throw savCasesError;
 
@@ -181,9 +181,9 @@ export default function SuperAdmin() {
           in_progress_cases: shopSavCases.filter(c => c.status === 'in_progress').length,
           ready_cases: shopSavCases.filter(c => c.status === 'ready').length,
           delivered_cases: shopSavCases.filter(c => c.status === 'delivered').length,
-          total_revenue: shopSavCases.reduce((sum, c) => sum + (c.total_cost || 0), 0),
+          total_revenue: shopSavCases.filter(c => c.sav_type !== 'internal').reduce((sum, c) => sum + (c.total_cost || 0), 0),
           average_case_value: shopSavCases.length > 0 
-            ? shopSavCases.reduce((sum, c) => sum + (c.total_cost || 0), 0) / shopSavCases.length 
+            ? shopSavCases.filter(c => c.sav_type !== 'internal').reduce((sum, c) => sum + (c.total_cost || 0), 0) / shopSavCases.filter(c => c.sav_type !== 'internal').length
             : 0
         };
       }) || [];
