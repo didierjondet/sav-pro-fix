@@ -30,15 +30,33 @@ export function useShop() {
   }, [user]);
 
   const fetchShop = async () => {
+    if (!user) return;
+    
     try {
+      // Récupérer d'abord le profil de l'utilisateur pour obtenir son shop_id
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('shop_id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (profileError) throw profileError;
+      if (!profile?.shop_id) {
+        setShop(null);
+        return;
+      }
+
+      // Récupérer les données du magasin
       const { data, error } = await supabase
         .from('shops')
         .select('*')
-        .single();
+        .eq('id', profile.shop_id)
+        .maybeSingle();
 
       if (error) throw error;
       setShop(data);
     } catch (error: any) {
+      console.error('Shop fetch error:', error);
       toast({
         title: "Erreur",
         description: "Impossible de charger les données du magasin",
