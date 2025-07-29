@@ -588,7 +588,34 @@ export default function ShopManagementDialog({ shop, isOpen, onClose, onUpdate }
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-4">
-                  <Label>Inviter un nouvel utilisateur</Label>
+                  <div className="bg-muted p-4 rounded-lg">
+                    <h4 className="font-medium mb-2">Code d'invitation pour ce magasin :</h4>
+                    <div className="flex items-center gap-2">
+                      <code className="bg-background px-2 py-1 rounded text-sm font-mono">
+                        {shop?.slug || 'Non défini'}
+                      </code>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          if (shop?.slug) {
+                            navigator.clipboard.writeText(shop.slug);
+                            toast({
+                              title: "Copié !",
+                              description: "Code d'invitation copié dans le presse-papiers",
+                            });
+                          }
+                        }}
+                      >
+                        Copier
+                      </Button>
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-2">
+                      Partagez ce code avec vos collaborateurs pour qu'ils puissent rejoindre votre magasin lors de leur inscription.
+                    </p>
+                  </div>
+                  
+                  <Label>Inviter un nouvel utilisateur par email</Label>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <Input
                       type="email"

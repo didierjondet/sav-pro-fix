@@ -38,16 +38,14 @@ export function useProfile() {
         .from('profiles')
         .select('*')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
       setProfile(data);
     } catch (error: any) {
-      toast({
-        title: "Erreur",
-        description: "Impossible de charger le profil utilisateur",
-        variant: "destructive",
-      });
+      console.error('Profile fetch error:', error);
+      // Ne pas afficher de toast d'erreur pour un profil manquant
+      // L'interface se chargera de proposer la création
     } finally {
       setLoading(false);
     }

@@ -1,13 +1,16 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { useProfile } from '@/hooks/useProfile';
 import { Header } from '@/components/layout/Header';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { SAVDashboard } from '@/components/sav/SAVDashboard';
 import { SAVForm } from '@/components/sav/SAVForm';
+import { ProfileSetup } from '@/components/auth/ProfileSetup';
 
 const Index = () => {
   const { user, loading } = useAuth();
+  const { profile, loading: profileLoading, refetch: refetchProfile } = useProfile();
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [currentView, setCurrentView] = useState<'dashboard' | 'new-sav'>('dashboard');
@@ -18,7 +21,7 @@ const Index = () => {
     }
   }, [user, loading, navigate]);
 
-  if (loading) {
+  if (loading || profileLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-lg">Chargement...</div>
@@ -28,6 +31,11 @@ const Index = () => {
 
   if (!user) {
     return null;
+  }
+
+  // Si l'utilisateur n'a pas de profil, afficher le setup
+  if (!profile) {
+    return <ProfileSetup onComplete={refetchProfile} />;
   }
 
   const handleMenuClick = () => {
