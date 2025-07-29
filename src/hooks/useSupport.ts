@@ -104,26 +104,56 @@ export function useSupport() {
     priority: 'low' | 'medium' | 'high' | 'urgent';
   }) => {
     try {
+      console.log('Creating ticket with data:', ticketData);
+      
+      // Get current user
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError) {
+        console.error('User error:', userError);
+        throw new Error('Erreur d\'authentification');
+      }
+      
+      if (!user) {
+        throw new Error('Utilisateur non connecté');
+      }
+      
+      console.log('Current user:', user.id);
+
       // Get current user's shop_id
-      const { data: profile } = await supabase
+      const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('shop_id')
-        .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
+        .eq('user_id', user.id)
         .single();
+
+      console.log('Profile query result:', { profile, profileError });
+
+      if (profileError) {
+        console.error('Profile error:', profileError);
+        throw new Error('Erreur lors de la récupération du profil');
+      }
 
       if (!profile?.shop_id) {
         throw new Error('Shop non trouvé pour cet utilisateur');
       }
 
+      console.log('Shop ID found:', profile.shop_id);
+
+      const ticketInsert = {
+        ...ticketData,
+        shop_id: profile.shop_id,
+        created_by: user.id
+      };
+
+      console.log('Inserting ticket:', ticketInsert);
+
       const { data, error } = await supabase
         .from('support_tickets')
-        .insert([{
-          ...ticketData,
-          shop_id: profile.shop_id,
-          created_by: (await supabase.auth.getUser()).data.user?.id
-        }])
+        .insert([ticketInsert])
         .select()
         .single();
+
+      console.log('Insert result:', { data, error });
 
       if (error) throw error;
 
@@ -135,6 +165,7 @@ export function useSupport() {
       fetchTickets();
       return { data, error: null };
     } catch (error: any) {
+      console.error('Create ticket error:', error);
       toast({
         title: "Erreur",
         description: error.message,
