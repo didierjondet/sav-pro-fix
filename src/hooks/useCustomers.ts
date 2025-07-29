@@ -70,10 +70,66 @@ export function useCustomers() {
     }
   };
 
+  const updateCustomer = async (customerId: string, customerData: Partial<Customer>) => {
+    try {
+      const { data, error } = await supabase
+        .from('customers')
+        .update(customerData)
+        .eq('id', customerId)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      toast({
+        title: "Succès",
+        description: "Client mis à jour avec succès",
+      });
+
+      fetchCustomers();
+      return { data, error: null };
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error.message,
+        variant: "destructive",
+      });
+      return { data: null, error };
+    }
+  };
+
+  const deleteCustomer = async (customerId: string) => {
+    try {
+      const { error } = await supabase
+        .from('customers')
+        .delete()
+        .eq('id', customerId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Succès",
+        description: "Client supprimé avec succès",
+      });
+
+      fetchCustomers();
+      return { error: null };
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error.message,
+        variant: "destructive",
+      });
+      return { error };
+    }
+  };
+
   return {
     customers,
     loading,
     createCustomer,
+    updateCustomer,
+    deleteCustomer,
     refetch: fetchCustomers,
   };
 }
