@@ -203,9 +203,16 @@ export default function SimpleTrack() {
       <div className="container mx-auto p-4 max-w-4xl">
         {/* En-tête avec logo/nom du magasin */}
         <div className="text-center mb-6">
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">
-            {savCase.shop?.name || 'Suivi de réparation'}
-          </h1>
+          <div className="flex items-center justify-center gap-3 mb-2">
+            <img 
+              src="/lovable-uploads/3d99a913-9d52-4f6c-9a65-78b3bd561739.png" 
+              alt="Logo SAV Pro Fix" 
+              className="h-12 w-12 object-contain"
+            />
+            <h1 className="text-3xl font-bold text-gray-800">
+              {savCase.shop?.name || 'SAV Pro Fix'}
+            </h1>
+          </div>
           <p className="text-gray-600">Suivi de votre dossier SAV</p>
         </div>
 

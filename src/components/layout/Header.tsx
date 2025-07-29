@@ -34,11 +34,13 @@ export function Header({ onMenuClick, isMobileMenuOpen }: HeaderProps) {
             <Menu className="h-5 w-5" />
           </Button>
           <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-primary to-primary-glow rounded-lg flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-sm">S</span>
-            </div>
+            <img 
+              src="/lovable-uploads/3d99a913-9d52-4f6c-9a65-78b3bd561739.png" 
+              alt="Logo SAV Pro Fix" 
+              className="h-8 w-8 object-contain"
+            />
             <div className="flex flex-col">
-              <h1 className="text-xl font-bold text-foreground">SAV Pro</h1>
+              <h1 className="text-xl font-bold text-foreground">SAV Pro Fix</h1>
               {shop && (
                 <span className="text-sm text-muted-foreground font-medium">
                   {shop.name}
