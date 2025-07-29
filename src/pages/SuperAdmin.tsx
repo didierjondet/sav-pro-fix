@@ -98,7 +98,7 @@ interface Profile {
 }
 
 export default function SuperAdmin() {
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   
@@ -667,6 +667,14 @@ export default function SuperAdmin() {
                 onClick={() => window.location.href = '/landing'}
               >
                 Retour Landing
+              </Button>
+              <Button 
+                variant="destructive" 
+                size="sm"
+                onClick={signOut}
+                className="bg-red-600 hover:bg-red-700 text-white"
+              >
+                Déconnexion
               </Button>
             </div>
           </div>
