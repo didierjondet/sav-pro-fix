@@ -85,7 +85,73 @@ Deno.serve(async (req) => {
 
         if (authError) {
           console.error('Auth error:', authError)
-          throw authError
+          
+          // Si l'utilisateur existe déjà, créer seulement le profil
+          if (authError.message?.includes('already been registered') || authError.status === 422) {
+            console.log('User already exists, searching for existing user')
+            
+            // Chercher l'utilisateur existant par email
+            const { data: existingUsers, error: searchError } = await supabase.auth.admin.listUsers()
+            
+            if (searchError) {
+              throw searchError
+            }
+            
+            const existingUser = existingUsers.users.find(u => u.email === email)
+            
+            if (!existingUser) {
+              throw new Error('User exists but could not be found')
+            }
+            
+            console.log('Found existing user:', existingUser.id)
+            
+            // Vérifier s'il a déjà un profil
+            const { data: existingProfile } = await supabase
+              .from('profiles')
+              .select('id')
+              .eq('user_id', existingUser.id)
+              .maybeSingle()
+            
+            if (existingProfile) {
+              throw new Error('User already has a profile in the system')
+            }
+            
+            // Créer le profil pour l'utilisateur existant
+            const { data: profileData, error: profileError } = await supabase
+              .from('profiles')
+              .insert({
+                user_id: existingUser.id,
+                shop_id,
+                first_name,
+                last_name,
+                phone,
+                role
+              })
+              .select()
+              .single()
+
+            if (profileError) {
+              console.error('Profile error:', profileError)
+              throw profileError
+            }
+
+            console.log('Profile created for existing user:', profileData.id)
+
+            return new Response(
+              JSON.stringify({ 
+                success: true, 
+                user: existingUser, 
+                profile: profileData,
+                message: 'Profile created for existing user'
+              }),
+              { 
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+                status: 200 
+              }
+            )
+          } else {
+            throw authError
+          }
         }
 
         console.log('Auth user created:', authData.user.id)

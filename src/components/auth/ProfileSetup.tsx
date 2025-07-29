@@ -98,11 +98,30 @@ export function ProfileSetup({ onComplete }: ProfileSetupProps) {
     setLoading(true);
     try {
       // Chercher le magasin par son code d'invitation OU par son slug
-      const { data: shop, error: shopError } = await supabase
+      let shop;
+      let shopError;
+      
+      // D'abord essayer avec invite_code
+      const { data: shopByCode, error: codeError } = await supabase
         .from('shops')
         .select('id')
-        .or(`invite_code.ilike.${formData.inviteCode},slug.ilike.${formData.inviteCode}`)
+        .ilike('invite_code', formData.inviteCode)
         .maybeSingle();
+      
+      if (shopByCode) {
+        shop = shopByCode;
+        shopError = codeError;
+      } else {
+        // Sinon essayer avec slug
+        const { data: shopBySlug, error: slugError } = await supabase
+          .from('shops')
+          .select('id')
+          .ilike('slug', formData.inviteCode)
+          .maybeSingle();
+        
+        shop = shopBySlug;
+        shopError = slugError;
+      }
 
       if (shopError || !shop) {
         throw new Error("Code d'invitation invalide");
