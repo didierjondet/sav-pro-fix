@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -18,6 +19,7 @@ import {
 
 export default function Landing() {
   const [showDemo, setShowDemo] = useState(false);
+  const navigate = useNavigate();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -30,10 +32,10 @@ export default function Landing() {
               <h1 className="text-2xl font-bold text-gray-900">SAV Pro</h1>
             </div>
             <div className="flex items-center gap-4">
-              <Button variant="outline" onClick={() => window.location.href = '/auth'}>
+              <Button variant="outline" onClick={() => navigate('/auth')}>
                 Connexion
               </Button>
-              <Button onClick={() => window.location.href = '/auth'}>
+              <Button onClick={() => navigate('/auth')}>
                 Essai Gratuit
               </Button>
             </div>
@@ -56,7 +58,7 @@ export default function Landing() {
               La solution SAV nouvelle génération pour les professionnels du high-tech.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button size="lg" className="text-lg px-8" onClick={() => window.location.href = '/auth'}>
+              <Button size="lg" className="text-lg px-8" onClick={() => navigate('/auth')}>
                 Démarrer maintenant
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
@@ -275,7 +277,7 @@ export default function Landing() {
           <p className="text-xl text-blue-100 mb-8">
             Rejoignez les centaines de boutiques qui ont choisi SAV Pro
           </p>
-          <Button size="lg" className="bg-white text-blue-600 hover:bg-gray-100">
+          <Button size="lg" className="bg-white text-blue-600 hover:bg-gray-100" onClick={() => navigate('/auth')}>
             Commencer maintenant
           </Button>
         </div>
@@ -287,7 +289,7 @@ export default function Landing() {
           <div className="text-center text-gray-400">
             <p>&copy; 2024 SAV Pro. Tous droits réservés.</p>
             <button
-              onClick={() => window.location.href = '/super-admin'}
+              onClick={() => navigate('/super-admin')}
               className="text-xs text-gray-600 hover:text-gray-400 mt-2 opacity-50 hover:opacity-100 transition-opacity"
             >
               Administration
