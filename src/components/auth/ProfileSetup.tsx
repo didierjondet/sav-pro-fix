@@ -97,11 +97,11 @@ export function ProfileSetup({ onComplete }: ProfileSetupProps) {
 
     setLoading(true);
     try {
-      // Chercher le magasin par son code d'invitation (insensible à la casse)
+      // Chercher le magasin par son code d'invitation OU par son slug
       const { data: shop, error: shopError } = await supabase
         .from('shops')
         .select('id')
-        .ilike('invite_code', formData.inviteCode)
+        .or(`invite_code.ilike.${formData.inviteCode},slug.ilike.${formData.inviteCode}`)
         .maybeSingle();
 
       if (shopError || !shop) {
