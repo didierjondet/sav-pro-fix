@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
-import { useNotifications } from '@/hooks/useNotifications';
+
 export interface SAVMessage {
   id: string;
   sav_case_id: string;
@@ -19,7 +19,6 @@ export function useSAVMessages(savCaseId?: string) {
   const [messages, setMessages] = useState<SAVMessage[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
-  const { createSAVMessageNotification } = useNotifications();
 
   const fetchMessages = async () => {
     if (!savCaseId) {
@@ -64,34 +63,8 @@ export function useSAVMessages(savCaseId?: string) {
           table: 'sav_messages',
           filter: `sav_case_id=eq.${savCaseId}`
         },
-        async (payload) => {
+        (payload) => {
           console.log('SAV message change detected:', payload);
-          
-          // Si c'est un nouveau message d'un client, créer une notification
-          if (payload.eventType === 'INSERT') {
-            const newMessage = payload.new as SAVMessage;
-            if (newMessage.sender_type === 'client') {
-              try {
-                // Récupérer le numéro de cas pour la notification
-                const { data: savCase } = await supabase
-                  .from('sav_cases')
-                  .select('case_number')
-                  .eq('id', savCaseId)
-                  .single();
-                
-                if (savCase) {
-                  await createSAVMessageNotification(
-                    savCaseId,
-                    savCase.case_number,
-                    'client'
-                  );
-                }
-              } catch (error) {
-                console.error('Error creating SAV notification:', error);
-              }
-            }
-          }
-          
           fetchMessages(); // Refetch messages when any change occurs
         }
       )
