@@ -551,6 +551,7 @@ export type Database = {
           created_at: string
           email: string | null
           id: string
+          invite_code: string | null
           name: string
           phone: string | null
           slug: string | null
@@ -567,6 +568,7 @@ export type Database = {
           created_at?: string
           email?: string | null
           id?: string
+          invite_code?: string | null
           name: string
           phone?: string | null
           slug?: string | null
@@ -583,6 +585,7 @@ export type Database = {
           created_at?: string
           email?: string | null
           id?: string
+          invite_code?: string | null
           name?: string
           phone?: string | null
           slug?: string | null
@@ -698,6 +701,10 @@ export type Database = {
         Returns: undefined
       }
       generate_case_number: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      generate_invite_code: {
         Args: Record<PropertyKey, never>
         Returns: string
       }

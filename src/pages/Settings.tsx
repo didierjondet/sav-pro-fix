@@ -191,9 +191,9 @@ export default function Settings() {
   };
 
   const copyShopCode = () => {
-    if (!shop?.id) return;
+    if (!shop?.invite_code) return;
     
-    navigator.clipboard.writeText(shop.id);
+    navigator.clipboard.writeText(shop.invite_code);
     toast({
       title: "Succès",
       description: "Code magasin copié dans le presse-papiers",
@@ -337,8 +337,8 @@ export default function Settings() {
                         Copier
                       </Button>
                     </div>
-                    <div className="mt-3 p-3 bg-background border rounded font-mono text-sm">
-                      {shop?.id || 'Chargement...'}
+                    <div className="mt-3 p-3 bg-background border rounded font-mono text-sm text-center text-xl font-bold tracking-wider">
+                      {shop?.invite_code || 'Chargement...'}
                     </div>
                   </div>
                 </CardContent>

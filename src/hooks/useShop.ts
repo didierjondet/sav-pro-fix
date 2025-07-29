@@ -10,6 +10,7 @@ export interface Shop {
   phone: string;
   address: string;
   sms_credits: number;
+  invite_code: string;
   created_at: string;
   updated_at: string;
 }

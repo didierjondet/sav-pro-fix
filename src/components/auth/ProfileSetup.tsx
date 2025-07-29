@@ -97,12 +97,12 @@ export function ProfileSetup({ onComplete }: ProfileSetupProps) {
 
     setLoading(true);
     try {
-      // Pour le moment, on cherche par slug du magasin
+      // Chercher le magasin par son code d'invitation
       const { data: shop, error: shopError } = await supabase
         .from('shops')
         .select('id')
-        .eq('slug', formData.inviteCode.toLowerCase())
-        .single();
+        .eq('invite_code', formData.inviteCode.toUpperCase())
+        .maybeSingle();
 
       if (shopError || !shop) {
         throw new Error("Code d'invitation invalide");
