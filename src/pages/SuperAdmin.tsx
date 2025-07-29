@@ -137,35 +137,48 @@ export default function SuperAdmin() {
 
   const fetchData = async () => {
     try {
-      // Fetch shops with statistics
+      // Fetch shops
       const { data: shopsData, error: shopsError } = await supabase
         .from('shops')
-        .select(`
-          *,
-          profiles:profiles(count),
-          sav_cases:sav_cases(
-            id,
-            status,
-            total_cost
-          )
-        `);
+        .select('*')
+        .order('created_at', { ascending: false });
 
       if (shopsError) throw shopsError;
 
+      // Fetch profiles count for each shop
+      const { data: profilesCount, error: profilesCountError } = await supabase
+        .from('profiles')
+        .select('shop_id')
+        .not('shop_id', 'is', null);
+
+      if (profilesCountError) throw profilesCountError;
+
+      // Fetch SAV cases for statistics
+      const { data: savCasesData, error: savCasesError } = await supabase
+        .from('sav_cases')
+        .select('shop_id, status, total_cost');
+
+      if (savCasesError) throw savCasesError;
+
       // Process shop statistics
-      const shopsWithStats = shopsData?.map(shop => ({
-        ...shop,
-        total_users: shop.profiles?.[0]?.count || 0,
-        total_sav_cases: shop.sav_cases?.length || 0,
-        pending_cases: shop.sav_cases?.filter((c: any) => c.status === 'pending').length || 0,
-        in_progress_cases: shop.sav_cases?.filter((c: any) => c.status === 'in_progress').length || 0,
-        ready_cases: shop.sav_cases?.filter((c: any) => c.status === 'ready').length || 0,
-        delivered_cases: shop.sav_cases?.filter((c: any) => c.status === 'delivered').length || 0,
-        total_revenue: shop.sav_cases?.reduce((sum: number, c: any) => sum + (c.total_cost || 0), 0) || 0,
-        average_case_value: shop.sav_cases?.length > 0 
-          ? shop.sav_cases.reduce((sum: number, c: any) => sum + (c.total_cost || 0), 0) / shop.sav_cases.length 
-          : 0
-      })) || [];
+      const shopsWithStats = shopsData?.map(shop => {
+        const shopProfiles = profilesCount?.filter(p => p.shop_id === shop.id) || [];
+        const shopSavCases = savCasesData?.filter(sc => sc.shop_id === shop.id) || [];
+        
+        return {
+          ...shop,
+          total_users: shopProfiles.length,
+          total_sav_cases: shopSavCases.length,
+          pending_cases: shopSavCases.filter(c => c.status === 'pending').length,
+          in_progress_cases: shopSavCases.filter(c => c.status === 'in_progress').length,
+          ready_cases: shopSavCases.filter(c => c.status === 'ready').length,
+          delivered_cases: shopSavCases.filter(c => c.status === 'delivered').length,
+          total_revenue: shopSavCases.reduce((sum, c) => sum + (c.total_cost || 0), 0),
+          average_case_value: shopSavCases.length > 0 
+            ? shopSavCases.reduce((sum, c) => sum + (c.total_cost || 0), 0) / shopSavCases.length 
+            : 0
+        };
+      }) || [];
 
       setShops(shopsWithStats);
 
@@ -174,17 +187,25 @@ export default function SuperAdmin() {
         .from('profiles')
         .select(`
           *,
-          shop:shops(name, email)
+          shops!inner(name, email)
         `)
         .order('created_at', { ascending: false });
 
       if (profilesError) throw profilesError;
-      setProfiles(profilesData || []);
+      
+      // Transform the data to match expected format
+      const transformedProfiles = profilesData?.map(profile => ({
+        ...profile,
+        shop: profile.shops ? { name: profile.shops.name, email: profile.shops.email } : undefined
+      })) || [];
+      
+      setProfiles(transformedProfiles);
 
     } catch (error: any) {
+      console.error('Error fetching data:', error);
       toast({
         title: "Erreur",
-        description: "Impossible de charger les données",
+        description: `Impossible de charger les données: ${error.message}`,
         variant: "destructive",
       });
     } finally {
