@@ -26,8 +26,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(session?.user ?? null);
         setLoading(false);
         
-        // Only redirect on SIGNED_IN event, not on other state changes
-        if (event === 'SIGNED_IN' && session?.user) {
+        // NO AUTOMATIC REDIRECTIONS - Let users navigate freely
+        // Only redirect on SIGNED_IN event and only if we're on auth page
+        if (event === 'SIGNED_IN' && session?.user && window.location.pathname === '/auth') {
           // Check if user has a profile and their role
           supabase
             .from('profiles')
@@ -37,17 +38,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             .then(({ data, error }) => {
               if (error) {
                 console.error('Error checking profile:', error);
-                // On error, redirect to shop creation
                 window.location.href = '/create-shop';
               } else if (!data) {
-                // No profile found, redirect to shop creation
                 window.location.href = '/create-shop';
               } else if (data.role === 'super_admin') {
-                // Super admin should go to super admin panel
-                console.log('Super admin detected, redirecting to /super-admin');
                 window.location.href = '/super-admin';
               } else {
-                // Regular users go to dashboard
                 window.location.href = '/';
               }
             });
