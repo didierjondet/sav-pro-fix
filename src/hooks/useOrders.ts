@@ -25,6 +25,9 @@ export interface OrderItemWithPart extends OrderItem {
 
 export function useOrders() {
   const [orderItems, setOrderItems] = useState<OrderItemWithPart[]>([]);
+  const [partsNeededForSAV, setPartsNeededForSAV] = useState<OrderItemWithPart[]>([]);
+  const [partsNeededForQuotes, setPartsNeededForQuotes] = useState<OrderItemWithPart[]>([]);
+  const [partsNeedingRestock, setPartsNeedingRestock] = useState<OrderItemWithPart[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
@@ -52,8 +55,128 @@ export function useOrders() {
     }
   };
 
+  const fetchPartsNeededForSAV = async () => {
+    try {
+      // Récupérer les pièces utilisées dans les SAV en cours qui ne sont pas en stock
+      const { data: savParts, error: savError } = await supabase
+        .from('sav_parts')
+        .select(`
+          part_id,
+          quantity,
+          sav_case_id,
+          parts!inner(*)
+        `)
+        .eq('parts.quantity', 0); // Seulement les pièces en rupture de stock
+
+      if (savError) throw savError;
+
+      const formattedSavParts = savParts?.map(item => ({
+        id: `sav-needed-${item.part_id}`,
+        part_id: item.part_id,
+        part_name: item.parts.name,
+        part_reference: item.parts.reference,
+        quantity_needed: item.quantity,
+        sav_case_id: item.sav_case_id,
+        reason: 'sav_stock_zero' as const,
+        priority: 'high' as const,
+        ordered: false,
+        shop_id: item.parts.shop_id || '',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        part: item.parts as Part
+      })) || [];
+
+      setPartsNeededForSAV(formattedSavParts);
+    } catch (error: any) {
+      console.error('Error fetching SAV parts needed:', error);
+    }
+  };
+
+  const fetchPartsNeededForQuotes = async () => {
+    try {
+      // Récupérer les pièces dans les devis dont le stock est insuffisant
+      const { data: quotes, error: quotesError } = await supabase
+        .from('quotes')
+        .select('id, items')
+        .eq('status', 'draft');
+
+      if (quotesError) throw quotesError;
+
+      const neededParts: OrderItemWithPart[] = [];
+      
+      for (const quote of quotes || []) {
+        const items = typeof quote.items === 'string' ? JSON.parse(quote.items) : quote.items;
+        
+        for (const item of items) {
+          // Vérifier le stock disponible
+          const { data: part, error: partError } = await supabase
+            .from('parts')
+            .select('*')
+            .eq('id', item.part_id)
+            .maybeSingle();
+
+          if (!partError && part && part.quantity < item.quantity) {
+            neededParts.push({
+              id: `quote-needed-${item.part_id}-${quote.id}`,
+              part_id: item.part_id,
+              part_name: item.part_name,
+              part_reference: item.part_reference,
+              quantity_needed: item.quantity - part.quantity,
+              quote_id: quote.id,
+              reason: 'quote_needed',
+              priority: 'medium',
+              ordered: false,
+              shop_id: part.shop_id,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+              part: part
+            });
+          }
+        }
+      }
+
+      setPartsNeededForQuotes(neededParts);
+    } catch (error: any) {
+      console.error('Error fetching quote parts needed:', error);
+    }
+  };
+
+  const fetchPartsNeedingRestock = async () => {
+    try {
+      // Récupérer toutes les pièces dont le stock est en dessous du minimum
+      const { data: parts, error } = await supabase
+        .from('parts')
+        .select('*')
+        .lt('quantity', 'min_stock');
+
+      if (error) throw error;
+
+      const restockNeeded = parts?.map(part => ({
+        id: `restock-${part.id}`,
+        part_id: part.id,
+        part_name: part.name,
+        part_reference: part.reference,
+        quantity_needed: part.min_stock - part.quantity,
+        reason: 'manual' as const,
+        priority: 'low' as const,
+        ordered: false,
+        shop_id: part.shop_id,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        part: part
+      })) || [];
+
+      setPartsNeedingRestock(restockNeeded);
+    } catch (error: any) {
+      console.error('Error fetching parts needing restock:', error);
+    }
+  };
+
   useEffect(() => {
     fetchOrderItems();
+    fetchPartsNeededForSAV();
+    fetchPartsNeededForQuotes();
+    fetchPartsNeedingRestock();
   }, []);
 
   const addToOrder = async (orderData: Omit<OrderItem, 'id' | 'created_at' | 'updated_at' | 'shop_id' | 'ordered'>) => {
@@ -163,23 +286,36 @@ export function useOrders() {
     }
   };
 
-  const getOrdersByFilter = (filter: 'all' | 'sav' | 'quotes' | 'pending') => {
-    return orderItems.filter(item => {
-      if (filter === 'all') return true;
-      if (filter === 'sav') return item.reason === 'sav_stock_zero';
-      if (filter === 'quotes') return item.reason === 'quote_needed';
-      if (filter === 'pending') return !item.ordered;
-      return true;
-    });
+  const getOrdersByFilter = (filter: 'all' | 'sav' | 'quotes') => {
+    switch (filter) {
+      case 'sav':
+        return partsNeededForSAV;
+      case 'quotes':
+        return partsNeededForQuotes;
+      case 'all':
+        return partsNeedingRestock;
+      default:
+        return [];
+    }
+  };
+
+  const refreshAllData = () => {
+    fetchOrderItems();
+    fetchPartsNeededForSAV();
+    fetchPartsNeededForQuotes();
+    fetchPartsNeedingRestock();
   };
 
   return {
     orderItems,
+    partsNeededForSAV,
+    partsNeededForQuotes,
+    partsNeedingRestock,
     loading,
     addToOrder,
     markAsOrdered,
     removeFromOrder,
     getOrdersByFilter,
-    refetch: fetchOrderItems,
+    refetch: refreshAllData,
   };
 }

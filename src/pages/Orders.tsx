@@ -20,7 +20,7 @@ import {
 export default function Orders() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeFilter, setActiveFilter] = useState<'all' | 'sav' | 'quotes' | 'pending'>('pending');
+  const [activeFilter, setActiveFilter] = useState<'all' | 'sav' | 'quotes'>('sav');
   
   const { orderItems, loading, markAsOrdered, removeFromOrder, getOrdersByFilter } = useOrders();
 
@@ -51,8 +51,17 @@ export default function Orders() {
     switch (reason) {
       case 'sav_stock_zero': return 'SAV - Stock épuisé';
       case 'quote_needed': return 'Devis en cours';
-      case 'manual': return 'Ajout manuel';
+      case 'manual': return 'Réapprovisionnement';
       default: return reason;
+    }
+  };
+
+  const getEmptyMessage = () => {
+    switch (activeFilter) {
+      case 'sav': return 'Aucune pièce manquante pour les SAV';
+      case 'quotes': return 'Aucune pièce manquante pour les devis';
+      case 'all': return 'Aucune pièce en dessous du stock minimum';
+      default: return 'Aucune pièce trouvée';
     }
   };
 
@@ -161,11 +170,10 @@ export default function Orders() {
 
               {/* Filtres */}
               <Tabs value={activeFilter} onValueChange={(value) => setActiveFilter(value as any)} className="mb-6">
-                <TabsList className="grid w-full grid-cols-4">
-                  <TabsTrigger value="pending">En attente</TabsTrigger>
+                <TabsList className="grid w-full grid-cols-3">
                   <TabsTrigger value="sav">SAV</TabsTrigger>
                   <TabsTrigger value="quotes">Devis</TabsTrigger>
-                  <TabsTrigger value="all">Toutes</TabsTrigger>
+                  <TabsTrigger value="all">Stock minimum</TabsTrigger>
                 </TabsList>
               </Tabs>
 
@@ -176,7 +184,7 @@ export default function Orders() {
                     <CardContent className="text-center py-8">
                       <Package className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
                       <p className="text-muted-foreground">
-                        {searchTerm ? 'Aucune commande trouvée' : 'Aucune commande en attente'}
+                        {searchTerm ? 'Aucune pièce trouvée' : getEmptyMessage()}
                       </p>
                     </CardContent>
                   </Card>
