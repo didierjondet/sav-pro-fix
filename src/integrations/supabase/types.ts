@@ -717,6 +717,17 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      invite_user_to_shop: {
+        Args: {
+          p_email: string
+          p_first_name: string
+          p_last_name: string
+          p_phone: string
+          p_role: Database["public"]["Enums"]["user_role"]
+          p_shop_id: string
+        }
+        Returns: Json
+      }
       is_shop_admin: {
         Args: { check_user_id?: string }
         Returns: boolean

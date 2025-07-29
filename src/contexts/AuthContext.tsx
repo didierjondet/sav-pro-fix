@@ -26,10 +26,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(session?.user ?? null);
         setLoading(false);
         
-        // NO AUTOMATIC REDIRECTIONS - Let users navigate freely
-        // Only redirect on SIGNED_IN event and only if we're on auth page
-        if (event === 'SIGNED_IN' && session?.user && window.location.pathname === '/auth') {
-          // Check if user has a profile and their role
+        // Redirection après connexion/inscription
+        if (event === 'SIGNED_IN' && session?.user) {
+          // Vérifier si l'utilisateur a un profil et son rôle
           supabase
             .from('profiles')
             .select('id, role, shop_id')
@@ -38,12 +37,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             .then(({ data, error }) => {
               if (error) {
                 console.error('Error checking profile:', error);
+                // Pas de profil trouvé, rediriger vers création de boutique
                 window.location.href = '/create-shop';
               } else if (!data) {
+                // Pas de profil, rediriger vers création de boutique
                 window.location.href = '/create-shop';
               } else if (data.role === 'super_admin') {
+                // Super admin vers panel admin
                 window.location.href = '/super-admin';
               } else {
+                // Utilisateur normal vers dashboard
                 window.location.href = '/';
               }
             });

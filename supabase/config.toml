@@ -38,3 +38,6 @@ verify_jwt = true
 
 [functions.customer-portal]
 verify_jwt = true
+
+[functions.send-invitation]
+verify_jwt = true

@@ -117,10 +117,10 @@ export default function ShopManagementDialog({ shop, isOpen, onClose, onUpdate }
   };
 
   const handleCreateUser = async () => {
-    if (!newUserEmail || !newUserPassword) {
+    if (!newUserEmail) {
       toast({
         title: "Erreur",
-        description: "Email et mot de passe requis",
+        description: "Email requis",
         variant: "destructive",
       });
       return;
@@ -128,28 +128,31 @@ export default function ShopManagementDialog({ shop, isOpen, onClose, onUpdate }
 
     setLoading(true);
     try {
-      // Utiliser la nouvelle fonction qui fonctionne pour les super admins
-      const { data, error } = await supabase.rpc('create_real_user_for_shop', {
-        p_email: newUserEmail,
-        p_password: newUserPassword,
-        p_first_name: '',
-        p_last_name: '',
-        p_phone: '',
-        p_role: newUserRole,
-        p_shop_id: shop.id
+      // Utiliser la nouvelle fonction d'invitation
+      const { data, error } = await supabase.functions.invoke('send-invitation', {
+        body: {
+          email: newUserEmail,
+          firstName: '',
+          lastName: '',
+          phone: '',
+          role: newUserRole
+        }
       });
 
       if (error) throw error;
 
-      toast({
-        title: "Succès",
-        description: "Profil utilisateur créé avec succès",
-      });
+      if (data.success) {
+        toast({
+          title: "Succès",
+          description: `Invitation envoyée à ${newUserEmail}`,
+        });
 
-      setNewUserEmail('');
-      setNewUserPassword('');
-      setNewUserRole('technician');
-      fetchUsers();
+        setNewUserEmail('');
+        setNewUserRole('technician');
+        fetchUsers();
+      } else {
+        throw new Error(data.error);
+      }
     } catch (error: any) {
       toast({
         title: "Erreur",
@@ -585,19 +588,13 @@ export default function ShopManagementDialog({ shop, isOpen, onClose, onUpdate }
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-4">
-                  <Label>Créer un nouvel utilisateur</Label>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <Label>Inviter un nouvel utilisateur</Label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <Input
                       type="email"
                       placeholder="Email"
                       value={newUserEmail}
                       onChange={(e) => setNewUserEmail(e.target.value)}
-                    />
-                    <Input
-                      type="password"
-                      placeholder="Mot de passe"
-                      value={newUserPassword}
-                      onChange={(e) => setNewUserPassword(e.target.value)}
                     />
                     <Select value={newUserRole} onValueChange={(value: 'admin' | 'technician') => setNewUserRole(value)}>
                       <SelectTrigger>
@@ -609,9 +606,12 @@ export default function ShopManagementDialog({ shop, isOpen, onClose, onUpdate }
                       </SelectContent>
                     </Select>
                   </div>
-                  <Button onClick={handleCreateUser} disabled={loading} className="w-full">
-                    <UserPlus className="h-4 w-4 mr-2" />
-                    Créer l'utilisateur
+                  <p className="text-sm text-muted-foreground">
+                    Un email d'invitation sera envoyé à cette adresse
+                  </p>
+                  <Button onClick={handleCreateUser} disabled={loading || !newUserEmail} className="w-full">
+                    <Mail className="h-4 w-4 mr-2" />
+                    {loading ? "Envoi..." : "Envoyer l'invitation"}
                   </Button>
                 </div>
 
