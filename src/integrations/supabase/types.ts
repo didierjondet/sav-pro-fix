@@ -362,6 +362,7 @@ export type Database = {
           technician_id: string | null
           total_cost: number | null
           total_time_minutes: number | null
+          tracking_slug: string | null
           updated_at: string
         }
         Insert: {
@@ -380,6 +381,7 @@ export type Database = {
           technician_id?: string | null
           total_cost?: number | null
           total_time_minutes?: number | null
+          tracking_slug?: string | null
           updated_at?: string
         }
         Update: {
@@ -398,6 +400,7 @@ export type Database = {
           technician_id?: string | null
           total_cost?: number | null
           total_time_minutes?: number | null
+          tracking_slug?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -717,6 +720,10 @@ export type Database = {
       }
       generate_shop_slug: {
         Args: { shop_name: string }
+        Returns: string
+      }
+      generate_tracking_slug: {
+        Args: { customer_name: string }
         Returns: string
       }
       get_current_user_role: {

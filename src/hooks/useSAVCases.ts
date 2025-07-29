@@ -5,6 +5,7 @@ import { useToast } from '@/hooks/use-toast';
 export interface SAVCase {
   id: string;
   case_number: string;
+  tracking_slug?: string;
   sav_type: 'client' | 'internal';
   status: 'pending' | 'in_progress' | 'testing' | 'ready' | 'delivered' | 'cancelled';
   device_brand: string;

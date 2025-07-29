@@ -29,9 +29,9 @@ export default function SAVDetail() {
   }, [cases, id]);
 
   const generateTrackingUrl = () => {
-    if (!savCase) return '';
+    if (!savCase?.tracking_slug) return '';
     const baseUrl = window.location.origin;
-    return `${baseUrl}/track/${savCase.case_number}`;
+    return `${baseUrl}/${savCase.tracking_slug}`;
   };
 
   const generateQRCode = async () => {
@@ -201,11 +201,12 @@ export default function SAVDetail() {
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div>
-                      <label className="text-sm font-medium">Lien de suivi pour le client</label>
+                      <label className="text-sm font-medium">Lien de suivi simplifié pour le client</label>
                       <div className="mt-2 p-3 bg-muted rounded-lg border text-sm break-all">
-                        {generateTrackingUrl()}
+                        {savCase?.tracking_slug ? generateTrackingUrl() : 'Slug de suivi non généré'}
                       </div>
                       <p className="text-xs text-muted-foreground mt-1">
+                        Lien simplifié : <strong>fixway.fr/{savCase?.tracking_slug || 'nomclient123'}</strong><br/>
                         Le client pourra suivre l'état de sa réparation et communiquer avec vous via ce lien
                       </p>
                     </div>

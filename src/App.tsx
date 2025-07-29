@@ -11,6 +11,7 @@ import SAVList from "./pages/SAVList";
 import NewSAV from "./pages/NewSAV";
 import SAVDetail from "./pages/SAVDetail";
 import TrackSAV from "./pages/TrackSAV";
+import SimpleTrack from "./pages/SimpleTrack";
 import Parts from "./pages/Parts";
 import Quotes from "./pages/Quotes";
 import Customers from "./pages/Customers";
@@ -40,6 +41,7 @@ const App = () => (
             <Route path="/sav/new" element={<NewSAV />} />
             <Route path="/sav/:id" element={<SAVDetail />} />
             <Route path="/track/:caseNumber" element={<TrackSAV />} />
+            <Route path="/:slug" element={<SimpleTrack />} />
             <Route path="/parts" element={<Parts />} />
             <Route path="/quotes" element={<Quotes />} />
             <Route path="/orders" element={<Orders />} />
