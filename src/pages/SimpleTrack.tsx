@@ -9,7 +9,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { supabase } from '@/integrations/supabase/client';
 import { useSAVMessages } from '@/hooks/useSAVMessages';
-import { MessageSquare, Send, Smartphone, AlertCircle, CheckCircle, Clock, Package } from 'lucide-react';
+import { MessageSquare, Send, Smartphone, AlertCircle, CheckCircle, Clock, Package, Wifi } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
@@ -89,6 +89,7 @@ export default function SimpleTrack() {
   const [clientName, setClientName] = useState('');
   const [newMessage, setNewMessage] = useState('');
   const [isSendingMessage, setIsSendingMessage] = useState(false);
+  const [isRealTimeConnected, setIsRealTimeConnected] = useState(false);
   
   const { toast } = useToast();
   const { messages, sendMessage, markAsRead } = useSAVMessages(savCase?.id || '');
@@ -130,6 +131,12 @@ export default function SimpleTrack() {
           });
         }
       )
+      .on('system', {}, (status) => {
+        if (status.type === 'connection') {
+          console.log('Realtime connection status:', status);
+          setIsRealTimeConnected(status.status === 'connected');
+        }
+      })
       .subscribe();
 
     return () => {
@@ -251,7 +258,15 @@ export default function SimpleTrack() {
               {savCase.shop?.name || 'SAV Pro Fix'}
             </h1>
           </div>
-          <p className="text-gray-600">Suivi de votre dossier SAV</p>
+          <div className="flex items-center justify-center gap-2 mb-2">
+            <p className="text-gray-600">Suivi de votre dossier SAV</p>
+            {isRealTimeConnected && (
+              <div className="flex items-center gap-1 text-green-600 text-sm">
+                <Wifi className="h-4 w-4" />
+                <span>Temps réel</span>
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="grid gap-6 md:grid-cols-2">
