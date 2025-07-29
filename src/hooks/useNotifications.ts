@@ -145,6 +145,30 @@ export function useNotifications() {
     });
   };
 
+  const createSAVMessageNotification = async (savCaseId: string, caseNumber: string, senderType: 'shop' | 'client') => {
+    const title = senderType === 'client' ? 'Nouveau message client' : 'Nouvelle réponse SAV';
+    const message = `Nouveau message dans le SAV: ${caseNumber}`;
+    
+    // Play notification sound
+    try {
+      const audio = new Audio('/notification.mp3');
+      audio.volume = 0.3;
+      audio.play().catch(() => {
+        // Fallback to system notification sound
+        console.log('🔔 SAV notification');
+      });
+    } catch (error) {
+      console.log('🔔 SAV notification');
+    }
+    
+    return await createNotification({
+      type: 'general',
+      title,
+      message,
+      sav_case_id: savCaseId
+    });
+  };
+
   return {
     notifications,
     loading,
@@ -152,6 +176,7 @@ export function useNotifications() {
     createNotification,
     createStockAlert,
     createSupportMessageNotification,
+    createSAVMessageNotification,
     markAsRead,
     markAllAsRead,
     refetch: fetchNotifications,
