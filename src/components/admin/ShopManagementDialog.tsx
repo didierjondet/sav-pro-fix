@@ -129,7 +129,7 @@ export default function ShopManagementDialog({ shop, isOpen, onClose, onUpdate }
     setLoading(true);
     try {
       // Utiliser la nouvelle fonction qui fonctionne pour les super admins
-      const { data, error } = await supabase.rpc('create_user_for_shop', {
+      const { data, error } = await supabase.rpc('create_real_user_for_shop', {
         p_email: newUserEmail,
         p_password: newUserPassword,
         p_first_name: '',
