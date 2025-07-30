@@ -9,7 +9,6 @@ export interface Shop {
   email: string;
   phone: string;
   address: string;
-  sms_credits: number;
   invite_code: string;
   logo_url: string;
   max_sav_processing_days_client: number;
@@ -20,6 +19,12 @@ export interface Shop {
   slug: string;
   created_at: string;
   updated_at: string;
+  subscription_tier?: string;
+  subscription_plan_id?: string;
+  sms_credits_allocated?: number;
+  sms_credits_used?: number;
+  active_sav_count?: number;
+  subscription_end?: string;
 }
 
 export function useShop() {

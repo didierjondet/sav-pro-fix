@@ -657,11 +657,11 @@ export type Database = {
           name: string
           phone: string | null
           slug: string | null
-          sms_credits: number | null
           sms_credits_allocated: number | null
           sms_credits_used: number | null
           subscription_end: string | null
           subscription_menu_visible: boolean
+          subscription_plan_id: string | null
           subscription_tier: string | null
           updated_at: string
           website_description: string | null
@@ -681,11 +681,11 @@ export type Database = {
           name: string
           phone?: string | null
           slug?: string | null
-          sms_credits?: number | null
           sms_credits_allocated?: number | null
           sms_credits_used?: number | null
           subscription_end?: string | null
           subscription_menu_visible?: boolean
+          subscription_plan_id?: string | null
           subscription_tier?: string | null
           updated_at?: string
           website_description?: string | null
@@ -705,18 +705,26 @@ export type Database = {
           name?: string
           phone?: string | null
           slug?: string | null
-          sms_credits?: number | null
           sms_credits_allocated?: number | null
           sms_credits_used?: number | null
           subscription_end?: string | null
           subscription_menu_visible?: boolean
+          subscription_plan_id?: string | null
           subscription_tier?: string | null
           updated_at?: string
           website_description?: string | null
           website_enabled?: boolean | null
           website_title?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "shops_subscription_plan_id_fkey"
+            columns: ["subscription_plan_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_plans"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       sms_history: {
         Row: {

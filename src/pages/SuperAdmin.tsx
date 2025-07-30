@@ -77,9 +77,16 @@ interface Shop {
   email: string;
   phone: string;
   address: string;
+  invite_code: string;
+  logo_url: string;
+  website_enabled: boolean;
+  website_title: string;
+  website_description: string;
+  max_sav_processing_days_client: number;
+  max_sav_processing_days_internal: number;
   slug: string;
-  sms_credits: number;
   subscription_tier: string;
+  subscription_plan_id?: string;
   sms_credits_allocated: number;
   sms_credits_used: number;
   active_sav_count: number;
@@ -158,8 +165,7 @@ export default function SuperAdmin() {
     name: '',
     email: '',
     phone: '',
-    address: '',
-    sms_credits: 100
+    address: ''
   });
   
   const [newUser, setNewUser] = useState({
@@ -300,7 +306,7 @@ export default function SuperAdmin() {
 
       setShops([...shops, data]);
       setIsCreateShopOpen(false);
-      setNewShop({ name: '', email: '', phone: '', address: '', sms_credits: 100 });
+      setNewShop({ name: '', email: '', phone: '', address: '' });
       
       toast({
         title: "Succès",
@@ -321,8 +327,7 @@ export default function SuperAdmin() {
       name: shop.name,
       email: shop.email || '',
       phone: shop.phone || '',
-      address: shop.address || '',
-      sms_credits: shop.sms_credits
+      address: shop.address || ''
     });
     setIsEditShopOpen(true);
   };
@@ -348,7 +353,7 @@ export default function SuperAdmin() {
       setShops(shops.map(shop => shop.id === editingShop.id ? { ...shop, ...data } : shop));
       setIsEditShopOpen(false);
       setEditingShop(null);
-      setNewShop({ name: '', email: '', phone: '', address: '', sms_credits: 100 });
+      setNewShop({ name: '', email: '', phone: '', address: '' });
       
       toast({
         title: "Succès",

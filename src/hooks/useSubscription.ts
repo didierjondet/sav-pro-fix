@@ -35,7 +35,7 @@ export function useSubscription() {
       
       if (error) throw error;
       
-      // Also get current shop data for limits
+      // Also get current shop data for limits and subscription plan
       const { data: profileData } = await supabase
         .from('profiles')
         .select('shop_id')
@@ -45,16 +45,30 @@ export function useSubscription() {
       if (profileData?.shop_id) {
         const { data: shopData } = await supabase
           .from('shops')
-          .select('subscription_tier, sms_credits_allocated, sms_credits_used, active_sav_count')
+          .select(`
+            subscription_tier, 
+            sms_credits_allocated, 
+            sms_credits_used, 
+            active_sav_count,
+            subscription_plan_id,
+            subscription_plans!inner(
+              name,
+              sms_limit,
+              sms_cost,
+              sav_limit,
+              monthly_price
+            )
+          `)
           .eq('id', profileData.shop_id)
           .single();
 
-        if (shopData) {
+        if (shopData && shopData.subscription_plans) {
+          const plan = shopData.subscription_plans;
           setSubscription({
             subscribed: data.subscribed || false,
-            subscription_tier: (shopData.subscription_tier as 'free' | 'premium' | 'enterprise') || 'free',
+            subscription_tier: plan.name.toLowerCase() as 'free' | 'premium' | 'enterprise',
             subscription_end: data.subscription_end,
-            sms_credits_allocated: shopData.sms_credits_allocated || 15,
+            sms_credits_allocated: plan.sms_limit || 15,
             sms_credits_used: shopData.sms_credits_used || 0,
             active_sav_count: shopData.active_sav_count || 0,
           });
@@ -125,17 +139,18 @@ export function useSubscription() {
 
     const { subscription_tier, sms_credits_used, sms_credits_allocated, active_sav_count } = subscription;
 
-    // Vérification des limites SAV
+    // Vérification des limites SAV basées sur le plan
     if (action === 'sav' || !action) {
       if (subscription_tier === 'free' && active_sav_count >= 15) {
-        return { allowed: false, reason: "Plan gratuit limité à 15 SAV actifs" };
+        return { allowed: false, reason: "Plan Gratuit limité à 15 SAV actifs" };
       }
       if (subscription_tier === 'premium' && active_sav_count >= 10) {
         return { allowed: false, reason: "Plan Premium limité à 10 SAV simultanés" };
       }
+      // Enterprise = illimité
     }
 
-    // Vérification des limites SMS
+    // Vérification des limites SMS basées sur le plan
     if (action === 'sms' || !action) {
       const smsUsed = sms_credits_used || 0;
       const smsAllocated = sms_credits_allocated || 0;
