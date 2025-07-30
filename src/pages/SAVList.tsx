@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Header } from '@/components/layout/Header';
 import { Sidebar } from '@/components/layout/Sidebar';
@@ -6,7 +6,11 @@ import { SAVDashboard } from '@/components/sav/SAVDashboard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useSAVCases } from '@/hooks/useSAVCases';
+import { useShop } from '@/hooks/useShop';
+import { formatDelayText, calculateSAVDelay } from '@/hooks/useSAVDelay';
+import { SAVQRCodePrint } from '@/components/sav/SAVQRCodePrint';
 import { 
   Eye, 
   Edit, 
@@ -15,7 +19,8 @@ import {
   AlertCircle,
   Package,
   User,
-  Trash2
+  Trash2,
+  QrCode
 } from 'lucide-react';
 
 const statusColors = {
@@ -38,8 +43,18 @@ const statusLabels = {
 
 export default function SAVList() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [qrCodeCase, setQrCodeCase] = useState(null);
   const { cases, loading, deleteCase } = useSAVCases();
+  const { shop } = useShop();
   const navigate = useNavigate();
+
+  // Calculer les informations de délai pour tous les cas
+  const casesWithDelayInfo = useMemo(() => {
+    return cases.map((case_) => ({
+      ...case_,
+      delayInfo: calculateSAVDelay(case_, shop)
+    }));
+  }, [cases, shop]);
 
   if (loading) {
     return (
@@ -73,7 +88,7 @@ export default function SAVList() {
               </div>
 
           <div className="grid gap-4">
-            {cases.length === 0 ? (
+            {casesWithDelayInfo.length === 0 ? (
               <Card>
                 <CardContent className="text-center py-8">
                   <p className="text-muted-foreground">Aucun dossier SAV trouvé</p>
@@ -83,7 +98,7 @@ export default function SAVList() {
                 </CardContent>
               </Card>
             ) : (
-              cases.map((savCase) => (
+              casesWithDelayInfo.map((savCase) => (
                 <Card key={savCase.id} className="hover:shadow-md transition-shadow">
                   <CardContent className="p-6">
                     <div className="flex items-center justify-between">
@@ -115,7 +130,7 @@ export default function SAVList() {
                           
                           <div className="flex items-center gap-2">
                             <Clock className="h-4 w-4" />
-                            <span>{savCase.total_time_minutes} min</span>
+                            <span>{formatDelayText(savCase.delayInfo)}</span>
                           </div>
                         </div>
                         
@@ -133,6 +148,25 @@ export default function SAVList() {
                           <Edit className="h-4 w-4 mr-1" />
                           Modifier
                         </Button>
+                        {savCase.sav_type === 'client' && (
+                          <Dialog>
+                            <DialogTrigger asChild>
+                              <Button variant="outline" size="sm">
+                                <QrCode className="h-4 w-4 mr-1" />
+                                QR Code
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                              <DialogHeader>
+                                <DialogTitle>Impression QR Code - Dossier {savCase.case_number}</DialogTitle>
+                              </DialogHeader>
+                              <SAVQRCodePrint 
+                                savCase={savCase} 
+                                onClose={() => {}} 
+                              />
+                            </DialogContent>
+                          </Dialog>
+                        )}
                         <Button 
                           variant="outline" 
                           size="sm"
