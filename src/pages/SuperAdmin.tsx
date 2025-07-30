@@ -98,6 +98,21 @@ interface Profile {
   };
 }
 
+interface SupportTicket {
+  id: string;
+  shop_id: string;
+  created_by: string;
+  subject: string;
+  description: string;
+  status: 'open' | 'in_progress' | 'resolved' | 'closed';
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  created_at: string;
+  shop?: {
+    name: string;
+    email?: string;
+  };
+}
+
 export default function SuperAdmin() {
   const { user, signOut, loading: authLoading } = useAuth();
   const { toast } = useToast();
@@ -105,6 +120,8 @@ export default function SuperAdmin() {
   
   const [shops, setShops] = useState<Shop[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [supportTickets, setSupportTickets] = useState<SupportTicket[]>([]);
+  const [activeSupportCount, setActiveSupportCount] = useState(0);
   const [isCreateShopOpen, setIsCreateShopOpen] = useState(false);
   const [isCreateUserOpen, setIsCreateUserOpen] = useState(false);
   const [isEditShopOpen, setIsEditShopOpen] = useState(false);
@@ -143,6 +160,25 @@ export default function SuperAdmin() {
       fetchData();
     }
   }, [user, authLoading]);
+
+  const fetchSupportTickets = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('support_tickets')
+        .select(`
+          *,
+          shop:shops(name, email)
+        `)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      
+      setSupportTickets((data || []) as SupportTicket[]);
+      setActiveSupportCount((data || []).filter(ticket => ticket.status === 'open' || ticket.status === 'in_progress').length);
+    } catch (error: any) {
+      console.error('Error fetching support tickets:', error);
+    }
+  };
 
   const fetchData = async () => {
     try {
@@ -642,7 +678,12 @@ export default function SuperAdmin() {
     totalShops: shops.length,
     totalUsers: profiles.length,
     totalRevenue: shops.reduce((sum, shop) => sum + (shop.total_revenue || 0), 0),
-    totalCases: shops.reduce((sum, shop) => sum + (shop.total_sav_cases || 0), 0)
+    totalCases: shops.reduce((sum, shop) => sum + (shop.total_sav_cases || 0), 0),
+    totalSubscriptionRevenue: shops.reduce((sum, shop) => {
+      const tierPrices = { 'free': 0, 'premium': 12, 'enterprise': 40 };
+      return sum + (tierPrices[shop.subscription_tier as keyof typeof tierPrices] || 0);
+    }, 0),
+    activeSupportTickets: activeSupportCount,
   };
 
   return (
@@ -738,7 +779,7 @@ export default function SuperAdmin() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-slate-600 font-medium">Chiffre d'affaires</p>
+                  <p className="text-slate-600 font-medium">CA généré par le réseau</p>
                   <p className="text-3xl font-bold text-slate-900">{totalStats.totalRevenue.toFixed(2)}€</p>
                 </div>
                 <div className="p-3 bg-yellow-100 rounded-lg">
@@ -1345,13 +1386,88 @@ export default function SuperAdmin() {
                 <CardTitle className="flex items-center gap-2 text-slate-900">
                   <HelpCircle className="h-5 w-5" />
                   Gestion du Support
+                  <Badge variant="secondary" className="ml-2">
+                    {supportTickets.filter(t => t.status === 'open' || t.status === 'in_progress').length} actifs
+                  </Badge>
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-center py-8 text-slate-600">
-                  <HelpCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p className="text-lg font-medium">Interface de support en développement</p>
-                  <p>Les magasins peuvent créer des tickets depuis leur espace Support</p>
+                <div className="space-y-4">
+                  {supportTickets.length === 0 ? (
+                    <div className="text-center py-8 text-slate-600">
+                      <HelpCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p className="text-lg font-medium">Aucun ticket de support</p>
+                      <p>Les magasins peuvent créer des tickets depuis leur espace Support</p>
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full divide-y divide-slate-200">
+                        <thead className="bg-slate-50">
+                          <tr>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                              Ticket
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                              Magasin
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                              Statut
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                              Priorité
+                            </th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                              Date
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-slate-200">
+                          {supportTickets.map((ticket) => (
+                            <tr key={ticket.id} className="hover:bg-slate-50">
+                              <td className="px-6 py-4">
+                                <div>
+                                  <div className="text-sm font-medium text-slate-900">
+                                    {ticket.subject}
+                                  </div>
+                                  <div className="text-sm text-slate-500 truncate max-w-xs">
+                                    {ticket.description}
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="text-sm text-slate-900">{ticket.shop?.name}</div>
+                                <div className="text-sm text-slate-500">{ticket.shop?.email}</div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <Badge variant={
+                                  ticket.status === 'open' ? 'destructive' : 
+                                  ticket.status === 'in_progress' ? 'default' : 
+                                  ticket.status === 'resolved' ? 'secondary' : 'outline'
+                                }>
+                                  {ticket.status === 'open' ? 'Ouvert' :
+                                   ticket.status === 'in_progress' ? 'En cours' :
+                                   ticket.status === 'resolved' ? 'Résolu' : 'Fermé'}
+                                </Badge>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <Badge variant={
+                                  ticket.priority === 'urgent' ? 'destructive' : 
+                                  ticket.priority === 'high' ? 'default' : 'outline'
+                                }>
+                                  {ticket.priority === 'urgent' ? 'Urgent' :
+                                   ticket.priority === 'high' ? 'Élevée' :
+                                   ticket.priority === 'medium' ? 'Moyenne' : 'Faible'}
+                                </Badge>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
+                                {new Date(ticket.created_at).toLocaleDateString('fr-FR')}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
