@@ -251,11 +251,11 @@ export default function SimpleTrack() {
           <div className="flex items-center justify-center gap-3 mb-2">
             <img 
               src="/lovable-uploads/3d99a913-9d52-4f6c-9a65-78b3bd561739.png" 
-              alt="Logo SAV Pro Fix" 
+              alt="Logo fixway.fr" 
               className="h-12 w-12 object-contain"
             />
             <h1 className="text-3xl font-bold text-gray-800">
-              {savCase.shop?.name || 'SAV Pro Fix'}
+              {savCase.shop?.name || 'fixway.fr'}
             </h1>
           </div>
           <div className="flex items-center justify-center gap-2 mb-2">
