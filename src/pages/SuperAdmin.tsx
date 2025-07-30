@@ -64,7 +64,7 @@ import { Switch } from '@/components/ui/switch';
 // Fonction pour calculer le revenu des abonnements basé sur les plans
 const calculateSubscriptionRevenue = (shops: any[]) => {
   // Prix des plans basés sur les plans d'abonnement créés
-  const planPrices = { 'free': 0, 'premium': 12, 'enterprise': 40 };
+  const planPrices = { 'free': 0, 'premium': 29, 'enterprise': 99 };
   
   return shops.reduce((sum, shop) => {
     return sum + (planPrices[shop.subscription_tier as keyof typeof planPrices] || 0);
