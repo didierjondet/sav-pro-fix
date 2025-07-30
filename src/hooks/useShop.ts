@@ -41,6 +41,8 @@ export function useShop() {
     if (!user) return;
     
     try {
+      console.log('useShop: Fetching profile for user:', user.id);
+      
       // Récupérer d'abord le profil de l'utilisateur pour obtenir son shop_id
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
@@ -48,11 +50,16 @@ export function useShop() {
         .eq('user_id', user.id)
         .maybeSingle();
 
+      console.log('useShop: Profile fetch result:', { profile, profileError });
+
       if (profileError) throw profileError;
       if (!profile?.shop_id) {
+        console.log('useShop: No shop_id found in profile');
         setShop(null);
         return;
       }
+
+      console.log('useShop: Fetching shop data for shop_id:', profile.shop_id);
 
       // Récupérer les données du magasin
       const { data, error } = await supabase
@@ -60,6 +67,8 @@ export function useShop() {
         .select('*')
         .eq('id', profile.shop_id)
         .maybeSingle();
+
+      console.log('useShop: Shop fetch result:', { data, error });
 
       if (error) throw error;
       setShop(data);
