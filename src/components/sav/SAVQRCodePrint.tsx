@@ -159,16 +159,25 @@ export function SAVQRCodePrint({ savCase, onClose }: SAVQRCodePrintProps) {
         <body>
           <!-- Première QR Code -->
           <div class="qr-section">
-            <div class="shop-header">
-              ${shop?.logo_url ? `<img src="${shop.logo_url}" alt="Logo" class="shop-logo" />` : ''}
-              <div class="shop-info">
-                <div class="shop-name">${shop?.name || 'Nom du magasin'}</div>
-                <div class="shop-details">
-                  ${shop?.address || ''}<br>
-                  ${shop?.phone ? 'Tél: ' + shop.phone : ''} ${shop?.email ? '| Email: ' + shop.email : ''}
+            ${shop ? `
+              <div class="shop-header">
+                ${shop.logo_url ? `<img src="${shop.logo_url}" alt="${shop.name}" class="shop-logo" />` : ''}
+                <div class="shop-info">
+                  <div class="shop-name">${shop.name}</div>
+                  <div class="shop-details">
+                    ${shop.address ? shop.address + '<br>' : ''}
+                    ${shop.phone ? 'Tél: ' + shop.phone : ''} ${shop.email ? ' | Email: ' + shop.email : ''}
+                  </div>
                 </div>
               </div>
-            </div>
+            ` : `
+              <div class="shop-header">
+                <div class="shop-info">
+                  <div class="shop-name">Nom du magasin</div>
+                  <div class="shop-details">Informations non disponibles</div>
+                </div>
+              </div>
+            `}
             
             <div class="content">
               <div class="qr-info">
@@ -187,16 +196,25 @@ export function SAVQRCodePrint({ savCase, onClose }: SAVQRCodePrintProps) {
           
           <!-- Deuxième QR Code (identique) -->
           <div class="qr-section-duplicate">
-            <div class="shop-header">
-              ${shop?.logo_url ? `<img src="${shop.logo_url}" alt="Logo" class="shop-logo" />` : ''}
-              <div class="shop-info">
-                <div class="shop-name">${shop?.name || 'Nom du magasin'}</div>
-                <div class="shop-details">
-                  ${shop?.address || ''}<br>
-                  ${shop?.phone ? 'Tél: ' + shop.phone : ''} ${shop?.email ? '| Email: ' + shop.email : ''}
+            ${shop ? `
+              <div class="shop-header">
+                ${shop.logo_url ? `<img src="${shop.logo_url}" alt="${shop.name}" class="shop-logo" />` : ''}
+                <div class="shop-info">
+                  <div class="shop-name">${shop.name}</div>
+                  <div class="shop-details">
+                    ${shop.address ? shop.address + '<br>' : ''}
+                    ${shop.phone ? 'Tél: ' + shop.phone : ''} ${shop.email ? ' | Email: ' + shop.email : ''}
+                  </div>
                 </div>
               </div>
-            </div>
+            ` : `
+              <div class="shop-header">
+                <div class="shop-info">
+                  <div class="shop-name">Nom du magasin</div>
+                  <div class="shop-details">Informations non disponibles</div>
+                </div>
+              </div>
+            `}
             
             <div class="content">
               <div class="qr-info">
