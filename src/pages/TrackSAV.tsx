@@ -33,6 +33,13 @@ interface SAVCaseData {
     email?: string;
     phone?: string;
   };
+  shop?: {
+    name: string;
+    phone?: string;
+    email?: string;
+    address?: string;
+    logo_url?: string;
+  };
 }
 
 const statusConfig = {
@@ -119,7 +126,8 @@ export default function TrackSAV() {
         .from('sav_cases')
         .select(`
           *,
-          customer:customers(first_name, last_name, email, phone)
+          customer:customers(first_name, last_name, email, phone),
+          shop:shops(name, phone, email, address, logo_url)
         `)
         .eq('case_number', caseNumber)
         .single();
@@ -186,10 +194,47 @@ export default function TrackSAV() {
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-4xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="text-center space-y-2">
-          <h1 className="text-3xl font-bold">Suivi de votre dossier SAV</h1>
+        {/* Header avec logo/nom du magasin */}
+        <div className="text-center space-y-4">
+          <div className="flex items-center justify-center gap-3 mb-2">
+            {savCase.shop?.logo_url ? (
+              <img 
+                src={savCase.shop.logo_url} 
+                alt="Logo du magasin" 
+                className="h-12 w-12 object-contain"
+              />
+            ) : (
+              <img 
+                src="/lovable-uploads/3d99a913-9d52-4f6c-9a65-78b3bd561739.png" 
+                alt="Logo fixway.fr" 
+                className="h-12 w-12 object-contain"
+              />
+            )}
+            <h1 className="text-3xl font-bold">
+              {savCase.shop?.name || 'fixway.fr'}
+            </h1>
+          </div>
+          <p className="text-muted-foreground">Suivi de votre dossier SAV</p>
           <p className="text-muted-foreground">Dossier n° {savCase.case_number}</p>
+          
+          {/* Coordonnées du magasin */}
+          {savCase.shop && (
+            <div className="text-sm text-muted-foreground space-y-1">
+              {savCase.shop.phone && (
+                <p>📞 {savCase.shop.phone}</p>
+              )}
+              {savCase.shop.email && (
+                <p>✉️ {savCase.shop.email}</p>
+              )}
+              {savCase.shop.address && (
+                <p>📍 {savCase.shop.address}</p>
+              )}
+            </div>
+          )}
+          
+          <div className="text-xs text-muted-foreground">
+            Propulsé par <span className="font-medium">fixway.fr</span>
+          </div>
         </div>
 
         {/* Status */}
