@@ -114,7 +114,7 @@ export default function Parts() {
                       <CardContent className="p-6">
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className="text-sm text-muted-foreground">Quantité totale</p>
+                            <p className="text-sm text-muted-foreground">Pièces en stock</p>
                             <p className="text-2xl font-bold">{totalParts}</p>
                           </div>
                           <BarChart3 className="h-8 w-8 text-green-600" />
@@ -155,7 +155,7 @@ export default function Parts() {
                         <div className="flex items-center gap-2 text-yellow-800">
                           <AlertTriangle className="h-5 w-5" />
                         <span className="font-medium">
-                          {lowStockParts.length} produit(s) en stock faible
+                          {lowStockParts.length} référence(s) en stock faible
                         </span>
                         </div>
                       </CardContent>
