@@ -13,7 +13,10 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
 import { useShop } from '@/hooks/useShop';
 import { useProfile } from '@/hooks/useProfile';
+import { useSubscription } from '@/hooks/useSubscription';
 import { supabase } from '@/integrations/supabase/client';
+import { SMSPurchaseSection } from '@/components/sms/SMSPurchaseSection';
+import { SMSHistory } from '@/components/sms/SMSHistory';
 import { 
   Store, 
   Users, 
@@ -64,6 +67,7 @@ export default function Settings() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { shop, updateShop: updateShopData } = useShop();
   const { profile, refetch: refetchProfile } = useProfile();
+  const { subscription } = useSubscription();
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
@@ -465,48 +469,32 @@ export default function Settings() {
               </Card>
             </TabsContent>
 
-            <TabsContent value="sms">
+            <TabsContent value="sms" className="space-y-6">
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Mail className="h-5 w-5" />
-                    Gestion des Crédits SMS
+                    Crédits SMS - Plan {subscription?.subscription_tier || 'free'}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
-                    <div>
-                      <h3 className="font-medium">Crédits disponibles</h3>
-                      <p className="text-sm text-muted-foreground">
-                        Nombre de SMS restants pour les notifications clients
-                      </p>
-                    </div>
-                    <div className="text-right">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="p-4 bg-muted rounded-lg">
+                      <h3 className="font-medium mb-1">Crédits disponibles</h3>
                       <div className="text-2xl font-bold">{shop?.sms_credits || 0}</div>
-                      <div className="text-sm text-muted-foreground">SMS</div>
+                      <p className="text-sm text-muted-foreground">SMS restants</p>
                     </div>
-                  </div>
-                  
-                  <div className="space-y-4">
-                    <div className="p-4 border rounded-lg">
-                      <h4 className="font-medium mb-2">Acheter des crédits SMS</h4>
-                      <p className="text-sm text-muted-foreground mb-4">
-                        Cette fonctionnalité sera bientôt disponible. Vous pourrez acheter des crédits SMS pour envoyer des notifications automatiques à vos clients.
-                      </p>
-                      <Button disabled>
-                        Acheter des crédits
-                      </Button>
-                    </div>
-                    
-                    <div className="p-4 border rounded-lg">
-                      <h4 className="font-medium mb-2">Historique d'utilisation</h4>
-                      <p className="text-sm text-muted-foreground">
-                        L'historique de vos envois SMS sera affiché ici.
-                      </p>
+                    <div className="p-4 bg-muted rounded-lg">
+                      <h3 className="font-medium mb-1">Utilisés ce mois</h3>
+                      <div className="text-2xl font-bold">{subscription?.sms_credits_used || 0}</div>
+                      <p className="text-sm text-muted-foreground">SMS envoyés</p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
+              
+              <SMSPurchaseSection />
+              <SMSHistory />
             </TabsContent>
 
             <TabsContent value="profile">

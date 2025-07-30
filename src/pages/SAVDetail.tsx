@@ -13,6 +13,7 @@ import { QrCode, ExternalLink, ArrowLeft, Copy, Share } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { SAVPartsEditor } from '@/components/sav/SAVPartsEditor';
 import { SAVPartsRequirements } from '@/components/sav/SAVPartsRequirements';
+import { SendSMSButton } from '@/components/sms/SendSMSButton';
 
 export default function SAVDetail() {
   const { id } = useParams<{ id: string }>();
@@ -239,6 +240,17 @@ export default function SAVDetail() {
                         <ExternalLink className="h-4 w-4 mr-2" />
                         Prévisualiser
                       </Button>
+                      {savCase.customers?.phone && (
+                        <SendSMSButton
+                          recipientPhone={savCase.customers.phone}
+                          recipientName={`${savCase.customers.first_name} ${savCase.customers.last_name}`}
+                          type="sav"
+                          recordId={savCase.id}
+                          variant="outline"
+                          size="sm"
+                          className="flex-1 sm:flex-initial"
+                        />
+                      )}
                     </div>
                   </CardContent>
                 </Card>

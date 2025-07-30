@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
+import { SendSMSButton } from '@/components/sms/SendSMSButton';
 import { Download, Mail, X } from 'lucide-react';
 
 interface QuoteViewProps {
@@ -129,7 +130,7 @@ export function QuoteView({ quote, isOpen, onClose, onDownloadPDF, onSendEmail }
           <Separator />
 
           {/* Actions */}
-          <div className="flex justify-end gap-2">
+          <div className="flex justify-end gap-2 flex-wrap">
             <Button variant="outline" onClick={() => onDownloadPDF(quote)}>
               <Download className="h-4 w-4 mr-2" />
               Télécharger PDF
@@ -139,6 +140,15 @@ export function QuoteView({ quote, isOpen, onClose, onDownloadPDF, onSendEmail }
                 <Mail className="h-4 w-4 mr-2" />
                 Envoyer par email
               </Button>
+            )}
+            {quote.customer_phone && (
+              <SendSMSButton
+                recipientPhone={quote.customer_phone}
+                recipientName={quote.customer_name}
+                type="quote"
+                recordId={quote.id}
+                variant="outline"
+              />
             )}
           </div>
         </div>
