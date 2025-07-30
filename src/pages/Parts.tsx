@@ -154,9 +154,9 @@ export default function Parts() {
                       <CardContent className="p-4">
                         <div className="flex items-center gap-2 text-yellow-800">
                           <AlertTriangle className="h-5 w-5" />
-                          <span className="font-medium">
-                            {lowStockParts.length} pièce(s) en stock faible
-                          </span>
+                        <span className="font-medium">
+                          {lowStockParts.length} produit(s) en stock faible
+                        </span>
                         </div>
                       </CardContent>
                     </Card>
