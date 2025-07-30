@@ -715,6 +715,45 @@ export type Database = {
         }
         Relationships: []
       }
+      sms_history: {
+        Row: {
+          created_at: string
+          id: string
+          message: string
+          ovh_job_id: string | null
+          record_id: string | null
+          shop_id: string
+          status: string
+          to_number: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message: string
+          ovh_job_id?: string | null
+          record_id?: string | null
+          shop_id: string
+          status?: string
+          to_number: string
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string
+          ovh_job_id?: string | null
+          record_id?: string | null
+          shop_id?: string
+          status?: string
+          to_number?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       subscribers: {
         Row: {
           active_sav_count: number | null
