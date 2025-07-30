@@ -360,17 +360,17 @@ export default function Support() {
                                   className={`flex ${message.sender_type === 'shop' ? 'justify-end' : 'justify-start'}`}
                                 >
                                   <div
-                                    className={`max-w-[80%] p-3 rounded-lg ${
-                                      message.sender_type === 'shop'
-                                        ? 'bg-primary text-primary-foreground'
-                                        : 'bg-muted'
-                                    }`}
+                                     className={`max-w-[80%] p-3 rounded-lg ${
+                                       message.sender_type === 'shop'
+                                         ? 'bg-blue-500 text-white rounded-br-sm'
+                                         : 'bg-gray-200 text-gray-900 rounded-bl-sm'
+                                     }`}
                                   >
                                     <p className="text-sm">{message.message}</p>
                                     <div className="flex items-center justify-between mt-1">
-                                      <span className="text-xs opacity-70">
-                                        {message.sender_type === 'shop' ? 'Vous' : 'Support'}
-                                      </span>
+                                       <span className="text-xs opacity-70">
+                                         {message.sender_type === 'shop' ? 'Vous' : message.sender_type === 'admin' ? 'Support' : 'Support'}
+                                       </span>
                                       <span className="text-xs opacity-70">
                                         {formatDistanceToNow(new Date(message.created_at), { 
                                           addSuffix: true, 
