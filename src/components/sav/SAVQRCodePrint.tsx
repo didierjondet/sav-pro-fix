@@ -20,7 +20,13 @@ export function SAVQRCodePrint({ savCase, onClose }: SAVQRCodePrintProps) {
   const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(`https://${trackingUrl}`)}`;
 
   useEffect(() => {
-    console.log('Shop data:', shop); // Debug
+    // Attendre que les données du shop soient chargées
+    if (!shop) {
+      console.log('Shop data not loaded yet, waiting...');
+      return;
+    }
+    
+    console.log('Shop data loaded:', shop);
     
     // Créer une nouvelle fenêtre pour l'impression
     const printWindow = window.open('', '_blank');
