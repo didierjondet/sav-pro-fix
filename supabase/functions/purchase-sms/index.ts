@@ -122,7 +122,7 @@ serve(async (req) => {
         },
       ],
       mode: "payment",
-      success_url: `${req.headers.get("origin")}/settings?tab=sms&success=true`,
+      success_url: `${req.headers.get("origin")}/sms-purchase-success?credits=${credits}`,
       cancel_url: `${req.headers.get("origin")}/settings?tab=sms&cancelled=true`,
       metadata: {
         type: "sms_purchase",

@@ -55,19 +55,18 @@ serve(async (req) => {
     }
     logStep("Customer lookup completed", { customerId });
 
-    // Define pricing
-    const prices = {
-      premium: {
-        amount: 3900, // 39€ in cents
-        name: "MySAV Premium - 10 SAV simultanés, 100 SMS/mois"
-      },
-      enterprise: {
-        amount: 5900, // 59€ in cents  
-        name: "MySAV Enterprise - SAV illimités, 400 SMS/mois"
-      }
-    };
+    // Get real pricing from database
+    const { data: plans, error: plansError } = await supabaseClient
+      .from('subscription_plans')
+      .select('*')
+      .eq('is_active', true);
 
-    const selectedPrice = prices[plan as keyof typeof prices];
+    if (plansError) throw new Error(`Error fetching plans: ${plansError.message}`);
+    
+    const planData = plans?.find(p => p.name.toLowerCase() === plan.toLowerCase());
+    if (!planData) throw new Error(`Plan ${plan} not found`);
+
+    logStep("Plan data found", { planId: planData.id, price: planData.monthly_price });
 
     // Create checkout session
     const session = await stripe.checkout.sessions.create({
@@ -78,10 +77,10 @@ serve(async (req) => {
           price_data: {
             currency: "eur",
             product_data: { 
-              name: selectedPrice.name,
-              description: `Abonnement MySAV ${plan === 'premium' ? 'Premium' : 'Enterprise'}`
+              name: `MySAV ${planData.name}`,
+              description: planData.description || `Abonnement MySAV ${planData.name}`
             },
-            unit_amount: selectedPrice.amount,
+            unit_amount: Math.round(planData.monthly_price * 100), // Convert to cents
             recurring: { interval: "month" },
           },
           quantity: 1,
@@ -92,7 +91,9 @@ serve(async (req) => {
       cancel_url: `${req.headers.get("origin")}/subscription?cancelled=true`,
       metadata: {
         user_id: user.id,
-        plan: plan
+        user_email: user.email,
+        plan: plan,
+        plan_id: planData.id
       }
     });
 

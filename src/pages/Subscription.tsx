@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSubscription } from '@/hooks/useSubscription';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -21,62 +22,50 @@ export default function Subscription() {
     }
   }, [user]);
 
-  const plans = [
+  // Charger les plans depuis la base de données
+  const [plans, setPlans] = useState([
     {
-      id: 'free',
+      id: 'gratuit',
       name: 'Gratuit',
       price: '0€',
       period: '/mois',
       icon: CheckCircle,
-      features: [
-        '15 SAV maximum',
-        '15 SMS gratuits/mois',
-        'Support par email',
-        'Fonctionnalités de base'
-      ],
-      limits: {
-        sav: 15,
-        sms: 15
-      }
-    },
-    {
-      id: 'premium',
-      name: 'Premium',
-      price: '39€',
-      period: '/mois HT',
-      icon: Crown,
-      features: [
-        '10 SAV simultanés',
-        '100 SMS inclus/mois',
-        'Support prioritaire',
-        'Statistiques avancées',
-        'Notifications en temps réel'
-      ],
-      limits: {
-        sav: 10,
-        sms: 100
-      }
-    },
-    {
-      id: 'enterprise',
-      name: 'Enterprise',
-      price: '59€',
-      period: '/mois HT',
-      icon: Infinity,
-      features: [
-        'SAV illimités',
-        '400 SMS inclus/mois',
-        'Support 24/7',
-        'API complète',
-        'Rapports personnalisés',
-        'Formation incluse'
-      ],
-      limits: {
-        sav: 999999,
-        sms: 400
-      }
+      features: ['15 SAV maximum', '15 SMS gratuits/mois', 'Support par email'],
+      limits: { sav: 15, sms: 15 }
     }
-  ];
+  ]);
+
+  useEffect(() => {
+    const fetchPlans = async () => {
+      try {
+        const { data: dbPlans } = await supabase
+          .from('subscription_plans')
+          .select('*')
+          .eq('is_active', true)
+          .order('monthly_price');
+
+        if (dbPlans) {
+          const formattedPlans = dbPlans.map(plan => ({
+            id: plan.name.toLowerCase(),
+            name: plan.name,
+            price: `${plan.monthly_price}€`,
+            period: plan.monthly_price > 0 ? '/mois HT' : '/mois',
+            icon: plan.name === 'Enterprise' ? Infinity : plan.name === 'Premium' ? Crown : CheckCircle,
+            features: Array.isArray(plan.features) ? plan.features.map(f => String(f)) : [],
+            limits: {
+              sav: plan.sav_limit || 999999,
+              sms: plan.sms_limit || 0
+            }
+          }));
+          setPlans(formattedPlans);
+        }
+      } catch (error) {
+        console.error('Error fetching plans:', error);
+      }
+    };
+
+    fetchPlans();
+  }, []);
 
   const getCurrentPlan = () => {
     return plans.find(plan => plan.id === subscription?.subscription_tier) || plans[0];
