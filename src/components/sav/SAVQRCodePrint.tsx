@@ -45,19 +45,34 @@ export function SAVQRCodePrint({ savCase, onClose }: SAVQRCodePrintProps) {
             .header {
               display: flex;
               justify-content: space-between;
-              align-items: center;
+              align-items: flex-start;
               margin-bottom: 40px;
               border-bottom: 2px solid #333;
               padding-bottom: 20px;
             }
+            .logo-section {
+              flex: 0 0 auto;
+              margin-right: 20px;
+            }
             .logo {
-              max-height: 80px;
-              max-width: 200px;
+              max-height: 100px;
+              max-width: 250px;
+              object-fit: contain;
             }
             .shop-info {
-              text-align: right;
+              flex: 1;
+              text-align: left;
               font-size: 14px;
-              line-height: 1.4;
+              line-height: 1.6;
+            }
+            .shop-name {
+              font-size: 20px;
+              font-weight: bold;
+              color: #333;
+              margin-bottom: 10px;
+            }
+            .shop-details {
+              color: #555;
             }
             .main-content {
               flex: 1;
@@ -118,14 +133,17 @@ export function SAVQRCodePrint({ savCase, onClose }: SAVQRCodePrintProps) {
         </head>
         <body>
           <div class="header">
-            <div>
-              ${shop?.logo_url ? `<img src="${shop.logo_url}" alt="Logo" class="logo" />` : '<div style="width: 200px;"></div>'}
+            <div class="logo-section">
+              ${shop?.logo_url ? `<img src="${shop.logo_url}" alt="Logo ${shop.name}" class="logo" />` : ''}
             </div>
             <div class="shop-info">
-              <strong>${shop?.name || 'Nom du magasin'}</strong><br>
-              ${shop?.address ? shop.address + '<br>' : ''}
-              ${shop?.phone ? 'Tél: ' + shop.phone + '<br>' : ''}
-              ${shop?.email ? 'Email: ' + shop.email : ''}
+              <div class="shop-name">${shop?.name || 'Nom du magasin'}</div>
+              <div class="shop-details">
+                ${shop?.address ? shop.address + '<br>' : ''}
+                ${shop?.phone ? 'Tél: ' + shop.phone + '<br>' : ''}
+                ${shop?.email ? 'Email: ' + shop.email + '<br>' : ''}
+                ${shop?.website_enabled && shop?.slug ? 'Site web: www.fixway.fr/' + shop.slug : ''}
+              </div>
             </div>
           </div>
           
