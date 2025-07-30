@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { multiWordSearch } from '@/utils/searchUtils';
 import { Header } from '@/components/layout/Header';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -25,8 +26,7 @@ export default function Orders() {
   const { orderItems, loading, markAsOrdered, removeFromOrder, getOrdersByFilter } = useOrders();
 
   const filteredItems = getOrdersByFilter(activeFilter).filter(item =>
-    item.part_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    item.part_reference?.toLowerCase().includes(searchTerm.toLowerCase())
+    multiWordSearch(searchTerm, item.part_name, item.part_reference)
   );
 
   const getPriorityColor = (priority: string) => {

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { multiWordSearch } from '@/utils/searchUtils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -22,8 +23,7 @@ export function QuoteForm({ onSubmit, onCancel }: QuoteFormProps) {
   const [selectedItems, setSelectedItems] = useState<QuoteItem[]>([]);
 
   const filteredParts = parts.filter(part =>
-    part.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (part.reference && part.reference.toLowerCase().includes(searchTerm.toLowerCase()))
+    multiWordSearch(searchTerm, part.name, part.reference)
   );
 
   const addPartToQuote = (partId: string) => {

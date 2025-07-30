@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { multiWordSearch } from '@/utils/searchUtils';
 import { Header } from '@/components/layout/Header';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -43,8 +44,7 @@ export default function Parts() {
   const { parts, loading, createPart, updatePart, deletePart, adjustStock, refetch } = useParts();
 
   const filteredParts = parts.filter(part =>
-    part.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (part.reference && part.reference.toLowerCase().includes(searchTerm.toLowerCase()))
+    multiWordSearch(searchTerm, part.name, part.reference)
   );
 
   const lowStockParts = parts.filter(part => (part.quantity || 0) <= (part.min_stock || 0));

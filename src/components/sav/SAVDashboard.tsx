@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { multiWordSearch } from '@/utils/searchUtils';
 import { Plus, Search, Filter, MoreHorizontal, Eye, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -47,12 +48,15 @@ export function SAVDashboard() {
     }));
   }, [cases, shop]);
 
-  const filteredCases = casesWithDelayInfo.filter(
-    (case_) =>
-      case_.customer?.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      case_.customer?.last_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      case_.case_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      case_.device_brand.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredCases = casesWithDelayInfo.filter(case_ =>
+    multiWordSearch(
+      searchTerm, 
+      case_.customer?.first_name, 
+      case_.customer?.last_name, 
+      case_.case_number, 
+      case_.device_brand,
+      case_.device_model
+    )
   );
 
   return (
