@@ -20,7 +20,6 @@ interface ImportedPart {
   prix_public?: number;
   prix_achat_ht?: number;
   prix_ttc?: number;
-  date_prix?: string;
   temp_rep_min?: number;
   // Mapped fields
   name: string;
@@ -48,7 +47,7 @@ export function ImportStock({ onBack, onRefresh }: ImportStatsProps) {
   const expectedColumns = [
     'Marque', 'Model', 'Pieces', 'QT', 'Fournisseur', 
     'Prix public', 'Prix achat ht', 'Prix ttc', 
-    'DATE PRIX', 'Temp rep (min)'
+    'Temp rep (min)'
   ];
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -133,7 +132,6 @@ export function ImportStock({ onBack, onRefresh }: ImportStatsProps) {
         prix_public: parseFloat(normalizedRow['prix_public']) || 0,
         prix_achat_ht: parseFloat(normalizedRow['prix_achat_ht']) || 0,
         prix_ttc: parseFloat(normalizedRow['prix_ttc']) || 0,
-        date_prix: normalizedRow['date_prix'] || '',
         temp_rep_min: parseInt(normalizedRow['temp_rep_(min)'] || normalizedRow['temp_rep_min']) || 0,
         // Mapped fields for parts table
         name,
