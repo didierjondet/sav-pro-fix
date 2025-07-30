@@ -77,12 +77,6 @@ interface ShopManagementDialogProps {
   onUpdate: () => void;
 }
 
-const SUBSCRIPTION_TIERS = [
-  { id: 'free', name: 'Gratuit', price: 0, sav_limit: 15, sms_limit: 15 },
-  { id: 'premium', name: 'Premium', price: 29, sav_limit: 10, sms_limit: 100 },
-  { id: 'enterprise', name: 'Enterprise', price: 99, sav_limit: null, sms_limit: 400 }
-];
-
 export default function ShopManagementDialog({ shop, isOpen, onClose, onUpdate }: ShopManagementDialogProps) {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
@@ -94,17 +88,36 @@ export default function ShopManagementDialog({ shop, isOpen, onClose, onUpdate }
   const [newUserEmail, setNewUserEmail] = useState('');
   const [newUserPassword, setNewUserPassword] = useState('');
   const [newUserRole, setNewUserRole] = useState<'admin' | 'technician'>('technician');
+  const [subscriptionPlans, setSubscriptionPlans] = useState<any[]>([]);
 
   useEffect(() => {
     if (shop?.id) {
       fetchUsers();
+      fetchSubscriptionPlans();
       setSubscriptionMenuVisible(shop.subscription_menu_visible ?? true);
     }
   }, [shop?.id, shop?.subscription_menu_visible]);
 
   if (!shop) return null;
 
-  const currentTier = SUBSCRIPTION_TIERS.find(tier => tier.id === shop.subscription_tier);
+  const currentTier = subscriptionPlans.find(plan => 
+    plan.name.toLowerCase() === shop.subscription_tier?.toLowerCase()
+  );
+
+  const fetchSubscriptionPlans = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('subscription_plans')
+        .select('*')
+        .eq('is_active', true)
+        .order('monthly_price');
+
+      if (error) throw error;
+      setSubscriptionPlans(data || []);
+    } catch (error: any) {
+      console.error('Error fetching subscription plans:', error);
+    }
+  };
 
   const fetchUsers = async () => {
     if (!shop) return;
@@ -256,13 +269,13 @@ export default function ShopManagementDialog({ shop, isOpen, onClose, onUpdate }
     
     setLoading(true);
     try {
-      const tierConfig = SUBSCRIPTION_TIERS.find(t => t.id === newSubscriptionTier);
+      const selectedPlan = subscriptionPlans.find(plan => plan.name.toLowerCase() === newSubscriptionTier.toLowerCase());
       
       const { error } = await supabase
         .from('shops')
         .update({
           subscription_tier: newSubscriptionTier,
-          sms_credits_allocated: tierConfig?.sms_limit || 15,
+          sms_credits_allocated: selectedPlan?.sms_limit || 15,
           subscription_end: newSubscriptionTier === 'free' ? null : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
         })
         .eq('id', shop.id);
@@ -271,7 +284,7 @@ export default function ShopManagementDialog({ shop, isOpen, onClose, onUpdate }
 
       toast({
         title: "Succès",
-        description: `Abonnement mis à jour vers ${tierConfig?.name}`,
+        description: `Abonnement mis à jour vers ${selectedPlan?.name || newSubscriptionTier}`,
       });
       
       onUpdate();
@@ -526,7 +539,7 @@ export default function ShopManagementDialog({ shop, isOpen, onClose, onUpdate }
                       {currentTier?.name}
                     </Badge>
                     <span className="text-sm text-muted-foreground">
-                      {currentTier?.price}€/mois
+                      {currentTier?.monthly_price}€/mois
                     </span>
                   </div>
                 </div>
@@ -540,9 +553,9 @@ export default function ShopManagementDialog({ shop, isOpen, onClose, onUpdate }
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {SUBSCRIPTION_TIERS.map(tier => (
-                        <SelectItem key={tier.id} value={tier.id}>
-                          {tier.name} - {tier.price}€/mois
+                      {subscriptionPlans.map(plan => (
+                        <SelectItem key={plan.id} value={plan.name.toLowerCase()}>
+                          {plan.name} - {plan.monthly_price}€/mois
                         </SelectItem>
                       ))}
                     </SelectContent>
