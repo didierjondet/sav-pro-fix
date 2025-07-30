@@ -46,7 +46,7 @@ export function ImportStock({ onBack, onRefresh }: ImportStatsProps) {
   const { toast } = useToast();
 
   const expectedColumns = [
-    'Marque', 'Model', 'Pieces', 'Fournisseur', 
+    'Marque', 'Model', 'Pieces', 'QT', 'Fournisseur', 
     'Prix public', 'Prix achat ht', 'Prix ttc', 
     'DATE PRIX', 'Temp rep (min)'
   ];
@@ -140,7 +140,7 @@ export function ImportStock({ onBack, onRefresh }: ImportStatsProps) {
         reference,
         selling_price: parseFloat(normalizedRow['prix_public']) || 0,
         purchase_price: parseFloat(normalizedRow['prix_achat_ht']) || 0,
-        quantity: 0, // Default quantity
+        quantity: parseInt(normalizedRow['qt'] || normalizedRow['quantite'] || normalizedRow['quantité']) || 0,
         min_stock: 5, // Default min stock
       };
 
@@ -327,6 +327,7 @@ export function ImportStock({ onBack, onRefresh }: ImportStatsProps) {
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
                 Les colonnes "Marque", "Model" et "Pieces" sont obligatoires. 
+                La colonne "QT" permet de définir la quantité en stock.
                 Le nom final sera généré comme : "Marque Model - Pieces"
               </AlertDescription>
             </Alert>
@@ -400,6 +401,7 @@ export function ImportStock({ onBack, onRefresh }: ImportStatsProps) {
                       <div className="font-medium">{item.name}</div>
                       <div className="text-sm text-muted-foreground">
                         Réf: {item.reference} | 
+                        Quantité: {item.quantity} | 
                         Achat: {item.purchase_price}€ | 
                         Vente: {item.selling_price}€
                       </div>
