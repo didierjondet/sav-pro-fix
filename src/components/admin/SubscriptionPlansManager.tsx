@@ -44,8 +44,7 @@ interface SubscriptionPlan {
   id: string;
   name: string;
   description: string;
-  price: number;
-  currency: string;
+  monthly_price: number;
   billing_interval: 'month' | 'year';
   sav_limit: number | null;
   sms_limit: number;
@@ -54,6 +53,7 @@ interface SubscriptionPlan {
   stripe_price_id: string | null;
   is_active: boolean;
   created_at: string;
+  updated_at: string;
 }
 
 export default function SubscriptionPlansManager() {
@@ -67,8 +67,7 @@ export default function SubscriptionPlansManager() {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    price: 0,
-    currency: 'EUR',
+    monthly_price: 0,
     billing_interval: 'month' as 'month' | 'year',
     sav_limit: null as number | null,
     sms_limit: 15,
@@ -84,57 +83,23 @@ export default function SubscriptionPlansManager() {
 
   const fetchPlans = async () => {
     try {
-      // Pour l'instant, on utilise des données locales
-      // Dans une vraie implémentation, on aurait une table subscription_plans
-      const mockPlans: SubscriptionPlan[] = [
-        {
-          id: '1',
-          name: 'Gratuit',
-          description: 'Plan de base pour découvrir la plateforme',
-          price: 0,
-          currency: 'EUR',
-          billing_interval: 'month',
-          sav_limit: 15,
-          sms_limit: 15,
-          sms_cost: 0.12,
-          features: ['15 SAV maximum', '15 SMS par mois', 'Support email'],
-          stripe_price_id: null,
-          is_active: true,
-          created_at: new Date().toISOString()
-        },
-        {
-          id: '2',
-          name: 'Premium',
-          description: 'Plan professionnel pour les petites entreprises',
-          price: 29,
-          currency: 'EUR',
-          billing_interval: 'month',
-          sav_limit: 10,
-          sms_limit: 100,
-          sms_cost: 0.08,
-          features: ['10 SAV simultanés', '100 SMS par mois', 'Support prioritaire', 'Rapports avancés'],
-          stripe_price_id: 'price_premium_monthly',
-          is_active: true,
-          created_at: new Date().toISOString()
-        },
-        {
-          id: '3',
-          name: 'Enterprise',
-          description: 'Plan enterprise pour les grandes organisations',
-          price: 99,
-          currency: 'EUR',
-          billing_interval: 'month',
-          sav_limit: null,
-          sms_limit: 400,
-          sms_cost: 0.05,
-          features: ['SAV illimités', '400 SMS par mois', 'Support 24/7', 'API personnalisée'],
-          stripe_price_id: 'price_enterprise_monthly',
-          is_active: true,
-          created_at: new Date().toISOString()
-        }
-      ];
+      const { data, error } = await supabase
+        .from('subscription_plans')
+        .select('*')
+        .order('monthly_price');
+
+      if (error) throw error;
       
-      setPlans(mockPlans);
+      // Transform data to match our interface
+      const transformedPlans = (data || []).map(plan => ({
+        ...plan,
+        description: plan.description || '',
+        billing_interval: plan.billing_interval as 'month' | 'year',
+        features: Array.isArray(plan.features) ? plan.features.map(f => String(f)) : [],
+        stripe_price_id: plan.stripe_price_id || null
+      }));
+      
+      setPlans(transformedPlans);
     } catch (error: any) {
       toast({
         title: "Erreur",
@@ -150,8 +115,7 @@ export default function SubscriptionPlansManager() {
     setFormData({
       name: '',
       description: '',
-      price: 0,
-      currency: 'EUR',
+      monthly_price: 0,
       billing_interval: 'month',
       sav_limit: null,
       sms_limit: 15,
@@ -164,15 +128,32 @@ export default function SubscriptionPlansManager() {
 
   const handleCreatePlan = async () => {
     try {
-      // Dans une vraie implémentation, on créerait le plan en base
-      const newPlan: SubscriptionPlan = {
-        id: Date.now().toString(),
-        ...formData,
-        features: formData.features.split('\n').filter(f => f.trim()),
-        created_at: new Date().toISOString()
-      };
-      
-      setPlans([...plans, newPlan]);
+      const { data, error } = await supabase
+        .from('subscription_plans')
+        .insert({
+          name: formData.name,
+          description: formData.description,
+          monthly_price: formData.monthly_price,
+          billing_interval: formData.billing_interval,
+          sav_limit: formData.sav_limit,
+          sms_limit: formData.sms_limit,
+          sms_cost: formData.sms_cost,
+          features: formData.features.split('\n').filter(f => f.trim()),
+          stripe_price_id: formData.stripe_price_id || null,
+          is_active: formData.is_active
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setPlans([...plans, {
+        ...data,
+        description: data.description || '',
+        billing_interval: data.billing_interval as 'month' | 'year',
+        features: Array.isArray(data.features) ? data.features.map(f => String(f)) : [],
+        stripe_price_id: data.stripe_price_id || null
+      }]);
       setIsCreateOpen(false);
       resetForm();
       
@@ -202,13 +183,33 @@ export default function SubscriptionPlansManager() {
     if (!editingPlan) return;
     
     try {
-      const updatedPlan: SubscriptionPlan = {
-        ...editingPlan,
-        ...formData,
-        features: formData.features.split('\n').filter(f => f.trim())
-      };
-      
-      setPlans(plans.map(plan => plan.id === editingPlan.id ? updatedPlan : plan));
+      const { data, error } = await supabase
+        .from('subscription_plans')
+        .update({
+          name: formData.name,
+          description: formData.description,
+          monthly_price: formData.monthly_price,
+          billing_interval: formData.billing_interval,
+          sav_limit: formData.sav_limit,
+          sms_limit: formData.sms_limit,
+          sms_cost: formData.sms_cost,
+          features: formData.features.split('\n').filter(f => f.trim()),
+          stripe_price_id: formData.stripe_price_id || null,
+          is_active: formData.is_active
+        })
+        .eq('id', editingPlan.id)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setPlans(plans.map(plan => plan.id === editingPlan.id ? {
+        ...data,
+        description: data.description || '',
+        billing_interval: data.billing_interval as 'month' | 'year',
+        features: Array.isArray(data.features) ? data.features.map(f => String(f)) : [],
+        stripe_price_id: data.stripe_price_id || null
+      } : plan));
       setIsEditOpen(false);
       setEditingPlan(null);
       resetForm();
@@ -228,6 +229,13 @@ export default function SubscriptionPlansManager() {
 
   const handleDeletePlan = async (planId: string) => {
     try {
+      const { error } = await supabase
+        .from('subscription_plans')
+        .delete()
+        .eq('id', planId);
+
+      if (error) throw error;
+
       setPlans(plans.filter(plan => plan.id !== planId));
       
       toast({
@@ -294,8 +302,8 @@ export default function SubscriptionPlansManager() {
                   <div className="flex gap-2">
                     <Input
                       type="number"
-                      value={formData.price}
-                      onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })}
+                      value={formData.monthly_price}
+                      onChange={(e) => setFormData({ ...formData, monthly_price: parseFloat(e.target.value) || 0 })}
                     />
                     <select
                       value={formData.billing_interval}
@@ -400,7 +408,7 @@ export default function SubscriptionPlansManager() {
                     {!plan.is_active && <Badge variant="secondary">Inactif</Badge>}
                   </CardTitle>
                   <div className="text-2xl font-bold text-primary">
-                    {plan.price}€
+                    {plan.monthly_price}€
                     <span className="text-sm font-normal text-muted-foreground">
                       /{plan.billing_interval === 'month' ? 'mois' : 'an'}
                     </span>
@@ -512,8 +520,8 @@ export default function SubscriptionPlansManager() {
                 <div className="flex gap-2">
                   <Input
                     type="number"
-                    value={formData.price}
-                    onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })}
+                    value={formData.monthly_price}
+                    onChange={(e) => setFormData({ ...formData, monthly_price: parseFloat(e.target.value) || 0 })}
                   />
                   <select
                     value={formData.billing_interval}
