@@ -220,13 +220,13 @@ export default function SupportTicketManager({ ticket, onBack }: SupportTicketMa
                 messages.map((message) => (
                   <div
                     key={message.id}
-                    className={`flex ${message.sender_type === 'admin' ? 'justify-end' : 'justify-start'}`}
+                    className={`flex mb-4 ${message.sender_type === 'admin' ? 'justify-end' : 'justify-start'}`}
                   >
                     <div
                       className={`max-w-xs lg:max-w-md px-4 py-3 rounded-lg ${
                         message.sender_type === 'admin'
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-slate-100 text-slate-900'
+                          ? 'bg-blue-100 text-blue-900 rounded-br-sm'
+                          : 'bg-slate-100 text-slate-900 rounded-bl-sm'
                       }`}
                     >
                       <div className="flex items-center gap-2 mb-1">
@@ -235,7 +235,7 @@ export default function SupportTicketManager({ ticket, onBack }: SupportTicketMa
                         ) : (
                           <User className="h-3 w-3" />
                         )}
-                        <span className="text-xs opacity-75">
+                        <span className="text-xs opacity-75 font-medium">
                           {message.sender_type === 'admin' ? 'Support' : 'Magasin'}
                         </span>
                         <span className="text-xs opacity-75 ml-auto">
