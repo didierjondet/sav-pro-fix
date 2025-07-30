@@ -11,8 +11,13 @@ interface SAVQRCodePrintProps {
 export function SAVQRCodePrint({ savCase, onClose }: SAVQRCodePrintProps) {
   const { shop } = useShop();
 
-  const trackingUrl = `${window.location.origin}/track/${savCase.case_number}`;
-  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(trackingUrl)}`;
+  // Créer l'URL raccourcie du style www.fixway.fr/nom_du_magasin/nom_du_client
+  const shopName = shop?.name?.toLowerCase().replace(/[^a-z0-9]/g, '_') || 'magasin';
+  const clientName = savCase.customer 
+    ? `${savCase.customer.first_name}_${savCase.customer.last_name}`.toLowerCase().replace(/[^a-z0-9]/g, '_')
+    : 'client';
+  const trackingUrl = `www.fixway.fr/${shopName}/${clientName}`;
+  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(`https://${trackingUrl}`)}`;
 
   useEffect(() => {
     // Créer une nouvelle fenêtre pour l'impression
@@ -118,9 +123,9 @@ export function SAVQRCodePrint({ savCase, onClose }: SAVQRCodePrintProps) {
             </div>
             <div class="shop-info">
               <strong>${shop?.name || 'Nom du magasin'}</strong><br>
-              ${shop?.address || 'Adresse'}<br>
-              ${shop?.phone || 'Téléphone'}<br>
-              ${shop?.email || 'Email'}
+              ${shop?.address ? shop.address + '<br>' : ''}
+              ${shop?.phone ? 'Tél: ' + shop.phone + '<br>' : ''}
+              ${shop?.email ? 'Email: ' + shop.email : ''}
             </div>
           </div>
           
@@ -136,6 +141,8 @@ export function SAVQRCodePrint({ savCase, onClose }: SAVQRCodePrintProps) {
               <p><strong>Scannez ce QR code</strong> avec votre smartphone pour suivre l'état de votre réparation en temps réel.</p>
               <p>Ou rendez-vous directement sur :</p>
               <div class="url">${trackingUrl}</div>
+              <p style="margin-top: 15px;"><strong>Appareil :</strong> ${savCase.device_brand} ${savCase.device_model}</p>
+              ${savCase.customer ? `<p><strong>Client :</strong> ${savCase.customer.first_name} ${savCase.customer.last_name}</p>` : ''}
             </div>
           </div>
           
