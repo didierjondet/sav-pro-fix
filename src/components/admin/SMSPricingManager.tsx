@@ -12,6 +12,8 @@ export function SMSPricingManager() {
   const [editingPrices, setEditingPrices] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState<string | null>(null);
 
+  console.log('SMSPricingManager render:', { pricing, loading });
+
   const handlePriceChange = (tier: string, value: string) => {
     setEditingPrices(prev => ({
       ...prev,
@@ -66,7 +68,25 @@ export function SMSPricingManager() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-center py-4">Chargement...</div>
+          <div className="text-center py-4">Chargement des prix SMS...</div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!pricing || pricing.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <MessageSquare className="h-5 w-5" />
+            Gestion des Prix SMS
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-4 text-red-500">
+            Erreur : Impossible de charger les prix SMS. Vérifiez les politiques RLS.
+          </div>
         </CardContent>
       </Card>
     );

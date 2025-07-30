@@ -26,8 +26,13 @@ export function useSMSPricing() {
         .select('*')
         .order('subscription_tier');
 
-      if (error) throw error;
-      setPricing(data as SMSPricing[] || []);
+      if (error) {
+        console.error('SMS Pricing fetch error:', error);
+        throw error;
+      }
+      
+      console.log('SMS Pricing data:', data);
+      setPricing((data || []) as SMSPricing[]);
     } catch (error: any) {
       toast({
         title: "Erreur",
