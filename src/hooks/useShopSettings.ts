@@ -23,23 +23,34 @@ export function useShopSettings() {
   const fetchShopSettings = async () => {
     if (!user) return;
     
+    console.log('🔍 Fetching shop settings for user:', user.id);
+    
     try {
       // Récupérer l'ID du magasin de l'utilisateur
-      const { data: profileData } = await supabase
+      const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('shop_id')
         .eq('user_id', user.id)
         .single();
 
+      console.log('👤 Profile data:', profileData, profileError);
+
+      if (profileError) throw profileError;
+
       if (profileData?.shop_id) {
         // Récupérer les paramètres du magasin
-        const { data: shopData } = await supabase
+        const { data: shopData, error: shopError } = await supabase
           .from('shops')
           .select('subscription_menu_visible')
           .eq('id', profileData.shop_id)
           .single();
 
+        console.log('🏪 Shop data:', shopData, shopError);
+
+        if (shopError) throw shopError;
+
         if (shopData) {
+          console.log('✅ Setting subscription_menu_visible to:', shopData.subscription_menu_visible);
           setSettings({
             subscription_menu_visible: shopData.subscription_menu_visible ?? true
           });

@@ -1031,40 +1031,6 @@ export default function SuperAdmin() {
                               <Badge variant="outline" className="border-blue-600 text-blue-700">
                                 {shop.total_sav_cases} dossier(s) SAV
                               </Badge>
-                              <div className="flex items-center gap-2 ml-auto">
-                                <span className="text-sm text-slate-600">Menu Abonnement:</span>
-                                <Switch
-                                  checked={shop.subscription_menu_visible}
-                                  onCheckedChange={async (checked) => {
-                                    try {
-                                      const { error } = await supabase
-                                        .from('shops')
-                                        .update({ subscription_menu_visible: checked })
-                                        .eq('id', shop.id);
-                                      
-                                      if (error) throw error;
-                                      
-                                      // Mettre à jour l'état local
-                                      setShops(shops.map(s => 
-                                        s.id === shop.id 
-                                          ? { ...s, subscription_menu_visible: checked }
-                                          : s
-                                      ));
-                                      
-                                      toast({
-                                        title: "Succès",
-                                        description: `Menu abonnement ${checked ? 'activé' : 'désactivé'} pour ${shop.name}`,
-                                      });
-                                    } catch (error: any) {
-                                      toast({
-                                        title: "Erreur",
-                                        description: error.message,
-                                        variant: "destructive",
-                                      });
-                                    }
-                                  }}
-                                />
-                              </div>
                             </div>
                             
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm mb-2">

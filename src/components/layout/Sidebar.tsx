@@ -44,8 +44,15 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 
   // Créer la navigation dynamique selon les paramètres du magasin
   const navigation = [...baseNavigation];
+  
+  console.log('🔧 Sidebar settings:', settings);
+  console.log('📋 Menu visible:', settings?.subscription_menu_visible);
+  
   if (settings?.subscription_menu_visible) {
+    console.log('✅ Adding subscription menu to navigation');
     navigation.push({ name: 'Abonnement', href: '/subscription', icon: CreditCard });
+  } else {
+    console.log('❌ Subscription menu hidden');
   }
 
   // Calculate status counts

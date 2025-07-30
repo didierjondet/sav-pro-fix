@@ -54,6 +54,7 @@ interface Shop {
   sms_credits_allocated: number;
   sms_credits_used: number;
   active_sav_count: number;
+  subscription_menu_visible: boolean;
   subscription_end?: string;
   created_at: string;
   total_users?: number;
@@ -81,6 +82,7 @@ export default function ShopManagementDialog({ shop, isOpen, onClose, onUpdate }
   const [smsCreditsToAdd, setSmsCreditsToAdd] = useState('');
   const [newSubscriptionTier, setNewSubscriptionTier] = useState(shop?.subscription_tier || 'free');
   const [isBlocked, setIsBlocked] = useState(shop?.is_blocked || false);
+  const [subscriptionMenuVisible, setSubscriptionMenuVisible] = useState(shop?.subscription_menu_visible ?? true);
   const [users, setUsers] = useState<any[]>([]);
   const [newUserEmail, setNewUserEmail] = useState('');
   const [newUserPassword, setNewUserPassword] = useState('');
@@ -89,8 +91,9 @@ export default function ShopManagementDialog({ shop, isOpen, onClose, onUpdate }
   useEffect(() => {
     if (shop?.id) {
       fetchUsers();
+      setSubscriptionMenuVisible(shop.subscription_menu_visible ?? true);
     }
-  }, [shop?.id]);
+  }, [shop?.id, shop?.subscription_menu_visible]);
 
   if (!shop) return null;
 
@@ -360,6 +363,37 @@ export default function ShopManagementDialog({ shop, isOpen, onClose, onUpdate }
       toast({
         title: "Succès",
         description: isBlocked ? "Magasin débloqué" : "Magasin bloqué",
+      });
+      
+      onUpdate();
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleToggleSubscriptionMenu = async () => {
+    if (!shop) return;
+    
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('shops')
+        .update({ subscription_menu_visible: !subscriptionMenuVisible })
+        .eq('id', shop.id);
+
+      if (error) throw error;
+
+      setSubscriptionMenuVisible(!subscriptionMenuVisible);
+      
+      toast({
+        title: "Succès",
+        description: `Menu abonnement ${!subscriptionMenuVisible ? 'activé' : 'désactivé'}`,
       });
       
       onUpdate();
@@ -729,6 +763,22 @@ export default function ShopManagementDialog({ shop, isOpen, onClose, onUpdate }
                   <Switch
                     checked={isBlocked}
                     onCheckedChange={handleToggleBlock}
+                    disabled={loading}
+                  />
+                </div>
+
+                <Separator />
+
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label>Menu Abonnement</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Afficher ou masquer le menu abonnement dans la sidebar du magasin
+                    </p>
+                  </div>
+                  <Switch
+                    checked={subscriptionMenuVisible}
+                    onCheckedChange={handleToggleSubscriptionMenu}
                     disabled={loading}
                   />
                 </div>
