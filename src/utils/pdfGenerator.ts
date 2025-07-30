@@ -17,22 +17,17 @@ export const generateQuotePDF = (quote: Quote, shop?: Shop) => {
           color: #333;
         }
         .shop-header {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 15px;
-          margin-bottom: 20px;
+          text-align: left;
+          margin-bottom: 30px;
         }
         .shop-logo {
-          max-height: 60px;
-          max-width: 150px;
+          max-height: 80px;
+          max-width: 200px;
           object-fit: contain;
-        }
-        .shop-info {
-          text-align: left;
+          margin-bottom: 10px;
         }
         .shop-name {
-          font-size: 20px;
+          font-size: 24px;
           font-weight: bold;
           color: #0066cc;
           margin: 0;
@@ -93,6 +88,14 @@ export const generateQuotePDF = (quote: Quote, shop?: Shop) => {
           text-align: center;
           font-size: 12px;
           color: #666;
+          border-top: 1px solid #ddd;
+          padding-top: 20px;
+        }
+        .shop-footer {
+          text-align: center;
+          font-size: 11px;
+          color: #666;
+          margin-bottom: 15px;
         }
         .status-badge {
           display: inline-block;
@@ -112,12 +115,7 @@ export const generateQuotePDF = (quote: Quote, shop?: Shop) => {
       ${shop ? `
         <div class="shop-header">
           ${shop.logo_url ? `<img src="${shop.logo_url}" alt="${shop.name}" class="shop-logo">` : ''}
-          <div class="shop-info">
-            <h1 class="shop-name">${shop.name}</h1>
-            ${shop.address ? `<p><strong>Adresse:</strong> ${shop.address}</p>` : ''}
-            ${shop.phone ? `<p><strong>Téléphone:</strong> ${shop.phone}</p>` : ''}
-            ${shop.email ? `<p><strong>Email:</strong> ${shop.email}</p>` : ''}
-          </div>
+          <h1 class="shop-name">${shop.name}</h1>
         </div>
       ` : ''}
       
@@ -166,6 +164,13 @@ export const generateQuotePDF = (quote: Quote, shop?: Shop) => {
       </div>
       
       <div class="footer">
+        ${shop ? `
+          <div class="shop-footer">
+            ${shop.address ? `<p><strong>Adresse:</strong> ${shop.address}</p>` : ''}
+            ${shop.phone ? `<p><strong>Téléphone:</strong> ${shop.phone}</p>` : ''}
+            ${shop.email ? `<p><strong>Email:</strong> ${shop.email}</p>` : ''}
+          </div>
+        ` : ''}
         <p>Devis généré le ${new Date().toLocaleDateString('fr-FR')} à ${new Date().toLocaleTimeString('fr-FR')}</p>
         <p style="font-size: 10px; margin-top: 10px;">Propulsé par <strong>fixway.fr</strong></p>
       </div>
