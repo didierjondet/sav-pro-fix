@@ -232,11 +232,19 @@ export default function Orders() {
                               </div>
 
                               {item.part && (
-                                <div className="mt-2 text-sm text-muted-foreground">
-                                  <span className="font-medium">Stock actuel: </span>
-                                  <span className={item.part.quantity === 0 ? 'text-red-600 font-bold' : ''}>
-                                    {item.part.quantity}
-                                  </span>
+                                <div className="mt-3 text-sm">
+                                  <div className="mb-1">
+                                    <span className="font-medium text-muted-foreground">Stock actuel: </span>
+                                    <span className={`text-xl font-bold ${item.part.quantity === 0 ? 'text-red-600' : 'text-foreground'}`}>
+                                      {item.part.quantity}
+                                    </span>
+                                  </div>
+                                  <div>
+                                    <span className="font-medium text-muted-foreground">Stock minimum: </span>
+                                    <span className="text-sm text-muted-foreground">
+                                      {item.part.min_stock}
+                                    </span>
+                                  </div>
                                 </div>
                               )}
                             </div>
