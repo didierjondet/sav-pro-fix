@@ -345,8 +345,8 @@ export default function Support() {
                     {selectedTicket ? (
                       <>
                         {/* Messages */}
-                        <ScrollArea className="flex-1 mb-4">
-                          <div className="space-y-3">
+                        <ScrollArea className="flex-1 mb-4 h-96">
+                          <div className="space-y-3 p-2">
                             {messages.length === 0 ? (
                               <div className="text-center text-muted-foreground py-8">
                                 <MessageSquare className="h-12 w-12 mx-auto mb-2 opacity-50" />
@@ -362,14 +362,14 @@ export default function Support() {
                                   <div
                                      className={`max-w-[80%] p-3 rounded-lg ${
                                        message.sender_type === 'shop'
-                                         ? 'bg-blue-500 text-white rounded-br-sm'
-                                         : 'bg-gray-200 text-gray-900 rounded-bl-sm'
+                                         ? 'bg-blue-500 text-white rounded-br-sm ml-auto'
+                                         : 'bg-green-500 text-white rounded-bl-sm mr-auto'
                                      }`}
                                   >
                                     <p className="text-sm">{message.message}</p>
                                     <div className="flex items-center justify-between mt-1">
                                        <span className="text-xs opacity-70">
-                                         {message.sender_type === 'shop' ? 'Vous' : message.sender_type === 'admin' ? 'Support' : 'Support'}
+                                         {message.sender_type === 'shop' ? 'Magasin' : 'Super Admin'}
                                        </span>
                                       <span className="text-xs opacity-70">
                                         {formatDistanceToNow(new Date(message.created_at), { 

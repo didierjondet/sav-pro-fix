@@ -225,8 +225,8 @@ export default function SupportTicketManager({ ticket, onBack }: SupportTicketMa
                     <div
                       className={`max-w-xs lg:max-w-md px-4 py-3 rounded-lg ${
                         message.sender_type === 'admin'
-                          ? 'bg-blue-500 text-white rounded-br-sm'
-                          : 'bg-gray-200 text-gray-900 rounded-bl-sm'
+                          ? 'bg-green-500 text-white rounded-br-sm ml-auto'
+                          : 'bg-blue-500 text-white rounded-bl-sm mr-auto'
                       }`}
                     >
                       <div className="flex items-center gap-2 mb-1">
@@ -236,7 +236,7 @@ export default function SupportTicketManager({ ticket, onBack }: SupportTicketMa
                           <User className="h-3 w-3" />
                         )}
                         <span className="text-xs opacity-75 font-medium">
-                          {message.sender_type === 'admin' ? 'Support' : 'Magasin'}
+                          {message.sender_type === 'admin' ? 'Super Admin' : 'Magasin'}
                         </span>
                         <span className="text-xs opacity-75 ml-auto">
                           {formatDistanceToNow(new Date(message.created_at), { addSuffix: true, locale: fr })}
