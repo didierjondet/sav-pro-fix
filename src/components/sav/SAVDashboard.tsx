@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Search, Filter, MoreHorizontal, Eye, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -17,7 +17,7 @@ import { SAVForm } from './SAVForm';
 import { useSAVCases } from '@/hooks/useSAVCases';
 import { useQuotes } from '@/hooks/useQuotes';
 import { useShop } from '@/hooks/useShop';
-import { useSAVDelay, formatDelayText } from '@/hooks/useSAVDelay';
+import { formatDelayText, DelayInfo, calculateSAVDelay } from '@/hooks/useSAVDelay';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -39,7 +39,15 @@ export function SAVDashboard() {
   const { shop } = useShop();
   const navigate = useNavigate();
 
-  const filteredCases = cases.filter(
+  // Calculer les informations de délai pour tous les cas une seule fois
+  const casesWithDelayInfo = useMemo(() => {
+    return cases.map((case_) => ({
+      ...case_,
+      delayInfo: calculateSAVDelay(case_, shop)
+    }));
+  }, [cases, shop]);
+
+  const filteredCases = casesWithDelayInfo.filter(
     (case_) =>
       case_.customer?.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       case_.customer?.last_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -155,80 +163,76 @@ export function SAVDashboard() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredCases.map((case_) => {
-                  const delayInfo = useSAVDelay(case_, shop);
-                  
-                  return (
-                    <TableRow 
-                      key={case_.id} 
-                      className={cn(
-                        delayInfo.isOverdue && case_.status !== 'delivered' && case_.status !== 'cancelled'
-                          ? "bg-destructive/10 border-destructive/20" 
-                          : ""
-                      )}
-                    >
-                      <TableCell className="font-medium">{case_.case_number}</TableCell>
-                      <TableCell>
-                        {case_.customer 
-                          ? `${case_.customer.first_name} ${case_.customer.last_name}`
-                          : 'SAV Interne'
-                        }
-                      </TableCell>
-                      <TableCell>{case_.device_brand} {case_.device_model}</TableCell>
-                      <TableCell>
-                        <div className="flex flex-col gap-1">
-                          <Badge variant={statusConfig[case_.status].variant}>
-                            {statusConfig[case_.status].label}
-                          </Badge>
-                          {case_.status !== 'delivered' && case_.status !== 'cancelled' && (
-                            <span className={cn(
-                              "text-xs",
-                              delayInfo.isOverdue 
-                                ? "text-destructive font-medium" 
-                                : "text-muted-foreground"
-                            )}>
-                              {formatDelayText(delayInfo)}
-                            </span>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {format(new Date(case_.created_at), 'dd/MM/yyyy', { locale: fr })}
-                      </TableCell>
-                      <TableCell>{(case_.total_cost || 0).toFixed(2)}€</TableCell>
-                      <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-8 w-8 p-0">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => navigate(`/sav/${case_.id}`)}>
-                              <Eye className="mr-2 h-4 w-4" />
-                              Voir détails
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => navigate(`/sav/${case_.id}`)}>
-                              <Edit className="mr-2 h-4 w-4" />
-                              Modifier
-                            </DropdownMenuItem>
-                            <DropdownMenuItem 
-                              className="text-destructive"
-                              onClick={() => {
-                                if (confirm('Êtes-vous sûr de vouloir supprimer ce dossier SAV ?')) {
-                                  deleteCase(case_.id);
-                                }
-                              }}
-                            >
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              Supprimer
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
+                {filteredCases.map((case_) => (
+                  <TableRow 
+                    key={case_.id} 
+                    className={cn(
+                      case_.delayInfo.isOverdue && case_.status !== 'delivered' && case_.status !== 'cancelled'
+                        ? "bg-destructive/10 border-destructive/20" 
+                        : ""
+                    )}
+                  >
+                    <TableCell className="font-medium">{case_.case_number}</TableCell>
+                    <TableCell>
+                      {case_.customer 
+                        ? `${case_.customer.first_name} ${case_.customer.last_name}`
+                        : 'SAV Interne'
+                      }
+                    </TableCell>
+                    <TableCell>{case_.device_brand} {case_.device_model}</TableCell>
+                    <TableCell>
+                      <div className="flex flex-col gap-1">
+                        <Badge variant={statusConfig[case_.status].variant}>
+                          {statusConfig[case_.status].label}
+                        </Badge>
+                        {case_.status !== 'delivered' && case_.status !== 'cancelled' && (
+                          <span className={cn(
+                            "text-xs",
+                            case_.delayInfo.isOverdue 
+                              ? "text-destructive font-medium" 
+                              : "text-muted-foreground"
+                          )}>
+                            {formatDelayText(case_.delayInfo)}
+                          </span>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {format(new Date(case_.created_at), 'dd/MM/yyyy', { locale: fr })}
+                    </TableCell>
+                    <TableCell>{(case_.total_cost || 0).toFixed(2)}€</TableCell>
+                    <TableCell className="text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" className="h-8 w-8 p-0">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => navigate(`/sav/${case_.id}`)}>
+                            <Eye className="mr-2 h-4 w-4" />
+                            Voir détails
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => navigate(`/sav/${case_.id}`)}>
+                            <Edit className="mr-2 h-4 w-4" />
+                            Modifier
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            className="text-destructive"
+                            onClick={() => {
+                              if (confirm('Êtes-vous sûr de vouloir supprimer ce dossier SAV ?')) {
+                                deleteCase(case_.id);
+                              }
+                            }}
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Supprimer
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))}
               </TableBody>
             </Table>
           )}
