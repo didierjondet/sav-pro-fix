@@ -85,6 +85,39 @@ export type Database = {
         }
         Relationships: []
       }
+      import_configurations: {
+        Row: {
+          column_mappings: Json
+          created_at: string
+          id: string
+          is_default: boolean
+          name: string
+          required_columns: string[]
+          shop_id: string
+          updated_at: string
+        }
+        Insert: {
+          column_mappings?: Json
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          name?: string
+          required_columns?: string[]
+          shop_id: string
+          updated_at?: string
+        }
+        Update: {
+          column_mappings?: Json
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          name?: string
+          required_columns?: string[]
+          shop_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           created_at: string
