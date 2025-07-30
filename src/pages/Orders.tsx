@@ -213,12 +213,22 @@ export default function Orders() {
                               </div>
                               
                               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-muted-foreground">
-                                <div>
-                                  <span className="font-medium">Quantité: </span>
-                                  <span className="text-lg font-bold text-foreground">
-                                    {item.quantity_needed}
-                                  </span>
-                                </div>
+                                {item.part && (
+                                  <div>
+                                    <div className="mb-1">
+                                      <span className="font-medium text-muted-foreground">Stock actuel: </span>
+                                      <span className={`text-xl font-bold ${item.part.quantity === 0 ? 'text-red-600' : 'text-foreground'}`}>
+                                        {item.part.quantity}
+                                      </span>
+                                    </div>
+                                    <div>
+                                      <span className="font-medium text-muted-foreground">Stock minimum: </span>
+                                      <span className="text-sm text-muted-foreground">
+                                        {item.part.min_stock}
+                                      </span>
+                                    </div>
+                                  </div>
+                                )}
                                 
                                 <div>
                                   <span className="font-medium">Raison: </span>
@@ -230,23 +240,6 @@ export default function Orders() {
                                   <span>{new Date(item.created_at).toLocaleDateString()}</span>
                                 </div>
                               </div>
-
-                              {item.part && (
-                                <div className="mt-3 text-sm">
-                                  <div className="mb-1">
-                                    <span className="font-medium text-muted-foreground">Stock actuel: </span>
-                                    <span className={`text-xl font-bold ${item.part.quantity === 0 ? 'text-red-600' : 'text-foreground'}`}>
-                                      {item.part.quantity}
-                                    </span>
-                                  </div>
-                                  <div>
-                                    <span className="font-medium text-muted-foreground">Stock minimum: </span>
-                                    <span className="text-sm text-muted-foreground">
-                                      {item.part.min_stock}
-                                    </span>
-                                  </div>
-                                </div>
-                              )}
                             </div>
                             
                             {!item.ordered && (
