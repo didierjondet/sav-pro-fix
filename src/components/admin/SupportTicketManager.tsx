@@ -142,175 +142,142 @@ export default function SupportTicketManager({ ticket, onBack }: SupportTicketMa
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Messages */}
-        <div className="lg:col-span-2">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <MessageSquare className="h-5 w-5" />
-                Conversation
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Description initiale */}
-              <div className="bg-slate-50 p-4 rounded-lg border-l-4 border-slate-300">
-                <div className="flex items-center gap-2 mb-2">
-                  <User className="h-4 w-4 text-slate-600" />
-                  <span className="font-medium text-slate-900">
-                    {ticket.creator?.first_name} {ticket.creator?.last_name}
-                  </span>
-                  <span className="text-sm text-slate-500">
-                    {formatDistanceToNow(new Date(ticket.created_at), { addSuffix: true, locale: fr })}
-                  </span>
-                </div>
-                <p className="text-slate-700 whitespace-pre-wrap">{ticket.description}</p>
-              </div>
+      {/* Informations du ticket */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Informations du ticket</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div>
+              <label className="text-sm font-medium text-slate-600">Magasin</label>
+              <p className="font-medium">{ticket.shop?.name}</p>
+              {ticket.shop?.email && (
+                <p className="text-sm text-slate-500">{ticket.shop.email}</p>
+              )}
+            </div>
 
-              {/* Messages */}
-              <ScrollArea className="h-96">
-                <div className="space-y-4">
-                  {messages.map((message) => (
-                    <div
-                      key={message.id}
-                      className={`flex ${message.sender_type === 'admin' ? 'justify-end' : 'justify-start'}`}
-                    >
-                      <div
-                        className={`max-w-xs lg:max-w-md px-4 py-3 rounded-lg ${
-                          message.sender_type === 'admin'
-                            ? 'bg-primary text-primary-foreground'
-                            : 'bg-slate-100 text-slate-900'
-                        }`}
-                      >
-                        <div className="flex items-center gap-2 mb-1">
-                          {message.sender_type === 'admin' ? (
-                            <Shield className="h-3 w-3" />
-                          ) : (
-                            <User className="h-3 w-3" />
-                          )}
-                          <span className="text-xs opacity-75">
-                            {message.sender_type === 'admin' ? 'Support' : 'Magasin'}
-                          </span>
-                          <span className="text-xs opacity-75 ml-auto">
-                            {formatDistanceToNow(new Date(message.created_at), { addSuffix: true, locale: fr })}
-                          </span>
-                        </div>
-                        <p className="whitespace-pre-wrap">{message.message}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </ScrollArea>
-
-              {/* Zone de saisie */}
-              <div className="border-t pt-4">
-                <div className="flex gap-2">
-                  <Textarea
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    placeholder="Tapez votre réponse..."
-                    className="flex-1 min-h-[80px]"
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && e.ctrlKey) {
-                        handleSendMessage();
-                      }
-                    }}
-                  />
-                  <Button
-                    onClick={handleSendMessage}
-                    disabled={!newMessage.trim() || sending}
-                    className="self-end"
-                  >
-                    <Send className="h-4 w-4" />
-                  </Button>
-                </div>
-                <p className="text-xs text-slate-500 mt-1">
-                  Utilisez Ctrl+Entrée pour envoyer rapidement
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Informations du ticket */}
-        <div className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Informations du ticket</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <label className="text-sm font-medium text-slate-600">Magasin</label>
-                <p className="font-medium">{ticket.shop?.name}</p>
-                {ticket.shop?.email && (
-                  <p className="text-sm text-slate-500">{ticket.shop.email}</p>
-                )}
-              </div>
-
-              <div>
-                <label className="text-sm font-medium text-slate-600">Créé par</label>
-                <p className="font-medium">
-                  {ticket.creator?.first_name} {ticket.creator?.last_name}
-                </p>
-                {ticket.creator?.email && (
-                  <p className="text-sm text-slate-500">{ticket.creator.email}</p>
-                )}
-              </div>
-
-              <div>
-                <label className="text-sm font-medium text-slate-600">Priorité</label>
+            <div>
+              <label className="text-sm font-medium text-slate-600">Priorité</label>
+              <div className="mt-1">
                 <Badge className={priorityConfig[ticket.priority].color}>
                   {priorityConfig[ticket.priority].label}
                 </Badge>
               </div>
+            </div>
 
-              <div>
-                <label className="text-sm font-medium text-slate-600">Statut</label>
-                <div className="flex items-center gap-2">
-                  <StatusIcon className="h-4 w-4" />
-                  <Badge className={statusConfig[ticket.status].color}>
-                    {statusConfig[ticket.status].label}
-                  </Badge>
-                </div>
+            <div>
+              <label className="text-sm font-medium text-slate-600">Créé le</label>
+              <div className="flex items-center gap-2 mt-1">
+                <Clock className="h-4 w-4 text-slate-500" />
+                <p className="text-sm">
+                  {new Date(ticket.created_at).toLocaleDateString('fr-FR', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}
+                </p>
               </div>
+            </div>
+          </div>
 
-              <div>
-                <label className="text-sm font-medium text-slate-600">Créé le</label>
-                <div className="flex items-center gap-2">
-                  <Clock className="h-4 w-4 text-slate-500" />
-                  <p className="text-sm">
-                    {new Date(ticket.created_at).toLocaleDateString('fr-FR', {
-                      day: '2-digit',
-                      month: '2-digit',
-                      year: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    })}
-                  </p>
+          {/* Description initiale */}
+          <div className="mt-6">
+            <label className="text-sm font-medium text-slate-600">Description</label>
+            <div className="bg-slate-50 p-4 rounded-lg mt-2">
+              <p className="text-slate-700 whitespace-pre-wrap">{ticket.description}</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Conversation */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <MessageSquare className="h-5 w-5" />
+            Conversation
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Messages */}
+          <ScrollArea className="h-96">
+            <div className="space-y-4">
+              {loading ? (
+                <div className="text-center py-8 text-slate-600">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+                  <p className="mt-2">Chargement des messages...</p>
                 </div>
-              </div>
-
-              {ticket.resolved_at && (
-                <div>
-                  <label className="text-sm font-medium text-slate-600">Résolu le</label>
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="h-4 w-4 text-green-500" />
-                    <p className="text-sm">
-                      {new Date(ticket.resolved_at).toLocaleDateString('fr-FR', {
-                        day: '2-digit',
-                        month: '2-digit',
-                        year: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      })}
-                    </p>
+              ) : messages.length === 0 ? (
+                <div className="text-center py-8 text-slate-600">
+                  <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>Aucun message dans cette conversation</p>
+                  <p className="text-sm">Soyez le premier à répondre au magasin</p>
+                </div>
+              ) : (
+                messages.map((message) => (
+                  <div
+                    key={message.id}
+                    className={`flex ${message.sender_type === 'admin' ? 'justify-end' : 'justify-start'}`}
+                  >
+                    <div
+                      className={`max-w-xs lg:max-w-md px-4 py-3 rounded-lg ${
+                        message.sender_type === 'admin'
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-slate-100 text-slate-900'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 mb-1">
+                        {message.sender_type === 'admin' ? (
+                          <Shield className="h-3 w-3" />
+                        ) : (
+                          <User className="h-3 w-3" />
+                        )}
+                        <span className="text-xs opacity-75">
+                          {message.sender_type === 'admin' ? 'Support' : 'Magasin'}
+                        </span>
+                        <span className="text-xs opacity-75 ml-auto">
+                          {formatDistanceToNow(new Date(message.created_at), { addSuffix: true, locale: fr })}
+                        </span>
+                      </div>
+                      <p className="whitespace-pre-wrap">{message.message}</p>
+                    </div>
                   </div>
-                </div>
+                ))
               )}
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+            </div>
+          </ScrollArea>
+
+          {/* Zone de saisie */}
+          <div className="border-t pt-4">
+            <div className="flex gap-2">
+              <Textarea
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                placeholder="Tapez votre réponse..."
+                className="flex-1 min-h-[80px]"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && e.ctrlKey) {
+                    handleSendMessage();
+                  }
+                }}
+              />
+              <Button
+                onClick={handleSendMessage}
+                disabled={!newMessage.trim() || sending}
+                className="self-end"
+              >
+                <Send className="h-4 w-4" />
+              </Button>
+            </div>
+            <p className="text-xs text-slate-500 mt-1">
+              Utilisez Ctrl+Entrée pour envoyer rapidement
+            </p>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

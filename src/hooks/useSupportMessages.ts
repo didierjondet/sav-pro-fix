@@ -19,10 +19,7 @@ export function useSupportMessages(ticketId?: string) {
     try {
       const { data, error } = await supabase
         .from('support_messages')
-        .select(`
-          *,
-          sender:profiles!support_messages_sender_id_fkey(first_name, last_name, user_id)
-        `)
+        .select(`*`)
         .eq('ticket_id', ticketId)
         .order('created_at', { ascending: true });
 
