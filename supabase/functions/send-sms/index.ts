@@ -108,7 +108,8 @@ serve(async (req) => {
     const body = JSON.stringify({
       message: message,
       receivers: [to],
-      sender: "FixWay",
+      // Utiliser le numéro du magasin comme expéditeur temporairement
+      sender: "0467300900",
       charset: "UTF-8"
     });
 
