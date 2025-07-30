@@ -229,12 +229,48 @@ export function useSupport() {
     }
   };
 
+  const deleteTicket = async (ticketId: string) => {
+    try {
+      // Supprimer d'abord tous les messages associés au ticket
+      const { error: messagesError } = await supabase
+        .from('support_messages')
+        .delete()
+        .eq('ticket_id', ticketId);
+
+      if (messagesError) throw messagesError;
+
+      // Puis supprimer le ticket
+      const { error } = await supabase
+        .from('support_tickets')
+        .delete()
+        .eq('id', ticketId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Ticket supprimé",
+        description: "Le ticket de support a été supprimé avec succès",
+      });
+
+      fetchTickets();
+      return { error: null };
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error.message,
+        variant: "destructive",
+      });
+      return { error };
+    }
+  };
+
   return {
     tickets,
     loading,
     createTicket,
     updateTicketStatus,
     assignTicket,
+    deleteTicket,
     refetch: fetchTickets,
   };
 }

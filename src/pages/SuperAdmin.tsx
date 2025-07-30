@@ -1431,6 +1431,10 @@ export default function SuperAdmin() {
               <SupportTicketManager
                 ticket={selectedTicket}
                 onBack={() => setSelectedTicket(null)}
+                onDelete={(ticketId: string) => {
+                  setSelectedTicket(null);
+                  fetchSupportTickets();
+                }}
               />
             ) : (
               <Card className="bg-white border-slate-200 shadow-sm">

@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { useSupportMessages } from '@/hooks/useSupportMessages';
 import { useSupport, SupportTicket } from '@/hooks/useSupport';
@@ -20,12 +21,14 @@ import {
   CheckCircle,
   XCircle,
   Pause,
-  MessageSquare
+  MessageSquare,
+  Trash2
 } from 'lucide-react';
 
 interface SupportTicketManagerProps {
   ticket: SupportTicket;
   onBack: () => void;
+  onDelete?: (ticketId: string) => void;
 }
 
 const statusConfig = {
@@ -42,11 +45,11 @@ const priorityConfig = {
   'urgent': { color: 'bg-red-100 text-red-800', label: 'Urgente' }
 };
 
-export default function SupportTicketManager({ ticket, onBack }: SupportTicketManagerProps) {
+export default function SupportTicketManager({ ticket, onBack, onDelete }: SupportTicketManagerProps) {
   const [newMessage, setNewMessage] = useState('');
   const [sending, setSending] = useState(false);
   const { messages, loading, sendMessage, markAsRead } = useSupportMessages(ticket.id);
-  const { updateTicketStatus } = useSupport();
+  const { updateTicketStatus, deleteTicket } = useSupport();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -91,6 +94,25 @@ export default function SupportTicketManager({ ticket, onBack }: SupportTicketMa
         title: "Statut mis à jour",
         description: `Le ticket est maintenant "${statusConfig[newStatus].label}"`,
       });
+    }
+  };
+
+  const handleDeleteTicket = async () => {
+    const result = await deleteTicket(ticket.id);
+    
+    if (result?.error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de supprimer le ticket",
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Ticket supprimé",
+        description: "Le ticket a été supprimé avec succès",
+      });
+      onDelete?.(ticket.id);
+      onBack();
     }
   };
 
@@ -139,6 +161,35 @@ export default function SupportTicketManager({ ticket, onBack }: SupportTicketMa
               </SelectContent>
             </Select>
           </div>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                variant="destructive"
+                size="sm"
+                className="flex items-center gap-2"
+              >
+                <Trash2 className="h-4 w-4" />
+                Supprimer
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Supprimer le ticket</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Êtes-vous sûr de vouloir supprimer ce ticket de support ? Cette action est irréversible et supprimera également tous les messages associés.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Annuler</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={handleDeleteTicket}
+                  className="bg-red-600 hover:bg-red-700"
+                >
+                  Supprimer définitivement
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </div>
 
