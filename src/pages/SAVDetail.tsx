@@ -14,6 +14,7 @@ import { useNavigate } from 'react-router-dom';
 import { SAVPartsEditor } from '@/components/sav/SAVPartsEditor';
 import { SAVPartsRequirements } from '@/components/sav/SAVPartsRequirements';
 import { SendSMSButton } from '@/components/sms/SendSMSButton';
+import { SMSTrackingButton } from '@/components/sms/SMSTrackingButton';
 
 export default function SAVDetail() {
   const { id } = useParams<{ id: string }>();
@@ -247,6 +248,18 @@ export default function SAVDetail() {
                           type="sav"
                           recordId={savCase.id}
                           variant="outline"
+                          size="sm"
+                          className="flex-1 sm:flex-initial"
+                        />
+                      )}
+                      {savCase.customers?.phone && savCase.tracking_slug && (
+                        <SMSTrackingButton
+                          recipientPhone={savCase.customers.phone}
+                          recipientName={`${savCase.customers.first_name} ${savCase.customers.last_name}`}
+                          trackingUrl={generateTrackingUrl()}
+                          type="tracking"
+                          recordId={savCase.id}
+                          variant="default"
                           size="sm"
                           className="flex-1 sm:flex-initial"
                         />

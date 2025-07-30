@@ -118,28 +118,37 @@ export function useSubscription() {
     }
   };
 
-  const checkLimits = async () => {
-    if (!subscription) return { allowed: false, reason: 'Subscription not loaded' };
+  const checkLimits = (action?: 'sav' | 'sms') => {
+    if (!subscription) {
+      return { allowed: false, reason: "Données d'abonnement non disponibles" };
+    }
 
     const { subscription_tier, sms_credits_used, sms_credits_allocated, active_sav_count } = subscription;
 
-    // Utiliser les limites basées sur les plans d'abonnement
-    const planLimits = {
-      free: { sav_limit: 15, sms_limit: 15 },
-      premium: { sav_limit: 10, sms_limit: 100 },
-      enterprise: { sav_limit: null, sms_limit: 400 }
-    };
-
-    const limits = planLimits[subscription_tier];
-
-    if (limits.sav_limit && active_sav_count >= limits.sav_limit) {
-      return { allowed: false, reason: `Plan ${subscription_tier} limité à ${limits.sav_limit} SAV ${subscription_tier === 'premium' ? 'simultanés' : 'actifs'}` };
-    }
-    if (limits.sms_limit && sms_credits_used >= limits.sms_limit) {
-      return { allowed: false, reason: `Plan ${subscription_tier} limité à ${limits.sms_limit} SMS par mois` };
+    // Vérification des limites SAV
+    if (action === 'sav' || !action) {
+      if (subscription_tier === 'free' && active_sav_count >= 15) {
+        return { allowed: false, reason: "Plan gratuit limité à 15 SAV actifs" };
+      }
+      if (subscription_tier === 'premium' && active_sav_count >= 10) {
+        return { allowed: false, reason: "Plan Premium limité à 10 SAV simultanés" };
+      }
     }
 
-    return { allowed: true, reason: 'Dans les limites' };
+    // Vérification des limites SMS
+    if (action === 'sms' || !action) {
+      const smsUsed = sms_credits_used || 0;
+      const smsAllocated = sms_credits_allocated || 0;
+      
+      if (smsUsed >= smsAllocated) {
+        return { 
+          allowed: false, 
+          reason: `Vous avez utilisé tous vos crédits SMS du mois (${smsUsed}/${smsAllocated})` 
+        };
+      }
+    }
+
+    return { allowed: true, reason: "Dans les limites autorisées" };
   };
 
   return {
