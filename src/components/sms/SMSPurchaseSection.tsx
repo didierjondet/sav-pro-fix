@@ -4,14 +4,13 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { useSubscription } from '@/hooks/useSubscription';
-import { useSMSPricing } from '@/hooks/useSMSPricing';
+
 import { supabase } from '@/integrations/supabase/client';
 import { MessageSquare, CreditCard, Package } from 'lucide-react';
 
 export function SMSPurchaseSection() {
   const [purchasing, setPurchasing] = useState<number | null>(null);
   const { subscription } = useSubscription();
-  const { getPriceForTier } = useSMSPricing();
   const { toast } = useToast();
 
   const handlePurchase = async (credits: number) => {
@@ -42,7 +41,8 @@ export function SMSPurchaseSection() {
   };
 
   const tier = subscription?.subscription_tier || 'free';
-  const pricePerSMS = getPriceForTier(tier);
+  // Prix par défaut selon le tier, maintenant géré dans les plans d'abonnement
+  const pricePerSMS = tier === 'enterprise' ? 0.05 : tier === 'premium' ? 0.08 : 0.12;
   
   // SMS packages with dynamic pricing
   const smsPackages = [
