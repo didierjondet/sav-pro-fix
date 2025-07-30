@@ -12,6 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { QrCode, ExternalLink, ArrowLeft, Copy, Share } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { SAVPartsEditor } from '@/components/sav/SAVPartsEditor';
+import { SAVPartsRequirements } from '@/components/sav/SAVPartsRequirements';
 
 export default function SAVDetail() {
   const { id } = useParams<{ id: string }>();
@@ -242,6 +243,9 @@ export default function SAVDetail() {
                   </CardContent>
                 </Card>
               )}
+
+              {/* Parts Requirements */}
+              <SAVPartsRequirements savCaseId={savCase.id} />
 
               {/* Status Management and Messaging */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
