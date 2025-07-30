@@ -24,6 +24,7 @@ import Support from "./pages/Support";
 // CreateShop page supprimée - création automatique par trigger
 
 import NotFound from "./pages/NotFound";
+import ShopWebsite from "./pages/ShopWebsite";
 
 const queryClient = new QueryClient();
 
@@ -42,7 +43,6 @@ const App = () => (
             <Route path="/sav/new" element={<NewSAV />} />
             <Route path="/sav/:id" element={<SAVDetail />} />
             <Route path="/track/:caseNumber" element={<TrackSAV />} />
-            <Route path="/:slug" element={<SimpleTrack />} />
             <Route path="/parts" element={<Parts />} />
             <Route path="/quotes" element={<Quotes />} />
             <Route path="/orders" element={<Orders />} />
@@ -51,8 +51,14 @@ const App = () => (
             
             <Route path="/super-admin" element={<SuperAdmin />} />
             <Route path="/subscription" element={<Subscription />} />
-            {/* Route supprimée - création automatique par trigger */}
             <Route path="/landing" element={<Landing />} />
+            
+            {/* Routes pour les mini-sites des magasins */}
+            <Route path="/shop/:slug" element={<ShopWebsite />} />
+            
+            {/* Route de suivi simple - garde en dernier */}
+            <Route path="/:slug" element={<SimpleTrack />} />
+            
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
