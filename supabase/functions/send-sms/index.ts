@@ -108,8 +108,8 @@ serve(async (req) => {
     const body = JSON.stringify({
       message: message,
       receivers: [to],
-      // Remettre FixWay en attendant la validation OVH
-      sender: "FixWay",
+      // Utiliser le nouvel expéditeur FIXWAYFR
+      sender: "FIXWAYFR",
       charset: "UTF-8"
     });
 
