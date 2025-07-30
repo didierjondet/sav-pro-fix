@@ -758,8 +758,8 @@ export default function SuperAdmin() {
           </div>
         </div>
 
-        {/* Dashboard Overview - Design distinctif */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        {/* Dashboard Overview - 3 rangées de 2 modules */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           <Card className="bg-white border-slate-200 shadow-sm hover:shadow-md transition-shadow">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
@@ -829,11 +829,8 @@ export default function SuperAdmin() {
               </div>
             </CardContent>
           </Card>
-        </div>
 
-        {/* Support séparé */}
-        <div className="mb-8">
-          <Card className="bg-white border-slate-200 shadow-sm hover:shadow-md transition-shadow max-w-sm">
+          <Card className="bg-white border-slate-200 shadow-sm hover:shadow-md transition-shadow">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
