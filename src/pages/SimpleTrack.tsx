@@ -39,6 +39,7 @@ interface SAVCaseData {
     phone?: string;
     email?: string;
     address?: string;
+    logo_url?: string;
   };
 }
 
@@ -154,7 +155,7 @@ export default function SimpleTrack() {
         .select(`
           *,
           customer:customers(first_name, last_name, email, phone),
-          shop:shops(name, phone, email, address)
+          shop:shops(name, phone, email, address, logo_url)
         `)
         .eq('tracking_slug', slug)
         .single();
@@ -249,11 +250,19 @@ export default function SimpleTrack() {
         {/* En-tête avec logo/nom du magasin */}
         <div className="text-center mb-6">
           <div className="flex items-center justify-center gap-3 mb-2">
-            <img 
-              src="/lovable-uploads/3d99a913-9d52-4f6c-9a65-78b3bd561739.png" 
-              alt="Logo fixway.fr" 
-              className="h-12 w-12 object-contain"
-            />
+            {savCase.shop?.logo_url ? (
+              <img 
+                src={savCase.shop.logo_url} 
+                alt="Logo du magasin" 
+                className="h-12 w-12 object-contain"
+              />
+            ) : (
+              <img 
+                src="/lovable-uploads/3d99a913-9d52-4f6c-9a65-78b3bd561739.png" 
+                alt="Logo fixway.fr" 
+                className="h-12 w-12 object-contain"
+              />
+            )}
             <h1 className="text-3xl font-bold text-gray-800">
               {savCase.shop?.name || 'fixway.fr'}
             </h1>
@@ -266,6 +275,9 @@ export default function SimpleTrack() {
                 <span>Temps réel</span>
               </div>
             )}
+          </div>
+          <div className="text-xs text-gray-500">
+            Propulsé par <span className="font-medium">fixway.fr</span>
           </div>
         </div>
 

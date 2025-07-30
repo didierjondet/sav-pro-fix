@@ -25,7 +25,9 @@ import {
   Crown,
   Settings as SettingsIcon,
   Copy,
-  Key 
+  Key,
+  Upload,
+  Image as ImageIcon
 } from 'lucide-react';
 import {
   Dialog,
@@ -66,6 +68,7 @@ export default function Settings() {
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState<'admin' | 'technician' | 'super_admin' | 'shop_admin'>('technician');
+  const [logoUploading, setLogoUploading] = useState(false);
   
   // Local state for form data
   const [shopForm, setShopForm] = useState({
@@ -73,6 +76,7 @@ export default function Settings() {
     email: '',
     phone: '',
     address: '',
+    logo_url: '',
     max_sav_processing_days_client: 7,
     max_sav_processing_days_internal: 5
   });
@@ -96,6 +100,7 @@ export default function Settings() {
         email: shop.email || '',
         phone: shop.phone || '',
         address: shop.address || '',
+        logo_url: shop.logo_url || '',
         max_sav_processing_days_client: shop.max_sav_processing_days_client || 7,
         max_sav_processing_days_internal: shop.max_sav_processing_days_internal || 5
       });
@@ -204,6 +209,52 @@ export default function Settings() {
     });
   };
 
+  const handleLogoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !shop) return;
+
+    setLogoUploading(true);
+    try {
+      // Créer un nom de fichier unique
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${shop.id}/logo.${fileExt}`;
+
+      // Supprimer l'ancien logo s'il existe
+      if (shop.logo_url) {
+        const oldPath = shop.logo_url.split('/').slice(-2).join('/');
+        await supabase.storage.from('shop-logos').remove([oldPath]);
+      }
+
+      // Uploader le nouveau logo
+      const { error: uploadError } = await supabase.storage
+        .from('shop-logos')
+        .upload(fileName, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      // Récupérer l'URL publique
+      const { data } = supabase.storage.from('shop-logos').getPublicUrl(fileName);
+      
+      // Mettre à jour la base de données
+      await updateShopData({ logo_url: data.publicUrl });
+      
+      setShopForm(prev => ({ ...prev, logo_url: data.publicUrl }));
+
+      toast({
+        title: "Succès",
+        description: "Logo mis à jour avec succès",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLogoUploading(false);
+    }
+  };
+
   const isAdmin = profile?.role === 'admin';
 
   if (loading) {
@@ -278,6 +329,37 @@ export default function Settings() {
                       onChange={(e) => setShopForm({...shopForm, name: e.target.value})}
                       disabled={!isAdmin}
                     />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="shop-logo">Logo du magasin</Label>
+                    <div className="flex items-center gap-4">
+                      {shopForm.logo_url && (
+                        <div className="flex items-center gap-2">
+                          <img 
+                            src={shopForm.logo_url} 
+                            alt="Logo du magasin" 
+                            className="h-12 w-12 object-contain border rounded"
+                          />
+                        </div>
+                      )}
+                      <div className="flex-1">
+                        <Input
+                          id="shop-logo"
+                          type="file"
+                          accept="image/*"
+                          onChange={handleLogoUpload}
+                          disabled={!isAdmin || logoUploading}
+                          className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
+                        />
+                        {logoUploading && (
+                          <p className="text-sm text-muted-foreground mt-1">Upload en cours...</p>
+                        )}
+                        <p className="text-sm text-muted-foreground mt-1">
+                          Le logo sera utilisé dans les PDF et les liens de suivi client
+                        </p>
+                      </div>
+                    </div>
                   </div>
                   <div>
                     <Label htmlFor="shop-email">Email</Label>

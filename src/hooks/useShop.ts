@@ -11,6 +11,7 @@ export interface Shop {
   address: string;
   sms_credits: number;
   invite_code: string;
+  logo_url: string;
   max_sav_processing_days_client: number;
   max_sav_processing_days_internal: number;
   created_at: string;

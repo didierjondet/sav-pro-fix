@@ -34,18 +34,26 @@ export function Header({ onMenuClick, isMobileMenuOpen }: HeaderProps) {
             <Menu className="h-5 w-5" />
           </Button>
           <div className="flex items-center space-x-2">
-            <img 
-              src="/lovable-uploads/3d99a913-9d52-4f6c-9a65-78b3bd561739.png" 
-              alt="Logo fixway.fr" 
-              className="h-8 w-8 object-contain"
-            />
+            {shop?.logo_url ? (
+              <img 
+                src={shop.logo_url} 
+                alt="Logo du magasin" 
+                className="h-8 w-8 object-contain"
+              />
+            ) : (
+              <img 
+                src="/lovable-uploads/3d99a913-9d52-4f6c-9a65-78b3bd561739.png" 
+                alt="Logo fixway.fr" 
+                className="h-8 w-8 object-contain"
+              />
+            )}
             <div className="flex flex-col">
-              <h1 className="text-xl font-bold text-foreground">fixway.fr</h1>
-              {shop && (
-                <span className="text-sm text-muted-foreground font-medium">
-                  {shop.name}
-                </span>
-              )}
+              <h1 className="text-xl font-bold text-foreground">
+                {shop?.name || 'fixway.fr'}
+              </h1>
+              <span className="text-xs text-muted-foreground">
+                Propulsé par fixway.fr
+              </span>
             </div>
           </div>
         </div>

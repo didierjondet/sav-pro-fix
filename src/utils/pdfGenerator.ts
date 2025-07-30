@@ -1,6 +1,7 @@
 import { Quote } from '@/hooks/useQuotes';
+import { Shop } from '@/hooks/useShop';
 
-export const generateQuotePDF = (quote: Quote) => {
+export const generateQuotePDF = (quote: Quote, shop?: Shop) => {
   // Créer le contenu HTML du PDF
   const htmlContent = `
     <!DOCTYPE html>
@@ -14,6 +15,27 @@ export const generateQuotePDF = (quote: Quote) => {
           margin: 0;
           padding: 20px;
           color: #333;
+        }
+        .shop-header {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 15px;
+          margin-bottom: 20px;
+        }
+        .shop-logo {
+          max-height: 60px;
+          max-width: 150px;
+          object-fit: contain;
+        }
+        .shop-info {
+          text-align: left;
+        }
+        .shop-name {
+          font-size: 20px;
+          font-weight: bold;
+          color: #0066cc;
+          margin: 0;
         }
         .header {
           text-align: center;
@@ -87,6 +109,18 @@ export const generateQuotePDF = (quote: Quote) => {
       </style>
     </head>
     <body>
+      ${shop ? `
+        <div class="shop-header">
+          ${shop.logo_url ? `<img src="${shop.logo_url}" alt="Logo" class="shop-logo">` : ''}
+          <div class="shop-info">
+            <h1 class="shop-name">${shop.name}</h1>
+            ${shop.address ? `<p>${shop.address}</p>` : ''}
+            ${shop.phone ? `<p>Tél: ${shop.phone}</p>` : ''}
+            ${shop.email ? `<p>Email: ${shop.email}</p>` : ''}
+          </div>
+        </div>
+      ` : ''}
+      
       <div class="header">
         <div class="quote-number">DEVIS ${quote.quote_number}</div>
         <p>Date: ${new Date(quote.created_at).toLocaleDateString('fr-FR')}</p>
@@ -133,6 +167,7 @@ export const generateQuotePDF = (quote: Quote) => {
       
       <div class="footer">
         <p>Devis généré le ${new Date().toLocaleDateString('fr-FR')} à ${new Date().toLocaleTimeString('fr-FR')}</p>
+        <p style="font-size: 10px; margin-top: 10px;">Propulsé par <strong>fixway.fr</strong></p>
       </div>
     </body>
     </html>
