@@ -109,7 +109,7 @@ export default function Parts() {
                   </div>
 
                    {/* Statistiques */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                     <Card>
                       <CardContent className="p-6">
                         <div className="flex items-center justify-between">
@@ -130,18 +130,6 @@ export default function Parts() {
                             <p className="text-2xl font-bold">{totalValue.toFixed(2)}€</p>
                           </div>
                           <TrendingUp className="h-8 w-8 text-yellow-600" />
-                        </div>
-                      </CardContent>
-                    </Card>
-                    
-                    <Card>
-                      <CardContent className="p-6">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="text-sm text-muted-foreground">Stocks faibles</p>
-                            <p className="text-2xl font-bold text-red-600">{lowStockParts.length}</p>
-                          </div>
-                          <AlertTriangle className="h-8 w-8 text-red-600" />
                         </div>
                       </CardContent>
                     </Card>
