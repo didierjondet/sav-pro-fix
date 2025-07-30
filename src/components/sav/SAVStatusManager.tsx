@@ -17,7 +17,7 @@ interface SAVStatusManagerProps {
     id: string;
     case_number: string;
     status: string;
-    customers?: {
+    customer?: {
       first_name: string;
       last_name: string;
       phone?: string;
@@ -70,8 +70,8 @@ export function SAVStatusManager({ savCase, onStatusUpdated }: SAVStatusManagerP
       await updateCaseStatus(savCase.id, selectedStatus as any, notes.trim() || undefined);
       
       // Si on doit envoyer un SMS
-      if (sendSMS && savCase.customers?.phone && savCase.tracking_slug) {
-        const customerName = `${savCase.customers.first_name} ${savCase.customers.last_name}`;
+      if (sendSMS && savCase.customer?.phone && savCase.tracking_slug) {
+        const customerName = `${savCase.customer.first_name} ${savCase.customer.last_name}`;
         const trackingUrl = generateTrackingUrl();
         const statusLabel = statusConfig[selectedStatus as keyof typeof statusConfig]?.label || selectedStatus;
         
@@ -79,7 +79,7 @@ export function SAVStatusManager({ savCase, onStatusUpdated }: SAVStatusManagerP
         
         await supabase.functions.invoke('send-sms', {
           body: {
-            to: savCase.customers.phone,
+            to: savCase.customer.phone,
             message: message,
             type: 'status_change',
             recordId: savCase.id
@@ -88,7 +88,7 @@ export function SAVStatusManager({ savCase, onStatusUpdated }: SAVStatusManagerP
         
         toast({
           title: "Statut mis à jour et SMS envoyé",
-          description: `SMS de notification envoyé à ${savCase.customers.phone}`,
+          description: `SMS de notification envoyé à ${savCase.customer.phone}`,
         });
       } else {
         toast({
@@ -116,7 +116,7 @@ export function SAVStatusManager({ savCase, onStatusUpdated }: SAVStatusManagerP
     if (selectedStatus === savCase.status && !notes.trim()) return;
     
     // Si le client a un téléphone et qu'on change vraiment le statut
-    if (savCase.customers?.phone && selectedStatus !== savCase.status) {
+    if (savCase.customer?.phone && selectedStatus !== savCase.status) {
       setPendingStatusData({ status: selectedStatus, notes: notes.trim() });
       setShowSMSDialog(true);
     } else {
@@ -135,7 +135,7 @@ export function SAVStatusManager({ savCase, onStatusUpdated }: SAVStatusManagerP
 
   const hasChanges = selectedStatus !== savCase.status || notes.trim();
   const limits = checkLimits('sms');
-  const canSendSMS = limits.allowed && savCase.customers?.phone && savCase.tracking_slug;
+  const canSendSMS = limits.allowed && savCase.customer?.phone && savCase.tracking_slug;
 
   return (
     <Card>
@@ -206,13 +206,13 @@ export function SAVStatusManager({ savCase, onStatusUpdated }: SAVStatusManagerP
                 à "{statusConfig[selectedStatus as keyof typeof statusConfig]?.label}".
               </p>
               
-              {savCase.customers?.phone ? (
+              {savCase.customer?.phone ? (
                 <div>
                   <p className="text-sm">
                     Voulez-vous envoyer un SMS de notification au client ?
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Destinataire : {savCase.customers.phone}
+                    Destinataire : {savCase.customer.phone}
                   </p>
                   
                   {!canSendSMS && (
@@ -246,7 +246,7 @@ export function SAVStatusManager({ savCase, onStatusUpdated }: SAVStatusManagerP
                   <MessageSquare className="h-4 w-4 mr-2" />
                   Oui, envoyer SMS
                 </Button>
-              ) : savCase.customers?.phone ? (
+              ) : savCase.customer?.phone ? (
                 <Button 
                   variant="outline"
                   onClick={() => window.location.href = '/settings?tab=sms'}
