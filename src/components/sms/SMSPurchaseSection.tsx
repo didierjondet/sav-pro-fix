@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -41,8 +41,29 @@ export function SMSPurchaseSection() {
   };
 
   const tier = subscription?.subscription_tier || 'free';
-  // Prix par défaut selon le tier, maintenant géré dans les plans d'abonnement
-  const pricePerSMS = tier === 'enterprise' ? 0.05 : tier === 'premium' ? 0.08 : 0.12;
+  
+  // Récupérer le prix SMS depuis les plans d'abonnement
+  const [pricePerSMS, setPricePerSMS] = useState(0.12); // Prix par défaut
+  
+  useEffect(() => {
+    const fetchSMSPrice = async () => {
+      try {
+        const { data: plans } = await supabase
+          .from('subscription_plans')
+          .select('sms_cost')
+          .eq('name', tier === 'free' ? 'Gratuit' : tier === 'premium' ? 'Premium' : 'Enterprise')
+          .single();
+        
+        if (plans?.sms_cost) {
+          setPricePerSMS(plans.sms_cost);
+        }
+      } catch (error) {
+        console.error('Erreur lors de la récupération du prix SMS:', error);
+      }
+    };
+    
+    fetchSMSPrice();
+  }, [tier]);
   
   // SMS packages with dynamic pricing
   const smsPackages = [

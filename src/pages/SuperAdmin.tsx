@@ -693,10 +693,7 @@ export default function SuperAdmin() {
     totalUsers: profiles.length,
     totalRevenue: shops.reduce((sum, shop) => sum + (shop.total_revenue || 0), 0),
     totalCases: shops.reduce((sum, shop) => sum + (shop.total_sav_cases || 0), 0),
-    totalSubscriptionRevenue: shops.reduce((sum, shop) => {
-      const tierPrices = { 'free': 0, 'premium': 12, 'enterprise': 40 };
-      return sum + (tierPrices[shop.subscription_tier as keyof typeof tierPrices] || 0);
-    }, 0),
+    totalSubscriptionRevenue: await calculateSubscriptionRevenue(shops),
     activeSupportTickets: activeSupportCount,
   };
 

@@ -123,28 +123,51 @@ export function useSubscription() {
 
     const { subscription_tier, sms_credits_used, sms_credits_allocated, active_sav_count } = subscription;
 
-    switch (subscription_tier) {
-      case 'free':
-        if (active_sav_count >= 15) {
-          return { allowed: false, reason: 'Plan gratuit limité à 15 SAV actifs' };
+    // Récupérer les limites depuis les plans d'abonnement
+    try {
+      const planName = subscription_tier === 'free' ? 'Gratuit' : 
+                      subscription_tier === 'premium' ? 'Premium' : 'Enterprise';
+      
+      const { data: plan } = await supabase
+        .from('subscription_plans')
+        .select('sav_limit, sms_limit')
+        .eq('name', planName)
+        .single();
+
+      if (plan) {
+        if (plan.sav_limit && active_sav_count >= plan.sav_limit) {
+          return { allowed: false, reason: `Plan ${subscription_tier} limité à ${plan.sav_limit} SAV ${subscription_tier === 'premium' ? 'simultanés' : 'actifs'}` };
         }
-        if (sms_credits_used >= 15) {
-          return { allowed: false, reason: 'Plan gratuit limité à 15 SMS par mois' };
+        if (plan.sms_limit && sms_credits_used >= plan.sms_limit) {
+          return { allowed: false, reason: `Plan ${subscription_tier} limité à ${plan.sms_limit} SMS par mois` };
         }
-        break;
-      case 'premium':
-        if (active_sav_count >= 10) {
-          return { allowed: false, reason: 'Plan Premium limité à 10 SAV simultanés' };
-        }
-        if (sms_credits_used >= 100) {
-          return { allowed: false, reason: 'Plan Premium limité à 100 SMS par mois' };
-        }
-        break;
-      case 'enterprise':
-        if (sms_credits_used >= 400) {
-          return { allowed: false, reason: 'Plan Enterprise limité à 400 SMS par mois' };
-        }
-        break;
+      }
+    } catch (error) {
+      console.error('Erreur lors de la vérification des limites:', error);
+      // Fallback sur les anciennes limites codées en dur
+      switch (subscription_tier) {
+        case 'free':
+          if (active_sav_count >= 15) {
+            return { allowed: false, reason: 'Plan gratuit limité à 15 SAV actifs' };
+          }
+          if (sms_credits_used >= 15) {
+            return { allowed: false, reason: 'Plan gratuit limité à 15 SMS par mois' };
+          }
+          break;
+        case 'premium':
+          if (active_sav_count >= 10) {
+            return { allowed: false, reason: 'Plan Premium limité à 10 SAV simultanés' };
+          }
+          if (sms_credits_used >= 100) {
+            return { allowed: false, reason: 'Plan Premium limité à 100 SMS par mois' };
+          }
+          break;
+        case 'enterprise':
+          if (sms_credits_used >= 400) {
+            return { allowed: false, reason: 'Plan Enterprise limité à 400 SMS par mois' };
+          }
+          break;
+      }
     }
 
     return { allowed: true, reason: 'Dans les limites' };
