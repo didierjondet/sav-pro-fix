@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Bell } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Bell, BellRing } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -10,13 +10,116 @@ import {
 import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { useNotifications } from '@/hooks/useNotifications';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 export function NotificationBell() {
   const [isOpen, setIsOpen] = useState(false);
+  const [hasNewActivity, setHasNewActivity] = useState(false);
+  const [isAnimating, setIsAnimating] = useState(false);
   const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
+  const { user } = useAuth();
+
+  // Listen to real-time changes
+  useEffect(() => {
+    if (!user) return;
+
+    let savChannel: any;
+    let supportChannel: any;
+
+    const setupRealtimeListeners = async () => {
+      // Get user's shop_id first
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('shop_id')
+        .eq('user_id', user.id)
+        .single();
+      
+      if (!profile?.shop_id) return;
+
+      // Listen to SAV messages
+      savChannel = supabase
+        .channel('sav-messages-realtime')
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'sav_messages',
+            filter: `shop_id=eq.${profile.shop_id}`
+          },
+          (payload) => {
+            console.log('New SAV message:', payload);
+            if (payload.new.sender_type === 'client') {
+              triggerNotificationEffect();
+            }
+          }
+        )
+        .subscribe();
+
+      // Get shop ticket IDs for support messages
+      const { data: tickets } = await supabase
+        .from('support_tickets')
+        .select('id')
+        .eq('shop_id', profile.shop_id);
+      
+      if (tickets && tickets.length > 0) {
+        const ticketIds = tickets.map(t => t.id);
+        
+        // Listen to support messages
+        supportChannel = supabase
+          .channel('support-messages-realtime')
+          .on(
+            'postgres_changes',
+            {
+              event: 'INSERT',
+              schema: 'public',
+              table: 'support_messages'
+            },
+            (payload) => {
+              console.log('New support message:', payload);
+              // Only trigger if it's from admin and for this shop's tickets
+              if (payload.new.sender_type === 'admin' && ticketIds.includes(payload.new.ticket_id)) {
+                triggerNotificationEffect();
+              }
+            }
+          )
+          .subscribe();
+      }
+    };
+
+    setupRealtimeListeners();
+
+    return () => {
+      if (savChannel) supabase.removeChannel(savChannel);
+      if (supportChannel) supabase.removeChannel(supportChannel);
+    };
+  }, [user]);
+
+  const triggerNotificationEffect = () => {
+    setHasNewActivity(true);
+    setIsAnimating(true);
+    
+    // Play notification sound
+    const audio = new Audio('/notification.mp3');
+    audio.play().catch(console.error);
+    
+    // Stop animation after shaking
+    setTimeout(() => setIsAnimating(false), 1500);
+  };
 
   const handleNotificationClick = (notificationId: string) => {
     markAsRead(notificationId);
+    if (hasNewActivity) {
+      setHasNewActivity(false);
+    }
+  };
+
+  const handleBellClick = () => {
+    setIsOpen(!isOpen);
+    if (hasNewActivity) {
+      setHasNewActivity(false);
+    }
   };
 
   const getNotificationIcon = (type: string) => {
@@ -24,6 +127,7 @@ export function NotificationBell() {
       case 'stock_alert': return '📦';
       case 'order_needed': return '🛒';  
       case 'support_message': return '💬';
+      case 'sav_message': return '🔧';
       default: return '🔔';
     }
   };
@@ -45,14 +149,36 @@ export function NotificationBell() {
     }
   };
 
+  const showRedIndicator = hasNewActivity || unreadCount > 0;
+
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
       <PopoverTrigger asChild>
-        <Button variant="ghost" size="sm" className="relative">
-          <Bell className="h-5 w-5" />
-          {unreadCount > 0 && (
-            <Badge variant="destructive" className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs">
-              {unreadCount > 9 ? '9+' : unreadCount}
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          className={`relative ${
+            hasNewActivity 
+              ? 'text-red-500 hover:text-red-600' 
+              : unreadCount > 0 
+                ? 'text-orange-500 hover:text-orange-600' 
+                : ''
+          } ${isAnimating ? 'animate-[bounce_0.3s_ease-in-out_infinite]' : ''}`}
+          onClick={handleBellClick}
+        >
+          {showRedIndicator ? (
+            <BellRing className={`h-5 w-5 ${hasNewActivity ? 'animate-pulse' : ''}`} />
+          ) : (
+            <Bell className="h-5 w-5" />
+          )}
+          {showRedIndicator && (
+            <Badge 
+              variant="destructive" 
+              className={`absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs ${
+                hasNewActivity ? 'animate-pulse bg-red-600 border-red-600' : ''
+              }`}
+            >
+              {unreadCount > 9 ? '9+' : unreadCount || '!'}
             </Badge>
           )}
         </Button>
