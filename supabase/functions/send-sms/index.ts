@@ -108,8 +108,8 @@ serve(async (req) => {
     const body = JSON.stringify({
       message: message,
       receivers: [to],
-      // Utiliser le numéro du magasin comme expéditeur temporairement
-      sender: "0467300900",
+      // Laisser vide pour utiliser l'expéditeur par défaut OVH
+      // sender: "",
       charset: "UTF-8"
     });
 
