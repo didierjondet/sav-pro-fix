@@ -225,8 +225,8 @@ export default function SupportTicketManager({ ticket, onBack }: SupportTicketMa
                     <div
                       className={`max-w-xs lg:max-w-md px-4 py-3 rounded-lg ${
                         message.sender_type === 'admin'
-                          ? 'bg-primary/10 text-primary border border-primary/20 rounded-br-sm'
-                          : 'bg-muted text-muted-foreground border border-border rounded-bl-sm'
+                          ? 'bg-blue-500 text-white rounded-br-sm'
+                          : 'bg-gray-200 text-gray-900 rounded-bl-sm'
                       }`}
                     >
                       <div className="flex items-center gap-2 mb-1">
