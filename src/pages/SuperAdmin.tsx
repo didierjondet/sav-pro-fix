@@ -39,6 +39,7 @@ import {
 } from '@/components/ui/dialog';
 import ShopManagementDialog from '@/components/admin/ShopManagementDialog';
 import SubscriptionPlansManager from '@/components/admin/SubscriptionPlansManager';
+import SupportTicketManager from '@/components/admin/SupportTicketManager';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -106,9 +107,17 @@ interface SupportTicket {
   description: string;
   status: 'open' | 'in_progress' | 'resolved' | 'closed';
   priority: 'low' | 'medium' | 'high' | 'urgent';
+  assigned_to?: string;
   created_at: string;
+  updated_at: string;
+  resolved_at?: string;
   shop?: {
     name: string;
+    email?: string;
+  };
+  creator?: {
+    first_name?: string;
+    last_name?: string;
     email?: string;
   };
 }
@@ -122,6 +131,7 @@ export default function SuperAdmin() {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [supportTickets, setSupportTickets] = useState<SupportTicket[]>([]);
   const [activeSupportCount, setActiveSupportCount] = useState(0);
+  const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
   const [isCreateShopOpen, setIsCreateShopOpen] = useState(false);
   const [isCreateUserOpen, setIsCreateUserOpen] = useState(false);
   const [isEditShopOpen, setIsEditShopOpen] = useState(false);
@@ -1422,96 +1432,116 @@ export default function SuperAdmin() {
 
           {/* Support Management */}
           <TabsContent value="support">
-            <Card className="bg-white border-slate-200 shadow-sm">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-slate-900">
-                  <HelpCircle className="h-5 w-5" />
-                  Gestion du Support
-                  <Badge variant="secondary" className="ml-2">
-                    {supportTickets.filter(t => t.status === 'open' || t.status === 'in_progress').length} actifs
-                  </Badge>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {supportTickets.length === 0 ? (
-                    <div className="text-center py-8 text-slate-600">
-                      <HelpCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                      <p className="text-lg font-medium">Aucun ticket de support</p>
-                      <p>Les magasins peuvent créer des tickets depuis leur espace Support</p>
-                    </div>
-                  ) : (
-                    <div className="overflow-x-auto">
-                      <table className="min-w-full divide-y divide-slate-200">
-                        <thead className="bg-slate-50">
-                          <tr>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                              Ticket
-                            </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                              Magasin
-                            </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                              Statut
-                            </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                              Priorité
-                            </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                              Date
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody className="bg-white divide-y divide-slate-200">
-                          {supportTickets.map((ticket) => (
-                            <tr key={ticket.id} className="hover:bg-slate-50">
-                              <td className="px-6 py-4">
-                                <div>
-                                  <div className="text-sm font-medium text-slate-900">
-                                    {ticket.subject}
-                                  </div>
-                                  <div className="text-sm text-slate-500 truncate max-w-xs">
-                                    {ticket.description}
-                                  </div>
-                                </div>
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap">
-                                <div className="text-sm text-slate-900">{ticket.shop?.name}</div>
-                                <div className="text-sm text-slate-500">{ticket.shop?.email}</div>
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap">
-                                <Badge variant={
-                                  ticket.status === 'open' ? 'destructive' : 
-                                  ticket.status === 'in_progress' ? 'default' : 
-                                  ticket.status === 'resolved' ? 'secondary' : 'outline'
-                                }>
-                                  {ticket.status === 'open' ? 'Ouvert' :
-                                   ticket.status === 'in_progress' ? 'En cours' :
-                                   ticket.status === 'resolved' ? 'Résolu' : 'Fermé'}
-                                </Badge>
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap">
-                                <Badge variant={
-                                  ticket.priority === 'urgent' ? 'destructive' : 
-                                  ticket.priority === 'high' ? 'default' : 'outline'
-                                }>
-                                  {ticket.priority === 'urgent' ? 'Urgent' :
-                                   ticket.priority === 'high' ? 'Élevée' :
-                                   ticket.priority === 'medium' ? 'Moyenne' : 'Faible'}
-                                </Badge>
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
-                                {new Date(ticket.created_at).toLocaleDateString('fr-FR')}
-                              </td>
+            {selectedTicket ? (
+              <SupportTicketManager
+                ticket={selectedTicket}
+                onBack={() => setSelectedTicket(null)}
+              />
+            ) : (
+              <Card className="bg-white border-slate-200 shadow-sm">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-slate-900">
+                    <HelpCircle className="h-5 w-5" />
+                    Gestion du Support
+                    <Badge variant="secondary" className="ml-2">
+                      {supportTickets.filter(t => t.status === 'open' || t.status === 'in_progress').length} actifs
+                    </Badge>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {supportTickets.length === 0 ? (
+                      <div className="text-center py-8 text-slate-600">
+                        <HelpCircle className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                        <p className="text-lg font-medium">Aucun ticket de support</p>
+                        <p>Les magasins peuvent créer des tickets depuis leur espace Support</p>
+                      </div>
+                    ) : (
+                      <div className="overflow-x-auto">
+                        <table className="min-w-full divide-y divide-slate-200">
+                          <thead className="bg-slate-50">
+                            <tr>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                                Ticket
+                              </th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                                Magasin
+                              </th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                                Statut
+                              </th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                                Priorité
+                              </th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                                Date
+                              </th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
+                                Actions
+                              </th>
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+                          </thead>
+                          <tbody className="bg-white divide-y divide-slate-200">
+                            {supportTickets.map((ticket) => (
+                              <tr key={ticket.id} className="hover:bg-slate-50">
+                                <td className="px-6 py-4">
+                                  <div>
+                                    <div className="text-sm font-medium text-slate-900">
+                                      {ticket.subject}
+                                    </div>
+                                    <div className="text-sm text-slate-500 truncate max-w-xs">
+                                      {ticket.description}
+                                    </div>
+                                  </div>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <div className="text-sm text-slate-900">{ticket.shop?.name}</div>
+                                  <div className="text-sm text-slate-500">{ticket.shop?.email}</div>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <Badge variant={
+                                    ticket.status === 'open' ? 'destructive' : 
+                                    ticket.status === 'in_progress' ? 'default' : 
+                                    ticket.status === 'resolved' ? 'secondary' : 'outline'
+                                  }>
+                                    {ticket.status === 'open' ? 'Ouvert' :
+                                     ticket.status === 'in_progress' ? 'En cours' :
+                                     ticket.status === 'resolved' ? 'Résolu' : 'Fermé'}
+                                  </Badge>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <Badge variant={
+                                    ticket.priority === 'urgent' ? 'destructive' : 
+                                    ticket.priority === 'high' ? 'default' : 'outline'
+                                  }>
+                                    {ticket.priority === 'urgent' ? 'Urgent' :
+                                     ticket.priority === 'high' ? 'Élevée' :
+                                     ticket.priority === 'medium' ? 'Moyenne' : 'Faible'}
+                                  </Badge>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
+                                  {new Date(ticket.created_at).toLocaleDateString('fr-FR')}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <Button
+                                    size="sm"
+                                    onClick={() => setSelectedTicket(ticket)}
+                                    className="flex items-center gap-2"
+                                  >
+                                    <MessageSquare className="h-4 w-4" />
+                                    Gérer
+                                  </Button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
         </Tabs>
 
