@@ -111,12 +111,12 @@ export const generateQuotePDF = (quote: Quote, shop?: Shop) => {
     <body>
       ${shop ? `
         <div class="shop-header">
-          ${shop.logo_url ? `<img src="${shop.logo_url}" alt="Logo" class="shop-logo">` : ''}
+          ${shop.logo_url ? `<img src="${shop.logo_url}" alt="${shop.name}" class="shop-logo">` : ''}
           <div class="shop-info">
             <h1 class="shop-name">${shop.name}</h1>
-            ${shop.address ? `<p>${shop.address}</p>` : ''}
-            ${shop.phone ? `<p>Tél: ${shop.phone}</p>` : ''}
-            ${shop.email ? `<p>Email: ${shop.email}</p>` : ''}
+            ${shop.address ? `<p><strong>Adresse:</strong> ${shop.address}</p>` : ''}
+            ${shop.phone ? `<p><strong>Téléphone:</strong> ${shop.phone}</p>` : ''}
+            ${shop.email ? `<p><strong>Email:</strong> ${shop.email}</p>` : ''}
           </div>
         </div>
       ` : ''}

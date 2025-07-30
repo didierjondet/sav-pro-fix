@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { useQuotes, Quote } from '@/hooks/useQuotes';
+import { useShop } from '@/hooks/useShop';
 import { QuoteForm } from '@/components/quotes/QuoteForm';
 import { QuoteView } from '@/components/quotes/QuoteView';
 import { generateQuotePDF } from '@/utils/pdfGenerator';
@@ -44,6 +45,7 @@ export default function Quotes() {
   const [viewingQuote, setViewingQuote] = useState<Quote | null>(null);
   
   const { quotes, loading, createQuote, deleteQuote, updateQuote } = useQuotes();
+  const { shop } = useShop();
   const { toast } = useToast();
 
   const filteredQuotes = quotes.filter(quote =>
@@ -69,7 +71,7 @@ export default function Quotes() {
 
   const handleDownloadPDF = (quote: Quote) => {
     try {
-      generateQuotePDF(quote);
+      generateQuotePDF(quote, shop);
       toast({
         title: "PDF généré",
         description: "Le PDF du devis a été généré avec succès",
