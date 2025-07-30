@@ -108,8 +108,8 @@ serve(async (req) => {
     const body = JSON.stringify({
       message: message,
       receivers: [to],
-      // Utiliser un nom d'expéditeur simple
-      sender: "Info",
+      // Remettre FixWay en attendant la validation OVH
+      sender: "FixWay",
       charset: "UTF-8"
     });
 
@@ -132,6 +132,18 @@ serve(async (req) => {
     if (!ovhResponse.ok) {
       const errorText = await ovhResponse.text();
       logStep("OVH SMS error", { status: ovhResponse.status, error: errorText });
+      
+      // Si l'erreur est liée à l'expéditeur, ne pas décompter les crédits
+      if (errorText.includes("does not exists")) {
+        return new Response(JSON.stringify({ 
+          error: "Service SMS temporairement indisponible. L'expéditeur SMS est en cours de validation chez OVH. Veuillez réessayer dans quelques heures.",
+          tempError: true
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200, // Retourner 200 pour éviter les erreurs côté client
+        });
+      }
+      
       throw new Error(`OVH SMS error: ${errorText}`);
     }
 
