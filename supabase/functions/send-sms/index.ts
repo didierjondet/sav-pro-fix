@@ -86,17 +86,20 @@ serve(async (req) => {
     // Vérifier les crédits SMS disponibles
     const { data: shopData, error: shopError } = await supabaseClient
       .from('shops')
-      .select('sms_credits')
+      .select('sms_credits_allocated, sms_credits_used')
       .eq('id', shopId)
       .single();
 
     if (shopError) throw shopError;
     
-    if (!shopData.sms_credits || shopData.sms_credits < 1) {
+    const creditsUsed = shopData.sms_credits_used || 0;
+    const creditsAllocated = shopData.sms_credits_allocated || 0;
+    
+    if (creditsUsed >= creditsAllocated) {
       throw new Error("Insufficient SMS credits");
     }
 
-    logStep("SMS credits available", { credits: shopData.sms_credits });
+    logStep("SMS credits available", { used: creditsUsed, allocated: creditsAllocated });
 
     // Préparer l'envoi OVH SMS
     const timestamp = Math.floor(Date.now() / 1000);
@@ -137,7 +140,7 @@ serve(async (req) => {
     // Décrémenter les crédits SMS
     const { error: updateError } = await supabaseClient
       .from('shops')
-      .update({ sms_credits: shopData.sms_credits - 1 })
+      .update({ sms_credits_used: creditsUsed + 1 })
       .eq('id', shopId);
 
     if (updateError) {
@@ -149,12 +152,13 @@ serve(async (req) => {
       .from('sms_history')
       .insert({
         shop_id: shopId,
-        to_number: to,
+        recipient_phone: to,
         message: message,
         type: type,
         record_id: recordId,
         status: 'sent',
-        ovh_job_id: ovhResult.ids?.[0]
+        ovh_job_id: ovhResult.ids?.[0],
+        cost: 1
       });
 
     if (historyError) {
@@ -163,7 +167,7 @@ serve(async (req) => {
 
     return new Response(JSON.stringify({ 
       success: true, 
-      creditsRemaining: shopData.sms_credits - 1,
+      creditsRemaining: creditsAllocated - (creditsUsed + 1),
       ovhJobId: ovhResult.ids?.[0]
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

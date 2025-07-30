@@ -34,7 +34,7 @@ export default function SAVDetail() {
   const generateTrackingUrl = () => {
     if (!savCase?.tracking_slug) return '';
     const baseUrl = window.location.origin;
-    return `${baseUrl}/${savCase.tracking_slug}`;
+    return `${baseUrl}/track/${savCase.tracking_slug}`;
   };
 
   const generateQRCode = async () => {

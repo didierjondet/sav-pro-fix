@@ -82,7 +82,7 @@ const statusConfig = {
 };
 
 export default function TrackSAV() {
-  const { caseNumber } = useParams<{ caseNumber: string }>();
+  const { slug } = useParams<{ slug: string }>();
   const [savCase, setSavCase] = useState<SAVCaseData | null>(null);
   const [loading, setLoading] = useState(true);
   const [clientName, setClientName] = useState('');
@@ -93,19 +93,19 @@ export default function TrackSAV() {
   const { messages, sendMessage, refetch: refetchMessages } = useSAVMessages(savCase?.id);
 
   useEffect(() => {
-    if (caseNumber) {
+    if (slug) {
       fetchSAVCase();
 
       // Set up realtime listener for SAV case updates
       const caseChannel = supabase
-        .channel(`sav-case-${caseNumber}`)
+        .channel(`sav-case-${slug}`)
         .on(
           'postgres_changes',
           {
             event: 'UPDATE',
             schema: 'public',
             table: 'sav_cases',
-            filter: `case_number=eq.${caseNumber}`
+            filter: `tracking_slug=eq.${slug}`
           },
           (payload) => {
             console.log('SAV case update detected:', payload);
@@ -118,7 +118,7 @@ export default function TrackSAV() {
         supabase.removeChannel(caseChannel);
       };
     }
-  }, [caseNumber]);
+  }, [slug]);
 
   const fetchSAVCase = async () => {
     try {
@@ -129,7 +129,7 @@ export default function TrackSAV() {
           customer:customers(first_name, last_name, email, phone),
           shop:shops(name, phone, email, address, logo_url)
         `)
-        .eq('case_number', caseNumber)
+        .eq('tracking_slug', slug)
         .single();
 
       if (error) throw error;
@@ -181,7 +181,7 @@ export default function TrackSAV() {
         <div className="max-w-4xl mx-auto text-center">
           <h1 className="text-2xl font-bold mb-4">Dossier SAV introuvable</h1>
           <p className="text-muted-foreground">
-            Le numéro de dossier "{caseNumber}" n'existe pas ou n'est plus accessible.
+            Le lien de suivi "{slug}" n'existe pas ou n'est plus accessible.
           </p>
         </div>
       </div>
