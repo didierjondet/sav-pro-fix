@@ -593,6 +593,56 @@ export type Database = {
           },
         ]
       }
+      shop_services: {
+        Row: {
+          category: string
+          created_at: string
+          description: string | null
+          display_order: number
+          duration_minutes: number
+          id: string
+          name: string
+          price: number
+          shop_id: string
+          updated_at: string
+          visible: boolean
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          duration_minutes?: number
+          id?: string
+          name: string
+          price?: number
+          shop_id: string
+          updated_at?: string
+          visible?: boolean
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          duration_minutes?: number
+          id?: string
+          name?: string
+          price?: number
+          shop_id?: string
+          updated_at?: string
+          visible?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shop_services_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       shops: {
         Row: {
           active_sav_count: number | null
@@ -613,6 +663,9 @@ export type Database = {
           subscription_end: string | null
           subscription_tier: string | null
           updated_at: string
+          website_description: string | null
+          website_enabled: boolean | null
+          website_title: string | null
         }
         Insert: {
           active_sav_count?: number | null
@@ -633,6 +686,9 @@ export type Database = {
           subscription_end?: string | null
           subscription_tier?: string | null
           updated_at?: string
+          website_description?: string | null
+          website_enabled?: boolean | null
+          website_title?: string | null
         }
         Update: {
           active_sav_count?: number | null
@@ -653,6 +709,9 @@ export type Database = {
           subscription_end?: string | null
           subscription_tier?: string | null
           updated_at?: string
+          website_description?: string | null
+          website_enabled?: boolean | null
+          website_title?: string | null
         }
         Relationships: []
       }

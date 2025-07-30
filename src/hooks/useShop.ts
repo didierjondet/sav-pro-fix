@@ -14,6 +14,10 @@ export interface Shop {
   logo_url: string;
   max_sav_processing_days_client: number;
   max_sav_processing_days_internal: number;
+  website_enabled: boolean;
+  website_title: string;
+  website_description: string;
+  slug: string;
   created_at: string;
   updated_at: string;
 }
