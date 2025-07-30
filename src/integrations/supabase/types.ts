@@ -754,30 +754,6 @@ export type Database = {
         }
         Relationships: []
       }
-      sms_pricing: {
-        Row: {
-          created_at: string
-          id: string
-          price_per_sms: number
-          subscription_tier: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          price_per_sms?: number
-          subscription_tier: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          price_per_sms?: number
-          subscription_tier?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
       subscribers: {
         Row: {
           active_sav_count: number | null
@@ -817,6 +793,54 @@ export type Database = {
           subscription_tier?: string | null
           updated_at?: string
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      subscription_plans: {
+        Row: {
+          billing_interval: string
+          created_at: string
+          description: string | null
+          features: Json | null
+          id: string
+          is_active: boolean
+          monthly_price: number
+          name: string
+          sav_limit: number | null
+          sms_cost: number
+          sms_limit: number
+          stripe_price_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          billing_interval?: string
+          created_at?: string
+          description?: string | null
+          features?: Json | null
+          id?: string
+          is_active?: boolean
+          monthly_price?: number
+          name: string
+          sav_limit?: number | null
+          sms_cost?: number
+          sms_limit?: number
+          stripe_price_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          billing_interval?: string
+          created_at?: string
+          description?: string | null
+          features?: Json | null
+          id?: string
+          is_active?: boolean
+          monthly_price?: number
+          name?: string
+          sav_limit?: number | null
+          sms_cost?: number
+          sms_limit?: number
+          stripe_price_id?: string | null
+          updated_at?: string
         }
         Relationships: []
       }

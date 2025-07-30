@@ -61,6 +61,16 @@ import {
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 
+// Fonction pour calculer le revenu des abonnements basé sur les plans
+const calculateSubscriptionRevenue = (shops: any[]) => {
+  // Prix des plans basés sur les plans d'abonnement créés
+  const planPrices = { 'free': 0, 'premium': 12, 'enterprise': 40 };
+  
+  return shops.reduce((sum, shop) => {
+    return sum + (planPrices[shop.subscription_tier as keyof typeof planPrices] || 0);
+  }, 0);
+};
+
 interface Shop {
   id: string;
   name: string;
@@ -693,7 +703,7 @@ export default function SuperAdmin() {
     totalUsers: profiles.length,
     totalRevenue: shops.reduce((sum, shop) => sum + (shop.total_revenue || 0), 0),
     totalCases: shops.reduce((sum, shop) => sum + (shop.total_sav_cases || 0), 0),
-    totalSubscriptionRevenue: await calculateSubscriptionRevenue(shops),
+    totalSubscriptionRevenue: calculateSubscriptionRevenue(shops),
     activeSupportTickets: activeSupportCount,
   };
 

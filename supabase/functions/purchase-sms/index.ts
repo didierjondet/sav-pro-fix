@@ -71,18 +71,23 @@ serve(async (req) => {
 
     logStep("Shop data retrieved", { shopId: profileData.shop_id, subscriptionTier: shopData.subscription_tier });
 
-    // Get SMS pricing for this subscription tier
-    const { data: pricingData, error: pricingError } = await supabaseClient
-      .from('sms_pricing')
-      .select('price_per_sms')
-      .eq('subscription_tier', shopData.subscription_tier || 'free')
+    // Récupérer le prix SMS depuis les plans d'abonnement
+    const { data: planData, error: planError } = await supabaseClient
+      .from('subscription_plans')
+      .select('sms_cost')
+      .eq('name', shopData.subscription_tier === 'free' ? 'Gratuit' : 
+                  shopData.subscription_tier === 'premium' ? 'Premium' : 'Enterprise')
       .single();
 
-    if (pricingError || !pricingData) {
-      throw new Error('Tarification SMS introuvable pour ce plan');
+    let pricePerSMS = 0.12; // Prix par défaut pour free
+    if (planData?.sms_cost) {
+      pricePerSMS = planData.sms_cost;
+    } else {
+      // Fallback sur les anciens prix si la table n'existe pas encore
+      pricePerSMS = shopData.subscription_tier === 'enterprise' ? 0.05 : 
+                   shopData.subscription_tier === 'premium' ? 0.08 : 0.12;
     }
 
-    const pricePerSMS = pricingData.price_per_sms;
     const totalPrice = Math.ceil(credits * pricePerSMS * 100); // Total price in cents
     logStep("Pricing calculated", { pricePerSMS, totalPrice, credits });
 
