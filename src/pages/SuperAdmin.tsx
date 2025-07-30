@@ -819,31 +819,29 @@ export default function SuperAdmin() {
 
         {/* Indicateurs supplémentaires */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          <Card className="bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg">
+          <Card className="bg-white border-slate-200 shadow-sm hover:shadow-md transition-shadow">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-orange-100 font-medium">Support Actif</p>
-                  <p className="text-4xl font-bold">{totalStats.activeSupportTickets}</p>
-                  <p className="text-orange-100 text-sm">tickets en cours</p>
+                  <p className="text-slate-600 font-medium">Support Actif</p>
+                  <p className="text-3xl font-bold text-slate-900">{totalStats.activeSupportTickets}</p>
                 </div>
-                <div className="p-3 bg-white/20 rounded-lg">
-                  <HelpCircle className="h-10 w-10 text-white" />
+                <div className="p-3 bg-orange-100 rounded-lg">
+                  <HelpCircle className="h-8 w-8 text-orange-600" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-r from-green-500 to-green-600 text-white shadow-lg">
+          <Card className="bg-white border-slate-200 shadow-sm hover:shadow-md transition-shadow">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-green-100 font-medium">Notre Chiffre d'Affaires</p>
-                  <p className="text-4xl font-bold">{totalStats.totalSubscriptionRevenue}€</p>
-                  <p className="text-green-100 text-sm">abonnements mensuels</p>
+                  <p className="text-slate-600 font-medium">Notre Chiffre d'Affaires</p>
+                  <p className="text-3xl font-bold text-slate-900">{totalStats.totalSubscriptionRevenue}€</p>
                 </div>
-                <div className="p-3 bg-white/20 rounded-lg">
-                  <TrendingUp className="h-10 w-10 text-white" />
+                <div className="p-3 bg-green-100 rounded-lg">
+                  <TrendingUp className="h-8 w-8 text-green-600" />
                 </div>
               </div>
             </CardContent>
