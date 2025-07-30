@@ -759,7 +759,7 @@ export default function SuperAdmin() {
         </div>
 
         {/* Dashboard Overview - Design distinctif */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <Card className="bg-white border-slate-200 shadow-sm hover:shadow-md transition-shadow">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
@@ -815,23 +815,6 @@ export default function SuperAdmin() {
               </div>
             </CardContent>
           </Card>
-        </div>
-
-        {/* Indicateurs supplémentaires */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          <Card className="bg-white border-slate-200 shadow-sm hover:shadow-md transition-shadow">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-slate-600 font-medium">Support Actif</p>
-                  <p className="text-3xl font-bold text-slate-900">{totalStats.activeSupportTickets}</p>
-                </div>
-                <div className="p-3 bg-orange-100 rounded-lg">
-                  <HelpCircle className="h-8 w-8 text-orange-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
 
           <Card className="bg-white border-slate-200 shadow-sm hover:shadow-md transition-shadow">
             <CardContent className="p-6">
@@ -842,6 +825,23 @@ export default function SuperAdmin() {
                 </div>
                 <div className="p-3 bg-green-100 rounded-lg">
                   <TrendingUp className="h-8 w-8 text-green-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Support séparé */}
+        <div className="mb-8">
+          <Card className="bg-white border-slate-200 shadow-sm hover:shadow-md transition-shadow max-w-sm">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-slate-600 font-medium">Support Actif</p>
+                  <p className="text-3xl font-bold text-slate-900">{totalStats.activeSupportTickets}</p>
+                </div>
+                <div className="p-3 bg-orange-100 rounded-lg">
+                  <HelpCircle className="h-8 w-8 text-orange-600" />
                 </div>
               </div>
             </CardContent>
