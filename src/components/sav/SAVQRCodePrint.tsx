@@ -20,6 +20,8 @@ export function SAVQRCodePrint({ savCase, onClose }: SAVQRCodePrintProps) {
   const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(`https://${trackingUrl}`)}`;
 
   useEffect(() => {
+    console.log('Shop data:', shop); // Debug
+    
     // Créer une nouvelle fenêtre pour l'impression
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
@@ -31,141 +33,184 @@ export function SAVQRCodePrint({ savCase, onClose }: SAVQRCodePrintProps) {
           <title>QR Code - Suivi SAV ${savCase.case_number}</title>
           <style>
             @page {
-              size: A4;
-              margin: 2cm;
+              size: A4 portrait;
+              margin: 1.5cm;
+            }
+            * {
+              box-sizing: border-box;
             }
             body {
               font-family: Arial, sans-serif;
               margin: 0;
+              padding: 0;
+              width: 100%;
+              height: 100vh;
+            }
+            
+            /* Première moitié de page */
+            .qr-section {
+              width: 100%;
+              height: 48vh;
+              padding: 20px;
+              border-bottom: 2px dashed #ccc;
+              display: flex;
+              flex-direction: column;
+            }
+            
+            /* Deuxième moitié de page */
+            .qr-section-duplicate {
+              width: 100%;
+              height: 48vh;
               padding: 20px;
               display: flex;
               flex-direction: column;
-              min-height: 100vh;
             }
-            .header {
+            
+            .shop-header {
               display: flex;
-              justify-content: space-between;
-              align-items: flex-start;
-              margin-bottom: 40px;
-              border-bottom: 2px solid #333;
-              padding-bottom: 20px;
+              align-items: center;
+              margin-bottom: 15px;
+              border-bottom: 1px solid #ddd;
+              padding-bottom: 10px;
             }
-            .logo-section {
-              flex: 0 0 auto;
-              margin-right: 20px;
+            
+            .shop-logo {
+              max-height: 50px;
+              max-width: 80px;
+              margin-right: 15px;
             }
-            .logo {
-              max-height: 100px;
-              max-width: 250px;
-              object-fit: contain;
-            }
+            
             .shop-info {
               flex: 1;
-              text-align: left;
-              font-size: 14px;
-              line-height: 1.6;
             }
+            
             .shop-name {
-              font-size: 20px;
-              font-weight: bold;
-              color: #333;
-              margin-bottom: 10px;
-            }
-            .shop-details {
-              color: #555;
-            }
-            .main-content {
-              flex: 1;
-              display: flex;
-              flex-direction: column;
-              justify-content: center;
-              align-items: center;
-              text-align: center;
-            }
-            .title {
-              font-size: 24px;
-              font-weight: bold;
-              margin-bottom: 20px;
-              color: #333;
-            }
-            .case-number {
-              font-size: 32px;
-              font-weight: bold;
-              color: #2563eb;
-              margin-bottom: 30px;
-            }
-            .qr-code {
-              margin: 30px 0;
-            }
-            .qr-code img {
-              border: 2px solid #333;
-              padding: 10px;
-              background: white;
-            }
-            .instructions {
               font-size: 16px;
-              max-width: 500px;
-              margin: 20px auto;
-              line-height: 1.6;
-              color: #555;
+              font-weight: bold;
+              margin-bottom: 5px;
             }
-            .url {
-              font-family: monospace;
-              background: #f5f5f5;
-              padding: 10px;
-              border-radius: 4px;
-              word-break: break-all;
-              margin: 20px 0;
-              font-size: 14px;
-            }
-            .footer {
-              margin-top: 40px;
-              text-align: center;
-              font-size: 12px;
+            
+            .shop-details {
+              font-size: 11px;
+              line-height: 1.3;
               color: #666;
             }
+            
+            .content {
+              flex: 1;
+              display: flex;
+              align-items: center;
+              justify-content: space-between;
+            }
+            
+            .qr-info {
+              flex: 1;
+              padding-right: 15px;
+            }
+            
+            .case-number {
+              font-size: 18px;
+              font-weight: bold;
+              color: #2563eb;
+              margin-bottom: 8px;
+            }
+            
+            .device-info {
+              font-size: 12px;
+              margin-bottom: 5px;
+            }
+            
+            .customer-info {
+              font-size: 11px;
+              color: #666;
+              margin-bottom: 8px;
+            }
+            
+            .url-info {
+              font-size: 10px;
+              background: #f5f5f5;
+              padding: 5px;
+              border-radius: 3px;
+              word-break: break-all;
+            }
+            
+            .qr-code {
+              text-align: center;
+            }
+            
+            .qr-code img {
+              width: 120px;
+              height: 120px;
+              border: 1px solid #ddd;
+            }
+            
+            .instructions {
+              font-size: 9px;
+              text-align: center;
+              margin-top: 5px;
+              line-height: 1.2;
+            }
+            
             @media print {
-              .no-print {
-                display: none;
-              }
+              body { print-color-adjust: exact; }
             }
           </style>
         </head>
         <body>
-          <div class="header">
-            <div class="logo-section">
-              ${shop?.logo_url ? `<img src="${shop.logo_url}" alt="Logo ${shop.name}" class="logo" />` : ''}
+          <!-- Première QR Code -->
+          <div class="qr-section">
+            <div class="shop-header">
+              ${shop?.logo_url ? `<img src="${shop.logo_url}" alt="Logo" class="shop-logo" />` : ''}
+              <div class="shop-info">
+                <div class="shop-name">${shop?.name || 'Nom du magasin'}</div>
+                <div class="shop-details">
+                  ${shop?.address || ''}<br>
+                  ${shop?.phone ? 'Tél: ' + shop.phone : ''} ${shop?.email ? '| Email: ' + shop.email : ''}
+                </div>
+              </div>
             </div>
-            <div class="shop-info">
-              <div class="shop-name">${shop?.name || 'Nom du magasin'}</div>
-              <div class="shop-details">
-                ${shop?.address ? shop.address + '<br>' : ''}
-                ${shop?.phone ? 'Tél: ' + shop.phone + '<br>' : ''}
-                ${shop?.email ? 'Email: ' + shop.email + '<br>' : ''}
-                ${shop?.website_enabled && shop?.slug ? 'Site web: www.fixway.fr/' + shop.slug : ''}
+            
+            <div class="content">
+              <div class="qr-info">
+                <div class="case-number">SAV N° ${savCase.case_number}</div>
+                <div class="device-info"><strong>Appareil:</strong> ${savCase.device_brand} ${savCase.device_model}</div>
+                ${savCase.customer ? `<div class="customer-info"><strong>Client:</strong> ${savCase.customer.first_name} ${savCase.customer.last_name}</div>` : ''}
+                <div class="url-info">${trackingUrl}</div>
+              </div>
+              
+              <div class="qr-code">
+                <img src="${qrCodeUrl}" alt="QR Code" />
+                <div class="instructions">Scannez pour suivre<br>votre réparation</div>
               </div>
             </div>
           </div>
           
-          <div class="main-content">
-            <h1 class="title">Suivi de réparation SAV</h1>
-            <div class="case-number">Dossier N° ${savCase.case_number}</div>
-            
-            <div class="qr-code">
-              <img src="${qrCodeUrl}" alt="QR Code" />
+          <!-- Deuxième QR Code (identique) -->
+          <div class="qr-section-duplicate">
+            <div class="shop-header">
+              ${shop?.logo_url ? `<img src="${shop.logo_url}" alt="Logo" class="shop-logo" />` : ''}
+              <div class="shop-info">
+                <div class="shop-name">${shop?.name || 'Nom du magasin'}</div>
+                <div class="shop-details">
+                  ${shop?.address || ''}<br>
+                  ${shop?.phone ? 'Tél: ' + shop.phone : ''} ${shop?.email ? '| Email: ' + shop.email : ''}
+                </div>
+              </div>
             </div>
             
-            <div class="instructions">
-              <p><strong>Scannez ce QR code</strong> avec votre smartphone pour suivre l'état de votre réparation en temps réel.</p>
-              <p>Ou rendez-vous directement sur :</p>
-              <div class="url">${trackingUrl}</div>
-              <p style="margin-top: 15px;"><strong>Appareil :</strong> ${savCase.device_brand} ${savCase.device_model}</p>
-              ${savCase.customer ? `<p><strong>Client :</strong> ${savCase.customer.first_name} ${savCase.customer.last_name}</p>` : ''}
+            <div class="content">
+              <div class="qr-info">
+                <div class="case-number">SAV N° ${savCase.case_number}</div>
+                <div class="device-info"><strong>Appareil:</strong> ${savCase.device_brand} ${savCase.device_model}</div>
+                ${savCase.customer ? `<div class="customer-info"><strong>Client:</strong> ${savCase.customer.first_name} ${savCase.customer.last_name}</div>` : ''}
+                <div class="url-info">${trackingUrl}</div>
+              </div>
+              
+              <div class="qr-code">
+                <img src="${qrCodeUrl}" alt="QR Code" />
+                <div class="instructions">Scannez pour suivre<br>votre réparation</div>
+              </div>
             </div>
-          </div>
-          
-          <div class="footer">
-            <p>Document généré le ${new Date().toLocaleDateString('fr-FR')} - ${shop?.name || ''}</p>
           </div>
         </body>
       </html>
