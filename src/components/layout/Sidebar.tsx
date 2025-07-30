@@ -4,6 +4,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useSAVCases } from '@/hooks/useSAVCases';
 import { useProfile } from '@/hooks/useProfile';
+import { useShopSettings } from '@/hooks/useShopSettings';
 import {
   
   Package,
@@ -23,7 +24,7 @@ interface SidebarProps {
   onClose: () => void;
 }
 
-const navigation = [
+const baseNavigation = [
   { name: 'Tableau de bord', href: '/', icon: BarChart3 },
   { name: 'Nouveau SAV', href: '/sav/new', icon: Plus },
   { name: 'Dossiers SAV', href: '/sav', icon: FileText },
@@ -32,7 +33,6 @@ const navigation = [
   { name: 'Commandes', href: '/orders', icon: Package },
   { name: 'Clients', href: '/customers', icon: Users },
   { name: 'Support', href: '/support', icon: HelpCircle },
-  { name: 'Abonnement', href: '/subscription', icon: CreditCard },
 ];
 
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
@@ -40,6 +40,13 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const location = useLocation();
   const { cases } = useSAVCases();
   const { profile } = useProfile();
+  const { settings } = useShopSettings();
+
+  // Créer la navigation dynamique selon les paramètres du magasin
+  const navigation = [...baseNavigation];
+  if (settings?.subscription_menu_visible) {
+    navigation.push({ name: 'Abonnement', href: '/subscription', icon: CreditCard });
+  }
 
   // Calculate status counts
   const statusCounts = cases.reduce((acc, savCase) => {
