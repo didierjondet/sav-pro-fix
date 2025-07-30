@@ -601,6 +601,8 @@ export type Database = {
           email: string | null
           id: string
           invite_code: string | null
+          max_sav_processing_days_client: number | null
+          max_sav_processing_days_internal: number | null
           name: string
           phone: string | null
           slug: string | null
@@ -618,6 +620,8 @@ export type Database = {
           email?: string | null
           id?: string
           invite_code?: string | null
+          max_sav_processing_days_client?: number | null
+          max_sav_processing_days_internal?: number | null
           name: string
           phone?: string | null
           slug?: string | null
@@ -635,6 +639,8 @@ export type Database = {
           email?: string | null
           id?: string
           invite_code?: string | null
+          max_sav_processing_days_client?: number | null
+          max_sav_processing_days_internal?: number | null
           name?: string
           phone?: string | null
           slug?: string | null
