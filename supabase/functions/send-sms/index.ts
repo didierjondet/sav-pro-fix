@@ -108,8 +108,8 @@ serve(async (req) => {
     const body = JSON.stringify({
       message: message,
       receivers: [to],
-      // Laisser vide pour utiliser l'expéditeur par défaut OVH
-      // sender: "",
+      // Utiliser un nom d'expéditeur simple
+      sender: "Info",
       charset: "UTF-8"
     });
 
