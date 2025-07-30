@@ -4,40 +4,21 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { useSubscription } from '@/hooks/useSubscription';
+import { useSMSPricing } from '@/hooks/useSMSPricing';
 import { supabase } from '@/integrations/supabase/client';
 import { MessageSquare, CreditCard, Package } from 'lucide-react';
-
-const SMS_PACKAGES = {
-  free: [
-    { credits: 50, price: 5, label: "50 SMS" },
-    { credits: 100, price: 9, label: "100 SMS" },
-    { credits: 200, price: 17, label: "200 SMS" }
-  ],
-  premium: [
-    { credits: 50, price: 4, label: "50 SMS" },
-    { credits: 100, price: 7, label: "100 SMS" },
-    { credits: 200, price: 13, label: "200 SMS" },
-    { credits: 500, price: 30, label: "500 SMS" }
-  ],
-  enterprise: [
-    { credits: 50, price: 3, label: "50 SMS" },
-    { credits: 100, price: 5, label: "100 SMS" },
-    { credits: 200, price: 9, label: "200 SMS" },
-    { credits: 500, price: 20, label: "500 SMS" },
-    { credits: 1000, price: 35, label: "1000 SMS" }
-  ]
-};
 
 export function SMSPurchaseSection() {
   const [purchasing, setPurchasing] = useState<number | null>(null);
   const { subscription } = useSubscription();
+  const { getPriceForTier } = useSMSPricing();
   const { toast } = useToast();
 
-  const handlePurchase = async (credits: number, price: number) => {
+  const handlePurchase = async (credits: number) => {
     setPurchasing(credits);
     try {
       const { data, error } = await supabase.functions.invoke('purchase-sms', {
-        body: { credits, price }
+        body: { credits }
       });
 
       if (error) throw error;
@@ -60,7 +41,20 @@ export function SMSPurchaseSection() {
     }
   };
 
-  const packages = SMS_PACKAGES[subscription?.subscription_tier || 'free'];
+  const tier = subscription?.subscription_tier || 'free';
+  const pricePerSMS = getPriceForTier(tier);
+  
+  // SMS packages with dynamic pricing
+  const smsPackages = [
+    { credits: 50, label: "50 SMS" },
+    { credits: 100, label: "100 SMS" },
+    { credits: 200, label: "200 SMS" },
+    { credits: 500, label: "500 SMS" },
+    { credits: 1000, label: "1000 SMS" }
+  ].map(pkg => ({
+    ...pkg,
+    price: Math.ceil(pkg.credits * pricePerSMS * 100) / 100 // Round up to 2 decimals
+  }));
 
   return (
     <Card>
@@ -75,13 +69,13 @@ export function SMSPurchaseSection() {
           Achetez des crédits SMS supplémentaires pour envoyer des notifications à vos clients.
           {subscription?.subscription_tier && subscription.subscription_tier !== 'free' && (
             <span className="block mt-1 text-primary">
-              Tarif préférentiel plan {subscription.subscription_tier}
+              Tarif préférentiel plan {subscription.subscription_tier} - {(pricePerSMS * 100).toFixed(1)}¢ par SMS
             </span>
           )}
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {packages.map((pkg) => (
+          {smsPackages.map((pkg) => (
             <div key={pkg.credits} className="border rounded-lg p-4 space-y-3">
               <div className="text-center">
                 <div className="text-lg font-semibold">{pkg.label}</div>
@@ -99,7 +93,7 @@ export function SMSPurchaseSection() {
               
               <Button 
                 className="w-full" 
-                onClick={() => handlePurchase(pkg.credits, pkg.price)}
+                onClick={() => handlePurchase(pkg.credits)}
                 disabled={purchasing === pkg.credits}
               >
                 <CreditCard className="h-4 w-4 mr-2" />

@@ -40,6 +40,7 @@ import {
 import ShopManagementDialog from '@/components/admin/ShopManagementDialog';
 import SubscriptionPlansManager from '@/components/admin/SubscriptionPlansManager';
 import SupportTicketManager from '@/components/admin/SupportTicketManager';
+import { SMSPricingManager } from '@/components/admin/SMSPricingManager';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -1362,8 +1363,9 @@ export default function SuperAdmin() {
           </TabsContent>
 
           {/* Plans d'abonnement */}
-          <TabsContent value="plans">
+          <TabsContent value="plans" className="space-y-6">
             <SubscriptionPlansManager />
+            <SMSPricingManager />
           </TabsContent>
 
           {/* Statistics */}

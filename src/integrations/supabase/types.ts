@@ -754,6 +754,30 @@ export type Database = {
         }
         Relationships: []
       }
+      sms_pricing: {
+        Row: {
+          created_at: string
+          id: string
+          price_per_sms: number
+          subscription_tier: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          price_per_sms?: number
+          subscription_tier: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          price_per_sms?: number
+          subscription_tier?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       subscribers: {
         Row: {
           active_sav_count: number | null

@@ -40,17 +40,24 @@ serve(async (req) => {
 
     logStep("User authenticated", { userId: user.id, email: user.email });
 
-    const { smsPackage } = await req.json();
-    if (!smsPackage) throw new Error("SMS package not specified");
+    // Parse request body
+    const { credits } = await req.json();
+    logStep("Request body parsed", { credits });
 
-    // Récupérer le shop et l'abonnement
+    if (!credits || typeof credits !== 'number' || credits <= 0) {
+      throw new Error('Nombre de crédits SMS invalide');
+    }
+
+    // Get user's shop and subscription tier
     const { data: profileData, error: profileError } = await supabaseClient
       .from('profiles')
       .select('shop_id')
       .eq('user_id', user.id)
       .single();
 
-    if (profileError) throw profileError;
+    if (profileError || !profileData?.shop_id) {
+      throw new Error('Profil utilisateur introuvable');
+    }
 
     const { data: shopData, error: shopError } = await supabaseClient
       .from('shops')
@@ -58,35 +65,26 @@ serve(async (req) => {
       .eq('id', profileData.shop_id)
       .single();
 
-    if (shopError) throw shopError;
-
-    // Définir les prix selon l'abonnement
-    const smsPrices = {
-      free: {
-        pack_100: { amount: 1500, credits: 100 }, // 15€ pour 100 SMS
-        pack_500: { amount: 6000, credits: 500 }, // 60€ pour 500 SMS
-        pack_1000: { amount: 10000, credits: 1000 } // 100€ pour 1000 SMS
-      },
-      premium: {
-        pack_100: { amount: 1200, credits: 100 }, // 12€ pour 100 SMS  
-        pack_500: { amount: 5000, credits: 500 }, // 50€ pour 500 SMS
-        pack_1000: { amount: 8000, credits: 1000 } // 80€ pour 1000 SMS
-      },
-      enterprise: {
-        pack_100: { amount: 1000, credits: 100 }, // 10€ pour 100 SMS
-        pack_500: { amount: 4000, credits: 500 }, // 40€ pour 500 SMS
-        pack_1000: { amount: 6000, credits: 1000 } // 60€ pour 1000 SMS
-      }
-    };
-
-    const tier = shopData.subscription_tier as keyof typeof smsPrices;
-    const packageData = smsPrices[tier]?.[smsPackage as keyof typeof smsPrices[typeof tier]];
-    
-    if (!packageData) {
-      throw new Error("Invalid SMS package for subscription tier");
+    if (shopError || !shopData) {
+      throw new Error('Magasin introuvable');
     }
 
-    logStep("Package selected", { tier, smsPackage, packageData });
+    logStep("Shop data retrieved", { shopId: profileData.shop_id, subscriptionTier: shopData.subscription_tier });
+
+    // Get SMS pricing for this subscription tier
+    const { data: pricingData, error: pricingError } = await supabaseClient
+      .from('sms_pricing')
+      .select('price_per_sms')
+      .eq('subscription_tier', shopData.subscription_tier || 'free')
+      .single();
+
+    if (pricingError || !pricingData) {
+      throw new Error('Tarification SMS introuvable pour ce plan');
+    }
+
+    const pricePerSMS = pricingData.price_per_sms;
+    const totalPrice = Math.ceil(credits * pricePerSMS * 100); // Total price in cents
+    logStep("Pricing calculated", { pricePerSMS, totalPrice, credits });
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
 
@@ -110,10 +108,10 @@ serve(async (req) => {
           price_data: {
             currency: "eur",
             product_data: { 
-              name: `Pack ${packageData.credits} SMS`,
-              description: `Crédits SMS pour votre magasin - Plan ${tier}`
+              name: `Pack ${credits} SMS`,
+              description: `Crédits SMS pour votre magasin - Plan ${shopData.subscription_tier}`
             },
-            unit_amount: packageData.amount,
+            unit_amount: totalPrice, // Price in cents
           },
           quantity: 1,
         },
@@ -124,7 +122,7 @@ serve(async (req) => {
       metadata: {
         type: "sms_purchase",
         shop_id: profileData.shop_id,
-        sms_credits: packageData.credits.toString(),
+        sms_credits: credits.toString(),
         user_id: user.id
       }
     });
