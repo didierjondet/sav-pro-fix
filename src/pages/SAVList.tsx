@@ -1,11 +1,13 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { multiWordSearch } from '@/utils/searchUtils';
 import { Header } from '@/components/layout/Header';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { SAVDashboard } from '@/components/sav/SAVDashboard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useSAVCases } from '@/hooks/useSAVCases';
 import { useShop } from '@/hooks/useShop';
@@ -21,7 +23,8 @@ import {
   User,
   Trash2,
   QrCode,
-  MessageSquare
+  MessageSquare,
+  Search
 } from 'lucide-react';
 
 const statusColors = {
@@ -44,6 +47,7 @@ const statusLabels = {
 
 export default function SAVList() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
   const [qrCodeCase, setQrCodeCase] = useState(null);
   const { cases, loading, deleteCase } = useSAVCases();
   const { shop } = useShop();
@@ -79,6 +83,18 @@ export default function SAVList() {
     });
   }, [cases, shop]);
 
+  // Filtrer les cas selon la recherche
+  const filteredCases = casesWithDelayInfo.filter(case_ =>
+    multiWordSearch(
+      searchTerm, 
+      case_.customer?.first_name, 
+      case_.customer?.last_name, 
+      case_.case_number, 
+      case_.device_brand,
+      case_.device_model
+    )
+  );
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
@@ -110,18 +126,35 @@ export default function SAVList() {
                 </Button>
               </div>
 
+              {/* Barre de recherche */}
+              <div className="mb-6">
+                <div className="relative max-w-md">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                  <Input
+                    placeholder="Rechercher un dossier, client, appareil..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+
           <div className="grid gap-4">
-            {casesWithDelayInfo.length === 0 ? (
+            {filteredCases.length === 0 ? (
               <Card>
                 <CardContent className="text-center py-8">
-                  <p className="text-muted-foreground">Aucun dossier SAV trouvé</p>
-                  <Button className="mt-4" onClick={() => navigate('/sav/new')}>
-                    Créer le premier dossier
-                  </Button>
+                  <p className="text-muted-foreground">
+                    {searchTerm ? 'Aucun dossier trouvé pour cette recherche' : 'Aucun dossier SAV trouvé'}
+                  </p>
+                  {!searchTerm && (
+                    <Button className="mt-4" onClick={() => navigate('/sav/new')}>
+                      Créer le premier dossier
+                    </Button>
+                  )}
                 </CardContent>
               </Card>
             ) : (
-              casesWithDelayInfo.map((savCase) => {
+              filteredCases.map((savCase) => {
                 const isUrgent = savCase.delayInfo.isOverdue;
                 const isHighPriority = !isUrgent && savCase.delayInfo.totalRemainingHours <= 24; // Moins de 24h restantes
                 
