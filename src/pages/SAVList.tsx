@@ -124,9 +124,13 @@ export default function SAVList() {
               casesWithDelayInfo.map((savCase) => {
                 const isUrgent = savCase.delayInfo.isOverdue;
                 const isHighPriority = !isUrgent && savCase.delayInfo.totalRemainingHours <= 24; // Moins de 24h restantes
-                const cardClassName = `hover:shadow-md transition-shadow ${
-                  isUrgent ? 'border-l-4 border-l-red-500 bg-red-50/30' : 
-                  isHighPriority ? 'border-l-4 border-l-orange-500 bg-orange-50/30' : ''
+                
+                // Couleurs de fond selon le type de SAV
+                const backgroundClass = savCase.sav_type === 'client' ? 'bg-red-50' : 'bg-sky-50';
+                
+                const cardClassName = `hover:shadow-md transition-shadow ${backgroundClass} ${
+                  isUrgent ? 'border-l-4 border-l-red-500' : 
+                  isHighPriority ? 'border-l-4 border-l-orange-500' : ''
                 }`;
                 
                 return (
