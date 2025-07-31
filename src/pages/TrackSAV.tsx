@@ -113,9 +113,12 @@ export default function TrackSAV() {
         .eq('tracking_slug', slug)
         .single();
 
+      console.log('📥 [TrackSAV] Raw response:', { data, error });
       if (error) throw error;
       console.log('✅ [TrackSAV] SAV case data retrieved:', data);
       console.log('🏪 [TrackSAV] Shop data in response:', data?.shop);
+      console.log('🏪 [TrackSAV] Shop name:', data?.shop?.name);
+      console.log('🏪 [TrackSAV] Shop address:', data?.shop?.address);
       setSavCase(data);
     } catch (error: any) {
       toast({
