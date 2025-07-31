@@ -40,12 +40,34 @@ export function SAVDashboard() {
   const { shop } = useShop();
   const navigate = useNavigate();
 
-  // Calculer les informations de délai pour tous les cas une seule fois
+  // Calculer les informations de délai pour tous les cas et trier par priorité
   const casesWithDelayInfo = useMemo(() => {
-    return cases.map((case_) => ({
+    const casesWithDelay = cases.map((case_) => ({
       ...case_,
       delayInfo: calculateSAVDelay(case_, shop)
     }));
+
+    // Trier par priorité : 
+    // 1. SAV en retard (isOverdue = true) en premier
+    // 2. Ensuite par temps restant croissant (le moins de temps restant en premier)
+    // 3. Enfin les SAV livrés ou annulés à la fin
+    return casesWithDelay.sort((a, b) => {
+      // Les SAV livrés ou annulés vont à la fin
+      const aCompleted = a.status === 'delivered' || a.status === 'cancelled';
+      const bCompleted = b.status === 'delivered' || b.status === 'cancelled';
+      
+      if (aCompleted && !bCompleted) return 1;
+      if (!aCompleted && bCompleted) return -1;
+      if (aCompleted && bCompleted) return 0; // Garder l'ordre existant pour les complétés
+      
+      // Pour les SAV actifs, trier par urgence
+      // 1. SAV en retard en premier
+      if (a.delayInfo.isOverdue && !b.delayInfo.isOverdue) return -1;
+      if (!a.delayInfo.isOverdue && b.delayInfo.isOverdue) return 1;
+      
+      // 2. Si les deux sont en retard ou non en retard, trier par temps restant
+      return a.delayInfo.totalRemainingHours - b.delayInfo.totalRemainingHours;
+    });
   }, [cases, shop]);
 
   const filteredCases = casesWithDelayInfo.filter(case_ =>
@@ -167,12 +189,17 @@ export function SAVDashboard() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredCases.map((case_) => (
+                {filteredCases.map((case_) => {
+                  // Couleurs de fond selon le type de SAV
+                  const backgroundClass = case_.sav_type === 'client' ? 'bg-red-50' : 'bg-sky-50';
+                  
+                  return (
                   <TableRow 
                     key={case_.id} 
                     className={cn(
+                      backgroundClass,
                       case_.delayInfo.isOverdue && case_.status !== 'delivered' && case_.status !== 'cancelled'
-                        ? "bg-destructive/10 border-destructive/20" 
+                        ? "border-destructive/20 bg-red-100" 
                         : ""
                     )}
                   >
@@ -236,7 +263,8 @@ export function SAVDashboard() {
                       </DropdownMenu>
                     </TableCell>
                   </TableRow>
-                ))}
+                  );
+                })}
               </TableBody>
             </Table>
           )}
