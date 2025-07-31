@@ -149,6 +149,8 @@ export default function SimpleTrack() {
     try {
       setLoading(true);
       setError(null);
+      
+      console.log('🔍 [SimpleTrack] Fetching SAV case for slug:', slug);
 
       const { data, error } = await supabase
         .from('sav_cases')
@@ -160,7 +162,10 @@ export default function SimpleTrack() {
         .eq('tracking_slug', slug)
         .single();
 
+      console.log('📥 [SimpleTrack] Raw response:', { data, error });
+      
       if (error) {
+        console.error('❌ [SimpleTrack] Database error:', error);
         if (error.code === 'PGRST116') {
           setError('Aucun dossier trouvé avec ce lien de suivi.');
         } else {
@@ -169,12 +174,18 @@ export default function SimpleTrack() {
         return;
       }
 
+      console.log('✅ [SimpleTrack] SAV case data retrieved:', data);
+      console.log('🏪 [SimpleTrack] Shop data in response:', data?.shop);
+      console.log('🏪 [SimpleTrack] Shop name:', data?.shop?.name);
+      console.log('🏪 [SimpleTrack] Shop address:', data?.shop?.address);
+      console.log('🏪 [SimpleTrack] Shop logo:', data?.shop?.logo_url);
+
       setSavCase(data as SAVCaseData);
       if (data.customer) {
         setClientName(`${data.customer.first_name} ${data.customer.last_name}`);
       }
     } catch (error) {
-      console.error('Error fetching SAV case:', error);
+      console.error('❌ [SimpleTrack] Catch error:', error);
       setError('Erreur lors du chargement du dossier.');
     } finally {
       setLoading(false);
