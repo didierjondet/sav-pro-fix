@@ -128,7 +128,7 @@ export default function TrackSAV() {
         .select(`
           *,
           customer:customers(first_name, last_name, email, phone),
-          shop:shops!inner(name, phone, email, address, logo_url)
+          shop:shops(name, phone, email, address, logo_url)
         `)
         .eq('tracking_slug', slug)
         .single();
