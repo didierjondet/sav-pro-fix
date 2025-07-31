@@ -172,7 +172,7 @@ export const generateQuotePDF = (quote: Quote, shop?: Shop) => {
           </div>
         ` : ''}
         <p>Devis généré le ${new Date().toLocaleDateString('fr-FR')} à ${new Date().toLocaleTimeString('fr-FR')}</p>
-        <p style="font-size: 10px; margin-top: 10px;">Propulsé par <strong>fixway.fr</strong></p>
+        <p style="font-size: 10px; margin-top: 10px;">Propulsé par <strong>FixWay Pro</strong></p>
       </div>
     </body>
     </html>

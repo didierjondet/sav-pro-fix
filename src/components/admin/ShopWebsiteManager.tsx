@@ -62,7 +62,7 @@ export default function ShopWebsiteManager() {
 
   const getWebsiteUrl = () => {
     if (!shop?.slug) return '';
-    return `https://www.fixway.fr/${shop.slug}`;
+    return `https://www.fixwaypro.com/${shop.slug}`;
   };
 
   if (loading) {
