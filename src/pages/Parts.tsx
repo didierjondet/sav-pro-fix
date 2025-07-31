@@ -148,20 +148,6 @@ export default function Parts() {
                     </div>
                   </div>
 
-                  {/* Alerte stocks faibles */}
-                  {lowStockParts.length > 0 && (
-                    <Card className="mb-6 border-yellow-200 bg-yellow-50">
-                      <CardContent className="p-4">
-                        <div className="flex items-center gap-2 text-yellow-800">
-                          <AlertTriangle className="h-5 w-5" />
-                        <span className="font-medium">
-                          {lowStockParts.length} référence(s) en stock faible
-                        </span>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )}
-
                   {/* Liste des pièces */}
                   <div className="grid gap-4">
                     {filteredParts.length === 0 ? (
