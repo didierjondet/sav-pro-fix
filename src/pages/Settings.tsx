@@ -30,8 +30,13 @@ import {
   Copy,
   Key,
   Upload,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Moon,
+  Sun,
+  Monitor
 } from 'lucide-react';
+import { useTheme } from "next-themes";
+import { Switch } from '@/components/ui/switch';
 import {
   Dialog,
   DialogContent,
@@ -62,6 +67,7 @@ interface Profile {
 export default function Settings() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { theme, setTheme } = useTheme();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -295,7 +301,7 @@ export default function Settings() {
               </div>
 
           <Tabs defaultValue="shop" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="shop" className="flex items-center gap-2">
                 <Store className="h-4 w-4" />
                 Magasin
@@ -303,6 +309,10 @@ export default function Settings() {
               <TabsTrigger value="profile" className="flex items-center gap-2">
                 <Users className="h-4 w-4" />
                 Mon Profil
+              </TabsTrigger>
+              <TabsTrigger value="appearance" className="flex items-center gap-2">
+                <Monitor className="h-4 w-4" />
+                Apparence
               </TabsTrigger>
               <TabsTrigger value="sms" className="flex items-center gap-2">
                 <Mail className="h-4 w-4" />
@@ -563,6 +573,137 @@ export default function Settings() {
                   <Button onClick={handleSaveProfile} disabled={saving}>
                     {saving ? 'Sauvegarde...' : 'Sauvegarder'}
                   </Button>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="appearance" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Monitor className="h-5 w-5" />
+                    Apparence et Thème
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="space-y-4">
+                    <div>
+                      <Label className="text-base font-medium">Mode d'affichage</Label>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        Personnalisez l'apparence de l'interface selon vos préférences
+                      </p>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 gap-4">
+                      {/* Option Mode Clair */}
+                      <div 
+                        className={`relative rounded-lg border-2 p-4 cursor-pointer transition-all ${
+                          theme === 'light' ? 'border-primary bg-primary/5' : 'border-muted hover:border-muted-foreground/25'
+                        }`}
+                        onClick={() => setTheme('light')}
+                      >
+                        <div className="flex items-center space-x-3">
+                          <div className="flex-shrink-0">
+                            <div className="w-5 h-5 rounded-full border-2 border-primary flex items-center justify-center">
+                              {theme === 'light' && (
+                                <div className="w-2 h-2 rounded-full bg-primary"></div>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <Sun className="h-4 w-4" />
+                              <span className="font-medium">Mode Clair</span>
+                            </div>
+                            <p className="text-sm text-muted-foreground">
+                              Interface claire et lumineuse, idéale pour le travail de jour
+                            </p>
+                          </div>
+                          <div className="w-16 h-10 bg-white border rounded-md shadow-sm flex items-center justify-center">
+                            <div className="w-8 h-2 bg-gray-200 rounded"></div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Option Mode Sombre */}
+                      <div 
+                        className={`relative rounded-lg border-2 p-4 cursor-pointer transition-all ${
+                          theme === 'dark' ? 'border-primary bg-primary/5' : 'border-muted hover:border-muted-foreground/25'
+                        }`}
+                        onClick={() => setTheme('dark')}
+                      >
+                        <div className="flex items-center space-x-3">
+                          <div className="flex-shrink-0">
+                            <div className="w-5 h-5 rounded-full border-2 border-primary flex items-center justify-center">
+                              {theme === 'dark' && (
+                                <div className="w-2 h-2 rounded-full bg-primary"></div>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <Moon className="h-4 w-4" />
+                              <span className="font-medium">Mode Sombre</span>
+                            </div>
+                            <p className="text-sm text-muted-foreground">
+                              Interface sombre qui réduit la fatigue oculaire, parfait pour les sessions prolongées
+                            </p>
+                          </div>
+                          <div className="w-16 h-10 bg-gray-900 border rounded-md shadow-sm flex items-center justify-center">
+                            <div className="w-8 h-2 bg-gray-600 rounded"></div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Option Système */}
+                      <div 
+                        className={`relative rounded-lg border-2 p-4 cursor-pointer transition-all ${
+                          theme === 'system' ? 'border-primary bg-primary/5' : 'border-muted hover:border-muted-foreground/25'
+                        }`}
+                        onClick={() => setTheme('system')}
+                      >
+                        <div className="flex items-center space-x-3">
+                          <div className="flex-shrink-0">
+                            <div className="w-5 h-5 rounded-full border-2 border-primary flex items-center justify-center">
+                              {theme === 'system' && (
+                                <div className="w-2 h-2 rounded-full bg-primary"></div>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <Monitor className="h-4 w-4" />
+                              <span className="font-medium">Automatique (Système)</span>
+                            </div>
+                            <p className="text-sm text-muted-foreground">
+                              S'adapte automatiquement aux préférences de votre système d'exploitation
+                            </p>
+                          </div>
+                          <div className="w-16 h-10 border rounded-md shadow-sm flex">
+                            <div className="w-8 h-full bg-white border-r flex items-center justify-center">
+                              <div className="w-4 h-1 bg-gray-200 rounded"></div>
+                            </div>
+                            <div className="w-8 h-full bg-gray-900 flex items-center justify-center">
+                              <div className="w-4 h-1 bg-gray-600 rounded"></div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="pt-4 border-t">
+                      <div className="text-sm text-muted-foreground space-y-2">
+                        <p className="flex items-center gap-2">
+                          <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                          Les modifications s'appliquent instantanément
+                        </p>
+                        <p className="flex items-center gap-2">
+                          <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                          Vos préférences sont sauvegardées automatiquement
+                        </p>
+                      </div>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
             </TabsContent>
