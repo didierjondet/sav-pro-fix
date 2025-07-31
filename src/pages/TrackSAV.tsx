@@ -95,34 +95,13 @@ export default function TrackSAV() {
   useEffect(() => {
     if (slug) {
       fetchSAVCase();
-
-      // Set up realtime listener for SAV case updates
-      const caseChannel = supabase
-        .channel(`sav-case-${slug}`)
-        .on(
-          'postgres_changes',
-          {
-            event: 'UPDATE',
-            schema: 'public',
-            table: 'sav_cases',
-            filter: `tracking_slug=eq.${slug}`
-          },
-          (payload) => {
-            console.log('SAV case update detected:', payload);
-            fetchSAVCase(); // Refetch case data when status changes
-          }
-        )
-        .subscribe();
-
-      return () => {
-        supabase.removeChannel(caseChannel);
-      };
     }
   }, [slug]);
 
   const fetchSAVCase = async () => {
+    if (!slug) return;
+    
     try {
-      console.log('🔍 Fetching SAV case for slug:', slug);
       const { data, error } = await supabase
         .from('sav_cases')
         .select(`
@@ -133,21 +112,9 @@ export default function TrackSAV() {
         .eq('tracking_slug', slug)
         .single();
 
-      if (error) {
-        console.error('❌ Error fetching SAV case:', error);
-        throw error;
-      }
-      
-      console.log('✅ SAV case data retrieved:', data);
-      console.log('🏪 Shop data in response:', data?.shop);
-      console.log('📍 Shop name specifically:', data?.shop?.name);
-      console.log('📞 Shop phone specifically:', data?.shop?.phone);
-      console.log('🏢 Shop address specifically:', data?.shop?.address);
-      console.log('🖼️ Shop logo specifically:', data?.shop?.logo_url);
-      
+      if (error) throw error;
       setSavCase(data);
     } catch (error: any) {
-      console.error('💥 Fetch error:', error);
       toast({
         title: "Erreur",
         description: "Dossier SAV introuvable",
@@ -180,18 +147,16 @@ export default function TrackSAV() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background p-6">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center">Chargement...</div>
-        </div>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">Chargement...</div>
       </div>
     );
   }
 
   if (!savCase) {
     return (
-      <div className="min-h-screen bg-background p-6">
-        <div className="max-w-4xl mx-auto text-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
           <h1 className="text-2xl font-bold mb-4">Dossier SAV introuvable</h1>
           <p className="text-muted-foreground">
             Le lien de suivi "{slug}" n'existe pas ou n'est plus accessible.
@@ -207,7 +172,7 @@ export default function TrackSAV() {
   return (
     <div className="min-h-screen bg-background">
       {/* En-tête du magasin */}
-      <div className="bg-white border-b shadow-sm">
+      <div className="bg-card border-b shadow-sm">
         <div className="max-w-4xl mx-auto p-6">
           <div className="flex items-center justify-center gap-4 mb-4">
             {savCase.shop?.logo_url ? (
@@ -330,7 +295,7 @@ export default function TrackSAV() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <ScrollArea className="h-[500px] w-full pr-4 border rounded-lg bg-gray-50/50">
+            <ScrollArea className="h-[400px] w-full pr-4 border rounded-lg bg-muted/30">
               <div className="p-4 space-y-4">
                 {messages.length === 0 ? (
                   <div className="text-center text-muted-foreground">
@@ -346,7 +311,7 @@ export default function TrackSAV() {
                         className={`max-w-[80%] rounded-lg p-3 ${
                           message.sender_type === 'client'
                             ? 'bg-primary text-primary-foreground'
-                            : 'bg-muted'
+                            : 'bg-card'
                         }`}
                       >
                         <div className="flex items-center gap-2 mb-1">
