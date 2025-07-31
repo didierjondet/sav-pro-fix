@@ -128,6 +128,8 @@ export default function SubscriptionPlansManager() {
 
   const handleCreatePlan = async () => {
     try {
+      console.log('Creating plan with data:', formData);
+      
       const { data, error } = await supabase
         .from('subscription_plans')
         .insert({
@@ -145,7 +147,12 @@ export default function SubscriptionPlansManager() {
         .select()
         .single();
 
-      if (error) throw error;
+      console.log('Insert result:', { data, error });
+
+      if (error) {
+        console.error('Insert error:', error);
+        throw error;
+      }
 
       setPlans([...plans, {
         ...data,
@@ -162,6 +169,7 @@ export default function SubscriptionPlansManager() {
         description: "Plan d'abonnement créé avec succès",
       });
     } catch (error: any) {
+      console.error('Create plan error:', error);
       toast({
         title: "Erreur",
         description: error.message,
