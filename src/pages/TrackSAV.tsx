@@ -131,7 +131,7 @@ export default function TrackSAV() {
           shop:shops(name, phone, email, address, logo_url)
         `)
         .eq('tracking_slug', slug)
-        .maybeSingle();
+        .single();
 
       if (error) {
         console.error('Error fetching SAV case:', error);
