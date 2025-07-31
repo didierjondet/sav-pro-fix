@@ -45,6 +45,46 @@ export function useCustomers() {
 
   const createCustomer = async (customerData: Omit<Customer, 'id' | 'created_at' | 'updated_at'>) => {
     try {
+      // Vérification des doublons
+      const { data: existingCustomers, error: searchError } = await supabase
+        .from('customers')
+        .select('id, first_name, last_name, email')
+        .eq('shop_id', customerData.shop_id);
+
+      if (searchError) throw searchError;
+
+      // Vérifier si un client avec le même nom et prénom existe déjà
+      const nameMatch = existingCustomers?.find(customer => 
+        customer.first_name.toLowerCase().trim() === customerData.first_name.toLowerCase().trim() &&
+        customer.last_name.toLowerCase().trim() === customerData.last_name.toLowerCase().trim()
+      );
+
+      if (nameMatch) {
+        toast({
+          title: "Client déjà existant",
+          description: `Un client avec le nom "${customerData.first_name} ${customerData.last_name}" existe déjà.`,
+          variant: "destructive",
+        });
+        return { data: null, error: new Error("Client déjà existant") };
+      }
+
+      // Si un email est fourni, vérifier s'il existe déjà
+      if (customerData.email && customerData.email.trim()) {
+        const emailMatch = existingCustomers?.find(customer => 
+          customer.email && customer.email.toLowerCase().trim() === customerData.email!.toLowerCase().trim()
+        );
+
+        if (emailMatch) {
+          toast({
+            title: "Email déjà utilisé",
+            description: `Un client avec l'email "${customerData.email}" existe déjà.`,
+            variant: "destructive",
+          });
+          return { data: null, error: new Error("Email déjà utilisé") };
+        }
+      }
+
+      // Si aucun doublon détecté, créer le client
       const { data, error } = await supabase
         .from('customers')
         .insert([customerData])
@@ -72,6 +112,51 @@ export function useCustomers() {
 
   const updateCustomer = async (customerId: string, customerData: Partial<Customer>) => {
     try {
+      // Vérification des doublons lors de la modification
+      if (customerData.first_name || customerData.last_name || customerData.email) {
+        const { data: existingCustomers, error: searchError } = await supabase
+          .from('customers')
+          .select('id, first_name, last_name, email')
+          .eq('shop_id', customerData.shop_id!)
+          .neq('id', customerId); // Exclure le client actuel
+
+        if (searchError) throw searchError;
+
+        // Vérifier si un autre client avec le même nom et prénom existe
+        if (customerData.first_name && customerData.last_name) {
+          const nameMatch = existingCustomers?.find(customer => 
+            customer.first_name.toLowerCase().trim() === customerData.first_name!.toLowerCase().trim() &&
+            customer.last_name.toLowerCase().trim() === customerData.last_name!.toLowerCase().trim()
+          );
+
+          if (nameMatch) {
+            toast({
+              title: "Client déjà existant",
+              description: `Un autre client avec le nom "${customerData.first_name} ${customerData.last_name}" existe déjà.`,
+              variant: "destructive",
+            });
+            return { data: null, error: new Error("Client déjà existant") };
+          }
+        }
+
+        // Si un email est fourni, vérifier s'il existe déjà chez un autre client
+        if (customerData.email && customerData.email.trim()) {
+          const emailMatch = existingCustomers?.find(customer => 
+            customer.email && customer.email.toLowerCase().trim() === customerData.email!.toLowerCase().trim()
+          );
+
+          if (emailMatch) {
+            toast({
+              title: "Email déjà utilisé",
+              description: `Un autre client avec l'email "${customerData.email}" existe déjà.`,
+              variant: "destructive",
+            });
+            return { data: null, error: new Error("Email déjà utilisé") };
+          }
+        }
+      }
+
+      // Si aucun doublon détecté, mettre à jour le client
       const { data, error } = await supabase
         .from('customers')
         .update(customerData)
