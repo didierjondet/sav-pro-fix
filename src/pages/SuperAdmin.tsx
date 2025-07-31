@@ -184,7 +184,19 @@ export default function SuperAdmin() {
       return;
     }
     
-    if (user) {
+    // Protection stricte : seul djondet@gmail.com peut accéder à cette page
+    if (user && user.email !== 'djondet@gmail.com') {
+      console.warn('Accès non autorisé à la page Super Admin:', user.email);
+      toast({
+        title: "Accès refusé",
+        description: "Vous n'êtes pas autorisé à accéder à cette page.",
+        variant: "destructive",
+      });
+      window.location.href = '/';
+      return;
+    }
+    
+    if (user && user.email === 'djondet@gmail.com') {
       fetchData();
     }
   }, [user, authLoading]);
