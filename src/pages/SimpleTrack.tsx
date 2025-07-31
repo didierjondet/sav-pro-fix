@@ -262,7 +262,7 @@ export default function SimpleTrack() {
               </div>
             )}
             <h1 className="text-3xl font-bold text-gray-800">
-              {savCase.shop?.name || 'Réparateur'}
+              {savCase.shop?.name || 'FixWay Pro'}
             </h1>
           </div>
           <div className="flex items-center justify-center gap-2 mb-2">

@@ -194,7 +194,7 @@ export default function TrackSAV() {
             )}
             <div className="text-center">
               <h1 className="text-2xl font-bold text-primary">
-                {savCase?.shop?.name || "Réparateur"}
+                {savCase?.shop?.name || "FixWay Pro"}
               </h1>
               <p className="text-sm text-muted-foreground">Service Après-Vente</p>
             </div>
