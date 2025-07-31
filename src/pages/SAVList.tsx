@@ -49,12 +49,34 @@ export default function SAVList() {
   const { shop } = useShop();
   const navigate = useNavigate();
 
-  // Calculer les informations de délai pour tous les cas
+  // Calculer les informations de délai pour tous les cas et trier par priorité
   const casesWithDelayInfo = useMemo(() => {
-    return cases.map((case_) => ({
+    const casesWithDelay = cases.map((case_) => ({
       ...case_,
       delayInfo: calculateSAVDelay(case_, shop)
     }));
+
+    // Trier par priorité : 
+    // 1. SAV en retard (isOverdue = true) en premier
+    // 2. Ensuite par temps restant croissant (le moins de temps restant en premier)
+    // 3. Enfin les SAV livrés ou annulés à la fin
+    return casesWithDelay.sort((a, b) => {
+      // Les SAV livrés ou annulés vont à la fin
+      const aCompleted = a.status === 'delivered' || a.status === 'cancelled';
+      const bCompleted = b.status === 'delivered' || b.status === 'cancelled';
+      
+      if (aCompleted && !bCompleted) return 1;
+      if (!aCompleted && bCompleted) return -1;
+      if (aCompleted && bCompleted) return 0; // Garder l'ordre existant pour les complétés
+      
+      // Pour les SAV actifs, trier par urgence
+      // 1. SAV en retard en premier
+      if (a.delayInfo.isOverdue && !b.delayInfo.isOverdue) return -1;
+      if (!a.delayInfo.isOverdue && b.delayInfo.isOverdue) return 1;
+      
+      // 2. Si les deux sont en retard ou non en retard, trier par temps restant
+      return a.delayInfo.totalRemainingHours - b.delayInfo.totalRemainingHours;
+    });
   }, [cases, shop]);
 
   if (loading) {
@@ -99,15 +121,27 @@ export default function SAVList() {
                 </CardContent>
               </Card>
             ) : (
-              casesWithDelayInfo.map((savCase) => (
-                <Card key={savCase.id} className="hover:shadow-md transition-shadow">
+              casesWithDelayInfo.map((savCase) => {
+                const isUrgent = savCase.delayInfo.isOverdue;
+                const isHighPriority = !isUrgent && savCase.delayInfo.totalRemainingHours <= 24; // Moins de 24h restantes
+                const cardClassName = `hover:shadow-md transition-shadow ${
+                  isUrgent ? 'border-l-4 border-l-red-500 bg-red-50/30' : 
+                  isHighPriority ? 'border-l-4 border-l-orange-500 bg-orange-50/30' : ''
+                }`;
+                
+                return (
+                <Card key={savCase.id} className={cardClassName}>
                   <CardContent className="p-6">
                     <div className="flex items-center justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-4 mb-2">
-                          <h3 className="font-semibold text-lg">
-                            #{savCase.case_number}
-                          </h3>
+                          <div className="flex items-center gap-2">
+                            {isUrgent && <AlertCircle className="h-5 w-5 text-red-500" />}
+                            {isHighPriority && !isUrgent && <Clock className="h-5 w-5 text-orange-500" />}
+                            <h3 className="font-semibold text-lg">
+                              #{savCase.case_number}
+                            </h3>
+                          </div>
                           <Badge className={statusColors[savCase.status]}>
                             {statusLabels[savCase.status]}
                           </Badge>
@@ -131,7 +165,12 @@ export default function SAVList() {
                           
                           <div className="flex items-center gap-2">
                             <Clock className="h-4 w-4" />
-                            <span>{formatDelayText(savCase.delayInfo)}</span>
+                            <span className={
+                              isUrgent ? 'text-red-600 font-semibold' :
+                              isHighPriority ? 'text-orange-600 font-medium' : ''
+                            }>
+                              {formatDelayText(savCase.delayInfo)}
+                            </span>
                           </div>
                         </div>
                         
@@ -195,7 +234,8 @@ export default function SAVList() {
                     </div>
                   </CardContent>
                 </Card>
-              ))
+                );
+              })
             )}
           </div>
             </div>
