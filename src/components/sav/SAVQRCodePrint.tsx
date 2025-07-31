@@ -11,13 +11,15 @@ interface SAVQRCodePrintProps {
 export function SAVQRCodePrint({ savCase, onClose }: SAVQRCodePrintProps) {
   const { shop } = useShop();
 
-  // Créer l'URL raccourcie du style www.fixway.fr/nom_du_magasin/nom_du_client
-  const shopName = shop?.name?.toLowerCase().replace(/[^a-z0-9]/g, '_') || 'magasin';
-  const clientName = savCase.customer 
-    ? `${savCase.customer.first_name}_${savCase.customer.last_name}`.toLowerCase().replace(/[^a-z0-9]/g, '_')
-    : 'client';
-  const trackingUrl = `www.fixway.fr/${shopName}/${clientName}`;
-  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(`https://${trackingUrl}`)}`;
+  // Utiliser la vraie URL de tracking comme dans SAVDetail
+  const generateTrackingUrl = () => {
+    if (!savCase?.tracking_slug) return '';
+    const baseUrl = window.location.origin;
+    return `${baseUrl}/track/${savCase.tracking_slug}`;
+  };
+  
+  const trackingUrl = generateTrackingUrl();
+  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(trackingUrl)}`;
 
   useEffect(() => {
     // Attendre que les données du shop soient chargées
