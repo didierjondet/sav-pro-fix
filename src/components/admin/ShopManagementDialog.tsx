@@ -101,7 +101,7 @@ export default function ShopManagementDialog({ shop, isOpen, onClose, onUpdate }
   if (!shop) return null;
 
   const currentTier = subscriptionPlans.find(plan => 
-    plan.name.toLowerCase() === shop.subscription_tier?.toLowerCase()
+    shop.subscription_plan_id ? plan.id === shop.subscription_plan_id : plan.name.toLowerCase() === shop.subscription_tier?.toLowerCase()
   );
 
   const fetchSubscriptionPlans = async () => {
