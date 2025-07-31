@@ -191,6 +191,9 @@ export default function SubscriptionPlansManager() {
     if (!editingPlan) return;
     
     try {
+      console.log('Updating plan with ID:', editingPlan.id);
+      console.log('Update data:', formData);
+      
       const { data, error } = await supabase
         .from('subscription_plans')
         .update({
@@ -209,7 +212,12 @@ export default function SubscriptionPlansManager() {
         .select()
         .single();
 
-      if (error) throw error;
+      console.log('Update result:', { data, error });
+
+      if (error) {
+        console.error('Update error:', error);
+        throw error;
+      }
 
       setPlans(plans.map(plan => plan.id === editingPlan.id ? {
         ...data,
@@ -227,6 +235,7 @@ export default function SubscriptionPlansManager() {
         description: "Plan d'abonnement mis à jour avec succès",
       });
     } catch (error: any) {
+      console.error('Update plan error:', error);
       toast({
         title: "Erreur",
         description: error.message,
