@@ -192,50 +192,56 @@ export default function TrackSAV() {
   const StatusIcon = statusInfo?.icon || AlertCircle;
 
   return (
-    <div className="min-h-screen bg-background p-6">
-      <div className="max-w-4xl mx-auto space-y-6">
-        {/* Header avec logo/nom du magasin */}
-        <div className="text-center space-y-4">
-          <div className="flex items-center justify-center gap-3 mb-2">
+    <div className="min-h-screen bg-background">
+      {/* En-tête du magasin */}
+      <div className="bg-white border-b shadow-sm">
+        <div className="max-w-4xl mx-auto p-6">
+          <div className="flex items-center justify-center gap-4 mb-4">
             {savCase.shop?.logo_url ? (
               <img 
                 src={savCase.shop.logo_url} 
-                alt="Logo du magasin" 
-                className="h-12 w-12 object-contain"
+                alt={`Logo ${savCase.shop.name}`}
+                className="h-16 w-16 object-contain"
               />
             ) : (
-              <img 
-                src="/lovable-uploads/3d99a913-9d52-4f6c-9a65-78b3bd561739.png" 
-                alt="Logo fixway.fr" 
-                className="h-12 w-12 object-contain"
-              />
+              <div className="h-16 w-16 bg-primary/10 rounded-lg flex items-center justify-center">
+                <Smartphone className="h-8 w-8 text-primary" />
+              </div>
             )}
-            <h1 className="text-3xl font-bold">
-              {savCase.shop?.name || 'fixway.fr'}
-            </h1>
+            <div className="text-center">
+              <h1 className="text-2xl font-bold text-primary">
+                {savCase.shop?.name || "Réparateur"}
+              </h1>
+              <p className="text-sm text-muted-foreground">Service Après-Vente</p>
+            </div>
           </div>
-          <p className="text-muted-foreground">Suivi de votre dossier SAV</p>
-          <p className="text-muted-foreground">Dossier n° {savCase.case_number}</p>
           
           {/* Coordonnées du magasin */}
           {savCase.shop && (
-            <div className="text-sm text-muted-foreground space-y-1">
-              {savCase.shop.phone && (
-                <p>📞 {savCase.shop.phone}</p>
-              )}
-              {savCase.shop.email && (
-                <p>✉️ {savCase.shop.email}</p>
-              )}
-              {savCase.shop.address && (
-                <p>📍 {savCase.shop.address}</p>
-              )}
+            <div className="text-center space-y-1 mb-4">
+              <div className="flex flex-wrap justify-center gap-4 text-sm text-muted-foreground">
+                {savCase.shop.address && (
+                  <span>📍 {savCase.shop.address}</span>
+                )}
+                {savCase.shop.phone && (
+                  <span>📞 {savCase.shop.phone}</span>
+                )}
+                {savCase.shop.email && (
+                  <span>✉️ {savCase.shop.email}</span>
+                )}
+              </div>
             </div>
           )}
           
-          <div className="text-xs text-muted-foreground">
-            Propulsé par <span className="font-medium">fixway.fr</span>
+          <div className="text-center">
+            <h2 className="text-lg font-semibold">Suivi de votre dossier SAV</h2>
+            <p className="text-primary font-medium">Dossier n° {savCase.case_number}</p>
           </div>
         </div>
+      </div>
+
+      {/* Contenu principal */}
+      <div className="max-w-4xl mx-auto p-6 space-y-6">
 
         {/* Status */}
         <Card>
@@ -372,6 +378,15 @@ export default function TrackSAV() {
             </div>
           </CardContent>
         </Card>
+      </div>
+      
+      {/* Footer */}
+      <div className="bg-muted/30 border-t mt-12">
+        <div className="max-w-4xl mx-auto p-4 text-center">
+          <p className="text-sm text-muted-foreground">
+            Propulsé par <span className="font-semibold text-primary">fixway.fr</span>
+          </p>
+        </div>
       </div>
     </div>
   );
