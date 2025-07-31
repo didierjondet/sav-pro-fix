@@ -397,6 +397,7 @@ export type Database = {
           device_imei: string | null
           device_model: string | null
           id: string
+          private_comments: string | null
           problem_description: string | null
           repair_notes: string | null
           sav_type: Database["public"]["Enums"]["sav_type"]
@@ -416,6 +417,7 @@ export type Database = {
           device_imei?: string | null
           device_model?: string | null
           id?: string
+          private_comments?: string | null
           problem_description?: string | null
           repair_notes?: string | null
           sav_type: Database["public"]["Enums"]["sav_type"]
@@ -435,6 +437,7 @@ export type Database = {
           device_imei?: string | null
           device_model?: string | null
           id?: string
+          private_comments?: string | null
           problem_description?: string | null
           repair_notes?: string | null
           sav_type?: Database["public"]["Enums"]["sav_type"]

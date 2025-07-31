@@ -13,6 +13,7 @@ export interface SAVCase {
   device_imei?: string;
   problem_description: string;
   repair_notes?: string;
+  private_comments?: string;
   total_time_minutes: number;
   total_cost: number;
   created_at: string;

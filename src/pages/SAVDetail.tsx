@@ -7,9 +7,12 @@ import { SAVStatusManager } from '@/components/sav/SAVStatusManager';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
 import { useSAVCases } from '@/hooks/useSAVCases';
 import { useToast } from '@/hooks/use-toast';
-import { QrCode, ExternalLink, ArrowLeft, Copy, Share } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { QrCode, ExternalLink, ArrowLeft, Copy, Share, Save, Lock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { SAVPartsEditor } from '@/components/sav/SAVPartsEditor';
 import { SAVPartsRequirements } from '@/components/sav/SAVPartsRequirements';
@@ -21,6 +24,8 @@ export default function SAVDetail() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [privateComments, setPrivateComments] = useState('');
+  const [savingComments, setSavingComments] = useState(false);
   const { cases, loading } = useSAVCases();
   const [savCase, setSavCase] = useState<any>(null);
 
@@ -28,6 +33,10 @@ export default function SAVDetail() {
     if (cases && id) {
       const foundCase = cases.find(c => c.id === id);
       setSavCase(foundCase);
+      // Charger les commentaires privés
+      if (foundCase?.private_comments) {
+        setPrivateComments(foundCase.private_comments);
+      }
     }
   }, [cases, id]);
 
@@ -68,6 +77,36 @@ export default function SAVDetail() {
     const updatedCase = cases.find(c => c.id === id);
     if (updatedCase) {
       setSavCase(updatedCase);
+    }
+  };
+
+  const savePrivateComments = async () => {
+    if (!savCase?.id) return;
+    
+    setSavingComments(true);
+    try {
+      const { error } = await supabase
+        .from('sav_cases')
+        .update({ private_comments: privateComments })
+        .eq('id', savCase.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Succès",
+        description: "Commentaires privés sauvegardés",
+      });
+
+      // Mettre à jour l'état local
+      setSavCase({ ...savCase, private_comments: privateComments });
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de sauvegarder les commentaires",
+        variant: "destructive",
+      });
+    } finally {
+      setSavingComments(false);
     }
   };
 
@@ -190,6 +229,40 @@ export default function SAVDetail() {
                       <p className="mt-1 text-muted-foreground">{savCase.repair_notes}</p>
                     </div>
                   )}
+                </CardContent>
+              </Card>
+
+              {/* Private Comments - Only visible to shop staff */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Lock className="h-5 w-5" />
+                    Commentaires privés magasin
+                  </CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    Ces commentaires ne sont visibles que par le personnel du magasin. Le client ne peut pas les voir.
+                  </p>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <Label htmlFor="private-comments">Commentaires internes</Label>
+                    <Textarea
+                      id="private-comments"
+                      placeholder="Ajoutez vos notes et commentaires privés ici..."
+                      value={privateComments}
+                      onChange={(e) => setPrivateComments(e.target.value)}
+                      rows={4}
+                      className="mt-2"
+                    />
+                  </div>
+                  <Button 
+                    onClick={savePrivateComments}
+                    disabled={savingComments}
+                    size="sm"
+                  >
+                    <Save className="h-4 w-4 mr-2" />
+                    {savingComments ? 'Sauvegarde...' : 'Sauvegarder les commentaires'}
+                  </Button>
                 </CardContent>
               </Card>
 
