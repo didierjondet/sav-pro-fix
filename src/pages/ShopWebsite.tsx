@@ -286,7 +286,7 @@ export default function ShopWebsite() {
             </div>
             <div className="text-center md:text-right">
               <p className="text-sm text-muted-foreground">
-                Propulsé par <span className="font-medium text-primary">fixway.fr</span>
+                Propulsé par <span className="font-medium text-primary">FixWay Pro</span>
               </p>
             </div>
           </div>
