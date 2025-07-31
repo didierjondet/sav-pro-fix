@@ -257,14 +257,12 @@ export default function SimpleTrack() {
                 className="h-12 w-12 object-contain"
               />
             ) : (
-              <img 
-                src="/lovable-uploads/3d99a913-9d52-4f6c-9a65-78b3bd561739.png" 
-                alt="Logo fixway.fr" 
-                className="h-12 w-12 object-contain"
-              />
+              <div className="h-12 w-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                <Smartphone className="h-6 w-6 text-blue-600" />
+              </div>
             )}
             <h1 className="text-3xl font-bold text-gray-800">
-              {savCase.shop?.name || 'fixway.fr'}
+              {savCase.shop?.name || 'Réparateur'}
             </h1>
           </div>
           <div className="flex items-center justify-center gap-2 mb-2">
@@ -277,7 +275,7 @@ export default function SimpleTrack() {
             )}
           </div>
           <div className="text-xs text-gray-500">
-            Propulsé par <span className="font-medium">fixway.fr</span>
+            Propulsé par <span className="font-medium">FixWay Pro</span>
           </div>
         </div>
 

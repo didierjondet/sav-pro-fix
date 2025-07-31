@@ -99,6 +99,7 @@ export default function TrackSAV() {
   }, [slug]);
 
   const fetchSAVCase = async () => {
+    console.log('🔍 [TrackSAV] Starting fetch for slug:', slug);
     if (!slug) return;
     
     try {
@@ -113,6 +114,8 @@ export default function TrackSAV() {
         .single();
 
       if (error) throw error;
+      console.log('✅ [TrackSAV] SAV case data retrieved:', data);
+      console.log('🏪 [TrackSAV] Shop data in response:', data?.shop);
       setSavCase(data);
     } catch (error: any) {
       toast({
