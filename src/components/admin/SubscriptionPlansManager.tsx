@@ -199,9 +199,13 @@ export default function SubscriptionPlansManager() {
         })
         .eq('id', editingPlan.id)
         .select()
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
+      
+      if (!data) {
+        throw new Error('Aucun plan trouvé avec cet ID');
+      }
 
       setPlans(plans.map(plan => plan.id === editingPlan.id ? {
         ...data,
