@@ -43,16 +43,16 @@ export function Header({ onMenuClick, isMobileMenuOpen }: HeaderProps) {
             ) : (
               <img 
                 src="/lovable-uploads/3d99a913-9d52-4f6c-9a65-78b3bd561739.png" 
-                alt="Logo fixway.fr" 
+                alt="Logo FixWay Pro" 
                 className="h-8 w-8 object-contain"
               />
             )}
             <div className="flex flex-col">
               <h1 className="text-xl font-bold text-foreground">
-                {shop?.name || 'fixway.fr'}
+                {shop?.name || 'FixWay Pro'}
               </h1>
               <span className="text-xs text-muted-foreground">
-                Propulsé par fixway.fr
+                Propulsé par FixWay Pro
               </span>
             </div>
           </div>
