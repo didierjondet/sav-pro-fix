@@ -26,6 +26,7 @@ export interface SAVCase {
     last_name: string;
     email?: string;
     phone?: string;
+    address?: string;
   };
 }
 
@@ -40,7 +41,7 @@ export function useSAVCases() {
         .from('sav_cases')
         .select(`
           *,
-          customer:customers(first_name, last_name, email, phone)
+          customer:customers(first_name, last_name, email, phone, address)
         `)
         .order('created_at', { ascending: false });
 

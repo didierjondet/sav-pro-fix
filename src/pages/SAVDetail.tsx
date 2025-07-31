@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label';
 import { useSAVCases } from '@/hooks/useSAVCases';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { QrCode, ExternalLink, ArrowLeft, Copy, Share, Save, Lock } from 'lucide-react';
+import { QrCode, ExternalLink, ArrowLeft, Copy, Share, Save, Lock, User, Mail, Phone, MapPin } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { SAVPartsEditor } from '@/components/sav/SAVPartsEditor';
 import { SAVPartsRequirements } from '@/components/sav/SAVPartsRequirements';
@@ -198,6 +198,59 @@ export default function SAVDetail() {
                   />
                 </div>
               </div>
+
+              {/* Client Information - Only for client SAV cases */}
+              {savCase.sav_type === 'client' && savCase.customer && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <User className="h-5 w-5" />
+                      Coordonnées du client
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="flex items-center gap-2">
+                      <User className="h-4 w-4 text-muted-foreground" />
+                      <div>
+                        <p className="text-sm text-muted-foreground">Nom complet</p>
+                        <p className="font-medium">
+                          {savCase.customer.first_name} {savCase.customer.last_name}
+                        </p>
+                      </div>
+                    </div>
+                    
+                    {savCase.customer.email && (
+                      <div className="flex items-center gap-2">
+                        <Mail className="h-4 w-4 text-muted-foreground" />
+                        <div>
+                          <p className="text-sm text-muted-foreground">Email</p>
+                          <p className="font-medium">{savCase.customer.email}</p>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {savCase.customer.phone && (
+                      <div className="flex items-center gap-2">
+                        <Phone className="h-4 w-4 text-muted-foreground" />
+                        <div>
+                          <p className="text-sm text-muted-foreground">Téléphone</p>
+                          <p className="font-medium">{savCase.customer.phone}</p>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {savCase.customer.address && (
+                      <div className="flex items-center gap-2">
+                        <MapPin className="h-4 w-4 text-muted-foreground" />
+                        <div>
+                          <p className="text-sm text-muted-foreground">Adresse</p>
+                          <p className="font-medium">{savCase.customer.address}</p>
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
 
               {/* Case Details */}
               <Card>
