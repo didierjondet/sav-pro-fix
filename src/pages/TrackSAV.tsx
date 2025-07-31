@@ -122,7 +122,7 @@ export default function TrackSAV() {
 
   const fetchSAVCase = async () => {
     try {
-      console.log('Fetching SAV case for slug:', slug);
+      console.log('🔍 Fetching SAV case for slug:', slug);
       const { data, error } = await supabase
         .from('sav_cases')
         .select(`
@@ -134,15 +134,20 @@ export default function TrackSAV() {
         .single();
 
       if (error) {
-        console.error('Error fetching SAV case:', error);
+        console.error('❌ Error fetching SAV case:', error);
         throw error;
       }
       
-      console.log('SAV case data retrieved:', data);
-      console.log('Shop data:', data?.shop);
+      console.log('✅ SAV case data retrieved:', data);
+      console.log('🏪 Shop data in response:', data?.shop);
+      console.log('📍 Shop name specifically:', data?.shop?.name);
+      console.log('📞 Shop phone specifically:', data?.shop?.phone);
+      console.log('🏢 Shop address specifically:', data?.shop?.address);
+      console.log('🖼️ Shop logo specifically:', data?.shop?.logo_url);
+      
       setSavCase(data);
     } catch (error: any) {
-      console.error('Fetch error:', error);
+      console.error('💥 Fetch error:', error);
       toast({
         title: "Erreur",
         description: "Dossier SAV introuvable",
