@@ -209,7 +209,7 @@ export default function SAVDetail() {
                         {savCase?.tracking_slug ? generateTrackingUrl() : 'Slug de suivi non généré'}
                       </div>
                       <p className="text-xs text-muted-foreground mt-1">
-                        Lien simplifié : <strong>fixway.fr/{savCase?.tracking_slug || 'nomclient123'}</strong><br/>
+                        Lien simplifié : <strong>fixwaypro.com/{savCase?.tracking_slug || 'nomclient123'}</strong><br/>
                         Le client pourra suivre l'état de sa réparation et communiquer avec vous via ce lien
                       </p>
                     </div>
