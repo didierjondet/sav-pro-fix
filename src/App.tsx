@@ -42,7 +42,7 @@ const App = () => (
             <Route path="/sav" element={<SAVList />} />
             <Route path="/sav/new" element={<NewSAV />} />
             <Route path="/sav/:id" element={<SAVDetail />} />
-            <Route path="/track/:caseNumber" element={<TrackSAV />} />
+            <Route path="/track/:slug" element={<TrackSAV />} />
             <Route path="/parts" element={<Parts />} />
             <Route path="/quotes" element={<Quotes />} />
             <Route path="/orders" element={<Orders />} />

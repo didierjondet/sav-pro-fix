@@ -175,7 +175,7 @@ export default function TrackSAV() {
       <div className="bg-card border-b shadow-sm">
         <div className="max-w-4xl mx-auto p-6">
           <div className="flex items-center justify-center gap-4 mb-4">
-            {savCase.shop?.logo_url ? (
+            {savCase?.shop?.logo_url ? (
               <img 
                 src={savCase.shop.logo_url} 
                 alt={`Logo ${savCase.shop.name}`}
@@ -188,14 +188,14 @@ export default function TrackSAV() {
             )}
             <div className="text-center">
               <h1 className="text-2xl font-bold text-primary">
-                {savCase.shop?.name || "Réparateur"}
+                {savCase?.shop?.name || "Réparateur"}
               </h1>
               <p className="text-sm text-muted-foreground">Service Après-Vente</p>
             </div>
           </div>
           
           {/* Coordonnées du magasin */}
-          {savCase.shop && (
+          {savCase?.shop && (
             <div className="text-center space-y-1 mb-4">
               <div className="flex flex-wrap justify-center gap-4 text-sm text-muted-foreground">
                 {savCase.shop.address && (
@@ -213,7 +213,7 @@ export default function TrackSAV() {
           
           <div className="text-center">
             <h2 className="text-lg font-semibold">Suivi de votre dossier SAV</h2>
-            <p className="text-primary font-medium">Dossier n° {savCase.case_number}</p>
+            <p className="text-primary font-medium">Dossier n° {savCase?.case_number}</p>
           </div>
         </div>
       </div>
@@ -362,7 +362,7 @@ export default function TrackSAV() {
       <div className="bg-muted/30 border-t mt-12">
         <div className="max-w-4xl mx-auto p-4 text-center">
           <p className="text-sm text-muted-foreground">
-            Propulsé par <span className="font-semibold text-primary">fixway.fr</span>
+            Propulsé par <span className="font-semibold text-primary">FixWay Pro</span>
           </p>
         </div>
       </div>
