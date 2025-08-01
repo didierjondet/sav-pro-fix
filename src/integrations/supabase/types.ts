@@ -403,6 +403,7 @@ export type Database = {
           sav_type: Database["public"]["Enums"]["sav_type"]
           shop_id: string | null
           status: Database["public"]["Enums"]["sav_status"]
+          taken_over: boolean
           technician_id: string | null
           total_cost: number | null
           total_time_minutes: number | null
@@ -423,6 +424,7 @@ export type Database = {
           sav_type: Database["public"]["Enums"]["sav_type"]
           shop_id?: string | null
           status?: Database["public"]["Enums"]["sav_status"]
+          taken_over?: boolean
           technician_id?: string | null
           total_cost?: number | null
           total_time_minutes?: number | null
@@ -443,6 +445,7 @@ export type Database = {
           sav_type?: Database["public"]["Enums"]["sav_type"]
           shop_id?: string | null
           status?: Database["public"]["Enums"]["sav_status"]
+          taken_over?: boolean
           technician_id?: string | null
           total_cost?: number | null
           total_time_minutes?: number | null
