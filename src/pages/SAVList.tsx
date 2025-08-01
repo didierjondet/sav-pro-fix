@@ -88,14 +88,19 @@ export default function SAVList() {
     // 4. Appliquer le tri
     return filteredBySearch.sort((a, b) => {
       if (sortOrder === 'oldest') {
-        // Trier du plus vieux au plus récent (par date de création)
-        return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+        // Trier par temps restant croissant (le moins de temps restant en premier = plus vieux/urgent)
+        return a.delayInfo.totalRemainingHours - b.delayInfo.totalRemainingHours;
       } else if (sortOrder === 'newest') {
         // Trier du plus récent au plus vieux (par date de création)
         return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
       } else {
-        // Tri par priorité (par défaut)
-        // Les SAV livrés ou annulés vont à la fin
+        // Tri par défaut : SAV client en premier, puis SAV magasin, puis par priorité
+        
+        // 1. Prioriser les SAV client vs magasin
+        if (a.sav_type === 'client' && b.sav_type === 'internal') return -1;
+        if (a.sav_type === 'internal' && b.sav_type === 'client') return 1;
+        
+        // 2. Les SAV livrés ou annulés vont à la fin (même logique pour client et magasin)
         const aCompleted = a.status === 'delivered' || a.status === 'cancelled';
         const bCompleted = b.status === 'delivered' || b.status === 'cancelled';
         
@@ -103,12 +108,12 @@ export default function SAVList() {
         if (!aCompleted && bCompleted) return -1;
         if (aCompleted && bCompleted) return 0; // Garder l'ordre existant pour les complétés
         
-        // Pour les SAV actifs, trier par urgence
-        // 1. SAV en retard en premier
+        // 3. Pour les SAV actifs, trier par urgence
+        // SAV en retard en premier
         if (a.delayInfo.isOverdue && !b.delayInfo.isOverdue) return -1;
         if (!a.delayInfo.isOverdue && b.delayInfo.isOverdue) return 1;
         
-        // 2. Si les deux sont en retard ou non en retard, trier par temps restant
+        // 4. Si les deux sont en retard ou non en retard, trier par temps restant
         return a.delayInfo.totalRemainingHours - b.delayInfo.totalRemainingHours;
       }
     });
