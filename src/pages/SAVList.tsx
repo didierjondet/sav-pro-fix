@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useSAVCases } from '@/hooks/useSAVCases';
 import { useShop } from '@/hooks/useShop';
@@ -24,7 +25,8 @@ import {
   Trash2,
   QrCode,
   MessageSquare,
-  Search
+  Search,
+  Filter
 } from 'lucide-react';
 
 const statusColors = {
@@ -48,52 +50,69 @@ const statusLabels = {
 export default function SAVList() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [filterType, setFilterType] = useState('all'); // 'all', 'client', 'internal'
+  const [sortOrder, setSortOrder] = useState('priority'); // 'priority', 'oldest', 'newest'
   const [qrCodeCase, setQrCodeCase] = useState(null);
   const { cases, loading, deleteCase } = useSAVCases();
   const { shop } = useShop();
   const navigate = useNavigate();
 
-  // Calculer les informations de délai pour tous les cas et trier par priorité
-  const casesWithDelayInfo = useMemo(() => {
+  // Calculer les informations de délai et appliquer filtres et tri
+  const filteredAndSortedCases = useMemo(() => {
+    // 1. Ajouter les informations de délai
     const casesWithDelay = cases.map((case_) => ({
       ...case_,
       delayInfo: calculateSAVDelay(case_, shop)
     }));
 
-    // Trier par priorité : 
-    // 1. SAV en retard (isOverdue = true) en premier
-    // 2. Ensuite par temps restant croissant (le moins de temps restant en premier)
-    // 3. Enfin les SAV livrés ou annulés à la fin
-    return casesWithDelay.sort((a, b) => {
-      // Les SAV livrés ou annulés vont à la fin
-      const aCompleted = a.status === 'delivered' || a.status === 'cancelled';
-      const bCompleted = b.status === 'delivered' || b.status === 'cancelled';
-      
-      if (aCompleted && !bCompleted) return 1;
-      if (!aCompleted && bCompleted) return -1;
-      if (aCompleted && bCompleted) return 0; // Garder l'ordre existant pour les complétés
-      
-      // Pour les SAV actifs, trier par urgence
-      // 1. SAV en retard en premier
-      if (a.delayInfo.isOverdue && !b.delayInfo.isOverdue) return -1;
-      if (!a.delayInfo.isOverdue && b.delayInfo.isOverdue) return 1;
-      
-      // 2. Si les deux sont en retard ou non en retard, trier par temps restant
-      return a.delayInfo.totalRemainingHours - b.delayInfo.totalRemainingHours;
-    });
-  }, [cases, shop]);
+    // 2. Filtrer par type de SAV
+    let filteredByType = casesWithDelay;
+    if (filterType === 'client') {
+      filteredByType = casesWithDelay.filter(case_ => case_.sav_type === 'client');
+    } else if (filterType === 'internal') {
+      filteredByType = casesWithDelay.filter(case_ => case_.sav_type === 'internal');
+    }
 
-  // Filtrer les cas selon la recherche
-  const filteredCases = casesWithDelayInfo.filter(case_ =>
-    multiWordSearch(
-      searchTerm, 
-      case_.customer?.first_name, 
-      case_.customer?.last_name, 
-      case_.case_number, 
-      case_.device_brand,
-      case_.device_model
-    )
-  );
+    // 3. Filtrer par recherche
+    const filteredBySearch = filteredByType.filter(case_ =>
+      multiWordSearch(
+        searchTerm, 
+        case_.customer?.first_name, 
+        case_.customer?.last_name, 
+        case_.case_number, 
+        case_.device_brand,
+        case_.device_model
+      )
+    );
+
+    // 4. Appliquer le tri
+    return filteredBySearch.sort((a, b) => {
+      if (sortOrder === 'oldest') {
+        // Trier du plus vieux au plus récent (par date de création)
+        return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+      } else if (sortOrder === 'newest') {
+        // Trier du plus récent au plus vieux (par date de création)
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      } else {
+        // Tri par priorité (par défaut)
+        // Les SAV livrés ou annulés vont à la fin
+        const aCompleted = a.status === 'delivered' || a.status === 'cancelled';
+        const bCompleted = b.status === 'delivered' || b.status === 'cancelled';
+        
+        if (aCompleted && !bCompleted) return 1;
+        if (!aCompleted && bCompleted) return -1;
+        if (aCompleted && bCompleted) return 0; // Garder l'ordre existant pour les complétés
+        
+        // Pour les SAV actifs, trier par urgence
+        // 1. SAV en retard en premier
+        if (a.delayInfo.isOverdue && !b.delayInfo.isOverdue) return -1;
+        if (!a.delayInfo.isOverdue && b.delayInfo.isOverdue) return 1;
+        
+        // 2. Si les deux sont en retard ou non en retard, trier par temps restant
+        return a.delayInfo.totalRemainingHours - b.delayInfo.totalRemainingHours;
+      }
+    });
+  }, [cases, shop, filterType, sortOrder, searchTerm]);
 
   if (loading) {
     return (
@@ -126,8 +145,8 @@ export default function SAVList() {
                 </Button>
               </div>
 
-              {/* Barre de recherche */}
-              <div className="mb-6">
+              {/* Barre de recherche et filtres */}
+              <div className="mb-6 space-y-4">
                 <div className="relative max-w-md">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                   <Input
@@ -137,16 +156,53 @@ export default function SAVList() {
                     className="pl-10"
                   />
                 </div>
+                
+                {/* Filtres et tri */}
+                <div className="flex flex-wrap gap-4 items-center">
+                  <div className="flex items-center gap-2">
+                    <Filter className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm font-medium">Type:</span>
+                    <Select value={filterType} onValueChange={setFilterType}>
+                      <SelectTrigger className="w-40">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Tous les SAV</SelectItem>
+                        <SelectItem value="client">SAV Client</SelectItem>
+                        <SelectItem value="internal">SAV Magasin</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium">Tri:</span>
+                    <Select value={sortOrder} onValueChange={setSortOrder}>
+                      <SelectTrigger className="w-48">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="priority">Par priorité</SelectItem>
+                        <SelectItem value="oldest">Plus vieux en premier</SelectItem>
+                        <SelectItem value="newest">Plus récent en premier</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  {/* Compteur de résultats */}
+                  <div className="text-sm text-muted-foreground ml-auto">
+                    {filteredAndSortedCases.length} dossier{filteredAndSortedCases.length > 1 ? 's' : ''} trouvé{filteredAndSortedCases.length > 1 ? 's' : ''}
+                  </div>
+                </div>
               </div>
 
           <div className="grid gap-4">
-            {filteredCases.length === 0 ? (
+            {filteredAndSortedCases.length === 0 ? (
               <Card>
                 <CardContent className="text-center py-8">
                   <p className="text-muted-foreground">
-                    {searchTerm ? 'Aucun dossier trouvé pour cette recherche' : 'Aucun dossier SAV trouvé'}
+                    {searchTerm || filterType !== 'all' ? 'Aucun dossier trouvé pour cette recherche/filtre' : 'Aucun dossier SAV trouvé'}
                   </p>
-                  {!searchTerm && (
+                  {!searchTerm && filterType === 'all' && (
                     <Button className="mt-4" onClick={() => navigate('/sav/new')}>
                       Créer le premier dossier
                     </Button>
@@ -154,7 +210,7 @@ export default function SAVList() {
                 </CardContent>
               </Card>
             ) : (
-              filteredCases.map((savCase) => {
+              filteredAndSortedCases.map((savCase) => {
                 const isUrgent = savCase.delayInfo.isOverdue;
                 const isHighPriority = !isUrgent && savCase.delayInfo.totalRemainingHours <= 24; // Moins de 24h restantes
                 
