@@ -18,6 +18,7 @@ import { SAVForm } from './SAVForm';
 import { useSAVCases } from '@/hooks/useSAVCases';
 import { useQuotes } from '@/hooks/useQuotes';
 import { useShop } from '@/hooks/useShop';
+import { useSAVPartsCosts } from '@/hooks/useSAVPartsCosts';
 import { formatDelayText, DelayInfo, calculateSAVDelay } from '@/hooks/useSAVDelay';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -38,6 +39,7 @@ export function SAVDashboard() {
   const { cases, loading, updateCaseStatus, deleteCase } = useSAVCases();
   const { quotes } = useQuotes();
   const { shop } = useShop();
+  const { costs, loading: costsLoading } = useSAVPartsCosts();
   const navigate = useNavigate();
 
   // Calculer les informations de délai pour tous les cas et trier par priorité
@@ -103,48 +105,64 @@ export function SAVDashboard() {
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total SAV</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{cases.length}</div>
-            <p className="text-xs text-muted-foreground">Dossiers créés</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">En cours</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {cases.filter(c => c.status === 'in_progress').length}
-            </div>
-            <p className="text-xs text-muted-foreground">Réparations actives</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Prêts</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {cases.filter(c => c.status === 'ready').length}
-            </div>
-            <p className="text-xs text-muted-foreground">À récupérer</p>
-          </CardContent>
-        </Card>
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5 mb-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">CA du mois</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {(cases.filter(c => c.sav_type !== 'internal').reduce((acc, c) => acc + (c.total_cost || 0), 0) + 
-                quotes.filter(q => q.status === 'accepted').reduce((acc, q) => acc + (q.total_amount || 0), 0)).toFixed(2)}€
+              {costsLoading ? '...' : costs.monthly_revenue.toFixed(2)}€
             </div>
-            <p className="text-xs text-muted-foreground">Chiffre d'affaires</p>
+            <p className="text-xs text-muted-foreground">SAV prêts uniquement</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Coût prise en charge</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {costsLoading ? '...' : costs.takeover_cost.toFixed(2)}€
+            </div>
+            <p className="text-xs text-muted-foreground">SAV client pris en charge</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Coût SAV magasin</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {costsLoading ? '...' : costs.internal_cost.toFixed(2)}€
+            </div>
+            <p className="text-xs text-muted-foreground">Pièces SAV interne</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Coût SAV client</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {costsLoading ? '...' : costs.client_cost.toFixed(2)}€
+            </div>
+            <p className="text-xs text-muted-foreground">SAV client non pris en charge</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Balance</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className={`text-2xl font-bold ${
+              !costsLoading && (costs.monthly_revenue - costs.takeover_cost - costs.internal_cost - costs.client_cost) < 0 
+                ? 'text-destructive' 
+                : 'text-primary'
+            }`}>
+              {costsLoading ? '...' : (costs.monthly_revenue - costs.takeover_cost - costs.internal_cost - costs.client_cost).toFixed(2)}€
+            </div>
+            <p className="text-xs text-muted-foreground">CA - Coûts totaux</p>
           </CardContent>
         </Card>
       </div>
