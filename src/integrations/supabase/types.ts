@@ -1072,6 +1072,7 @@ export type Database = {
         | "ready"
         | "delivered"
         | "cancelled"
+        | "parts_ordered"
       sav_type: "client" | "internal"
       user_role: "super_admin" | "shop_admin" | "technician" | "admin"
     }
@@ -1208,6 +1209,7 @@ export const Constants = {
         "ready",
         "delivered",
         "cancelled",
+        "parts_ordered",
       ],
       sav_type: ["client", "internal"],
       user_role: ["super_admin", "shop_admin", "technician", "admin"],

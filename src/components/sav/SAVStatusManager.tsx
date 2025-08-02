@@ -31,8 +31,8 @@ const statusConfig = {
   pending: { label: 'En attente', variant: 'secondary' as const },
   in_progress: { label: 'En cours', variant: 'default' as const },
   testing: { label: 'Tests', variant: 'default' as const },
+  parts_ordered: { label: 'Pièce commandée', variant: 'outline' as const },
   ready: { label: 'Prêt', variant: 'default' as const },
-  delivered: { label: 'Livré', variant: 'default' as const },
   cancelled: { label: 'Annulé', variant: 'destructive' as const },
 };
 
@@ -40,8 +40,8 @@ const statusOptions = [
   { value: 'pending', label: 'En attente' },
   { value: 'in_progress', label: 'En cours' },
   { value: 'testing', label: 'Tests' },
+  { value: 'parts_ordered', label: 'Pièce commandée' },
   { value: 'ready', label: 'Prêt' },
-  { value: 'delivered', label: 'Livré' },
   { value: 'cancelled', label: 'Annulé' },
 ];
 

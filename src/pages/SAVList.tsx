@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { useSAVCases } from '@/hooks/useSAVCases';
 import { useShop } from '@/hooks/useShop';
 import { formatDelayText, calculateSAVDelay } from '@/hooks/useSAVDelay';
+import { useSAVUnreadMessages } from '@/hooks/useSAVUnreadMessages';
 import { SAVQRCodePrint } from '@/components/sav/SAVQRCodePrint';
 import { SMSTrackingButton } from '@/components/sms/SMSTrackingButton';
 import { 
@@ -26,15 +27,17 @@ import {
   QrCode,
   MessageSquare,
   Search,
-  Filter
+  Filter,
+  Phone,
+  MessageCircle
 } from 'lucide-react';
 
 const statusColors = {
   pending: 'bg-yellow-100 text-yellow-800',
   in_progress: 'bg-blue-100 text-blue-800', 
   testing: 'bg-purple-100 text-purple-800',
+  parts_ordered: 'bg-orange-100 text-orange-800',
   ready: 'bg-green-100 text-green-800',
-  delivered: 'bg-gray-100 text-gray-800',
   cancelled: 'bg-red-100 text-red-800',
 };
 
@@ -42,8 +45,8 @@ const statusLabels = {
   pending: 'En attente',
   in_progress: 'En cours',
   testing: 'En test',
+  parts_ordered: 'Pièce commandée',
   ready: 'Prêt',
-  delivered: 'Livré',
   cancelled: 'Annulé',
 };
 
@@ -55,6 +58,7 @@ export default function SAVList() {
   const [qrCodeCase, setQrCodeCase] = useState(null);
   const { cases, loading, deleteCase } = useSAVCases();
   const { shop } = useShop();
+  const { savWithUnreadMessages } = useSAVUnreadMessages();
   const navigate = useNavigate();
 
   // Calculer les informations de délai et appliquer filtres et tri
@@ -100,9 +104,9 @@ export default function SAVList() {
         if (a.sav_type === 'client' && b.sav_type === 'internal') return -1;
         if (a.sav_type === 'internal' && b.sav_type === 'client') return 1;
         
-        // 2. Les SAV livrés ou annulés vont à la fin (même logique pour client et magasin)
-        const aCompleted = a.status === 'delivered' || a.status === 'cancelled';
-        const bCompleted = b.status === 'delivered' || b.status === 'cancelled';
+        // 2. Les SAV annulés vont à la fin (même logique pour client et magasin)
+        const aCompleted = a.status === 'cancelled';
+        const bCompleted = b.status === 'cancelled';
         
         if (aCompleted && !bCompleted) return 1;
         if (!aCompleted && bCompleted) return -1;
@@ -219,6 +223,9 @@ export default function SAVList() {
                 const isUrgent = savCase.delayInfo.isOverdue;
                 const isHighPriority = !isUrgent && savCase.delayInfo.totalRemainingHours <= 24; // Moins de 24h restantes
                 
+                // Vérifier s'il y a des messages non lus pour ce SAV
+                const hasUnreadMessages = savWithUnreadMessages.some(sav => sav.id === savCase.id);
+                
                 // Couleurs de fond selon le type de SAV
                 const backgroundClass = savCase.sav_type === 'client' ? 'bg-red-50' : 'bg-sky-50';
                 
@@ -234,6 +241,7 @@ export default function SAVList() {
                       <div className="flex-1">
                         <div className="flex items-center gap-4 mb-2">
                           <div className="flex items-center gap-2">
+                            {hasUnreadMessages && <MessageCircle className="h-5 w-5 text-blue-500 animate-pulse" />}
                             {isUrgent && <AlertCircle className="h-5 w-5 text-red-500" />}
                             {isHighPriority && !isUrgent && <Clock className="h-5 w-5 text-orange-500" />}
                             <h3 className="font-semibold text-lg">
@@ -248,11 +256,18 @@ export default function SAVList() {
                           </Badge>
                         </div>
                         
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-muted-foreground">
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm text-muted-foreground">
                           <div className="flex items-center gap-2">
                             <Package className="h-4 w-4" />
                             <span>{savCase.device_brand} {savCase.device_model}</span>
                           </div>
+                          
+                          {savCase.device_imei && (
+                            <div className="flex items-center gap-2">
+                              <Phone className="h-4 w-4" />
+                              <span className="font-mono text-xs">{savCase.device_imei}</span>
+                            </div>
+                          )}
                           
                           {savCase.customer && (
                             <div className="flex items-center gap-2">

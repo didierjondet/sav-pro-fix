@@ -7,7 +7,7 @@ export interface SAVCase {
   case_number: string;
   tracking_slug?: string;
   sav_type: 'client' | 'internal';
-  status: 'pending' | 'in_progress' | 'testing' | 'ready' | 'delivered' | 'cancelled';
+  status: 'pending' | 'in_progress' | 'testing' | 'parts_ordered' | 'ready' | 'cancelled';
   device_brand: string;
   device_model: string;
   device_imei?: string;

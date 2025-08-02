@@ -56,9 +56,9 @@ export function SAVDashboard() {
     // 2. Ensuite par temps restant croissant (le moins de temps restant en premier)
     // 3. Enfin les SAV livrés ou annulés à la fin
     return casesWithDelay.sort((a, b) => {
-      // Les SAV livrés ou annulés vont à la fin
-      const aCompleted = a.status === 'delivered' || a.status === 'cancelled';
-      const bCompleted = b.status === 'delivered' || b.status === 'cancelled';
+      // Les SAV annulés vont à la fin
+      const aCompleted = a.status === 'cancelled';
+      const bCompleted = b.status === 'cancelled';
       
       if (aCompleted && !bCompleted) return 1;
       if (!aCompleted && bCompleted) return -1;
@@ -221,7 +221,7 @@ export function SAVDashboard() {
                     key={case_.id} 
                     className={cn(
                       backgroundClass,
-                      case_.delayInfo.isOverdue && case_.status !== 'delivered' && case_.status !== 'cancelled'
+                      case_.delayInfo.isOverdue && case_.status !== 'cancelled'
                         ? "border-destructive/20 bg-red-100" 
                         : ""
                     )}
@@ -253,7 +253,7 @@ export function SAVDashboard() {
                         <Badge variant={statusConfig[case_.status].variant}>
                           {statusConfig[case_.status].label}
                         </Badge>
-                        {case_.status !== 'delivered' && case_.status !== 'cancelled' && (
+                        {case_.status !== 'cancelled' && (
                           <span className={cn(
                             "text-xs",
                             case_.delayInfo.isOverdue 
