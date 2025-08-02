@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { multiWordSearch } from '@/utils/searchUtils';
-import { Plus, Search, Filter, MoreHorizontal, Eye, Edit, Trash2 } from 'lucide-react';
+import { Plus, Search, Filter, MoreHorizontal, Eye, Edit, Trash2, MessageCircleWarning } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -19,6 +19,7 @@ import { useSAVCases } from '@/hooks/useSAVCases';
 import { useQuotes } from '@/hooks/useQuotes';
 import { useShop } from '@/hooks/useShop';
 import { useSAVPartsCosts } from '@/hooks/useSAVPartsCosts';
+import { useSAVUnreadMessages } from '@/hooks/useSAVUnreadMessages';
 import { formatDelayText, DelayInfo, calculateSAVDelay } from '@/hooks/useSAVDelay';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -40,6 +41,7 @@ export function SAVDashboard() {
   const { quotes } = useQuotes();
   const { shop } = useShop();
   const { costs, loading: costsLoading } = useSAVPartsCosts();
+  const { savWithUnreadMessages } = useSAVUnreadMessages();
   const navigate = useNavigate();
 
   // Calculer les informations de délai pour tous les cas et trier par priorité
@@ -199,7 +201,7 @@ export function SAVDashboard() {
                 <TableRow>
                   <TableHead>N° Dossier</TableHead>
                   <TableHead>Client</TableHead>
-                  <TableHead>Appareil</TableHead>
+                  <TableHead>Appareil / IMEI</TableHead>
                   <TableHead>Statut / Délai</TableHead>
                   <TableHead>Date</TableHead>
                   <TableHead>Montant</TableHead>
@@ -211,6 +213,9 @@ export function SAVDashboard() {
                   // Couleurs de fond selon le type de SAV
                   const backgroundClass = case_.sav_type === 'client' ? 'bg-red-50' : 'bg-sky-50';
                   
+                  // Vérifier s'il y a des messages non lus pour ce SAV
+                  const unreadMessages = savWithUnreadMessages.find(sav => sav.id === case_.id);
+                  
                   return (
                   <TableRow 
                     key={case_.id} 
@@ -221,14 +226,28 @@ export function SAVDashboard() {
                         : ""
                     )}
                   >
-                    <TableCell className="font-medium">{case_.case_number}</TableCell>
+                    <TableCell className="font-medium">
+                      <div className="flex items-center gap-2">
+                        {case_.case_number}
+                        {unreadMessages && (
+                          <MessageCircleWarning className="h-4 w-4 text-orange-500 animate-pulse" />
+                        )}
+                      </div>
+                    </TableCell>
                     <TableCell>
                       {case_.customer 
                         ? `${case_.customer.first_name} ${case_.customer.last_name}`
                         : 'SAV Interne'
                       }
                     </TableCell>
-                    <TableCell>{case_.device_brand} {case_.device_model}</TableCell>
+                    <TableCell>
+                      <div className="flex flex-col">
+                        <span>{case_.device_brand} {case_.device_model}</span>
+                        {case_.device_imei && (
+                          <span className="text-xs text-muted-foreground">IMEI: {case_.device_imei}</span>
+                        )}
+                      </div>
+                    </TableCell>
                     <TableCell>
                       <div className="flex flex-col gap-1">
                         <Badge variant={statusConfig[case_.status].variant}>

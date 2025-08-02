@@ -10,15 +10,19 @@ import {
 import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { useNotifications } from '@/hooks/useNotifications';
+import { useSAVUnreadMessages } from '@/hooks/useSAVUnreadMessages';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 export function NotificationBell() {
   const [isOpen, setIsOpen] = useState(false);
   const [hasNewActivity, setHasNewActivity] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
   const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
+  const { savWithUnreadMessages } = useSAVUnreadMessages();
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   // Listen to real-time changes
   useEffect(() => {
@@ -149,7 +153,9 @@ export function NotificationBell() {
     }
   };
 
-  const showRedIndicator = hasNewActivity || unreadCount > 0;
+  const totalUnreadSAVMessages = savWithUnreadMessages.reduce((total, sav) => total + sav.unread_count, 0);
+  const totalUnreadCount = unreadCount + totalUnreadSAVMessages;
+  const showRedIndicator = hasNewActivity || totalUnreadCount > 0;
 
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen}>
@@ -178,7 +184,7 @@ export function NotificationBell() {
                 hasNewActivity ? 'animate-pulse bg-red-600 border-red-600' : ''
               }`}
             >
-              {unreadCount > 9 ? '9+' : unreadCount || '!'}
+              {totalUnreadCount > 9 ? '9+' : totalUnreadCount || '!'}
             </Badge>
           )}
         </Button>
@@ -187,7 +193,7 @@ export function NotificationBell() {
         <div className="p-4 border-b">
           <div className="flex items-center justify-between">
             <h3 className="font-semibold">Notifications</h3>
-            {unreadCount > 0 && (
+            {totalUnreadCount > 0 && (
               <Button variant="ghost" size="sm" onClick={markAllAsRead}>
                 Tout marquer lu
               </Button>
@@ -196,11 +202,52 @@ export function NotificationBell() {
         </div>
         
         <div className="max-h-96 overflow-y-auto">
-          {notifications.length === 0 ? (
+          {/* SAV Messages non lus */}
+          {savWithUnreadMessages.length > 0 && (
+            <div className="border-b">
+              <div className="p-3 bg-orange-50">
+                <h4 className="font-medium text-sm text-orange-700">Messages SAV non lus</h4>
+              </div>
+              {savWithUnreadMessages.map((sav, index) => (
+                <div key={sav.id}>
+                  <Card 
+                    className="border-0 rounded-none cursor-pointer hover:bg-muted/50 bg-orange-50/50"
+                    onClick={() => {
+                      navigate(`/sav/${sav.id}`);
+                      setIsOpen(false);
+                    }}
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex items-start gap-3">
+                        <span className="text-lg" role="img" aria-label="sav-message">
+                          🔧
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between">
+                            <h4 className="font-medium text-sm truncate">
+                              SAV {sav.case_number}
+                            </h4>
+                            <div className="w-2 h-2 bg-orange-500 rounded-full flex-shrink-0 ml-2"></div>
+                          </div>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            {sav.unread_count} nouveau{sav.unread_count > 1 ? 'x' : ''} message{sav.unread_count > 1 ? 's' : ''}
+                          </p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                  {index < savWithUnreadMessages.length - 1 && <Separator />}
+                </div>
+              ))}
+            </div>
+          )}
+          
+          {/* Notifications classiques */}
+          {notifications.length === 0 && savWithUnreadMessages.length === 0 ? (
             <div className="p-6 text-center text-muted-foreground">
               Aucune notification
             </div>
-          ) : (
+          ) : notifications.length > 0 && (
             notifications.slice(0, 10).map((notification, index) => (
               <div key={notification.id}>
                 <Card 
