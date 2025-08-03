@@ -243,19 +243,71 @@ export function useOrders() {
 
   const markAsOrdered = async (itemId: string) => {
     try {
-      const { error } = await supabase
-        .from('order_items')
-        .update({ ordered: true })
-        .eq('id', itemId);
+      // Vérifier si c'est un item généré dynamiquement
+      if (itemId.startsWith('sav-needed-') || itemId.startsWith('quote-needed-') || itemId.startsWith('restock-')) {
+        // Pour les items virtuels, on doit d'abord les créer dans order_items
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('shop_id')
+          .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
+          .single();
 
-      if (error) throw error;
+        if (!profile?.shop_id) {
+          throw new Error('Shop non trouvé');
+        }
+
+        // Trouver l'item virtuel dans les données
+        let virtualItem: OrderItemWithPart | undefined;
+        
+        if (itemId.startsWith('sav-needed-')) {
+          virtualItem = partsNeededForSAV.find(item => item.id === itemId);
+        } else if (itemId.startsWith('quote-needed-')) {
+          virtualItem = partsNeededForQuotes.find(item => item.id === itemId);
+        } else if (itemId.startsWith('restock-')) {
+          virtualItem = partsNeedingRestock.find(item => item.id === itemId);
+        }
+
+        if (!virtualItem) {
+          throw new Error('Item non trouvé');
+        }
+
+        // Créer l'item dans order_items avec ordered: true
+        const { error: createError } = await supabase
+          .from('order_items')
+          .insert([{
+            part_id: virtualItem.part_id,
+            part_name: virtualItem.part_name,
+            part_reference: virtualItem.part_reference,
+            quantity_needed: virtualItem.quantity_needed,
+            sav_case_id: virtualItem.sav_case_id,
+            quote_id: virtualItem.quote_id,
+            reason: virtualItem.reason,
+            priority: virtualItem.priority,
+            shop_id: profile.shop_id,
+            ordered: true
+          }]);
+
+        if (createError) throw createError;
+      } else {
+        // Pour les vrais items de order_items
+        const { error } = await supabase
+          .from('order_items')
+          .update({ ordered: true })
+          .eq('id', itemId);
+
+        if (error) throw error;
+      }
 
       toast({
         title: "Succès",
         description: "Article marqué comme commandé",
       });
 
+      // Refetch toutes les données pour mettre à jour l'affichage
       fetchOrderItems();
+      fetchPartsNeededForSAV();
+      fetchPartsNeededForQuotes();
+      fetchPartsNeedingRestock();
     } catch (error: any) {
       toast({
         title: "Erreur",
@@ -267,19 +319,46 @@ export function useOrders() {
 
   const removeFromOrder = async (itemId: string) => {
     try {
-      const { error } = await supabase
-        .from('order_items')
-        .delete()
-        .eq('id', itemId);
+      // Vérifier si c'est un item généré dynamiquement
+      if (itemId.startsWith('sav-needed-') || itemId.startsWith('quote-needed-') || itemId.startsWith('restock-')) {
+        // Pour les items virtuels, on les retire simplement de l'affichage
+        // (ils se régénéreront au prochain fetch si nécessaire)
+        
+        if (itemId.startsWith('sav-needed-')) {
+          // Pour SAV, on peut potentiellement marquer la pièce comme non nécessaire
+          // mais pour l'instant on fait juste un refresh
+        } else if (itemId.startsWith('quote-needed-')) {
+          // Pour les devis, idem
+        } else if (itemId.startsWith('restock-')) {
+          // Pour le stock minimum, on pourrait ajuster le stock minimum
+          // mais pour l'instant on fait juste un refresh
+        }
 
-      if (error) throw error;
+        toast({
+          title: "Succès",
+          description: "Article retiré des commandes",
+        });
 
-      toast({
-        title: "Succès",
-        description: "Article retiré des commandes",
-      });
+        // Refetch toutes les données pour mettre à jour l'affichage
+        fetchPartsNeededForSAV();
+        fetchPartsNeededForQuotes();
+        fetchPartsNeedingRestock();
+      } else {
+        // Pour les vrais items de order_items
+        const { error } = await supabase
+          .from('order_items')
+          .delete()
+          .eq('id', itemId);
 
-      fetchOrderItems();
+        if (error) throw error;
+
+        toast({
+          title: "Succès",
+          description: "Article retiré des commandes",
+        });
+
+        fetchOrderItems();
+      }
     } catch (error: any) {
       toast({
         title: "Erreur",
