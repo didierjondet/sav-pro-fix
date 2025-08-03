@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { multiWordSearch } from '@/utils/searchUtils';
 import { Header } from '@/components/layout/Header';
 import { Sidebar } from '@/components/layout/Sidebar';
@@ -15,13 +16,15 @@ import {
   AlertTriangle,
   CheckCircle,
   X,
-  Printer
+  Printer,
+  Eye
 } from 'lucide-react';
 
 export default function Orders() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeFilter, setActiveFilter] = useState<'all' | 'sav' | 'quotes'>('sav');
+  const navigate = useNavigate();
   
   const { orderItems, loading, markAsOrdered, removeFromOrder, getOrdersByFilter } = useOrders();
 
@@ -62,6 +65,17 @@ export default function Orders() {
       case 'quotes': return 'Aucune pièce manquante pour les devis';
       case 'all': return 'Aucune pièce en dessous du stock minimum';
       default: return 'Aucune pièce trouvée';
+    }
+  };
+
+  const handleViewItem = (item: any) => {
+    if (item.sav_case_id) {
+      // Rediriger vers le SAV
+      navigate(`/sav/${item.sav_case_id}`);
+    } else if (item.quote_id) {
+      // Pour l'instant, rediriger vers la page des devis
+      // Plus tard, vous pourrez créer une page de détail de devis
+      navigate('/quotes');
     }
   };
 
@@ -244,6 +258,19 @@ export default function Orders() {
                             
                             {!item.ordered && (
                               <div className="flex items-center gap-2 ml-4">
+                                {/* Bouton Voir - affiché seulement pour SAV et Devis */}
+                                {(item.sav_case_id || item.quote_id) && (
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm"
+                                    onClick={() => handleViewItem(item)}
+                                    className="text-blue-600 hover:text-blue-700"
+                                  >
+                                    <Eye className="h-4 w-4 mr-1" />
+                                    Voir
+                                  </Button>
+                                )}
+                                
                                 <Button 
                                   variant="outline" 
                                   size="sm"
