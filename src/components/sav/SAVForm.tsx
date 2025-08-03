@@ -27,6 +27,7 @@ interface DeviceInfo {
   brand: string;
   model: string;
   imei: string;
+  sku: string;
   problemDescription: string;
 }
 
@@ -58,6 +59,7 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
     brand: '',
     model: '',
     imei: '',
+    sku: '',
     problemDescription: '',
   });
   const [selectedParts, setSelectedParts] = useState<SelectedPart[]>([]);
@@ -164,6 +166,7 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
         device_brand: deviceInfo.brand,
         device_model: deviceInfo.model,
         device_imei: deviceInfo.imei || null,
+        sku: deviceInfo.sku || null,
         problem_description: deviceInfo.problemDescription,
         total_time_minutes: totalTimeMinutes,
         total_cost: totalCost,
@@ -186,6 +189,7 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
         brand: '',
         model: '',
         imei: '',
+        sku: '',
         problemDescription: '',
       });
       setSelectedParts([]);
@@ -314,15 +318,30 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
               />
             </div>
           </div>
-          <div>
-            <Label htmlFor="imei">IMEI</Label>
-            <Input
-              id="imei"
-              value={deviceInfo.imei}
-              onChange={(e) =>
-                setDeviceInfo({ ...deviceInfo, imei: e.target.value })
-              }
-            />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="imei">IMEI</Label>
+              <Input
+                id="imei"
+                value={deviceInfo.imei}
+                onChange={(e) =>
+                  setDeviceInfo({ ...deviceInfo, imei: e.target.value })
+                }
+              />
+            </div>
+            <div>
+              <Label htmlFor="sku">SKU</Label>
+              <Input
+                id="sku"
+                value={deviceInfo.sku}
+                onChange={(e) => {
+                  const value = e.target.value.replace(/[^0-9]/g, '').slice(0, 13);
+                  setDeviceInfo({ ...deviceInfo, sku: value });
+                }}
+                placeholder="Numérique uniquement (13 caractères max)"
+                maxLength={13}
+              />
+            </div>
           </div>
           <div>
             <Label htmlFor="problemDescription">Description du problème *</Label>

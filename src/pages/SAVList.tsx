@@ -85,7 +85,10 @@ export default function SAVList() {
         case_.customer?.last_name, 
         case_.case_number, 
         case_.device_brand,
-        case_.device_model
+        case_.device_model,
+        case_.device_imei,
+        case_.sku,
+        case_.problem_description
       )
     );
 
@@ -266,6 +269,14 @@ export default function SAVList() {
                             <div className="flex items-center gap-2">
                               <Phone className="h-4 w-4" />
                               <span className="font-mono text-xs">{savCase.device_imei}</span>
+                            </div>
+                          )}
+                          
+                          {savCase.sku && (
+                            <div className="flex items-center gap-2">
+                              <Badge variant="secondary" className="text-xs">
+                                SKU: {savCase.sku}
+                              </Badge>
                             </div>
                           )}
                           

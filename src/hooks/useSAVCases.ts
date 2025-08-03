@@ -11,6 +11,7 @@ export interface SAVCase {
   device_brand: string;
   device_model: string;
   device_imei?: string;
+  sku?: string;
   problem_description: string;
   repair_notes?: string;
   private_comments?: string;
@@ -46,7 +47,14 @@ export function useSAVCases() {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setCases(data || []);
+      
+      // Mapper les anciens statuts vers les nouveaux
+      const mappedData = data?.map(item => ({
+        ...item,
+        status: item.status === 'delivered' ? 'ready' : item.status
+      })) as SAVCase[];
+      
+      setCases(mappedData || []);
     } catch (error: any) {
       toast({
         title: "Erreur",
