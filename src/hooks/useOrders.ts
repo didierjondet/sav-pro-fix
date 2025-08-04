@@ -70,7 +70,22 @@ export function useOrders() {
 
       if (savError) throw savError;
 
-      const formattedSavParts = savParts?.map(item => ({
+      // Récupérer les items déjà commandés pour éviter les doublons
+      const { data: existingOrders } = await supabase
+        .from('order_items')
+        .select('part_id, sav_case_id, ordered')
+        .eq('reason', 'sav_stock_zero')
+        .eq('ordered', true);
+
+      const formattedSavParts = savParts?.filter(item => {
+        // Vérifier si cette combinaison part_id + sav_case_id n'a pas déjà été commandée
+        const alreadyOrdered = existingOrders?.some(order => 
+          order.part_id === item.part_id && 
+          order.sav_case_id === item.sav_case_id &&
+          order.ordered === true
+        );
+        return !alreadyOrdered;
+      }).map(item => ({
         id: `sav-needed-${item.part_id}`,
         part_id: item.part_id,
         part_name: item.parts.name,
@@ -102,35 +117,51 @@ export function useOrders() {
 
       if (quotesError) throw quotesError;
 
+      // Récupérer les items déjà commandés pour éviter les doublons
+      const { data: existingOrders } = await supabase
+        .from('order_items')
+        .select('part_id, quote_id, ordered')
+        .eq('reason', 'quote_needed')
+        .eq('ordered', true);
+
       const neededParts: OrderItemWithPart[] = [];
       
       for (const quote of quotes || []) {
         const items = typeof quote.items === 'string' ? JSON.parse(quote.items) : quote.items;
         
         for (const item of items) {
-          // Vérifier le stock disponible
-          const { data: part, error: partError } = await supabase
-            .from('parts')
-            .select('*')
-            .eq('id', item.part_id)
-            .maybeSingle();
+          // Vérifier si cette combinaison part_id + quote_id n'a pas déjà été commandée
+          const alreadyOrdered = existingOrders?.some(order => 
+            order.part_id === item.part_id && 
+            order.quote_id === quote.id &&
+            order.ordered === true
+          );
 
-          if (!partError && part && part.quantity < item.quantity) {
-            neededParts.push({
-              id: `quote-needed-${item.part_id}-${quote.id}`,
-              part_id: item.part_id,
-              part_name: item.part_name,
-              part_reference: item.part_reference,
-              quantity_needed: item.quantity - part.quantity,
-              quote_id: quote.id,
-              reason: 'quote_needed',
-              priority: 'medium',
-              ordered: false,
-              shop_id: part.shop_id,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-              part: part
-            });
+          if (!alreadyOrdered) {
+            // Vérifier le stock disponible
+            const { data: part, error: partError } = await supabase
+              .from('parts')
+              .select('*')
+              .eq('id', item.part_id)
+              .maybeSingle();
+
+            if (!partError && part && part.quantity < item.quantity) {
+              neededParts.push({
+                id: `quote-needed-${item.part_id}-${quote.id}`,
+                part_id: item.part_id,
+                part_name: item.part_name,
+                part_reference: item.part_reference,
+                quantity_needed: item.quantity - part.quantity,
+                quote_id: quote.id,
+                reason: 'quote_needed',
+                priority: 'medium',
+                ordered: false,
+                shop_id: part.shop_id,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+                part: part
+              });
+            }
           }
         }
       }
@@ -150,8 +181,22 @@ export function useOrders() {
 
       if (error) throw error;
 
+      // Récupérer les items déjà commandés pour éviter les doublons
+      const { data: existingOrders } = await supabase
+        .from('order_items')
+        .select('part_id, ordered')
+        .eq('reason', 'manual')
+        .eq('ordered', true);
+
       // Filtrer les pièces qui ont besoin d'être réapprovisionnées
-      const partsNeedingStock = parts?.filter(part => part.quantity < part.min_stock) || [];
+      const partsNeedingStock = parts?.filter(part => {
+        const needsRestock = part.quantity < part.min_stock;
+        // Vérifier si cette pièce n'a pas déjà été commandée
+        const alreadyOrdered = existingOrders?.some(order => 
+          order.part_id === part.id && order.ordered === true
+        );
+        return needsRestock && !alreadyOrdered;
+      }) || [];
 
       const restockNeeded = partsNeedingStock.map(part => ({
         id: `restock-${part.id}`,
