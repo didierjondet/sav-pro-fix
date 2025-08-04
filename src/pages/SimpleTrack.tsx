@@ -23,6 +23,7 @@ interface SAVCaseData {
   device_brand: string;
   device_model: string;
   device_imei?: string;
+  sku?: string;
   problem_description: string;
   repair_notes?: string;
   total_cost: number;
@@ -319,6 +320,9 @@ export default function SimpleTrack() {
                   <p><span className="font-medium">Modèle:</span> {savCase.device_model}</p>
                   {savCase.device_imei && (
                     <p><span className="font-medium">IMEI:</span> {savCase.device_imei}</p>
+                  )}
+                  {savCase.sku && (
+                    <p><span className="font-medium">SKU:</span> {savCase.sku}</p>
                   )}
                 </div>
               </div>

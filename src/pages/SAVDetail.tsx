@@ -269,6 +269,11 @@ export default function SAVDetail() {
                       <strong>IMEI:</strong> {savCase.device_imei}
                     </div>
                   )}
+                  {savCase.sku && (
+                    <div>
+                      <strong>SKU:</strong> {savCase.sku}
+                    </div>
+                  )}
                   <div>
                     <strong>Coût total:</strong> {savCase.total_cost}€
                   </div>

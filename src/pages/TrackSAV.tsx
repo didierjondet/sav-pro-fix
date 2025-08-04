@@ -22,6 +22,7 @@ interface SAVCaseData {
   device_brand: string;
   device_model: string;
   device_imei?: string;
+  sku?: string;
   problem_description: string;
   repair_notes?: string;
   total_cost: number;
@@ -266,6 +267,11 @@ export default function TrackSAV() {
               {savCase.device_imei && (
                 <div>
                   <strong>IMEI:</strong> {savCase.device_imei}
+                </div>
+              )}
+              {savCase.sku && (
+                <div>
+                  <strong>SKU:</strong> {savCase.sku}
                 </div>
               )}
               <div>

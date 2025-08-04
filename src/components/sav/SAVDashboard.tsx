@@ -229,6 +229,7 @@ export function SAVDashboard() {
                       <div className="flex flex-col">
                         <span>{case_.device_brand} {case_.device_model}</span>
                         {case_.device_imei && <span className="text-xs text-muted-foreground">IMEI: {case_.device_imei}</span>}
+                        {case_.sku && <span className="text-xs text-muted-foreground">SKU: {case_.sku}</span>}
                       </div>
                     </TableCell>
                     <TableCell>

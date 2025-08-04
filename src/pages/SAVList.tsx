@@ -274,6 +274,13 @@ export default function SAVList() {
                           
                           {savCase.sku && (
                             <div className="flex items-center gap-2">
+                              <span className="h-4 w-4 text-center text-xs font-semibold">#</span>
+                              <span className="font-mono text-xs">{savCase.sku}</span>
+                            </div>
+                          )}
+                          
+                          {savCase.sku && (
+                            <div className="flex items-center gap-2">
                               <Badge variant="secondary" className="text-xs">
                                 SKU: {savCase.sku}
                               </Badge>
