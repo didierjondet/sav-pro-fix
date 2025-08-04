@@ -119,6 +119,57 @@ export function NotificationBell() {
     }
   };
 
+  const handleSAVClick = async (savCaseId: string) => {
+    try {
+      // Marquer tous les messages non lus de ce SAV comme lus par le shop
+      await supabase
+        .from('sav_messages')
+        .update({ read_by_shop: true })
+        .eq('sav_case_id', savCaseId)
+        .eq('sender_type', 'client')
+        .eq('read_by_shop', false);
+      
+      // Naviguer vers le SAV
+      navigate(`/sav/${savCaseId}`);
+      setIsOpen(false);
+      
+      // Réinitialiser l'indicateur d'activité
+      if (hasNewActivity) {
+        setHasNewActivity(false);
+      }
+    } catch (error) {
+      console.error('Error marking SAV messages as read:', error);
+      // Naviguer même en cas d'erreur
+      navigate(`/sav/${savCaseId}`);
+      setIsOpen(false);
+    }
+  };
+
+  const handleMarkAllAsRead = async () => {
+    try {
+      // Marquer toutes les notifications classiques comme lues
+      await markAllAsRead();
+      
+      // Marquer tous les messages SAV non lus comme lus par le shop
+      if (savWithUnreadMessages.length > 0) {
+        const savCaseIds = savWithUnreadMessages.map(sav => sav.id);
+        await supabase
+          .from('sav_messages')
+          .update({ read_by_shop: true })
+          .in('sav_case_id', savCaseIds)
+          .eq('sender_type', 'client')
+          .eq('read_by_shop', false);
+      }
+      
+      // Réinitialiser l'indicateur d'activité
+      if (hasNewActivity) {
+        setHasNewActivity(false);
+      }
+    } catch (error) {
+      console.error('Error marking all as read:', error);
+    }
+  };
+
   const handleBellClick = () => {
     setIsOpen(!isOpen);
     if (hasNewActivity) {
@@ -194,7 +245,7 @@ export function NotificationBell() {
           <div className="flex items-center justify-between">
             <h3 className="font-semibold">Notifications</h3>
             {totalUnreadCount > 0 && (
-              <Button variant="ghost" size="sm" onClick={markAllAsRead}>
+              <Button variant="ghost" size="sm" onClick={handleMarkAllAsRead}>
                 Tout marquer lu
               </Button>
             )}
@@ -212,10 +263,7 @@ export function NotificationBell() {
                 <div key={sav.id}>
                   <Card 
                     className="border-0 rounded-none cursor-pointer hover:bg-muted/50 bg-orange-50/50"
-                    onClick={() => {
-                      navigate(`/sav/${sav.id}`);
-                      setIsOpen(false);
-                    }}
+                    onClick={() => handleSAVClick(sav.id)}
                   >
                     <CardContent className="p-4">
                       <div className="flex items-start gap-3">
