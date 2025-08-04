@@ -55,13 +55,21 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     console.log('❌ Subscription menu hidden');
   }
 
-  // Calculate status counts
+  // Calculate status counts with distinction between client and shop pending
   const statusCounts = cases.reduce((acc, savCase) => {
-    if (savCase.status === 'pending') acc.pending++;
-    else if (savCase.status === 'in_progress') acc.inProgress++;
-    else if (['delivered', 'ready'].includes(savCase.status)) acc.completed++;
+    if (savCase.status === 'pending') {
+      if (savCase.sav_type === 'client') {
+        acc.pendingClient++;
+      } else {
+        acc.pendingShop++;
+      }
+    } else if (savCase.status === 'in_progress') {
+      acc.inProgress++;
+    } else if (['delivered', 'ready'].includes(savCase.status)) {
+      acc.completed++;
+    }
     return acc;
-  }, { pending: 0, inProgress: 0, completed: 0 });
+  }, { pendingClient: 0, pendingShop: 0, inProgress: 0, completed: 0 });
   return (
     <>
       {/* Mobile overlay */}
@@ -137,8 +145,12 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
               </h3>
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span>En attente</span>
-                  <span className="font-medium">{statusCounts.pending}</span>
+                  <span>En attente client</span>
+                  <span className="font-medium">{statusCounts.pendingClient}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span>En attente magasin</span>
+                  <span className="font-medium">{statusCounts.pendingShop}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span>En cours</span>
