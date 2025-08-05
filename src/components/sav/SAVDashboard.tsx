@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { multiWordSearch } from '@/utils/searchUtils';
 import { Plus, Search, Filter, MoreHorizontal, Eye, Edit, Trash2, MessageCircleWarning } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -51,6 +52,7 @@ const statusConfig = {
 };
 export function SAVDashboard() {
   const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all-except-ready'); // Par défaut, masquer les SAV prêts
   const [isFormOpen, setIsFormOpen] = useState(false);
   const {
     cases,
@@ -101,7 +103,20 @@ export function SAVDashboard() {
       return a.delayInfo.totalRemainingHours - b.delayInfo.totalRemainingHours;
     });
   }, [cases, shop]);
-  const filteredCases = casesWithDelayInfo.filter(case_ => multiWordSearch(searchTerm, case_.customer?.first_name, case_.customer?.last_name, case_.case_number, case_.device_brand, case_.device_model));
+  const filteredCases = casesWithDelayInfo.filter(case_ => {
+    // Filtrage par recherche textuelle
+    const matchesSearch = multiWordSearch(searchTerm, case_.customer?.first_name, case_.customer?.last_name, case_.case_number, case_.device_brand, case_.device_model);
+    
+    // Filtrage par statut
+    let matchesStatus = true;
+    if (statusFilter === 'all-except-ready') {
+      matchesStatus = case_.status !== 'ready';
+    } else if (statusFilter !== 'all') {
+      matchesStatus = case_.status === statusFilter;
+    }
+    
+    return matchesSearch && matchesStatus;
+  });
   return <div className="space-y-6">
       <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
         <div className="flex-1 max-w-sm">
@@ -109,12 +124,6 @@ export function SAVDashboard() {
             <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input placeholder="Rechercher un dossier..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-8" />
           </div>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm">
-            <Filter className="mr-2 h-4 w-4" />
-            Filtres
-          </Button>
         </div>
       </div>
 
@@ -180,20 +189,38 @@ export function SAVDashboard() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle>Dossiers SAV récents</CardTitle>
-            <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-              <DialogTrigger asChild>
-                <Button>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Nouveau SAV
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle>Créer un nouveau dossier SAV</DialogTitle>
-                </DialogHeader>
-                <SAVForm onSuccess={() => setIsFormOpen(false)} />
-              </DialogContent>
-            </Dialog>
+            <div className="flex gap-2">
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-[200px]">
+                  <Filter className="mr-2 h-4 w-4" />
+                  <SelectValue placeholder="Filtrer par statut" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tous les statuts</SelectItem>
+                  <SelectItem value="all-except-ready">Masquer les prêts</SelectItem>
+                  <SelectItem value="pending">En attente</SelectItem>
+                  <SelectItem value="in_progress">En cours</SelectItem>
+                  <SelectItem value="testing">En test</SelectItem>
+                  <SelectItem value="parts_ordered">Pièces commandées</SelectItem>
+                  <SelectItem value="ready">Prêt</SelectItem>
+                  <SelectItem value="cancelled">Annulé</SelectItem>
+                </SelectContent>
+              </Select>
+              <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+                <DialogTrigger asChild>
+                  <Button>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Nouveau SAV
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>Créer un nouveau dossier SAV</DialogTitle>
+                  </DialogHeader>
+                  <SAVForm onSuccess={() => setIsFormOpen(false)} />
+                </DialogContent>
+              </Dialog>
+            </div>
           </div>
           <CardDescription>
             Gérez vos dossiers de réparation et leur statut

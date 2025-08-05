@@ -54,6 +54,7 @@ export default function SAVList() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all'); // 'all', 'client', 'internal'
+  const [statusFilter, setStatusFilter] = useState('all-except-ready'); // Par défaut, masquer les SAV prêts
   const [sortOrder, setSortOrder] = useState('priority'); // 'priority', 'oldest', 'newest'
   const [qrCodeCase, setQrCodeCase] = useState(null);
   const { cases, loading, deleteCase } = useSAVCases();
@@ -77,8 +78,16 @@ export default function SAVList() {
       filteredByType = casesWithDelay.filter(case_ => case_.sav_type === 'internal');
     }
 
-    // 3. Filtrer par recherche
-    const filteredBySearch = filteredByType.filter(case_ =>
+    // 3. Filtrer par statut
+    let filteredByStatus = filteredByType;
+    if (statusFilter === 'all-except-ready') {
+      filteredByStatus = filteredByType.filter(case_ => case_.status !== 'ready');
+    } else if (statusFilter !== 'all') {
+      filteredByStatus = filteredByType.filter(case_ => case_.status === statusFilter);
+    }
+
+    // 4. Filtrer par recherche
+    const filteredBySearch = filteredByStatus.filter(case_ =>
       multiWordSearch(
         searchTerm, 
         case_.customer?.first_name, 
@@ -92,7 +101,7 @@ export default function SAVList() {
       )
     );
 
-    // 4. Appliquer le tri
+    // 5. Appliquer le tri
     return filteredBySearch.sort((a, b) => {
       if (sortOrder === 'oldest') {
         // Trier par temps restant croissant (le moins de temps restant en premier = plus vieux/urgent)
@@ -124,7 +133,7 @@ export default function SAVList() {
         return a.delayInfo.totalRemainingHours - b.delayInfo.totalRemainingHours;
       }
     });
-  }, [cases, shop, filterType, sortOrder, searchTerm]);
+  }, [cases, shop, filterType, statusFilter, sortOrder, searchTerm]);
 
   if (loading) {
     return (
@@ -182,6 +191,25 @@ export default function SAVList() {
                         <SelectItem value="all">Tous les SAV</SelectItem>
                         <SelectItem value="client">SAV Client</SelectItem>
                         <SelectItem value="internal">SAV Magasin</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium">Statut:</span>
+                    <Select value={statusFilter} onValueChange={setStatusFilter}>
+                      <SelectTrigger className="w-48">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Tous les statuts</SelectItem>
+                        <SelectItem value="all-except-ready">Masquer les prêts</SelectItem>
+                        <SelectItem value="pending">En attente</SelectItem>
+                        <SelectItem value="in_progress">En cours</SelectItem>
+                        <SelectItem value="testing">En test</SelectItem>
+                        <SelectItem value="parts_ordered">Pièces commandées</SelectItem>
+                        <SelectItem value="ready">Prêt</SelectItem>
+                        <SelectItem value="cancelled">Annulé</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
