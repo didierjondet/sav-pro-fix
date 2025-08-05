@@ -111,6 +111,8 @@ export function SAVDashboard() {
     let matchesStatus = true;
     if (statusFilter === 'all-except-ready') {
       matchesStatus = case_.status !== 'ready';
+    } else if (statusFilter === 'overdue') {
+      matchesStatus = case_.delayInfo.isOverdue && case_.status !== 'cancelled';
     } else if (statusFilter !== 'all') {
       matchesStatus = case_.status === statusFilter;
     }
@@ -198,6 +200,7 @@ export function SAVDashboard() {
                 <SelectContent>
                   <SelectItem value="all">Tous les statuts</SelectItem>
                   <SelectItem value="all-except-ready">Masquer les prêts</SelectItem>
+                  <SelectItem value="overdue">En retard</SelectItem>
                   <SelectItem value="pending">En attente</SelectItem>
                   <SelectItem value="in_progress">En cours</SelectItem>
                   <SelectItem value="testing">En test</SelectItem>

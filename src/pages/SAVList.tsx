@@ -82,6 +82,8 @@ export default function SAVList() {
     let filteredByStatus = filteredByType;
     if (statusFilter === 'all-except-ready') {
       filteredByStatus = filteredByType.filter(case_ => case_.status !== 'ready');
+    } else if (statusFilter === 'overdue') {
+      filteredByStatus = filteredByType.filter(case_ => case_.delayInfo.isOverdue && case_.status !== 'cancelled');
     } else if (statusFilter !== 'all') {
       filteredByStatus = filteredByType.filter(case_ => case_.status === statusFilter);
     }
@@ -204,6 +206,7 @@ export default function SAVList() {
                       <SelectContent>
                         <SelectItem value="all">Tous les statuts</SelectItem>
                         <SelectItem value="all-except-ready">Masquer les prêts</SelectItem>
+                        <SelectItem value="overdue">En retard</SelectItem>
                         <SelectItem value="pending">En attente</SelectItem>
                         <SelectItem value="in_progress">En cours</SelectItem>
                         <SelectItem value="testing">En test</SelectItem>
