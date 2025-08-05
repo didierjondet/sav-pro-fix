@@ -32,6 +32,10 @@ const statusConfig = {
     label: 'En test',
     variant: 'default' as const
   },
+  parts_ordered: {
+    label: 'Pièces commandées',
+    variant: 'default' as const
+  },
   ready: {
     label: 'Prêt',
     variant: 'default' as const
