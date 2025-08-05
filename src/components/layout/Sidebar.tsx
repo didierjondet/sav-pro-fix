@@ -56,7 +56,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
   }
 
   // Calculate status counts with distinction between client and shop pending
-  const statusCounts = cases.reduce((acc, savCase) => {
+  const statusCounts = (cases || []).reduce((acc, savCase) => {
     if (savCase.status === 'pending') {
       if (savCase.sav_type === 'client') {
         acc.pendingClient++;
