@@ -14,6 +14,7 @@ import { useParts } from '@/hooks/useParts';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProfile } from '@/hooks/useProfile';
 import { Badge } from '@/components/ui/badge';
+import { CustomerSearch } from '@/components/customers/CustomerSearch';
 
 interface CustomerInfo {
   firstName: string;
@@ -48,6 +49,7 @@ interface SAVFormProps {
 
 export function SAVForm({ onSuccess }: SAVFormProps) {
   const [savType, setSavType] = useState<'client' | 'internal'>('client');
+  const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({
     firstName: '',
     lastName: '',
@@ -138,10 +140,10 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
     setLoading(true);
     
     try {
-      let customerId = null;
+      let customerId = selectedCustomer?.id || null;
       
-      // Create customer if SAV client
-      if (savType === 'client') {
+      // Create customer if SAV client and no customer selected
+      if (savType === 'client' && !selectedCustomer) {
         const { data: customer, error: customerError } = await createCustomer({
           first_name: customerInfo.firstName,
           last_name: customerInfo.lastName,
@@ -228,63 +230,74 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
             <CardTitle>Informations Client</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="firstName">Prénom *</Label>
-                <Input
-                  id="firstName"
-                  value={customerInfo.firstName}
-                  onChange={(e) =>
-                    setCustomerInfo({ ...customerInfo, firstName: e.target.value })
-                  }
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="lastName">Nom *</Label>
-                <Input
-                  id="lastName"
-                  value={customerInfo.lastName}
-                  onChange={(e) =>
-                    setCustomerInfo({ ...customerInfo, lastName: e.target.value })
-                  }
-                  required
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={customerInfo.email}
-                  onChange={(e) =>
-                    setCustomerInfo({ ...customerInfo, email: e.target.value })
-                  }
-                />
-              </div>
-              <div>
-                <Label htmlFor="phone">Téléphone</Label>
-                <Input
-                  id="phone"
-                  value={customerInfo.phone}
-                  onChange={(e) =>
-                    setCustomerInfo({ ...customerInfo, phone: e.target.value })
-                  }
-                />
-              </div>
-            </div>
-            <div>
-              <Label htmlFor="address">Adresse</Label>
-              <Textarea
-                id="address"
-                value={customerInfo.address}
-                onChange={(e) =>
-                  setCustomerInfo({ ...customerInfo, address: e.target.value })
-                }
-              />
-            </div>
+            <CustomerSearch
+              customerInfo={customerInfo}
+              setCustomerInfo={setCustomerInfo}
+              onCustomerSelected={setSelectedCustomer}
+            />
+            
+            {/* Champs supplémentaires visibles seulement si pas de client sélectionné */}
+            {!selectedCustomer && (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="firstName">Prénom *</Label>
+                    <Input
+                      id="firstName"
+                      value={customerInfo.firstName}
+                      onChange={(e) =>
+                        setCustomerInfo({ ...customerInfo, firstName: e.target.value })
+                      }
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="lastName">Nom *</Label>
+                    <Input
+                      id="lastName"
+                      value={customerInfo.lastName}
+                      onChange={(e) =>
+                        setCustomerInfo({ ...customerInfo, lastName: e.target.value })
+                      }
+                      required
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={customerInfo.email}
+                      onChange={(e) =>
+                        setCustomerInfo({ ...customerInfo, email: e.target.value })
+                      }
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="phone">Téléphone</Label>
+                    <Input
+                      id="phone"
+                      value={customerInfo.phone}
+                      onChange={(e) =>
+                        setCustomerInfo({ ...customerInfo, phone: e.target.value })
+                      }
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label htmlFor="address">Adresse</Label>
+                  <Textarea
+                    id="address"
+                    value={customerInfo.address}
+                    onChange={(e) =>
+                      setCustomerInfo({ ...customerInfo, address: e.target.value })
+                    }
+                  />
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
       )}
