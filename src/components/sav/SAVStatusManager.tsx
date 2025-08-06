@@ -4,19 +4,27 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useSAVCases } from '@/hooks/useSAVCases';
 import { useSubscription } from '@/hooks/useSubscription';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Settings, Save, MessageSquare, AlertTriangle, CreditCard } from 'lucide-react';
+import { Settings, Save, MessageSquare, AlertTriangle, CreditCard, Euro } from 'lucide-react';
 
 interface SAVStatusManagerProps {
   savCase: {
     id: string;
     case_number: string;
     status: string;
+    sav_type: 'client' | 'internal';
+    total_cost: number;
+    taken_over?: boolean;
+    partial_takeover?: boolean;
+    takeover_amount?: number;
     customer?: {
       first_name: string;
       last_name: string;
@@ -51,6 +59,12 @@ export function SAVStatusManager({ savCase, onStatusUpdated }: SAVStatusManagerP
   const [updating, setUpdating] = useState(false);
   const [showSMSDialog, setShowSMSDialog] = useState(false);
   const [pendingStatusData, setPendingStatusData] = useState<{status: string, notes: string} | null>(null);
+  
+  // États pour la prise en charge
+  const [partialTakeover, setPartialTakeover] = useState(savCase.partial_takeover || false);
+  const [takeoverAmount, setTakeoverAmount] = useState(savCase.takeover_amount || 0);
+  const [updatingTakeover, setUpdatingTakeover] = useState(false);
+  
   const { updateCaseStatus } = useSAVCases();
   const { subscription, checkLimits } = useSubscription();
   const { toast } = useToast();
@@ -133,9 +147,49 @@ export function SAVStatusManager({ savCase, onStatusUpdated }: SAVStatusManagerP
     }
   };
 
+  // Fonction pour mettre à jour la prise en charge
+  const updateTakeover = async () => {
+    if (savCase.sav_type !== 'client') return;
+    
+    setUpdatingTakeover(true);
+    try {
+      const { error } = await supabase
+        .from('sav_cases')
+        .update({
+          partial_takeover: partialTakeover,
+          takeover_amount: partialTakeover ? takeoverAmount : 0
+        })
+        .eq('id', savCase.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Succès",
+        description: "Prise en charge mise à jour avec succès",
+      });
+
+      onStatusUpdated?.();
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error.message || "Erreur lors de la mise à jour",
+        variant: "destructive",
+      });
+    } finally {
+      setUpdatingTakeover(false);
+    }
+  };
+
   const hasChanges = selectedStatus !== savCase.status || notes.trim();
+  const hasTakeoverChanges = partialTakeover !== (savCase.partial_takeover || false) || 
+                            takeoverAmount !== (savCase.takeover_amount || 0);
   const limits = checkLimits('sms');
   const canSendSMS = limits.allowed && savCase.customer?.phone && savCase.tracking_slug;
+
+  // Calculer le montant à payer par le client
+  const clientAmount = partialTakeover ? 
+    Math.max(0, savCase.total_cost - takeoverAmount) : 
+    (savCase.taken_over ? 0 : savCase.total_cost);
 
   return (
     <Card>
@@ -192,6 +246,77 @@ export function SAVStatusManager({ savCase, onStatusUpdated }: SAVStatusManagerP
           <Save className="h-4 w-4 mr-2" />
           {updating ? 'Mise à jour...' : 'Mettre à jour le statut'}
         </Button>
+
+        {/* Section Prise en charge - Uniquement pour les SAV clients */}
+        {savCase.sav_type === 'client' && (
+          <>
+            <div className="border-t pt-4">
+              <div className="flex items-center gap-2 mb-4">
+                <Euro className="h-5 w-5" />
+                <h3 className="text-lg font-medium">Prise en charge financière</h3>
+              </div>
+              
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <Label htmlFor="partial-takeover">Prise en charge partielle</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Le magasin prend en charge une partie du coût du SAV
+                    </p>
+                  </div>
+                  <Switch
+                    id="partial-takeover"
+                    checked={partialTakeover}
+                    onCheckedChange={setPartialTakeover}
+                  />
+                </div>
+
+                {partialTakeover && (
+                  <div className="space-y-2">
+                    <Label htmlFor="takeover-amount">Montant pris en charge par le magasin (€)</Label>
+                    <Input
+                      id="takeover-amount"
+                      type="number"
+                      min="0"
+                      max={savCase.total_cost}
+                      step="0.01"
+                      value={takeoverAmount}
+                      onChange={(e) => setTakeoverAmount(parseFloat(e.target.value) || 0)}
+                      placeholder="0.00"
+                    />
+                    <p className="text-sm text-muted-foreground">
+                      Coût total du SAV : {savCase.total_cost.toFixed(2)}€
+                    </p>
+                  </div>
+                )}
+
+                <div className="bg-muted/50 p-3 rounded-lg">
+                  <div className="flex justify-between items-center text-sm">
+                    <span>Montant à payer par le client :</span>
+                    <span className="font-bold text-lg">
+                      {clientAmount.toFixed(2)}€
+                    </span>
+                  </div>
+                  {partialTakeover && (
+                    <div className="text-xs text-muted-foreground mt-1">
+                      Magasin prend en charge : {takeoverAmount.toFixed(2)}€
+                    </div>
+                  )}
+                </div>
+
+                <Button
+                  onClick={updateTakeover}
+                  disabled={!hasTakeoverChanges || updatingTakeover}
+                  variant="outline"
+                  className="w-full"
+                >
+                  <Save className="h-4 w-4 mr-2" />
+                  {updatingTakeover ? 'Mise à jour...' : 'Sauvegarder prise en charge'}
+                </Button>
+              </div>
+            </div>
+          </>
+        )}
 
         {/* Dialog de confirmation SMS */}
         <Dialog open={showSMSDialog} onOpenChange={setShowSMSDialog}>

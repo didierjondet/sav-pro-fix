@@ -27,7 +27,7 @@ export function useSAVPartsCosts() {
         .select(`
           quantity,
           parts!inner(purchase_price),
-          sav_cases!inner(sav_type, status, taken_over, total_cost)
+          sav_cases!inner(sav_type, status, taken_over, partial_takeover, takeover_amount, total_cost)
         `)
         .eq('sav_cases.status', 'ready');
 
@@ -44,12 +44,21 @@ export function useSAVPartsCosts() {
           const partCost = (item.parts.purchase_price || 0) * item.quantity;
           const savCase = item.sav_cases;
           
-          if (savCase.sav_type === 'client' && savCase.taken_over) {
-            takeover_cost += partCost;
+          if (savCase.sav_type === 'client') {
+            if (savCase.taken_over) {
+              // SAV totalement pris en charge
+              takeover_cost += partCost;
+            } else if (savCase.partial_takeover) {
+              // SAV partiellement pris en charge
+              const takeoverRatio = savCase.takeover_amount / (savCase.total_cost || 1);
+              takeover_cost += partCost * takeoverRatio;
+              client_cost += partCost * (1 - takeoverRatio);
+            } else {
+              // SAV entièrement à la charge du client
+              client_cost += partCost;
+            }
           } else if (savCase.sav_type === 'internal') {
             internal_cost += partCost;
-          } else if (savCase.sav_type === 'client' && !savCase.taken_over) {
-            client_cost += partCost;
           }
         });
       }

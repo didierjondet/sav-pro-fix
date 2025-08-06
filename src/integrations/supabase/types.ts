@@ -397,6 +397,7 @@ export type Database = {
           device_imei: string | null
           device_model: string | null
           id: string
+          partial_takeover: boolean | null
           private_comments: string | null
           problem_description: string | null
           repair_notes: string | null
@@ -405,6 +406,7 @@ export type Database = {
           sku: string | null
           status: Database["public"]["Enums"]["sav_status"]
           taken_over: boolean
+          takeover_amount: number | null
           technician_id: string | null
           total_cost: number | null
           total_time_minutes: number | null
@@ -419,6 +421,7 @@ export type Database = {
           device_imei?: string | null
           device_model?: string | null
           id?: string
+          partial_takeover?: boolean | null
           private_comments?: string | null
           problem_description?: string | null
           repair_notes?: string | null
@@ -427,6 +430,7 @@ export type Database = {
           sku?: string | null
           status?: Database["public"]["Enums"]["sav_status"]
           taken_over?: boolean
+          takeover_amount?: number | null
           technician_id?: string | null
           total_cost?: number | null
           total_time_minutes?: number | null
@@ -441,6 +445,7 @@ export type Database = {
           device_imei?: string | null
           device_model?: string | null
           id?: string
+          partial_takeover?: boolean | null
           private_comments?: string | null
           problem_description?: string | null
           repair_notes?: string | null
@@ -449,6 +454,7 @@ export type Database = {
           sku?: string | null
           status?: Database["public"]["Enums"]["sav_status"]
           taken_over?: boolean
+          takeover_amount?: number | null
           technician_id?: string | null
           total_cost?: number | null
           total_time_minutes?: number | null
