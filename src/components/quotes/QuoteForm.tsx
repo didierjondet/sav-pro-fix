@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Textarea } from '@/components/ui/textarea';
 import { useParts } from '@/hooks/useParts';
 import { Search, Plus, Trash2, ArrowLeft } from 'lucide-react';
 import { QuoteItem } from '@/hooks/useQuotes';
@@ -16,9 +17,11 @@ interface QuoteFormProps {
 
 export function QuoteForm({ onSubmit, onCancel }: QuoteFormProps) {
   const { parts } = useParts();
-  const [customerName, setCustomerName] = useState('');
+  const [customerFirstName, setCustomerFirstName] = useState('');
+  const [customerLastName, setCustomerLastName] = useState('');
   const [customerEmail, setCustomerEmail] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
+  const [notes, setNotes] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedItems, setSelectedItems] = useState<QuoteItem[]>([]);
 
@@ -119,8 +122,8 @@ export function QuoteForm({ onSubmit, onCancel }: QuoteFormProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!customerName.trim()) {
-      alert('Le nom du client est requis');
+    if (!customerFirstName.trim() || !customerLastName.trim()) {
+      alert('Le nom et prénom du client sont requis');
       return;
     }
 
@@ -130,9 +133,10 @@ export function QuoteForm({ onSubmit, onCancel }: QuoteFormProps) {
     }
 
     const { error } = await onSubmit({
-      customer_name: customerName,
+      customer_name: `${customerFirstName} ${customerLastName}`,
       customer_email: customerEmail || null,
       customer_phone: customerPhone || null,
+      notes: notes || null,
       items: selectedItems,
       total_amount: totalAmount,
       status: 'draft'
@@ -160,14 +164,25 @@ export function QuoteForm({ onSubmit, onCancel }: QuoteFormProps) {
             <CardTitle>Informations client</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div>
-              <Label htmlFor="customerName">Nom du client *</Label>
-              <Input
-                id="customerName"
-                value={customerName}
-                onChange={(e) => setCustomerName(e.target.value)}
-                required
-              />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="customerFirstName">Prénom *</Label>
+                <Input
+                  id="customerFirstName"
+                  value={customerFirstName}
+                  onChange={(e) => setCustomerFirstName(e.target.value)}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="customerLastName">Nom *</Label>
+                <Input
+                  id="customerLastName"
+                  value={customerLastName}
+                  onChange={(e) => setCustomerLastName(e.target.value)}
+                  required
+                />
+              </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -187,6 +202,16 @@ export function QuoteForm({ onSubmit, onCancel }: QuoteFormProps) {
                   onChange={(e) => setCustomerPhone(e.target.value)}
                 />
               </div>
+            </div>
+            <div>
+              <Label htmlFor="notes">Notes (optionnel)</Label>
+              <Textarea
+                id="notes"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="Notes additionnelles pour le devis..."
+                rows={3}
+              />
             </div>
           </CardContent>
         </Card>

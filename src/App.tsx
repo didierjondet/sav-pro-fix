@@ -16,7 +16,6 @@ import Parts from "./pages/Parts";
 import Quotes from "./pages/Quotes";
 import Customers from "./pages/Customers";
 import Statistics from "./pages/Statistics";
-
 import Landing from "./pages/Landing";
 import Orders from "./pages/Orders";
 import SuperAdmin from "./pages/SuperAdmin";
