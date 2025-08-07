@@ -4,6 +4,7 @@ import { Sidebar } from '@/components/layout/Sidebar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { CustomerForm } from '@/components/customers/CustomerForm';
 import { CustomerActivityDialog } from '@/components/customers/CustomerActivityDialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -11,6 +12,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useCustomers, Customer } from '@/hooks/useCustomers';
 import { useCustomerActivity } from '@/hooks/useCustomerActivity';
 import { useShop } from '@/hooks/useShop';
+import { multiWordSearch } from '@/utils/searchUtils';
 import { 
   User,
   Plus,
@@ -21,7 +23,8 @@ import {
   MapPin,
   Eye,
   Euro,
-  TrendingUp
+  TrendingUp,
+  Search
 } from 'lucide-react';
 
 export default function Customers() {
@@ -30,9 +33,15 @@ export default function Customers() {
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [deletingCustomer, setDeletingCustomer] = useState<Customer | null>(null);
   const [viewingCustomer, setViewingCustomer] = useState<Customer | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
   
   const { customers, loading, createCustomer, updateCustomer, deleteCustomer } = useCustomers();
   const { shop } = useShop();
+
+  // Filtrer les clients en fonction de la recherche
+  const filteredCustomers = customers.filter(customer =>
+    !searchTerm || multiWordSearch(searchTerm, customer.first_name, customer.last_name, customer.email || '', customer.phone || '')
+  );
 
   const handleCreateCustomer = async (customerData: Omit<Customer, 'id' | 'created_at' | 'updated_at'>) => {
     const dataWithShop = {
@@ -109,8 +118,21 @@ export default function Customers() {
                 </Button>
               </div>
 
+              {/* Champ de recherche */}
+              <div className="mb-6">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                  <Input
+                    placeholder="Rechercher un client (nom, prénom, email, téléphone)..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+
           <div className="grid gap-4">
-            {customers.length === 0 ? (
+            {filteredCustomers.length === 0 && !searchTerm ? (
               <Card>
                 <CardContent className="text-center py-8">
                   <User className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
@@ -121,8 +143,15 @@ export default function Customers() {
                   </Button>
                 </CardContent>
               </Card>
+            ) : filteredCustomers.length === 0 ? (
+              <Card>
+                <CardContent className="text-center py-8">
+                  <User className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                  <p className="text-muted-foreground">Aucun client trouvé pour "{searchTerm}"</p>
+                </CardContent>
+              </Card>
             ) : (
-              customers.map((customer) => {
+              filteredCustomers.map((customer) => {
                 return (
                   <CustomerCard 
                     key={customer.id} 
