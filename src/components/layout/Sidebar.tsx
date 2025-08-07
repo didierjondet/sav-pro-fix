@@ -26,13 +26,12 @@ interface SidebarProps {
 
 const baseNavigation = [
   { name: 'Tableau de bord', href: '/', icon: BarChart3 },
-  { name: 'Nouveau SAV', href: '/sav/new', icon: Plus },
   { name: 'Dossiers SAV', href: '/sav', icon: FileText },
   { name: 'Stock pièces', href: '/parts', icon: Package },
   { name: 'Devis', href: '/quotes', icon: FileText },
   { name: 'Commandes', href: '/orders', icon: Package },
   { name: 'Clients', href: '/customers', icon: Users },
-  { name: 'Support', href: '/support', icon: HelpCircle },
+  { name: 'Statistiques', href: '/statistics', icon: BarChart3 },
 ];
 
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
@@ -169,6 +168,17 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
           </ScrollArea>
 
           <div className="p-4 border-t border-border">
+            <Button 
+              variant="ghost" 
+              className="w-full justify-start mb-2"
+              onClick={() => {
+                navigate('/support');
+                onClose();
+              }}
+            >
+              <HelpCircle className="mr-3 h-5 w-5" />
+              Support
+            </Button>
             <Button 
               variant="ghost" 
               className="w-full justify-start"

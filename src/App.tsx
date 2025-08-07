@@ -15,6 +15,7 @@ import SimpleTrack from "./pages/SimpleTrack";
 import Parts from "./pages/Parts";
 import Quotes from "./pages/Quotes";
 import Customers from "./pages/Customers";
+import Statistics from "./pages/Statistics";
 
 import Landing from "./pages/Landing";
 import Orders from "./pages/Orders";
@@ -47,6 +48,7 @@ const App = () => (
             <Route path="/quotes" element={<Quotes />} />
             <Route path="/orders" element={<Orders />} />
             <Route path="/customers" element={<Customers />} />
+            <Route path="/statistics" element={<Statistics />} />
             <Route path="/support" element={<Support />} />
             
             <Route path="/super-admin" element={<SuperAdmin />} />
