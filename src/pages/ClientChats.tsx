@@ -26,9 +26,25 @@ export default function ClientChats() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
 
-  // SEO: title
+  // SEO: title and meta
   useEffect(() => {
     document.title = 'Chat clients | Gestion SAV';
+    // Meta description
+    const meta = document.querySelector('meta[name="description"]') || (() => {
+      const m = document.createElement('meta');
+      m.setAttribute('name', 'description');
+      document.head.appendChild(m);
+      return m;
+    })();
+    meta.setAttribute('content', "Chat clients: liste des discussions ouvertes, notifications sonores et fil de discussion en temps réel.");
+    // Canonical URL
+    const link = document.querySelector('link[rel="canonical"]') || (() => {
+      const l = document.createElement('link');
+      l.setAttribute('rel', 'canonical');
+      document.head.appendChild(l);
+      return l;
+    })();
+    link.setAttribute('href', window.location.href);
   }, []);
 
   // Load preference from localStorage
@@ -100,6 +116,7 @@ export default function ClientChats() {
         <div className="flex-1 flex flex-col overflow-hidden">
           <Header onMenuClick={() => setSidebarOpen(true)} isMobileMenuOpen={sidebarOpen} />
           <main className="flex-1 overflow-hidden p-6">
+            <h1 className="sr-only">Chat clients - discussions ouvertes et fil de discussion</h1>
             <div className="max-w-7xl mx-auto h-full grid grid-cols-1 md:grid-cols-[320px_1fr] gap-6">
               {/* Left: Open chats list */}
               <Card className="h-full">
