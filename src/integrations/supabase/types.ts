@@ -675,6 +675,7 @@ export type Database = {
           sms_credits_allocated: number | null
           sms_credits_used: number | null
           subscription_end: string | null
+          subscription_forced: boolean | null
           subscription_menu_visible: boolean
           subscription_plan_id: string | null
           subscription_tier: string | null
@@ -699,6 +700,7 @@ export type Database = {
           sms_credits_allocated?: number | null
           sms_credits_used?: number | null
           subscription_end?: string | null
+          subscription_forced?: boolean | null
           subscription_menu_visible?: boolean
           subscription_plan_id?: string | null
           subscription_tier?: string | null
@@ -723,6 +725,7 @@ export type Database = {
           sms_credits_allocated?: number | null
           sms_credits_used?: number | null
           subscription_end?: string | null
+          subscription_forced?: boolean | null
           subscription_menu_visible?: boolean
           subscription_plan_id?: string | null
           subscription_tier?: string | null

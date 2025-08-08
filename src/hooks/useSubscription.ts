@@ -10,6 +10,7 @@ export interface SubscriptionInfo {
   sms_credits_allocated: number;
   sms_credits_used: number;
   active_sav_count: number;
+  forced?: boolean;
 }
 
 export function useSubscription() {
@@ -31,93 +32,79 @@ export function useSubscription() {
     if (!user) return;
     
     try {
-      // Get current shop data for limits and subscription plan
-      const { data: profileData } = await supabase
+      // Récupérer le shop courant
+      const profileRes = await (supabase as any)
         .from('profiles')
         .select('shop_id')
         .eq('user_id', user.id)
         .single();
+      const profileData: any = profileRes.data;
 
       if (profileData?.shop_id) {
-        const { data: shopData } = await supabase
+        // Charger les infos du shop
+        const shopRes = await (supabase as any)
           .from('shops')
-          .select(`
-            subscription_tier, 
-            sms_credits_allocated, 
-            sms_credits_used, 
-            active_sav_count,
-            subscription_plan_id,
-            subscription_forced,
-            subscription_plans!inner(
-              name,
-              sms_limit,
-              sms_cost,
-              sav_limit,
-              monthly_price
-            )
-          `)
+          .select('subscription_tier, sms_credits_allocated, sms_credits_used, active_sav_count, subscription_plan_id, subscription_forced')
           .eq('id', profileData.shop_id)
           .single();
+        const shopData: any = shopRes.data;
 
-        if (shopData && shopData.subscription_plans) {
-          const plan = shopData.subscription_plans;
-          
-          // Si l'abonnement est forcé, ne pas vérifier Stripe
-          if (shopData.subscription_forced) {
-            setSubscription({
-              subscribed: true,
-              subscription_tier: plan.name.toLowerCase() as 'free' | 'premium' | 'enterprise',
-              subscription_end: null,
-              sms_credits_allocated: plan.sms_limit || 15,
-              sms_credits_used: shopData.sms_credits_used || 0,
-              active_sav_count: shopData.active_sav_count || 0,
-            });
+        // Charger le plan si disponible
+        let plan: any = null;
+        if (shopData?.subscription_plan_id) {
+          const planRes = await (supabase as any)
+            .from('subscription_plans')
+            .select('name, sms_limit, sms_cost, sav_limit, monthly_price')
+            .eq('id', shopData.subscription_plan_id)
+            .single();
+          plan = planRes.data;
+        }
+
+        const resolveSubscriptionFromLocal = (fallbackSubscribed = true) => {
+          const tier = (plan?.name?.toLowerCase?.() || shopData?.subscription_tier || 'free') as 'free' | 'premium' | 'enterprise';
+          setSubscription({
+            subscribed: fallbackSubscribed,
+            subscription_tier: tier,
+            subscription_end: null,
+            sms_credits_allocated: plan?.sms_limit ?? shopData?.sms_credits_allocated ?? 15,
+            sms_credits_used: shopData?.sms_credits_used ?? 0,
+            active_sav_count: shopData?.active_sav_count ?? 0,
+            forced: !!shopData?.subscription_forced,
+          });
+        };
+
+        // Si abonnement forcé, ne pas appeler Stripe et utiliser les données locales
+        if (shopData?.subscription_forced) {
+          resolveSubscriptionFromLocal(true);
+          return;
+        }
+
+        // Sinon, tenter de vérifier via Stripe, mais ne pas afficher d'erreur bloquante
+        try {
+          const { data, error } = await supabase.functions.invoke('check-subscription');
+          if (error) {
+            console.warn('Stripe verification failed, using local subscription data');
+            resolveSubscriptionFromLocal(true);
             return;
           }
-          
-          // Sinon, vérifier via Stripe
-          try {
-            const { data, error } = await supabase.functions.invoke('check-subscription');
-            
-            if (error) {
-              console.warn('Stripe verification failed, using forced subscription data');
-              // En cas d'erreur Stripe, utiliser les données locales
-              setSubscription({
-                subscribed: true,
-                subscription_tier: plan.name.toLowerCase() as 'free' | 'premium' | 'enterprise',
-                subscription_end: null,
-                sms_credits_allocated: plan.sms_limit || 15,
-                sms_credits_used: shopData.sms_credits_used || 0,
-                active_sav_count: shopData.active_sav_count || 0,
-              });
-              return;
-            }
-            
-            setSubscription({
-              subscribed: data.subscribed || false,
-              subscription_tier: plan.name.toLowerCase() as 'free' | 'premium' | 'enterprise',
-              subscription_end: data.subscription_end,
-              sms_credits_allocated: plan.sms_limit || 15,
-              sms_credits_used: shopData.sms_credits_used || 0,
-              active_sav_count: shopData.active_sav_count || 0,
-            });
-          } catch (stripeError) {
-            console.warn('Stripe API unavailable, using local subscription data');
-            // En cas d'erreur Stripe, utiliser les données locales sans toast d'erreur
-            setSubscription({
-              subscribed: true,
-              subscription_tier: plan.name.toLowerCase() as 'free' | 'premium' | 'enterprise',
-              subscription_end: null,
-              sms_credits_allocated: plan.sms_limit || 15,
-              sms_credits_used: shopData.sms_credits_used || 0,
-              active_sav_count: shopData.active_sav_count || 0,
-            });
-          }
+          const tier = (plan?.name?.toLowerCase?.() || shopData?.subscription_tier || 'free') as 'free' | 'premium' | 'enterprise';
+          setSubscription({
+            subscribed: data?.subscribed ?? false,
+            subscription_tier: tier,
+            subscription_end: data?.subscription_end ?? null,
+            sms_credits_allocated: plan?.sms_limit ?? shopData?.sms_credits_allocated ?? 15,
+            sms_credits_used: shopData?.sms_credits_used ?? 0,
+            active_sav_count: shopData?.active_sav_count ?? 0,
+            forced: false,
+          });
+        } catch (stripeError) {
+          console.warn('Stripe API unavailable, using local subscription data');
+          resolveSubscriptionFromLocal(true);
         }
       }
     } catch (error: any) {
       console.error('Error checking subscription:', error);
-      // Ne plus afficher le toast d'erreur pour éviter de spammer l'utilisateur
+      // Ne pas afficher de toast d'erreur pour éviter de spammer l'utilisateur
     } finally {
       setLoading(false);
     }
@@ -174,34 +161,38 @@ export function useSubscription() {
       return { allowed: false, reason: "Données d'abonnement non disponibles" };
     }
 
+    // Si abonnement forcé, ne pas bloquer
+    if (subscription.forced) {
+      return { allowed: true, reason: 'Abonnement forcé - vérifications désactivées' };
+    }
+
     const { subscription_tier, sms_credits_used, sms_credits_allocated, active_sav_count } = subscription;
 
-    // Vérification des limites SAV basées sur le plan - plus souple pour les abonnements forcés
+    // Vérification des limites SAV basées sur le plan
     if (action === 'sav' || !action) {
-      if (subscription_tier === 'free' && active_sav_count >= 25) { // Augmenté de 15 à 25
-        return { allowed: false, reason: "Plan Gratuit limité à 25 SAV actifs" };
+      if (subscription_tier === 'free' && active_sav_count >= 15) {
+        return { allowed: false, reason: 'Plan Gratuit limité à 15 SAV actifs' };
       }
-      if (subscription_tier === 'premium' && active_sav_count >= 50) { // Augmenté de 10 à 50
-        return { allowed: false, reason: "Plan Premium limité à 50 SAV simultanés" };
+      if (subscription_tier === 'premium' && active_sav_count >= 10) {
+        return { allowed: false, reason: 'Plan Premium limité à 10 SAV simultanés' };
       }
       // Enterprise = illimité
     }
 
-    // Vérification des limites SMS basées sur le plan - plus souple
+    // Vérification des limites SMS basées sur le plan
     if (action === 'sms' || !action) {
       const smsUsed = sms_credits_used || 0;
       const smsAllocated = sms_credits_allocated || 0;
       
-      // Plus de souplesse pour les SMS aussi
-      if (smsUsed >= (smsAllocated * 1.2)) { // 20% de dépassement autorisé
+      if (smsUsed >= smsAllocated) {
         return { 
           allowed: false, 
-          reason: `Limite SMS dépassée (${smsUsed}/${smsAllocated})` 
+          reason: `Vous avez utilisé tous vos crédits SMS du mois (${smsUsed}/${smsAllocated})` 
         };
       }
     }
 
-    return { allowed: true, reason: "Dans les limites autorisées" };
+    return { allowed: true, reason: 'Dans les limites autorisées' };
   };
 
   return {
