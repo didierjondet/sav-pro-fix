@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useParts } from '@/hooks/useParts';
 import { Search, Plus, Trash2, ArrowLeft } from 'lucide-react';
 import { QuoteItem } from '@/hooks/useQuotes';
+import { CustomerSearch } from '@/components/customers/CustomerSearch';
 
 interface QuoteFormProps {
   onSubmit: (data: any) => Promise<{ data: any; error: any }>;
@@ -17,10 +18,8 @@ interface QuoteFormProps {
 
 export function QuoteForm({ onSubmit, onCancel }: QuoteFormProps) {
   const { parts } = useParts();
-  const [customerFirstName, setCustomerFirstName] = useState('');
-  const [customerLastName, setCustomerLastName] = useState('');
-  const [customerEmail, setCustomerEmail] = useState('');
-  const [customerPhone, setCustomerPhone] = useState('');
+  const [customerInfo, setCustomerInfo] = useState({ firstName: '', lastName: '', email: '', phone: '', address: '' });
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
   const [notes, setNotes] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedItems, setSelectedItems] = useState<QuoteItem[]>([]);
@@ -122,7 +121,7 @@ export function QuoteForm({ onSubmit, onCancel }: QuoteFormProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!customerFirstName.trim() || !customerLastName.trim()) {
+    if (!customerInfo.firstName.trim() || !customerInfo.lastName.trim()) {
       alert('Le nom et prénom du client sont requis');
       return;
     }
@@ -133,9 +132,9 @@ export function QuoteForm({ onSubmit, onCancel }: QuoteFormProps) {
     }
 
     const { error } = await onSubmit({
-      customer_name: `${customerFirstName} ${customerLastName}`,
-      customer_email: customerEmail || null,
-      customer_phone: customerPhone || null,
+      customer_name: `${customerInfo.firstName} ${customerInfo.lastName}`,
+      customer_email: customerInfo.email || null,
+      customer_phone: customerInfo.phone || null,
       notes: notes || null,
       items: selectedItems,
       total_amount: totalAmount,
@@ -164,13 +163,18 @@ export function QuoteForm({ onSubmit, onCancel }: QuoteFormProps) {
             <CardTitle>Informations client</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            <CustomerSearch
+              customerInfo={customerInfo}
+              setCustomerInfo={setCustomerInfo}
+              onCustomerSelected={(customer) => setSelectedCustomerId(customer.id)}
+            />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="customerFirstName">Prénom *</Label>
                 <Input
                   id="customerFirstName"
-                  value={customerFirstName}
-                  onChange={(e) => setCustomerFirstName(e.target.value)}
+                  value={customerInfo.firstName}
+                  onChange={(e) => setCustomerInfo({ ...customerInfo, firstName: e.target.value })}
                   required
                 />
               </div>
@@ -178,8 +182,8 @@ export function QuoteForm({ onSubmit, onCancel }: QuoteFormProps) {
                 <Label htmlFor="customerLastName">Nom *</Label>
                 <Input
                   id="customerLastName"
-                  value={customerLastName}
-                  onChange={(e) => setCustomerLastName(e.target.value)}
+                  value={customerInfo.lastName}
+                  onChange={(e) => setCustomerInfo({ ...customerInfo, lastName: e.target.value })}
                   required
                 />
               </div>
@@ -190,16 +194,16 @@ export function QuoteForm({ onSubmit, onCancel }: QuoteFormProps) {
                 <Input
                   id="customerEmail"
                   type="email"
-                  value={customerEmail}
-                  onChange={(e) => setCustomerEmail(e.target.value)}
+                  value={customerInfo.email}
+                  onChange={(e) => setCustomerInfo({ ...customerInfo, email: e.target.value })}
                 />
               </div>
               <div>
                 <Label htmlFor="customerPhone">Téléphone</Label>
                 <Input
                   id="customerPhone"
-                  value={customerPhone}
-                  onChange={(e) => setCustomerPhone(e.target.value)}
+                  value={customerInfo.phone}
+                  onChange={(e) => setCustomerInfo({ ...customerInfo, phone: e.target.value })}
                 />
               </div>
             </div>
