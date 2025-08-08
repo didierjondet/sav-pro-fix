@@ -1,0 +1,201 @@
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Header } from '@/components/layout/Header';
+import { Sidebar } from '@/components/layout/Sidebar';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { useSAVUnreadMessages } from '@/hooks/useSAVUnreadMessages';
+import { useProfile } from '@/hooks/useProfile';
+import { SAVMessaging } from '@/components/sav/SAVMessaging';
+import { MessageSquare, Volume2, VolumeX, Search } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+
+interface SelectedChat {
+  id: string;
+  case_number: string;
+}
+
+export default function ClientChats() {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { savWithUnreadMessages, loading } = useSAVUnreadMessages();
+  const { profile } = useProfile();
+  const [selected, setSelected] = useState<SelectedChat | null>(null);
+  const [query, setQuery] = useState('');
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
+
+  // SEO: title
+  useEffect(() => {
+    document.title = 'Chat clients | Gestion SAV';
+  }, []);
+
+  // Load preference from localStorage
+  useEffect(() => {
+    const pref = localStorage.getItem('chatSoundEnabled');
+    setSoundEnabled(pref !== 'false');
+  }, []);
+
+  // Init audio element
+  useEffect(() => {
+    audioRef.current = new Audio('/notification.mp3');
+    audioRef.current.preload = 'auto';
+  }, []);
+
+  // Realtime sound on new client message for this shop
+  useEffect(() => {
+    if (!profile?.shop_id) return;
+
+    const channel = supabase
+      .channel('client-chat-sound')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'sav_messages',
+          filter: `shop_id=eq.${profile.shop_id}`,
+        },
+        (payload) => {
+          try {
+            // Only play for client messages and if enabled
+            const row: any = (payload as any).new;
+            if (row?.sender_type === 'client') {
+              const pref = localStorage.getItem('chatSoundEnabled');
+              const enabled = pref !== 'false';
+              if (enabled && audioRef.current) {
+                // Attempt to play; catch to avoid uncaught promise rejection
+                audioRef.current.currentTime = 0;
+                audioRef.current.play().catch(() => {});
+              }
+            }
+          } catch {}
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [profile?.shop_id]);
+
+  const totalUnread = useMemo(
+    () => savWithUnreadMessages.reduce((sum, s) => sum + s.unread_count, 0),
+    [savWithUnreadMessages]
+  );
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return savWithUnreadMessages;
+    return savWithUnreadMessages.filter((s) =>
+      s.case_number.toLowerCase().includes(q)
+    );
+  }, [query, savWithUnreadMessages]);
+
+  return (
+    <div className="min-h-screen bg-background">
+      <div className="flex h-screen">
+        <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <Header onMenuClick={() => setSidebarOpen(true)} isMobileMenuOpen={sidebarOpen} />
+          <main className="flex-1 overflow-hidden p-6">
+            <div className="max-w-7xl mx-auto h-full grid grid-cols-1 md:grid-cols-[320px_1fr] gap-6">
+              {/* Left: Open chats list */}
+              <Card className="h-full">
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between gap-2">
+                    <span className="flex items-center gap-2">
+                      <MessageSquare className="h-5 w-5" />
+                      Chats ouverts
+                    </span>
+                    {totalUnread > 0 && (
+                      <Badge variant="secondary">{totalUnread}</Badge>
+                    )}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      value={query}
+                      onChange={(e) => setQuery(e.target.value)}
+                      placeholder="Rechercher #numéro"
+                      className="pl-9"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm text-muted-foreground">
+                      {loading ? 'Chargement...' : `${filtered.length} chat(s)`}
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        const current = localStorage.getItem('chatSoundEnabled');
+                        const next = current === 'false';
+                        localStorage.setItem('chatSoundEnabled', next ? 'true' : 'false');
+                        setSoundEnabled(next);
+                      }}
+                      className="gap-2"
+                    >
+                      {soundEnabled ? (
+                        <>
+                          <Volume2 className="h-4 w-4" />
+                          Son activé
+                        </>
+                      ) : (
+                        <>
+                          <VolumeX className="h-4 w-4" />
+                          Son coupé
+                        </>
+                      )}
+                    </Button>
+                  </div>
+
+                  <ScrollArea className="h-[calc(100vh-260px)] pr-3">
+                    <div className="space-y-2">
+                      {filtered.length === 0 ? (
+                        <div className="text-sm text-muted-foreground py-8 text-center">
+                          Aucun chat non lu pour l'instant
+                        </div>
+                      ) : (
+                        filtered.map((s) => (
+                          <Button
+                            key={s.id}
+                            variant={selected?.id === s.id ? 'default' : 'outline'}
+                            className="w-full justify-between"
+                            onClick={() => setSelected({ id: s.id, case_number: s.case_number })}
+                          >
+                            <span className="font-mono">#{s.case_number}</span>
+                            {s.unread_count > 0 && (
+                              <Badge variant="destructive">{s.unread_count}</Badge>
+                            )}
+                          </Button>
+                        ))
+                      )}
+                    </div>
+                  </ScrollArea>
+                </CardContent>
+              </Card>
+
+              {/* Right: Conversation */}
+              <div className="h-full">
+                {selected ? (
+                  <SAVMessaging savCaseId={selected.id} savCaseNumber={selected.case_number} />
+                ) : (
+                  <Card className="h-full">
+                    <CardContent className="h-full flex items-center justify-center text-muted-foreground">
+                      Sélectionnez un chat à gauche pour afficher la discussion
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            </div>
+          </main>
+        </div>
+      </div>
+    </div>
+  );
+}
