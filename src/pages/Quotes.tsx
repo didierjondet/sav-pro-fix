@@ -136,6 +136,52 @@ const handleStatusChange = async (quote: Quote, newStatus: Quote['status']) => {
     }
   };
 
+  const convertQuoteToSAV = async (type: 'client' | 'external') => {
+    if (!quoteToConvert) return;
+    try {
+      // 1) Créer le dossier SAV minimal
+      const totalPublic = quoteToConvert.items?.reduce((sum, it) => sum + (it.total_price ?? ((it.quantity || 0) * (it.unit_public_price || 0))), 0) || 0;
+
+      const { data: savCase, error: savError } = await supabase
+        .from('sav_cases' as any)
+        .insert([
+          {
+            sav_type: type,
+            status: 'pending',
+            problem_description: `Créé depuis devis ${quoteToConvert.quote_number}`,
+            total_time_minutes: 0,
+            total_cost: totalPublic,
+            shop_id: shop?.id ?? null,
+          } as any,
+        ] as any)
+        .select('id')
+        .single();
+
+      if (savError) throw savError;
+
+      // 2) Insérer les lignes pièces dans sav_parts
+      const partsToInsert = (quoteToConvert.items || []).map((it) => ({
+        sav_case_id: savCase.id,
+        part_id: it.part_id ?? null,
+        quantity: it.quantity || 0,
+        time_minutes: 0,
+        unit_price: it.unit_public_price || 0,
+        purchase_price: it.unit_purchase_price ?? null,
+      }));
+
+      if (partsToInsert.length > 0) {
+        const { error: partsError } = await supabase.from('sav_parts').insert(partsToInsert);
+        if (partsError) throw partsError;
+      }
+
+      toast({ title: 'Conversion réussie', description: `Devis ${quoteToConvert.quote_number} converti en SAV ${type}.` });
+      setQuoteToConvert(null);
+    } catch (error: any) {
+      console.error('Erreur conversion devis -> SAV:', error);
+      toast({ title: 'Erreur', description: error.message ?? 'Conversion impossible', variant: 'destructive' });
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
@@ -323,7 +369,7 @@ const handleStatusChange = async (quote: Quote, newStatus: Quote['status']) => {
 />
 
 {/* Dialog de suppression */}
-              <Dialog open={!!deletingQuote} onOpenChange={() => setDeletingQuote(null)}>
+              <Dialog open={!!deletingQuote} onOpenChange={(open) => { if (!open) setDeletingQuote(null); }}>
                 <DialogContent>
                   <DialogHeader>
                     <DialogTitle>Supprimer le devis</DialogTitle>
@@ -344,7 +390,7 @@ const handleStatusChange = async (quote: Quote, newStatus: Quote['status']) => {
 </Dialog>
 
 {/* Dialog de conversion en SAV */}
-<Dialog open={!!quoteToConvert} onOpenChange={() => setQuoteToConvert(null)}>
+<Dialog open={!!quoteToConvert} onOpenChange={(open) => { if (!open) setQuoteToConvert(null); }}>
   <DialogContent>
     <DialogHeader>
       <DialogTitle>Convertir en SAV</DialogTitle>
@@ -367,7 +413,3 @@ const handleStatusChange = async (quote: Quote, newStatus: Quote['status']) => {
   );
 }
 
-async function convertQuoteToSAV(type: 'client' | 'external') {
-  // This function will be in scope of the module; implement below component is not possible with TS rules,
-  // so define it above default export if needed. Here we place it after for simplicity using hoisting.
-}
