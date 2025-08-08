@@ -195,12 +195,12 @@ export default function Parts() {
                                   </div>
                                   
                                   <div>
-                                    <span className="font-medium">Prix d'achat: </span>
+                                    <span className="font-medium">Prix d'achat HT: </span>
                                     <span>{(part.purchase_price || 0).toFixed(2)}€</span>
                                   </div>
                                   
                                   <div>
-                                    <span className="font-medium">Prix de vente: </span>
+                                    <span className="font-medium">Prix public TTC: </span>
                                     <span>{(part.selling_price || 0).toFixed(2)}€</span>
                                   </div>
                                   

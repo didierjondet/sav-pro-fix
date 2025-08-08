@@ -21,6 +21,7 @@ import Support from './pages/Support';
 import Subscription from './pages/Subscription';
 import ShopWebsite from './pages/ShopWebsite';
 import Landing from './pages/Landing';
+import Statistics from './pages/Statistics';
 import NotFound from './pages/NotFound';
 import SubscriptionSuccess from './pages/SubscriptionSuccess';
 import SMSPurchaseSuccess from './pages/SMSPurchaseSuccess';
@@ -51,11 +52,13 @@ function App() {
               <Route path="/super-admin" element={<SuperAdmin />} />
               <Route path="/support" element={<Support />} />
               <Route path="/subscription" element={<Subscription />} />
-              <Route path="/shop-website" element={<ShopWebsite />} />
+<Route path="/shop-website" element={<ShopWebsite />} />
+              <Route path="/shop/:slug" element={<ShopWebsite />} />
               <Route path="/simple-track" element={<SimpleTrack />} />
               <Route path="/track/:slug" element={<TrackSAV />} />
               <Route path="/subscription-success" element={<SubscriptionSuccess />} />
               <Route path="/sms-purchase-success" element={<SMSPurchaseSuccess />} />
+<Route path="/statistics" element={<Statistics />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Router>

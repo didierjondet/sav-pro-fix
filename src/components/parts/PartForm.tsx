@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Switch } from '@/components/ui/switch';
 import { Part } from '@/hooks/useParts';
 
 interface PartFormProps {
@@ -20,7 +21,9 @@ export function PartForm({ initialData, onSubmit, onCancel, isEdit = false }: Pa
   const {
     register,
     handleSubmit,
-    formState: { errors }
+    formState: { errors },
+    watch,
+    setValue,
   } = useForm({
     defaultValues: {
       name: initialData?.name || '',
@@ -32,6 +35,19 @@ export function PartForm({ initialData, onSubmit, onCancel, isEdit = false }: Pa
       notes: initialData?.notes || '',
     }
   });
+
+  const [useMargin, setUseMargin] = useState(false);
+  const [marginPercent, setMarginPercent] = useState<number>(30);
+
+  const purchasePrice = watch('purchase_price');
+
+  useEffect(() => {
+    if (useMargin) {
+      const computed = Number(purchasePrice || 0) * (1 + Number(marginPercent || 0) / 100);
+      const rounded = Math.round(computed * 100) / 100;
+      setValue('selling_price', isFinite(rounded) ? rounded : 0);
+    }
+  }, [useMargin, marginPercent, purchasePrice, setValue]);
 
   const onFormSubmit = async (data: any) => {
     setLoading(true);
@@ -77,9 +93,33 @@ export function PartForm({ initialData, onSubmit, onCancel, isEdit = false }: Pa
             </div>
           </div>
 
+          <div className="flex items-center gap-3">
+            <Switch id="use_margin" checked={useMargin} onCheckedChange={setUseMargin} />
+            <Label htmlFor="use_margin">Définir le prix public via une marge (%)</Label>
+          </div>
+          {useMargin && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="margin">Marge (%)</Label>
+                <Input
+                  id="margin"
+                  type="number"
+                  step="0.1"
+                  min="0"
+                  value={marginPercent}
+                  onChange={(e) => setMarginPercent(parseFloat(e.target.value) || 0)}
+                />
+              </div>
+              <div>
+                <Label>Prix public TTC calculé</Label>
+                <Input value={watch('selling_price') || 0} readOnly />
+              </div>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="purchase_price">Prix d'achat (€)</Label>
+              <Label htmlFor="purchase_price">Prix d'achat HT (€)</Label>
               <Input
                 id="purchase_price"
                 type="number"
@@ -91,7 +131,7 @@ export function PartForm({ initialData, onSubmit, onCancel, isEdit = false }: Pa
             </div>
 
             <div>
-              <Label htmlFor="selling_price">Prix de vente (€)</Label>
+              <Label htmlFor="selling_price">Prix public TTC (€)</Label>
               <Input
                 id="selling_price"
                 type="number"
@@ -99,6 +139,7 @@ export function PartForm({ initialData, onSubmit, onCancel, isEdit = false }: Pa
                 min="0"
                 {...register('selling_price', { valueAsNumber: true })}
                 placeholder="0.00"
+                readOnly={useMargin}
               />
             </div>
           </div>
