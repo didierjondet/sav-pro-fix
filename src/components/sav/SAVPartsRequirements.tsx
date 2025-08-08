@@ -2,9 +2,10 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { AlertTriangle, CheckCircle, Package, ShoppingCart } from 'lucide-react';
+import { AlertTriangle, CheckCircle, Package, ShoppingCart, Plus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { SAVPartsEditor } from '@/components/sav/SAVPartsEditor';
 
 interface SAVPartRequirement {
   id: string;
@@ -135,9 +136,20 @@ export function SAVPartsRequirements({ savCaseId }: SAVPartsRequirementsProps) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Package className="h-5 w-5" />
-            Pièces nécessaires
+          <CardTitle className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Package className="h-5 w-5" />
+              Pièces nécessaires
+            </div>
+            <SAVPartsEditor
+              savCaseId={savCaseId}
+              onPartsUpdated={fetchPartsRequirements}
+              trigger={
+                <Button variant="ghost" size="icon" aria-label="Ajouter une pièce">
+                  <Plus className="h-4 w-4" />
+                </Button>
+              }
+            />
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -151,9 +163,20 @@ export function SAVPartsRequirements({ savCaseId }: SAVPartsRequirementsProps) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Package className="h-5 w-5" />
-            Pièces nécessaires
+          <CardTitle className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Package className="h-5 w-5" />
+              Pièces nécessaires
+            </div>
+            <SAVPartsEditor
+              savCaseId={savCaseId}
+              onPartsUpdated={fetchPartsRequirements}
+              trigger={
+                <Button variant="ghost" size="icon" aria-label="Ajouter une pièce">
+                  <Plus className="h-4 w-4" />
+                </Button>
+              }
+            />
           </CardTitle>
         </CardHeader>
         <CardContent>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type ReactNode } from 'react';
 import { multiWordSearch } from '@/utils/searchUtils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,9 +27,10 @@ interface SAVPart {
 interface SAVPartsEditorProps {
   savCaseId: string;
   onPartsUpdated: () => void;
+  trigger?: ReactNode;
 }
 
-export function SAVPartsEditor({ savCaseId, onPartsUpdated }: SAVPartsEditorProps) {
+export function SAVPartsEditor({ savCaseId, onPartsUpdated, trigger }: SAVPartsEditorProps) {
   const [open, setOpen] = useState(false);
   const [savParts, setSavParts] = useState<SAVPart[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -203,10 +204,14 @@ export function SAVPartsEditor({ savCaseId, onPartsUpdated }: SAVPartsEditorProp
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm">
-          <Edit className="h-4 w-4 mr-2" />
-          Modifier les pièces
-        </Button>
+        {trigger ? (
+          trigger
+        ) : (
+          <Button variant="outline" size="sm">
+            <Edit className="h-4 w-4 mr-2" />
+            Modifier les pièces
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>

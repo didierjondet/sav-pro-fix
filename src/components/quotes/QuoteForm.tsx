@@ -274,7 +274,12 @@ export function QuoteForm({ onSubmit, onCancel }: QuoteFormProps) {
         {/* Pièces sélectionnées */}
         <Card>
           <CardHeader>
-            <CardTitle>Pièces du devis</CardTitle>
+            <CardTitle className="flex items-center justify-between">
+              <span>Pièces du devis</span>
+              <Button type="button" variant="ghost" size="icon" onClick={addCustomItem} aria-label="Ajouter une pièce">
+                <Plus className="h-4 w-4" />
+              </Button>
+            </CardTitle>
           </CardHeader>
           <CardContent>
             {selectedItems.length === 0 ? (
