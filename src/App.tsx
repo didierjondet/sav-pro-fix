@@ -48,8 +48,9 @@ const App = () => (
             <Route path="/quotes" element={<Quotes />} />
             <Route path="/orders" element={<Orders />} />
             <Route path="/customers" element={<Customers />} />
+            {/* Chat clients routes (aliases) */}
             <Route path="/client-chats" element={<ClientChats />} />
-            <Route path="/client-chats/" element={<ClientChats />} />
+            <Route path="/client-chats/*" element={<ClientChats />} />
             <Route path="/chats" element={<ClientChats />} />
             <Route path="/statistics" element={<Statistics />} />
             <Route path="/support" element={<Support />} />
