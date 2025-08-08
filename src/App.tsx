@@ -62,8 +62,8 @@ const App = () => (
             {/* Routes pour les mini-sites des magasins */}
             <Route path="/shop/:slug" element={<ShopWebsite />} />
             
-            {/* Route de suivi simple - garde en dernier */}
-            <Route path="/:slug" element={<SimpleTrack />} />
+            {/* Route de suivi simple - désactivée temporairement pour éviter les collisions */}
+            {/* <Route path="/:slug" element={<SimpleTrack />} /> */}
             
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
