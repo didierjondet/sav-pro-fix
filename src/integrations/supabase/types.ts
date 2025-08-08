@@ -537,6 +537,7 @@ export type Database = {
           created_at: string
           id: string
           part_id: string | null
+          purchase_price: number | null
           quantity: number
           sav_case_id: string | null
           time_minutes: number | null
@@ -546,6 +547,7 @@ export type Database = {
           created_at?: string
           id?: string
           part_id?: string | null
+          purchase_price?: number | null
           quantity?: number
           sav_case_id?: string | null
           time_minutes?: number | null
@@ -555,6 +557,7 @@ export type Database = {
           created_at?: string
           id?: string
           part_id?: string | null
+          purchase_price?: number | null
           quantity?: number
           sav_case_id?: string | null
           time_minutes?: number | null

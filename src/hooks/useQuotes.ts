@@ -7,7 +7,8 @@ export interface QuoteItem {
   part_name: string;
   part_reference?: string;
   quantity: number;
-  unit_price: number;
+  unit_public_price: number; // Prix public (vente)
+  unit_purchase_price: number; // Prix d'achat (coût)
   total_price: number;
 }
 
@@ -39,11 +40,17 @@ export function useQuotes() {
 
       if (error) throw error;
       
-      // Parse JSON items field
-      const parsedData = (data as any[])?.map(quote => ({
-        ...quote,
-        items: typeof quote.items === 'string' ? JSON.parse(quote.items) : quote.items
-      })) || [];
+// Parse JSON items field with backward compatibility for pricing fields
+const parsedData = (data as any[])?.map(quote => {
+  const rawItems = typeof quote.items === 'string' ? JSON.parse(quote.items) : (quote.items || []);
+  const items = (rawItems as any[]).map((it: any) => ({
+    ...it,
+    unit_public_price: it.unit_public_price ?? it.unit_price ?? 0,
+    unit_purchase_price: it.unit_purchase_price ?? 0,
+    total_price: it.total_price ?? ((it.quantity || 0) * (it.unit_public_price ?? it.unit_price ?? 0)),
+  }));
+  return { ...quote, items };
+}) || [];
       
       setQuotes(parsedData);
     } catch (error: any) {

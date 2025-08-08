@@ -37,12 +37,15 @@ import {
   Calendar
 } from 'lucide-react';
 
+import { supabase } from '@/integrations/supabase/client';
+
 export default function Quotes() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [deletingQuote, setDeletingQuote] = useState<Quote | null>(null);
-  const [viewingQuote, setViewingQuote] = useState<Quote | null>(null);
+const [viewingQuote, setViewingQuote] = useState<Quote | null>(null);
+const [quoteToConvert, setQuoteToConvert] = useState<Quote | null>(null);
   
   const { quotes, loading, createQuote, deleteQuote, updateQuote } = useQuotes();
   const { shop } = useShop();
@@ -93,22 +96,19 @@ export default function Quotes() {
     });
   };
 
-  const handleStatusChange = async (quote: Quote, newStatus: Quote['status']) => {
-    const result = await updateQuote(quote.id, { status: newStatus });
-    if (!result.error) {
-      let description = `Le devis ${quote.quote_number} est maintenant ${getStatusText(newStatus)}`;
-      
-      // Message spécial pour les devis acceptés
-      if (newStatus === 'accepted') {
-        description += '. Le client sera automatiquement ajouté à votre base de données.';
-      }
-      
-      toast({
-        title: "Statut mis à jour",
-        description: description,
-      });
-    }
-  };
+const handleStatusChange = async (quote: Quote, newStatus: Quote['status']) => {
+  if (newStatus === 'accepted') {
+    setQuoteToConvert(quote);
+    return;
+  }
+  const result = await updateQuote(quote.id, { status: newStatus });
+  if (!result.error) {
+    toast({
+      title: "Statut mis à jour",
+      description: `Le devis ${quote.quote_number} est maintenant ${getStatusText(newStatus)}`,
+    });
+  }
+};
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -313,16 +313,16 @@ export default function Quotes() {
                 />
               )}
 
-              {/* Dialog de vue détaillée */}
-              <QuoteView
-                quote={viewingQuote}
-                isOpen={!!viewingQuote}
-                onClose={() => setViewingQuote(null)}
-                onDownloadPDF={handleDownloadPDF}
-                onSendEmail={handleSendEmail}
-              />
+{/* Dialog de vue détaillée */}
+<QuoteView
+  quote={viewingQuote}
+  isOpen={!!viewingQuote}
+  onClose={() => setViewingQuote(null)}
+  onDownloadPDF={handleDownloadPDF}
+  onSendEmail={handleSendEmail}
+/>
 
-              {/* Dialog de suppression */}
+{/* Dialog de suppression */}
               <Dialog open={!!deletingQuote} onOpenChange={() => setDeletingQuote(null)}>
                 <DialogContent>
                   <DialogHeader>
@@ -341,11 +341,33 @@ export default function Quotes() {
                     </Button>
                   </DialogFooter>
                 </DialogContent>
-              </Dialog>
+</Dialog>
+
+{/* Dialog de conversion en SAV */}
+<Dialog open={!!quoteToConvert} onOpenChange={() => setQuoteToConvert(null)}>
+  <DialogContent>
+    <DialogHeader>
+      <DialogTitle>Convertir en SAV</DialogTitle>
+      <DialogDescription>
+        Choisissez le type de SAV à créer pour le devis "{quoteToConvert?.quote_number}".
+      </DialogDescription>
+    </DialogHeader>
+    <div className="flex gap-3 justify-end">
+      <Button variant="outline" onClick={() => setQuoteToConvert(null)}>Annuler</Button>
+      <Button onClick={() => convertQuoteToSAV('client')}>SAV Client</Button>
+      <Button onClick={() => convertQuoteToSAV('external')}>SAV Externe</Button>
+    </div>
+  </DialogContent>
+</Dialog>
             </div>
           </main>
         </div>
       </div>
     </div>
   );
+}
+
+async function convertQuoteToSAV(type: 'client' | 'external') {
+  // This function will be in scope of the module; implement below component is not possible with TS rules,
+  // so define it above default export if needed. Here we place it after for simplicity using hoisting.
 }

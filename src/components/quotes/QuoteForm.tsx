@@ -28,69 +28,81 @@ export function QuoteForm({ onSubmit, onCancel }: QuoteFormProps) {
     multiWordSearch(searchTerm, part.name, part.reference)
   );
 
-  const addPartToQuote = (partId: string) => {
-    const part = parts.find(p => p.id === partId);
-    if (!part) return;
+const addPartToQuote = (partId: string) => {
+  const part = parts.find(p => p.id === partId);
+  if (!part) return;
 
-    const existingItem = selectedItems.find(item => item.part_id === partId);
-    if (existingItem) {
-      setSelectedItems(items =>
-        items.map(item =>
-          item.part_id === partId
-            ? { ...item, quantity: item.quantity + 1, total_price: (item.quantity + 1) * item.unit_price }
-            : item
-        )
-      );
-    } else {
-      const newItem: QuoteItem = {
-        part_id: part.id,
-        part_name: part.name,
-        part_reference: part.reference,
-        quantity: 1,
-        unit_price: part.selling_price || 0,
-        total_price: part.selling_price || 0,
-      };
-      setSelectedItems(items => [...items, newItem]);
-    }
-    setSearchTerm('');
-  };
-
-  const addCustomItem = () => {
+  const existingItem = selectedItems.find(item => item.part_id === partId);
+  if (existingItem) {
+    setSelectedItems(items =>
+      items.map(item =>
+        item.part_id === partId
+          ? { ...item, quantity: item.quantity + 1, total_price: (item.quantity + 1) * item.unit_public_price }
+          : item
+      )
+    );
+  } else {
     const newItem: QuoteItem = {
-      part_id: `custom-${Date.now()}`,
-      part_name: '',
-      part_reference: '',
+      part_id: part.id,
+      part_name: part.name,
+      part_reference: part.reference,
       quantity: 1,
-      unit_price: 0,
-      total_price: 0,
-    };
+      unit_public_price: part.selling_price || 0,
+      unit_purchase_price: part.purchase_price || 0,
+      total_price: (part.selling_price || 0),
+    } as QuoteItem;
     setSelectedItems(items => [...items, newItem]);
-  };
+  }
+  setSearchTerm('');
+};
 
-  const updateQuantity = (partId: string, quantity: number) => {
-    if (quantity <= 0) {
-      removePartFromQuote(partId);
-      return;
-    }
+const addCustomItem = () => {
+  const newItem: QuoteItem = {
+    part_id: `custom-${Date.now()}`,
+    part_name: '',
+    part_reference: '',
+    quantity: 1,
+    unit_public_price: 0,
+    unit_purchase_price: 0,
+    total_price: 0,
+  } as QuoteItem;
+  setSelectedItems(items => [...items, newItem]);
+};
 
-    setSelectedItems(items =>
-      items.map(item =>
-        item.part_id === partId
-          ? { ...item, quantity, total_price: quantity * item.unit_price }
-          : item
-      )
-    );
-  };
+const updateQuantity = (partId: string, quantity: number) => {
+  if (quantity <= 0) {
+    removePartFromQuote(partId);
+    return;
+  }
 
-  const updateUnitPrice = (partId: string, unitPrice: number) => {
-    setSelectedItems(items =>
-      items.map(item =>
-        item.part_id === partId
-          ? { ...item, unit_price: unitPrice, total_price: item.quantity * unitPrice }
-          : item
-      )
-    );
-  };
+  setSelectedItems(items =>
+    items.map(item =>
+      item.part_id === partId
+        ? { ...item, quantity, total_price: quantity * item.unit_public_price }
+        : item
+    )
+  );
+};
+
+const updateUnitPublicPrice = (partId: string, unitPrice: number) => {
+  setSelectedItems(items =>
+    items.map(item =>
+      item.part_id === partId
+        ? { ...item, unit_public_price: unitPrice, total_price: item.quantity * unitPrice }
+        : item
+    )
+  );
+};
+
+const updateUnitPurchasePrice = (partId: string, unitPrice: number) => {
+  setSelectedItems(items =>
+    items.map(item =>
+      item.part_id === partId
+        ? { ...item, unit_purchase_price: unitPrice }
+        : item
+    )
+  );
+};
 
   const updateItemName = (partId: string, name: string) => {
     setSelectedItems(items =>
@@ -249,9 +261,9 @@ export function QuoteForm({ onSubmit, onCancel }: QuoteFormProps) {
                       {part.reference && (
                         <p className="text-sm text-muted-foreground">Réf: {part.reference}</p>
                       )}
-                      <p className="text-sm text-muted-foreground">
-                        Prix: {(part.selling_price || 0).toFixed(2)}€
-                      </p>
+<p className="text-sm text-muted-foreground">
+  Public: {(part.selling_price || 0).toFixed(2)}€ • Achat: {(part.purchase_price || 0).toFixed(2)}€
+</p>
                     </div>
                     <Button type="button" size="sm">
                       <Plus className="h-4 w-4" />
@@ -349,18 +361,31 @@ export function QuoteForm({ onSubmit, onCancel }: QuoteFormProps) {
                           />
                         </div>
                         
-                        <div className="flex items-center gap-2">
-                          <Label>Prix unitaire:</Label>
-                          <Input
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            value={item.unit_price}
-                            onChange={(e) => updateUnitPrice(item.part_id, parseFloat(e.target.value) || 0)}
-                            className="w-24"
-                          />
-                          <span>€</span>
-                        </div>
+<div className="flex items-center gap-2">
+  <Label>Prix public:</Label>
+  <Input
+    type="number"
+    step="0.01"
+    min="0"
+    value={item.unit_public_price}
+    onChange={(e) => updateUnitPublicPrice(item.part_id, parseFloat(e.target.value) || 0)}
+    className="w-24"
+  />
+  <span>€</span>
+</div>
+
+<div className="flex items-center gap-2">
+  <Label>Prix d'achat:</Label>
+  <Input
+    type="number"
+    step="0.01"
+    min="0"
+    value={item.unit_purchase_price}
+    onChange={(e) => updateUnitPurchasePrice(item.part_id, parseFloat(e.target.value) || 0)}
+    className="w-24"
+  />
+  <span>€</span>
+</div>
                         
                         <div className="text-right">
                           <p className="font-medium">{item.total_price.toFixed(2)}€</p>

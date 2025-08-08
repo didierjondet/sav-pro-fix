@@ -19,7 +19,8 @@ interface SAVPart {
   part_reference?: string;
   quantity: number;
   time_minutes: number;
-  unit_price: number;
+  unit_price: number; // prix public
+  purchase_price?: number; // prix d'achat
   available_stock?: number;
   isCustom: boolean;
 }
@@ -54,8 +55,8 @@ export function SAVPartsEditor({ savCaseId, onPartsUpdated, trigger }: SAVPartsE
           part_id,
           quantity,
           time_minutes,
-          unit_price,
-          parts:part_id(name, reference, quantity)
+unit_price,
+parts:part_id(name, reference, quantity, purchase_price)
         `)
         .eq('sav_case_id', savCaseId);
 
@@ -68,9 +69,10 @@ export function SAVPartsEditor({ savCaseId, onPartsUpdated, trigger }: SAVPartsE
         part_reference: item.parts?.reference,
         quantity: item.quantity,
         time_minutes: item.time_minutes || 0,
-        unit_price: item.unit_price || 0,
-        available_stock: item.parts?.quantity,
-        isCustom: !item.part_id
+unit_price: item.unit_price || 0,
+available_stock: item.parts?.quantity,
+purchase_price: item.parts?.purchase_price || 0,
+isCustom: !item.part_id
       })) || [];
 
       setSavParts(formattedParts);
@@ -106,9 +108,10 @@ export function SAVPartsEditor({ savCaseId, onPartsUpdated, trigger }: SAVPartsE
         part_reference: part.reference,
         quantity: 1,
         time_minutes: 0,
-        unit_price: part.selling_price || 0,
-        available_stock: part.quantity,
-        isCustom: false,
+unit_price: part.selling_price || 0,
+available_stock: part.quantity,
+purchase_price: part.purchase_price || 0,
+isCustom: false,
       };
       setSavParts([...savParts, newPart]);
     }
@@ -151,13 +154,14 @@ export function SAVPartsEditor({ savCaseId, onPartsUpdated, trigger }: SAVPartsE
 
       // Insérer les nouvelles pièces
       if (savParts.length > 0) {
-        const partsToInsert = savParts.map(part => ({
-          sav_case_id: savCaseId,
-          part_id: part.part_id,
-          quantity: part.quantity,
-          time_minutes: part.time_minutes,
-          unit_price: part.unit_price,
-        }));
+const partsToInsert = savParts.map(part => ({
+  sav_case_id: savCaseId,
+  part_id: part.part_id,
+  quantity: part.quantity,
+  time_minutes: part.time_minutes,
+  unit_price: part.unit_price,
+  purchase_price: part.purchase_price ?? null,
+}));
 
         const { error: insertError } = await supabase
           .from('sav_parts')
@@ -328,54 +332,65 @@ export function SAVPartsEditor({ savCaseId, onPartsUpdated, trigger }: SAVPartsE
                         </Button>
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        <div>
-                          <Label htmlFor={`part-name-${part.id}`}>Nom de la pièce</Label>
-                          <Input
-                            id={`part-name-${part.id}`}
-                            value={part.part_name}
-                            onChange={(e) => updatePart(part.id, 'part_name', e.target.value)}
-                            placeholder="Ex: Écran LCD"
-                            disabled={!part.isCustom}
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor={`part-qty-${part.id}`}>Quantité</Label>
-                          <Input
-                            id={`part-qty-${part.id}`}
-                            type="number"
-                            min="1"
-                            value={part.quantity}
-                            onChange={(e) => updatePart(part.id, 'quantity', parseInt(e.target.value) || 1)}
-                          />
-                          {!part.isCustom && part.available_stock !== undefined && part.quantity > part.available_stock && (
-                            <div className="text-xs text-destructive mt-1">
-                              Quantité demandée supérieure au stock
-                            </div>
-                          )}
-                        </div>
-                        <div>
-                          <Label htmlFor={`part-time-${part.id}`}>Temps (min)</Label>
-                          <Input
-                            id={`part-time-${part.id}`}
-                            type="number"
-                            min="0"
-                            value={part.time_minutes}
-                            onChange={(e) => updatePart(part.id, 'time_minutes', parseInt(e.target.value) || 0)}
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor={`part-price-${part.id}`}>Prix unitaire (€)</Label>
-                          <Input
-                            id={`part-price-${part.id}`}
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            value={part.unit_price}
-                            onChange={(e) => updatePart(part.id, 'unit_price', parseFloat(e.target.value) || 0)}
-                          />
-                        </div>
-                      </div>
+<div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+  <div>
+    <Label htmlFor={`part-name-${part.id}`}>Nom de la pièce</Label>
+    <Input
+      id={`part-name-${part.id}`}
+      value={part.part_name}
+      onChange={(e) => updatePart(part.id, 'part_name', e.target.value)}
+      placeholder="Ex: Écran LCD"
+      disabled={!part.isCustom}
+    />
+  </div>
+  <div>
+    <Label htmlFor={`part-qty-${part.id}`}>Quantité</Label>
+    <Input
+      id={`part-qty-${part.id}`}
+      type="number"
+      min="1"
+      value={part.quantity}
+      onChange={(e) => updatePart(part.id, 'quantity', parseInt(e.target.value) || 1)}
+    />
+    {!part.isCustom && part.available_stock !== undefined && part.quantity > part.available_stock && (
+      <div className="text-xs text-destructive mt-1">
+        Quantité demandée supérieure au stock
+      </div>
+    )}
+  </div>
+  <div>
+    <Label htmlFor={`part-time-${part.id}`}>Temps (min)</Label>
+    <Input
+      id={`part-time-${part.id}`}
+      type="number"
+      min="0"
+      value={part.time_minutes}
+      onChange={(e) => updatePart(part.id, 'time_minutes', parseInt(e.target.value) || 0)}
+    />
+  </div>
+  <div>
+    <Label htmlFor={`part-price-${part.id}`}>Prix public (€)</Label>
+    <Input
+      id={`part-price-${part.id}`}
+      type="number"
+      min="0"
+      step="0.01"
+      value={part.unit_price}
+      onChange={(e) => updatePart(part.id, 'unit_price', parseFloat(e.target.value) || 0)}
+    />
+  </div>
+  <div>
+    <Label htmlFor={`part-price-purchase-${part.id}`}>Prix d'achat (€)</Label>
+    <Input
+      id={`part-price-purchase-${part.id}`}
+      type="number"
+      min="0"
+      step="0.01"
+      value={part.purchase_price ?? 0}
+      onChange={(e) => updatePart(part.id, 'purchase_price', parseFloat(e.target.value) || 0)}
+    />
+  </div>
+</div>
                     </div>
                   </div>
                 ))}

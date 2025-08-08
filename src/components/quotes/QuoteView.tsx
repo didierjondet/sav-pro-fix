@@ -94,12 +94,13 @@ export function QuoteView({ quote, isOpen, onClose, onDownloadPDF, onSendEmail }
           <div>
             <h3 className="text-lg font-semibold mb-3">Articles</h3>
             <div className="border rounded-lg overflow-hidden">
-              <div className="grid grid-cols-12 gap-4 p-3 bg-muted/50 text-sm font-medium">
-                <div className="col-span-5">Article</div>
-                <div className="col-span-2 text-center">Quantité</div>
-                <div className="col-span-2 text-right">Prix unitaire</div>
-                <div className="col-span-3 text-right">Total</div>
-              </div>
+<div className="grid grid-cols-12 gap-4 p-3 bg-muted/50 text-sm font-medium">
+  <div className="col-span-5">Article</div>
+  <div className="col-span-2 text-center">Quantité</div>
+  <div className="col-span-2 text-right">Prix public</div>
+  <div className="col-span-1 text-right">Prix d'achat</div>
+  <div className="col-span-2 text-right">Total</div>
+</div>
               
               {quote.items.map((item, index) => (
                 <div key={index} className="grid grid-cols-12 gap-4 p-3 border-t text-sm">
@@ -109,9 +110,10 @@ export function QuoteView({ quote, isOpen, onClose, onDownloadPDF, onSendEmail }
                       <div className="text-xs text-muted-foreground">Réf: {item.part_reference}</div>
                     )}
                   </div>
-                  <div className="col-span-2 text-center">{item.quantity}</div>
-                  <div className="col-span-2 text-right">{item.unit_price.toFixed(2)}€</div>
-                  <div className="col-span-3 text-right font-medium">{item.total_price.toFixed(2)}€</div>
+<div className="col-span-2 text-center">{item.quantity}</div>
+<div className="col-span-2 text-right">{item.unit_public_price.toFixed(2)}€</div>
+<div className="col-span-1 text-right">{item.unit_purchase_price?.toFixed(2)}€</div>
+<div className="col-span-2 text-right font-medium">{item.total_price.toFixed(2)}€</div>
                 </div>
               ))}
               
