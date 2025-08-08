@@ -158,14 +158,6 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                   <span className="text-destructive font-bold">TOTAL SAV</span>
                   <span className="font-bold text-destructive">{statusCounts.pendingClient + statusCounts.pendingExternal + statusCounts.pendingShop}</span>
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span>En cours</span>
-                  <span className="font-medium">{statusCounts.inProgress}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span>Terminés</span>
-                  <span className="font-medium">{statusCounts.completed}</span>
-                </div>
               </div>
             </div>
           </ScrollArea>
