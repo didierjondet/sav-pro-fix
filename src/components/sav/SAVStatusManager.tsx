@@ -20,7 +20,7 @@ interface SAVStatusManagerProps {
     id: string;
     case_number: string;
     status: string;
-    sav_type: 'client' | 'internal';
+    sav_type: 'client' | 'internal' | 'external';
     total_cost: number;
     taken_over?: boolean;
     partial_takeover?: boolean;

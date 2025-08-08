@@ -259,7 +259,7 @@ export default function SAVDetail() {
                 </CardHeader>
                 <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <strong>Type:</strong> {savCase.sav_type === 'client' ? 'Client' : 'Interne'}
+                    <strong>Type:</strong> {savCase.sav_type === 'client' ? 'Client' : savCase.sav_type === 'external' ? 'Externe' : 'Interne'}
                   </div>
                   <div>
                     <strong>Appareil:</strong> {savCase.device_brand} {savCase.device_model}

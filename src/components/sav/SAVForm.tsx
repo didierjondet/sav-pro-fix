@@ -48,7 +48,7 @@ interface SAVFormProps {
 }
 
 export function SAVForm({ onSuccess }: SAVFormProps) {
-  const [savType, setSavType] = useState<'client' | 'internal'>('client');
+  const [savType, setSavType] = useState<'client' | 'internal' | 'external'>('client');
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({
     firstName: '',
@@ -211,10 +211,14 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
           <CardTitle>Type de SAV</CardTitle>
         </CardHeader>
         <CardContent>
-          <RadioGroup value={savType} onValueChange={(value) => setSavType(value as 'client' | 'internal')}>
+          <RadioGroup value={savType} onValueChange={(value) => setSavType(value as 'client' | 'internal' | 'external')}>
             <div className="flex items-center space-x-2">
               <RadioGroupItem value="client" id="client" />
               <Label htmlFor="client">SAV Client</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="external" id="external" />
+              <Label htmlFor="external">SAV Externe</Label>
             </div>
             <div className="flex items-center space-x-2">
               <RadioGroupItem value="internal" id="internal" />

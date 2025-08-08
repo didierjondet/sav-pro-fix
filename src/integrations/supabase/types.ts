@@ -1096,7 +1096,7 @@ export type Database = {
         | "delivered"
         | "cancelled"
         | "parts_ordered"
-      sav_type: "client" | "internal"
+      sav_type: "client" | "internal" | "external"
       user_role: "super_admin" | "shop_admin" | "technician" | "admin"
     }
     CompositeTypes: {
@@ -1234,7 +1234,7 @@ export const Constants = {
         "cancelled",
         "parts_ordered",
       ],
-      sav_type: ["client", "internal"],
+      sav_type: ["client", "internal", "external"],
       user_role: ["super_admin", "shop_admin", "technician", "admin"],
     },
   },

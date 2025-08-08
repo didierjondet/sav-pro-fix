@@ -286,7 +286,7 @@ export default function SAVList() {
                             {statusLabels[savCase.status]}
                           </Badge>
                           <Badge variant="outline">
-                            {savCase.sav_type === 'client' ? 'Client' : 'Interne'}
+                            {savCase.sav_type === 'client' ? 'Client' : savCase.sav_type === 'external' ? 'Externe' : 'Interne'}
                           </Badge>
                         </div>
                         
