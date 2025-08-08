@@ -6,20 +6,9 @@ import { Badge } from '@/components/ui/badge';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useSAVCases } from '@/hooks/useSAVCases';
 import { useProfile } from '@/hooks/useProfile';
+import { useSAVUnreadMessages } from '@/hooks/useSAVUnreadMessages';
 import { useShopSettings } from '@/hooks/useShopSettings';
-import {
-  
-  Package,
-  Users,
-  BarChart3,
-  FileText,
-  Settings,
-  X,
-  Plus,
-  Shield,
-  CreditCard,
-  HelpCircle,
-} from 'lucide-react';
+import { MessageSquare, Package, Users, BarChart3, FileText, Settings, X, Plus, Shield, CreditCard, HelpCircle } from 'lucide-react';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -33,6 +22,7 @@ const baseNavigation = [
   { name: 'Devis', href: '/quotes', icon: FileText },
   { name: 'Commandes', href: '/orders', icon: Package },
   { name: 'Clients', href: '/customers', icon: Users },
+  { name: 'Chat clients', href: '/client-chats', icon: MessageSquare },
   { name: 'Statistiques', href: '/statistics', icon: BarChart3 },
 ];
 
@@ -42,6 +32,8 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const { cases } = useSAVCases();
   const { profile } = useProfile();
   const { settings } = useShopSettings();
+  const { savWithUnreadMessages } = useSAVUnreadMessages();
+  const totalUnread = (savWithUnreadMessages || []).reduce((sum, s) => sum + s.unread_count, 0);
 
   // Créer la navigation dynamique selon les paramètres du magasin
   const navigation = [...baseNavigation];
@@ -116,7 +108,10 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                     }}
                   >
                     <Icon className="mr-3 h-5 w-5" />
-                    {item.name}
+                    <span>{item.name}</span>
+                    {item.href === '/client-chats' && totalUnread > 0 && (
+                      <Badge variant="destructive" className="ml-auto">{totalUnread}</Badge>
+                    )}
                   </Button>
                 );
               })}

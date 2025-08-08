@@ -706,6 +706,26 @@ export default function Settings() {
                   </div>
                 </CardContent>
               </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Notifications</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="font-medium">Son des nouveaux messages clients</div>
+                      <p className="text-sm text-muted-foreground">Jouer un son lorsqu’un client envoie un message.</p>
+                    </div>
+                    <Switch
+                      checked={(typeof window !== 'undefined' ? localStorage.getItem('chatSoundEnabled') !== 'false' : true)}
+                      onCheckedChange={(val) => {
+                        localStorage.setItem('chatSoundEnabled', val ? 'true' : 'false');
+                      }}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
             </TabsContent>
 
             {isAdmin && (
