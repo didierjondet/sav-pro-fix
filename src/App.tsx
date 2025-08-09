@@ -33,6 +33,7 @@ import Features from "./pages/Features";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
 import Home from "./pages/Home";
+import TestLanding from "./pages/TestLanding";
 
 const queryClient = new QueryClient();
 
@@ -44,7 +45,7 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
-            <Route path="/" element={<Landing />} />
+            <Route path="/" element={<TestLanding />} />
             <Route path="/dashboard" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/settings" element={<Settings />} />
