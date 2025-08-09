@@ -100,6 +100,11 @@ export function useStatistics(period: '7d' | '30d' | '3m' | '6m' | '1y'): Statis
           c.status !== 'delivered' && c.status !== 'cancelled' && c.sav_type !== 'internal'
         );
 
+        console.log('🔍 Debug retard - Total SAV récupérés:', savCases?.length || 0);
+        console.log('🔍 Debug retard - SAV actifs:', activeSavCases.length);
+        console.log('🔍 Debug retard - SAV ready:', readySavCases.length);
+        console.log('🔍 Debug retard - Délai max client:', shop.max_sav_processing_days_client);
+
         // Calculer les revenus et dépenses
         let totalRevenue = 0;
         let totalExpenses = 0;
@@ -112,6 +117,7 @@ export function useStatistics(period: '7d' | '30d' | '3m' | '6m' | '1y'): Statis
         const dailyData: Record<string, { revenue: number; expenses: number; count: number }> = {};
 
         const currentDate = new Date();
+        console.log('🔍 Debug retard - Date actuelle:', currentDate.toISOString());
 
         // D'abord calculer les retards sur TOUS les SAV actifs
         activeSavCases.forEach((savCase: any) => {
@@ -119,6 +125,14 @@ export function useStatistics(period: '7d' | '30d' | '3m' | '6m' | '1y'): Statis
           const processingDays = shop.max_sav_processing_days_client || 7;
           const theoreticalEndDate = new Date(startDate);
           theoreticalEndDate.setDate(theoreticalEndDate.getDate() + processingDays);
+          
+          console.log(`🔍 SAV ${savCase.case_number}:`, {
+            status: savCase.status,
+            startDate: startDate.toISOString(),
+            theoreticalEnd: theoreticalEndDate.toISOString(),
+            isLate: currentDate > theoreticalEndDate,
+            daysDiff: Math.floor((currentDate.getTime() - theoreticalEndDate.getTime()) / (1000 * 60 * 60 * 24))
+          });
           
           if (currentDate > theoreticalEndDate) {
             lateCount++;
@@ -184,6 +198,12 @@ export function useStatistics(period: '7d' | '30d' | '3m' | '6m' | '1y'): Statis
 
         // Calculer le taux de retard sur TOUS les SAV actifs
         const lateRate = activeSavCases.length > 0 ? (lateCount / activeSavCases.length) * 100 : 0;
+        
+        console.log('🔍 Debug retard - Résultat final:', {
+          lateCount,
+          totalActiveSav: activeSavCases.length,
+          lateRate: lateRate.toFixed(2) + '%'
+        });
 
         // Préparer les données pour les graphiques
         const chartData = Object.entries(dailyData)
