@@ -138,6 +138,28 @@ export function SAVPartsRequirements({ savCaseId, onPartsUpdated }: SAVPartsRequ
 
       if (error) throw error;
 
+      // Recalculer le coût total après suppression
+      const { data: remainingParts, error: fetchError } = await supabase
+        .from('sav_parts')
+        .select('quantity, unit_price, time_minutes')
+        .eq('sav_case_id', savCaseId);
+
+      if (fetchError) throw fetchError;
+
+      const totalCost = remainingParts?.reduce((acc, part) => acc + (part.quantity * part.unit_price), 0) || 0;
+      const totalTime = remainingParts?.reduce((acc, part) => acc + (part.time_minutes || 0), 0) || 0;
+
+      // Mettre à jour le coût total du dossier SAV
+      const { error: updateError } = await supabase
+        .from('sav_cases')
+        .update({ 
+          total_cost: totalCost,
+          total_time_minutes: totalTime 
+        })
+        .eq('id', savCaseId);
+
+      if (updateError) throw updateError;
+
       toast({
         title: "Pièce supprimée",
         description: `${partName} a été supprimée du dossier SAV`,
@@ -145,6 +167,7 @@ export function SAVPartsRequirements({ savCaseId, onPartsUpdated }: SAVPartsRequ
 
       // Rafraîchir la liste des pièces
       fetchPartsRequirements();
+      onPartsUpdated?.();
     } catch (error: any) {
       toast({
         title: "Erreur",
