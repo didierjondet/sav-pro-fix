@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, Link } from 'react-router-dom';
 import { Header } from '@/components/layout/Header';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -132,7 +132,11 @@ export default function ExpensesDetails() {
                           {rows.map((r, idx) => (
                             <tr key={idx} className="border-t">
                               <td className="py-2">{r.date}</td>
-                              <td className="py-2">{r.case_number}</td>
+                              <td className="py-2">
+                                <Link to={`/sav/${r.sav_id}`} className="text-primary underline-offset-4 hover:underline">
+                                  {r.case_number}
+                                </Link>
+                              </td>
                               <td className="py-2">{r.part_name}</td>
                               <td className="py-2">{r.part_reference}</td>
                               <td className="py-2">{r.quantity}</td>

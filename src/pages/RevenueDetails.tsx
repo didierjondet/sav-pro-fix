@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { Header } from '@/components/layout/Header';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -141,7 +141,11 @@ export default function RevenueDetails() {
                           {rows.map(r => (
                             <tr key={r.id} className="border-t">
                               <td className="py-2">{r.date}</td>
-                              <td className="py-2">{r.case_number}</td>
+                              <td className="py-2">
+                                <Link to={`/sav/${r.id}`} className="text-primary underline-offset-4 hover:underline">
+                                  {r.case_number}
+                                </Link>
+                              </td>
                               <td className="py-2">{r.customer}</td>
                               <td className="py-2">{fmt(r.cost)}</td>
                               <td className="py-2">{fmt(r.revenue)}</td>
