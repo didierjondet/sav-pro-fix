@@ -18,7 +18,7 @@ import {
   ArrowRight
 } from 'lucide-react';
 
-export default function Features() {
+function Features() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // SEO
@@ -200,3 +200,5 @@ export default function Features() {
     </div>
   );
 }
+
+export default Features;
