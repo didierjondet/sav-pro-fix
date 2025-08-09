@@ -14,7 +14,7 @@ import {
   Building2
 } from 'lucide-react';
 
-function About() {
+export default function About() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // SEO
@@ -308,4 +308,3 @@ function About() {
   );
 }
 
-export default About;

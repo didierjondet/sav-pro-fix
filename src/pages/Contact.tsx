@@ -17,7 +17,7 @@ import {
   Calendar
 } from 'lucide-react';
 
-function Contact() {
+export default function Contact() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
@@ -324,4 +324,3 @@ function Contact() {
   );
 }
 
-export default Contact;
