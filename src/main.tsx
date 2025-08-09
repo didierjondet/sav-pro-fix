@@ -36,6 +36,14 @@ import './index.css';
 const queryClient = new QueryClient();
 
 function App() {
+  // Bypass auth for public pages
+  if (window.location.pathname === '/') {
+    return <PublicLanding />;
+  }
+  if (window.location.pathname === '/auth') {
+    return <Auth />;
+  }
+
   return (
     <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
       <QueryClientProvider client={queryClient}>
@@ -43,8 +51,6 @@ function App() {
           <Router>
             <Routes>
               <Route path="/dashboard" element={<Index />} />
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/" element={<PublicLanding />} />
               <Route path="/customers" element={<Customers />} />
               <Route path="/parts" element={<Parts />} />
               <Route path="/quotes" element={<Quotes />} />

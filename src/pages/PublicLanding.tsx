@@ -1,7 +1,9 @@
 import { useState } from 'react';
+import { Smartphone, Clock, MessageSquare, BarChart3, Users, Settings, CheckCircle, ArrowRight, Star, Shield, Zap } from 'lucide-react';
 
 export default function PublicLanding() {
-  console.log('PublicLanding rendering - NO auth context used');
+  console.log('PublicLanding rendering - completely outside auth context');
+  console.log('Current URL:', window.location.href);
   
   const handleAuthClick = () => {
     window.location.href = '/auth';
@@ -14,7 +16,7 @@ export default function PublicLanding() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center">
-              <div className="h-8 w-8 bg-blue-600 rounded mr-2"></div>
+              <Smartphone className="h-8 w-8 text-blue-600 mr-2" />
               <h1 className="text-2xl font-bold text-gray-900">Fixway</h1>
             </div>
             <div className="flex items-center gap-4">
@@ -51,10 +53,10 @@ export default function PublicLanding() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <button 
-                className="px-8 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-lg"
+                className="px-8 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-lg flex items-center justify-center mx-auto"
                 onClick={handleAuthClick}
               >
-                Démarrer maintenant →
+                Démarrer maintenant <ArrowRight className="ml-2 h-5 w-5" />
               </button>
               <button className="px-8 py-3 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 text-lg">
                 Voir la démo
@@ -79,7 +81,7 @@ export default function PublicLanding() {
           <div className="grid md:grid-cols-3 gap-8">
             <div className="text-center p-6">
               <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-4">
-                <div className="w-6 h-6 bg-blue-600 rounded"></div>
+                <Smartphone className="w-6 h-6 text-blue-600" />
               </div>
               <h3 className="text-xl font-semibold mb-2">Gestion des réparations</h3>
               <p className="text-gray-600">Suivez vos réparations de A à Z avec un système intuitif</p>
@@ -87,7 +89,7 @@ export default function PublicLanding() {
 
             <div className="text-center p-6">
               <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-4">
-                <div className="w-6 h-6 bg-blue-600 rounded"></div>
+                <MessageSquare className="w-6 h-6 text-blue-600" />
               </div>
               <h3 className="text-xl font-semibold mb-2">Communication client</h3>
               <p className="text-gray-600">SMS automatiques et suivi en temps réel pour vos clients</p>
@@ -95,7 +97,7 @@ export default function PublicLanding() {
 
             <div className="text-center p-6">
               <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-4">
-                <div className="w-6 h-6 bg-blue-600 rounded"></div>
+                <BarChart3 className="w-6 h-6 text-blue-600" />
               </div>
               <h3 className="text-xl font-semibold mb-2">Statistiques avancées</h3>
               <p className="text-gray-600">Analysez vos performances et optimisez votre rentabilité</p>
