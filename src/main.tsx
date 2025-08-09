@@ -6,8 +6,9 @@ import { ThemeProvider } from "next-themes";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 
-import Index from './pages/Index';
 import Auth from './pages/Auth';
+import PublicLanding from './pages/PublicLanding';
+import Index from './pages/Index';
 import Customers from './pages/Customers';
 import Parts from './pages/Parts';
 import Quotes from './pages/Quotes';
@@ -21,7 +22,6 @@ import Support from './pages/Support';
 import Subscription from './pages/Subscription';
 import ShopWebsite from './pages/ShopWebsite';
 import Landing from './pages/Landing';
-import PublicLanding from './pages/PublicLanding';
 import Statistics from './pages/Statistics';
 import RevenueDetails from './pages/RevenueDetails';
 import ExpensesDetails from './pages/ExpensesDetails';
