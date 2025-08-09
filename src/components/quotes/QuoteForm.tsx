@@ -27,6 +27,7 @@ export function QuoteForm({ onSubmit, onCancel, initialQuote, submitLabel, title
   const [notes, setNotes] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedItems, setSelectedItems] = useState<QuoteItem[]>([]);
+  const [deviceInfo, setDeviceInfo] = useState({ brand: '', model: '', imei: '', sku: '', problemDescription: '' });
 
   useEffect(() => {
     if (initialQuote) {
@@ -39,6 +40,14 @@ export function QuoteForm({ onSubmit, onCancel, initialQuote, submitLabel, title
         address: '',
       });
       setSelectedItems(initialQuote.items || []);
+      // Pré-remplir infos appareil si présentes
+      setDeviceInfo({
+        brand: (initialQuote as any).device_brand || '',
+        model: (initialQuote as any).device_model || '',
+        imei: (initialQuote as any).device_imei || '',
+        sku: (initialQuote as any).sku || '',
+        problemDescription: (initialQuote as any).problem_description || '',
+      });
       // Customer id is optional in quotes schema
       setSelectedCustomerId(null);
     }
@@ -166,6 +175,12 @@ const updateUnitPurchasePrice = (partId: string, unitPrice: number) => {
       customer_name: `${customerInfo.firstName} ${customerInfo.lastName}`.trim(),
       customer_email: customerInfo.email || null,
       customer_phone: customerInfo.phone || null,
+      // Informations appareil
+      device_brand: deviceInfo.brand || null,
+      device_model: deviceInfo.model || null,
+      device_imei: deviceInfo.imei || null,
+      sku: deviceInfo.sku || null,
+      problem_description: deviceInfo.problemDescription || null,
       notes: notes || null,
       items: selectedItems,
       total_amount: totalAmount,
@@ -246,6 +261,65 @@ const updateUnitPurchasePrice = (partId: string, unitPrice: number) => {
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="Notes additionnelles pour le devis..."
                 rows={3}
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Informations Appareil */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Informations Appareil</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="brand">Marque *</Label>
+                <Input
+                  id="brand"
+                  value={deviceInfo.brand}
+                  onChange={(e) => setDeviceInfo({ ...deviceInfo, brand: e.target.value })}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="model">Modèle *</Label>
+                <Input
+                  id="model"
+                  value={deviceInfo.model}
+                  onChange={(e) => setDeviceInfo({ ...deviceInfo, model: e.target.value })}
+                  required
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="imei">IMEI</Label>
+                <Input
+                  id="imei"
+                  value={deviceInfo.imei}
+                  onChange={(e) => setDeviceInfo({ ...deviceInfo, imei: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label htmlFor="sku">SKU</Label>
+                <Input
+                  id="sku"
+                  value={deviceInfo.sku}
+                  onChange={(e) => setDeviceInfo({ ...deviceInfo, sku: e.target.value.replace(/[^0-9]/g, '').slice(0, 13) })}
+                  placeholder="Numérique uniquement (13 caractères max)"
+                  maxLength={13}
+                />
+              </div>
+            </div>
+            <div>
+              <Label htmlFor="problemDescription">Description du problème *</Label>
+              <Textarea
+                id="problemDescription"
+                value={deviceInfo.problemDescription}
+                onChange={(e) => setDeviceInfo({ ...deviceInfo, problemDescription: e.target.value })}
+                placeholder="Décrivez le problème rencontré..."
+                required
               />
             </div>
           </CardContent>

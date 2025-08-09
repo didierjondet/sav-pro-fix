@@ -18,6 +18,13 @@ export interface Quote {
   customer_name: string;
   customer_email?: string;
   customer_phone?: string;
+  // Device info (parité avec SAV)
+  device_brand?: string | null;
+  device_model?: string | null;
+  device_imei?: string | null;
+  sku?: string | null;
+  problem_description?: string | null;
+  repair_notes?: string | null;
   items: QuoteItem[];
   total_amount: number;
   status: 'draft' | 'pending_review' | 'sent' | 'under_negotiation' | 'accepted' | 'rejected' | 'expired';
@@ -91,6 +98,13 @@ const parsedData = (data as any[])?.map(quote => {
         customer_name: quoteData.customer_name,
         customer_email: quoteData.customer_email,
         customer_phone: quoteData.customer_phone,
+        // Device info
+        device_brand: quoteData.device_brand ?? null,
+        device_model: quoteData.device_model ?? null,
+        device_imei: quoteData.device_imei ?? null,
+        sku: quoteData.sku ?? null,
+        problem_description: quoteData.problem_description ?? null,
+        repair_notes: quoteData.repair_notes ?? null,
         items: JSON.stringify(quoteData.items), // Ensure JSON serialization
         total_amount: quoteData.total_amount,
         status: quoteData.status,

@@ -356,10 +356,16 @@ export type Database = {
           customer_id: string | null
           customer_name: string
           customer_phone: string | null
+          device_brand: string | null
+          device_imei: string | null
+          device_model: string | null
           id: string
           items: Json
+          problem_description: string | null
           quote_number: string
+          repair_notes: string | null
           shop_id: string
+          sku: string | null
           status: string
           total_amount: number
           updated_at: string
@@ -370,10 +376,16 @@ export type Database = {
           customer_id?: string | null
           customer_name: string
           customer_phone?: string | null
+          device_brand?: string | null
+          device_imei?: string | null
+          device_model?: string | null
           id?: string
           items?: Json
+          problem_description?: string | null
           quote_number: string
+          repair_notes?: string | null
           shop_id: string
+          sku?: string | null
           status?: string
           total_amount?: number
           updated_at?: string
@@ -384,10 +396,16 @@ export type Database = {
           customer_id?: string | null
           customer_name?: string
           customer_phone?: string | null
+          device_brand?: string | null
+          device_imei?: string | null
+          device_model?: string | null
           id?: string
           items?: Json
+          problem_description?: string | null
           quote_number?: string
+          repair_notes?: string | null
           shop_id?: string
+          sku?: string | null
           status?: string
           total_amount?: number
           updated_at?: string
