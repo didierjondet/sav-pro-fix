@@ -32,6 +32,7 @@ export function PartForm({ initialData, onSubmit, onCancel, isEdit = false }: Pa
       selling_price: initialData?.selling_price || 0,
       quantity: initialData?.quantity || 0,
       min_stock: initialData?.min_stock || 5,
+      time_minutes: initialData?.time_minutes ?? 15,
       notes: initialData?.notes || '',
     }
   });
@@ -165,6 +166,20 @@ export function PartForm({ initialData, onSubmit, onCancel, isEdit = false }: Pa
                 {...register('min_stock', { valueAsNumber: true })}
                 placeholder="5"
               />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="time_minutes">Temps (minutes)</Label>
+              <Input
+                id="time_minutes"
+                type="number"
+                min="0"
+                {...register('time_minutes', { valueAsNumber: true })}
+                placeholder="15"
+              />
+              <p className="text-xs text-muted-foreground mt-1">Par défaut: 15 minutes</p>
             </div>
           </div>
 

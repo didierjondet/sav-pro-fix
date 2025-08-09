@@ -10,6 +10,7 @@ export interface Part {
   selling_price?: number;
   quantity: number;
   min_stock: number;
+  time_minutes?: number;
   notes?: string;
   shop_id: string;
   created_at: string;
@@ -60,7 +61,7 @@ export function useParts() {
 
       const { data, error } = await supabase
         .from('parts')
-        .insert([{ ...partData, shop_id: profile.shop_id }])
+        .insert([{ ...partData, shop_id: profile.shop_id, time_minutes: (partData as any).time_minutes ?? 15 }])
         .select()
         .single();
 
