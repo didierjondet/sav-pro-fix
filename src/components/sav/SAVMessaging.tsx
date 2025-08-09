@@ -42,6 +42,32 @@ export function SAVMessaging({ savCaseId, savCaseNumber }: SAVMessagingProps) {
     });
   };
 
+  const renderMessageWithLinks = (text: string) => {
+    // Regex pour détecter les URLs (http, https, www)
+    const urlRegex = /(https?:\/\/[^\s]+|www\.[^\s]+)/g;
+    const parts = text.split(urlRegex);
+    
+    return parts.map((part, index) => {
+      if (part.match(urlRegex)) {
+        // S'assurer que l'URL commence par http:// ou https://
+        const url = part.startsWith('www.') ? `https://${part}` : part;
+        return (
+          <a
+            key={index}
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline hover:text-blue-300 break-all"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {part}
+          </a>
+        );
+      }
+      return part;
+    });
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -78,7 +104,7 @@ export function SAVMessaging({ savCaseId, savCaseNumber }: SAVMessagingProps) {
                         {message.sender_type === 'shop' ? 'Boutique' : 'Client'}
                       </Badge>
                     </div>
-                    <p className="text-sm whitespace-pre-wrap">{message.message}</p>
+                    <p className="text-sm whitespace-pre-wrap">{renderMessageWithLinks(message.message)}</p>
                     <div className="text-xs opacity-70 mt-1">
                       {formatTime(message.created_at)}
                       {message.sender_type === 'shop' && !message.read_by_client && (
