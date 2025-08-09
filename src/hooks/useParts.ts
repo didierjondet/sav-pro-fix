@@ -46,6 +46,54 @@ export function useParts() {
     fetchParts();
   }, []);
 
+  // Fonction pour trouver des pièces similaires
+  const findSimilarParts = (name: string, excludeId?: string): Part[] => {
+    if (!name || name.length < 3) return [];
+    
+    const normalizedName = name.toLowerCase().trim();
+    
+    return parts.filter(part => {
+      if (excludeId && part.id === excludeId) return false;
+      
+      const partName = part.name.toLowerCase().trim();
+      
+      // Correspondance exacte
+      if (partName === normalizedName) return true;
+      
+      // Correspondance si l'un contient l'autre
+      if (partName.includes(normalizedName) || normalizedName.includes(partName)) return true;
+      
+      // Calcul de distance de Levenshtein simple pour détecter les fautes de frappe
+      const distance = levenshteinDistance(partName, normalizedName);
+      const maxLength = Math.max(partName.length, normalizedName.length);
+      const similarity = 1 - (distance / maxLength);
+      
+      // Considérer comme similaire si plus de 70% de similarité
+      return similarity > 0.7;
+    });
+  };
+
+  // Fonction de calcul de distance de Levenshtein
+  const levenshteinDistance = (str1: string, str2: string): number => {
+    const matrix = Array(str2.length + 1).fill(null).map(() => Array(str1.length + 1).fill(null));
+    
+    for (let i = 0; i <= str1.length; i++) matrix[0][i] = i;
+    for (let j = 0; j <= str2.length; j++) matrix[j][0] = j;
+    
+    for (let j = 1; j <= str2.length; j++) {
+      for (let i = 1; i <= str1.length; i++) {
+        const indicator = str1[i - 1] === str2[j - 1] ? 0 : 1;
+        matrix[j][i] = Math.min(
+          matrix[j][i - 1] + 1,     // deletion
+          matrix[j - 1][i] + 1,     // insertion
+          matrix[j - 1][i - 1] + indicator // substitution
+        );
+      }
+    }
+    
+    return matrix[str2.length][str1.length];
+  };
+
   const createPart = async (partData: Omit<Part, 'id' | 'created_at' | 'updated_at' | 'shop_id'>) => {
     try {
       // Get current user's shop_id
@@ -193,6 +241,7 @@ export function useParts() {
     deletePart,
     updatePartQuantity,
     adjustStock,
+    findSimilarParts,
     refetch: fetchParts,
   };
 }

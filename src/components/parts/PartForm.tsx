@@ -7,16 +7,21 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Part } from '@/hooks/useParts';
+import { SimilarPartsAlert } from './SimilarPartsAlert';
 
 interface PartFormProps {
   initialData?: Partial<Part>;
   onSubmit: (data: any) => Promise<{ error: any }>;
   onCancel: () => void;
   isEdit?: boolean;
+  findSimilarParts?: (name: string, excludeId?: string) => Part[];
 }
 
-export function PartForm({ initialData, onSubmit, onCancel, isEdit = false }: PartFormProps) {
+export function PartForm({ initialData, onSubmit, onCancel, isEdit = false, findSimilarParts }: PartFormProps) {
   const [loading, setLoading] = useState(false);
+  const [showSimilarAlert, setShowSimilarAlert] = useState(false);
+  const [similarParts, setSimilarParts] = useState<Part[]>([]);
+  const [pendingData, setPendingData] = useState<any>(null);
   
   const {
     register,
@@ -50,7 +55,30 @@ export function PartForm({ initialData, onSubmit, onCancel, isEdit = false }: Pa
     }
   }, [useMargin, marginPercent, purchasePrice, setValue]);
 
+  const checkForSimilarParts = (data: any) => {
+    // Seulement pour les nouvelles pièces (pas en édition)
+    if (!isEdit && findSimilarParts && data.name) {
+      const similar = findSimilarParts(data.name, initialData?.id);
+      if (similar.length > 0) {
+        setSimilarParts(similar);
+        setPendingData(data);
+        setShowSimilarAlert(true);
+        return true;
+      }
+    }
+    return false;
+  };
+
   const onFormSubmit = async (data: any) => {
+    // Vérifier les doublons avant la soumission
+    if (checkForSimilarParts(data)) {
+      return;
+    }
+
+    await submitPart(data);
+  };
+
+  const submitPart = async (data: any) => {
     setLoading(true);
     try {
       const { error } = await onSubmit(data);
@@ -61,6 +89,37 @@ export function PartForm({ initialData, onSubmit, onCancel, isEdit = false }: Pa
       setLoading(false);
     }
   };
+
+  const handleProceedAnyway = () => {
+    setShowSimilarAlert(false);
+    if (pendingData) {
+      submitPart(pendingData);
+    }
+  };
+
+  const handleCancelDuplicate = () => {
+    setShowSimilarAlert(false);
+    setPendingData(null);
+    setSimilarParts([]);
+  };
+
+  // Si on affiche l'alerte des doublons
+  if (showSimilarAlert) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Pièces similaires détectées</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <SimilarPartsAlert
+            similarParts={similarParts}
+            onProceed={handleProceedAnyway}
+            onCancel={handleCancelDuplicate}
+          />
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>

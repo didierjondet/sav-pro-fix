@@ -41,7 +41,7 @@ export default function Parts() {
   const [adjustingPart, setAdjustingPart] = useState<Part | null>(null);
   const [showImport, setShowImport] = useState(false);
   
-  const { parts, loading, createPart, updatePart, deletePart, adjustStock, refetch } = useParts();
+  const { parts, loading, createPart, updatePart, deletePart, adjustStock, findSimilarParts, refetch } = useParts();
 
   const filteredParts = parts.filter(part =>
     multiWordSearch(searchTerm, part.name, part.reference)
@@ -264,6 +264,7 @@ export default function Parts() {
                     setEditingPart(null);
                   }}
                   isEdit={!!editingPart}
+                  findSimilarParts={findSimilarParts}
                 />
               )}
 
