@@ -78,6 +78,32 @@ export function useStatistics(period: '7d' | '30d' | '3m' | '6m' | '1y'): Statis
     return { start: startOfDay(start), end: endOfDay(end) };
   };
 
+  const normalizeDeviceName = (brand: string, model: string) => {
+    // Normaliser la marque
+    const normalizedBrand = (brand || 'Marque inconnue')
+      .toLowerCase()
+      .trim()
+      .replace(/[^\w\s]/g, '') // Supprimer les caractères spéciaux
+      .replace(/\s+/g, ' '); // Normaliser les espaces
+
+    // Normaliser le modèle
+    let normalizedModel = (model || 'Modèle inconnu')
+      .toLowerCase()
+      .trim()
+      .replace(/[^\w\s]/g, '') // Supprimer les caractères spéciaux
+      .replace(/\s+/g, '') // Supprimer tous les espaces
+      .replace(/iphone(\d+)/g, 'iphone $1') // Standardiser "iphone12" -> "iphone 12"
+      .replace(/samsung(\w+)/g, 'samsung $1') // Standardiser "samsunggalaxy" -> "samsung galaxy"
+      .replace(/galaxy(\w+)/g, 'galaxy $1') // Standardiser "galaxys21" -> "galaxy s21"
+      .trim();
+
+    return {
+      normalizedKey: `${normalizedBrand}_${normalizedModel}`,
+      displayBrand: brand || 'Marque inconnue',
+      displayModel: model || 'Modèle inconnu'
+    };
+  };
+
   useEffect(() => {
     if (!shop?.id) return;
 
@@ -146,15 +172,19 @@ export function useStatistics(period: '7d' | '30d' | '3m' | '6m' | '1y'): Statis
         // Tracking des téléphones les plus réparés (tous les SAV, pas seulement terminés)
         (savCases || []).forEach((savCase: any) => {
           if (savCase.sav_type !== 'internal' && (savCase.device_brand || savCase.device_model)) {
-            const deviceKey = `${savCase.device_brand || 'Marque inconnue'} - ${savCase.device_model || 'Modèle inconnu'}`;
-            if (!deviceUsage[deviceKey]) {
-              deviceUsage[deviceKey] = { 
-                model: savCase.device_model || 'Modèle inconnu', 
-                brand: savCase.device_brand || 'Marque inconnue', 
+            const { normalizedKey, displayBrand, displayModel } = normalizeDeviceName(
+              savCase.device_brand, 
+              savCase.device_model
+            );
+            
+            if (!deviceUsage[normalizedKey]) {
+              deviceUsage[normalizedKey] = { 
+                model: displayModel, 
+                brand: displayBrand, 
                 count: 0 
               };
             }
-            deviceUsage[deviceKey].count++;
+            deviceUsage[normalizedKey].count++;
           }
         });
 
