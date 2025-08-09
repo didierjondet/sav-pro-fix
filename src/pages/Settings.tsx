@@ -15,6 +15,7 @@ import { useShop } from '@/hooks/useShop';
 import { useProfile } from '@/hooks/useProfile';
 import { useSubscription } from '@/hooks/useSubscription';
 import { supabase } from '@/integrations/supabase/client';
+import * as XLSX from 'xlsx';
 
 import { SMSHistory } from '@/components/sms/SMSHistory';
 import { 
@@ -265,6 +266,131 @@ export default function Settings() {
     }
   };
 
+  // Helpers Export
+  const escapeCSV = (val: any) => {
+    if (val === null || val === undefined) return '';
+    const str = String(val).replace(/"/g, '""');
+    return `"${str}"`;
+  };
+
+  const downloadBlob = (content: string | Blob, filename: string, mime: string) => {
+    const blob = content instanceof Blob ? content : new Blob([content], { type: mime });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  };
+
+  const buildAndDownloadCSV = (filename: string, headers: string[], rows: (string | number)[][]) => {
+    const csv = [headers.join(';'), ...rows.map(r => r.map(escapeCSV).join(';'))].join('\n');
+    downloadBlob(csv, `${filename}.csv`, 'text/csv;charset=utf-8;');
+  };
+
+  const exportToExcel = (filename: string, rows: Record<string, any>[]) => {
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Export');
+    XLSX.writeFile(wb, `${filename}.xlsx`);
+  };
+
+  const printTablePDF = (title: string, headers: string[], rows: (string | number)[][]) => {
+    const styles = `
+      <style>
+        body{font-family: Arial, sans-serif; padding:20px; color:#333}
+        h1{font-size:20px; margin-bottom:16px}
+        table{width:100%; border-collapse:collapse}
+        th,td{border:1px solid #ddd; padding:8px; font-size:12px}
+        th{background:#f3f4f6; text-align:left}
+      </style>`;
+    const tableHead = `<tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr>`;
+    const tableBody = rows.map(r => `<tr>${r.map(c => `<td>${c ?? ''}</td>`).join('')}</tr>`).join('');
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${title}</title>${styles}</head><body><h1>${title}</h1><table><thead>${tableHead}</thead><tbody>${tableBody}</tbody></table></body></html>`;
+    const w = window.open('', '_blank');
+    if (w) {
+      w.document.write(html);
+      w.document.close();
+      w.onload = () => { w.print(); w.onafterprint = () => w.close(); };
+    }
+  };
+
+  const handleExportQuotes = async (format: 'csv'|'xlsx'|'pdf') => {
+    try {
+      const query = supabase.from('quotes' as any).select('*').order('created_at', { ascending: false });
+      const { data, error } = shop?.id ? await query.eq('shop_id', shop.id) : await query;
+      if (error) throw error;
+      const quotes = (data || []) as any[];
+
+      const headers = ['Numéro', 'Date', 'Statut', 'Client', 'Email', 'Téléphone', 'Total (€)', 'Articles (nb)'];
+      const rows = quotes.map(q => [
+        q.quote_number,
+        new Date(q.created_at).toLocaleString('fr-FR'),
+        q.status,
+        q.customer_name,
+        q.customer_email || '',
+        q.customer_phone || '',
+        Number(q.total_amount || 0).toFixed(2),
+        (Array.isArray(q.items) ? q.items.length : (typeof q.items === 'string' ? JSON.parse(q.items || '[]').length : 0))
+      ]);
+
+      if (format === 'csv') return buildAndDownloadCSV('devis', headers, rows);
+      if (format === 'xlsx') return exportToExcel('devis', quotes.map((q, i) => ({
+        'Numéro': q.quote_number,
+        'Date': new Date(q.created_at).toLocaleString('fr-FR'),
+        'Statut': q.status,
+        'Client': q.customer_name,
+        'Email': q.customer_email || '',
+        'Téléphone': q.customer_phone || '',
+        'Total (€)': Number(q.total_amount || 0),
+        'Articles (nb)': (Array.isArray(q.items) ? q.items.length : (typeof q.items === 'string' ? JSON.parse(q.items || '[]').length : 0))
+      })));
+      return printTablePDF('Export - Tous les devis', headers, rows);
+    } catch (e: any) {
+      toast({ title: 'Erreur', description: e.message || 'Export devis impossible', variant: 'destructive' });
+    }
+  };
+
+  const handleExportSAVs = async (format: 'csv'|'xlsx'|'pdf') => {
+    try {
+      const query = supabase.from('sav_cases' as any).select('*').order('created_at', { ascending: false });
+      const { data, error } = shop?.id ? await query.eq('shop_id', shop.id) : await query;
+      if (error) throw error;
+      const cases = (data || []) as any[];
+
+      const headers = ['Dossier', 'Date', 'Type', 'Statut', 'Coût (€)', 'Temps (min)', 'Marque', 'Modèle', 'Tracking'];
+      const rows = cases.map(c => [
+        c.case_number,
+        new Date(c.created_at).toLocaleString('fr-FR'),
+        c.sav_type,
+        c.status,
+        Number(c.total_cost || 0).toFixed(2),
+        c.total_time_minutes || 0,
+        c.device_brand || '',
+        c.device_model || '',
+        c.tracking_slug || ''
+      ]);
+
+      if (format === 'csv') return buildAndDownloadCSV('sav', headers, rows);
+      if (format === 'xlsx') return exportToExcel('sav', cases.map(c => ({
+        'Dossier': c.case_number,
+        'Date': new Date(c.created_at).toLocaleString('fr-FR'),
+        'Type': c.sav_type,
+        'Statut': c.status,
+        'Coût (€)': Number(c.total_cost || 0),
+        'Temps (min)': c.total_time_minutes || 0,
+        'Marque': c.device_brand || '',
+        'Modèle': c.device_model || '',
+        'Tracking': c.tracking_slug || ''
+      })));
+      return printTablePDF('Export - Tous les SAV', headers, rows);
+    } catch (e: any) {
+      toast({ title: 'Erreur', description: e.message || 'Export SAV impossible', variant: 'destructive' });
+    }
+  };
+
   const isAdmin = profile?.role === 'admin';
 
   if (loading) {
@@ -301,7 +427,7 @@ export default function Settings() {
               </div>
 
           <Tabs defaultValue="shop" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-5">
+            <TabsList className="grid w-full grid-cols-6">
               <TabsTrigger value="shop" className="flex items-center gap-2">
                 <Store className="h-4 w-4" />
                 Magasin
@@ -317,6 +443,10 @@ export default function Settings() {
               <TabsTrigger value="sms" className="flex items-center gap-2">
                 <Mail className="h-4 w-4" />
                 Crédits SMS
+              </TabsTrigger>
+              <TabsTrigger value="import-export" className="flex items-center gap-2">
+                <Upload className="h-4 w-4" />
+                Import/Export
               </TabsTrigger>
               {isAdmin && (
                 <TabsTrigger value="users" className="flex items-center gap-2">
@@ -863,6 +993,40 @@ export default function Settings() {
                 </Card>
               </TabsContent>
             )}
+
+            <TabsContent value="import-export" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Exporter les Devis</CardTitle>
+                </CardHeader>
+                <CardContent className="flex flex-wrap gap-2">
+                  <Button variant="outline" onClick={() => handleExportQuotes('csv')}>Exporter CSV</Button>
+                  <Button variant="outline" onClick={() => handleExportQuotes('xlsx')}>Exporter Excel</Button>
+                  <Button variant="outline" onClick={() => handleExportQuotes('pdf')}>Exporter PDF</Button>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Exporter les SAV</CardTitle>
+                </CardHeader>
+                <CardContent className="flex flex-wrap gap-2">
+                  <Button variant="outline" onClick={() => handleExportSAVs('csv')}>Exporter CSV</Button>
+                  <Button variant="outline" onClick={() => handleExportSAVs('xlsx')}>Exporter Excel</Button>
+                  <Button variant="outline" onClick={() => handleExportSAVs('pdf')}>Exporter PDF</Button>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Import (bientôt)</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2 text-sm text-muted-foreground">
+                  <p>Import de SAV et Devis via CSV/Excel arrivera prochainement.</p>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
           </Tabs>
             </div>
           </main>

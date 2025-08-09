@@ -25,6 +25,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogClose,
 } from '@/components/ui/dialog';
 import { 
   FileText,
@@ -414,8 +415,8 @@ const handleStatusChange = async (quote: Quote, newStatus: Quote['status']) => {
                 <DialogContent>
                   <DialogHeader>
                     <DialogTitle>Supprimer le devis</DialogTitle>
-                    <DialogDescription>
-                      Êtes-vous sûr de vouloir supprimer le devis "{deletingQuote?.quote_number}" ? 
+                    <DialogDescription id="delete-quote-desc">
+                      Êtes-vous sûr de vouloir supprimer le devis "{deletingQuote?.quote_number}" ?
                       Cette action est irréversible.
                     </DialogDescription>
                   </DialogHeader>
@@ -423,26 +424,26 @@ const handleStatusChange = async (quote: Quote, newStatus: Quote['status']) => {
                     <Button variant="outline" onClick={() => setDeletingQuote(null)}>
                       Annuler
                     </Button>
-                    <Button variant="destructive" onClick={handleDeleteQuote}>
+                    <Button variant="destructive" onClick={handleDeleteQuote} aria-describedby="delete-quote-desc">
                       Supprimer
                     </Button>
                   </DialogFooter>
                 </DialogContent>
-</Dialog>
+              </Dialog>
 
 {/* Dialog de conversion en SAV */}
 <Dialog open={!!quoteToConvert} onOpenChange={(open) => { if (!open) setQuoteToConvert(null); }}>
   <DialogContent>
     <DialogHeader>
       <DialogTitle>Convertir en SAV</DialogTitle>
-      <DialogDescription>
+      <DialogDescription id="convert-sav-desc">
         Choisissez le type de SAV à créer pour le devis "{quoteToConvert?.quote_number}".
       </DialogDescription>
     </DialogHeader>
     <div className="flex gap-3 justify-end">
       <Button variant="outline" onClick={() => setQuoteToConvert(null)}>Annuler</Button>
-      <Button onClick={() => convertQuoteToSAV('client')}>SAV Client</Button>
-      <Button onClick={() => convertQuoteToSAV('external')}>SAV Externe</Button>
+      <Button onClick={() => convertQuoteToSAV('client')} aria-describedby="convert-sav-desc">SAV Client</Button>
+      <Button onClick={() => convertQuoteToSAV('external')} aria-describedby="convert-sav-desc">SAV Externe</Button>
     </div>
   </DialogContent>
 </Dialog>
