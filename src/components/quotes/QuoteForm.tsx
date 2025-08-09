@@ -176,8 +176,8 @@ const updateUnitPurchasePrice = (partId: string, unitPrice: number) => {
       customer_email: customerInfo.email || null,
       customer_phone: customerInfo.phone || null,
       // Informations appareil
-      device_brand: deviceInfo.brand || null,
-      device_model: deviceInfo.model || null,
+      device_brand: deviceInfo.brand ? deviceInfo.brand.toUpperCase().trim() : null,
+      device_model: deviceInfo.model ? deviceInfo.model.toUpperCase().trim() : null,
       device_imei: deviceInfo.imei || null,
       sku: deviceInfo.sku || null,
       problem_description: deviceInfo.problemDescription || null,

@@ -73,9 +73,9 @@ export default function Quotes() {
         customer_email: data.customer_email,
         customer_phone: data.customer_phone,
         // Infos appareil
-        device_brand: data.device_brand,
-        device_model: data.device_model,
-        device_imei: data.device_imei,
+        device_brand: data.device_brand ? data.device_brand.toUpperCase().trim() : null,
+        device_model: data.device_model ? data.device_model.toUpperCase().trim() : null,
+        device_imei: data.device_imei || null,
         sku: data.sku,
         problem_description: data.problem_description,
         items: data.items,
@@ -228,8 +228,8 @@ const handleStatusChange = async (quote: Quote, newStatus: Quote['status']) => {
           {
             sav_type: type,
             status: 'pending',
-            device_brand: (quoteToConvert as any).device_brand || null,
-            device_model: (quoteToConvert as any).device_model || null,
+            device_brand: (quoteToConvert as any).device_brand ? (quoteToConvert as any).device_brand.toUpperCase().trim() : null,
+            device_model: (quoteToConvert as any).device_model ? (quoteToConvert as any).device_model.toUpperCase().trim() : null,
             device_imei: (quoteToConvert as any).device_imei || null,
             sku: (quoteToConvert as any).sku || null,
             problem_description: (quoteToConvert as any).problem_description || `Créé depuis devis ${quoteToConvert.quote_number}`,

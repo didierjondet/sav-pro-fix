@@ -79,23 +79,22 @@ export function useStatistics(period: '7d' | '30d' | '3m' | '6m' | '1y'): Statis
   };
 
   const normalizeDeviceName = (brand: string, model: string) => {
-    // Normaliser la marque
-    const normalizedBrand = (brand || 'Marque inconnue')
-      .toLowerCase()
+    // Normaliser la marque (garder en majuscules comme dans les données)
+    const normalizedBrand = (brand || 'MARQUE INCONNUE')
+      .toUpperCase()
       .trim()
       .replace(/[^\w\s]/g, '') // Supprimer les caractères spéciaux
       .replace(/\s+/g, ' '); // Normaliser les espaces
 
-    // Normaliser le modèle
-    let normalizedModel = (model || 'Modèle inconnu')
-      .toLowerCase()
+    // Normaliser le modèle (garder en majuscules comme dans les données)
+    let normalizedModel = (model || 'MODÈLE INCONNU')
+      .toUpperCase()
       .trim()
       .replace(/[^\w\s]/g, '') // Supprimer les caractères spéciaux
-      .replace(/\s+/g, '') // Supprimer tous les espaces
-      .replace(/iphone(\d+)/g, 'iphone $1') // Standardiser "iphone12" -> "iphone 12"
-      .replace(/samsung(\w+)/g, 'samsung $1') // Standardiser "samsunggalaxy" -> "samsung galaxy"
-      .replace(/galaxy(\w+)/g, 'galaxy $1') // Standardiser "galaxys21" -> "galaxy s21"
-      .trim();
+      .replace(/\s+/g, '') // Supprimer tous les espaces pour la comparaison
+      .replace(/IPHONE(\d+)/g, 'IPHONE$1') // Standardiser "IPHONE 12" -> "IPHONE12"
+      .replace(/SAMSUNG(\w+)/g, 'SAMSUNG$1') // Standardiser "SAMSUNG GALAXY" -> "SAMSUNGGALAXY"
+      .replace(/GALAXY(\w+)/g, 'GALAXY$1'); // Standardiser "GALAXY S21" -> "GALAXYS21"
 
     return {
       normalizedKey: `${normalizedBrand}_${normalizedModel}`,

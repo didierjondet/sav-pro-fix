@@ -165,8 +165,8 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
       const { error: caseError } = await createCase({
         sav_type: savType,
         customer_id: customerId,
-        device_brand: deviceInfo.brand,
-        device_model: deviceInfo.model,
+        device_brand: deviceInfo.brand ? deviceInfo.brand.toUpperCase().trim() : null,
+        device_model: deviceInfo.model ? deviceInfo.model.toUpperCase().trim() : null,
         device_imei: deviceInfo.imei || null,
         sku: deviceInfo.sku || null,
         problem_description: deviceInfo.problemDescription,
