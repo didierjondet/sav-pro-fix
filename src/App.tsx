@@ -57,12 +57,13 @@ const App = () => (
             <Route path="/chats" element={<ClientChats />} />
             <Route path="/statistics" element={<Statistics />} />
             <Route path="/statistics/revenue" element={<RevenueDetails />} />
+            <Route path="/statistics/revenue/*" element={<RevenueDetails />} />
             <Route path="/statistics/expenses" element={<ExpensesDetails />} />
-            <Route path="/statistics/*" element={<StatsDetailsRouter />} />
+            <Route path="/statistics/expenses/*" element={<ExpensesDetails />} />
             <Route path="/stats/revenue" element={<RevenueDetails />} />
+            <Route path="/stats/revenue/*" element={<RevenueDetails />} />
             <Route path="/stats/expenses" element={<ExpensesDetails />} />
-            <Route path="/stats/:type" element={<StatsDetailsRouter />} />
-            <Route path="/stats/*" element={<StatsDetailsRouter />} />
+            <Route path="/stats/expenses/*" element={<ExpensesDetails />} />
             <Route path="/support" element={<Support />} />
             
             <Route path="/super-admin" element={<SuperAdmin />} />
