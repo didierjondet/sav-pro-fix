@@ -141,17 +141,21 @@ export function useStatistics(period: '7d' | '30d' | '3m' | '6m' | '1y'): Statis
           if (dailyData[dateKey]) {
             dailyData[dateKey].completed++;
           }
+        });
 
-          // Tracking des téléphones les plus réparés
-          const deviceKey = `${savCase.device_brand || 'Marque inconnue'} - ${savCase.device_model || 'Modèle inconnu'}`;
-          if (!deviceUsage[deviceKey]) {
-            deviceUsage[deviceKey] = { 
-              model: savCase.device_model || 'Modèle inconnu', 
-              brand: savCase.device_brand || 'Marque inconnue', 
-              count: 0 
-            };
+        // Tracking des téléphones les plus réparés (tous les SAV, pas seulement terminés)
+        (savCases || []).forEach((savCase: any) => {
+          if (savCase.sav_type !== 'internal' && (savCase.device_brand || savCase.device_model)) {
+            const deviceKey = `${savCase.device_brand || 'Marque inconnue'} - ${savCase.device_model || 'Modèle inconnu'}`;
+            if (!deviceUsage[deviceKey]) {
+              deviceUsage[deviceKey] = { 
+                model: savCase.device_model || 'Modèle inconnu', 
+                brand: savCase.device_brand || 'Marque inconnue', 
+                count: 0 
+              };
+            }
+            deviceUsage[deviceKey].count++;
           }
-          deviceUsage[deviceKey].count++;
         });
 
         // D'abord calculer les retards sur TOUS les SAV actifs
