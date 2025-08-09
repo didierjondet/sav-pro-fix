@@ -142,8 +142,8 @@ const handleStatusChange = async (quote: Quote, newStatus: Quote['status']) => {
       // 1) Créer le dossier SAV minimal
       const totalPublic = quoteToConvert.items?.reduce((sum, it) => sum + (it.total_price ?? ((it.quantity || 0) * (it.unit_public_price || 0))), 0) || 0;
 
-      const { data: savCase, error: savError } = await supabase
-        .from('sav_cases' as any)
+      const { data: savCase, error: savError } = await (supabase as any)
+        .from('sav_cases')
         .insert([
           {
             sav_type: type,
@@ -152,16 +152,18 @@ const handleStatusChange = async (quote: Quote, newStatus: Quote['status']) => {
             total_time_minutes: 0,
             total_cost: totalPublic,
             shop_id: shop?.id ?? null,
-          } as any,
-        ] as any)
+          },
+        ])
         .select('id')
-        .single();
+        .maybeSingle();
 
-      if (savError) throw savError;
+      if (savError || !savCase?.id) throw savError ?? new Error('Création SAV échouée');
+
+      const savCaseId = (savCase as any).id as string;
 
       // 2) Insérer les lignes pièces dans sav_parts
       const partsToInsert = (quoteToConvert.items || []).map((it) => ({
-        sav_case_id: savCase.id,
+        sav_case_id: savCaseId,
         part_id: it.part_id ?? null,
         quantity: it.quantity || 0,
         time_minutes: 0,
