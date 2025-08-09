@@ -75,7 +75,7 @@ const App = () => (
             <Route path="/subscription" element={<Subscription />} />
             <Route path="/landing" element={<Landing />} />
             
-            {/* Pages SEO */}
+            {/* Pages SEO publiques */}
             <Route path="/features" element={<Features />} />
             <Route path="/about" element={<About />} />
             <Route path="/contact" element={<Contact />} />
