@@ -84,7 +84,7 @@ export default function ExpensesDetails() {
     document.head.appendChild(metaDesc);
     const canonical = document.querySelector("link[rel='canonical']") || document.createElement('link');
     canonical.setAttribute('rel', 'canonical');
-    canonical.setAttribute('href', `${window.location.origin}/statistics/expenses`);
+    canonical.setAttribute('href', `${window.location.origin}/stats/expenses`);
     document.head.appendChild(canonical);
   }
 

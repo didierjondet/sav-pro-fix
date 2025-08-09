@@ -93,7 +93,7 @@ export default function RevenueDetails() {
     document.head.appendChild(metaDesc);
     const canonical = document.querySelector("link[rel='canonical']") || document.createElement('link');
     canonical.setAttribute('rel', 'canonical');
-    canonical.setAttribute('href', `${window.location.origin}/statistics/revenue`);
+    canonical.setAttribute('href', `${window.location.origin}/stats/revenue`);
     document.head.appendChild(canonical);
   }
 

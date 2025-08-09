@@ -24,6 +24,7 @@ import Subscription from "./pages/Subscription";
 import Support from "./pages/Support";
 import RevenueDetails from "./pages/RevenueDetails";
 import ExpensesDetails from "./pages/ExpensesDetails";
+import StatsDetailsRouter from "./pages/StatsDetailsRouter";
 // CreateShop page supprimée - création automatique par trigger
 
 import NotFound from "./pages/NotFound";
@@ -59,6 +60,7 @@ const App = () => (
             <Route path="/statistics/expenses" element={<ExpensesDetails />} />
             <Route path="/stats/revenue" element={<RevenueDetails />} />
             <Route path="/stats/expenses" element={<ExpensesDetails />} />
+            <Route path="/stats/:type" element={<StatsDetailsRouter />} />
             <Route path="/support" element={<Support />} />
             
             <Route path="/super-admin" element={<SuperAdmin />} />
