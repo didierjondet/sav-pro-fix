@@ -1,12 +1,82 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Smartphone, Clock, MessageSquare, BarChart3, Users, Settings, CheckCircle, ArrowRight, Star, Shield, Zap } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+interface SubscriptionPlan {
+  id: string;
+  name: string;
+  description: string;
+  monthly_price: number;
+  billing_interval: 'month' | 'year';
+  sav_limit: number | null;
+  sms_limit: number;
+  features: string[];
+  is_active: boolean;
+}
+
 export default function Landing() {
   const [showDemo, setShowDemo] = useState(false);
+  const [subscriptionPlans, setSubscriptionPlans] = useState<SubscriptionPlan[]>([]);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    fetchSubscriptionPlans();
+  }, []);
+
+  const fetchSubscriptionPlans = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('subscription_plans')
+        .select('*')
+        .eq('is_active', true)
+        .order('monthly_price');
+
+      if (error) throw error;
+      
+      // Transform data to match our interface
+      const transformedPlans = (data || []).map(plan => ({
+        ...plan,
+        description: plan.description || '',
+        billing_interval: plan.billing_interval as 'month' | 'year',
+        features: Array.isArray(plan.features) ? plan.features.map(f => String(f)) : []
+      }));
+      
+      setSubscriptionPlans(transformedPlans);
+    } catch (error) {
+      console.error('Error fetching subscription plans:', error);
+      // En cas d'erreur, utiliser des plans par défaut
+      setSubscriptionPlans([
+        {
+          id: '1',
+          name: 'Starter',
+          description: 'Plan gratuit pour commencer',
+          monthly_price: 0,
+          billing_interval: 'month',
+          sav_limit: 10,
+          sms_limit: 50,
+          features: ['Jusqu\'à 10 dossiers SAV/mois', '50 SMS inclus', 'Support email'],
+          is_active: true
+        },
+        {
+          id: '2',
+          name: 'Pro',
+          description: 'Plan professionnel',
+          monthly_price: 29,
+          billing_interval: 'month',
+          sav_limit: null,
+          sms_limit: 500,
+          features: ['Dossiers SAV illimités', '500 SMS inclus', 'Notifications automatiques', 'Statistiques avancées'],
+          is_active: true
+        }
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  };
   return <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       {/* Header */}
       <header className="bg-white shadow-sm">
@@ -195,61 +265,52 @@ export default function Landing() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <Card>
-              <CardHeader>
-                <CardTitle>Starter</CardTitle>
-                <div className="text-3xl font-bold">Gratuit</div>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-2 text-sm">
-                  <li>• Jusqu'à 10 dossiers SAV/mois</li>
-                  <li>• 50 SMS inclus</li>
-                  <li>• Support email</li>
-                </ul>
-                <Button className="w-full mt-4" variant="outline">
-                  Commencer gratuitement
-                </Button>
-              </CardContent>
-            </Card>
-
-            <Card className="border-blue-500 shadow-lg">
-              <CardHeader>
-                <Badge className="mb-2">Populaire</Badge>
-                <CardTitle>Pro</CardTitle>
-                <div className="text-3xl font-bold">29€<span className="text-lg text-gray-500">/mois</span></div>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-2 text-sm">
-                  <li>• Dossiers SAV illimités</li>
-                  <li>• 500 SMS inclus</li>
-                  <li>• Notifications automatiques</li>
-                  <li>• Statistiques avancées</li>
-                </ul>
-                <Button className="w-full mt-4">
-                  Essayer Pro
-                </Button>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Enterprise</CardTitle>
-                <div className="text-3xl font-bold">Sur mesure</div>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-2 text-sm">
-                  <li>• Tout de Pro</li>
-                  <li>• SMS illimités</li>
-                  <li>• API personnalisée</li>
-                  <li>• Support prioritaire</li>
-                </ul>
-                <Button className="w-full mt-4" variant="outline">
-                  Nous contacter
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
+          {loading ? (
+            <div className="text-center">
+              <div className="animate-pulse">Chargement des tarifs...</div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {subscriptionPlans.map((plan, index) => (
+                <Card key={plan.id} className={index === 1 ? 'border-blue-500 shadow-lg' : ''}>
+                  <CardHeader>
+                    {index === 1 && <Badge className="mb-2">Populaire</Badge>}
+                    <CardTitle>{plan.name}</CardTitle>
+                    <div className="text-3xl font-bold">
+                      {plan.monthly_price === 0 ? 'Gratuit' : 
+                        `${plan.monthly_price}€${plan.billing_interval === 'month' ? '/mois' : '/an'}`
+                      }
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    {plan.description && (
+                      <p className="text-sm text-gray-600 mb-4">{plan.description}</p>
+                    )}
+                    <ul className="space-y-2 text-sm">
+                      {plan.sav_limit && (
+                        <li>• {plan.sav_limit === 0 ? 'Dossiers SAV illimités' : `Jusqu'à ${plan.sav_limit} dossiers SAV${plan.billing_interval === 'month' ? '/mois' : '/an'}`}</li>
+                      )}
+                      {!plan.sav_limit && <li>• Dossiers SAV illimités</li>}
+                      <li>• {plan.sms_limit} SMS inclus</li>
+                      {plan.features.map((feature, featureIndex) => (
+                        <li key={featureIndex}>• {feature}</li>
+                      ))}
+                    </ul>
+                    <Button 
+                      className="w-full mt-4" 
+                      variant={index === 1 ? 'default' : 'outline'}
+                      onClick={() => navigate('/auth')}
+                    >
+                      {plan.monthly_price === 0 ? 'Commencer gratuitement' : 
+                        index === 1 ? `Essayer ${plan.name}` : 
+                        plan.monthly_price > 50 ? 'Nous contacter' : `Choisir ${plan.name}`
+                      }
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
