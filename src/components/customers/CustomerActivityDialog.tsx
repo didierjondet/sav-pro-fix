@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { Link } from 'react-router-dom';
 
 interface CustomerActivityDialogProps {
   customer: Customer | null;
@@ -141,7 +142,15 @@ export function CustomerActivityDialog({ customer, open, onOpenChange }: Custome
                             )}
                             <div>
                               <h4 className="font-medium">
-                                {activity.type === 'sav' ? 'SAV' : 'Devis'} {activity.number}
+                                {activity.type === 'sav' ? (
+                                  <Link to={`/sav/${activity.id}`} className="text-primary underline-offset-4 hover:underline">
+                                    SAV {activity.number}
+                                  </Link>
+                                ) : (
+                                  <Link to={`/quotes`} className="text-primary underline-offset-4 hover:underline">
+                                    Devis {activity.number}
+                                  </Link>
+                                )}
                               </h4>
                               <p className="text-sm text-muted-foreground">
                                 {activity.description}
