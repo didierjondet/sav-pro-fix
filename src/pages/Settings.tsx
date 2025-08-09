@@ -96,6 +96,7 @@ const [logoUploading, setLogoUploading] = useState(false);
     address: '',
     logo_url: '',
     review_link: '',
+    auto_review_enabled: true,
     max_sav_processing_days_client: 7,
     max_sav_processing_days_internal: 5
   });
@@ -121,6 +122,7 @@ const [logoUploading, setLogoUploading] = useState(false);
         address: shop.address || '',
         logo_url: shop.logo_url || '',
         review_link: (shop as any).review_link || '',
+        auto_review_enabled: (shop as any).auto_review_enabled ?? true,
         max_sav_processing_days_client: shop.max_sav_processing_days_client || 7,
         max_sav_processing_days_internal: shop.max_sav_processing_days_internal || 5
       });
@@ -719,20 +721,36 @@ const handleExportParts = async (format: 'csv' | 'xlsx') => {
                       <Star className="h-4 w-4" />
                       Avis Google
                     </h4>
-                    <div>
-                      <Label htmlFor="review-link">Lien vers votre page d'avis Google</Label>
-                      <Input
-                        id="review-link"
-                        type="url"
-                        value={shopForm.review_link}
-                        onChange={(e) => setShopForm({...shopForm, review_link: e.target.value})}
-                        disabled={!isAdmin}
-                        placeholder="https://g.page/r/..."
-                      />
-                      <p className="text-sm text-muted-foreground mt-2">
-                        Ce lien sera utilisé pour demander aux clients de laisser un avis après réparation. 
-                        Vous pouvez trouver votre lien d'avis dans Google My Business.
-                      </p>
+                    <div className="space-y-4">
+                      <div>
+                        <Label htmlFor="review-link">Lien vers votre page d'avis Google</Label>
+                        <Input
+                          id="review-link"
+                          type="url"
+                          value={shopForm.review_link}
+                          onChange={(e) => setShopForm({...shopForm, review_link: e.target.value})}
+                          disabled={!isAdmin}
+                          placeholder="https://g.page/r/..."
+                        />
+                        <p className="text-sm text-muted-foreground mt-2">
+                          Ce lien sera utilisé pour demander aux clients de laisser un avis après réparation. 
+                          Vous pouvez trouver votre lien d'avis dans Google My Business.
+                        </p>
+                      </div>
+                      
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="font-medium">Envoi automatique de demande d'avis</div>
+                          <p className="text-sm text-muted-foreground">
+                            Envoyer automatiquement une demande d'avis lorsqu'un SAV est marqué comme "livré"
+                          </p>
+                        </div>
+                        <Switch
+                          checked={shopForm.auto_review_enabled}
+                          onCheckedChange={(checked) => setShopForm({...shopForm, auto_review_enabled: checked})}
+                          disabled={!isAdmin}
+                        />
+                      </div>
                     </div>
                   </div>
 

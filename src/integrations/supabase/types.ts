@@ -703,6 +703,7 @@ export type Database = {
         Row: {
           active_sav_count: number | null
           address: string | null
+          auto_review_enabled: boolean
           created_at: string
           email: string | null
           id: string
@@ -729,6 +730,7 @@ export type Database = {
         Insert: {
           active_sav_count?: number | null
           address?: string | null
+          auto_review_enabled?: boolean
           created_at?: string
           email?: string | null
           id?: string
@@ -755,6 +757,7 @@ export type Database = {
         Update: {
           active_sav_count?: number | null
           address?: string | null
+          auto_review_enabled?: boolean
           created_at?: string
           email?: string | null
           id?: string
