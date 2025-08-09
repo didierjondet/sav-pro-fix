@@ -69,7 +69,7 @@ export default function Statistics() {
 
               {/* KPI Row */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                <Card onClick={() => navigate(`/statistics/revenue?period=${period}`)} className="cursor-pointer hover:shadow-md transition-shadow">
+                <Card onClick={() => navigate(`/stats/revenue?period=${period}`)} className="cursor-pointer hover:shadow-md transition-shadow">
                   <CardHeader>
                     <CardTitle>Chiffre d'affaires</CardTitle>
                   </CardHeader>
@@ -78,7 +78,7 @@ export default function Statistics() {
                   </CardContent>
                 </Card>
 
-                <Card onClick={() => navigate(`/statistics/expenses?period=${period}`)} className="cursor-pointer hover:shadow-md transition-shadow">
+                <Card onClick={() => navigate(`/stats/expenses?period=${period}`)} className="cursor-pointer hover:shadow-md transition-shadow">
                   <CardHeader>
                     <CardTitle>Dépenses (pièces)</CardTitle>
                   </CardHeader>
