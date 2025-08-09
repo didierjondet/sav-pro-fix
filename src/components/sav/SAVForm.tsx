@@ -142,8 +142,8 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
     try {
       let customerId = selectedCustomer?.id || null;
       
-      // Create customer if SAV client and no customer selected
-      if (savType === 'client' && !selectedCustomer) {
+      // Create customer if SAV client or external and no customer selected
+      if ((savType === 'client' || savType === 'external') && !selectedCustomer) {
         const { data: customer, error: customerError } = await createCustomer({
           first_name: customerInfo.firstName,
           last_name: customerInfo.lastName,
@@ -228,10 +228,12 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
         </CardContent>
       </Card>
 
-      {savType === 'client' && (
+      {(savType === 'client' || savType === 'external') && (
         <Card>
           <CardHeader>
-            <CardTitle>Informations Client</CardTitle>
+            <CardTitle>
+              Informations Client {savType === 'external' ? '(Externe)' : ''}
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <CustomerSearch
