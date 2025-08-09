@@ -126,7 +126,8 @@ export function useStatistics(period: '7d' | '30d' | '3m' | '6m' | '1y'): Statis
 
           // Ajuster selon la prise en charge
           if (savCase.partial_takeover && savCase.takeover_amount) {
-            const takeoverRatio = savCase.takeover_amount / (savCase.total_cost || 1);
+            const rawRatio = Number(savCase.takeover_amount) / (Number(savCase.total_cost) || 1);
+            const takeoverRatio = Math.min(1, Math.max(0, rawRatio));
             caseRevenue = caseCost + (caseRevenue - caseCost) * (1 - takeoverRatio);
           } else if (savCase.taken_over) {
             caseRevenue = caseCost; // Pas de marge si pris en charge totalement
@@ -165,14 +166,14 @@ export function useStatistics(period: '7d' | '30d' | '3m' | '6m' | '1y'): Statis
 
         // Préparer les données pour les graphiques
         const chartData = Object.entries(dailyData)
+          .sort(([a], [b]) => new Date(a).getTime() - new Date(b).getTime())
           .map(([date, data]) => ({
             date: format(new Date(date), 'dd/MM'),
             revenue: data.revenue,
             expenses: data.expenses,
             profit: data.revenue - data.expenses,
             count: data.count
-          }))
-          .sort((a, b) => a.date.localeCompare(b.date));
+          }));
 
         const topPartsArray = Object.values(partsUsage)
           .sort((a, b) => b.quantity - a.quantity)

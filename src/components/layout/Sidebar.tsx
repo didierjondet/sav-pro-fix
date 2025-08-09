@@ -9,6 +9,7 @@ import { useProfile } from '@/hooks/useProfile';
 import { useSAVUnreadMessages } from '@/hooks/useSAVUnreadMessages';
 import { useShopSettings } from '@/hooks/useShopSettings';
 import { MessageSquare, Package, Users, BarChart3, FileText, Settings, X, Plus, Shield, CreditCard, HelpCircle } from 'lucide-react';
+import { useQuotes } from '@/hooks/useQuotes';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -34,6 +35,13 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const { settings } = useShopSettings();
   const { savWithUnreadMessages } = useSAVUnreadMessages();
   const totalUnread = (savWithUnreadMessages || []).reduce((sum, s) => sum + s.unread_count, 0);
+  const { quotes } = useQuotes();
+  const quoteCounts = (quotes || []).reduce((acc, q) => {
+    if (q.status === 'accepted') acc.accepted++;
+    else if (q.status === 'rejected') acc.rejected++;
+    else acc.inProgress++;
+    return acc;
+  }, { inProgress: 0, accepted: 0, rejected: 0 });
 
   // Créer la navigation dynamique selon les paramètres du magasin
   const navigation = [...baseNavigation];
@@ -157,6 +165,26 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                 <div className="flex justify-between text-sm border-t pt-2 mt-2">
                   <span className="text-destructive font-bold">TOTAL SAV</span>
                   <span className="font-bold text-destructive">{statusCounts.pendingClient + statusCounts.pendingExternal + statusCounts.pendingShop}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-4 p-4 bg-muted rounded-lg">
+              <h3 className="text-sm font-medium text-muted-foreground mb-2">
+                Statut devis
+              </h3>
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span>En cours</span>
+                  <span className="font-medium">{quoteCounts.inProgress}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span>Validé</span>
+                  <span className="font-medium">{quoteCounts.accepted}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span>Refusé</span>
+                  <span className="font-medium">{quoteCounts.rejected}</span>
                 </div>
               </div>
             </div>
