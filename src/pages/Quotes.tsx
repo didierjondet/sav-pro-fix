@@ -159,11 +159,53 @@ const handleStatusChange = async (quote: Quote, newStatus: Quote['status']) => {
       const updateRes = await updateQuote(quoteToConvert.id, { status: 'accepted' });
       if (updateRes.error) throw updateRes.error;
 
-      // 1) Créer le dossier SAV minimal
-      const totalPublic = quoteToConvert.items?.reduce(
-        (sum, it) => sum + (it.total_price ?? ((it.quantity || 0) * (it.unit_public_price || 0))),
-        0
-      ) || 0;
+      // helper: récupérer ou créer le client pour lier le SAV
+      const getOrCreateCustomerId = async (): Promise<string | null> => {
+        const existingId = (quoteToConvert as any).customer_id as string | null | undefined;
+        if (existingId) return existingId;
+        if (!shop?.id) return null;
+
+        // Tenter de retrouver par email dans la boutique
+        if (quoteToConvert.customer_email) {
+          const { data: existing, error: findErr } = await supabase
+            .from('customers')
+            .select('id')
+            .eq('shop_id', shop.id)
+            .eq('email', quoteToConvert.customer_email)
+            .maybeSingle();
+          if (!findErr && existing?.id) return existing.id;
+        }
+
+        // Créer le client à partir du nom / email / téléphone du devis
+        const nameParts = (quoteToConvert.customer_name || '').trim().split(/\s+/);
+        const firstName = nameParts[0] || 'Client';
+        const lastName = nameParts.slice(1).join(' ') || 'Devis';
+
+        const { data: created, error: createErr } = await supabase
+          .from('customers')
+          .insert([
+            {
+              shop_id: shop.id,
+              first_name: firstName,
+              last_name: lastName,
+              email: quoteToConvert.customer_email || null,
+              phone: quoteToConvert.customer_phone || null,
+            },
+          ])
+          .select('id')
+          .maybeSingle();
+        if (createErr) throw createErr;
+        return created?.id ?? null;
+      };
+
+      const customerId = await getOrCreateCustomerId();
+
+      // 1) Créer le dossier SAV avec le client lié
+      const totalPublic =
+        quoteToConvert.items?.reduce(
+          (sum, it) => sum + (it.total_price ?? ( (it.quantity || 0) * (it.unit_public_price || 0) )),
+          0
+        ) || 0;
 
       const { data: savCase, error: savError } = await (supabase as any)
         .from('sav_cases')
@@ -175,6 +217,7 @@ const handleStatusChange = async (quote: Quote, newStatus: Quote['status']) => {
             total_time_minutes: 0,
             total_cost: totalPublic,
             shop_id: shop?.id ?? null,
+            customer_id: customerId,
           },
         ])
         .select('id')
@@ -205,7 +248,7 @@ const handleStatusChange = async (quote: Quote, newStatus: Quote['status']) => {
 
       toast({
         title: 'Conversion réussie',
-        description: `Devis ${quoteToConvert.quote_number} converti en SAV ${type} et supprimé de la liste.`,
+        description: `Devis ${quoteToConvert.quote_number} converti en SAV ${type} avec informations client.`,
       });
       setQuoteToConvert(null);
     } catch (error: any) {
