@@ -36,55 +36,160 @@ import './index.css';
 const queryClient = new QueryClient();
 
 function App() {
-  // Bypass auth only for public landing page
-  if (window.location.pathname === '/') {
-    return <PublicLanding />;
-  }
-
   return (
     <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
       <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <Router>
-            <Routes>
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/dashboard" element={<Index />} />
-              <Route path="/customers" element={<Customers />} />
-              <Route path="/parts" element={<Parts />} />
-              <Route path="/quotes" element={<Quotes />} />
-              <Route path="/orders" element={<Orders />} />
-              <Route path="/sav/new" element={<NewSAV />} />
-              <Route path="/sav" element={<SAVList />} />
-              <Route path="/sav/:id" element={<SAVDetail />} />
-              <Route path="/settings" element={<Settings />} />
-              <Route path="/super-admin" element={<SuperAdmin />} />
-              <Route path="/support" element={<Support />} />
-              <Route path="/subscription" element={<Subscription />} />
-<Route path="/shop-website" element={<ShopWebsite />} />
-              <Route path="/shop/:slug" element={<ShopWebsite />} />
-              <Route path="/simple-track" element={<SimpleTrack />} />
-              <Route path="/track/:slug" element={<TrackSAV />} />
-              <Route path="/subscription-success" element={<SubscriptionSuccess />} />
-              <Route path="/sms-purchase-success" element={<SMSPurchaseSuccess />} />
-              {/* Chat clients routes */}
-              <Route path="/client-chats" element={<ClientChats />} />
-              <Route path="/client-chats/*" element={<ClientChats />} />
-              <Route path="/chats" element={<ClientChats />} />
-              <Route path="/statistics" element={<Statistics />} />
-              <Route path="/statistics/revenue" element={<RevenueDetails />} />
-              <Route path="/statistics/revenue/*" element={<RevenueDetails />} />
-              <Route path="/statistics/expenses" element={<ExpensesDetails />} />
-              <Route path="/statistics/expenses/*" element={<ExpensesDetails />} />
-              <Route path="/stats/revenue" element={<RevenueDetails />} />
-              <Route path="/stats/revenue/*" element={<RevenueDetails />} />
-              <Route path="/stats/expenses" element={<ExpensesDetails />} />
-              <Route path="/stats/expenses/*" element={<ExpensesDetails />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </Router>
+        <Router>
+          <Routes>
+            <Route path="/" element={<PublicLanding />} />
+            <Route path="/auth" element={
+              <AuthProvider>
+                <Auth />
+              </AuthProvider>
+            } />
+            <Route path="/dashboard" element={
+              <AuthProvider>
+                <Index />
+              </AuthProvider>
+            } />
+            <Route path="/customers" element={
+              <AuthProvider>
+                <Customers />
+              </AuthProvider>
+            } />
+            <Route path="/parts" element={
+              <AuthProvider>
+                <Parts />
+              </AuthProvider>
+            } />
+            <Route path="/quotes" element={
+              <AuthProvider>
+                <Quotes />
+              </AuthProvider>
+            } />
+            <Route path="/orders" element={
+              <AuthProvider>
+                <Orders />
+              </AuthProvider>
+            } />
+            <Route path="/sav/new" element={
+              <AuthProvider>
+                <NewSAV />
+              </AuthProvider>
+            } />
+            <Route path="/sav" element={
+              <AuthProvider>
+                <SAVList />
+              </AuthProvider>
+            } />
+            <Route path="/sav/:id" element={
+              <AuthProvider>
+                <SAVDetail />
+              </AuthProvider>
+            } />
+            <Route path="/settings" element={
+              <AuthProvider>
+                <Settings />
+              </AuthProvider>
+            } />
+            <Route path="/super-admin" element={
+              <AuthProvider>
+                <SuperAdmin />
+              </AuthProvider>
+            } />
+            <Route path="/support" element={
+              <AuthProvider>
+                <Support />
+              </AuthProvider>
+            } />
+            <Route path="/subscription" element={
+              <AuthProvider>
+                <Subscription />
+              </AuthProvider>
+            } />
+            <Route path="/shop-website" element={
+              <AuthProvider>
+                <ShopWebsite />
+              </AuthProvider>
+            } />
+            <Route path="/shop/:slug" element={<ShopWebsite />} />
+            <Route path="/simple-track" element={<SimpleTrack />} />
+            <Route path="/track/:slug" element={<TrackSAV />} />
+            <Route path="/subscription-success" element={
+              <AuthProvider>
+                <SubscriptionSuccess />
+              </AuthProvider>
+            } />
+            <Route path="/sms-purchase-success" element={
+              <AuthProvider>
+                <SMSPurchaseSuccess />
+              </AuthProvider>
+            } />
+            <Route path="/client-chats" element={
+              <AuthProvider>
+                <ClientChats />
+              </AuthProvider>
+            } />
+            <Route path="/client-chats/*" element={
+              <AuthProvider>
+                <ClientChats />
+              </AuthProvider>
+            } />
+            <Route path="/chats" element={
+              <AuthProvider>
+                <ClientChats />
+              </AuthProvider>
+            } />
+            <Route path="/statistics" element={
+              <AuthProvider>
+                <Statistics />
+              </AuthProvider>
+            } />
+            <Route path="/statistics/revenue" element={
+              <AuthProvider>
+                <RevenueDetails />
+              </AuthProvider>
+            } />
+            <Route path="/statistics/revenue/*" element={
+              <AuthProvider>
+                <RevenueDetails />
+              </AuthProvider>
+            } />
+            <Route path="/statistics/expenses" element={
+              <AuthProvider>
+                <ExpensesDetails />
+              </AuthProvider>
+            } />
+            <Route path="/statistics/expenses/*" element={
+              <AuthProvider>
+                <ExpensesDetails />
+              </AuthProvider>
+            } />
+            <Route path="/stats/revenue" element={
+              <AuthProvider>
+                <RevenueDetails />
+              </AuthProvider>
+            } />
+            <Route path="/stats/revenue/*" element={
+              <AuthProvider>
+                <RevenueDetails />
+              </AuthProvider>
+            } />
+            <Route path="/stats/expenses" element={
+              <AuthProvider>
+                <ExpensesDetails />
+              </AuthProvider>
+            } />
+            <Route path="/stats/expenses/*" element={
+              <AuthProvider>
+                <ExpensesDetails />
+              </AuthProvider>
+            } />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
           <Toaster />
           <Sonner />
-        </AuthProvider>
+        </Router>
       </QueryClientProvider>
     </ThemeProvider>
   );
