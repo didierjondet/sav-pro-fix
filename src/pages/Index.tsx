@@ -18,6 +18,8 @@ const Index = () => {
   useEffect(() => {
     if (!loading && !user) {
       navigate('/auth');
+    } else if (!loading && user) {
+      // Utilisateur connecté, on reste sur le dashboard
     }
   }, [user, loading, navigate]);
 

@@ -29,6 +29,10 @@ import StatsDetailsRouter from "./pages/StatsDetailsRouter";
 
 import NotFound from "./pages/NotFound";
 import ShopWebsite from "./pages/ShopWebsite";
+import Features from "./pages/Features";
+import About from "./pages/About";
+import Contact from "./pages/Contact";
+import Home from "./pages/Home";
 
 const queryClient = new QueryClient();
 
@@ -40,7 +44,8 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
-            <Route path="/" element={<Index />} />
+            <Route path="/" element={<Home />} />
+            <Route path="/dashboard" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/sav" element={<SAVList />} />
@@ -69,6 +74,11 @@ const App = () => (
             <Route path="/super-admin" element={<SuperAdmin />} />
             <Route path="/subscription" element={<Subscription />} />
             <Route path="/landing" element={<Landing />} />
+            
+            {/* Pages SEO */}
+            <Route path="/features" element={<Features />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/contact" element={<Contact />} />
             
             {/* Routes pour les mini-sites des magasins */}
             <Route path="/shop/:slug" element={<ShopWebsite />} />
