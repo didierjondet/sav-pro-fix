@@ -25,6 +25,7 @@ interface SAVStatusManagerProps {
     taken_over?: boolean;
     partial_takeover?: boolean;
     takeover_amount?: number;
+    shop_id: string;
     customer?: {
       first_name: string;
       last_name: string;
@@ -114,6 +115,11 @@ export function SAVStatusManager({ savCase, onStatusUpdated }: SAVStatusManagerP
           description: "Le statut du dossier a été mis à jour avec succès",
         });
       }
+
+      // Envoi automatique de demande d'avis si le statut passe à "ready" et que c'est activé
+      if (selectedStatus === 'ready' && savCase.status !== 'ready' && savCase.sav_type === 'client') {
+        await sendAutomaticReviewRequest();
+      }
       
       setNotes('');
       onStatusUpdated?.();
@@ -127,6 +133,67 @@ export function SAVStatusManager({ savCase, onStatusUpdated }: SAVStatusManagerP
       setUpdating(false);
       setShowSMSDialog(false);
       setPendingStatusData(null);
+    }
+  };
+
+  const sendAutomaticReviewRequest = async () => {
+    try {
+      // Vérifier si l'envoi automatique est activé
+      const { data: shopData, error: shopError } = await supabase
+        .from('shops')
+        .select('auto_review_enabled, review_link, name')
+        .eq('id', savCase.shop_id)
+        .single();
+
+      if (shopError || !shopData) {
+        console.log('Impossible de récupérer les paramètres de boutique pour l\'envoi automatique d\'avis');
+        return;
+      }
+
+      // Si l'envoi automatique n'est pas activé ou pas de lien d'avis configuré, ne rien faire
+      if (!shopData.auto_review_enabled || !shopData.review_link) {
+        return;
+      }
+
+      const customerName = `${savCase.customer?.first_name || ''} ${savCase.customer?.last_name || ''}`.trim();
+      
+      const reviewMessage = `Bonjour ${customerName || 'cher client'} ! 👋
+
+Votre réparation est maintenant terminée ! Si vous avez été satisfait(e) de notre service, nous vous serions reconnaissants de prendre un moment pour nous laisser un avis.
+
+⭐ Laisser un avis : ${shopData.review_link}
+
+Votre retour nous aide à continuer d'améliorer nos services.
+
+Merci pour votre confiance ! 😊
+
+L'équipe ${shopData.name || 'de réparation'}`;
+
+      // Envoyer le message dans le chat SAV
+      const { error } = await supabase
+        .from('sav_messages')
+        .insert([{
+          sav_case_id: savCase.id,
+          shop_id: savCase.shop_id,
+          sender_type: 'shop',
+          sender_name: shopData.name || 'Équipe SAV',
+          message: reviewMessage,
+          read_by_shop: true,
+          read_by_client: false
+        }]);
+
+      if (error) {
+        console.error('Erreur lors de l\'envoi automatique de demande d\'avis:', error);
+        return;
+      }
+
+      toast({
+        title: "Demande d'avis envoyée",
+        description: "Une demande d'avis automatique a été envoyée au client.",
+      });
+
+    } catch (error) {
+      console.error('Erreur lors de l\'envoi automatique de demande d\'avis:', error);
     }
   };
   
