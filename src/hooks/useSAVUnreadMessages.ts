@@ -5,7 +5,14 @@ import { useAuth } from '@/contexts/AuthContext';
 export interface SAVWithUnreadMessages {
   id: string;
   case_number: string;
+  sav_type: 'client' | 'internal' | 'external';
+  device_brand: string;
+  device_model: string;
   unread_count: number;
+  customer?: {
+    first_name: string;
+    last_name: string;
+  };
 }
 
 export function useSAVUnreadMessages() {
@@ -55,10 +62,17 @@ export function useSAVUnreadMessages() {
         return;
       }
 
-      // Get SAV case details
+      // Get SAV case details with customer info
       const { data: savCases, error: savError } = await supabase
         .from('sav_cases')
-        .select('id, case_number')
+        .select(`
+          id, 
+          case_number, 
+          sav_type,
+          device_brand,
+          device_model,
+          customer:customers(first_name, last_name)
+        `)
         .in('id', savCaseIds);
 
       if (savError) throw savError;
@@ -71,6 +85,10 @@ export function useSAVUnreadMessages() {
             acc[savCase.id] = {
               id: savCase.id,
               case_number: savCase.case_number,
+              sav_type: savCase.sav_type,
+              device_brand: savCase.device_brand,
+              device_model: savCase.device_model,
+              customer: savCase.customer,
               unread_count: 0
             };
           }

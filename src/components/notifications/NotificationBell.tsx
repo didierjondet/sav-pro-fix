@@ -177,6 +177,16 @@ export function NotificationBell() {
     }
   };
 
+  const getDisplayName = (sav: any) => {
+    if (sav.sav_type === 'internal') {
+      return `${sav.device_brand} ${sav.device_model} - ${sav.case_number}`;
+    } else if (sav.customer) {
+      return `${sav.customer.first_name} ${sav.customer.last_name}`;
+    } else {
+      return `SAV ${sav.case_number}`;
+    }
+  };
+
   const getNotificationIcon = (type: string) => {
     switch (type) {
       case 'stock_alert': return '📦';
@@ -273,7 +283,7 @@ export function NotificationBell() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between">
                             <h4 className="font-medium text-sm truncate">
-                              SAV {sav.case_number}
+                              {getDisplayName(sav)}
                             </h4>
                             <div className="w-2 h-2 bg-orange-500 rounded-full flex-shrink-0 ml-2"></div>
                           </div>
