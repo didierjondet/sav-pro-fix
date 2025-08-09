@@ -72,6 +72,18 @@ serve(async (req) => {
 
     logStep("Request data", { to, type, recordId });
 
+    // Normaliser le numéro de téléphone français au format international
+    let normalizedPhone = to;
+    if (to.startsWith('06') || to.startsWith('07')) {
+      // Numéro mobile français : remplacer le 0 initial par +33
+      normalizedPhone = '+33' + to.substring(1);
+    } else if (to.startsWith('0')) {
+      // Autres numéros français : remplacer le 0 initial par +33
+      normalizedPhone = '+33' + to.substring(1);
+    }
+    
+    logStep("Phone number normalized", { original: to, normalized: normalizedPhone });
+
     // Récupérer le shop_id de l'utilisateur
     const { data: profileData, error: profileError } = await supabaseClient
       .from('profiles')
@@ -107,7 +119,7 @@ serve(async (req) => {
     const query = `https://eu.api.ovh.com/1.0/sms/${smsService}/jobs`;
     const body = JSON.stringify({
       message: message,
-      receivers: [to],
+      receivers: [normalizedPhone],
       // Utiliser le nouvel expéditeur FIXWAYFR
       sender: "FIXWAYFR",
       charset: "UTF-8"
@@ -165,13 +177,12 @@ serve(async (req) => {
       .from('sms_history')
       .insert({
         shop_id: shopId,
-        recipient_phone: to,
+        recipient_phone: normalizedPhone,
         message: message,
         type: type,
         record_id: recordId,
         status: 'sent',
-        ovh_job_id: ovhResult.ids?.[0],
-        cost: 1
+        ovh_job_id: ovhResult.ids?.[0]
       });
 
     if (historyError) {
