@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { AlertTriangle, CheckCircle, Package, ShoppingCart, Plus } from 'lucide-react';
+import { AlertTriangle, CheckCircle, Package, ShoppingCart, Plus, Trash2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { SAVPartsEditor } from '@/components/sav/SAVPartsEditor';
@@ -128,6 +128,31 @@ export function SAVPartsRequirements({ savCaseId }: SAVPartsRequirementsProps) {
     }
   };
 
+  const removePart = async (partId: string, partName: string) => {
+    try {
+      const { error } = await supabase
+        .from('sav_parts')
+        .delete()
+        .eq('id', partId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Pièce supprimée",
+        description: `${partName} a été supprimée du dossier SAV`,
+      });
+
+      // Rafraîchir la liste des pièces
+      fetchPartsRequirements();
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
   useEffect(() => {
     fetchPartsRequirements();
   }, [savCaseId]);
@@ -197,13 +222,22 @@ export function SAVPartsRequirements({ savCaseId }: SAVPartsRequirementsProps) {
           <div className="flex items-center gap-2">
             <Package className="h-5 w-5" />
             Pièces nécessaires
+            {totalPartsToOrder > 0 && (
+              <Badge variant="destructive" className="flex items-center gap-1">
+                <AlertTriangle className="h-3 w-3" />
+                {totalPartsToOrder} à commander
+              </Badge>
+            )}
           </div>
-          {totalPartsToOrder > 0 && (
-            <Badge variant="destructive" className="flex items-center gap-1">
-              <AlertTriangle className="h-3 w-3" />
-              {totalPartsToOrder} à commander
-            </Badge>
-          )}
+          <SAVPartsEditor
+            savCaseId={savCaseId}
+            onPartsUpdated={fetchPartsRequirements}
+            trigger={
+              <Button variant="ghost" size="icon" aria-label="Ajouter une pièce">
+                <Plus className="h-4 w-4" />
+              </Button>
+            }
+          />
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -227,18 +261,29 @@ export function SAVPartsRequirements({ savCaseId }: SAVPartsRequirementsProps) {
                 </div>
               </div>
               
-              <div className="text-right">
-                {requirement.needs_ordering ? (
-                  <Badge variant="destructive" className="flex items-center gap-1">
-                    <AlertTriangle className="h-3 w-3" />
-                    À commander
-                  </Badge>
-                ) : (
-                  <Badge variant="default" className="flex items-center gap-1">
-                    <CheckCircle className="h-3 w-3" />
-                    Disponible
-                  </Badge>
-                )}
+              <div className="flex items-center gap-2">
+                <div className="text-right">
+                  {requirement.needs_ordering ? (
+                    <Badge variant="destructive" className="flex items-center gap-1">
+                      <AlertTriangle className="h-3 w-3" />
+                      À commander
+                    </Badge>
+                  ) : (
+                    <Badge variant="default" className="flex items-center gap-1">
+                      <CheckCircle className="h-3 w-3" />
+                      Disponible
+                    </Badge>
+                  )}
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => removePart(requirement.id, requirement.part_name)}
+                  className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                  aria-label={`Supprimer ${requirement.part_name}`}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
               </div>
             </div>
 
