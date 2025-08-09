@@ -175,7 +175,7 @@ export default function Customers() {
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
             <AlertDialogDescription>
-              Êtes-vous sûr de vouloir supprimer le client "{deletingCustomer?.first_name} {deletingCustomer?.last_name}" ? 
+              Êtes-vous sûr de vouloir supprimer le client "{deletingCustomer?.last_name?.toUpperCase()} {deletingCustomer?.first_name}" ? 
               Cette action est irréversible.
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -214,7 +214,7 @@ function CustomerCard({ customer, onEdit, onDelete, onView }: {
           <div className="flex-1">
             <div className="flex items-center gap-4 mb-2">
               <h3 className="font-semibold text-lg">
-                {customer.first_name} {customer.last_name}
+                {customer.last_name?.toUpperCase()} {customer.first_name}
               </h3>
               <Badge variant="outline" className="text-green-600">
                 <Euro className="h-3 w-3 mr-1" />
