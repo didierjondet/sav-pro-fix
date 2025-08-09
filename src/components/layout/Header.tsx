@@ -28,13 +28,29 @@ export function Header({
             <Menu className="h-5 w-5" />
           </Button>
           <div className="flex items-center space-x-2">
-            {shop?.logo_url ? <img src={shop.logo_url} alt="Logo du magasin" className="h-14 w-14 md:h-16 md:w-16 object-contain" /> : <img src="/lovable-uploads/3d99a913-9d52-4f6c-9a65-78b3bd561739.png" alt="Logo FixWay Pro" className="h-14 w-14 md:h-16 md:w-16 object-contain" />}
-            <div className="flex flex-col">
-              <h1 className="text-xl font-bold text-foreground">
-                {shop?.name || 'FixWay Pro'}
-              </h1>
-              <span className="text-xs text-muted-foreground">Propulsé par FixWay.fr</span>
-            </div>
+            {shop ? (
+              <>
+                {shop.logo_url ? (
+                  <img src={shop.logo_url} alt="Logo du magasin" className="h-14 w-14 md:h-16 md:w-16 object-contain" />
+                ) : (
+                  <img src="/lovable-uploads/3d99a913-9d52-4f6c-9a65-78b3bd561739.png" alt="Logo FixWay Pro" className="h-14 w-14 md:h-16 md:w-16 object-contain" />
+                )}
+                <div className="flex flex-col">
+                  <h1 className="text-xl font-bold text-foreground">
+                    {shop.name}
+                  </h1>
+                  <span className="text-xs text-muted-foreground">Propulsé par FixWay.fr</span>
+                </div>
+              </>
+            ) : (
+              <div className="flex items-center space-x-2">
+                <div className="h-14 w-14 md:h-16 md:w-16 bg-muted animate-pulse rounded" />
+                <div className="flex flex-col space-y-1">
+                  <div className="h-6 w-32 bg-muted animate-pulse rounded" />
+                  <div className="h-3 w-40 bg-muted animate-pulse rounded" />
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
