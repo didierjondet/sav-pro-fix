@@ -22,9 +22,11 @@ interface StatisticsData {
   };
   revenueChart: Array<{ date: string; revenue: number }>;
   savCountChart: Array<{ date: string; count: number }>;
+  completedSavChart: Array<{ date: string; completed: number }>;
   lateRateChart: Array<{ date: string; lateRate: number }>;
   profitabilityChart: Array<{ date: string; revenue: number; expenses: number; profit: number }>;
   topParts: Array<{ name: string; quantity: number; revenue: number }>;
+  topDevices: Array<{ model: string; brand: string; count: number }>;
   savStatusDistribution: Array<{ name: string; value: number }>;
   loading: boolean;
 }
@@ -40,9 +42,11 @@ export function useStatistics(period: '7d' | '30d' | '3m' | '6m' | '1y'): Statis
     takeoverStats: { amount: 0, count: 0 },
     revenueChart: [],
     savCountChart: [],
+    completedSavChart: [],
     lateRateChart: [],
     profitabilityChart: [],
     topParts: [],
+    topDevices: [],
     savStatusDistribution: []
   });
   const [loading, setLoading] = useState(true);
@@ -101,6 +105,7 @@ export function useStatistics(period: '7d' | '30d' | '3m' | '6m' | '1y'): Statis
         const activeSavCases = (savCases || []).filter((c: any) => 
           c.status !== 'delivered' && c.status !== 'cancelled' && c.sav_type !== 'internal'
         );
+        const completedSavCases = (savCases || []).filter((c: any) => c.status === 'delivered' && c.sav_type !== 'internal');
 
         console.log('🔍 Debug retard - Total SAV récupérés:', savCases?.length || 0);
         console.log('🔍 Debug retard - SAV actifs:', activeSavCases.length);
@@ -116,7 +121,8 @@ export function useStatistics(period: '7d' | '30d' | '3m' | '6m' | '1y'): Statis
         let lateCount = 0;
         const statusCounts: Record<string, number> = {};
         const partsUsage: Record<string, { quantity: number; revenue: number; name: string }> = {};
-        const dailyData: Record<string, { revenue: number; expenses: number; count: number; lateCount: number; activeCount: number }> = {};
+        const deviceUsage: Record<string, { model: string; brand: string; count: number }> = {};
+        const dailyData: Record<string, { revenue: number; expenses: number; count: number; completed: number; lateCount: number; activeCount: number }> = {};
 
         const currentDate = new Date();
         console.log('🔍 Debug retard - Date actuelle:', currentDate.toISOString());
@@ -125,8 +131,27 @@ export function useStatistics(period: '7d' | '30d' | '3m' | '6m' | '1y'): Statis
         (savCases || []).forEach((savCase: any) => {
           const dateKey = format(new Date(savCase.created_at), 'yyyy-MM-dd');
           if (!dailyData[dateKey]) {
-            dailyData[dateKey] = { revenue: 0, expenses: 0, count: 0, lateCount: 0, activeCount: 0 };
+            dailyData[dateKey] = { revenue: 0, expenses: 0, count: 0, completed: 0, lateCount: 0, activeCount: 0 };
           }
+        });
+
+        // Compter les SAV terminés par jour
+        completedSavCases.forEach((savCase: any) => {
+          const dateKey = format(new Date(savCase.created_at), 'yyyy-MM-dd');
+          if (dailyData[dateKey]) {
+            dailyData[dateKey].completed++;
+          }
+
+          // Tracking des téléphones les plus réparés
+          const deviceKey = `${savCase.device_brand || 'Marque inconnue'} - ${savCase.device_model || 'Modèle inconnu'}`;
+          if (!deviceUsage[deviceKey]) {
+            deviceUsage[deviceKey] = { 
+              model: savCase.device_model || 'Modèle inconnu', 
+              brand: savCase.device_brand || 'Marque inconnue', 
+              count: 0 
+            };
+          }
+          deviceUsage[deviceKey].count++;
         });
 
         // D'abord calculer les retards sur TOUS les SAV actifs
@@ -230,11 +255,16 @@ export function useStatistics(period: '7d' | '30d' | '3m' | '6m' | '1y'): Statis
             expenses: data.expenses,
             profit: data.revenue - data.expenses,
             count: data.count,
-            lateRate: data.activeCount > 0 ? (data.lateCount / data.activeCount) * 100 : 0
+            lateRate: data.activeCount > 0 ? (data.lateCount / data.activeCount) * 100 : 0,
+            completed: data.completed
           }));
 
         const topPartsArray = Object.values(partsUsage)
           .sort((a, b) => b.quantity - a.quantity)
+          .slice(0, 5);
+
+        const topDevicesArray = Object.values(deviceUsage)
+          .sort((a, b) => b.count - a.count)
           .slice(0, 5);
 
         const statusDistribution = Object.entries(statusCounts).map(([name, value]) => ({
@@ -265,6 +295,7 @@ export function useStatistics(period: '7d' | '30d' | '3m' | '6m' | '1y'): Statis
           },
           revenueChart: chartData.map(d => ({ date: d.date, revenue: d.revenue })),
           savCountChart: chartData.map(d => ({ date: d.date, count: d.count })),
+          completedSavChart: chartData.map(d => ({ date: d.date, completed: d.completed })),
           lateRateChart: chartData.map(d => ({ date: d.date, lateRate: d.lateRate })),
           profitabilityChart: chartData.map(d => ({ 
             date: d.date, 
@@ -273,6 +304,7 @@ export function useStatistics(period: '7d' | '30d' | '3m' | '6m' | '1y'): Statis
             profit: d.profit 
           })),
           topParts: topPartsArray,
+          topDevices: topDevicesArray,
           savStatusDistribution: statusDistribution
         });
 

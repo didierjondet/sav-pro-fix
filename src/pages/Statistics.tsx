@@ -20,9 +20,11 @@ export default function Statistics() {
     takeoverStats,
     revenueChart,
     savCountChart,
+    completedSavChart,
     lateRateChart,
     profitabilityChart,
     topParts,
+    topDevices,
     savStatusDistribution,
     loading
   } = useStatistics(period);
@@ -165,18 +167,18 @@ export default function Statistics() {
 
                 <Card>
                   <CardHeader>
-                    <CardTitle>Nombre de SAV</CardTitle>
+                    <CardTitle>SAV terminés</CardTitle>
                   </CardHeader>
                   <CardContent className="pt-4">
                     <ChartContainer
-                      config={{ count: { label: "SAV", color: "hsl(var(--primary))" } }}
+                      config={{ completed: { label: "SAV terminés", color: "hsl(var(--secondary))" } }}
                       className="h-72"
                     >
-                      <BarChart data={savCountChart}>
+                      <BarChart data={completedSavChart}>
                         <XAxis dataKey="date" tickLine={false} axisLine={false} />
                         <YAxis tickLine={false} axisLine={false} />
                         <ChartTooltip content={<ChartTooltipContent />} />
-                        <Bar dataKey="count" fill="var(--color-count)" radius={4} />
+                        <Bar dataKey="completed" fill="var(--color-completed)" radius={4} />
                       </BarChart>
                     </ChartContainer>
                   </CardContent>
@@ -216,6 +218,25 @@ export default function Statistics() {
                         <ChartTooltip content={<ChartTooltipContent />} />
                         <Line type="monotone" dataKey="lateRate" stroke="var(--color-lateRate)" strokeWidth={2} dot={true} />
                       </LineChart>
+                    </ChartContainer>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Podium des téléphones</CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-4">
+                    <ChartContainer
+                      config={{ count: { label: "Réparations", color: "hsl(var(--chart-1))" } }}
+                      className="h-72"
+                    >
+                      <BarChart data={topDevices} layout="horizontal">
+                        <XAxis type="number" tickLine={false} axisLine={false} />
+                        <YAxis dataKey="model" type="category" tickLine={false} axisLine={false} width={120} />
+                        <ChartTooltip content={<ChartTooltipContent />} />
+                        <Bar dataKey="count" fill="var(--color-count)" radius={4} />
+                      </BarChart>
                     </ChartContainer>
                   </CardContent>
                 </Card>
