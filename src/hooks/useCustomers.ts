@@ -112,12 +112,25 @@ export function useCustomers() {
 
   const updateCustomer = async (customerId: string, customerData: Partial<Customer>) => {
     try {
+      // Déterminer le shop_id à partir du client actuel (évite la dépendance à customerData.shop_id)
+      const current = customers.find((c) => c.id === customerId);
+      let shopId = current?.shop_id as string | undefined;
+      if (!shopId) {
+        const { data: currentCustomer, error: fetchError } = await supabase
+          .from('customers')
+          .select('shop_id')
+          .eq('id', customerId)
+          .single();
+        if (fetchError) throw fetchError;
+        shopId = currentCustomer?.shop_id as string | undefined;
+      }
+
       // Vérification des doublons lors de la modification
       if (customerData.first_name || customerData.last_name || customerData.email) {
         const { data: existingCustomers, error: searchError } = await supabase
           .from('customers')
           .select('id, first_name, last_name, email')
-          .eq('shop_id', customerData.shop_id!)
+          .eq('shop_id', shopId as string)
           .neq('id', customerId); // Exclure le client actuel
 
         if (searchError) throw searchError;
