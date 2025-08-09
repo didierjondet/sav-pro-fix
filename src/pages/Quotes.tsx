@@ -154,8 +154,15 @@ const handleStatusChange = async (quote: Quote, newStatus: Quote['status']) => {
   const convertQuoteToSAV = async (type: 'client' | 'external') => {
     if (!quoteToConvert) return;
     try {
+      // 0) Mettre le devis à "accepté" pour refléter l'état et nourrir les stats
+      const updateRes = await updateQuote(quoteToConvert.id, { status: 'accepted' });
+      if (updateRes.error) throw updateRes.error;
+
       // 1) Créer le dossier SAV minimal
-      const totalPublic = quoteToConvert.items?.reduce((sum, it) => sum + (it.total_price ?? ((it.quantity || 0) * (it.unit_public_price || 0))), 0) || 0;
+      const totalPublic = quoteToConvert.items?.reduce(
+        (sum, it) => sum + (it.total_price ?? ((it.quantity || 0) * (it.unit_public_price || 0))),
+        0
+      ) || 0;
 
       const { data: savCase, error: savError } = await (supabase as any)
         .from('sav_cases')
@@ -191,7 +198,14 @@ const handleStatusChange = async (quote: Quote, newStatus: Quote['status']) => {
         if (partsError) throw partsError;
       }
 
-      toast({ title: 'Conversion réussie', description: `Devis ${quoteToConvert.quote_number} converti en SAV ${type}.` });
+      // 3) Supprimer le devis après conversion
+      const { error: deleteErr } = await deleteQuote(quoteToConvert.id);
+      if (deleteErr) throw deleteErr;
+
+      toast({
+        title: 'Conversion réussie',
+        description: `Devis ${quoteToConvert.quote_number} converti en SAV ${type} et supprimé de la liste.`,
+      });
       setQuoteToConvert(null);
     } catch (error: any) {
       console.error('Erreur conversion devis -> SAV:', error);
