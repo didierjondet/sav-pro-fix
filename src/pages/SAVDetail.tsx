@@ -30,7 +30,6 @@ export default function SAVDetail() {
   const [savingComments, setSavingComments] = useState(false);
   const { cases, loading } = useSAVCases();
   const [savCase, setSavCase] = useState<any>(null);
-  const { refetch } = useSAVCases();
 
   useEffect(() => {
     if (cases && id) {
@@ -43,9 +42,38 @@ export default function SAVDetail() {
     }
   }, [cases, id]);
 
-  const refreshSAVData = async () => {
-    await refetch();
-  };
+  // Mise à jour en temps réel du SAV case
+  useEffect(() => {
+    if (!id) return;
+
+    const channel = supabase
+      .channel('sav-case-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'sav_cases',
+          filter: `id=eq.${id}`
+        },
+        (payload) => {
+          console.log('SAV case updated:', payload);
+          if (payload.eventType === 'UPDATE' && payload.new) {
+            setSavCase((prevCase: any) => ({ 
+              ...prevCase, 
+              ...payload.new,
+              // Conserver les données de relation customer si elles existent
+              customer: prevCase?.customer 
+            }));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [id]);
 
   const generateTrackingUrl = () => {
     if (!savCase?.tracking_slug) return '';
@@ -80,11 +108,7 @@ export default function SAVDetail() {
   };
 
   const handleStatusUpdated = () => {
-    // Refetch the case data instead of reloading the page
-    const updatedCase = cases.find(c => c.id === id);
-    if (updatedCase) {
-      setSavCase(updatedCase);
-    }
+    // Plus besoin de refetch, le realtime se charge de la mise à jour
   };
 
   const savePrivateComments = async () => {
@@ -196,7 +220,7 @@ export default function SAVDetail() {
                   <SAVPrintButton savCase={savCase} />
                   <SAVPartsEditor 
                     savCaseId={savCase.id} 
-                    onPartsUpdated={refreshSAVData}
+                    onPartsUpdated={() => {}}
                   />
                 </div>
               </div>
@@ -413,7 +437,7 @@ export default function SAVDetail() {
               {/* Parts Requirements */}
               <SAVPartsRequirements 
                 savCaseId={savCase.id} 
-                onPartsUpdated={refreshSAVData}
+                onPartsUpdated={() => {}}
               />
 
               {/* Status Management and Messaging */}
