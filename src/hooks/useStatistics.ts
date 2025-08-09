@@ -94,8 +94,11 @@ export function useStatistics(period: '7d' | '30d' | '3m' | '6m' | '1y'): Statis
 
         if (savError) throw savError;
 
-        // Ne prendre en compte que les dossiers "ready" et non internes
+        // Séparer les SAV pour les calculs financiers (ready uniquement) et pour les retards (tous les SAV actifs)
         const readySavCases = (savCases || []).filter((c: any) => c.status === 'ready' && c.sav_type !== 'internal');
+        const activeSavCases = (savCases || []).filter((c: any) => 
+          c.status !== 'delivered' && c.status !== 'cancelled' && c.sav_type !== 'internal'
+        );
 
         // Calculer les revenus et dépenses
         let totalRevenue = 0;
@@ -109,6 +112,18 @@ export function useStatistics(period: '7d' | '30d' | '3m' | '6m' | '1y'): Statis
         const dailyData: Record<string, { revenue: number; expenses: number; count: number }> = {};
 
         const currentDate = new Date();
+
+        // D'abord calculer les retards sur TOUS les SAV actifs
+        activeSavCases.forEach((savCase: any) => {
+          const startDate = new Date(savCase.taken_over_at || savCase.created_at);
+          const processingDays = shop.max_sav_processing_days_client || 7;
+          const theoreticalEndDate = new Date(startDate);
+          theoreticalEndDate.setDate(theoreticalEndDate.getDate() + processingDays);
+          
+          if (currentDate > theoreticalEndDate) {
+            lateCount++;
+          }
+        });
 
         readySavCases.forEach((savCase: any) => {
           // Calculer le coût total des pièces
@@ -134,15 +149,7 @@ export function useStatistics(period: '7d' | '30d' | '3m' | '6m' | '1y'): Statis
             partsUsage[partKey].revenue += partRevenue;
           });
 
-          // Calcul du retard - utilise taken_over_at ou created_at
-          const startDate = new Date(savCase.taken_over_at || savCase.created_at);
-          const processingDays = shop.max_sav_processing_days_client || 7;
-          const theoreticalEndDate = new Date(startDate);
-          theoreticalEndDate.setDate(theoreticalEndDate.getDate() + processingDays);
-          
-          if (currentDate > theoreticalEndDate) {
-            lateCount++;
-          }
+          // Calcul du retard déjà fait plus haut pour tous les SAV actifs
 
           // Calculer les prises en charge
           if (savCase.partial_takeover && savCase.takeover_amount) {
@@ -175,8 +182,8 @@ export function useStatistics(period: '7d' | '30d' | '3m' | '6m' | '1y'): Statis
           dailyData[dateKey].count += 1;
         });
 
-        // Calculer le taux de retard
-        const lateRate = readySavCases.length > 0 ? (lateCount / readySavCases.length) * 100 : 0;
+        // Calculer le taux de retard sur TOUS les SAV actifs
+        const lateRate = activeSavCases.length > 0 ? (lateCount / activeSavCases.length) * 100 : 0;
 
         // Préparer les données pour les graphiques
         const chartData = Object.entries(dailyData)
