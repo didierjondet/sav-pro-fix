@@ -95,6 +95,9 @@ export function useStatistics(period: '7d' | '30d' | '3m' | '6m' | '1y'): Statis
 
         if (savError) throw savError;
 
+        // Ne prendre en compte que les dossiers au statut "ready"
+        const readySavCases = (savCases || []).filter((c: any) => c.status === 'ready');
+
         // Calculer les revenus et dépenses
         let totalRevenue = 0;
         let totalExpenses = 0;
@@ -103,7 +106,7 @@ export function useStatistics(period: '7d' | '30d' | '3m' | '6m' | '1y'): Statis
         const partsUsage: Record<string, { quantity: number; revenue: number; name: string }> = {};
         const dailyData: Record<string, { revenue: number; expenses: number; count: number }> = {};
 
-        savCases?.forEach((savCase) => {
+        readySavCases.forEach((savCase: any) => {
           // Calculer le coût total des pièces
           let caseCost = 0;
           let caseRevenue = 0;
@@ -193,18 +196,18 @@ export function useStatistics(period: '7d' | '30d' | '3m' | '6m' | '1y'): Statis
           expenses: totalExpenses,
           profit: totalRevenue - totalExpenses,
           savStats: {
-            total: savCases?.length || 0,
-            averageTime: savCases?.length ? Math.round(totalTime / savCases.length / 60) : 0
+            total: readySavCases.length || 0,
+            averageTime: readySavCases.length ? Math.round(totalTime / readySavCases.length / 60) : 0
           },
           partsStats: {
             totalUsed: Object.values(partsUsage).reduce((sum, part) => sum + part.quantity, 0),
-            averageCost: totalExpenses / (savCases?.length || 1)
+            averageCost: totalExpenses / (readySavCases.length || 1)
           },
           customerStats: {
             active: customers?.length || 0,
             new: newCustomers?.length || 0,
             averageRevenue: totalRevenue / (customers?.length || 1),
-            averageSav: (savCases?.length || 0) / (customers?.length || 1)
+            averageSav: (readySavCases.length || 0) / (customers?.length || 1)
           },
           revenueChart: chartData.map(d => ({ date: d.date, revenue: d.revenue })),
           savCountChart: chartData.map(d => ({ date: d.date, count: d.count })),
