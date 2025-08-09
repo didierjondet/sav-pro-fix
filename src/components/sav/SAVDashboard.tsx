@@ -52,6 +52,7 @@ const statusConfig = {
 };
 export function SAVDashboard() {
   const [searchTerm, setSearchTerm] = useState('');
+  const [typeFilter, setTypeFilter] = useState('all'); // 'all' | 'client' | 'internal' | 'external'
   const [statusFilter, setStatusFilter] = useState('all-except-ready'); // Par défaut, masquer les SAV prêts
   const [isFormOpen, setIsFormOpen] = useState(false);
   const {
@@ -107,6 +108,12 @@ export function SAVDashboard() {
     // Filtrage par recherche textuelle
     const matchesSearch = multiWordSearch(searchTerm, case_.customer?.first_name, case_.customer?.last_name, case_.case_number, case_.device_brand, case_.device_model);
     
+    // Filtrage par type
+    let matchesType = true;
+    if (typeFilter !== 'all') {
+      matchesType = case_.sav_type === typeFilter;
+    }
+
     // Filtrage par statut
     let matchesStatus = true;
     if (statusFilter === 'all-except-ready') {
@@ -117,7 +124,7 @@ export function SAVDashboard() {
       matchesStatus = case_.status === statusFilter;
     }
     
-    return matchesSearch && matchesStatus;
+    return matchesSearch && matchesType && matchesStatus;
   });
   return <div className="space-y-6">
       <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
@@ -192,6 +199,18 @@ export function SAVDashboard() {
           <div className="flex items-center justify-between">
             <CardTitle>Dossiers SAV récents</CardTitle>
             <div className="flex gap-2">
+              <Select value={typeFilter} onValueChange={setTypeFilter}>
+                <SelectTrigger className="w-[200px]">
+                  <Filter className="mr-2 h-4 w-4" />
+                  <SelectValue placeholder="Filtrer par type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tous les types</SelectItem>
+                  <SelectItem value="client">SAV Client</SelectItem>
+                  <SelectItem value="internal">SAV Magasin</SelectItem>
+                  <SelectItem value="external">SAV Externe</SelectItem>
+                </SelectContent>
+              </Select>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="w-[200px]">
                   <Filter className="mr-2 h-4 w-4" />

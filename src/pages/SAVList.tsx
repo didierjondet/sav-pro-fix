@@ -76,6 +76,8 @@ export default function SAVList() {
       filteredByType = casesWithDelay.filter(case_ => case_.sav_type === 'client');
     } else if (filterType === 'internal') {
       filteredByType = casesWithDelay.filter(case_ => case_.sav_type === 'internal');
+    } else if (filterType === 'external') {
+      filteredByType = casesWithDelay.filter(case_ => case_.sav_type === 'external');
     }
 
     // 3. Filtrer par statut
@@ -193,6 +195,7 @@ export default function SAVList() {
                         <SelectItem value="all">Tous les SAV</SelectItem>
                         <SelectItem value="client">SAV Client</SelectItem>
                         <SelectItem value="internal">SAV Magasin</SelectItem>
+                        <SelectItem value="external">SAV Externe</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
