@@ -16,6 +16,7 @@ import { useProfile } from '@/hooks/useProfile';
 import { useSubscription } from '@/hooks/useSubscription';
 import { supabase } from '@/integrations/supabase/client';
 import * as XLSX from 'xlsx';
+import { useSearchParams } from 'react-router-dom';
 
 import { SMSHistory } from '@/components/sms/SMSHistory';
 import { 
@@ -69,6 +70,9 @@ export default function Settings() {
   const { user } = useAuth();
   const { toast } = useToast();
   const { theme, setTheme } = useTheme();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialTab = searchParams.get('tab') || 'shop';
+  const [activeTab, setActiveTab] = useState<string>(initialTab);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -514,7 +518,7 @@ export default function Settings() {
                 <h1 className="text-2xl font-bold">Paramètres</h1>
               </div>
 
-          <Tabs defaultValue="shop" className="space-y-6">
+          <Tabs value={activeTab} onValueChange={(val) => { setActiveTab(val); setSearchParams(prev => { const p = new URLSearchParams(prev); p.set('tab', val); return p; }); }} className="space-y-6">
             <TabsList className="grid w-full grid-cols-6">
               <TabsTrigger value="shop" className="flex items-center gap-2">
                 <Store className="h-4 w-4" />

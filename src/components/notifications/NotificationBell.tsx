@@ -318,12 +318,19 @@ export function NotificationBell() {
                             <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0 ml-2"></div>
                           )}
                         </div>
-                        <p className="text-sm text-muted-foreground mt-1 break-words">
-                          {notification.message}
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-2">
-                          {formatTimeAgo(notification.created_at)}
-                        </p>
+                          <p className="text-sm text-muted-foreground mt-1 break-words">
+                            {notification.message}
+                          </p>
+                          {notification.message?.includes('/settings?tab=import-export') && (
+                            <div className="mt-2">
+                              <Button variant="outline" size="sm" onClick={() => { navigate('/settings?tab=import-export'); handleNotificationClick(notification.id); }}>
+                                Ouvrir la page Export
+                              </Button>
+                            </div>
+                          )}
+                          <p className="text-xs text-muted-foreground mt-2">
+                            {formatTimeAgo(notification.created_at)}
+                          </p>
                       </div>
                     </div>
                   </CardContent>

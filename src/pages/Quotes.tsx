@@ -52,6 +52,15 @@ export default function Quotes() {
   const { shop } = useShop();
   const { toast } = useToast();
 
+  const formatCustomerDisplay = (name: string) => {
+    if (!name) return '';
+    const parts = name.trim().split(/\s+/);
+    if (parts.length < 2) return name;
+    const last = parts[parts.length - 1];
+    const first = parts.slice(0, parts.length - 1).join(' ');
+    return `${last.toUpperCase()} ${first.toLowerCase()}`;
+  };
+
   const filteredQuotes = quotes.filter(quote =>
     quote.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     quote.quote_number.toLowerCase().includes(searchTerm.toLowerCase())
@@ -338,7 +347,7 @@ const handleStatusChange = async (quote: Quote, newStatus: Quote['status']) => {
                             <div className="flex items-center justify-between">
                               <div className="flex-1">
                                 <div className="flex items-center gap-4 mb-2">
-                                  <h3 className="font-semibold text-lg">{quote.customer_name}</h3>
+                                  <h3 className="font-semibold text-lg">{formatCustomerDisplay(quote.customer_name)}</h3>
                                   <Badge variant="outline">
                                     {quote.quote_number}
                                   </Badge>

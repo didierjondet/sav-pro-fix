@@ -324,7 +324,7 @@ export default function SAVList() {
                           {savCase.customer && (
                             <div className="flex items-center gap-2">
                               <User className="h-4 w-4" />
-                              <span>{savCase.customer.first_name} {savCase.customer.last_name}</span>
+                              <span>{savCase.customer.last_name} {savCase.customer.first_name}</span>
                             </div>
                           )}
                           
