@@ -17,6 +17,7 @@ import { useShop } from '@/hooks/useShop';
 import { useSAVPartsCosts } from '@/hooks/useSAVPartsCosts';
 import { useSAVUnreadMessages } from '@/hooks/useSAVUnreadMessages';
 import { formatDelayText, DelayInfo, calculateSAVDelay } from '@/hooks/useSAVDelay';
+import { ReviewRequestButton } from './ReviewRequestButton';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -302,7 +303,16 @@ export function SAVDashboard() {
                     </TableCell>
                     <TableCell>{(case_.total_cost || 0).toFixed(2)}€</TableCell>
                     <TableCell className="text-right">
-                      <DropdownMenu>
+                      <div className="flex items-center justify-end gap-2">
+                        {case_.status === 'ready' && (
+                          <ReviewRequestButton
+                            savCaseId={case_.id}
+                            shopId={case_.shop_id}
+                            customerName={case_.customer ? `${case_.customer.first_name} ${case_.customer.last_name}`.trim() : ''}
+                            caseNumber={case_.case_number}
+                          />
+                        )}
+                        <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" className="h-8 w-8 p-0">
                             <MoreHorizontal className="h-4 w-4" />
@@ -327,6 +337,7 @@ export function SAVDashboard() {
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
+                      </div>
                     </TableCell>
                   </TableRow>;
             })}

@@ -19,6 +19,7 @@ import { SAVPartsRequirements } from '@/components/sav/SAVPartsRequirements';
 import { SendSMSButton } from '@/components/sms/SendSMSButton';
 import { SMSTrackingButton } from '@/components/sms/SMSTrackingButton';
 import { SAVPrintButton } from '@/components/sav/SAVPrint';
+import { ReviewRequestButton } from '@/components/sav/ReviewRequestButton';
 
 export default function SAVDetail() {
   const { id } = useParams<{ id: string }>();
@@ -395,6 +396,14 @@ export default function SAVDetail() {
                           variant="default"
                           size="sm"
                           className="flex-1 sm:flex-initial"
+                        />
+                      )}
+                      {savCase.status === 'ready' && (
+                        <ReviewRequestButton
+                          savCaseId={savCase.id}
+                          shopId={savCase.shop_id}
+                          customerName={`${savCase.customer?.first_name || ''} ${savCase.customer?.last_name || ''}`.trim()}
+                          caseNumber={savCase.case_number}
                         />
                       )}
                     </div>

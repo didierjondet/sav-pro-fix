@@ -362,6 +362,7 @@ export type Database = {
           id: string
           items: Json
           problem_description: string | null
+          quote_date: string | null
           quote_number: string
           repair_notes: string | null
           shop_id: string
@@ -382,6 +383,7 @@ export type Database = {
           id?: string
           items?: Json
           problem_description?: string | null
+          quote_date?: string | null
           quote_number: string
           repair_notes?: string | null
           shop_id: string
@@ -402,6 +404,7 @@ export type Database = {
           id?: string
           items?: Json
           problem_description?: string | null
+          quote_date?: string | null
           quote_number?: string
           repair_notes?: string | null
           shop_id?: string
@@ -438,6 +441,7 @@ export type Database = {
           sku: string | null
           status: Database["public"]["Enums"]["sav_status"]
           taken_over: boolean
+          taken_over_at: string | null
           takeover_amount: number | null
           technician_id: string | null
           total_cost: number | null
@@ -462,6 +466,7 @@ export type Database = {
           sku?: string | null
           status?: Database["public"]["Enums"]["sav_status"]
           taken_over?: boolean
+          taken_over_at?: string | null
           takeover_amount?: number | null
           technician_id?: string | null
           total_cost?: number | null
@@ -486,6 +491,7 @@ export type Database = {
           sku?: string | null
           status?: Database["public"]["Enums"]["sav_status"]
           taken_over?: boolean
+          taken_over_at?: string | null
           takeover_amount?: number | null
           technician_id?: string | null
           total_cost?: number | null
@@ -706,6 +712,7 @@ export type Database = {
           max_sav_processing_days_internal: number | null
           name: string
           phone: string | null
+          review_link: string | null
           slug: string | null
           sms_credits_allocated: number | null
           sms_credits_used: number | null
@@ -731,6 +738,7 @@ export type Database = {
           max_sav_processing_days_internal?: number | null
           name: string
           phone?: string | null
+          review_link?: string | null
           slug?: string | null
           sms_credits_allocated?: number | null
           sms_credits_used?: number | null
@@ -756,6 +764,7 @@ export type Database = {
           max_sav_processing_days_internal?: number | null
           name?: string
           phone?: string | null
+          review_link?: string | null
           slug?: string | null
           sms_credits_allocated?: number | null
           sms_credits_used?: number | null

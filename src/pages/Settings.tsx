@@ -36,7 +36,8 @@ import {
   Image as ImageIcon,
   Moon,
   Sun,
-  Monitor
+  Monitor,
+  Star
 } from 'lucide-react';
 import { useTheme } from "next-themes";
 import { Switch } from '@/components/ui/switch';
@@ -94,6 +95,7 @@ const [logoUploading, setLogoUploading] = useState(false);
     phone: '',
     address: '',
     logo_url: '',
+    review_link: '',
     max_sav_processing_days_client: 7,
     max_sav_processing_days_internal: 5
   });
@@ -118,6 +120,7 @@ const [logoUploading, setLogoUploading] = useState(false);
         phone: shop.phone || '',
         address: shop.address || '',
         logo_url: shop.logo_url || '',
+        review_link: (shop as any).review_link || '',
         max_sav_processing_days_client: shop.max_sav_processing_days_client || 7,
         max_sav_processing_days_internal: shop.max_sav_processing_days_internal || 5
       });
@@ -709,6 +712,28 @@ const handleExportParts = async (format: 'csv' | 'xlsx') => {
                     <p className="text-sm text-muted-foreground mt-2">
                       Délai maximum pour traiter les dossiers SAV. Les dossiers dépassant ce délai seront mis en surbrillance.
                     </p>
+                  </div>
+
+                  <div className="p-4 border rounded-lg">
+                    <h4 className="font-medium mb-4 flex items-center gap-2">
+                      <Star className="h-4 w-4" />
+                      Avis Google
+                    </h4>
+                    <div>
+                      <Label htmlFor="review-link">Lien vers votre page d'avis Google</Label>
+                      <Input
+                        id="review-link"
+                        type="url"
+                        value={shopForm.review_link}
+                        onChange={(e) => setShopForm({...shopForm, review_link: e.target.value})}
+                        disabled={!isAdmin}
+                        placeholder="https://g.page/r/..."
+                      />
+                      <p className="text-sm text-muted-foreground mt-2">
+                        Ce lien sera utilisé pour demander aux clients de laisser un avis après réparation. 
+                        Vous pouvez trouver votre lien d'avis dans Google My Business.
+                      </p>
+                    </div>
                   </div>
 
                   {isAdmin && (
