@@ -264,6 +264,7 @@ export type Database = {
           reference: string | null
           selling_price: number | null
           shop_id: string | null
+          time_minutes: number
           updated_at: string
         }
         Insert: {
@@ -277,6 +278,7 @@ export type Database = {
           reference?: string | null
           selling_price?: number | null
           shop_id?: string | null
+          time_minutes?: number
           updated_at?: string
         }
         Update: {
@@ -290,6 +292,7 @@ export type Database = {
           reference?: string | null
           selling_price?: number | null
           shop_id?: string | null
+          time_minutes?: number
           updated_at?: string
         }
         Relationships: [
