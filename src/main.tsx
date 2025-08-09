@@ -22,6 +22,8 @@ import Subscription from './pages/Subscription';
 import ShopWebsite from './pages/ShopWebsite';
 import Landing from './pages/Landing';
 import Statistics from './pages/Statistics';
+import RevenueDetails from './pages/RevenueDetails';
+import ExpensesDetails from './pages/ExpensesDetails';
 import ClientChats from './pages/ClientChats';
 import NotFound from './pages/NotFound';
 import SubscriptionSuccess from './pages/SubscriptionSuccess';
@@ -64,6 +66,14 @@ function App() {
               <Route path="/client-chats/*" element={<ClientChats />} />
               <Route path="/chats" element={<ClientChats />} />
               <Route path="/statistics" element={<Statistics />} />
+              <Route path="/statistics/revenue" element={<RevenueDetails />} />
+              <Route path="/statistics/revenue/*" element={<RevenueDetails />} />
+              <Route path="/statistics/expenses" element={<ExpensesDetails />} />
+              <Route path="/statistics/expenses/*" element={<ExpensesDetails />} />
+              <Route path="/stats/revenue" element={<RevenueDetails />} />
+              <Route path="/stats/revenue/*" element={<RevenueDetails />} />
+              <Route path="/stats/expenses" element={<ExpensesDetails />} />
+              <Route path="/stats/expenses/*" element={<ExpensesDetails />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Router>
