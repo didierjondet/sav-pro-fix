@@ -21,6 +21,7 @@ import Support from './pages/Support';
 import Subscription from './pages/Subscription';
 import ShopWebsite from './pages/ShopWebsite';
 import Landing from './pages/Landing';
+import PublicLanding from './pages/PublicLanding';
 import Statistics from './pages/Statistics';
 import RevenueDetails from './pages/RevenueDetails';
 import ExpensesDetails from './pages/ExpensesDetails';
@@ -43,7 +44,7 @@ function App() {
             <Routes>
               <Route path="/dashboard" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
-              <Route path="/" element={<Landing />} />
+              <Route path="/" element={<PublicLanding />} />
               <Route path="/customers" element={<Customers />} />
               <Route path="/parts" element={<Parts />} />
               <Route path="/quotes" element={<Quotes />} />
