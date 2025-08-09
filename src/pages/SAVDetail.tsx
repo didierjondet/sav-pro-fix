@@ -18,6 +18,7 @@ import { SAVPartsEditor } from '@/components/sav/SAVPartsEditor';
 import { SAVPartsRequirements } from '@/components/sav/SAVPartsRequirements';
 import { SendSMSButton } from '@/components/sms/SendSMSButton';
 import { SMSTrackingButton } from '@/components/sms/SMSTrackingButton';
+import { SAVPrintButton } from '@/components/sav/SAVPrint';
 
 export default function SAVDetail() {
   const { id } = useParams<{ id: string }>();
@@ -186,6 +187,7 @@ export default function SAVDetail() {
                   <Badge variant={statusConfig[savCase.status as keyof typeof statusConfig]?.variant || 'secondary'}>
                     {statusConfig[savCase.status as keyof typeof statusConfig]?.label || savCase.status}
                   </Badge>
+                  <SAVPrintButton savCase={savCase} />
                   <SAVPartsEditor 
                     savCaseId={savCase.id} 
                     onPartsUpdated={() => {
