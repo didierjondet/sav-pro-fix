@@ -19,6 +19,7 @@ import * as XLSX from 'xlsx';
 import { useSearchParams } from 'react-router-dom';
 
 import { SMSHistory } from '@/components/sms/SMSHistory';
+import { ImportStock } from '@/components/parts/ImportStock';
 import { 
   Store, 
   Users, 
@@ -83,7 +84,8 @@ export default function Settings() {
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState<'admin' | 'technician' | 'super_admin' | 'shop_admin'>('technician');
-  const [logoUploading, setLogoUploading] = useState(false);
+const [logoUploading, setLogoUploading] = useState(false);
+  const [showStockImport, setShowStockImport] = useState(false);
   
   // Local state for form data
   const [shopForm, setShopForm] = useState({
@@ -480,6 +482,56 @@ export default function Settings() {
       return printTablePDF('Export - Tous les SAV (complet)', headers, rows);
     } catch (e: any) {
       toast({ title: 'Erreur', description: e.message || 'Export SAV impossible', variant: 'destructive' });
+    }
+  };
+
+const handleExportParts = async (format: 'csv' | 'xlsx') => {
+    try {
+      const query = supabase
+        .from('parts' as any)
+        .select('*')
+        .order('name', { ascending: true });
+      const { data, error } = shop?.id ? await query.eq('shop_id', shop.id) : await query;
+      if (error) throw error;
+      const parts = (data || []) as any[];
+
+      const headers = [
+        'ID', 'Créé le', 'Mis à jour le', 'Nom', 'Référence', 'Quantité', 'Stock mini',
+        'Prix achat', 'Prix vente', 'Temps (min)', 'Notes', 'Shop ID'
+      ];
+
+      const rows = parts.map(p => [
+        p.id,
+        new Date(p.created_at).toLocaleString('fr-FR'),
+        new Date(p.updated_at).toLocaleString('fr-FR'),
+        p.name || '',
+        p.reference || '',
+        p.quantity ?? 0,
+        p.min_stock ?? 0,
+        Number(p.purchase_price || 0).toFixed(2),
+        Number(p.selling_price || 0).toFixed(2),
+        p.time_minutes ?? 0,
+        p.notes || '',
+        p.shop_id || ''
+      ]);
+
+      if (format === 'csv') return buildAndDownloadCSV('stock_pieces', headers, rows);
+      if (format === 'xlsx') return exportToExcel('stock_pieces', parts.map(p => ({
+        'ID': p.id,
+        'Créé le': new Date(p.created_at).toLocaleString('fr-FR'),
+        'Mis à jour le': new Date(p.updated_at).toLocaleString('fr-FR'),
+        'Nom': p.name || '',
+        'Référence': p.reference || '',
+        'Quantité': p.quantity ?? 0,
+        'Stock mini': p.min_stock ?? 0,
+        'Prix achat': Number(p.purchase_price || 0),
+        'Prix vente': Number(p.selling_price || 0),
+        'Temps (min)': p.time_minutes ?? 0,
+        'Notes': p.notes || '',
+        'Shop ID': p.shop_id || ''
+      })));
+    } catch (e: any) {
+      toast({ title: 'Erreur', description: e.message || 'Export stock impossible', variant: 'destructive' });
     }
   };
 
@@ -1087,36 +1139,50 @@ export default function Settings() {
             )}
 
             <TabsContent value="import-export" className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Exporter les Devis</CardTitle>
-                </CardHeader>
-                <CardContent className="flex flex-wrap gap-2">
-                  <Button variant="outline" onClick={() => handleExportQuotes('csv')}>Exporter CSV</Button>
-                  <Button variant="outline" onClick={() => handleExportQuotes('xlsx')}>Exporter Excel</Button>
-                  <Button variant="outline" onClick={() => handleExportQuotes('pdf')}>Exporter PDF</Button>
-                </CardContent>
-              </Card>
+              {showStockImport ? (
+                <ImportStock
+                  onBack={() => setShowStockImport(false)}
+                  onRefresh={() => {
+                    toast({ title: 'Import stock', description: 'Import terminé avec succès.' });
+                    setShowStockImport(false);
+                  }}
+                />
+              ) : (
+                <>
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Exporter les Devis</CardTitle>
+                    </CardHeader>
+                    <CardContent className="flex flex-wrap gap-2">
+                      <Button variant="outline" onClick={() => handleExportQuotes('csv')}>Exporter CSV</Button>
+                      <Button variant="outline" onClick={() => handleExportQuotes('xlsx')}>Exporter Excel</Button>
+                      <Button variant="outline" onClick={() => handleExportQuotes('pdf')}>Exporter PDF</Button>
+                    </CardContent>
+                  </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>Exporter les SAV</CardTitle>
-                </CardHeader>
-                <CardContent className="flex flex-wrap gap-2">
-                  <Button variant="outline" onClick={() => handleExportSAVs('csv')}>Exporter CSV</Button>
-                  <Button variant="outline" onClick={() => handleExportSAVs('xlsx')}>Exporter Excel</Button>
-                  <Button variant="outline" onClick={() => handleExportSAVs('pdf')}>Exporter PDF</Button>
-                </CardContent>
-              </Card>
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Exporter les SAV</CardTitle>
+                    </CardHeader>
+                    <CardContent className="flex flex-wrap gap-2">
+                      <Button variant="outline" onClick={() => handleExportSAVs('csv')}>Exporter CSV</Button>
+                      <Button variant="outline" onClick={() => handleExportSAVs('xlsx')}>Exporter Excel</Button>
+                      <Button variant="outline" onClick={() => handleExportSAVs('pdf')}>Exporter PDF</Button>
+                    </CardContent>
+                  </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>Import (bientôt)</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2 text-sm text-muted-foreground">
-                  <p>Import de SAV et Devis via CSV/Excel arrivera prochainement.</p>
-                </CardContent>
-              </Card>
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Stock (Pièces)</CardTitle>
+                    </CardHeader>
+                    <CardContent className="flex flex-wrap gap-2">
+                      <Button variant="outline" onClick={() => handleExportParts('csv')}>Exporter CSV</Button>
+                      <Button variant="outline" onClick={() => handleExportParts('xlsx')}>Exporter Excel</Button>
+                      <Button onClick={() => setShowStockImport(true)}>Importer le stock</Button>
+                    </CardContent>
+                  </Card>
+                </>
+              )}
             </TabsContent>
 
           </Tabs>

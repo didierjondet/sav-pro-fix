@@ -13,7 +13,7 @@ import { Upload, FileText, CheckCircle, AlertCircle, ArrowLeft, Settings } from 
 import Papa from 'papaparse';
 import * as XLSX from 'xlsx';
 import { useImportConfigurations, type ColumnMapping, type ImportConfiguration } from '@/hooks/useImportConfigurations';
-import { ImportConfigurationManager } from './ImportConfigurationManager';
+import { ImportConfigurationManager } from '@/components/parts/ImportConfigurationManager';
 
 interface ImportedPart {
   marque: string;
