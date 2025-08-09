@@ -117,7 +117,15 @@ export function SAVStatusManager({ savCase, onStatusUpdated }: SAVStatusManagerP
       }
 
       // Envoi automatique de demande d'avis si le statut passe à "ready" et que c'est activé
+      console.log('Vérification envoi automatique d\'avis:', {
+        selectedStatus,
+        currentStatus: savCase.status,
+        savType: savCase.sav_type,
+        shouldSend: selectedStatus === 'ready' && savCase.status !== 'ready' && savCase.sav_type === 'client'
+      });
+      
       if (selectedStatus === 'ready' && savCase.status !== 'ready' && savCase.sav_type === 'client') {
+        console.log('Envoi de la demande d\'avis automatique...');
         await sendAutomaticReviewRequest();
       }
       
@@ -139,6 +147,7 @@ export function SAVStatusManager({ savCase, onStatusUpdated }: SAVStatusManagerP
   const sendAutomaticReviewRequest = async () => {
     try {
       // Vérifier si l'envoi automatique est activé
+      console.log('Récupération des paramètres de boutique pour l\'avis...');
       const { data: shopData, error: shopError } = await supabase
         .from('shops')
         .select('auto_review_enabled, review_link, name')
@@ -146,12 +155,15 @@ export function SAVStatusManager({ savCase, onStatusUpdated }: SAVStatusManagerP
         .single();
 
       if (shopError || !shopData) {
-        console.log('Impossible de récupérer les paramètres de boutique pour l\'envoi automatique d\'avis');
+        console.log('Impossible de récupérer les paramètres de boutique pour l\'envoi automatique d\'avis', shopError);
         return;
       }
 
+      console.log('Paramètres boutique pour avis:', shopData);
+
       // Si l'envoi automatique n'est pas activé ou pas de lien d'avis configuré, ne rien faire
       if (!shopData.auto_review_enabled || !shopData.review_link) {
+        console.log('Envoi automatique désactivé ou pas de lien d\'avis configuré');
         return;
       }
 
@@ -170,6 +182,7 @@ Merci pour votre confiance ! 😊
 L'équipe ${shopData.name || 'de réparation'}`;
 
       // Envoyer le message dans le chat SAV
+      console.log('Envoi du message d\'avis dans le chat SAV...');
       const { error } = await supabase
         .from('sav_messages')
         .insert([{
@@ -187,6 +200,7 @@ L'équipe ${shopData.name || 'de réparation'}`;
         return;
       }
 
+      console.log('Message d\'avis envoyé avec succès');
       toast({
         title: "Demande d'avis envoyée",
         description: "Une demande d'avis automatique a été envoyée au client.",
