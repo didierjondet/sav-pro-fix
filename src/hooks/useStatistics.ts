@@ -22,6 +22,7 @@ interface StatisticsData {
   };
   revenueChart: Array<{ date: string; revenue: number }>;
   savCountChart: Array<{ date: string; count: number }>;
+  lateRateChart: Array<{ date: string; lateRate: number }>;
   profitabilityChart: Array<{ date: string; revenue: number; expenses: number; profit: number }>;
   topParts: Array<{ name: string; quantity: number; revenue: number }>;
   savStatusDistribution: Array<{ name: string; value: number }>;
@@ -39,6 +40,7 @@ export function useStatistics(period: '7d' | '30d' | '3m' | '6m' | '1y'): Statis
     takeoverStats: { amount: 0, count: 0 },
     revenueChart: [],
     savCountChart: [],
+    lateRateChart: [],
     profitabilityChart: [],
     topParts: [],
     savStatusDistribution: []
@@ -114,10 +116,18 @@ export function useStatistics(period: '7d' | '30d' | '3m' | '6m' | '1y'): Statis
         let lateCount = 0;
         const statusCounts: Record<string, number> = {};
         const partsUsage: Record<string, { quantity: number; revenue: number; name: string }> = {};
-        const dailyData: Record<string, { revenue: number; expenses: number; count: number }> = {};
+        const dailyData: Record<string, { revenue: number; expenses: number; count: number; lateCount: number; activeCount: number }> = {};
 
         const currentDate = new Date();
         console.log('🔍 Debug retard - Date actuelle:', currentDate.toISOString());
+
+        // Calculer les données journalières pour tous les SAV (actifs et ready)
+        (savCases || []).forEach((savCase: any) => {
+          const dateKey = format(new Date(savCase.created_at), 'yyyy-MM-dd');
+          if (!dailyData[dateKey]) {
+            dailyData[dateKey] = { revenue: 0, expenses: 0, count: 0, lateCount: 0, activeCount: 0 };
+          }
+        });
 
         // D'abord calculer les retards sur TOUS les SAV actifs
         activeSavCases.forEach((savCase: any) => {
@@ -126,6 +136,16 @@ export function useStatistics(period: '7d' | '30d' | '3m' | '6m' | '1y'): Statis
           const processingDays = shop.max_sav_processing_days_client || 7;
           const theoreticalEndDate = new Date(startDate);
           theoreticalEndDate.setDate(theoreticalEndDate.getDate() + processingDays);
+          
+          const dateKey = format(new Date(savCase.created_at), 'yyyy-MM-dd');
+          if (dailyData[dateKey]) {
+            dailyData[dateKey].activeCount++;
+            
+            if (currentDate > theoreticalEndDate) {
+              dailyData[dateKey].lateCount++;
+              lateCount++;
+            }
+          }
           
           console.log(`🔍 SAV ${savCase.case_number}:`, {
             status: savCase.status,
@@ -136,10 +156,6 @@ export function useStatistics(period: '7d' | '30d' | '3m' | '6m' | '1y'): Statis
             isLate: currentDate > theoreticalEndDate,
             daysDiff: Math.floor((currentDate.getTime() - theoreticalEndDate.getTime()) / (1000 * 60 * 60 * 24))
           });
-          
-          if (currentDate > theoreticalEndDate) {
-            lateCount++;
-          }
         });
 
         readySavCases.forEach((savCase: any) => {
@@ -166,8 +182,6 @@ export function useStatistics(period: '7d' | '30d' | '3m' | '6m' | '1y'): Statis
             partsUsage[partKey].revenue += partRevenue;
           });
 
-          // Calcul du retard déjà fait plus haut pour tous les SAV actifs
-
           // Calculer les prises en charge
           if (savCase.partial_takeover && savCase.takeover_amount) {
             takeoverAmount += Number(savCase.takeover_amount) || 0;
@@ -189,14 +203,13 @@ export function useStatistics(period: '7d' | '30d' | '3m' | '6m' | '1y'): Statis
           const status = savCase.status;
           statusCounts[status] = (statusCounts[status] || 0) + 1;
 
-          // Données journalières
+          // Données journalières pour revenus/expenses
           const dateKey = format(new Date(savCase.created_at), 'yyyy-MM-dd');
-          if (!dailyData[dateKey]) {
-            dailyData[dateKey] = { revenue: 0, expenses: 0, count: 0 };
+          if (dailyData[dateKey]) {
+            dailyData[dateKey].revenue += caseRevenue;
+            dailyData[dateKey].expenses += caseCost;
+            dailyData[dateKey].count += 1;
           }
-          dailyData[dateKey].revenue += caseRevenue;
-          dailyData[dateKey].expenses += caseCost;
-          dailyData[dateKey].count += 1;
         });
 
         // Calculer le taux de retard sur TOUS les SAV actifs
@@ -216,7 +229,8 @@ export function useStatistics(period: '7d' | '30d' | '3m' | '6m' | '1y'): Statis
             revenue: data.revenue,
             expenses: data.expenses,
             profit: data.revenue - data.expenses,
-            count: data.count
+            count: data.count,
+            lateRate: data.activeCount > 0 ? (data.lateCount / data.activeCount) * 100 : 0
           }));
 
         const topPartsArray = Object.values(partsUsage)
@@ -251,6 +265,7 @@ export function useStatistics(period: '7d' | '30d' | '3m' | '6m' | '1y'): Statis
           },
           revenueChart: chartData.map(d => ({ date: d.date, revenue: d.revenue })),
           savCountChart: chartData.map(d => ({ date: d.date, count: d.count })),
+          lateRateChart: chartData.map(d => ({ date: d.date, lateRate: d.lateRate })),
           profitabilityChart: chartData.map(d => ({ 
             date: d.date, 
             revenue: d.revenue, 

@@ -20,6 +20,7 @@ export default function Statistics() {
     takeoverStats,
     revenueChart,
     savCountChart,
+    lateRateChart,
     profitabilityChart,
     topParts,
     savStatusDistribution,
@@ -196,6 +197,25 @@ export default function Statistics() {
                         <ChartTooltip content={<ChartTooltipContent />} />
                         <Bar dataKey="quantity" fill="var(--color-quantity)" radius={4} />
                       </BarChart>
+                    </ChartContainer>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Évolution du taux de retard</CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-4">
+                    <ChartContainer
+                      config={{ lateRate: { label: "Taux de retard (%)", color: "hsl(var(--destructive))" } }}
+                      className="h-72"
+                    >
+                      <LineChart data={lateRateChart}>
+                        <XAxis dataKey="date" tickLine={false} axisLine={false} />
+                        <YAxis domain={[0, 100]} tickFormatter={(v) => `${v}%`} tickLine={false} axisLine={false} />
+                        <ChartTooltip content={<ChartTooltipContent />} />
+                        <Line type="monotone" dataKey="lateRate" stroke="var(--color-lateRate)" strokeWidth={2} dot={true} />
+                      </LineChart>
                     </ChartContainer>
                   </CardContent>
                 </Card>
