@@ -4,8 +4,8 @@ import { Sidebar } from '@/components/layout/Sidebar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useStatistics } from '@/hooks/useStatistics';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, BarChart, Bar, PieChart, Pie, Cell, Legend } from 'recharts';
-import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from '@/components/ui/chart';
+import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, BarChart, Bar, Legend } from 'recharts';
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 export default function Statistics() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [period, setPeriod] = useState<'7d' | '30d' | '3m' | '6m' | '1y'>('30d');
@@ -209,24 +209,6 @@ export default function Statistics() {
                   </CardContent>
                 </Card>
 
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Répartition des statuts</CardTitle>
-                  </CardHeader>
-                  <CardContent className="pt-4">
-                    <ChartContainer config={{}} className="h-72">
-                      <PieChart>
-                        <Pie data={savStatusDistribution} dataKey="value" nameKey="name" outerRadius={100}>
-                          {savStatusDistribution.map((_, idx) => (
-                            <Cell key={idx} fill={`hsl(var(--primary) / ${0.3 + idx * 0.12})`} />
-                          ))}
-                        </Pie>
-                        <ChartTooltip content={<ChartTooltipContent />} />
-                        <ChartLegend content={<ChartLegendContent />} />
-                      </PieChart>
-                    </ChartContainer>
-                  </CardContent>
-                </Card>
               </div>
             </div>
           </main>
