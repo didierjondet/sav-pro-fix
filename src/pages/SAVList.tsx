@@ -350,7 +350,7 @@ export default function SAVList() {
                           Voir
                         </Button>
                         
-                        {savCase.sav_type === 'client' && savCase.customer?.phone && savCase.tracking_slug && (
+                        {(savCase.sav_type === 'client' || savCase.sav_type === 'external') && savCase.customer?.phone && savCase.tracking_slug && (
                           <SMSTrackingButton
                             recipientPhone={savCase.customer.phone}
                             recipientName={`${savCase.customer.first_name} ${savCase.customer.last_name}`}
@@ -362,7 +362,7 @@ export default function SAVList() {
                           />
                         )}
                         
-                        {savCase.sav_type === 'client' && (
+                        {(savCase.sav_type === 'client' || savCase.sav_type === 'external') && (
                           <Dialog>
                             <DialogTrigger asChild>
                               <Button variant="outline" size="sm">
