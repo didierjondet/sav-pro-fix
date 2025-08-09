@@ -121,13 +121,16 @@ export function useStatistics(period: '7d' | '30d' | '3m' | '6m' | '1y'): Statis
 
         // D'abord calculer les retards sur TOUS les SAV actifs
         activeSavCases.forEach((savCase: any) => {
-          const startDate = new Date(savCase.taken_over_at || savCase.created_at);
+          // Utiliser created_at comme date de référence
+          const startDate = new Date(savCase.created_at);
           const processingDays = shop.max_sav_processing_days_client || 7;
           const theoreticalEndDate = new Date(startDate);
           theoreticalEndDate.setDate(theoreticalEndDate.getDate() + processingDays);
           
           console.log(`🔍 SAV ${savCase.case_number}:`, {
             status: savCase.status,
+            created_at: savCase.created_at,
+            taken_over_at: savCase.taken_over_at,
             startDate: startDate.toISOString(),
             theoreticalEnd: theoreticalEndDate.toISOString(),
             isLate: currentDate > theoreticalEndDate,
