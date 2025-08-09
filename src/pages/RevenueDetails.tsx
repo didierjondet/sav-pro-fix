@@ -49,6 +49,7 @@ export default function RevenueDetails() {
         .select('*, customer:customers(*), sav_parts(*, part:parts(*))')
         .eq('shop_id', shop.id)
         .eq('status', 'ready')
+        .neq('sav_type', 'internal')
         .gte('created_at', start.toISOString())
         .lte('created_at', end.toISOString())
         .order('created_at', { ascending: false });

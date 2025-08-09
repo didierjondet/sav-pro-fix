@@ -179,10 +179,10 @@ export function SAVDashboard() {
             <CardTitle className="text-sm font-medium">Marge</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className={`text-2xl font-bold ${!costsLoading && costs.monthly_revenue - costs.takeover_cost - costs.internal_cost - costs.client_cost < 0 ? 'text-destructive' : 'text-primary'}`}>
-              {costsLoading ? '...' : (costs.monthly_revenue - costs.takeover_cost - costs.internal_cost - costs.client_cost).toFixed(2)}€
+            <div className={`text-2xl font-bold ${!costsLoading && (costs.monthly_revenue - costs.takeover_cost - costs.client_cost - costs.external_cost) < 0 ? 'text-destructive' : 'text-primary'}`}>
+              {costsLoading ? '...' : (costs.monthly_revenue - costs.takeover_cost - costs.client_cost - costs.external_cost).toFixed(2)}€
             </div>
-            <p className="text-xs text-muted-foreground">CA - Coûts totaux</p>
+            <p className="text-xs text-muted-foreground">CA - Coûts (hors interne)</p>
           </CardContent>
         </Card>
       </div>

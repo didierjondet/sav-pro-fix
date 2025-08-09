@@ -4,9 +4,10 @@ import { useToast } from '@/hooks/use-toast';
 
 export interface SAVPartsCost {
   takeover_cost: number;     // Coût prise en charge (SAV client taken_over = true)
-  internal_cost: number;     // Coût SAV magasin 
+  internal_cost: number;     // Coût SAV magasin (à exclure des marges/CA)
   client_cost: number;       // Coût SAV client (taken_over = false)
-  monthly_revenue: number;   // CA du mois (SAV ready uniquement)
+  external_cost: number;     // Coût SAV externe (inclus dans les marges/CA)
+  monthly_revenue: number;   // CA (SAV prêts non internes + devis acceptés)
 }
 
 export function useSAVPartsCosts() {
@@ -14,6 +15,7 @@ export function useSAVPartsCosts() {
     takeover_cost: 0,
     internal_cost: 0,
     client_cost: 0,
+    external_cost: 0,
     monthly_revenue: 0,
   });
   const [loading, setLoading] = useState(true);
@@ -37,6 +39,7 @@ export function useSAVPartsCosts() {
       let takeover_cost = 0;
       let internal_cost = 0;
       let client_cost = 0;
+      let external_cost = 0;
       let monthly_revenue = 0;
 
       if (partsData) {
@@ -57,10 +60,12 @@ export function useSAVPartsCosts() {
               // SAV entièrement à la charge du client
               client_cost += partCost;
             }
-          } else if (savCase.sav_type === 'internal') {
-            internal_cost += partCost;
-          }
-        });
+            } else if (savCase.sav_type === 'internal') {
+              internal_cost += partCost;
+            } else if (savCase.sav_type === 'external') {
+              external_cost += partCost;
+            }
+          });
       }
 
       // Calculer le CA du mois (SAV ready uniquement)
@@ -92,6 +97,7 @@ export function useSAVPartsCosts() {
         takeover_cost,
         internal_cost,
         client_cost,
+        external_cost,
         monthly_revenue,
       });
     } catch (error: any) {

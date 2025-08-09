@@ -48,6 +48,7 @@ export default function ExpensesDetails() {
         .select('id, case_number, created_at, sav_parts(*, part:parts(*))')
         .eq('shop_id', shop.id)
         .eq('status', 'ready')
+        .neq('sav_type', 'internal')
         .gte('created_at', start.toISOString())
         .lte('created_at', end.toISOString())
         .order('created_at', { ascending: false });

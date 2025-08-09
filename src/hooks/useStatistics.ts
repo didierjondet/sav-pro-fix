@@ -95,8 +95,8 @@ export function useStatistics(period: '7d' | '30d' | '3m' | '6m' | '1y'): Statis
 
         if (savError) throw savError;
 
-        // Ne prendre en compte que les dossiers au statut "ready"
-        const readySavCases = (savCases || []).filter((c: any) => c.status === 'ready');
+        // Ne prendre en compte que les dossiers "ready" et non internes
+        const readySavCases = (savCases || []).filter((c: any) => c.status === 'ready' && c.sav_type !== 'internal');
 
         // Calculer les revenus et dépenses
         let totalRevenue = 0;
