@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useStatistics } from '@/hooks/useStatistics';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, BarChart, Bar, Legend } from 'recharts';
+import { Medal, Trophy, Award } from 'lucide-react';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 export default function Statistics() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -43,6 +44,20 @@ export default function Statistics() {
   }
 
   const formatCurrency = (v: number) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(v || 0);
+
+  const getPodiumIcon = (index: number) => {
+    if (index === 0) return <Trophy className="w-6 h-6 text-yellow-500" />;
+    if (index === 1) return <Medal className="w-6 h-6 text-gray-400" />;
+    if (index === 2) return <Award className="w-6 h-6 text-amber-600" />;
+    return <div className="w-6 h-6 flex items-center justify-center text-lg font-bold text-muted-foreground">{index + 1}</div>;
+  };
+
+  const getPodiumBg = (index: number) => {
+    if (index === 0) return "bg-gradient-to-r from-yellow-50 to-yellow-100 border-yellow-200";
+    if (index === 1) return "bg-gradient-to-r from-gray-50 to-gray-100 border-gray-200";
+    if (index === 2) return "bg-gradient-to-r from-amber-50 to-amber-100 border-amber-200";
+    return "bg-gradient-to-r from-slate-50 to-slate-100 border-slate-200";
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -224,20 +239,46 @@ export default function Statistics() {
 
                 <Card>
                   <CardHeader>
-                    <CardTitle>Podium des téléphones</CardTitle>
+                    <CardTitle>🏆 Podium des téléphones</CardTitle>
                   </CardHeader>
                   <CardContent className="pt-4">
-                    <ChartContainer
-                      config={{ count: { label: "Réparations", color: "hsl(var(--chart-1))" } }}
-                      className="h-72"
-                    >
-                      <BarChart data={topDevices} layout="horizontal">
-                        <XAxis type="number" tickLine={false} axisLine={false} />
-                        <YAxis dataKey="model" type="category" tickLine={false} axisLine={false} width={120} />
-                        <ChartTooltip content={<ChartTooltipContent />} />
-                        <Bar dataKey="count" fill="var(--color-count)" radius={4} />
-                      </BarChart>
-                    </ChartContainer>
+                    <div className="space-y-3">
+                      {topDevices.slice(0, 5).map((device, index) => (
+                        <div 
+                          key={`${device.brand}-${device.model}`}
+                          className={`p-4 rounded-lg border-2 transition-all hover:shadow-md ${getPodiumBg(index)}`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              {getPodiumIcon(index)}
+                              <div>
+                                <div className="font-semibold text-foreground">
+                                  {device.brand}
+                                </div>
+                                <div className="text-sm text-muted-foreground">
+                                  {device.model}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <div className="text-2xl font-bold text-foreground">
+                                {device.count}
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                réparations
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                      {topDevices.length === 0 && (
+                        <div className="text-center py-8 text-muted-foreground">
+                          <Trophy className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                          <p>Aucune donnée de téléphone disponible</p>
+                          <p className="text-sm">Les données apparaîtront quand des SAV avec marque/modèle seront créés</p>
+                        </div>
+                      )}
+                    </div>
                   </CardContent>
                 </Card>
 
