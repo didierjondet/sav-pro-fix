@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { useShop } from '@/hooks/useShop';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Link } from 'react-router-dom';
 interface HeaderProps {
   onMenuClick: () => void;
   isMobileMenuOpen: boolean;
@@ -35,6 +36,15 @@ export function Header({
               <span className="text-xs text-muted-foreground">Propulsé par FixWay.fr</span>
             </div>
           </div>
+        </div>
+
+        <div className="hidden md:flex items-center space-x-2">
+          <Button variant="ghost" asChild>
+            <Link to="/sav">SAV</Link>
+          </Button>
+          <Button variant="ghost" asChild>
+            <Link to="/quotes">Devis</Link>
+          </Button>
         </div>
 
         <div className="flex items-center space-x-2">
