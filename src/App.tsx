@@ -22,6 +22,8 @@ import Orders from "./pages/Orders";
 import SuperAdmin from "./pages/SuperAdmin";
 import Subscription from "./pages/Subscription";
 import Support from "./pages/Support";
+import RevenueDetails from "./pages/RevenueDetails";
+import ExpensesDetails from "./pages/ExpensesDetails";
 // CreateShop page supprimée - création automatique par trigger
 
 import NotFound from "./pages/NotFound";
@@ -53,6 +55,8 @@ const App = () => (
             <Route path="/client-chats/*" element={<ClientChats />} />
             <Route path="/chats" element={<ClientChats />} />
             <Route path="/statistics" element={<Statistics />} />
+            <Route path="/statistics/revenue" element={<RevenueDetails />} />
+            <Route path="/statistics/expenses" element={<ExpensesDetails />} />
             <Route path="/support" element={<Support />} />
             
             <Route path="/super-admin" element={<SuperAdmin />} />

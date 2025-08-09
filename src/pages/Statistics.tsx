@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Header } from '@/components/layout/Header';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,6 +10,7 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/
 export default function Statistics() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [period, setPeriod] = useState<'7d' | '30d' | '3m' | '6m' | '1y'>('30d');
+  const navigate = useNavigate();
   const {
     revenue,
     expenses,
@@ -67,7 +69,7 @@ export default function Statistics() {
 
               {/* KPI Row */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                <Card>
+                <Card onClick={() => navigate(`/statistics/revenue?period=${period}`)} className="cursor-pointer hover:shadow-md transition-shadow">
                   <CardHeader>
                     <CardTitle>Chiffre d'affaires</CardTitle>
                   </CardHeader>
@@ -76,7 +78,7 @@ export default function Statistics() {
                   </CardContent>
                 </Card>
 
-                <Card>
+                <Card onClick={() => navigate(`/statistics/expenses?period=${period}`)} className="cursor-pointer hover:shadow-md transition-shadow">
                   <CardHeader>
                     <CardTitle>Dépenses (pièces)</CardTitle>
                   </CardHeader>
