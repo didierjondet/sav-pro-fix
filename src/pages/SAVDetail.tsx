@@ -30,6 +30,7 @@ export default function SAVDetail() {
   const [savingComments, setSavingComments] = useState(false);
   const { cases, loading } = useSAVCases();
   const [savCase, setSavCase] = useState<any>(null);
+  const { refetch } = useSAVCases();
 
   useEffect(() => {
     if (cases && id) {
@@ -41,6 +42,10 @@ export default function SAVDetail() {
       }
     }
   }, [cases, id]);
+
+  const refreshSAVData = async () => {
+    await refetch();
+  };
 
   const generateTrackingUrl = () => {
     if (!savCase?.tracking_slug) return '';
@@ -191,13 +196,7 @@ export default function SAVDetail() {
                   <SAVPrintButton savCase={savCase} />
                   <SAVPartsEditor 
                     savCaseId={savCase.id} 
-                    onPartsUpdated={() => {
-                      // Rafraîchir les données du dossier SAV
-                      const updatedCase = cases.find(c => c.id === id);
-                      if (updatedCase) {
-                        setSavCase(updatedCase);
-                      }
-                    }} 
+                    onPartsUpdated={refreshSAVData}
                   />
                 </div>
               </div>
@@ -412,7 +411,10 @@ export default function SAVDetail() {
               )}
 
               {/* Parts Requirements */}
-              <SAVPartsRequirements savCaseId={savCase.id} />
+              <SAVPartsRequirements 
+                savCaseId={savCase.id} 
+                onPartsUpdated={refreshSAVData}
+              />
 
               {/* Status Management and Messaging */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

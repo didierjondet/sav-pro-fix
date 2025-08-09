@@ -22,9 +22,10 @@ interface SAVPartRequirement {
 
 interface SAVPartsRequirementsProps {
   savCaseId: string;
+  onPartsUpdated?: () => void;
 }
 
-export function SAVPartsRequirements({ savCaseId }: SAVPartsRequirementsProps) {
+export function SAVPartsRequirements({ savCaseId, onPartsUpdated }: SAVPartsRequirementsProps) {
   const [requirements, setRequirements] = useState<SAVPartRequirement[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
