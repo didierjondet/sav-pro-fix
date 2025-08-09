@@ -129,9 +129,15 @@ const parsedData = (data as any[])?.map(quote => {
 
   const updateQuote = async (quoteId: string, quoteData: Partial<Quote>) => {
     try {
+      // Ensure JSON serialization for items when provided
+      const payload: any = { ...quoteData };
+      if (payload.items && typeof payload.items !== 'string') {
+        payload.items = JSON.stringify(payload.items);
+      }
+
       const { error } = await supabase
         .from('quotes' as any)
-        .update(quoteData)
+        .update(payload)
         .eq('id', quoteId);
 
       if (error) throw error;

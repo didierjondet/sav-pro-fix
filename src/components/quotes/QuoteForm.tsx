@@ -8,15 +8,19 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { useParts } from '@/hooks/useParts';
 import { Search, Plus, Trash2, ArrowLeft } from 'lucide-react';
-import { QuoteItem } from '@/hooks/useQuotes';
+import { QuoteItem, Quote } from '@/hooks/useQuotes';
 import { CustomerSearch } from '@/components/customers/CustomerSearch';
+import { useEffect } from 'react';
 
 interface QuoteFormProps {
   onSubmit: (data: any) => Promise<{ data: any; error: any }>;
   onCancel: () => void;
+  initialQuote?: Quote;
+  submitLabel?: string;
+  title?: string;
 }
 
-export function QuoteForm({ onSubmit, onCancel }: QuoteFormProps) {
+export function QuoteForm({ onSubmit, onCancel, initialQuote, submitLabel, title }: QuoteFormProps) {
   const { parts } = useParts();
   const [customerInfo, setCustomerInfo] = useState({ firstName: '', lastName: '', email: '', phone: '', address: '' });
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
@@ -24,6 +28,21 @@ export function QuoteForm({ onSubmit, onCancel }: QuoteFormProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedItems, setSelectedItems] = useState<QuoteItem[]>([]);
 
+  useEffect(() => {
+    if (initialQuote) {
+      const [firstName, ...rest] = (initialQuote.customer_name || '').split(' ');
+      setCustomerInfo({
+        firstName: firstName || '',
+        lastName: rest.join(' ') || '',
+        email: initialQuote.customer_email || '',
+        phone: initialQuote.customer_phone || '',
+        address: '',
+      });
+      setSelectedItems(initialQuote.items || []);
+      // Customer id is optional in quotes schema
+      setSelectedCustomerId(null);
+    }
+  }, [initialQuote]);
   const filteredParts = parts.filter(part =>
     multiWordSearch(searchTerm, part.name, part.reference)
   );
@@ -144,13 +163,13 @@ const updateUnitPurchasePrice = (partId: string, unitPrice: number) => {
     }
 
     const { error } = await onSubmit({
-      customer_name: `${customerInfo.firstName} ${customerInfo.lastName}`,
+      customer_name: `${customerInfo.firstName} ${customerInfo.lastName}`.trim(),
       customer_email: customerInfo.email || null,
       customer_phone: customerInfo.phone || null,
       notes: notes || null,
       items: selectedItems,
       total_amount: totalAmount,
-      status: 'draft'
+      status: initialQuote?.status ?? 'draft'
     });
 
     if (!error) {
@@ -165,7 +184,7 @@ const updateUnitPurchasePrice = (partId: string, unitPrice: number) => {
           <ArrowLeft className="h-4 w-4 mr-2" />
           Retour
         </Button>
-        <h1 className="text-2xl font-bold">Nouveau devis</h1>
+        <h1 className="text-2xl font-bold">{title ?? (initialQuote ? 'Modifier le devis' : 'Nouveau devis')}</h1>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -422,7 +441,7 @@ const updateUnitPurchasePrice = (partId: string, unitPrice: number) => {
             Annuler
           </Button>
           <Button type="submit">
-            Créer le devis
+            {submitLabel ?? (initialQuote ? 'Mettre à jour le devis' : 'Créer le devis')}
           </Button>
         </div>
       </form>

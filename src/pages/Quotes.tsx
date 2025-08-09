@@ -44,9 +44,9 @@ export default function Quotes() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [deletingQuote, setDeletingQuote] = useState<Quote | null>(null);
-const [viewingQuote, setViewingQuote] = useState<Quote | null>(null);
-const [quoteToConvert, setQuoteToConvert] = useState<Quote | null>(null);
-  
+  const [viewingQuote, setViewingQuote] = useState<Quote | null>(null);
+  const [quoteToConvert, setQuoteToConvert] = useState<Quote | null>(null);
+  const [editingQuote, setEditingQuote] = useState<Quote | null>(null);
   const { quotes, loading, createQuote, deleteQuote, updateQuote } = useQuotes();
   const { shop } = useShop();
   const { toast } = useToast();
@@ -56,7 +56,22 @@ const [quoteToConvert, setQuoteToConvert] = useState<Quote | null>(null);
     quote.quote_number.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleCreateQuote = async (data: any) => {
+  const handleCreateOrUpdateQuote = async (data: any) => {
+    if (editingQuote) {
+      const result = await updateQuote(editingQuote.id, {
+        customer_name: data.customer_name,
+        customer_email: data.customer_email,
+        customer_phone: data.customer_phone,
+        items: data.items,
+        total_amount: data.total_amount,
+        status: data.status,
+      });
+      if (!result.error) {
+        setShowForm(false);
+        setEditingQuote(null);
+      }
+      return { data: null, error: result.error } as any;
+    }
     return await createQuote(data);
   };
 
@@ -314,6 +329,13 @@ const handleStatusChange = async (quote: Quote, newStatus: Quote['status']) => {
                                 <Button 
                                   variant="outline" 
                                   size="sm"
+                                  onClick={() => { setEditingQuote(quote); setShowForm(true); }}
+                                >
+                                  Modifier
+                                </Button>
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
                                   onClick={() => handleViewQuote(quote)}
                                 >
                                   <Eye className="h-4 w-4 mr-1" />
@@ -356,8 +378,11 @@ const handleStatusChange = async (quote: Quote, newStatus: Quote['status']) => {
                 </>
               ) : (
                 <QuoteForm
-                  onSubmit={handleCreateQuote}
-                  onCancel={() => setShowForm(false)}
+                  onSubmit={handleCreateOrUpdateQuote}
+                  onCancel={() => { setShowForm(false); setEditingQuote(null); }}
+                  initialQuote={editingQuote ?? undefined}
+                  submitLabel={editingQuote ? 'Mettre à jour le devis' : 'Créer le devis'}
+                  title={editingQuote ? 'Modifier le devis' : 'Nouveau devis'}
                 />
               )}
 
