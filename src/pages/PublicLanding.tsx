@@ -1,9 +1,23 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Smartphone, Clock, MessageSquare, BarChart3, Users, Settings, CheckCircle, ArrowRight, Star, Shield, Zap } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function PublicLanding() {
   console.log('PublicLanding rendering - completely outside auth context');
   console.log('Current URL:', window.location.href);
+  
+  useEffect(() => {
+    // Check if user is already authenticated and redirect
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        console.log('User is authenticated, redirecting to dashboard');
+        window.location.href = '/dashboard';
+      }
+    };
+    
+    checkAuth();
+  }, []);
   
   const handleAuthClick = () => {
     window.location.href = '/auth';
