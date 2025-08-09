@@ -319,35 +319,73 @@ export default function Settings() {
 
   const handleExportQuotes = async (format: 'csv'|'xlsx'|'pdf') => {
     try {
-      const query = supabase.from('quotes' as any).select('*').order('created_at', { ascending: false });
+      const query = supabase
+        .from('quotes' as any)
+        .select(`
+          *,
+          customer:customers(first_name,last_name,email,phone,address)
+        `)
+        .order('created_at', { ascending: false });
       const { data, error } = shop?.id ? await query.eq('shop_id', shop.id) : await query;
       if (error) throw error;
       const quotes = (data || []) as any[];
 
-      const headers = ['Numéro', 'Date', 'Statut', 'Client', 'Email', 'Téléphone', 'Total (€)', 'Articles (nb)'];
+      const getItems = (q: any) => (Array.isArray(q.items) ? q.items : (typeof q.items === 'string' ? JSON.parse(q.items || '[]') : []));
+
+      const headers = [
+        'ID', 'Numéro', 'Créé le', 'Mis à jour le', 'Statut',
+        'Client (nom complet)', 'Email devis', 'Téléphone devis',
+        'Client prénom', 'Client nom', 'Client email', 'Client téléphone', 'Client adresse',
+        'Total (€)', 'Articles (nombre)', 'Articles (JSON)',
+        'Shop ID', 'Customer ID'
+      ];
+
       const rows = quotes.map(q => [
+        q.id,
         q.quote_number,
         new Date(q.created_at).toLocaleString('fr-FR'),
+        new Date(q.updated_at).toLocaleString('fr-FR'),
         q.status,
         q.customer_name,
         q.customer_email || '',
         q.customer_phone || '',
+        q.customer?.first_name || '',
+        q.customer?.last_name || '',
+        q.customer?.email || '',
+        q.customer?.phone || '',
+        q.customer?.address || '',
         Number(q.total_amount || 0).toFixed(2),
-        (Array.isArray(q.items) ? q.items.length : (typeof q.items === 'string' ? JSON.parse(q.items || '[]').length : 0))
+        getItems(q).length,
+        JSON.stringify(getItems(q)),
+        q.shop_id || '',
+        q.customer_id || ''
       ]);
 
-      if (format === 'csv') return buildAndDownloadCSV('devis', headers, rows);
-      if (format === 'xlsx') return exportToExcel('devis', quotes.map((q, i) => ({
-        'Numéro': q.quote_number,
-        'Date': new Date(q.created_at).toLocaleString('fr-FR'),
-        'Statut': q.status,
-        'Client': q.customer_name,
-        'Email': q.customer_email || '',
-        'Téléphone': q.customer_phone || '',
-        'Total (€)': Number(q.total_amount || 0),
-        'Articles (nb)': (Array.isArray(q.items) ? q.items.length : (typeof q.items === 'string' ? JSON.parse(q.items || '[]').length : 0))
-      })));
-      return printTablePDF('Export - Tous les devis', headers, rows);
+      if (format === 'csv') return buildAndDownloadCSV('devis_complet', headers, rows);
+      if (format === 'xlsx') return exportToExcel('devis_complet', quotes.map((q) => {
+        const items = getItems(q);
+        return {
+          'ID': q.id,
+          'Numéro': q.quote_number,
+          'Créé le': new Date(q.created_at).toLocaleString('fr-FR'),
+          'Mis à jour le': new Date(q.updated_at).toLocaleString('fr-FR'),
+          'Statut': q.status,
+          'Client (nom complet)': q.customer_name,
+          'Email devis': q.customer_email || '',
+          'Téléphone devis': q.customer_phone || '',
+          'Client prénom': q.customer?.first_name || '',
+          'Client nom': q.customer?.last_name || '',
+          'Client email': q.customer?.email || '',
+          'Client téléphone': q.customer?.phone || '',
+          'Client adresse': q.customer?.address || '',
+          'Total (€)': Number(q.total_amount || 0),
+          'Articles (nombre)': items.length,
+          'Articles (JSON)': JSON.stringify(items),
+          'Shop ID': q.shop_id || '',
+          'Customer ID': q.customer_id || ''
+        };
+      }));
+      return printTablePDF('Export - Tous les devis (complet)', headers, rows);
     } catch (e: any) {
       toast({ title: 'Erreur', description: e.message || 'Export devis impossible', variant: 'destructive' });
     }
@@ -355,37 +393,87 @@ export default function Settings() {
 
   const handleExportSAVs = async (format: 'csv'|'xlsx'|'pdf') => {
     try {
-      const query = supabase.from('sav_cases' as any).select('*').order('created_at', { ascending: false });
+      const query = supabase
+        .from('sav_cases' as any)
+        .select(`
+          *,
+          customer:customers(first_name,last_name,email,phone,address)
+        `)
+        .order('created_at', { ascending: false });
       const { data, error } = shop?.id ? await query.eq('shop_id', shop.id) : await query;
       if (error) throw error;
       const cases = (data || []) as any[];
 
-      const headers = ['Dossier', 'Date', 'Type', 'Statut', 'Coût (€)', 'Temps (min)', 'Marque', 'Modèle', 'Tracking'];
+      const headers = [
+        'ID', 'Dossier', 'Créé le', 'Mis à jour le', 'Type', 'Statut',
+        'Coût (€)', 'Temps (min)', 'Marque', 'Modèle', 'IMEI', 'SKU',
+        'Problème', 'Notes réparation', 'Commentaires privés',
+        'Prise en charge', 'Prise partielle', 'Montant prise en charge',
+        'Tracking', 'Shop ID', 'Customer ID', 'Technicien ID',
+        'Client prénom', 'Client nom', 'Client email', 'Client téléphone', 'Client adresse'
+      ];
+
       const rows = cases.map(c => [
+        c.id,
         c.case_number,
         new Date(c.created_at).toLocaleString('fr-FR'),
+        new Date(c.updated_at).toLocaleString('fr-FR'),
         c.sav_type,
         c.status,
         Number(c.total_cost || 0).toFixed(2),
         c.total_time_minutes || 0,
         c.device_brand || '',
         c.device_model || '',
-        c.tracking_slug || ''
+        c.device_imei || '',
+        c.sku || '',
+        c.problem_description || '',
+        c.repair_notes || '',
+        c.private_comments || '',
+        c.taken_over ? 'oui' : 'non',
+        c.partial_takeover ? 'oui' : 'non',
+        Number(c.takeover_amount || 0).toFixed(2),
+        c.tracking_slug || '',
+        c.shop_id || '',
+        c.customer_id || '',
+        c.technician_id || '',
+        c.customer?.first_name || '',
+        c.customer?.last_name || '',
+        c.customer?.email || '',
+        c.customer?.phone || '',
+        c.customer?.address || ''
       ]);
 
-      if (format === 'csv') return buildAndDownloadCSV('sav', headers, rows);
-      if (format === 'xlsx') return exportToExcel('sav', cases.map(c => ({
+      if (format === 'csv') return buildAndDownloadCSV('sav_complet', headers, rows);
+      if (format === 'xlsx') return exportToExcel('sav_complet', cases.map(c => ({
+        'ID': c.id,
         'Dossier': c.case_number,
-        'Date': new Date(c.created_at).toLocaleString('fr-FR'),
+        'Créé le': new Date(c.created_at).toLocaleString('fr-FR'),
+        'Mis à jour le': new Date(c.updated_at).toLocaleString('fr-FR'),
         'Type': c.sav_type,
         'Statut': c.status,
         'Coût (€)': Number(c.total_cost || 0),
         'Temps (min)': c.total_time_minutes || 0,
         'Marque': c.device_brand || '',
         'Modèle': c.device_model || '',
-        'Tracking': c.tracking_slug || ''
+        'IMEI': c.device_imei || '',
+        'SKU': c.sku || '',
+        'Problème': c.problem_description || '',
+        'Notes réparation': c.repair_notes || '',
+        'Commentaires privés': c.private_comments || '',
+        'Prise en charge': !!c.taken_over,
+        'Prise partielle': !!c.partial_takeover,
+        'Montant prise en charge': Number(c.takeover_amount || 0),
+        'Tracking': c.tracking_slug || '',
+        'Shop ID': c.shop_id || '',
+        'Customer ID': c.customer_id || '',
+        'Technicien ID': c.technician_id || '',
+        'Client prénom': c.customer?.first_name || '',
+        'Client nom': c.customer?.last_name || '',
+        'Client email': c.customer?.email || '',
+        'Client téléphone': c.customer?.phone || '',
+        'Client adresse': c.customer?.address || ''
       })));
-      return printTablePDF('Export - Tous les SAV', headers, rows);
+      return printTablePDF('Export - Tous les SAV (complet)', headers, rows);
     } catch (e: any) {
       toast({ title: 'Erreur', description: e.message || 'Export SAV impossible', variant: 'destructive' });
     }
