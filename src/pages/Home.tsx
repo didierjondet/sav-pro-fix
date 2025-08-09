@@ -18,7 +18,7 @@ import {
   Zap
 } from 'lucide-react';
 
-export default function Home() {
+function Home() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // SEO optimisé
@@ -368,3 +368,5 @@ export default function Home() {
     </div>
   );
 }
+
+export default Home;
