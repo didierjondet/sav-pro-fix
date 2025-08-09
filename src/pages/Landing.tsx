@@ -3,33 +3,18 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Smartphone, 
-  Clock, 
-  MessageSquare, 
-  BarChart3, 
-  Users, 
-  Settings,
-  CheckCircle,
-  ArrowRight,
-  Star,
-  Shield,
-  Zap
-} from 'lucide-react';
-
+import { Smartphone, Clock, MessageSquare, BarChart3, Users, Settings, CheckCircle, ArrowRight, Star, Shield, Zap } from 'lucide-react';
 export default function Landing() {
   const [showDemo, setShowDemo] = useState(false);
   const navigate = useNavigate();
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+  return <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       {/* Header */}
       <header className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center">
               <Smartphone className="h-8 w-8 text-blue-600 mr-2" />
-              <h1 className="text-2xl font-bold text-gray-900">SAV Pro</h1>
+              <h1 className="text-2xl font-bold text-gray-900">Fixway</h1>
             </div>
             <div className="flex items-center gap-4">
               <Button variant="outline" onClick={() => navigate('/auth')}>
@@ -288,15 +273,11 @@ export default function Landing() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center text-gray-400">
             <p>&copy; 2024 SAV Pro. Tous droits réservés.</p>
-            <button
-              onClick={() => navigate('/super-admin')}
-              className="text-xs text-gray-600 hover:text-gray-400 mt-2 opacity-50 hover:opacity-100 transition-opacity"
-            >
+            <button onClick={() => navigate('/super-admin')} className="text-xs text-gray-600 hover:text-gray-400 mt-2 opacity-50 hover:opacity-100 transition-opacity">
               Administration
             </button>
           </div>
         </div>
       </footer>
-    </div>
-  );
+    </div>;
 }
