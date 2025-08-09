@@ -10,16 +10,15 @@ interface StatisticsData {
   savStats: {
     total: number;
     averageTime: number;
+    lateRate: number;
   };
   partsStats: {
     totalUsed: number;
     averageCost: number;
   };
-  customerStats: {
-    active: number;
-    new: number;
-    averageRevenue: number;
-    averageSav: number;
+  takeoverStats: {
+    amount: number;
+    count: number;
   };
   revenueChart: Array<{ date: string; revenue: number }>;
   savCountChart: Array<{ date: string; count: number }>;
@@ -35,9 +34,9 @@ export function useStatistics(period: '7d' | '30d' | '3m' | '6m' | '1y'): Statis
     revenue: 0,
     expenses: 0,
     profit: 0,
-    savStats: { total: 0, averageTime: 0 },
+    savStats: { total: 0, averageTime: 0, lateRate: 0 },
     partsStats: { totalUsed: 0, averageCost: 0 },
-    customerStats: { active: 0, new: 0, averageRevenue: 0, averageSav: 0 },
+    takeoverStats: { amount: 0, count: 0 },
     revenueChart: [],
     savCountChart: [],
     profitabilityChart: [],
@@ -101,22 +100,30 @@ export function useStatistics(period: '7d' | '30d' | '3m' | '6m' | '1y'): Statis
         // Calculer les revenus et dépenses
         let totalRevenue = 0;
         let totalExpenses = 0;
-        let totalTime = 0;
+        let totalTimeFromParts = 0;
+        let takeoverAmount = 0;
+        let takeoverCount = 0;
+        let lateCount = 0;
         const statusCounts: Record<string, number> = {};
         const partsUsage: Record<string, { quantity: number; revenue: number; name: string }> = {};
         const dailyData: Record<string, { revenue: number; expenses: number; count: number }> = {};
+
+        const currentDate = new Date();
 
         readySavCases.forEach((savCase: any) => {
           // Calculer le coût total des pièces
           let caseCost = 0;
           let caseRevenue = 0;
+          let caseTimeFromParts = 0;
 
           savCase.sav_parts?.forEach((savPart: any) => {
             const partCost = (savPart.part?.purchase_price || 0) * savPart.quantity;
             const partRevenue = (savPart.unit_price || savPart.part?.selling_price || 0) * savPart.quantity;
+            const partTime = (savPart.part?.time_minutes || 15) * savPart.quantity;
             
             caseCost += partCost;
             caseRevenue += partRevenue;
+            caseTimeFromParts += partTime;
 
             // Tracking des pièces les plus utilisées
             const partKey = savPart.part?.name || 'Pièce inconnue';
@@ -127,18 +134,32 @@ export function useStatistics(period: '7d' | '30d' | '3m' | '6m' | '1y'): Statis
             partsUsage[partKey].revenue += partRevenue;
           });
 
-          // Ajuster selon la prise en charge
+          // Calcul du retard - utilise taken_over_at ou created_at
+          const startDate = new Date(savCase.taken_over_at || savCase.created_at);
+          const processingDays = shop.max_sav_processing_days_client || 7;
+          const theoreticalEndDate = new Date(startDate);
+          theoreticalEndDate.setDate(theoreticalEndDate.getDate() + processingDays);
+          
+          if (currentDate > theoreticalEndDate) {
+            lateCount++;
+          }
+
+          // Calculer les prises en charge
           if (savCase.partial_takeover && savCase.takeover_amount) {
+            takeoverAmount += Number(savCase.takeover_amount) || 0;
+            takeoverCount++;
             const rawRatio = Number(savCase.takeover_amount) / (Number(savCase.total_cost) || 1);
             const takeoverRatio = Math.min(1, Math.max(0, rawRatio));
             caseRevenue = caseCost + (caseRevenue - caseCost) * (1 - takeoverRatio);
           } else if (savCase.taken_over) {
+            takeoverAmount += caseCost;
+            takeoverCount++;
             caseRevenue = caseCost; // Pas de marge si pris en charge totalement
           }
 
           totalRevenue += caseRevenue;
           totalExpenses += caseCost;
-          totalTime += savCase.total_time_minutes || 0;
+          totalTimeFromParts += caseTimeFromParts;
 
           // Compter les statuts
           const status = savCase.status;
@@ -154,18 +175,8 @@ export function useStatistics(period: '7d' | '30d' | '3m' | '6m' | '1y'): Statis
           dailyData[dateKey].count += 1;
         });
 
-        // Récupérer les statistiques clients
-        const { data: customers } = await supabase
-          .from('customers')
-          .select('*')
-          .eq('shop_id', shop.id);
-
-        const { data: newCustomers } = await supabase
-          .from('customers')
-          .select('*')
-          .eq('shop_id', shop.id)
-          .gte('created_at', start.toISOString())
-          .lte('created_at', end.toISOString());
+        // Calculer le taux de retard
+        const lateRate = readySavCases.length > 0 ? (lateCount / readySavCases.length) * 100 : 0;
 
         // Préparer les données pour les graphiques
         const chartData = Object.entries(dailyData)
@@ -197,17 +208,16 @@ export function useStatistics(period: '7d' | '30d' | '3m' | '6m' | '1y'): Statis
           profit: totalRevenue - totalExpenses,
           savStats: {
             total: readySavCases.length || 0,
-            averageTime: readySavCases.length ? Math.round(totalTime / readySavCases.length / 60) : 0
+            averageTime: readySavCases.length ? Math.round(totalTimeFromParts / readySavCases.length / 60) : 0,
+            lateRate: lateRate
           },
           partsStats: {
             totalUsed: Object.values(partsUsage).reduce((sum, part) => sum + part.quantity, 0),
             averageCost: totalExpenses / (readySavCases.length || 1)
           },
-          customerStats: {
-            active: customers?.length || 0,
-            new: newCustomers?.length || 0,
-            averageRevenue: totalRevenue / (customers?.length || 1),
-            averageSav: (readySavCases.length || 0) / (customers?.length || 1)
+          takeoverStats: {
+            amount: takeoverAmount,
+            count: takeoverCount
           },
           revenueChart: chartData.map(d => ({ date: d.date, revenue: d.revenue })),
           savCountChart: chartData.map(d => ({ date: d.date, count: d.count })),

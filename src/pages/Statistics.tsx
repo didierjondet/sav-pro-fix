@@ -17,7 +17,7 @@ export default function Statistics() {
     profit,
     savStats,
     partsStats,
-    customerStats,
+    takeoverStats,
     revenueChart,
     savCountChart,
     profitabilityChart,
@@ -98,49 +98,38 @@ export default function Statistics() {
 
                 <Card>
                   <CardHeader>
+                    <CardTitle>Prises en charge</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-sm text-muted-foreground">Montant total</div>
+                    <div className="text-2xl font-semibold">{formatCurrency(takeoverStats.amount)}</div>
+                    <div className="text-sm text-muted-foreground mt-1">Nombre de SAV</div>
+                    <div className="text-lg">{takeoverStats.count}</div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* SAV Stats Row */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4 mb-8">
+                <Card>
+                  <CardHeader>
                     <CardTitle>SAV & Durée</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-sm text-muted-foreground">Total</div>
+                    <div className="text-sm text-muted-foreground">Total SAV</div>
                     <div className="text-2xl font-semibold">{savStats.total}</div>
                     <div className="text-sm text-muted-foreground mt-1">Temps moyen</div>
                     <div className="text-lg">{savStats.averageTime} h</div>
                   </CardContent>
                 </Card>
-              </div>
-
-              {/* Customers Row */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Clients actifs</CardTitle>
+                    <CardTitle>Taux de retard</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-3xl font-semibold">{customerStats.active}</p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Nouveaux clients</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-3xl font-semibold">{customerStats.new}</p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader>
-                    <CardTitle>CA / client</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-3xl font-semibold">{formatCurrency(customerStats.averageRevenue)}</p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader>
-                    <CardTitle>SAV / client</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-3xl font-semibold">{customerStats.averageSav.toFixed(2)}</p>
+                    <div className="text-sm text-muted-foreground">SAV en retard</div>
+                    <div className="text-3xl font-semibold text-destructive">{savStats.lateRate.toFixed(1)}%</div>
+                    <div className="text-sm text-muted-foreground mt-1">Basé sur les délais configurés</div>
                   </CardContent>
                 </Card>
               </div>
