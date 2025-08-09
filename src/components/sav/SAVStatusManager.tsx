@@ -65,6 +65,10 @@ export function SAVStatusManager({ savCase, onStatusUpdated }: SAVStatusManagerP
   const [takeoverAmount, setTakeoverAmount] = useState(savCase.takeover_amount || 0);
   const [updatingTakeover, setUpdatingTakeover] = useState(false);
   
+  // Alerte lorsque l'on passe en "Prêt" sans pièces / prix d'achat
+  const [showReadyWarning, setShowReadyWarning] = useState(false);
+  const [readyWarningInfo, setReadyWarningInfo] = useState<{ noParts: boolean; noPurchase: boolean }>({ noParts: false, noPurchase: false });
+  
   const { updateCaseStatus } = useSAVCases();
   const { subscription, checkLimits } = useSubscription();
   const { toast } = useToast();
@@ -125,18 +129,51 @@ export function SAVStatusManager({ savCase, onStatusUpdated }: SAVStatusManagerP
       setPendingStatusData(null);
     }
   };
+  
+  // Validation avant passage au statut "Prêt"
+  const validateReadyConstraints = async (): Promise<{ ok: boolean; noParts: boolean; noPurchase: boolean }> => {
+    try {
+      const { data, error } = await supabase
+        .from('sav_parts')
+        .select('quantity, purchase_price')
+        .eq('sav_case_id', savCase.id);
+      if (error) throw error;
+      const parts = data || [];
+      const noParts = parts.length === 0;
+      const totalPurchase = parts.reduce((sum, p: any) => sum + (Number(p.purchase_price) || 0) * (Number(p.quantity) || 0), 0);
+      const noPurchase = totalPurchase <= 0;
+      // Bloquer uniquement si aucune pièce ET aucun prix d'achat
+      return { ok: !(noParts && noPurchase), noParts, noPurchase };
+    } catch {
+      // En cas d'erreur de vérification, ne pas bloquer mais avertir
+      return { ok: true, noParts: false, noPurchase: false };
+    }
+  };
 
-  const handleStatusChangeRequest = async () => {
-    if (selectedStatus === savCase.status && !notes.trim()) return;
-    
-    // Si le client a un téléphone et qu'on change vraiment le statut
+  // Procéder à la demande de changement de statut (avec logique SMS)
+  const proceedWithStatusChange = async () => {
     if (savCase.customer?.phone && selectedStatus !== savCase.status) {
       setPendingStatusData({ status: selectedStatus, notes: notes.trim() });
       setShowSMSDialog(true);
     } else {
-      // Pas de téléphone ou pas de changement de statut
       await handleUpdateStatus(false);
     }
+  };
+
+  const handleStatusChangeRequest = async () => {
+    if (selectedStatus === savCase.status && !notes.trim()) return;
+    
+    // Si on passe en "Prêt", vérifier la présence de pièces et de prix d'achat
+    if (selectedStatus === 'ready' && selectedStatus !== savCase.status) {
+      const { ok, noParts, noPurchase } = await validateReadyConstraints();
+      if (!ok) {
+        setReadyWarningInfo({ noParts, noPurchase });
+        setShowReadyWarning(true);
+        return;
+      }
+    }
+    
+    await proceedWithStatusChange();
   };
 
   const handleSMSChoice = async (sendSMS: boolean) => {
@@ -384,6 +421,38 @@ export function SAVStatusManager({ savCase, onStatusUpdated }: SAVStatusManagerP
                   Pas de téléphone
                 </Button>
               )}
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Alerte: pas de pièces / pas de prix d'achat */}
+        <Dialog open={showReadyWarning} onOpenChange={setShowReadyWarning}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Vérification avant passage en "Prêt"</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-3">
+              <Alert className="border-orange-200 bg-orange-50">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertDescription className="text-orange-700">
+                  Ce dossier semble incomplet.
+                </AlertDescription>
+              </Alert>
+              <ul className="list-disc pl-5 text-sm">
+                {readyWarningInfo.noParts && <li>Ce SAV n'a aucune pièce liée.</li>}
+                {readyWarningInfo.noPurchase && <li>Aucun prix d'achat n'est renseigné pour les pièces.</li>}
+              </ul>
+              <p className="text-sm text-muted-foreground">
+                Vous pouvez revenir pour ajouter des pièces ou forcer le statut en "Prêt".
+              </p>
+            </div>
+            <DialogFooter className="gap-2">
+              <Button variant="outline" onClick={() => setShowReadyWarning(false)}>
+                Revenir pour ajouter une pièce
+              </Button>
+              <Button onClick={async () => { setShowReadyWarning(false); await proceedWithStatusChange(); }}>
+                Forcer le statut "Prêt"
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
