@@ -121,10 +121,10 @@ export function SAVStatusManager({ savCase, onStatusUpdated }: SAVStatusManagerP
         selectedStatus,
         currentStatus: savCase.status,
         savType: savCase.sav_type,
-        shouldSend: selectedStatus === 'ready' && savCase.status !== 'ready' && savCase.sav_type === 'client'
+        shouldSend: selectedStatus === 'ready' && savCase.status !== 'ready' && (savCase.sav_type === 'client' || savCase.sav_type === 'external')
       });
       
-      if (selectedStatus === 'ready' && savCase.status !== 'ready' && savCase.sav_type === 'client') {
+      if (selectedStatus === 'ready' && savCase.status !== 'ready' && (savCase.sav_type === 'client' || savCase.sav_type === 'external')) {
         console.log('Envoi de la demande d\'avis automatique...');
         await sendAutomaticReviewRequest();
       }
