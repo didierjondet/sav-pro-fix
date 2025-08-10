@@ -29,6 +29,7 @@ import {
   HelpCircle,
   Search,
   Palette,
+  FileText,
 } from 'lucide-react';
 import {
   Dialog,
@@ -879,7 +880,7 @@ export default function SuperAdmin() {
         </div>
 
         <Tabs defaultValue="shops" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-8 bg-white border-slate-200">
+          <TabsList className="grid w-full grid-cols-9 bg-white border-slate-200">
             <TabsTrigger value="shops" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-slate-700">
               <Store className="h-4 w-4" />
               Gestion Magasins
@@ -916,6 +917,10 @@ export default function SuperAdmin() {
             <TabsTrigger value="branding" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-slate-700">
               <Palette className="h-4 w-4" />
               Charte Graphique
+            </TabsTrigger>
+            <TabsTrigger value="landing" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-slate-700">
+              <FileText className="h-4 w-4" />
+              Landing Page
             </TabsTrigger>
           </TabsList>
 
@@ -1605,6 +1610,11 @@ export default function SuperAdmin() {
           {/* Branding Management */}
           <TabsContent value="branding">
             <BrandingManager />
+          </TabsContent>
+
+          {/* Landing Page Management */}
+          <TabsContent value="landing">
+            <LandingPageManager />
           </TabsContent>
         </Tabs>
 

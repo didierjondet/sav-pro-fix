@@ -49,7 +49,7 @@ export function LandingPageManager() {
   const fetchContent = async () => {
     try {
       const { data, error } = await supabase
-        .from('landing_content')
+        .from('landing_content' as any)
         .select('*')
         .single();
 
@@ -58,7 +58,7 @@ export function LandingPageManager() {
       }
 
       if (data) {
-        setContent(data);
+        setContent(data as LandingContent);
       }
     } catch (error: any) {
       console.error('Error fetching landing content:', error);
@@ -86,20 +86,20 @@ export function LandingPageManager() {
 
       if (content.id) {
         const { error } = await supabase
-          .from('landing_content')
+          .from('landing_content' as any)
           .update(sectionData)
           .eq('id', content.id);
         
         if (error) throw error;
       } else {
         const { data, error } = await supabase
-          .from('landing_content')
+          .from('landing_content' as any)
           .insert([sectionData])
           .select()
           .single();
         
         if (error) throw error;
-        setContent(prev => ({ ...prev, id: data.id }));
+        setContent(prev => ({ ...prev, id: (data as any).id }));
       }
 
       toast({
