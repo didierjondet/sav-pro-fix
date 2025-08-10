@@ -137,6 +137,8 @@ export type Database = {
           benefit_3_title: string | null
           benefits_subtitle: string | null
           benefits_title: string | null
+          cgu_content: string | null
+          cgv_content: string | null
           created_at: string
           cta_button_text: string | null
           cta_subtitle: string | null
@@ -155,6 +157,7 @@ export type Database = {
           hero_subtitle: string | null
           hero_title: string | null
           id: string
+          privacy_policy: string | null
           updated_at: string
         }
         Insert: {
@@ -166,6 +169,8 @@ export type Database = {
           benefit_3_title?: string | null
           benefits_subtitle?: string | null
           benefits_title?: string | null
+          cgu_content?: string | null
+          cgv_content?: string | null
           created_at?: string
           cta_button_text?: string | null
           cta_subtitle?: string | null
@@ -184,6 +189,7 @@ export type Database = {
           hero_subtitle?: string | null
           hero_title?: string | null
           id?: string
+          privacy_policy?: string | null
           updated_at?: string
         }
         Update: {
@@ -195,6 +201,8 @@ export type Database = {
           benefit_3_title?: string | null
           benefits_subtitle?: string | null
           benefits_title?: string | null
+          cgu_content?: string | null
+          cgv_content?: string | null
           created_at?: string
           cta_button_text?: string | null
           cta_subtitle?: string | null
@@ -213,6 +221,7 @@ export type Database = {
           hero_subtitle?: string | null
           hero_title?: string | null
           id?: string
+          privacy_policy?: string | null
           updated_at?: string
         }
         Relationships: []
