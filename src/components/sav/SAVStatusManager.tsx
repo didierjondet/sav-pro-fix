@@ -14,6 +14,7 @@ import { useSubscription } from '@/hooks/useSubscription';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Settings, Save, MessageSquare, AlertTriangle, CreditCard, Euro } from 'lucide-react';
+import { SMSButton } from '@/components/sav/SMSButton';
 
 interface SAVStatusManagerProps {
   savCase: {
@@ -440,7 +441,17 @@ L'équipe ${shopData.name || 'de réparation'}`;
         <Dialog open={showSMSDialog} onOpenChange={setShowSMSDialog}>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
-              <DialogTitle>Notifier le client ?</DialogTitle>
+              <DialogTitle className="flex items-center justify-between">
+                <span>Notifier le client ?</span>
+                <SMSButton
+                  customerPhone={savCase.customer?.phone}
+                  customerName={`${savCase.customer?.first_name || ''} ${savCase.customer?.last_name || ''}`.trim()}
+                  caseNumber={savCase.case_number}
+                  caseId={savCase.id}
+                  size="sm"
+                  variant="ghost"
+                />
+              </DialogTitle>
             </DialogHeader>
             
             <div className="space-y-4">
@@ -452,7 +463,7 @@ L'équipe ${shopData.name || 'de réparation'}`;
               {savCase.customer?.phone ? (
                 <div>
                   <p className="text-sm">
-                    Voulez-vous envoyer un SMS de notification au client ?
+                    Voulez-vous envoyer un SMS de notification automatique au client ?
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
                     Destinataire : {savCase.customer.phone}

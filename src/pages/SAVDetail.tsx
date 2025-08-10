@@ -13,6 +13,7 @@ import { useSAVCases } from '@/hooks/useSAVCases';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { QrCode, ExternalLink, ArrowLeft, Copy, Share, Save, Lock, User, Mail, Phone, MapPin } from 'lucide-react';
+import { SMSButton } from '@/components/sav/SMSButton';
 import { useNavigate } from 'react-router-dom';
 import { SAVPartsEditor } from '@/components/sav/SAVPartsEditor';
 import { SAVPartsRequirements } from '@/components/sav/SAVPartsRequirements';
@@ -215,6 +216,16 @@ export default function SAVDetail() {
                   <Badge variant={statusConfig[savCase.status as keyof typeof statusConfig]?.variant || 'secondary'}>
                     {statusConfig[savCase.status as keyof typeof statusConfig]?.label || savCase.status}
                   </Badge>
+                  {savCase.sav_type === 'client' && savCase.customer?.phone && (
+                    <SMSButton
+                      customerPhone={savCase.customer.phone}
+                      customerName={`${savCase.customer.first_name} ${savCase.customer.last_name}`}
+                      caseNumber={savCase.case_number}
+                      caseId={savCase.id}
+                      size="sm"
+                      variant="outline"
+                    />
+                  )}
                   <SAVPrintButton savCase={savCase} />
                   <SAVPartsEditor 
                     savCaseId={savCase.id} 
@@ -424,6 +435,8 @@ export default function SAVDetail() {
                 <SAVMessaging 
                   savCaseId={savCase.id} 
                   savCaseNumber={savCase.case_number}
+                  customerPhone={savCase.customer?.phone}
+                  customerName={`${savCase.customer?.first_name || ''} ${savCase.customer?.last_name || ''}`.trim()}
                 />
               </div>
             </div>

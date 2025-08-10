@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { Download, Mail, X } from 'lucide-react';
+import { SMSButton } from '@/components/sav/SMSButton';
 
 interface QuoteViewProps {
   quote: Quote | null;
@@ -132,6 +133,16 @@ export function QuoteView({ quote, isOpen, onClose, onDownloadPDF, onSendEmail }
 
           {/* Actions */}
           <div className="flex justify-end gap-2 flex-wrap">
+            {quote.customer_phone && (
+              <SMSButton
+                customerPhone={quote.customer_phone}
+                customerName={quote.customer_name}
+                quoteNumber={quote.quote_number}
+                quoteId={quote.id}
+                size="sm"
+                variant="outline"
+              />
+            )}
             <Button variant="outline" onClick={() => onDownloadPDF(quote)}>
               <Download className="h-4 w-4 mr-2" />
               Télécharger PDF
