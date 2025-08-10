@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Smartphone, Clock, MessageSquare, BarChart3, Users, Settings, CheckCircle, ArrowRight, Star, Shield, Zap } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import LegalDocumentDialog from '@/components/legal/LegalDocumentDialog';
 interface SubscriptionPlan {
   id: string;
   name: string;
@@ -21,6 +22,15 @@ export default function Landing() {
   const [showDemo, setShowDemo] = useState(false);
   const [subscriptionPlans, setSubscriptionPlans] = useState<SubscriptionPlan[]>([]);
   const [loading, setLoading] = useState(true);
+  const [legalDialog, setLegalDialog] = useState<{
+    isOpen: boolean;
+    type: 'cgu_content' | 'cgv_content' | 'privacy_policy';
+    title: string;
+  }>({
+    isOpen: false,
+    type: 'cgu_content',
+    title: ''
+  });
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -310,19 +320,31 @@ export default function Landing() {
             <p>&copy; 2024 SAV Pro. Tous droits réservés.</p>
             <div className="flex justify-center gap-6 mt-4 text-sm">
               <button 
-                onClick={() => navigate('/cgu')} 
+                onClick={() => setLegalDialog({
+                  isOpen: true,
+                  type: 'cgu_content',
+                  title: 'Conditions Générales d\'Utilisation'
+                })}
                 className="hover:text-white transition-colors"
               >
                 Conditions Générales d'Utilisation
               </button>
               <button 
-                onClick={() => navigate('/cgv')} 
+                onClick={() => setLegalDialog({
+                  isOpen: true,
+                  type: 'cgv_content',
+                  title: 'Conditions Générales de Vente'
+                })}
                 className="hover:text-white transition-colors"
               >
                 Conditions Générales de Vente
               </button>
               <button 
-                onClick={() => navigate('/privacy')} 
+                onClick={() => setLegalDialog({
+                  isOpen: true,
+                  type: 'privacy_policy',
+                  title: 'Politique de Confidentialité'
+                })}
                 className="hover:text-white transition-colors"
               >
                 Politique de Confidentialité
@@ -334,5 +356,13 @@ export default function Landing() {
           </div>
         </div>
       </footer>
+
+      {/* Legal Document Dialog */}
+      <LegalDocumentDialog
+        type={legalDialog.type}
+        title={legalDialog.title}
+        isOpen={legalDialog.isOpen}
+        onClose={() => setLegalDialog(prev => ({ ...prev, isOpen: false }))}
+      />
     </div>;
 }

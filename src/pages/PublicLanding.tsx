@@ -3,6 +3,7 @@ import { Smartphone, Clock, MessageSquare, BarChart3, Users, Settings, CheckCirc
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import LegalDocumentDialog from '@/components/legal/LegalDocumentDialog';
 
 interface SubscriptionPlan {
   id: string;
@@ -22,6 +23,15 @@ export default function PublicLanding() {
   
   const [subscriptionPlans, setSubscriptionPlans] = useState<SubscriptionPlan[]>([]);
   const [loading, setLoading] = useState(true);
+  const [legalDialog, setLegalDialog] = useState<{
+    isOpen: boolean;
+    type: 'cgu_content' | 'cgv_content' | 'privacy_policy';
+    title: string;
+  }>({
+    isOpen: false,
+    type: 'cgu_content',
+    title: ''
+  });
   
   useEffect(() => {
     // Check if user is already authenticated and redirect
@@ -251,19 +261,48 @@ export default function PublicLanding() {
           <div className="text-center text-gray-400">
             <p>&copy; 2024 FixWay. Tous droits réservés.</p>
             <div className="flex justify-center gap-6 mt-4 text-sm">
-              <a href="/cgu" className="hover:text-white transition-colors">
+              <button 
+                onClick={() => setLegalDialog({
+                  isOpen: true,
+                  type: 'cgu_content',
+                  title: 'Conditions Générales d\'Utilisation'
+                })}
+                className="hover:text-white transition-colors"
+              >
                 Conditions Générales d'Utilisation
-              </a>
-              <a href="/cgv" className="hover:text-white transition-colors">
+              </button>
+              <button 
+                onClick={() => setLegalDialog({
+                  isOpen: true,
+                  type: 'cgv_content',
+                  title: 'Conditions Générales de Vente'
+                })}
+                className="hover:text-white transition-colors"
+              >
                 Conditions Générales de Vente
-              </a>
-              <a href="/privacy" className="hover:text-white transition-colors">
+              </button>
+              <button 
+                onClick={() => setLegalDialog({
+                  isOpen: true,
+                  type: 'privacy_policy',
+                  title: 'Politique de Confidentialité'
+                })}
+                className="hover:text-white transition-colors"
+              >
                 Politique de Confidentialité
-              </a>
+              </button>
             </div>
           </div>
         </div>
       </footer>
+
+      {/* Legal Document Dialog */}
+      <LegalDocumentDialog
+        type={legalDialog.type}
+        title={legalDialog.title}
+        isOpen={legalDialog.isOpen}
+        onClose={() => setLegalDialog(prev => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 }
