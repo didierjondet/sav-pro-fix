@@ -22,7 +22,7 @@ import {
   Phone
 } from 'lucide-react';
 
-export default function SMSTest() {
+const SMSTest = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [testPhone, setTestPhone] = useState('');
   const [testMessage, setTestMessage] = useState('Test SMS depuis Fixway - Votre système fonctionne correctement ! 📱');
@@ -373,4 +373,6 @@ export default function SMSTest() {
       </div>
     </div>
   );
-}
+};
+
+export default SMSTest;
