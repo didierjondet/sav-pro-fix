@@ -58,31 +58,8 @@ export default function PublicLanding() {
       setSubscriptionPlans(transformedPlans);
     } catch (error) {
       console.error('Error fetching subscription plans:', error);
-      // En cas d'erreur, utiliser des plans par défaut
-      setSubscriptionPlans([
-        {
-          id: '1',
-          name: 'Starter',
-          description: 'Plan gratuit pour commencer',
-          monthly_price: 0,
-          billing_interval: 'month',
-          sav_limit: 10,
-          sms_limit: 50,
-          features: ['Jusqu\'à 10 dossiers SAV/mois', '50 SMS inclus', 'Support email'],
-          is_active: true
-        },
-        {
-          id: '2',
-          name: 'Pro',
-          description: 'Plan professionnel',
-          monthly_price: 29,
-          billing_interval: 'month',
-          sav_limit: null,
-          sms_limit: 500,
-          features: ['Dossiers SAV illimités', '500 SMS inclus', 'Notifications automatiques', 'Statistiques avancées'],
-          is_active: true
-        }
-      ]);
+      // En cas d'erreur, afficher uniquement les plans configurés dans le super admin
+      setSubscriptionPlans([]);
     } finally {
       setLoading(false);
     }
