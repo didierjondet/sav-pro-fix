@@ -92,7 +92,7 @@ export function SAVPrintButton({ savCase, className, size = "sm", variant = "out
         <div class="block">
           <div class="block-title">Client</div>
           <div class="grid">
-            <div><span class="label">Nom:</span> ${savCase.customer.first_name} ${savCase.customer.last_name}</div>
+            <div><span class="label">Nom:</span> <span class="highlight-red">${savCase.customer.first_name} ${savCase.customer.last_name}</span></div>
             ${savCase.customer.email ? `<div><span class="label">Email:</span> ${savCase.customer.email}</div>` : ""}
             ${savCase.customer.phone ? `<div><span class="label">Téléphone:</span> ${savCase.customer.phone}</div>` : ""}
             ${savCase.customer.address ? `<div class="col-span-2"><span class="label">Adresse:</span> ${savCase.customer.address}</div>` : ""}
@@ -106,8 +106,8 @@ export function SAVPrintButton({ savCase, className, size = "sm", variant = "out
           <div class="grid">
             <div><span class="label">Marque:</span> ${savCase.device_brand || "-"}</div>
             <div><span class="label">Modèle:</span> ${savCase.device_model || "-"}</div>
-            ${savCase.device_imei ? `<div><span class="label">IMEI:</span> ${savCase.device_imei}</div>` : ""}
-            ${savCase.sku ? `<div><span class="label">SKU:</span> ${savCase.sku}</div>` : ""}
+            ${savCase.device_imei ? `<div><span class="label">IMEI:</span> <span class="highlight-red">${savCase.device_imei}</span></div>` : ""}
+            ${savCase.sku ? `<div><span class="label">SKU:</span> <span class="highlight-red">${savCase.sku}</span></div>` : ""}
             <div><span class="label">Type:</span> ${savCase.sav_type === "client" ? "Client" : savCase.sav_type === "external" ? "Externe" : "Interne"}</div>
             <div><span class="label">Statut:</span> ${statusLabels[savCase.status] || savCase.status}</div>
           </div>
@@ -184,54 +184,74 @@ export function SAVPrintButton({ savCase, className, size = "sm", variant = "out
   <title>Impression Dossier SAV ${savCase.case_number}</title>
   <style>
     @page { size: A4 portrait; margin: 1.2cm; }
-    body { font-family: Arial, sans-serif; font-size: 11px; color: #111; }
-    .content { width: 50%; }
+    body { font-family: Arial, sans-serif; font-size: 10px; color: #111; }
+    .dual-content { display: flex; gap: 20px; width: 100%; }
+    .content-block { width: 48%; }
     .header { display:flex; align-items:flex-start; justify-content:flex-start; margin-bottom: 12px; }
-    .shop-header { display:flex; align-items:center; gap: 8px; border-bottom: 1px solid #ddd; padding-bottom: 6px; justify-content: flex-start; margin-bottom: 8px; }
-    .shop-logo { max-height: 35px; max-width: 60px; }
-    .shop-info { line-height: 1.2; text-align: left; }
-    .shop-name { font-size: 13px; font-weight: 700; }
-    .shop-details { font-size: 9px; color:#555; }
+    .shop-header { display:flex; align-items:center; gap: 6px; border-bottom: 1px solid #ddd; padding-bottom: 4px; justify-content: flex-start; margin-bottom: 6px; }
+    .shop-logo { max-height: 30px; max-width: 50px; }
+    .shop-info { line-height: 1.1; text-align: left; }
+    .shop-name { font-size: 11px; font-weight: 700; }
+    .shop-details { font-size: 8px; color:#555; }
     .header-left { text-align: left; }
-    .title { font-size: 14px; font-weight: 700; color:#2563eb; }
-    .meta { margin-top: 3px; color:#555; font-size: 9px; }
-    .grid { display:grid; grid-template-columns: repeat(1, minmax(0,1fr)); gap: 4px; }
+    .title { font-size: 12px; font-weight: 700; color:#2563eb; }
+    .meta { margin-top: 2px; color:#555; font-size: 8px; }
+    .grid { display:grid; grid-template-columns: repeat(1, minmax(0,1fr)); gap: 3px; }
     .col-span-2 { grid-column: span 1 / span 1; }
-    .label { color:#555; font-weight:600; margin-right:4px; }
-    .block { margin-top: 10px; }
-    .block-title { font-size: 12px; font-weight: 700; margin-bottom: 6px; border-bottom:1px solid #eee; padding-bottom:3px; text-align: left; }
-    .text { white-space: pre-wrap; font-size: 10px; text-align: left; }
+    .label { color:#555; font-weight:600; margin-right:3px; }
+    .block { margin-top: 8px; }
+    .block-title { font-size: 10px; font-weight: 700; margin-bottom: 4px; border-bottom:1px solid #eee; padding-bottom:2px; text-align: left; }
+    .text { white-space: pre-wrap; font-size: 9px; text-align: left; }
     .text-muted { color:#666; }
-    .table { width:100%; border-collapse: collapse; margin-top:6px; font-size: 9px; }
-    .table th, .table td { border: 1px solid #e5e7eb; padding: 4px 6px; text-align:left; }
+    .table { width:100%; border-collapse: collapse; margin-top:4px; font-size: 8px; }
+    .table th, .table td { border: 1px solid #e5e7eb; padding: 3px 4px; text-align:left; }
     .table th { background: #f8fafc; font-weight:700; }
     .num { text-align:right; }
-    .summary { margin-top: 6px; display:flex; flex-direction: column; gap:6px; align-items: flex-end; }
-    .summary div { background:#f8fafc; border:1px solid #e5e7eb; padding:4px 8px; border-radius:4px; font-size: 9px; }
+    .summary { margin-top: 4px; display:flex; flex-direction: column; gap:4px; align-items: flex-end; }
+    .summary div { background:#f8fafc; border:1px solid #e5e7eb; padding:3px 6px; border-radius:3px; font-size: 8px; }
     .grand-total { font-weight:700; }
-    .qr { display:flex; align-items:center; gap:8px; justify-content: flex-start; }
-    .qr img { border:1px solid #ddd; padding:4px; max-width: 80px; max-height: 80px; }
-    .url { font-size: 8px; word-break: break-all; color:#2563eb; text-align: left; max-width: 120px; }
-    .footer { margin-top: 15px; font-size: 8px; color:#777; text-align:left; }
+    .qr { display:flex; align-items:center; gap: 6px; justify-content: flex-start; }
+    .qr img { border:1px solid #ddd; padding:3px; max-width: 60px; max-height: 60px; }
+    .url { font-size: 7px; word-break: break-all; color:#2563eb; text-align: left; max-width: 100px; }
+    .footer { margin-top: 12px; font-size: 7px; color:#777; text-align:left; }
+    .highlight-red { color: #dc2626; font-weight: bold; }
     @media print { body { -webkit-print-color-adjust: exact; } }
   </style>
 </head>
 <body>
-<div class="content">
-  ${shopHeader}
-  <div class="header">
-    <div class="header-left">
-      <div class="title">Dossier SAV N° ${savCase.case_number}</div>
-      <div class="meta">Créé le ${(savCase.created_at ? new Date(savCase.created_at).toLocaleDateString() : "")} · Statut: ${statusLabels[savCase.status] || savCase.status}</div>
+<div class="dual-content">
+  <div class="content-block">
+    ${shopHeader}
+    <div class="header">
+      <div class="header-left">
+        <div class="title">Dossier SAV N° ${savCase.case_number}</div>
+        <div class="meta">Créé le ${(savCase.created_at ? new Date(savCase.created_at).toLocaleDateString() : "")} · Statut: ${statusLabels[savCase.status] || savCase.status}</div>
+      </div>
     </div>
+    ${customerBlock}
+    ${deviceBlock}
+    ${descriptionBlock}
+    ${notesBlock}
+    ${partsTable}
+    ${qrBlock}
+    <div class="footer">Document généré par Fixway Pro</div>
   </div>
-  ${customerBlock}
-  ${deviceBlock}
-  ${descriptionBlock}
-  ${notesBlock}
-  ${partsTable}
-  ${qrBlock}
-  <div class="footer">Document généré par Fixway Pro</div>
+  <div class="content-block">
+    ${shopHeader}
+    <div class="header">
+      <div class="header-left">
+        <div class="title">Dossier SAV N° ${savCase.case_number}</div>
+        <div class="meta">Créé le ${(savCase.created_at ? new Date(savCase.created_at).toLocaleDateString() : "")} · Statut: ${statusLabels[savCase.status] || savCase.status}</div>
+      </div>
+    </div>
+    ${customerBlock}
+    ${deviceBlock}
+    ${descriptionBlock}
+    ${notesBlock}
+    ${partsTable}
+    ${qrBlock}
+    <div class="footer">Document généré par Fixway Pro</div>
+  </div>
 </div>
 </body>
 </html>`;
