@@ -88,13 +88,22 @@ async function checkSMSCredits(shopId: string): Promise<boolean> {
 }
 
 async function updateSMSCredits(shopId: string): Promise<void> {
-  // Incrémenter les crédits utilisés
-  await supabase
+  // Récupérer les crédits actuels
+  const { data: shop } = await supabase
     .from('shops')
-    .update({ 
-      sms_credits_used: supabase.raw('sms_credits_used + 1')
-    })
-    .eq('id', shopId);
+    .select('sms_credits_used')
+    .eq('id', shopId)
+    .single();
+
+  if (shop) {
+    // Incrémenter les crédits utilisés
+    await supabase
+      .from('shops')
+      .update({ 
+        sms_credits_used: shop.sms_credits_used + 1
+      })
+      .eq('id', shopId);
+  }
 }
 
 async function logSMSHistory(request: SMSRequest, status: string): Promise<void> {
