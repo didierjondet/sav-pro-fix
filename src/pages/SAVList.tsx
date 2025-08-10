@@ -14,7 +14,7 @@ import { useSAVCases } from '@/hooks/useSAVCases';
 import { useShop } from '@/hooks/useShop';
 import { formatDelayText, calculateSAVDelay } from '@/hooks/useSAVDelay';
 import { useSAVUnreadMessages } from '@/hooks/useSAVUnreadMessages';
-import { SAVQRCodePrint } from '@/components/sav/SAVQRCodePrint';
+import { SAVPrintButton } from '@/components/sav/SAVPrint';
 import { 
   Eye,
   Clock,
@@ -23,7 +23,7 @@ import {
   Package,
   User,
   Trash2,
-  QrCode,
+  Printer,
   MessageSquare,
   Search,
   Filter,
@@ -349,25 +349,11 @@ export default function SAVList() {
                           Voir
                         </Button>
                         
-                        {(savCase.sav_type === 'client' || savCase.sav_type === 'external') && (
-                          <Dialog>
-                            <DialogTrigger asChild>
-                              <Button variant="outline" size="sm">
-                                <QrCode className="h-4 w-4 mr-1" />
-                                QR Code
-                              </Button>
-                            </DialogTrigger>
-                            <DialogContent>
-                              <DialogHeader>
-                                <DialogTitle>Impression QR Code - Dossier {savCase.case_number}</DialogTitle>
-                              </DialogHeader>
-                              <SAVQRCodePrint 
-                                savCase={savCase} 
-                                onClose={() => {}} 
-                              />
-                            </DialogContent>
-                          </Dialog>
-                        )}
+                        <SAVPrintButton 
+                          savCase={savCase}
+                          variant="outline"
+                          size="sm"
+                        />
                         
                         <Button 
                           variant="outline" 
