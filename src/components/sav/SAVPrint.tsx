@@ -4,7 +4,7 @@ import { useShop } from "@/hooks/useShop";
 import { supabase } from "@/integrations/supabase/client";
 import type { SAVCase } from "@/hooks/useSAVCases";
 import { Printer } from "lucide-react";
-import { generateFullTrackingUrl } from '@/utils/trackingUtils';
+import { generateShortTrackingUrl } from '@/utils/trackingUtils';
 
 interface SAVPrintButtonProps {
   savCase: SAVCase & { customer?: { first_name: string; last_name: string; email?: string; phone?: string; address?: string } };
@@ -19,7 +19,7 @@ export function SAVPrintButton({ savCase, className, size = "sm", variant = "out
 
   const generateTrackingUrl = () => {
     if (!savCase?.tracking_slug) return "";
-    return generateFullTrackingUrl(savCase.tracking_slug);
+    return generateShortTrackingUrl(savCase.tracking_slug);
   };
 
   const handlePrint = async () => {
@@ -185,14 +185,15 @@ export function SAVPrintButton({ savCase, className, size = "sm", variant = "out
   <style>
     @page { size: A4 portrait; margin: 1.2cm; }
     body { font-family: Arial, sans-serif; font-size: 12px; color: #111; }
-    .header { display:flex; align-items:center; justify-content:space-between; margin-bottom: 12px; }
-    .shop-header { display:flex; align-items:center; gap: 12px; border-bottom: 1px solid #ddd; padding-bottom: 8px; }
-    .shop-logo { max-height: 50px; max-width: 90px; }
-    .shop-info { line-height: 1.3; }
-    .shop-name { font-size: 16px; font-weight: 700; }
-    .shop-details { font-size: 11px; color:#555; }
-    .title { font-size: 18px; font-weight: 700; color:#2563eb; }
-    .meta { margin-top: 6px; color:#555; font-size: 11px; }
+    .header { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom: 12px; }
+    .shop-header { display:flex; align-items:center; gap: 12px; border-bottom: 1px solid #ddd; padding-bottom: 8px; max-width: 25%; }
+    .shop-logo { max-height: 40px; max-width: 70px; }
+    .shop-info { line-height: 1.2; }
+    .shop-name { font-size: 14px; font-weight: 700; }
+    .shop-details { font-size: 10px; color:#555; }
+    .header-right { text-align: right; max-width: 25%; }
+    .title { font-size: 16px; font-weight: 700; color:#2563eb; }
+    .meta { margin-top: 4px; color:#555; font-size: 10px; }
     .grid { display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 6px 16px; }
     .col-span-2 { grid-column: span 2 / span 2; }
     .label { color:#555; font-weight:600; margin-right:6px; }
@@ -209,7 +210,7 @@ export function SAVPrintButton({ savCase, className, size = "sm", variant = "out
     .grand-total { font-weight:700; }
     .qr { display:flex; align-items:center; gap:12px; }
     .qr img { border:1px solid #ddd; padding:6px; }
-    .url { font-size: 11px; word-break: break-all; color:#2563eb; }
+    .url { font-size: 10px; word-break: break-all; color:#2563eb; }
     .footer { margin-top: 18px; font-size: 10px; color:#777; text-align:center; }
     @media print { body { -webkit-print-color-adjust: exact; } }
   </style>
@@ -217,7 +218,8 @@ export function SAVPrintButton({ savCase, className, size = "sm", variant = "out
 <body>
   ${shopHeader}
   <div class="header">
-    <div>
+    <div></div>
+    <div class="header-right">
       <div class="title">Dossier SAV N° ${savCase.case_number}</div>
       <div class="meta">Créé le ${(savCase.created_at ? new Date(savCase.created_at).toLocaleDateString() : "")} · Statut: ${statusLabels[savCase.status] || savCase.status}</div>
     </div>
