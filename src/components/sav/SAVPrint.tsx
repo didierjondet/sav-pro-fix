@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { useShop } from "@/hooks/useShop";
 import { supabase } from "@/integrations/supabase/client";
 import type { SAVCase } from "@/hooks/useSAVCases";
-import { Printer } from "lucide-react";
+import { Printer, Scissors } from "lucide-react";
 import { generateShortTrackingUrl } from '@/utils/trackingUtils';
 
 interface SAVPrintButtonProps {
@@ -215,6 +215,9 @@ export function SAVPrintButton({ savCase, className, size = "sm", variant = "out
     .url { font-size: 7px; word-break: break-all; color:#2563eb; text-align: left; max-width: 100px; }
     .footer { margin-top: 12px; font-size: 7px; color:#777; text-align:left; }
     .highlight-red { color: #dc2626; font-weight: bold; }
+    .cut-line { margin: 15px 0; display: flex; align-items: center; justify-content: center; position: relative; }
+    .cut-line::before { content: ''; position: absolute; left: 0; right: 0; height: 1px; background: repeating-linear-gradient(to right, #666 0, #666 5px, transparent 5px, transparent 10px); }
+    .cut-line .scissors { background: white; padding: 0 8px; color: #666; font-size: 12px; }
     @media print { body { -webkit-print-color-adjust: exact; } }
   </style>
 </head>
@@ -235,6 +238,9 @@ export function SAVPrintButton({ savCase, className, size = "sm", variant = "out
     ${partsTable}
     ${qrBlock}
     <div class="footer">Document généré par Fixway Pro</div>
+  </div>
+  <div class="cut-line">
+    <span class="scissors">✂</span>
   </div>
   <div class="content-block">
     ${shopHeader}
