@@ -127,7 +127,7 @@ export function SMSCreditManager({ shops, onUpdate }: SMSCreditManagerProps) {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <MessageSquare className="h-5 w-5" />
-          Gestion des Crédits SMS
+          Répartition Crédits SMS - Magasins du Réseau
         </CardTitle>
       </CardHeader>
       <CardContent>

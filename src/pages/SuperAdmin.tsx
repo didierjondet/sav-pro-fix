@@ -41,6 +41,7 @@ import ShopManagementDialog from '@/components/admin/ShopManagementDialog';
 import SubscriptionPlansManager from '@/components/admin/SubscriptionPlansManager';
 import SupportTicketManager from '@/components/admin/SupportTicketManager';
 import { SMSCreditManager } from '@/components/admin/SMSCreditManager';
+import { TwilioCreditsManager } from '@/components/admin/TwilioCreditsManager';
 
 import {
   AlertDialog,
@@ -1458,6 +1459,7 @@ export default function SuperAdmin() {
 
           {/* SMS Credits Management */}
           <TabsContent value="sms">
+            <TwilioCreditsManager />
             <SMSCreditManager 
               shops={shops || []} 
               onUpdate={fetchData} 
