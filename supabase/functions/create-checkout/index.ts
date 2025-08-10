@@ -65,24 +65,17 @@ serve(async (req) => {
     
     const planData = plans?.find(p => p.name.toLowerCase() === plan.toLowerCase());
     if (!planData) throw new Error(`Plan ${plan} not found`);
+    if (!planData.stripe_price_id) throw new Error(`Stripe Price ID not configured for plan ${plan}`);
 
-    logStep("Plan data found", { planId: planData.id, price: planData.monthly_price });
+    logStep("Plan data found", { planId: planData.id, stripePriceId: planData.stripe_price_id });
 
-    // Create checkout session
+    // Create checkout session using existing Stripe price
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       customer_email: customerId ? undefined : user.email,
       line_items: [
         {
-          price_data: {
-            currency: "eur",
-            product_data: { 
-              name: `MySAV ${planData.name}`,
-              description: planData.description || `Abonnement MySAV ${planData.name}`
-            },
-            unit_amount: Math.round(planData.monthly_price * 100), // Convert to cents
-            recurring: { interval: "month" },
-          },
+          price: planData.stripe_price_id, // Use existing Stripe price ID
           quantity: 1,
         },
       ],

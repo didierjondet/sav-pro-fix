@@ -82,19 +82,33 @@ serve(async (req) => {
       subscriptionEnd = new Date(subscription.current_period_end * 1000).toISOString();
       logStep("Active subscription found", { subscriptionId: subscription.id, endDate: subscriptionEnd });
       
-      // Determine subscription tier from price
-      const priceId = subscription.items.data[0].price.id;
-      const price = await stripe.prices.retrieve(priceId);
-      const amount = price.unit_amount || 0;
+      // Get subscription plans from database to match price ID
+      const { data: plans } = await supabaseClient
+        .from('subscription_plans')
+        .select('*')
+        .eq('is_active', true);
       
-      if (amount === 3900) { // 39€
-        subscriptionTier = "premium";
-        smsCreditsAllocated = 100;
-      } else if (amount === 5900) { // 59€
-        subscriptionTier = "enterprise";
-        smsCreditsAllocated = 400;
+      const priceId = subscription.items.data[0].price.id;
+      const matchingPlan = plans?.find(p => p.stripe_price_id === priceId);
+      
+      if (matchingPlan) {
+        subscriptionTier = matchingPlan.name.toLowerCase();
+        smsCreditsAllocated = matchingPlan.sms_limit;
+        logStep("Matched plan from database", { planName: matchingPlan.name, smsLimit: matchingPlan.sms_limit });
+      } else {
+        // Fallback to old price-based detection
+        const price = await stripe.prices.retrieve(priceId);
+        const amount = price.unit_amount || 0;
+        
+        if (amount === 3900) { // 39€
+          subscriptionTier = "premium";
+          smsCreditsAllocated = 100;
+        } else if (amount === 5900) { // 59€
+          subscriptionTier = "enterprise";
+          smsCreditsAllocated = 400;
+        }
+        logStep("Used fallback price detection", { priceId, amount, subscriptionTier });
       }
-      logStep("Determined subscription tier", { priceId, amount, subscriptionTier });
     } else {
       logStep("No active subscription found");
     }
