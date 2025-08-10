@@ -184,41 +184,42 @@ export function SAVPrintButton({ savCase, className, size = "sm", variant = "out
   <title>Impression Dossier SAV ${savCase.case_number}</title>
   <style>
     @page { size: A4 portrait; margin: 1.2cm; }
-    body { font-family: Arial, sans-serif; font-size: 12px; color: #111; }
-    .header { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom: 12px; }
-    .shop-header { display:flex; align-items:center; gap: 12px; border-bottom: 1px solid #ddd; padding-bottom: 8px; max-width: 25%; }
-    .shop-logo { max-height: 40px; max-width: 70px; }
-    .shop-info { line-height: 1.2; }
-    .shop-name { font-size: 14px; font-weight: 700; }
-    .shop-details { font-size: 10px; color:#555; }
-    .header-right { text-align: right; max-width: 25%; }
-    .title { font-size: 16px; font-weight: 700; color:#2563eb; }
-    .meta { margin-top: 4px; color:#555; font-size: 10px; }
-    .grid { display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 6px 16px; }
-    .col-span-2 { grid-column: span 2 / span 2; }
-    .label { color:#555; font-weight:600; margin-right:6px; }
-    .block { margin-top: 14px; }
-    .block-title { font-size: 14px; font-weight: 700; margin-bottom: 8px; border-bottom:1px solid #eee; padding-bottom:4px; }
-    .text { white-space: pre-wrap; }
+    body { font-family: Arial, sans-serif; font-size: 11px; color: #111; margin-left: 50%; }
+    .content { width: 100%; }
+    .header { display:flex; align-items:flex-start; justify-content:flex-end; margin-bottom: 12px; }
+    .shop-header { display:flex; align-items:center; gap: 8px; border-bottom: 1px solid #ddd; padding-bottom: 6px; justify-content: flex-end; margin-bottom: 8px; }
+    .shop-logo { max-height: 35px; max-width: 60px; }
+    .shop-info { line-height: 1.2; text-align: right; }
+    .shop-name { font-size: 13px; font-weight: 700; }
+    .shop-details { font-size: 9px; color:#555; }
+    .header-right { text-align: right; }
+    .title { font-size: 14px; font-weight: 700; color:#2563eb; }
+    .meta { margin-top: 3px; color:#555; font-size: 9px; }
+    .grid { display:grid; grid-template-columns: repeat(1, minmax(0,1fr)); gap: 4px; }
+    .col-span-2 { grid-column: span 1 / span 1; }
+    .label { color:#555; font-weight:600; margin-right:4px; }
+    .block { margin-top: 10px; }
+    .block-title { font-size: 12px; font-weight: 700; margin-bottom: 6px; border-bottom:1px solid #eee; padding-bottom:3px; text-align: right; }
+    .text { white-space: pre-wrap; font-size: 10px; text-align: right; }
     .text-muted { color:#666; }
-    .table { width:100%; border-collapse: collapse; margin-top:8px; }
-    .table th, .table td { border: 1px solid #e5e7eb; padding: 6px 8px; text-align:left; }
+    .table { width:100%; border-collapse: collapse; margin-top:6px; font-size: 9px; }
+    .table th, .table td { border: 1px solid #e5e7eb; padding: 4px 6px; text-align:right; }
     .table th { background: #f8fafc; font-weight:700; }
     .num { text-align:right; }
-    .summary { margin-top: 8px; display:flex; gap:16px; justify-content:flex-end; }
-    .summary div { background:#f8fafc; border:1px solid #e5e7eb; padding:6px 10px; border-radius:6px; }
+    .summary { margin-top: 6px; display:flex; flex-direction: column; gap:6px; align-items: flex-end; }
+    .summary div { background:#f8fafc; border:1px solid #e5e7eb; padding:4px 8px; border-radius:4px; font-size: 9px; }
     .grand-total { font-weight:700; }
-    .qr { display:flex; align-items:center; gap:12px; }
-    .qr img { border:1px solid #ddd; padding:6px; }
-    .url { font-size: 10px; word-break: break-all; color:#2563eb; }
-    .footer { margin-top: 18px; font-size: 10px; color:#777; text-align:center; }
+    .qr { display:flex; align-items:center; gap:8px; justify-content: flex-end; }
+    .qr img { border:1px solid #ddd; padding:4px; max-width: 80px; max-height: 80px; }
+    .url { font-size: 8px; word-break: break-all; color:#2563eb; text-align: right; max-width: 120px; }
+    .footer { margin-top: 15px; font-size: 8px; color:#777; text-align:right; }
     @media print { body { -webkit-print-color-adjust: exact; } }
   </style>
 </head>
 <body>
+<div class="content">
   ${shopHeader}
   <div class="header">
-    <div></div>
     <div class="header-right">
       <div class="title">Dossier SAV N° ${savCase.case_number}</div>
       <div class="meta">Créé le ${(savCase.created_at ? new Date(savCase.created_at).toLocaleDateString() : "")} · Statut: ${statusLabels[savCase.status] || savCase.status}</div>
@@ -231,6 +232,7 @@ export function SAVPrintButton({ savCase, className, size = "sm", variant = "out
   ${partsTable}
   ${qrBlock}
   <div class="footer">Document généré par Fixway Pro</div>
+</div>
 </body>
 </html>`;
 
