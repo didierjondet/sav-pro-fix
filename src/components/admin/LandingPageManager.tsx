@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Save, Globe, Users, Award, DollarSign } from 'lucide-react';
+import { Save, Globe, Users, Award, DollarSign, FileText } from 'lucide-react';
 
 interface LandingContent {
   id?: string;
@@ -34,6 +34,9 @@ interface LandingContent {
   cta_subtitle?: string;
   cta_button_text?: string;
   footer_text?: string;
+  cgv_content?: string;
+  cgu_content?: string;
+  privacy_policy?: string;
 }
 
 export function LandingPageManager() {
@@ -443,8 +446,83 @@ export function LandingPageManager() {
               />
             </div>
           </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
+          </CardContent>
+        </Card>
+
+        {/* Section Documents Légaux */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <FileText className="h-5 w-5" />
+              <CardTitle>Documents Légaux</CardTitle>
+            </div>
+            <Button
+              onClick={() => saveSection('Documents Légaux', ['cgv_content', 'cgu_content', 'privacy_policy'])}
+              disabled={saving === 'Documents Légaux'}
+              size="sm"
+            >
+              <Save className="h-4 w-4 mr-2" />
+              {saving === 'Documents Légaux' ? 'Sauvegarde...' : 'Sauvegarder'}
+            </Button>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="cgv_content">Conditions Générales de Vente (CGV)</Label>
+              <Textarea
+                id="cgv_content"
+                value={content.cgv_content || ''}
+                onChange={(e) => updateContent('cgv_content', e.target.value)}
+                placeholder="Saisissez vos conditions générales de vente..."
+                rows={10}
+                className="font-mono text-sm"
+              />
+              <p className="text-sm text-muted-foreground">
+                Vous pouvez utiliser du HTML simple pour la mise en forme (p, br, strong, em, ul, ol, li, h1-h6)
+              </p>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="cgu_content">Conditions Générales d'Utilisation (CGU)</Label>
+              <Textarea
+                id="cgu_content"
+                value={content.cgu_content || ''}
+                onChange={(e) => updateContent('cgu_content', e.target.value)}
+                placeholder="Saisissez vos conditions générales d'utilisation..."
+                rows={10}
+                className="font-mono text-sm"
+              />
+              <p className="text-sm text-muted-foreground">
+                Vous pouvez utiliser du HTML simple pour la mise en forme (p, br, strong, em, ul, ol, li, h1-h6)
+              </p>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="privacy_policy">Politique de Confidentialité</Label>
+              <Textarea
+                id="privacy_policy"
+                value={content.privacy_policy || ''}
+                onChange={(e) => updateContent('privacy_policy', e.target.value)}
+                placeholder="Saisissez votre politique de confidentialité..."
+                rows={10}
+                className="font-mono text-sm"
+              />
+              <p className="text-sm text-muted-foreground">
+                Vous pouvez utiliser du HTML simple pour la mise en forme (p, br, strong, em, ul, ol, li, h1-h6)
+              </p>
+            </div>
+            
+            <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <h4 className="font-semibold text-blue-800 mb-2">💡 Conseils de rédaction :</h4>
+              <ul className="text-sm text-blue-700 space-y-1">
+                <li>• Les CGV définissent les conditions de vente de vos services</li>
+                <li>• Les CGU régissent l'utilisation de votre plateforme</li>
+                <li>• La politique de confidentialité explique le traitement des données personnelles (RGPD)</li>
+                <li>• Ces documents sont obligatoires pour toute activité commerciale en ligne</li>
+                <li>• Consultez un juriste pour vous assurer de leur conformité</li>
+              </ul>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
