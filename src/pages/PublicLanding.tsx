@@ -111,15 +111,12 @@ export default function PublicLanding() {
               Optimisez votre rendement, automatisez la communication client et offrez un suivi en temps réel. 
               La solution SAV nouvelle génération pour les professionnels du high-tech.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <div className="flex justify-center">
               <button 
-                className="px-8 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-lg flex items-center justify-center mx-auto"
+                className="px-8 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-lg flex items-center justify-center"
                 onClick={handleAuthClick}
               >
                 Démarrer maintenant <ArrowRight className="ml-2 h-5 w-5" />
-              </button>
-              <button className="px-8 py-3 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 text-lg">
-                Voir la démo
               </button>
             </div>
           </div>
@@ -248,11 +245,22 @@ export default function PublicLanding() {
         </div>
       </section>
 
-      {/* Footer */}
+      {/* Footer avec liens légaux */}
       <footer className="bg-gray-900 py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center text-gray-400">
             <p>&copy; 2024 FixWay. Tous droits réservés.</p>
+            <div className="flex justify-center gap-6 mt-4 text-sm">
+              <a href="/cgu" className="hover:text-white transition-colors">
+                Conditions Générales d'Utilisation
+              </a>
+              <a href="/cgv" className="hover:text-white transition-colors">
+                Conditions Générales de Vente
+              </a>
+              <a href="/privacy" className="hover:text-white transition-colors">
+                Politique de Confidentialité
+              </a>
+            </div>
           </div>
         </div>
       </footer>

@@ -89,13 +89,10 @@ export default function Landing() {
               Optimisez votre rendement, automatisez la communication client et offrez un suivi en temps réel. 
               La solution SAV nouvelle génération pour les professionnels du high-tech.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <div className="flex justify-center">
               <Button size="lg" className="text-lg px-8" onClick={() => navigate('/auth')}>
                 Démarrer maintenant
                 <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
-              <Button variant="outline" size="lg" className="text-lg px-8" onClick={() => setShowDemo(true)}>
-                Voir la démo
               </Button>
             </div>
           </div>
@@ -306,12 +303,32 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Footer avec lien super admin */}
+      {/* Footer avec liens légaux */}
       <footer className="bg-gray-900 py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center text-gray-400">
             <p>&copy; 2024 SAV Pro. Tous droits réservés.</p>
-            <button onClick={() => navigate('/super-admin')} className="text-xs text-gray-600 hover:text-gray-400 mt-2 opacity-50 hover:opacity-100 transition-opacity">
+            <div className="flex justify-center gap-6 mt-4 text-sm">
+              <button 
+                onClick={() => navigate('/cgu')} 
+                className="hover:text-white transition-colors"
+              >
+                Conditions Générales d'Utilisation
+              </button>
+              <button 
+                onClick={() => navigate('/cgv')} 
+                className="hover:text-white transition-colors"
+              >
+                Conditions Générales de Vente
+              </button>
+              <button 
+                onClick={() => navigate('/privacy')} 
+                className="hover:text-white transition-colors"
+              >
+                Politique de Confidentialité
+              </button>
+            </div>
+            <button onClick={() => navigate('/super-admin')} className="text-xs text-gray-600 hover:text-gray-400 mt-4 opacity-50 hover:opacity-100 transition-opacity">
               Administration
             </button>
           </div>
