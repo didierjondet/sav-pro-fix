@@ -25,8 +25,6 @@ import Support from "./pages/Support";
 import RevenueDetails from "./pages/RevenueDetails";
 import ExpensesDetails from "./pages/ExpensesDetails";
 import StatsDetailsRouter from "./pages/StatsDetailsRouter";
-// CreateShop page supprimée - création automatique par trigger
-
 import NotFound from "./pages/NotFound";
 import ShopWebsite from "./pages/ShopWebsite";
 import Features from "./pages/Features";
@@ -60,7 +58,6 @@ const App = () => (
             <Route path="/quotes" element={<Quotes />} />
             <Route path="/orders" element={<Orders />} />
             <Route path="/customers" element={<Customers />} />
-            {/* Chat clients routes (aliases) */}
             <Route path="/client-chats" element={<ClientChats />} />
             <Route path="/client-chats/*" element={<ClientChats />} />
             <Route path="/chats" element={<ClientChats />} />
@@ -77,23 +74,13 @@ const App = () => (
             <Route path="/sms-test" element={<SMSTestNew />} />
             <Route path="/sms-purchase-success" element={<SMSPurchaseSuccess />} />
             <Route path="/subscription-success" element={<SubscriptionSuccess />} />
-            
             <Route path="/super-admin" element={<SuperAdmin />} />
             <Route path="/subscription" element={<Subscription />} />
             <Route path="/landing" element={<Landing />} />
-            
-            {/* Pages SEO publiques */}
             <Route path="/features" element={<Features />} />
             <Route path="/about" element={<About />} />
             <Route path="/contact" element={<Contact />} />
-            
-            {/* Routes pour les mini-sites des magasins */}
             <Route path="/shop/:slug" element={<ShopWebsite />} />
-            
-            {/* Route de suivi simple - désactivée temporairement pour éviter les collisions */}
-            {/* <Route path="/:slug" element={<SimpleTrack />} /> */}
-            
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
