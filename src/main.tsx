@@ -28,7 +28,7 @@ import ExpensesDetails from './pages/ExpensesDetails';
 import ClientChats from './pages/ClientChats';
 import NotFound from './pages/NotFound';
 import SubscriptionSuccess from './pages/SubscriptionSuccess';
-import SMSPurchaseSuccess from './pages/SMSPurchaseSuccess';
+import TestLanding from './pages/TestLanding';
 import SimpleTrack from './pages/SimpleTrack';
 import TrackSAV from './pages/TrackSAV';
 import './index.css';
@@ -118,11 +118,6 @@ function App() {
             <Route path="/subscription-success" element={
               <AuthProvider>
                 <SubscriptionSuccess />
-              </AuthProvider>
-            } />
-            <Route path="/sms-purchase-success" element={
-              <AuthProvider>
-                <SMSPurchaseSuccess />
               </AuthProvider>
             } />
             <Route path="/client-chats" element={

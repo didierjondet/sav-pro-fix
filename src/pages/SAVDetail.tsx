@@ -16,8 +16,6 @@ import { QrCode, ExternalLink, ArrowLeft, Copy, Share, Save, Lock, User, Mail, P
 import { useNavigate } from 'react-router-dom';
 import { SAVPartsEditor } from '@/components/sav/SAVPartsEditor';
 import { SAVPartsRequirements } from '@/components/sav/SAVPartsRequirements';
-import { SendSMSButton } from '@/components/sms/SendSMSButton';
-import { SMSTrackingButton } from '@/components/sms/SMSTrackingButton';
 import { SAVPrintButton } from '@/components/sav/SAVPrint';
 import { ReviewRequestButton } from '@/components/sav/ReviewRequestButton';
 
@@ -398,29 +396,6 @@ export default function SAVDetail() {
                         <ExternalLink className="h-4 w-4 mr-2" />
                         Prévisualiser
                       </Button>
-                      {savCase.customers?.phone && (
-                        <SendSMSButton
-                          recipientPhone={savCase.customers.phone}
-                          recipientName={`${savCase.customers.first_name} ${savCase.customers.last_name}`}
-                          type="sav"
-                          recordId={savCase.id}
-                          variant="outline"
-                          size="sm"
-                          className="flex-1 sm:flex-initial"
-                        />
-                      )}
-                      {savCase.customers?.phone && savCase.tracking_slug && (
-                        <SMSTrackingButton
-                          recipientPhone={savCase.customers.phone}
-                          recipientName={`${savCase.customers.first_name} ${savCase.customers.last_name}`}
-                          trackingUrl={generateTrackingUrl()}
-                          type="tracking"
-                          recordId={savCase.id}
-                          variant="default"
-                          size="sm"
-                          className="flex-1 sm:flex-initial"
-                        />
-                      )}
                       {savCase.status === 'ready' && (
                         <ReviewRequestButton
                           savCaseId={savCase.id}

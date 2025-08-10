@@ -15,9 +15,8 @@ import { useShop } from '@/hooks/useShop';
 import { formatDelayText, calculateSAVDelay } from '@/hooks/useSAVDelay';
 import { useSAVUnreadMessages } from '@/hooks/useSAVUnreadMessages';
 import { SAVQRCodePrint } from '@/components/sav/SAVQRCodePrint';
-import { SMSTrackingButton } from '@/components/sms/SMSTrackingButton';
 import { 
-  Eye, 
+  Eye,
   Clock,
   CheckCircle,
   AlertCircle,
@@ -349,18 +348,6 @@ export default function SAVList() {
                           <Eye className="h-4 w-4 mr-1" />
                           Voir
                         </Button>
-                        
-                        {(savCase.sav_type === 'client' || savCase.sav_type === 'external') && savCase.customer?.phone && savCase.tracking_slug && (
-                          <SMSTrackingButton
-                            recipientPhone={savCase.customer.phone}
-                            recipientName={`${savCase.customer.first_name} ${savCase.customer.last_name}`}
-                            trackingUrl={`${window.location.origin}/track/${savCase.tracking_slug}`}
-                            type="tracking"
-                            recordId={savCase.id}
-                            variant="outline"
-                            size="sm"
-                          />
-                        )}
                         
                         {(savCase.sav_type === 'client' || savCase.sav_type === 'external') && (
                           <Dialog>
