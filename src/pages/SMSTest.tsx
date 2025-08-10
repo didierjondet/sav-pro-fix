@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState } from 'react'; // SMS Test Page
 import { Header } from '@/components/layout/Header';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
