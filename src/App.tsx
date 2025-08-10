@@ -36,7 +36,13 @@ import SMSTestNew from "./pages/SMSTestNew";
 import SubscriptionSuccess from "./pages/SubscriptionSuccess";
 import SMSPurchaseSuccess from "./pages/SMSPurchaseSuccess";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5, // 5 minutes
+    },
+  },
+});
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
