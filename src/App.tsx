@@ -35,6 +35,8 @@ import Contact from "./pages/Contact";
 import Home from "./pages/Home";
 import TestLanding from "./pages/TestLanding";
 import SMSTestNew from "./pages/SMSTestNew";
+import SubscriptionSuccess from "./pages/SubscriptionSuccess";
+import SMSPurchaseSuccess from "./pages/SMSPurchaseSuccess";
 
 const queryClient = new QueryClient();
 
@@ -73,6 +75,8 @@ const App = () => (
             <Route path="/stats/expenses/*" element={<ExpensesDetails />} />
             <Route path="/support" element={<Support />} />
             <Route path="/sms-test" element={<SMSTestNew />} />
+            <Route path="/sms-purchase-success" element={<SMSPurchaseSuccess />} />
+            <Route path="/subscription-success" element={<SubscriptionSuccess />} />
             
             <Route path="/super-admin" element={<SuperAdmin />} />
             <Route path="/subscription" element={<Subscription />} />
