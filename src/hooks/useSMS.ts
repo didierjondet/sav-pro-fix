@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { generateShortTrackingUrl } from '@/utils/trackingUtils';
 import { useProfile } from '@/hooks/useProfile';
 
 interface SendSMSRequest {
@@ -81,23 +82,31 @@ export function useSMS() {
     status: string,
     savCaseId: string
   ): Promise<boolean> => {
+    // Récupérer le tracking_slug du SAV pour générer l'URL courte
+    const { data: savCase, error } = await supabase
+      .from('sav_cases')
+      .select('tracking_slug')
+      .eq('id', savCaseId)
+      .single();
+
+    const shortTrackingUrl = savCase?.tracking_slug ? generateShortTrackingUrl(savCase.tracking_slug) : '';
     let message = '';
     
     switch (status) {
       case 'in_progress':
-        message = `Bonjour ${customerName}, votre dossier SAV ${caseNumber} est maintenant en cours de réparation. Nous vous tiendrons informé de l'avancement.`;
+        message = `Bonjour ${customerName}, votre dossier SAV ${caseNumber} est maintenant en cours de réparation. Suivi : ${shortTrackingUrl}`;
         break;
       case 'waiting_parts':
-        message = `Bonjour ${customerName}, votre dossier SAV ${caseNumber} est en attente de pièces. Nous vous informerons dès leur réception.`;
+        message = `Bonjour ${customerName}, votre dossier SAV ${caseNumber} est en attente de pièces. Suivi : ${shortTrackingUrl}`;
         break;
       case 'ready_for_pickup':
-        message = `Bonjour ${customerName}, votre appareil (dossier ${caseNumber}) est prêt ! Vous pouvez venir le récupérer pendant nos heures d'ouverture.`;
+        message = `Bonjour ${customerName}, votre appareil (dossier ${caseNumber}) est prêt ! Vous pouvez venir le récupérer. Suivi : ${shortTrackingUrl}`;
         break;
       case 'delivered':
-        message = `Bonjour ${customerName}, merci d'avoir fait confiance à nos services pour votre dossier SAV ${caseNumber}. N'hésitez pas à nous contacter si besoin.`;
+        message = `Bonjour ${customerName}, merci d'avoir fait confiance à nos services pour votre dossier SAV ${caseNumber}. Suivi : ${shortTrackingUrl}`;
         break;
       default:
-        message = `Bonjour ${customerName}, le statut de votre dossier SAV ${caseNumber} a été mis à jour.`;
+        message = `Bonjour ${customerName}, le statut de votre dossier SAV ${caseNumber} a été mis à jour. Suivi : ${shortTrackingUrl}`;
     }
 
     return await sendSMS({

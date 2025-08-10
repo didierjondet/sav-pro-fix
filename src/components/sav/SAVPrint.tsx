@@ -4,6 +4,7 @@ import { useShop } from "@/hooks/useShop";
 import { supabase } from "@/integrations/supabase/client";
 import type { SAVCase } from "@/hooks/useSAVCases";
 import { Printer } from "lucide-react";
+import { generateFullTrackingUrl } from '@/utils/trackingUtils';
 
 interface SAVPrintButtonProps {
   savCase: SAVCase & { customer?: { first_name: string; last_name: string; email?: string; phone?: string; address?: string } };
@@ -18,8 +19,7 @@ export function SAVPrintButton({ savCase, className, size = "sm", variant = "out
 
   const generateTrackingUrl = () => {
     if (!savCase?.tracking_slug) return "";
-    const baseUrl = window.location.origin;
-    return `${baseUrl}/track/${savCase.tracking_slug}`;
+    return generateFullTrackingUrl(savCase.tracking_slug);
   };
 
   const handlePrint = async () => {

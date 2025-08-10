@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { generateFullTrackingUrl } from '@/utils/trackingUtils';
 import { useShop } from '@/hooks/useShop';
 import { SAVCase } from '@/hooks/useSAVCases';
 import { Card, CardContent } from '@/components/ui/card';
@@ -14,8 +15,7 @@ export function SAVQRCodePrint({ savCase, onClose }: SAVQRCodePrintProps) {
   // Utiliser la vraie URL de tracking comme dans SAVDetail
   const generateTrackingUrl = () => {
     if (!savCase?.tracking_slug) return '';
-    const baseUrl = window.location.origin;
-    return `${baseUrl}/track/${savCase.tracking_slug}`;
+    return generateFullTrackingUrl(savCase.tracking_slug);
   };
   
   const trackingUrl = generateTrackingUrl();

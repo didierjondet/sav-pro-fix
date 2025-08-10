@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { generateShortTrackingUrl, generateFullTrackingUrl } from '@/utils/trackingUtils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
@@ -77,8 +78,7 @@ export function SAVStatusManager({ savCase, onStatusUpdated }: SAVStatusManagerP
 
   const generateTrackingUrl = () => {
     if (!savCase.tracking_slug) return '';
-    const baseUrl = window.location.origin;
-    return `${baseUrl}/track/${savCase.tracking_slug}`;
+    return generateFullTrackingUrl(savCase.tracking_slug);
   };
 
   const handleUpdateStatus = async (sendSMS = false) => {
@@ -92,10 +92,10 @@ export function SAVStatusManager({ savCase, onStatusUpdated }: SAVStatusManagerP
       // Si on doit envoyer un SMS
       if (sendSMS && savCase.customer?.phone && savCase.tracking_slug) {
         const customerName = `${savCase.customer.first_name} ${savCase.customer.last_name}`;
-        const trackingUrl = generateTrackingUrl();
+        const shortTrackingUrl = generateShortTrackingUrl(savCase.tracking_slug);
         const statusLabel = statusConfig[selectedStatus as keyof typeof statusConfig]?.label || selectedStatus;
         
-        const message = `Bonjour ${customerName}, votre dossier de réparation ${savCase.case_number} a été mis à jour : ${statusLabel}. Suivez l'évolution : ${trackingUrl}`;
+        const message = `Bonjour ${customerName}, votre dossier de réparation ${savCase.case_number} a été mis à jour : ${statusLabel}. Suivez l'évolution : ${shortTrackingUrl}`;
         
         await supabase.functions.invoke('send-sms', {
           body: {

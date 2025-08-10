@@ -19,6 +19,7 @@ import { SAVPartsEditor } from '@/components/sav/SAVPartsEditor';
 import { SAVPartsRequirements } from '@/components/sav/SAVPartsRequirements';
 import { SAVPrintButton } from '@/components/sav/SAVPrint';
 import { ReviewRequestButton } from '@/components/sav/ReviewRequestButton';
+import { generateFullTrackingUrl } from '@/utils/trackingUtils';
 
 export default function SAVDetail() {
   const { id } = useParams<{ id: string }>();
@@ -76,8 +77,7 @@ export default function SAVDetail() {
 
   const generateTrackingUrl = () => {
     if (!savCase?.tracking_slug) return '';
-    const baseUrl = window.location.origin;
-    return `${baseUrl}/track/${savCase.tracking_slug}`;
+    return generateFullTrackingUrl(savCase.tracking_slug);
   };
 
   const generateQRCode = async () => {
