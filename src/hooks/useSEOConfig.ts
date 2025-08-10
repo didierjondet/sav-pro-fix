@@ -188,10 +188,16 @@ export function useSEOConfig() {
 
       // Si pas de config SEO existante, la créer
       if (!seoConfig) {
-        await createSEOConfig(shopId);
-        // Refetch pour avoir les données
-        await fetchSEOConfig();
+        const { data, error } = await supabase
+          .from('shop_seo_config')
+          .insert([{ shop_id: shopId, ...updates }])
+          .select()
+          .single();
+
+        if (error) throw error;
+        setSeoConfig(data);
         return;
+
       }
 
       // Mettre à jour la config existante

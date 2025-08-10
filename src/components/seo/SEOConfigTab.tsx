@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -34,54 +34,91 @@ export function SEOConfigTab() {
 
   const [formData, setFormData] = useState({
     // Meta tags de base
-    default_title: seoConfig?.default_title || '',
-    default_description: seoConfig?.default_description || '',
-    default_keywords: seoConfig?.default_keywords?.join(', ') || '',
+    default_title: '',
+    default_description: '',
+    default_keywords: '',
     
     // Open Graph
-    og_title: seoConfig?.og_title || '',
-    og_description: seoConfig?.og_description || '',
-    og_image_url: seoConfig?.og_image_url || '',
-    og_type: seoConfig?.og_type || 'website',
+    og_title: '',
+    og_description: '',
+    og_image_url: '',
+    og_type: 'website',
     
     // Twitter Cards
-    twitter_card_type: seoConfig?.twitter_card_type || 'summary_large_image',
-    twitter_title: seoConfig?.twitter_title || '',
-    twitter_description: seoConfig?.twitter_description || '',
-    twitter_image_url: seoConfig?.twitter_image_url || '',
+    twitter_card_type: 'summary_large_image',
+    twitter_title: '',
+    twitter_description: '',
+    twitter_image_url: '',
     
     // Structured data
-    business_type: seoConfig?.business_type || 'LocalBusiness',
-    price_range: seoConfig?.price_range || '€€',
-    accepts_reservations: seoConfig?.accepts_reservations ?? true,
+    business_type: 'LocalBusiness',
+    price_range: '€€',
+    accepts_reservations: true,
     
     // Analytics et verification
-    google_analytics_id: seoConfig?.google_analytics_id || '',
-    google_tag_manager_id: seoConfig?.google_tag_manager_id || '',
-    google_site_verification: seoConfig?.google_site_verification || '',
-    bing_site_verification: seoConfig?.bing_site_verification || '',
-    facebook_domain_verification: seoConfig?.facebook_domain_verification || '',
+    google_analytics_id: '',
+    google_tag_manager_id: '',
+    google_site_verification: '',
+    bing_site_verification: '',
+    facebook_domain_verification: '',
     
     // Robots et sitemap
-    robots_txt: seoConfig?.robots_txt || 'User-agent: *\nDisallow: /admin\nDisallow: /api\n\nSitemap: https://fixway.fr/sitemap.xml',
-    sitemap_enabled: seoConfig?.sitemap_enabled ?? true,
+    robots_txt: 'User-agent: *\nDisallow: /admin\nDisallow: /api\n\nSitemap: https://fixway.fr/sitemap.xml',
+    sitemap_enabled: true,
     
     // URL canoniques
-    canonical_domain: seoConfig?.canonical_domain || 'fixway.fr',
-    force_https: seoConfig?.force_https ?? true,
+    canonical_domain: 'fixway.fr',
+    force_https: true,
     
     // Images par défaut
-    default_alt_text_pattern: seoConfig?.default_alt_text_pattern || '{shop_name} - Service de réparation',
-    favicon_url: seoConfig?.favicon_url || '',
+    default_alt_text_pattern: '{shop_name} - Service de réparation',
+    favicon_url: '',
     
     // Performance
-    lazy_loading_enabled: seoConfig?.lazy_loading_enabled ?? true,
-    webp_images_enabled: seoConfig?.webp_images_enabled ?? true,
+    lazy_loading_enabled: true,
+    webp_images_enabled: true,
     
     // Données locales
-    service_areas: seoConfig?.service_areas?.join(', ') || '',
-    languages_supported: seoConfig?.languages_supported?.join(', ') || 'fr'
+    service_areas: '',
+    languages_supported: 'fr'
   });
+
+  // Mettre à jour le formulaire quand les données SEO arrivent
+  useEffect(() => {
+    if (seoConfig) {
+      setFormData({
+        default_title: seoConfig.default_title || '',
+        default_description: seoConfig.default_description || '',
+        default_keywords: seoConfig.default_keywords?.join(', ') || '',
+        og_title: seoConfig.og_title || '',
+        og_description: seoConfig.og_description || '',
+        og_image_url: seoConfig.og_image_url || '',
+        og_type: seoConfig.og_type || 'website',
+        twitter_card_type: seoConfig.twitter_card_type || 'summary_large_image',
+        twitter_title: seoConfig.twitter_title || '',
+        twitter_description: seoConfig.twitter_description || '',
+        twitter_image_url: seoConfig.twitter_image_url || '',
+        business_type: seoConfig.business_type || 'LocalBusiness',
+        price_range: seoConfig.price_range || '€€',
+        accepts_reservations: seoConfig.accepts_reservations ?? true,
+        google_analytics_id: seoConfig.google_analytics_id || '',
+        google_tag_manager_id: seoConfig.google_tag_manager_id || '',
+        google_site_verification: seoConfig.google_site_verification || '',
+        bing_site_verification: seoConfig.bing_site_verification || '',
+        facebook_domain_verification: seoConfig.facebook_domain_verification || '',
+        robots_txt: seoConfig.robots_txt || 'User-agent: *\nDisallow: /admin\nDisallow: /api\n\nSitemap: https://fixway.fr/sitemap.xml',
+        sitemap_enabled: seoConfig.sitemap_enabled ?? true,
+        canonical_domain: seoConfig.canonical_domain || 'fixway.fr',
+        force_https: seoConfig.force_https ?? true,
+        default_alt_text_pattern: seoConfig.default_alt_text_pattern || '{shop_name} - Service de réparation',
+        favicon_url: seoConfig.favicon_url || '',
+        lazy_loading_enabled: seoConfig.lazy_loading_enabled ?? true,
+        webp_images_enabled: seoConfig.webp_images_enabled ?? true,
+        service_areas: seoConfig.service_areas?.join(', ') || '',
+        languages_supported: seoConfig.languages_supported?.join(', ') || 'fr'
+      });
+    }
+  }, [seoConfig]);
 
   const handleSectionSave = async (sectionData: any) => {
     if (!sectionData) return;
