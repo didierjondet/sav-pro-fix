@@ -46,6 +46,7 @@ import { SMSCreditManager } from '@/components/admin/SMSCreditManager';
 import { TwilioCreditsManager } from '@/components/admin/TwilioCreditsManager';
 import { SEOConfigTab } from '@/components/seo/SEOConfigTab';
 import { BrandingManager } from '@/components/admin/BrandingManager';
+import { LandingPageManager } from '@/components/admin/LandingPageManager';
 
 import {
   AlertDialog,
