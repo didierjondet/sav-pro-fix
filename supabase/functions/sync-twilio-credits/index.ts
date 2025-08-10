@@ -103,8 +103,10 @@ serve(async (req) => {
       .upsert({
         id: '00000000-0000-0000-0000-000000000001', // ID fixe pour l'enregistrement global
         total_credits: totalSmsCredits,
-        remaining_credits: totalSmsCredits - totalAllocated,
         used_credits: totalAllocated,
+        twilio_balance_usd: twilioBalance,
+        last_sync_at: new Date().toISOString(),
+        sync_status: 'success',
         updated_at: new Date().toISOString()
       });
 

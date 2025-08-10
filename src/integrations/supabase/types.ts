@@ -62,24 +62,33 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          last_sync_at: string | null
           remaining_credits: number | null
+          sync_status: string | null
           total_credits: number | null
+          twilio_balance_usd: number | null
           updated_at: string
           used_credits: number | null
         }
         Insert: {
           created_at?: string
           id?: string
+          last_sync_at?: string | null
           remaining_credits?: number | null
+          sync_status?: string | null
           total_credits?: number | null
+          twilio_balance_usd?: number | null
           updated_at?: string
           used_credits?: number | null
         }
         Update: {
           created_at?: string
           id?: string
+          last_sync_at?: string | null
           remaining_credits?: number | null
+          sync_status?: string | null
           total_credits?: number | null
+          twilio_balance_usd?: number | null
           updated_at?: string
           used_credits?: number | null
         }

@@ -7,10 +7,12 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { RefreshCw, CreditCard, Zap, RotateCcw, AlertCircle } from 'lucide-react';
 import { useTwilioCredits } from '@/hooks/useTwilioCredits';
+import { useGlobalSMSCredits } from '@/hooks/useGlobalSMSCredits';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
 export function TwilioCreditsManager() {
   const { balance, loading, purchasing, fetchTwilioBalance, purchaseCredits, syncCreditsWithShops } = useTwilioCredits();
+  const { globalCredits, fetchGlobalCredits } = useGlobalSMSCredits();
   const [purchaseAmount, setPurchaseAmount] = useState<string>('100');
 
   const handlePurchase = async () => {
@@ -29,6 +31,7 @@ export function TwilioCreditsManager() {
     try {
       await syncCreditsWithShops();
       await fetchTwilioBalance();
+      await fetchGlobalCredits();
     } catch (error) {
       // Erreur déjà gérée dans le hook
     }
@@ -172,6 +175,40 @@ export function TwilioCreditsManager() {
             Synchronisation
           </h3>
           
+          {/* Statistiques de répartition */}
+          {globalCredits && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+              <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
+                <h3 className="font-medium text-purple-900 mb-2">Total Alloué</h3>
+                <div className="text-2xl font-bold text-purple-900">
+                  {globalCredits.used_credits}
+                </div>
+                <p className="text-sm text-purple-600">SMS distribués aux magasins</p>
+              </div>
+
+              <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg">
+                <h3 className="font-medium text-orange-900 mb-2">Disponible Réseau</h3>
+                <div className="text-2xl font-bold text-orange-900">
+                  {globalCredits.remaining_credits}
+                </div>
+                <p className="text-sm text-orange-600">SMS non alloués</p>
+              </div>
+
+              <div className="p-4 bg-indigo-50 border border-indigo-200 rounded-lg">
+                <h3 className="font-medium text-indigo-900 mb-2">Dernière Sync</h3>
+                <div className="text-sm font-bold text-indigo-900">
+                  {new Date(globalCredits.last_sync_at).toLocaleString('fr-FR')}
+                </div>
+                <Badge 
+                  variant={globalCredits.sync_status === 'success' ? 'default' : 'destructive'}
+                  className="mt-1"
+                >
+                  {globalCredits.sync_status}
+                </Badge>
+              </div>
+            </div>
+          )}
+
           <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
             <div>
               <p className="font-medium">Synchroniser avec les magasins</p>
