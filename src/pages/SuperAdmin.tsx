@@ -27,6 +27,7 @@ import {
   Zap,
   Globe,
   HelpCircle,
+  Search,
 } from 'lucide-react';
 import {
   Dialog,
@@ -42,6 +43,7 @@ import SubscriptionPlansManager from '@/components/admin/SubscriptionPlansManage
 import SupportTicketManager from '@/components/admin/SupportTicketManager';
 import { SMSCreditManager } from '@/components/admin/SMSCreditManager';
 import { TwilioCreditsManager } from '@/components/admin/TwilioCreditsManager';
+import { SEOConfigTab } from '@/components/seo/SEOConfigTab';
 
 import {
   AlertDialog,
@@ -874,7 +876,7 @@ export default function SuperAdmin() {
         </div>
 
         <Tabs defaultValue="shops" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6 bg-white border-slate-200">
+          <TabsList className="grid w-full grid-cols-7 bg-white border-slate-200">
             <TabsTrigger value="shops" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-slate-700">
               <Store className="h-4 w-4" />
               Gestion Magasins
@@ -903,6 +905,10 @@ export default function SuperAdmin() {
                   {activeSupportCount}
                 </Badge>
               )}
+            </TabsTrigger>
+            <TabsTrigger value="seo" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-slate-700">
+              <Search className="h-4 w-4" />
+              SEO
             </TabsTrigger>
           </TabsList>
 
@@ -1582,6 +1588,11 @@ export default function SuperAdmin() {
                 </CardContent>
               </Card>
             )}
+          </TabsContent>
+
+          {/* SEO Configuration */}
+          <TabsContent value="seo">
+            <SEOConfigTab />
           </TabsContent>
         </Tabs>
 
