@@ -10,6 +10,7 @@ import { useParts } from '@/hooks/useParts';
 import { Search, Plus, Trash2, ArrowLeft } from 'lucide-react';
 import { QuoteItem, Quote } from '@/hooks/useQuotes';
 import { CustomerSearch } from '@/components/customers/CustomerSearch';
+import { FileUpload } from '@/components/parts/FileUpload';
 import { useEffect } from 'react';
 
 interface QuoteFormProps {
@@ -493,6 +494,24 @@ const updateUnitPurchasePrice = (partId: string, unitPrice: number) => {
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
+                      </div>
+
+                      {/* Section pour les fichiers joints */}
+                      <div className="mt-4">
+                        <FileUpload
+                          files={(item as any).attachments || []}
+                          onFilesChange={(files) => {
+                            setSelectedItems(items => 
+                              items.map(i => 
+                                i.part_id === item.part_id 
+                                  ? { ...i, attachments: files }
+                                  : i
+                              )
+                            );
+                          }}
+                          partId={item.part_id}
+                          label="Fichiers joints (photos, PDF)"
+                        />
                       </div>
                     </div>
                   );

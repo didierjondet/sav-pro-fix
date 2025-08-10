@@ -561,6 +561,7 @@ export type Database = {
       }
       sav_parts: {
         Row: {
+          attachments: Json | null
           created_at: string
           id: string
           part_id: string | null
@@ -571,6 +572,7 @@ export type Database = {
           unit_price: number | null
         }
         Insert: {
+          attachments?: Json | null
           created_at?: string
           id?: string
           part_id?: string | null
@@ -581,6 +583,7 @@ export type Database = {
           unit_price?: number | null
         }
         Update: {
+          attachments?: Json | null
           created_at?: string
           id?: string
           part_id?: string | null

@@ -10,6 +10,7 @@ import { Plus, Trash2, Search, AlertTriangle } from 'lucide-react';
 import { Part, useParts } from '@/hooks/useParts';
 import { useNotifications } from '@/hooks/useNotifications';
 import { useOrders } from '@/hooks/useOrders';
+import { FileUpload } from '@/components/parts/FileUpload';
 
 interface SelectedPart {
   part_id: string;
@@ -19,6 +20,7 @@ interface SelectedPart {
   time_minutes: number;
   unit_price: number;
   available_stock: number;
+  attachments?: string[];
 }
 
 interface PartsSelectionProps {
@@ -58,6 +60,7 @@ export function PartsSelection({ selectedParts, onPartsChange, savCaseId }: Part
         time_minutes: 0,
         unit_price: part.selling_price || 0,
         available_stock: part.quantity,
+        attachments: [],
       };
       onPartsChange([...selectedParts, newPart]);
     }
@@ -101,7 +104,7 @@ export function PartsSelection({ selectedParts, onPartsChange, savCaseId }: Part
     setShowStockWarnings(showStockWarnings.filter(id => id !== partId));
   };
 
-  const updatePart = (partId: string, field: keyof SelectedPart, value: string | number) => {
+  const updatePart = (partId: string, field: keyof SelectedPart, value: string | number | string[]) => {
     const updatedParts = selectedParts.map(part =>
       part.part_id === partId ? { ...part, [field]: value } : part
     );
@@ -260,6 +263,16 @@ export function PartsSelection({ selectedParts, onPartsChange, savCaseId }: Part
                             onChange={(e) => updatePart(part.part_id, 'unit_price', parseFloat(e.target.value) || 0)}
                           />
                         </div>
+                      </div>
+
+                      {/* Section pour les fichiers joints */}
+                      <div className="mt-4">
+                        <FileUpload
+                          files={part.attachments || []}
+                          onFilesChange={(files) => updatePart(part.part_id, 'attachments', files)}
+                          partId={part.part_id}
+                          label="Fichiers joints (photos, PDF)"
+                        />
                       </div>
                     </div>
                   </div>
