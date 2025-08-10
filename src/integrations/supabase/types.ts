@@ -649,6 +649,128 @@ export type Database = {
           },
         ]
       }
+      shop_seo_config: {
+        Row: {
+          accepts_reservations: boolean | null
+          bing_site_verification: string | null
+          business_hours: Json | null
+          business_type: string | null
+          canonical_domain: string | null
+          created_at: string
+          default_alt_text_pattern: string | null
+          default_description: string | null
+          default_keywords: string[] | null
+          default_title: string | null
+          facebook_domain_verification: string | null
+          favicon_url: string | null
+          force_https: boolean | null
+          google_analytics_id: string | null
+          google_site_verification: string | null
+          google_tag_manager_id: string | null
+          id: string
+          languages_supported: string[] | null
+          lazy_loading_enabled: boolean | null
+          local_business_hours: Json | null
+          og_description: string | null
+          og_image_url: string | null
+          og_title: string | null
+          og_type: string | null
+          price_range: string | null
+          robots_txt: string | null
+          service_areas: string[] | null
+          shop_id: string
+          sitemap_enabled: boolean | null
+          twitter_card_type: string | null
+          twitter_description: string | null
+          twitter_image_url: string | null
+          twitter_title: string | null
+          updated_at: string
+          webp_images_enabled: boolean | null
+        }
+        Insert: {
+          accepts_reservations?: boolean | null
+          bing_site_verification?: string | null
+          business_hours?: Json | null
+          business_type?: string | null
+          canonical_domain?: string | null
+          created_at?: string
+          default_alt_text_pattern?: string | null
+          default_description?: string | null
+          default_keywords?: string[] | null
+          default_title?: string | null
+          facebook_domain_verification?: string | null
+          favicon_url?: string | null
+          force_https?: boolean | null
+          google_analytics_id?: string | null
+          google_site_verification?: string | null
+          google_tag_manager_id?: string | null
+          id?: string
+          languages_supported?: string[] | null
+          lazy_loading_enabled?: boolean | null
+          local_business_hours?: Json | null
+          og_description?: string | null
+          og_image_url?: string | null
+          og_title?: string | null
+          og_type?: string | null
+          price_range?: string | null
+          robots_txt?: string | null
+          service_areas?: string[] | null
+          shop_id: string
+          sitemap_enabled?: boolean | null
+          twitter_card_type?: string | null
+          twitter_description?: string | null
+          twitter_image_url?: string | null
+          twitter_title?: string | null
+          updated_at?: string
+          webp_images_enabled?: boolean | null
+        }
+        Update: {
+          accepts_reservations?: boolean | null
+          bing_site_verification?: string | null
+          business_hours?: Json | null
+          business_type?: string | null
+          canonical_domain?: string | null
+          created_at?: string
+          default_alt_text_pattern?: string | null
+          default_description?: string | null
+          default_keywords?: string[] | null
+          default_title?: string | null
+          facebook_domain_verification?: string | null
+          favicon_url?: string | null
+          force_https?: boolean | null
+          google_analytics_id?: string | null
+          google_site_verification?: string | null
+          google_tag_manager_id?: string | null
+          id?: string
+          languages_supported?: string[] | null
+          lazy_loading_enabled?: boolean | null
+          local_business_hours?: Json | null
+          og_description?: string | null
+          og_image_url?: string | null
+          og_title?: string | null
+          og_type?: string | null
+          price_range?: string | null
+          robots_txt?: string | null
+          service_areas?: string[] | null
+          shop_id?: string
+          sitemap_enabled?: boolean | null
+          twitter_card_type?: string | null
+          twitter_description?: string | null
+          twitter_image_url?: string | null
+          twitter_title?: string | null
+          updated_at?: string
+          webp_images_enabled?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shop_seo_config_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       shop_services: {
         Row: {
           category: string

@@ -14,7 +14,9 @@ import { useToast } from '@/hooks/use-toast';
 import { useShop } from '@/hooks/useShop';
 import { useProfile } from '@/hooks/useProfile';
 import { useSubscription } from '@/hooks/useSubscription';
+import { useSEOConfig } from '@/hooks/useSEOConfig';
 import { supabase } from '@/integrations/supabase/client';
+import { SEOConfigTab } from '@/components/seo/SEOConfigTab';
 import * as XLSX from 'xlsx';
 import { useSearchParams } from 'react-router-dom';
 
@@ -37,7 +39,8 @@ import {
   Moon,
   Sun,
   Monitor,
-  Star
+  Star,
+  Search
 } from 'lucide-react';
 import { useTheme } from "next-themes";
 import { Switch } from '@/components/ui/switch';
@@ -576,7 +579,7 @@ const handleExportParts = async (format: 'csv' | 'xlsx') => {
               </div>
 
           <Tabs value={activeTab} onValueChange={(val) => { setActiveTab(val); setSearchParams(prev => { const p = new URLSearchParams(prev); p.set('tab', val); return p; }); }} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-6">
+            <TabsList className="grid w-full grid-cols-7">
               <TabsTrigger value="shop" className="flex items-center gap-2">
                 <Store className="h-4 w-4" />
                 Magasin
@@ -596,6 +599,10 @@ const handleExportParts = async (format: 'csv' | 'xlsx') => {
               <TabsTrigger value="import-export" className="flex items-center gap-2">
                 <Upload className="h-4 w-4" />
                 Import/Export
+              </TabsTrigger>
+              <TabsTrigger value="seo" className="flex items-center gap-2">
+                <Search className="h-4 w-4" />
+                SEO
               </TabsTrigger>
               {isAdmin && (
                 <TabsTrigger value="users" className="flex items-center gap-2">
@@ -1226,6 +1233,10 @@ const handleExportParts = async (format: 'csv' | 'xlsx') => {
                   </Card>
                 </>
               )}
+            </TabsContent>
+
+            <TabsContent value="seo" className="space-y-6">
+              <SEOConfigTab />
             </TabsContent>
 
           </Tabs>
