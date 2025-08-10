@@ -28,7 +28,7 @@ export function QuoteForm({ onSubmit, onCancel, initialQuote, submitLabel, title
   const [notes, setNotes] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedItems, setSelectedItems] = useState<QuoteItem[]>([]);
-  const [deviceInfo, setDeviceInfo] = useState({ brand: '', model: '', imei: '', sku: '', problemDescription: '' });
+  const [deviceInfo, setDeviceInfo] = useState({ brand: '', model: '', imei: '', sku: '', problemDescription: '', attachments: [] as string[] });
 
   useEffect(() => {
     if (initialQuote) {
@@ -48,6 +48,7 @@ export function QuoteForm({ onSubmit, onCancel, initialQuote, submitLabel, title
         imei: (initialQuote as any).device_imei || '',
         sku: (initialQuote as any).sku || '',
         problemDescription: (initialQuote as any).problem_description || '',
+        attachments: (initialQuote as any).attachments || [],
       });
       // Customer id is optional in quotes schema
       setSelectedCustomerId(null);
@@ -323,6 +324,13 @@ const updateUnitPurchasePrice = (partId: string, unitPrice: number) => {
                 required
               />
             </div>
+            
+            <FileUpload
+              files={deviceInfo.attachments}
+              onFilesChange={(files) => setDeviceInfo({ ...deviceInfo, attachments: files })}
+              partId="quote-device-info"
+              label="Photos de l'appareil ou documents"
+            />
           </CardContent>
         </Card>
 
