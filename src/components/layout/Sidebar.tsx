@@ -202,6 +202,18 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
               <HelpCircle className="mr-3 h-5 w-5" />
               Support
             </Button>
+            {/* Lien de test SMS en mode développement */}
+            <Button 
+              variant="ghost" 
+              className="w-full justify-start mb-2"
+              onClick={() => {
+                navigate('/sms-test');
+                onClose();
+              }}
+            >
+              <MessageSquare className="mr-3 h-5 w-5" />
+              Test SMS
+            </Button>
             <Button 
               variant="ghost" 
               className="w-full justify-start"

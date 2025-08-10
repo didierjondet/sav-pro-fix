@@ -21,6 +21,7 @@ import * as XLSX from 'xlsx';
 import { useSearchParams } from 'react-router-dom';
 
 import { SMSHistory } from '@/components/sms/SMSHistory';
+import { SMSDiagnostic } from '@/components/sms/SMSDiagnostic';
 import { ImportStock } from '@/components/parts/ImportStock';
 import { 
   Store, 
@@ -858,6 +859,8 @@ const handleExportParts = async (format: 'csv' | 'xlsx') => {
                   </div>
                 </CardContent>
               </Card>
+              
+              <SMSDiagnostic />
               
               <SMSHistory />
             </TabsContent>
