@@ -185,8 +185,8 @@ export function SAVPrintButton({ savCase, className, size = "sm", variant = "out
   <style>
     @page { size: A4 portrait; margin: 1.2cm; }
     body { font-family: Arial, sans-serif; font-size: 10px; color: #111; }
-    .dual-content { display: flex; gap: 20px; width: 100%; }
-    .content-block { width: 48%; }
+    .dual-content { display: flex; flex-direction: column; gap: 20px; width: 50%; }
+    .content-block { width: 100%; }
     .header { display:flex; align-items:flex-start; justify-content:flex-start; margin-bottom: 12px; }
     .shop-header { display:flex; align-items:center; gap: 6px; border-bottom: 1px solid #ddd; padding-bottom: 4px; justify-content: flex-start; margin-bottom: 6px; }
     .shop-logo { max-height: 30px; max-width: 50px; }
