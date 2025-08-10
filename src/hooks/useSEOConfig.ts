@@ -81,11 +81,35 @@ export function useSEOConfig() {
       // Récupérer le shop_id de l'utilisateur
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
-        .select('shop_id')
+        .select('shop_id, role')
         .eq('user_id', user.id)
         .single();
 
       if (profileError) throw profileError;
+      
+      // Pour les super admins, on récupère la première boutique ou on en crée une par défaut
+      if (profileData?.role === 'super_admin' && !profileData?.shop_id) {
+        const { data: shops, error: shopsError } = await supabase
+          .from('shops')
+          .select('id')
+          .limit(1);
+        
+        if (shopsError) throw shopsError;
+        
+        if (shops && shops.length > 0) {
+          profileData.shop_id = shops[0].id;
+        } else {
+          // Créer une boutique par défaut pour la config globale
+          const { data: newShop, error: shopError } = await supabase
+            .from('shops')
+            .insert([{ name: 'Configuration Globale', email: user.email }])
+            .select()
+            .single();
+          
+          if (shopError) throw shopError;
+          profileData.shop_id = newShop.id;
+        }
+      }
       
       if (!profileData?.shop_id) {
         console.error('No shop_id found for user');
@@ -138,18 +162,33 @@ export function useSEOConfig() {
       // Récupérer le shop_id d'abord
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
-        .select('shop_id')
+        .select('shop_id, role')
         .eq('user_id', user.id)
         .single();
 
       if (profileError) throw profileError;
-      if (!profileData?.shop_id) {
+      
+      let shopId = profileData?.shop_id;
+      
+      // Pour les super admins sans shop_id, utiliser la première boutique disponible
+      if (profileData?.role === 'super_admin' && !shopId) {
+        const { data: shops } = await supabase
+          .from('shops')
+          .select('id')
+          .limit(1);
+        
+        if (shops && shops.length > 0) {
+          shopId = shops[0].id;
+        }
+      }
+      
+      if (!shopId) {
         throw new Error('Aucun magasin associé à cet utilisateur');
       }
 
       // Si pas de config SEO existante, la créer
       if (!seoConfig) {
-        await createSEOConfig(profileData.shop_id);
+        await createSEOConfig(shopId);
         // Refetch pour avoir les données
         await fetchSEOConfig();
         return;

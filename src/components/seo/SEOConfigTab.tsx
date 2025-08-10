@@ -83,17 +83,23 @@ export function SEOConfigTab() {
     languages_supported: seoConfig?.languages_supported?.join(', ') || 'fr'
   });
 
-  const handleSave = async () => {
+  const handleSectionSave = async (sectionData: any) => {
+    if (!sectionData) return;
+    
     setSaving(true);
     try {
-      await updateSEOConfig({
-        ...formData,
-        default_keywords: formData.default_keywords ? formData.default_keywords.split(',').map(k => k.trim()) : [],
-        service_areas: formData.service_areas ? formData.service_areas.split(',').map(a => a.trim()) : [],
-        languages_supported: formData.languages_supported ? formData.languages_supported.split(',').map(l => l.trim()) : ['fr']
+      await updateSEOConfig(sectionData);
+      toast({
+        title: 'Section sauvegardée',
+        description: 'La configuration a été mise à jour',
       });
     } catch (error) {
-      console.error('Error saving SEO config:', error);
+      console.error('Save error:', error);
+      toast({
+        title: 'Erreur',
+        description: 'Impossible de sauvegarder cette section',
+        variant: 'destructive'
+      });
     } finally {
       setSaving(false);
     }
@@ -155,6 +161,18 @@ export function SEOConfigTab() {
               Séparez les mots-clés par des virgules
             </p>
           </div>
+          <Button 
+            onClick={() => handleSectionSave({
+              default_title: formData.default_title,
+              default_description: formData.default_description,
+              default_keywords: formData.default_keywords ? formData.default_keywords.split(',').map(k => k.trim()) : []
+            })}
+            disabled={saving}
+            size="sm"
+            className="mt-4"
+          >
+            {saving ? 'Sauvegarde...' : 'Sauvegarder les méta tags'}
+          </Button>
         </CardContent>
       </Card>
 
@@ -200,6 +218,18 @@ export function SEOConfigTab() {
               Recommandé: 1200x630 pixels
             </p>
           </div>
+          <Button 
+            onClick={() => handleSectionSave({
+              og_title: formData.og_title,
+              og_description: formData.og_description,
+              og_image_url: formData.og_image_url
+            })}
+            disabled={saving}
+            size="sm"
+            className="mt-4"
+          >
+            {saving ? 'Sauvegarde...' : 'Sauvegarder Open Graph'}
+          </Button>
         </CardContent>
       </Card>
 
@@ -251,6 +281,19 @@ export function SEOConfigTab() {
               placeholder="Code meta de vérification Bing Webmaster"
             />
           </div>
+          <Button 
+            onClick={() => handleSectionSave({
+              google_analytics_id: formData.google_analytics_id,
+              google_tag_manager_id: formData.google_tag_manager_id,
+              google_site_verification: formData.google_site_verification,
+              bing_site_verification: formData.bing_site_verification
+            })}
+            disabled={saving}
+            size="sm"
+            className="mt-4"
+          >
+            {saving ? 'Sauvegarde...' : 'Sauvegarder Analytics & Vérifications'}
+          </Button>
         </CardContent>
       </Card>
 
@@ -301,6 +344,19 @@ export function SEOConfigTab() {
             />
             <Label htmlFor="force-https">Forcer HTTPS</Label>
           </div>
+          <Button 
+            onClick={() => handleSectionSave({
+              robots_txt: formData.robots_txt,
+              sitemap_enabled: formData.sitemap_enabled,
+              canonical_domain: formData.canonical_domain,
+              force_https: formData.force_https
+            })}
+            disabled={saving}
+            size="sm"
+            className="mt-4"
+          >
+            {saving ? 'Sauvegarde...' : 'Sauvegarder Robots & Sitemap'}
+          </Button>
         </CardContent>
       </Card>
 
@@ -353,6 +409,19 @@ export function SEOConfigTab() {
             />
             <Label htmlFor="webp-images">Optimisation WebP automatique</Label>
           </div>
+          <Button 
+            onClick={() => handleSectionSave({
+              favicon_url: formData.favicon_url,
+              default_alt_text_pattern: formData.default_alt_text_pattern,
+              lazy_loading_enabled: formData.lazy_loading_enabled,
+              webp_images_enabled: formData.webp_images_enabled
+            })}
+            disabled={saving}
+            size="sm"
+            className="mt-4"
+          >
+            {saving ? 'Sauvegarde...' : 'Sauvegarder Images & Médias'}
+          </Button>
         </CardContent>
       </Card>
 
@@ -426,6 +495,20 @@ export function SEOConfigTab() {
             />
             <Label htmlFor="accepts-reservations">Accepte les réservations</Label>
           </div>
+          <Button 
+            onClick={() => handleSectionSave({
+              business_type: formData.business_type,
+              price_range: formData.price_range,
+              service_areas: formData.service_areas ? formData.service_areas.split(',').map(a => a.trim()) : [],
+              languages_supported: formData.languages_supported ? formData.languages_supported.split(',').map(l => l.trim()) : ['fr'],
+              accepts_reservations: formData.accepts_reservations
+            })}
+            disabled={saving}
+            size="sm"
+            className="mt-4"
+          >
+            {saving ? 'Sauvegarde...' : 'Sauvegarder SEO Local'}
+          </Button>
         </CardContent>
       </Card>
 
@@ -473,12 +556,6 @@ export function SEOConfigTab() {
         </CardContent>
       </Card>
 
-      {/* Bouton de sauvegarde */}
-      <div className="flex justify-end">
-        <Button onClick={handleSave} disabled={saving}>
-          {saving ? 'Sauvegarde...' : 'Sauvegarder la configuration SEO'}
-        </Button>
-      </div>
     </div>
   );
 }
