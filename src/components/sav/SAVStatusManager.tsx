@@ -99,7 +99,8 @@ export function SAVStatusManager({ savCase, onStatusUpdated }: SAVStatusManagerP
         
         await supabase.functions.invoke('send-sms', {
           body: {
-            to: savCase.customer.phone,
+            shopId: savCase.shop_id,
+            toNumber: savCase.customer.phone,
             message: message,
             type: 'status_change',
             recordId: savCase.id
