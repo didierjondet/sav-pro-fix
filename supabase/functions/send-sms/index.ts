@@ -22,6 +22,30 @@ interface SMSRequest {
   recordId?: string;
 }
 
+function formatPhoneNumber(phoneNumber: string): string {
+  // Nettoie le numéro (supprime espaces, tirets, etc.)
+  let cleaned = phoneNumber.replace(/[\s\-\(\)\.]/g, '');
+  
+  // Si le numéro commence par 0 et fait 10 chiffres (format français)
+  if (cleaned.startsWith('0') && cleaned.length === 10) {
+    // Convertit au format international français
+    return '+33' + cleaned.substring(1);
+  }
+  
+  // Si le numéro commence déjà par +33
+  if (cleaned.startsWith('+33')) {
+    return cleaned;
+  }
+  
+  // Si le numéro commence par 33 sans le +
+  if (cleaned.startsWith('33') && cleaned.length === 11) {
+    return '+' + cleaned;
+  }
+  
+  // Pour les autres formats, on assume que c'est déjà correct
+  return cleaned.startsWith('+') ? cleaned : '+' + cleaned;
+}
+
 async function sendTwilioSMS(to: string, body: string): Promise<any> {
   const url = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`;
   
@@ -117,8 +141,12 @@ serve(async (req) => {
       );
     }
 
+    // Formatter le numéro au format international
+    const formattedNumber = formatPhoneNumber(smsRequest.toNumber);
+    console.log(`Numéro formaté: ${smsRequest.toNumber} -> ${formattedNumber}`);
+
     // Envoyer le SMS via Twilio
-    const twilioResponse = await sendTwilioSMS(smsRequest.toNumber, smsRequest.message);
+    const twilioResponse = await sendTwilioSMS(formattedNumber, smsRequest.message);
     console.log('Réponse Twilio:', twilioResponse);
 
     if (twilioResponse.sid) {
