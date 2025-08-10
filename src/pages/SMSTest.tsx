@@ -21,7 +21,7 @@ import {
   Phone
 } from 'lucide-react';
 
-const SMSTestNew = () => {
+const SMSTest = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [testPhone, setTestPhone] = useState('');
   const [testMessage, setTestMessage] = useState('Test SMS depuis Fixway - Votre système fonctionne correctement ! 📱');
@@ -139,7 +139,7 @@ const SMSTestNew = () => {
               
               <div className="flex items-center gap-2 mb-6">
                 <MessageSquare className="h-6 w-6" />
-                <h1 className="text-2xl font-bold">Test SMS</h1>
+                <h1 className="text-2xl font-bold">Test SMS - Version Fixée</h1>
                 <Badge variant="outline">Debug Mode</Badge>
               </div>
 
@@ -311,4 +311,4 @@ const SMSTestNew = () => {
   );
 };
 
-export default SMSTestNew;
+export default SMSTest;
