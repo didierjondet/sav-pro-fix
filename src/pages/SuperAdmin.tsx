@@ -40,6 +40,7 @@ import {
 import ShopManagementDialog from '@/components/admin/ShopManagementDialog';
 import SubscriptionPlansManager from '@/components/admin/SubscriptionPlansManager';
 import SupportTicketManager from '@/components/admin/SupportTicketManager';
+import { SMSCreditManager } from '@/components/admin/SMSCreditManager';
 
 import {
   AlertDialog,
@@ -872,7 +873,7 @@ export default function SuperAdmin() {
         </div>
 
         <Tabs defaultValue="shops" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5 bg-white border-slate-200">
+          <TabsList className="grid w-full grid-cols-6 bg-white border-slate-200">
             <TabsTrigger value="shops" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-slate-700">
               <Store className="h-4 w-4" />
               Gestion Magasins
@@ -888,6 +889,10 @@ export default function SuperAdmin() {
             <TabsTrigger value="statistics" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-slate-700">
               <BarChart3 className="h-4 w-4" />
               Statistiques
+            </TabsTrigger>
+            <TabsTrigger value="sms" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-slate-700">
+              <MessageSquare className="h-4 w-4" />
+              Crédits SMS
             </TabsTrigger>
             <TabsTrigger value="support" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-slate-700">
               <HelpCircle className="h-4 w-4" />
@@ -1449,6 +1454,14 @@ export default function SuperAdmin() {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* SMS Credits Management */}
+          <TabsContent value="sms">
+            <SMSCreditManager 
+              shops={shops || []} 
+              onUpdate={fetchData} 
+            />
           </TabsContent>
 
           {/* Support Management */}

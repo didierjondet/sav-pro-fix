@@ -4,6 +4,9 @@ import { useAuth } from '@/contexts/AuthContext';
 
 export interface ShopSettings {
   subscription_menu_visible: boolean;
+  sms_credits_allocated: number;
+  sms_credits_used: number;
+  subscription_tier: string;
 }
 
 export function useShopSettings() {
@@ -41,7 +44,7 @@ export function useShopSettings() {
         // Récupérer les paramètres du magasin
         const { data: shopData, error: shopError } = await supabase
           .from('shops')
-          .select('subscription_menu_visible')
+          .select('subscription_menu_visible, sms_credits_allocated, sms_credits_used, subscription_tier')
           .eq('id', profileData.shop_id)
           .single();
 
@@ -50,9 +53,12 @@ export function useShopSettings() {
         if (shopError) throw shopError;
 
         if (shopData) {
-          console.log('✅ Setting subscription_menu_visible to:', shopData.subscription_menu_visible);
+          console.log('✅ Setting shop settings:', shopData);
           setSettings({
-            subscription_menu_visible: shopData.subscription_menu_visible ?? true
+            subscription_menu_visible: shopData.subscription_menu_visible ?? true,
+            sms_credits_allocated: shopData.sms_credits_allocated || 0,
+            sms_credits_used: shopData.sms_credits_used || 0,
+            subscription_tier: shopData.subscription_tier || 'free'
           });
         }
       }
@@ -60,7 +66,10 @@ export function useShopSettings() {
       console.error('Error fetching shop settings:', error);
       // Définir des valeurs par défaut en cas d'erreur
       setSettings({
-        subscription_menu_visible: true
+        subscription_menu_visible: true,
+        sms_credits_allocated: 0,
+        sms_credits_used: 0,
+        subscription_tier: 'free'
       });
     } finally {
       setLoading(false);

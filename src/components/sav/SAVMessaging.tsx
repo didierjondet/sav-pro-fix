@@ -9,13 +9,16 @@ import { useProfile } from '@/hooks/useProfile';
 import { MessageSquare, Send } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { SMSButton } from './SMSButton';
 
 interface SAVMessagingProps {
   savCaseId: string;
   savCaseNumber: string;
+  customerPhone?: string;
+  customerName?: string;
 }
 
-export function SAVMessaging({ savCaseId, savCaseNumber }: SAVMessagingProps) {
+export function SAVMessaging({ savCaseId, savCaseNumber, customerPhone, customerName }: SAVMessagingProps) {
   const [newMessage, setNewMessage] = useState('');
   const { messages, loading, sendMessage } = useSAVMessages(savCaseId);
   const { profile } = useProfile();
@@ -71,9 +74,20 @@ export function SAVMessaging({ savCaseId, savCaseNumber }: SAVMessagingProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <MessageSquare className="h-5 w-5" />
-          Discussion - Dossier {savCaseNumber}
+        <CardTitle className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <MessageSquare className="h-5 w-5" />
+            Discussion - Dossier {savCaseNumber}
+          </div>
+          {customerPhone && (
+            <SMSButton
+              customerPhone={customerPhone}
+              customerName={customerName}
+              caseNumber={savCaseNumber}
+              caseId={savCaseId}
+              size="sm"
+            />
+          )}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
