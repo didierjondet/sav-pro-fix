@@ -48,7 +48,6 @@ interface SubscriptionPlan {
   billing_interval: 'month' | 'year';
   sav_limit: number | null;
   sms_limit: number;
-  sms_cost: number;
   features: string[];
   stripe_price_id: string | null;
   is_active: boolean;
@@ -71,7 +70,6 @@ export default function SubscriptionPlansManager() {
     billing_interval: 'month' as 'month' | 'year',
     sav_limit: null as number | null,
     sms_limit: 15,
-    sms_cost: 0.10,
     features: '',
     stripe_price_id: '',
     is_active: true
@@ -119,7 +117,6 @@ export default function SubscriptionPlansManager() {
       billing_interval: 'month',
       sav_limit: null,
       sms_limit: 15,
-      sms_cost: 0.10,
       features: '',
       stripe_price_id: '',
       is_active: true
@@ -139,7 +136,6 @@ export default function SubscriptionPlansManager() {
           billing_interval: formData.billing_interval,
           sav_limit: formData.sav_limit,
           sms_limit: formData.sms_limit,
-          sms_cost: formData.sms_cost,
           features: formData.features.split('\n').filter(f => f.trim()),
           stripe_price_id: formData.stripe_price_id || null,
           is_active: formData.is_active
@@ -203,7 +199,6 @@ export default function SubscriptionPlansManager() {
           billing_interval: formData.billing_interval,
           sav_limit: formData.sav_limit,
           sms_limit: formData.sms_limit,
-          sms_cost: formData.sms_cost,
           features: formData.features.split('\n').filter(f => f.trim()),
           stripe_price_id: formData.stripe_price_id || null,
           is_active: formData.is_active
@@ -362,16 +357,6 @@ export default function SubscriptionPlansManager() {
                     placeholder="ex: 100"
                   />
                 </div>
-                <div>
-                  <Label>Coût SMS (€)</Label>
-                  <Input
-                    type="number"
-                    step="0.001"
-                    value={formData.sms_cost}
-                    onChange={(e) => setFormData({ ...formData, sms_cost: parseFloat(e.target.value) || 0 })}
-                    placeholder="ex: 0.08"
-                  />
-                </div>
               </div>
               
               <div>
@@ -399,8 +384,8 @@ export default function SubscriptionPlansManager() {
                   onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
                 />
                 <Label>Plan actif</Label>
+                </div>
               </div>
-            </div>
             
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsCreateOpen(false)}>
@@ -475,7 +460,7 @@ export default function SubscriptionPlansManager() {
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   <MessageSquare className="h-4 w-4" />
-                  SMS: {plan.sms_limit} par mois ({plan.sms_cost}€/SMS)
+                  SMS: {plan.sms_limit} par mois
                 </div>
               </div>
               
@@ -575,15 +560,6 @@ export default function SubscriptionPlansManager() {
                   type="number"
                   value={formData.sms_limit}
                   onChange={(e) => setFormData({ ...formData, sms_limit: parseInt(e.target.value) || 0 })}
-                />
-              </div>
-              <div>
-                <Label>Coût SMS (€)</Label>
-                <Input
-                  type="number"
-                  step="0.001"
-                  value={formData.sms_cost}
-                  onChange={(e) => setFormData({ ...formData, sms_cost: parseFloat(e.target.value) || 0 })}
                 />
               </div>
             </div>

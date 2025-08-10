@@ -921,7 +921,6 @@ export type Database = {
           created_at: string
           id: string
           message: string
-          ovh_job_id: string | null
           record_id: string | null
           shop_id: string
           status: string
@@ -933,7 +932,6 @@ export type Database = {
           created_at?: string
           id?: string
           message: string
-          ovh_job_id?: string | null
           record_id?: string | null
           shop_id: string
           status?: string
@@ -945,7 +943,6 @@ export type Database = {
           created_at?: string
           id?: string
           message?: string
-          ovh_job_id?: string | null
           record_id?: string | null
           shop_id?: string
           status?: string
@@ -1008,7 +1005,6 @@ export type Database = {
           monthly_price: number
           name: string
           sav_limit: number | null
-          sms_cost: number
           sms_limit: number
           stripe_price_id: string | null
           updated_at: string
@@ -1023,7 +1019,6 @@ export type Database = {
           monthly_price?: number
           name: string
           sav_limit?: number | null
-          sms_cost?: number
           sms_limit?: number
           stripe_price_id?: string | null
           updated_at?: string
@@ -1038,7 +1033,6 @@ export type Database = {
           monthly_price?: number
           name?: string
           sav_limit?: number | null
-          sms_cost?: number
           sms_limit?: number
           stripe_price_id?: string | null
           updated_at?: string
