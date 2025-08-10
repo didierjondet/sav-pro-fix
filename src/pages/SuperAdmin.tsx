@@ -28,6 +28,7 @@ import {
   Globe,
   HelpCircle,
   Search,
+  Palette,
 } from 'lucide-react';
 import {
   Dialog,
@@ -44,6 +45,7 @@ import SupportTicketManager from '@/components/admin/SupportTicketManager';
 import { SMSCreditManager } from '@/components/admin/SMSCreditManager';
 import { TwilioCreditsManager } from '@/components/admin/TwilioCreditsManager';
 import { SEOConfigTab } from '@/components/seo/SEOConfigTab';
+import { BrandingManager } from '@/components/admin/BrandingManager';
 
 import {
   AlertDialog,
@@ -876,7 +878,7 @@ export default function SuperAdmin() {
         </div>
 
         <Tabs defaultValue="shops" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-7 bg-white border-slate-200">
+          <TabsList className="grid w-full grid-cols-8 bg-white border-slate-200">
             <TabsTrigger value="shops" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-slate-700">
               <Store className="h-4 w-4" />
               Gestion Magasins
@@ -909,6 +911,10 @@ export default function SuperAdmin() {
             <TabsTrigger value="seo" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-slate-700">
               <Search className="h-4 w-4" />
               SEO
+            </TabsTrigger>
+            <TabsTrigger value="branding" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-slate-700">
+              <Palette className="h-4 w-4" />
+              Charte Graphique
             </TabsTrigger>
           </TabsList>
 
@@ -1593,6 +1599,11 @@ export default function SuperAdmin() {
           {/* SEO Configuration */}
           <TabsContent value="seo">
             <SEOConfigTab />
+          </TabsContent>
+
+          {/* Branding Management */}
+          <TabsContent value="branding">
+            <BrandingManager />
           </TabsContent>
         </Tabs>
 

@@ -86,6 +86,13 @@ export function useSEOConfig() {
         .single();
 
       if (profileError) throw profileError;
+      
+      if (!profileData?.shop_id) {
+        console.error('No shop_id found for user');
+        setSeoConfig(null);
+        setLoading(false);
+        return;
+      }
 
       // Récupérer la config SEO
       const { data, error } = await supabase
@@ -108,10 +115,47 @@ export function useSEOConfig() {
     }
   };
 
+  const createSEOConfig = async (shopId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('shop_seo_config')
+        .insert([{ shop_id: shopId }])
+        .select()
+        .single();
+
+      if (error) throw error;
+      setSeoConfig(data);
+    } catch (error: any) {
+      console.error('SEO config creation error:', error);
+      throw error;
+    }
+  };
+
   const updateSEOConfig = async (updates: Partial<SEOConfig>) => {
-    if (!user || !seoConfig) return;
+    if (!user) return;
 
     try {
+      // Récupérer le shop_id d'abord
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('shop_id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (profileError) throw profileError;
+      if (!profileData?.shop_id) {
+        throw new Error('Aucun magasin associé à cet utilisateur');
+      }
+
+      // Si pas de config SEO existante, la créer
+      if (!seoConfig) {
+        await createSEOConfig(profileData.shop_id);
+        // Refetch pour avoir les données
+        await fetchSEOConfig();
+        return;
+      }
+
+      // Mettre à jour la config existante
       const { data, error } = await supabase
         .from('shop_seo_config')
         .update(updates)
