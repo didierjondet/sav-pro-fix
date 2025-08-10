@@ -207,7 +207,7 @@ export function SAVPrintButton({ savCase, className, size = "sm", variant = "out
     .table th, .table td { border: 1px solid #e5e7eb; padding: 3px 4px; text-align:left; }
     .table th { background: #f8fafc; font-weight:700; }
     .num { text-align:right; }
-    .summary { margin-top: 4px; display:flex; flex-direction: column; gap:4px; align-items: flex-end; }
+    .summary { margin-top: 4px; display:flex; flex-direction: column; gap:4px; align-items: flex-start; }
     .summary div { background:#f8fafc; border:1px solid #e5e7eb; padding:3px 6px; border-radius:3px; font-size: 8px; }
     .grand-total { font-weight:700; }
     .qr { display:flex; align-items:center; gap: 6px; justify-content: flex-start; }
