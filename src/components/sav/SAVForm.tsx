@@ -15,6 +15,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useProfile } from '@/hooks/useProfile';
 import { Badge } from '@/components/ui/badge';
 import { CustomerSearch } from '@/components/customers/CustomerSearch';
+import { FileUpload } from '@/components/parts/FileUpload';
 
 interface CustomerInfo {
   firstName: string;
@@ -30,6 +31,7 @@ interface DeviceInfo {
   imei: string;
   sku: string;
   problemDescription: string;
+  attachments: string[];
 }
 
 interface SelectedPart {
@@ -63,6 +65,7 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
     imei: '',
     sku: '',
     problemDescription: '',
+    attachments: [],
   });
   const [selectedParts, setSelectedParts] = useState<SelectedPart[]>([]);
   const [loading, setLoading] = useState(false);
@@ -187,13 +190,14 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
         phone: '',
         address: '',
       });
-      setDeviceInfo({
-        brand: '',
-        model: '',
-        imei: '',
-        sku: '',
-        problemDescription: '',
-      });
+        setDeviceInfo({
+          brand: '',
+          model: '',
+          imei: '',
+          sku: '',
+          problemDescription: '',
+          attachments: [],
+        });
       setSelectedParts([]);
       
       onSuccess?.();
@@ -374,6 +378,13 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
               required
             />
           </div>
+          
+          <FileUpload
+            files={deviceInfo.attachments}
+            onFilesChange={(files) => setDeviceInfo({ ...deviceInfo, attachments: files })}
+            partId="device-info"
+            label="Photos de l'appareil ou documents"
+          />
         </CardContent>
       </Card>
 
