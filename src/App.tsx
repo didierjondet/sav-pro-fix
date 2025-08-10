@@ -34,7 +34,7 @@ import About from "./pages/About";
 import Contact from "./pages/Contact";
 import Home from "./pages/Home";
 import TestLanding from "./pages/TestLanding";
-import SMSTestPage from "./pages/SMSTestPage";
+import SMSTest from "./pages/SMSTest";
 
 const queryClient = new QueryClient();
 
@@ -72,7 +72,7 @@ const App = () => (
             <Route path="/stats/expenses" element={<ExpensesDetails />} />
             <Route path="/stats/expenses/*" element={<ExpensesDetails />} />
             <Route path="/support" element={<Support />} />
-            <Route path="/sms-test" element={<SMSTestPage />} />
+            <Route path="/sms-test" element={<SMSTest />} />
             
             <Route path="/super-admin" element={<SuperAdmin />} />
             <Route path="/subscription" element={<Subscription />} />
