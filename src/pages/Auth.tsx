@@ -21,7 +21,7 @@ export default function Auth() {
 
   useEffect(() => {
     if (user) {
-      navigate('/');
+      navigate('/dashboard');
     }
   }, [user, navigate]);
 
@@ -42,7 +42,7 @@ export default function Auth() {
         title: "Connexion réussie",
         description: "Vous êtes maintenant connecté.",
       });
-      navigate('/');
+      navigate('/dashboard');
     }
     
     setLoading(false);
@@ -104,6 +104,16 @@ export default function Auth() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 to-secondary/5">
+      <div className="w-full max-w-md">
+        <div className="mb-4">
+          <Button 
+            variant="ghost" 
+            onClick={() => navigate('/')}
+            className="text-sm"
+          >
+            ← Retour à l'accueil
+          </Button>
+        </div>
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle className="text-2xl text-center">SAV Manager</CardTitle>
@@ -186,6 +196,7 @@ export default function Auth() {
           </Tabs>
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 }
