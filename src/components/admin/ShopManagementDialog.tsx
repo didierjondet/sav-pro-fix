@@ -475,16 +475,20 @@ export default function ShopManagementDialog({ shop, isOpen, onClose, onUpdate }
 
     setLoading(true);
     try {
+      // Mettre à jour directement la limite personnalisée du magasin
       const { error } = await supabase
         .from('shops')
-        .update({ sms_credits_allocated: newLimit })
+        .update({ 
+          custom_sms_limit: newLimit,
+          sms_credits_allocated: newLimit
+        })
         .eq('id', shop.id);
 
       if (error) throw error;
 
       toast({
         title: "Succès",
-        description: `Limite SMS mise à jour: ${newLimit}`,
+        description: `Limite SMS personnalisée mise à jour: ${newLimit}`,
       });
       
       setCustomSmsLimit('');
@@ -515,21 +519,19 @@ export default function ShopManagementDialog({ shop, isOpen, onClose, onUpdate }
 
     setLoading(true);
     try {
-      // Pour l'instant, on met à jour le plan d'abonnement avec une limite SAV personnalisée
-      const selectedPlan = subscriptionPlans.find(plan => plan.id === shop.subscription_plan_id) || currentTier;
-      
-      if (selectedPlan) {
-        const { error } = await supabase
-          .from('subscription_plans')
-          .update({ sav_limit: newLimit })
-          .eq('id', selectedPlan.id);
+      // Mettre à jour directement la limite personnalisée du magasin
+      const { error } = await supabase
+        .from('shops')
+        .update({ 
+          custom_sav_limit: newLimit
+        })
+        .eq('id', shop.id);
 
-        if (error) throw error;
-      }
+      if (error) throw error;
 
       toast({
         title: "Succès",
-        description: `Limite SAV mise à jour: ${newLimit}`,
+        description: `Limite SAV personnalisée mise à jour: ${newLimit}`,
       });
       
       // Débloquer automatiquement le magasin avec la nouvelle limite
@@ -537,7 +539,6 @@ export default function ShopManagementDialog({ shop, isOpen, onClose, onUpdate }
       await forceUnlockShop(shop.id, newLimit);
       
       setCustomSavLimit('');
-      fetchSubscriptionPlans();
       onUpdate();
     } catch (error: any) {
       toast({
@@ -559,7 +560,9 @@ export default function ShopManagementDialog({ shop, isOpen, onClose, onUpdate }
         .from('shops')
         .update({
           sms_credits_allocated: currentTier.sms_limit,
-          subscription_plan_id: currentTier.id
+          subscription_plan_id: currentTier.id,
+          custom_sav_limit: null, // Réinitialiser les limites personnalisées
+          custom_sms_limit: null
         })
         .eq('id', shop.id);
 
@@ -567,7 +570,7 @@ export default function ShopManagementDialog({ shop, isOpen, onClose, onUpdate }
 
       toast({
         title: "Succès",
-        description: "Limites synchronisées avec le plan par défaut",
+        description: "Limites synchronisées avec le plan par défaut. Limites personnalisées supprimées.",
       });
       
       onUpdate();

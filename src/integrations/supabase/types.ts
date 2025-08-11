@@ -991,6 +991,8 @@ export type Database = {
           address: string | null
           auto_review_enabled: boolean
           created_at: string
+          custom_sav_limit: number | null
+          custom_sms_limit: number | null
           email: string | null
           id: string
           invite_code: string | null
@@ -1018,6 +1020,8 @@ export type Database = {
           address?: string | null
           auto_review_enabled?: boolean
           created_at?: string
+          custom_sav_limit?: number | null
+          custom_sms_limit?: number | null
           email?: string | null
           id?: string
           invite_code?: string | null
@@ -1045,6 +1049,8 @@ export type Database = {
           address?: string | null
           auto_review_enabled?: boolean
           created_at?: string
+          custom_sav_limit?: number | null
+          custom_sms_limit?: number | null
           email?: string | null
           id?: string
           invite_code?: string | null
