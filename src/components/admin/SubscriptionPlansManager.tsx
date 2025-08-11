@@ -187,48 +187,63 @@ export default function SubscriptionPlansManager() {
     if (!editingPlan) return;
     
     try {
-      console.log('Updating plan with ID:', editingPlan.id);
-      console.log('Update data:', formData);
+      console.log('🔄 Updating plan with ID:', editingPlan.id);
+      console.log('📝 Form data before update:', formData);
+      console.log('🏷️ Stripe Price ID being saved:', formData.stripe_price_id);
       
+      const updateData = {
+        name: formData.name,
+        description: formData.description,
+        monthly_price: formData.monthly_price,
+        billing_interval: formData.billing_interval,
+        sav_limit: formData.sav_limit,
+        sms_limit: formData.sms_limit,
+        features: formData.features.split('\n').filter(f => f.trim()),
+        stripe_price_id: formData.stripe_price_id || null,
+        is_active: formData.is_active
+      };
+      
+      console.log('🚀 Update payload:', updateData);
+
       const { data, error } = await supabase
         .from('subscription_plans')
-        .update({
-          name: formData.name,
-          description: formData.description,
-          monthly_price: formData.monthly_price,
-          billing_interval: formData.billing_interval,
-          sav_limit: formData.sav_limit,
-          sms_limit: formData.sms_limit,
-          features: formData.features.split('\n').filter(f => f.trim()),
-          stripe_price_id: formData.stripe_price_id || null,
-          is_active: formData.is_active
-        })
+        .update(updateData)
         .eq('id', editingPlan.id)
         .select()
         .single();
 
-      console.log('Update result:', { data, error });
+      console.log('✅ Update result:', { data, error });
 
       if (error) {
-        console.error('Update error:', error);
+        console.error('❌ Update error:', error);
+        toast({
+          title: "Erreur",
+          description: `Erreur lors de la mise à jour: ${error.message}`,
+          variant: "destructive",
+        });
         throw error;
       }
 
-      setPlans(plans.map(plan => plan.id === editingPlan.id ? {
-        ...data,
-        description: data.description || '',
-        billing_interval: data.billing_interval as 'month' | 'year',
-        features: Array.isArray(data.features) ? data.features.map(f => String(f)) : [],
-        stripe_price_id: data.stripe_price_id || null
-      } : plan));
-      setIsEditOpen(false);
-      setEditingPlan(null);
-      resetForm();
-      
-      toast({
-        title: "Succès",
-        description: "Plan d'abonnement mis à jour avec succès",
-      });
+      if (data) {
+        console.log('📊 Updated plan data from DB:', data);
+        console.log('🎯 Stripe Price ID in updated data:', data.stripe_price_id);
+        
+        setPlans(plans.map(plan => plan.id === editingPlan.id ? {
+          ...data,
+          description: data.description || '',
+          billing_interval: data.billing_interval as 'month' | 'year',
+          features: Array.isArray(data.features) ? data.features.map(f => String(f)) : [],
+          stripe_price_id: data.stripe_price_id || null
+        } : plan));
+        setIsEditOpen(false);
+        setEditingPlan(null);
+        resetForm();
+        
+        toast({
+          title: "Succès",
+          description: "Plan d'abonnement mis à jour avec succès",
+        });
+      }
     } catch (error: any) {
       console.error('Update plan error:', error);
       toast({
