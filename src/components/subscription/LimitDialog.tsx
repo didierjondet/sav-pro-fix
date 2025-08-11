@@ -73,11 +73,23 @@ export function LimitDialog({
 
     setLoading(true);
     try {
-      const planKey = plan.name.toLowerCase() as 'premium' | 'enterprise';
-      await createCheckout(planKey);
+      // Map plan names to the expected format
+      const planKey = plan.name.toLowerCase().includes('premium') ? 'premium' : 'enterprise';
+      console.log('Creating checkout for plan:', planKey, 'from plan name:', plan.name);
+      
+      const result = await createCheckout(planKey);
+      console.log('Checkout result:', result);
+      
+      if (result?.error) {
+        console.error('Checkout error:', result.error);
+        // Don't close dialog on error so user can retry
+        return;
+      }
+      
       onOpenChange(false);
     } catch (error) {
       console.error('Error creating checkout:', error);
+      // Don't close dialog on error so user can retry
     } finally {
       setLoading(false);
     }
