@@ -4,6 +4,7 @@ import { LimitReachedDialog } from '@/components/dialogs/LimitReachedDialog';
 
 interface LimitDialogContextType {
   checkAndShowLimitDialog: (type?: 'sav' | 'sms') => boolean;
+  recheckLimitsAndHideDialog: () => void;
 }
 
 const LimitDialogContext = createContext<LimitDialogContextType | undefined>(undefined);
@@ -13,7 +14,8 @@ export function useLimitDialogContext() {
   if (!context) {
     // Return a default implementation to prevent crashes
     return {
-      checkAndShowLimitDialog: () => true
+      checkAndShowLimitDialog: () => true,
+      recheckLimitsAndHideDialog: () => {}
     };
   }
   return context;
@@ -24,7 +26,7 @@ interface LimitDialogProviderProps {
 }
 
 export function LimitDialogProvider({ children }: LimitDialogProviderProps) {
-  const { checkLimits } = useSubscription();
+  const { checkLimits, refetch } = useSubscription();
   const [dialogState, setDialogState] = useState<{
     isOpen: boolean;
     action: 'upgrade_plan' | 'buy_sms_package';
@@ -60,8 +62,21 @@ export function LimitDialogProvider({ children }: LimitDialogProviderProps) {
     setDialogState(prev => ({ ...prev, isOpen: false }));
   };
 
+  const recheckLimitsAndHideDialog = useCallback(async () => {
+    // Rafraîchir les données de souscription
+    await refetch();
+    
+    // Re-vérifier les limites avec les données à jour
+    const limits = checkLimits('sav');
+    
+    // Si les limites ne sont plus atteintes, fermer la popup
+    if (limits.allowed && dialogState.isOpen) {
+      setDialogState(prev => ({ ...prev, isOpen: false }));
+    }
+  }, [refetch, checkLimits, dialogState.isOpen]);
+
   return (
-    <LimitDialogContext.Provider value={{ checkAndShowLimitDialog }}>
+    <LimitDialogContext.Provider value={{ checkAndShowLimitDialog, recheckLimitsAndHideDialog }}>
       {children}
       <LimitReachedDialog
         isOpen={dialogState.isOpen}

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useLimitDialogContext } from '@/contexts/LimitDialogContext';
 
 export interface SAVCase {
   id: string;
@@ -35,6 +36,7 @@ export function useSAVCases() {
   const [cases, setCases] = useState<SAVCase[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const { recheckLimitsAndHideDialog } = useLimitDialogContext();
 
   const fetchCases = async () => {
     try {
@@ -156,6 +158,13 @@ export function useSAVCases() {
       });
 
       fetchCases();
+      
+      // Re-vérifier les limites après changement de statut (cas d'un statut qui libère un SAV actif)
+      if (status === 'ready' || status === 'cancelled') {
+        setTimeout(() => {
+          recheckLimitsAndHideDialog();
+        }, 500);
+      }
     } catch (error: any) {
       toast({
         title: "Erreur",
@@ -180,6 +189,11 @@ export function useSAVCases() {
       });
 
       fetchCases();
+      
+      // Re-vérifier les limites après suppression
+      setTimeout(() => {
+        recheckLimitsAndHideDialog();
+      }, 500); // Petit délai pour que la DB soit mise à jour
     } catch (error: any) {
       toast({
         title: "Erreur",
