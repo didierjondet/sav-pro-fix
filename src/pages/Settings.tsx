@@ -17,6 +17,7 @@ import { useProfile } from '@/hooks/useProfile';
 import { useSubscription } from '@/hooks/useSubscription';
 import { supabase } from '@/integrations/supabase/client';
 import { SAVStatusesManager } from '@/components/sav/SAVStatusesManager';
+import { SMSPackagesDisplay } from '@/components/subscription/SMSPackagesDisplay';
 import * as XLSX from 'xlsx';
 import { useSearchParams } from 'react-router-dom';
 
@@ -828,35 +829,7 @@ const handleExportParts = async (format: 'csv' | 'xlsx') => {
                 </CardContent>
               </Card>
               
-              <Card>
-                <CardHeader>
-                  <CardTitle>Détails du plan</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="p-4 bg-muted rounded-lg">
-                    <div className="flex justify-between items-center mb-2">
-                      <span>Plan actuel :</span>
-                      <Badge variant="outline">{subscription?.subscription_tier || 'Gratuit'}</Badge>
-                    </div>
-                    <div className="flex justify-between items-center mb-2">
-                      <span>SMS alloués par mois :</span>
-                      <span className="font-medium">{subscription?.sms_credits_allocated || 0}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span>SMS utilisés ce mois :</span>
-                      <span className="font-medium">{subscription?.sms_credits_used || 0}</span>
-                    </div>
-                  </div>
-                  
-                  <div className="text-sm text-muted-foreground p-3 bg-blue-50 rounded-lg">
-                    <p className="font-medium mb-1">💡 Information</p>
-                    <p>
-                      Les crédits SMS sont inclus dans votre plan d'abonnement et se renouvellent chaque mois. 
-                      Pour augmenter votre quota SMS, contactez un administrateur pour changer de plan.
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
+              <SMSPackagesDisplay />
             </TabsContent>
 
             <TabsContent value="profile">

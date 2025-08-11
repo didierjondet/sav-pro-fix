@@ -13,9 +13,12 @@ import { useCustomers } from '@/hooks/useCustomers';
 import { useParts } from '@/hooks/useParts';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProfile } from '@/hooks/useProfile';
+import { useSubscription } from '@/hooks/useSubscription';
 import { Badge } from '@/components/ui/badge';
 import { CustomerSearch } from '@/components/customers/CustomerSearch';
 import { FileUpload } from '@/components/parts/FileUpload';
+import { LimitAlert } from '@/components/subscription/LimitAlert';
+import { useToast } from '@/hooks/use-toast';
 
 interface CustomerInfo {
   firstName: string;
@@ -76,6 +79,8 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
   const { createCase } = useSAVCases();
   const { createCustomer } = useCustomers();
   const { parts } = useParts();
+  const { checkLimits } = useSubscription();
+  const { toast } = useToast();
 
   // Filtrer les pièces en fonction de la recherche
   const filteredParts = parts.filter(part =>
@@ -140,6 +145,17 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
     e.preventDefault();
     if (!user) return;
     
+    // Vérifier les limites SAV avant création
+    const limits = checkLimits('sav');
+    if (!limits.allowed) {
+      toast({
+        title: "Limite atteinte",
+        description: limits.reason,
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setLoading(true);
     
     try {
@@ -203,13 +219,30 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
       onSuccess?.();
     } catch (error: any) {
       console.error('Error creating SAV case:', error);
+      toast({
+        title: "Erreur",
+        description: error.message || "Une erreur est survenue lors de la création du SAV",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
   };
 
+  // Vérifier les limites SAV en temps réel
+  const savLimits = checkLimits('sav');
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <div className="space-y-6">
+      {/* Alerte de limite SAV */}
+      {!savLimits.allowed && savLimits.action && (
+        <LimitAlert 
+          action={savLimits.action as 'upgrade_plan' | 'buy_sms_package'}
+          reason={savLimits.reason}
+        />
+      )}
+      
+      <form onSubmit={handleSubmit} className="space-y-6">
       <Card>
         <CardHeader>
           <CardTitle>Type de SAV</CardTitle>
@@ -570,14 +603,15 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
         </CardContent>
       </Card>
 
-      <div className="flex justify-end space-x-2">
-        <Button type="button" variant="outline">
-          Annuler
-        </Button>
-        <Button type="submit" disabled={loading}>
-          {loading ? 'Création...' : 'Créer le dossier SAV'}
-        </Button>
-      </div>
-    </form>
+        <div className="flex justify-end space-x-2">
+          <Button type="button" variant="outline">
+            Annuler
+          </Button>
+          <Button type="submit" disabled={loading || !savLimits.allowed}>
+            {loading ? 'Création...' : 'Créer le dossier SAV'}
+          </Button>
+        </div>
+      </form>
+    </div>
   );
 }

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { MessageSquare } from 'lucide-react';
 import { useSMS } from '@/hooks/useSMS';
+import { useSubscription } from '@/hooks/useSubscription';
 import {
   Dialog,
   DialogContent,
@@ -43,9 +44,20 @@ export function SMSButton({
   const [customPhone, setCustomPhone] = useState(customerPhone || '');
   const [useCustomMessage, setUseCustomMessage] = useState(false);
   const { sendSMS, sendSAVNotification, sendQuoteNotification, loading } = useSMS();
+  const { checkLimits } = useSubscription();
 
   const handleSendSMS = async () => {
     if (!customPhone.trim()) return;
+
+    // Vérifier les limites SMS avant envoi
+    const smsLimits = checkLimits('sms');
+    if (!smsLimits.allowed) {
+      // Rediriger vers les paramètres avec l'onglet SMS si plus de crédits
+      if (smsLimits.action === 'buy_sms_package') {
+        window.location.href = '/settings?tab=sms&reason=no_credits';
+        return;
+      }
+    }
 
     let success = false;
 

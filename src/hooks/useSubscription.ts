@@ -158,12 +158,12 @@ export function useSubscription() {
 
   const checkLimits = (action?: 'sav' | 'sms') => {
     if (!subscription) {
-      return { allowed: false, reason: "Données d'abonnement non disponibles" };
+      return { allowed: false, reason: "Données d'abonnement non disponibles", action: null };
     }
 
     // Si abonnement forcé, ne pas bloquer
     if (subscription.forced) {
-      return { allowed: true, reason: 'Abonnement forcé - vérifications désactivées' };
+      return { allowed: true, reason: 'Abonnement forcé - vérifications désactivées', action: null };
     }
 
     const { subscription_tier, sms_credits_used, sms_credits_allocated, active_sav_count } = subscription;
@@ -171,10 +171,18 @@ export function useSubscription() {
     // Vérification des limites SAV basées sur le plan
     if (action === 'sav' || !action) {
       if (subscription_tier === 'free' && active_sav_count >= 15) {
-        return { allowed: false, reason: 'Plan Gratuit limité à 15 SAV actifs' };
+        return { 
+          allowed: false, 
+          reason: `Plan Gratuit limité à 15 SAV actifs (${active_sav_count}/15). Passez au plan Premium.`,
+          action: 'upgrade_plan'
+        };
       }
-      if (subscription_tier === 'premium' && active_sav_count >= 10) {
-        return { allowed: false, reason: 'Plan Premium limité à 10 SAV simultanés' };
+      if (subscription_tier === 'premium' && active_sav_count >= 100) {
+        return { 
+          allowed: false, 
+          reason: `Plan Premium limité à 100 SAV simultanés (${active_sav_count}/100). Passez au plan Enterprise.`,
+          action: 'upgrade_plan'
+        };
       }
       // Enterprise = illimité
     }
@@ -187,12 +195,13 @@ export function useSubscription() {
       if (smsUsed >= smsAllocated) {
         return { 
           allowed: false, 
-          reason: `Vous avez utilisé tous vos crédits SMS du mois (${smsUsed}/${smsAllocated})` 
+          reason: `Vous avez utilisé tous vos crédits SMS du mois (${smsUsed}/${smsAllocated})`,
+          action: 'buy_sms_package'
         };
       }
     }
 
-    return { allowed: true, reason: 'Dans les limites autorisées' };
+    return { allowed: true, reason: 'Dans les limites autorisées', action: null };
   };
 
   return {

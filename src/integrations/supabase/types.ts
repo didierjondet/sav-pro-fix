@@ -1107,6 +1107,96 @@ export type Database = {
         }
         Relationships: []
       }
+      sms_package_purchases: {
+        Row: {
+          created_at: string
+          id: string
+          package_id: string
+          price_paid_cents: number
+          processed_at: string | null
+          shop_id: string
+          sms_count: number
+          status: string
+          stripe_payment_intent_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          package_id: string
+          price_paid_cents: number
+          processed_at?: string | null
+          shop_id: string
+          sms_count: number
+          status?: string
+          stripe_payment_intent_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          package_id?: string
+          price_paid_cents?: number
+          processed_at?: string | null
+          shop_id?: string
+          sms_count?: number
+          status?: string
+          stripe_payment_intent_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sms_package_purchases_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "sms_packages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sms_package_purchases_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sms_packages: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          price_cents: number
+          sms_count: number
+          stripe_price_id: string | null
+          subscription_tier: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          price_cents: number
+          sms_count: number
+          stripe_price_id?: string | null
+          subscription_tier: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          price_cents?: number
+          sms_count?: number
+          stripe_price_id?: string | null
+          subscription_tier?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       subscribers: {
         Row: {
           active_sav_count: number | null
@@ -1292,6 +1382,10 @@ export type Database = {
     Functions: {
       check_subscription_limits: {
         Args: { p_shop_id: string }
+        Returns: Json
+      }
+      check_subscription_limits_v2: {
+        Args: { p_shop_id: string; p_action?: string }
         Returns: Json
       }
       create_profile_only: {
