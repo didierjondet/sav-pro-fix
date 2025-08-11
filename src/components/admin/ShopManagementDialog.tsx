@@ -531,6 +531,13 @@ export default function ShopManagementDialog({ shop, isOpen, onClose, onUpdate }
 
       if (error) throw error;
 
+      // Mettre à jour l'état local pour affichage immédiat
+      if (shop) {
+        const updatedShop = { ...shop, custom_sav_limit: newLimit };
+        // Trigger une re-render avec les nouvelles données
+        onUpdate();
+      }
+
       toast({
         title: "Succès",
         description: `Limite SAV personnalisée mise à jour: ${newLimit}`,
@@ -547,7 +554,6 @@ export default function ShopManagementDialog({ shop, isOpen, onClose, onUpdate }
       }
       
       setCustomSavLimit('');
-      onUpdate();
     } catch (error: any) {
       toast({
         title: "Erreur",
