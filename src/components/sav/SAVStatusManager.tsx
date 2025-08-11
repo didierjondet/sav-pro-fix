@@ -347,16 +347,6 @@ L'équipe ${shopData.name || 'de réparation'}`;
           </div>
         </div>
 
-        <div>
-          <label className="text-sm font-medium">Notes (optionnel)</label>
-          <Textarea
-            placeholder="Ajoutez des notes sur le changement de statut..."
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            rows={3}
-            className="mt-1"
-          />
-        </div>
 
         <Button
           onClick={handleStatusChangeRequest}
@@ -422,6 +412,17 @@ L'équipe ${shopData.name || 'de réparation'}`;
                       Magasin prend en charge : {takeoverAmount.toFixed(2)}€
                     </div>
                   )}
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium">Notes (optionnel)</label>
+                  <Textarea
+                    placeholder="Ajoutez des notes sur le changement de statut..."
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    rows={3}
+                    className="mt-1"
+                  />
                 </div>
 
                 <Button
