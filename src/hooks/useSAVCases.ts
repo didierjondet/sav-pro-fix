@@ -136,6 +136,12 @@ export function useSAVCases() {
 
   const updateCaseStatus = async (caseId: string, status: SAVCase['status'], notes?: string) => {
     try {
+      // Si le statut est "cancelled", supprimer définitivement le SAV
+      if (status === 'cancelled') {
+        await deleteCase(caseId);
+        return;
+      }
+
       const { error } = await supabase
         .from('sav_cases')
         .update({ status, repair_notes: notes })
@@ -160,7 +166,7 @@ export function useSAVCases() {
       fetchCases();
       
       // Re-vérifier les limites après changement de statut (cas d'un statut qui libère un SAV actif)
-      if (status === 'ready' || status === 'cancelled') {
+      if (status === 'ready') {
         setTimeout(() => {
           recheckLimitsAndHideDialog();
         }, 500);
