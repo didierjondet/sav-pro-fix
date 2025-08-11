@@ -70,7 +70,17 @@ serve(async (req) => {
     
     const planData = plans?.find(p => p.name.toLowerCase() === plan.toLowerCase());
     if (!planData) throw new Error(`Plan ${plan} not found`);
-    if (!planData.stripe_price_id) throw new Error(`Stripe Price ID not configured for plan ${plan}`);
+    if (!planData.stripe_price_id) {
+      logStep("Stripe Price ID not configured", { plan, planId: planData.id });
+      return new Response(JSON.stringify({ 
+        error: "stripe_price_id_missing",
+        message: `Le plan ${plan} n'est pas encore configuré dans Stripe. Veuillez contacter l'administrateur.`,
+        redirect_url: `${req.headers.get("origin")}/subscription?error=stripe_not_configured`
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400,
+      });
+    }
 
     logStep("Plan data found", { planId: planData.id, stripePriceId: planData.stripe_price_id });
 
