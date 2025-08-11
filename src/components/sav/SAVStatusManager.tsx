@@ -453,9 +453,12 @@ L'équipe ${shopData.name || 'de réparation'}`;
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium">Notes (optionnel)</label>
+                  <label className="text-sm font-medium">Notes privées (optionnel)</label>
+                  <p className="text-xs text-muted-foreground mb-2">
+                    ⚠️ Ces notes sont privées et ne seront pas visibles par le client
+                  </p>
                   <Textarea
-                    placeholder="Ajoutez des notes sur le changement de statut..."
+                    placeholder="Ajoutez des notes privées sur le changement de statut..."
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
                     rows={3}

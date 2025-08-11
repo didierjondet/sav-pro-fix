@@ -335,15 +335,6 @@ export default function SimpleTrack() {
                 <p className="text-sm text-gray-600">{savCase.problem_description}</p>
               </div>
 
-              {savCase.repair_notes && (
-                <>
-                  <Separator />
-                  <div>
-                    <h4 className="font-medium mb-2">Notes de réparation</h4>
-                    <p className="text-sm text-gray-600">{savCase.repair_notes}</p>
-                  </div>
-                </>
-              )}
 
               {savCase.total_cost > 0 && (
                 <>
