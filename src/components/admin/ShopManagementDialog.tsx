@@ -534,9 +534,15 @@ export default function ShopManagementDialog({ shop, isOpen, onClose, onUpdate }
         description: `Limite SAV personnalisée mise à jour: ${newLimit}`,
       });
       
-      // Débloquer automatiquement le magasin avec la nouvelle limite
-      console.log('🔓 [AUTO-UNLOCK] Débloquage automatique après mise à jour des limites...');
-      await forceUnlockShop(shop.id, newLimit);
+      // S'assurer que subscription_forced est désactivé pour que les nouvelles limites s'appliquent
+      const { error: resetError } = await supabase
+        .from('shops')
+        .update({ subscription_forced: false })
+        .eq('id', shop.id);
+      
+      if (resetError) {
+        console.error('Erreur lors du reset du subscription_forced:', resetError);
+      }
       
       setCustomSavLimit('');
       onUpdate();
