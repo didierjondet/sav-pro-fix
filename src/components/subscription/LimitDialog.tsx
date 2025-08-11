@@ -212,105 +212,112 @@ export function LimitDialog({
               {plans.map((plan) => {
                 const isCurrentSelected = isCurrentPlan(plan.name);
                 const canUpgrade = isPlanUpgrade(plan.monthly_price);
+                const isProcessing = processingPlanId === plan.id;
                 
                 return (
-                  <Card 
-                    key={plan.id} 
-                    className={`relative transition-all duration-200 hover:shadow-lg ${getPlanColor(plan.name)} ${
-                      isCurrentSelected ? 'ring-2 ring-blue-500' : ''
-                    }`}
-                  >
-                  {isCurrentSelected && (
-                    <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                      <Badge className="bg-blue-500 text-white">Plan actuel</Badge>
-                    </div>
-                  )}
-                  
-                  <CardHeader className="pb-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        {getPlanIcon(plan.name)}
-                        <CardTitle className="text-lg">{plan.name}</CardTitle>
-                      </div>
-                    </div>
-                    <div className="mt-2">
-                      <span className="text-3xl font-bold text-slate-900">
-                        {plan.monthly_price === 0 ? 'Gratuit' : `${plan.monthly_price}€`}
-                      </span>
-                      {plan.monthly_price > 0 && (
-                        <span className="text-slate-600 text-sm">/mois</span>
-                      )}
-                    </div>
-                    {plan.description && (
-                      <p className="text-sm text-slate-600 mt-1">{plan.description}</p>
-                    )}
-                  </CardHeader>
-                  
-                  <CardContent className="pt-0">
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-2">
-                        <Check className="h-4 w-4 text-green-500" />
-                        <span className="text-sm">
-                          {plan.sav_limit ? `${plan.sav_limit} SAV simultanés` : 'SAV illimités'}
-                        </span>
-                      </div>
-                      
-                      <div className="flex items-center gap-2">
-                        <Check className="h-4 w-4 text-green-500" />
-                        <span className="text-sm">{plan.sms_limit} SMS/mois</span>
-                      </div>
-
-                      {plan.features && plan.features.length > 0 && (
-                        <div className="space-y-1">
-                          {plan.features.slice(0, 3).map((feature, index) => (
-                            <div key={index} className="flex items-center gap-2">
-                              <Check className="h-4 w-4 text-green-500" />
-                              <span className="text-sm">{feature}</span>
-                            </div>
-                          ))}
+                  <div key={plan.id} className="relative">
+                    <Card 
+                      className={`relative transition-all duration-200 hover:shadow-lg ${getPlanColor(plan.name)} ${
+                        isCurrentSelected ? 'ring-2 ring-blue-500' : ''
+                      }`}
+                    >
+                      {isCurrentSelected && (
+                        <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+                          <Badge className="bg-blue-500 text-white">Plan actuel</Badge>
                         </div>
                       )}
-                    </div>
-
-                    <div className="mt-6">
-                      {isCurrentSelected ? (
-                        <Button 
-                          variant="outline" 
-                          className="w-full" 
-                          disabled
-                        >
-                          Plan actuel
-                        </Button>
-                      ) : canUpgrade ? (
-                        <Button
-                          onClick={(e) => handleSelectPlan(e, plan)}
-                          disabled={loading || !plan.stripe_price_id || processingPlanId === plan.id}
-                          className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white"
-                        >
-                          {processingPlanId === plan.id ? (
-                            <>
-                              <div className="animate-spin h-4 w-4 mr-2 border-2 border-white border-t-transparent rounded-full"></div>
-                              Traitement...
-                            </>
-                          ) : (
-                            <>
-                              <ArrowRight className="h-4 w-4 mr-2" />
-                              Choisir ce plan
-                            </>
+                      
+                      <CardHeader className="pb-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            {getPlanIcon(plan.name)}
+                            <CardTitle className="text-lg">{plan.name}</CardTitle>
+                          </div>
+                        </div>
+                        <div className="mt-2">
+                          <span className="text-3xl font-bold text-slate-900">
+                            {plan.monthly_price === 0 ? 'Gratuit' : `${plan.monthly_price}€`}
+                          </span>
+                          {plan.monthly_price > 0 && (
+                            <span className="text-slate-600 text-sm">/mois</span>
                           )}
-                        </Button>
-                      ) : (
-                        <Button 
-                          variant="outline" 
-                          className="w-full" 
-                          disabled
-                        >
-                          Plan inférieur
-                        </Button>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
+                        </div>
+                        {plan.description && (
+                          <p className="text-sm text-slate-600 mt-1">{plan.description}</p>
+                        )}
+                      </CardHeader>
+                      
+                      <CardContent className="pt-0">
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-2">
+                            <Check className="h-4 w-4 text-green-500" />
+                            <span className="text-sm">
+                              {plan.sav_limit ? `${plan.sav_limit} SAV simultanés` : 'SAV illimités'}
+                            </span>
+                          </div>
+                          
+                          <div className="flex items-center gap-2">
+                            <Check className="h-4 w-4 text-green-500" />
+                            <span className="text-sm">{plan.sms_limit} SMS/mois</span>
+                          </div>
+
+                          {plan.features && plan.features.length > 0 && (
+                            <div className="space-y-1">
+                              {plan.features.slice(0, 3).map((feature, index) => (
+                                <div key={index} className="flex items-center gap-2">
+                                  <Check className="h-4 w-4 text-green-500" />
+                                  <span className="text-sm">{feature}</span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="mt-6">
+                          {isCurrentSelected ? (
+                            <Button 
+                              variant="outline" 
+                              className="w-full" 
+                              disabled
+                            >
+                              Plan actuel
+                            </Button>
+                          ) : canUpgrade ? (
+                            <Button
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleSelectPlan(e, plan);
+                              }}
+                              disabled={loading || !plan.stripe_price_id || isProcessing}
+                              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white"
+                            >
+                              {isProcessing ? (
+                                <>
+                                  <div className="animate-spin h-4 w-4 mr-2 border-2 border-white border-t-transparent rounded-full"></div>
+                                  Traitement...
+                                </>
+                              ) : (
+                                <>
+                                  <ArrowRight className="h-4 w-4 mr-2" />
+                                  Choisir ce plan
+                                </>
+                              )}
+                            </Button>
+                          ) : (
+                            <Button 
+                              variant="outline" 
+                              className="w-full" 
+                              disabled
+                            >
+                              Plan inférieur
+                            </Button>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
                 );
               })}
             </div>
