@@ -89,12 +89,16 @@ export default function ShopManagementDialog({ shop, isOpen, onClose, onUpdate }
   const [newUserPassword, setNewUserPassword] = useState('');
   const [newUserRole, setNewUserRole] = useState<'admin' | 'technician'>('technician');
   const [subscriptionPlans, setSubscriptionPlans] = useState<any[]>([]);
+  const [customSmsLimit, setCustomSmsLimit] = useState('');
+  const [customSavLimit, setCustomSavLimit] = useState('');
 
   useEffect(() => {
     if (shop?.id) {
       fetchUsers();
       fetchSubscriptionPlans();
       setSubscriptionMenuVisible(shop.subscription_menu_visible ?? true);
+      // Synchroniser avec le plan par défaut si pas de plan spécifique
+      syncWithDefaultPlan();
     }
   }, [shop?.id, shop?.subscription_menu_visible]);
 
@@ -103,6 +107,32 @@ export default function ShopManagementDialog({ shop, isOpen, onClose, onUpdate }
   const currentTier = subscriptionPlans.find(plan => 
     shop.subscription_plan_id ? plan.id === shop.subscription_plan_id : plan.name.toLowerCase() === shop.subscription_tier?.toLowerCase()
   );
+
+  const syncWithDefaultPlan = async () => {
+    if (!shop || shop.subscription_plan_id) return; // Ne sync que si pas de plan spécifique
+    
+    const defaultTier = subscriptionPlans.find(plan => 
+      plan.name.toLowerCase() === shop.subscription_tier?.toLowerCase()
+    );
+    
+    if (defaultTier && (shop.sms_credits_allocated !== defaultTier.sms_limit)) {
+      try {
+        const { error } = await supabase
+          .from('shops')
+          .update({
+            sms_credits_allocated: defaultTier.sms_limit,
+            subscription_plan_id: defaultTier.id
+          })
+          .eq('id', shop.id);
+
+        if (!error) {
+          onUpdate();
+        }
+      } catch (error) {
+        console.error('Error syncing with default plan:', error);
+      }
+    }
+  };
 
   const fetchSubscriptionPlans = async () => {
     try {
@@ -414,6 +444,124 @@ export default function ShopManagementDialog({ shop, isOpen, onClose, onUpdate }
       toast({
         title: "Succès",
         description: `Menu abonnement ${!subscriptionMenuVisible ? 'activé' : 'désactivé'}`,
+      });
+      
+      onUpdate();
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUpdateSmsLimit = async () => {
+    if (!shop || !customSmsLimit) return;
+    
+    const newLimit = parseInt(customSmsLimit);
+    if (isNaN(newLimit) || newLimit < 0) {
+      toast({
+        title: "Erreur",
+        description: "Veuillez entrer un nombre valide",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('shops')
+        .update({ sms_credits_allocated: newLimit })
+        .eq('id', shop.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Succès",
+        description: `Limite SMS mise à jour: ${newLimit}`,
+      });
+      
+      setCustomSmsLimit('');
+      onUpdate();
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUpdateSavLimit = async () => {
+    if (!shop || !customSavLimit) return;
+    
+    const newLimit = parseInt(customSavLimit);
+    if (isNaN(newLimit) || newLimit < 0) {
+      toast({
+        title: "Erreur",
+        description: "Veuillez entrer un nombre valide",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // Pour l'instant, on met à jour le plan d'abonnement avec une limite SAV personnalisée
+      const selectedPlan = subscriptionPlans.find(plan => plan.id === shop.subscription_plan_id) || currentTier;
+      
+      if (selectedPlan) {
+        const { error } = await supabase
+          .from('subscription_plans')
+          .update({ sav_limit: newLimit })
+          .eq('id', selectedPlan.id);
+
+        if (error) throw error;
+      }
+
+      toast({
+        title: "Succès",
+        description: `Limite SAV mise à jour: ${newLimit}`,
+      });
+      
+      setCustomSavLimit('');
+      fetchSubscriptionPlans();
+      onUpdate();
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSyncWithPlan = async () => {
+    if (!shop || !currentTier) return;
+    
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('shops')
+        .update({
+          sms_credits_allocated: currentTier.sms_limit,
+          subscription_plan_id: currentTier.id
+        })
+        .eq('id', shop.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Succès",
+        description: "Limites synchronisées avec le plan par défaut",
       });
       
       onUpdate();
@@ -805,18 +953,77 @@ export default function ShopManagementDialog({ shop, isOpen, onClose, onUpdate }
 
                 <Separator />
 
-                <div className="space-y-2">
-                  <Label>Limites actuelles</Label>
-                  <div className="space-y-1 text-sm">
-                    <div>SAV simultanés: {currentTier?.sav_limit || 'Illimité'}</div>
-                    <div>SMS par mois: {currentTier?.sms_limit}</div>
+                <div className="space-y-4">
+                  <div>
+                    <Label>Limites par défaut du plan "{currentTier?.name || shop.subscription_tier}"</Label>
+                    <div className="space-y-1 text-sm text-muted-foreground">
+                      <div>SAV simultanés: {currentTier?.sav_limit || 'Illimité'}</div>
+                      <div>SMS par mois: {currentTier?.sms_limit || 15}</div>
+                    </div>
                   </div>
+
+                  <Separator />
+
+                  <div>
+                    <Label>Limites actuelles du magasin</Label>
+                    <div className="space-y-1 text-sm">
+                      <div className="flex items-center justify-between">
+                        <span>SAV simultanés: {shop.active_sav_count} (aucune limite SAV configurée)</span>
+                        <div className="flex items-center gap-2">
+                          <Input
+                            type="number"
+                            placeholder="Nouvelle limite SAV"
+                            value={customSavLimit}
+                            onChange={(e) => setCustomSavLimit(e.target.value)}
+                            className="w-32"
+                          />
+                          <Button
+                            size="sm"
+                            onClick={handleUpdateSavLimit}
+                            disabled={loading || !customSavLimit}
+                          >
+                            Appliquer
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span>SMS par mois: {shop.sms_credits_allocated}</span>
+                        <div className="flex items-center gap-2">
+                          <Input
+                            type="number"
+                            placeholder="Nouvelle limite SMS"
+                            value={customSmsLimit}
+                            onChange={(e) => setCustomSmsLimit(e.target.value)}
+                            className="w-32"
+                          />
+                          <Button
+                            size="sm"
+                            onClick={handleUpdateSmsLimit}
+                            disabled={loading || !customSmsLimit}
+                          >
+                            Appliquer
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <Separator />
+
+                  <Button
+                    variant="outline"
+                    onClick={handleSyncWithPlan}
+                    disabled={loading}
+                    className="w-full"
+                  >
+                    <Zap className="h-4 w-4 mr-2" />
+                    Synchroniser avec les limites du plan par défaut
+                  </Button>
                 </div>
 
                 <div className="text-sm text-muted-foreground bg-blue-50 p-3 rounded">
-                  <Zap className="h-4 w-4 inline mr-1" />
-                  Les limites sont automatiquement appliquées selon l'abonnement.
-                  Utilisez les fonctions ci-dessus pour des ajustements ponctuels.
+                  <AlertTriangle className="h-4 w-4 inline mr-1" />
+                  Vous pouvez modifier manuellement les limites pour ce magasin ou les synchroniser avec le plan par défaut.
                 </div>
               </CardContent>
             </Card>

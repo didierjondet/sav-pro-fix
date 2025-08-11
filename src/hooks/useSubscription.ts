@@ -170,21 +170,27 @@ export function useSubscription() {
 
     // Vérification des limites SAV basées sur le plan
     if (action === 'sav' || !action) {
-      if (subscription_tier === 'free' && active_sav_count >= 15) {
+      if (subscription_tier === 'free' && active_sav_count >= 5) {
         return { 
           allowed: false, 
-          reason: `Plan Gratuit limité à 15 SAV actifs (${active_sav_count}/15). Passez au plan Premium.`,
+          reason: `Plan Gratuit limité à 5 SAV actifs (${active_sav_count}/5). Passez au plan Premium.`,
           action: 'upgrade_plan'
         };
       }
-      if (subscription_tier === 'premium' && active_sav_count >= 100) {
+      if (subscription_tier === 'premium' && active_sav_count >= 50) {
         return { 
           allowed: false, 
-          reason: `Plan Premium limité à 100 SAV simultanés (${active_sav_count}/100). Passez au plan Enterprise.`,
+          reason: `Plan Premium limité à 50 SAV simultanés (${active_sav_count}/50). Passez au plan Enterprise.`,
           action: 'upgrade_plan'
         };
       }
-      // Enterprise = illimité
+      if (subscription_tier === 'enterprise' && active_sav_count >= 100) {
+        return { 
+          allowed: false, 
+          reason: `Plan Enterprise limité à 100 SAV simultanés (${active_sav_count}/100).`,
+          action: 'contact_support'
+        };
+      }
     }
 
     // Vérification des limites SMS basées sur le plan
