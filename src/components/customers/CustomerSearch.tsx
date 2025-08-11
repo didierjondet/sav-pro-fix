@@ -79,9 +79,24 @@ export function CustomerSearch({ customerInfo, setCustomerInfo, onCustomerSelect
     setShowResults(false);
   };
 
+  const handleInputFocus = () => {
+    if (searchTerm.length > 2 && filteredCustomers.length > 0) {
+      setShowResults(true);
+    }
+  };
+
+  const handleInputBlur = (e: React.FocusEvent) => {
+    // Délai pour permettre le clic sur les résultats
+    setTimeout(() => {
+      if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+        setShowResults(false);
+      }
+    }, 200);
+  };
+
   return (
     <div className="space-y-4">
-      <div>
+      <div className="relative">
         <Label htmlFor="customer-search">Rechercher un client existant</Label>
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
@@ -90,18 +105,21 @@ export function CustomerSearch({ customerInfo, setCustomerInfo, onCustomerSelect
             placeholder="Nom, prénom, email ou téléphone..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+            onFocus={handleInputFocus}
+            onBlur={handleInputBlur}
             className="pl-10"
+            autoComplete="off"
           />
         </div>
         
         {/* Affichage du client sélectionné */}
         {selectedCustomer && (
-          <Card className="mt-2 border-green-200 bg-green-50">
+          <Card className="mt-2 border-green-200 bg-green-50 dark:bg-green-950 dark:border-green-800">
             <CardContent className="p-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <User className="h-4 w-4 text-green-600" />
-                  <span className="font-medium text-green-800">
+                  <span className="font-medium text-green-800 dark:text-green-200">
                     Client sélectionné: {selectedCustomer.first_name} {selectedCustomer.last_name}
                   </span>
                 </div>
@@ -115,13 +133,13 @@ export function CustomerSearch({ customerInfo, setCustomerInfo, onCustomerSelect
                 </Button>
               </div>
               {selectedCustomer.email && (
-                <div className="flex items-center gap-1 text-sm text-green-700 mt-1">
+                <div className="flex items-center gap-1 text-sm text-green-700 dark:text-green-300 mt-1">
                   <Mail className="h-3 w-3" />
                   {selectedCustomer.email}
                 </div>
               )}
               {selectedCustomer.phone && (
-                <div className="flex items-center gap-1 text-sm text-green-700">
+                <div className="flex items-center gap-1 text-sm text-green-700 dark:text-green-300">
                   <Phone className="h-3 w-3" />
                   {selectedCustomer.phone}
                 </div>
@@ -132,42 +150,44 @@ export function CustomerSearch({ customerInfo, setCustomerInfo, onCustomerSelect
         
         {/* Résultats de recherche */}
         {showResults && (
-          <Card className="mt-2 absolute z-10 w-full border shadow-lg">
-            <CardContent className="p-0">
+          <Card className="mt-2 absolute z-50 w-full border shadow-lg bg-background">
+            <CardContent className="p-0 max-h-60 overflow-y-auto">
               {filteredCustomers.map((customer) => (
                 <div
                   key={customer.id}
-                  className="flex items-center justify-between p-3 hover:bg-muted/50 cursor-pointer border-b last:border-b-0"
+                  className="p-3 hover:bg-muted/80 cursor-pointer border-b last:border-b-0 transition-colors"
                   onClick={() => selectCustomer(customer)}
                 >
-                  <div className="flex-1">
-                    <div className="font-medium">
-                      {customer.first_name} {customer.last_name}
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <div className="font-medium text-foreground">
+                        {customer.first_name} {customer.last_name}
+                      </div>
+                      <div className="text-sm text-muted-foreground space-y-1">
+                        {customer.email && (
+                          <div className="flex items-center gap-1">
+                            <Mail className="h-3 w-3" />
+                            {customer.email}
+                          </div>
+                        )}
+                        {customer.phone && (
+                          <div className="flex items-center gap-1">
+                            <Phone className="h-3 w-3" />
+                            {customer.phone}
+                          </div>
+                        )}
+                      </div>
                     </div>
-                    <div className="text-sm text-muted-foreground">
-                      {customer.email && (
-                        <span className="flex items-center gap-1">
-                          <Mail className="h-3 w-3" />
-                          {customer.email}
-                        </span>
-                      )}
-                      {customer.phone && (
-                        <span className="flex items-center gap-1">
-                          <Phone className="h-3 w-3" />
-                          {customer.phone}
-                        </span>
-                      )}
+                    <div className="text-xs text-muted-foreground ml-2">
+                      Cliquer pour sélectionner
                     </div>
                   </div>
-                  <Button size="sm" variant="outline">
-                    Sélectionner
-                  </Button>
                 </div>
               ))}
               {/* Option pour créer un nouveau client */}
               {searchTerm && filteredCustomers.length < 5 && (
                 <div
-                  className="flex items-center gap-2 p-3 hover:bg-muted/50 cursor-pointer border-t"
+                  className="flex items-center gap-2 p-3 hover:bg-primary/10 cursor-pointer border-t transition-colors"
                   onClick={createNewCustomer}
                 >
                   <Plus className="h-4 w-4 text-primary" />
