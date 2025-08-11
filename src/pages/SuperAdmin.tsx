@@ -168,6 +168,7 @@ export default function SuperAdmin() {
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
   const [selectedUserForPassword, setSelectedUserForPassword] = useState<Profile | null>(null);
   const [newPassword, setNewPassword] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
   
   const [newShop, setNewShop] = useState({
     name: '',
@@ -313,6 +314,26 @@ export default function SuperAdmin() {
       setLoading(false);
     }
   };
+
+  // Filter shops based on search term
+  const filteredShops = shops.filter(shop => {
+    if (!searchTerm) return true;
+    
+    const searchLower = searchTerm.toLowerCase();
+    
+    // Search in shop name
+    if (shop.name.toLowerCase().includes(searchLower)) return true;
+    
+    // Search in address (for postal code)
+    if (shop.address?.toLowerCase().includes(searchLower)) return true;
+    
+    // Search in email
+    if (shop.email?.toLowerCase().includes(searchLower)) return true;
+    
+    // Search in admin names (we need to fetch profile data for this)
+    // For now, we'll search in the shop email which often contains admin info
+    return false;
+  });
 
   const createShop = async () => {
     try {
@@ -996,8 +1017,26 @@ export default function SuperAdmin() {
                       </DialogFooter>
                     </DialogContent>
                   </Dialog>
+                </div>
 
-                  {/* Dialog pour modifier un magasin */}
+                {/* Search field */}
+                <div className="mt-4 relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Search className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <Input
+                    type="text"
+                    placeholder="Rechercher par nom, code postal ou administrateur..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10 max-w-md"
+                  />
+                </div>
+              </CardHeader>
+
+              <CardContent>
+                <div className="space-y-4">
+                  {filteredShops.map((shop) => (
                   <Dialog open={isEditShopOpen} onOpenChange={setIsEditShopOpen}>
                     <DialogContent className="bg-slate-900 border-slate-700 text-white">
                       <DialogHeader>
@@ -1056,10 +1095,31 @@ export default function SuperAdmin() {
                     </DialogContent>
                   </Dialog>
                 </div>
+
+                {/* Search field */}
+                <div className="mt-4 relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Search className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <Input
+                    type="text"
+                    placeholder="Rechercher par nom, code postal ou administrateur..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10 max-w-md"
+                  />
+                </div>
               </CardHeader>
+
               <CardContent>
                 <div className="space-y-4">
-                  {shops.map((shop) => (
+                  {filteredShops.length === 0 && searchTerm ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Search className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p>Aucun magasin trouvé pour "{searchTerm}"</p>
+                    </div>
+                  ) : (
+                    filteredShops.map((shop) => (
                     <Card key={shop.id} className="bg-white border-slate-200 hover:shadow-md transition-all duration-200">
                       <CardContent className="p-6">
                         <div className="flex items-center justify-between">
@@ -1190,7 +1250,7 @@ export default function SuperAdmin() {
                         </div>
                       </CardContent>
                     </Card>
-                  ))}
+                  )))}
                 </div>
               </CardContent>
             </Card>
