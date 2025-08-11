@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { generateFullTrackingUrl } from '@/utils/trackingUtils';
+import { generateShortTrackingUrl } from '@/utils/trackingUtils';
 import { useShop } from '@/hooks/useShop';
 import { SAVCase } from '@/hooks/useSAVCases';
 import { Card, CardContent } from '@/components/ui/card';
@@ -12,10 +12,10 @@ interface SAVQRCodePrintProps {
 export function SAVQRCodePrint({ savCase, onClose }: SAVQRCodePrintProps) {
   const { shop } = useShop();
 
-  // Utiliser la vraie URL de tracking comme dans SAVDetail
+  // Utiliser l'URL de tracking raccourcie
   const generateTrackingUrl = () => {
     if (!savCase?.tracking_slug) return '';
-    return generateFullTrackingUrl(savCase.tracking_slug);
+    return generateShortTrackingUrl(savCase.tracking_slug);
   };
   
   const trackingUrl = generateTrackingUrl();

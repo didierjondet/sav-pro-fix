@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import React from 'react';
 import { multiWordSearch } from '@/utils/searchUtils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,6 +21,8 @@ import { FileUpload } from '@/components/parts/FileUpload';
 import { LimitAlert } from '@/components/subscription/LimitAlert';
 import { useLimitDialogContext } from '@/contexts/LimitDialogContext';
 import { useToast } from '@/hooks/use-toast';
+import { PrintConfirmDialog } from '@/components/dialogs/PrintConfirmDialog';
+import { SAVPrintButton } from '@/components/sav/SAVPrint';
 
 interface CustomerInfo {
   firstName: string;
@@ -74,6 +77,8 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
   const [selectedParts, setSelectedParts] = useState<SelectedPart[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [showPrintDialog, setShowPrintDialog] = useState(false);
+  const [createdSAVCase, setCreatedSAVCase] = useState<any>(null);
   
   const { user } = useAuth();
   const { profile } = useProfile();
@@ -177,7 +182,7 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
       const totalCost = savType === 'internal' ? 0 : selectedParts.reduce((acc, part) => acc + part.unitPrice * part.quantity, 0);
       
       // Create SAV case
-      const { error: caseError } = await createCase({
+      const { data: newCase, error: caseError } = await createCase({
         sav_type: savType,
         customer_id: customerId,
         device_brand: deviceInfo.brand ? deviceInfo.brand.toUpperCase().trim() : null,
@@ -193,6 +198,10 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
       
       if (caseError) throw caseError;
       
+      // Stocker le SAV créé et afficher le popup d'impression
+      setCreatedSAVCase(newCase);
+      setShowPrintDialog(true);
+      
       // Reset form
       setSavType('client');
       setCustomerInfo({
@@ -202,17 +211,15 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
         phone: '',
         address: '',
       });
-        setDeviceInfo({
-          brand: '',
-          model: '',
-          imei: '',
-          sku: '',
-          problemDescription: '',
-          attachments: [],
-        });
+      setDeviceInfo({
+        brand: '',
+        model: '',
+        imei: '',
+        sku: '',
+        problemDescription: '',
+        attachments: [],
+      });
       setSelectedParts([]);
-      
-      onSuccess?.();
     } catch (error: any) {
       console.error('Error creating SAV case:', error);
       toast({
@@ -222,6 +229,32 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handlePrintConfirm = () => {
+    // Lancer l'impression en appelant directement la fonction
+    if (createdSAVCase) {
+      // Simuler le clic sur le bouton d'impression par programmation
+      const printEvent = new MouseEvent('click');
+      const printButton = document.querySelector('[data-print-button]') as HTMLButtonElement;
+      if (printButton) {
+        printButton.dispatchEvent(printEvent);
+      }
+    }
+    onSuccess?.();
+  };
+
+  const handlePrintCancel = () => {
+    // Redirection sans impression
+    onSuccess?.();
+  };
+
+  // Fonction d'impression directe
+  const triggerPrint = () => {
+    const printButton = document.querySelector('[data-print-button]') as HTMLButtonElement;
+    if (printButton) {
+      printButton.click();
     }
   };
 
@@ -597,7 +630,7 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
             </>
           )}
         </CardContent>
-      </Card>
+        </Card>
 
         <div className="flex justify-end space-x-2">
           <Button type="button" variant="outline">
@@ -608,6 +641,25 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
           </Button>
         </div>
       </form>
+
+      {/* Bouton d'impression masqué pour référence */}
+      {createdSAVCase && (
+        <div style={{ display: 'none' }}>
+          <SAVPrintButton 
+            savCase={createdSAVCase}
+            data-print-button
+          />
+        </div>
+      )}
+
+      {/* Dialog de confirmation d'impression */}
+      <PrintConfirmDialog 
+        isOpen={showPrintDialog}
+        onClose={() => setShowPrintDialog(false)}
+        onConfirm={handlePrintConfirm}
+        onCancel={handlePrintCancel}
+        savCaseNumber={createdSAVCase?.case_number || ''}
+      />
     </div>
   );
 }
