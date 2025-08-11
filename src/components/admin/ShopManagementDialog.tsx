@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useShopLimits } from '@/hooks/useShopLimits';
 import {
   Dialog,
   DialogContent,
@@ -79,6 +80,7 @@ interface ShopManagementDialogProps {
 
 export default function ShopManagementDialog({ shop, isOpen, onClose, onUpdate }: ShopManagementDialogProps) {
   const { toast } = useToast();
+  const { refreshShopLimits, forceUnlockShop } = useShopLimits();
   const [loading, setLoading] = useState(false);
   const [smsCreditsToAdd, setSmsCreditsToAdd] = useState('');
   const [newSubscriptionTier, setNewSubscriptionTier] = useState(shop?.subscription_tier || 'free');
@@ -529,6 +531,10 @@ export default function ShopManagementDialog({ shop, isOpen, onClose, onUpdate }
         title: "Succès",
         description: `Limite SAV mise à jour: ${newLimit}`,
       });
+      
+      // Débloquer automatiquement le magasin avec la nouvelle limite
+      console.log('🔓 [AUTO-UNLOCK] Débloquage automatique après mise à jour des limites...');
+      await forceUnlockShop(shop.id, newLimit);
       
       setCustomSavLimit('');
       fetchSubscriptionPlans();
