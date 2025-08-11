@@ -17,6 +17,7 @@ import { formatDelayText, calculateSAVDelay } from '@/hooks/useSAVDelay';
 import { useSAVUnreadMessages } from '@/hooks/useSAVUnreadMessages';
 import { useLimitDialogContext } from '@/contexts/LimitDialogContext';
 import { SAVPrintButton } from '@/components/sav/SAVPrint';
+import { PartStatusIcon } from '@/components/sav/PartStatusIcon';
 import { 
   Eye,
   Clock,
@@ -300,8 +301,7 @@ export default function SAVList() {
                         <div className="flex items-center gap-4 mb-2">
                           <div className="flex items-center gap-2">
                             {hasUnreadMessages && <MessageCircle className="h-5 w-5 text-blue-500 animate-pulse" />}
-                            {isUrgent && <AlertCircle className="h-5 w-5 text-red-500" />}
-                            {isHighPriority && !isUrgent && <Clock className="h-5 w-5 text-orange-500" />}
+                            <PartStatusIcon savCaseId={savCase.id} />
                             <h3 className="font-semibold text-lg">
                               #{savCase.case_number}
                             </h3>
