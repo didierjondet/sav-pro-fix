@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useCallback } from 'react';
 import { useSubscription } from '@/hooks/useSubscription';
-import { useNavigate } from 'react-router-dom';
 
 interface LimitDialogContextType {
   checkAndShowLimitDialog: (type?: 'sav' | 'sms') => boolean;
@@ -25,19 +24,19 @@ interface LimitDialogProviderProps {
 
 export function LimitDialogProvider({ children }: LimitDialogProviderProps) {
   const { checkLimits } = useSubscription();
-  const navigate = useNavigate();
 
   const checkAndShowLimitDialog = useCallback((type: 'sav' | 'sms' = 'sav') => {
     const limits = checkLimits(type);
     
     if (!limits.allowed && limits.action) {
-      // Naviguer vers la page d'abonnement au lieu d'ouvrir une popup
-      navigate('/subscription');
+      // Rediriger vers la page d'abonnement via window.location
+      // pour éviter le problème de useNavigate hors du Router
+      window.location.href = '/subscription';
       return false; // Limite atteinte
     }
     
     return true; // OK, pas de limite atteinte
-  }, [checkLimits, navigate]);
+  }, [checkLimits]);
 
   return (
     <LimitDialogContext.Provider value={{ checkAndShowLimitDialog }}>
