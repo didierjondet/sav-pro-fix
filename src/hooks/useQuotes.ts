@@ -40,9 +40,23 @@ export function useQuotes() {
 
   const fetchQuotes = async () => {
     try {
+      // Get current user's shop_id
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('shop_id')
+        .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
+        .single();
+
+      if (!profile?.shop_id) {
+        console.error('No shop_id found for current user');
+        setQuotes([]);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('quotes' as any)
         .select('*')
+        .eq('shop_id', profile.shop_id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;

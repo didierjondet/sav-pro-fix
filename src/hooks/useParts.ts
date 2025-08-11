@@ -24,9 +24,23 @@ export function useParts() {
 
   const fetchParts = async () => {
     try {
+      // Get current user's shop_id
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('shop_id')
+        .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
+        .single();
+
+      if (!profile?.shop_id) {
+        console.error('No shop_id found for current user');
+        setParts([]);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('parts')
         .select('*')
+        .eq('shop_id', profile.shop_id)
         .order('name', { ascending: true });
 
       if (error) throw error;

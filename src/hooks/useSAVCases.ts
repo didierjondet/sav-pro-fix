@@ -38,12 +38,26 @@ export function useSAVCases() {
 
   const fetchCases = async () => {
     try {
+      // Get current user's shop_id
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('shop_id')
+        .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
+        .single();
+
+      if (!profile?.shop_id) {
+        console.error('No shop_id found for current user');
+        setCases([]);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('sav_cases')
         .select(`
           *,
           customer:customers(first_name, last_name, email, phone, address)
         `)
+        .eq('shop_id', profile.shop_id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;

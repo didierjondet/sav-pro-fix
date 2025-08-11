@@ -21,9 +21,23 @@ export function useCustomers() {
 
   const fetchCustomers = async () => {
     try {
+      // Get current user's shop_id
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('shop_id')
+        .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
+        .single();
+
+      if (!profile?.shop_id) {
+        console.error('No shop_id found for current user');
+        setCustomers([]);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('customers')
         .select('*')
+        .eq('shop_id', profile.shop_id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;

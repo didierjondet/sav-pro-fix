@@ -33,12 +33,26 @@ export function useOrders() {
 
   const fetchOrderItems = async () => {
     try {
+      // Get current user's shop_id
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('shop_id')
+        .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
+        .single();
+
+      if (!profile?.shop_id) {
+        console.error('No shop_id found for current user');
+        setOrderItems([]);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('order_items')
         .select(`
           *,
           part:parts(*)
         `)
+        .eq('shop_id', profile.shop_id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -57,6 +71,18 @@ export function useOrders() {
 
   const fetchPartsNeededForSAV = async () => {
     try {
+      // Get current user's shop_id
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('shop_id')
+        .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
+        .single();
+
+      if (!profile?.shop_id) {
+        setPartsNeededForSAV([]);
+        return;
+      }
+
       // Récupérer les pièces utilisées dans les SAV en cours qui ne sont pas en stock
       const { data: savParts, error: savError } = await supabase
         .from('sav_parts')
@@ -66,7 +92,8 @@ export function useOrders() {
           sav_case_id,
           parts!inner(*)
         `)
-        .eq('parts.quantity', 0); // Seulement les pièces en rupture de stock
+        .eq('parts.quantity', 0)
+        .eq('parts.shop_id', profile.shop_id); // Filtrer par shop_id
 
       if (savError) throw savError;
 
@@ -75,7 +102,8 @@ export function useOrders() {
         .from('order_items')
         .select('part_id, sav_case_id, ordered')
         .eq('reason', 'sav_stock_zero')
-        .eq('ordered', true);
+        .eq('ordered', true)
+        .eq('shop_id', profile.shop_id);
 
       const formattedSavParts = savParts?.filter(item => {
         // Vérifier si cette combinaison part_id + sav_case_id n'a pas déjà été commandée
@@ -109,11 +137,24 @@ export function useOrders() {
 
   const fetchPartsNeededForQuotes = async () => {
     try {
+      // Get current user's shop_id
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('shop_id')
+        .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
+        .single();
+
+      if (!profile?.shop_id) {
+        setPartsNeededForQuotes([]);
+        return;
+      }
+
       // Récupérer les pièces dans les devis dont le stock est insuffisant
       const { data: quotes, error: quotesError } = await supabase
         .from('quotes')
         .select('id, items')
-        .eq('status', 'draft');
+        .eq('status', 'draft')
+        .eq('shop_id', profile.shop_id);
 
       if (quotesError) throw quotesError;
 
@@ -122,7 +163,8 @@ export function useOrders() {
         .from('order_items')
         .select('part_id, quote_id, ordered')
         .eq('reason', 'quote_needed')
-        .eq('ordered', true);
+        .eq('ordered', true)
+        .eq('shop_id', profile.shop_id);
 
       const neededParts: OrderItemWithPart[] = [];
       
@@ -174,10 +216,23 @@ export function useOrders() {
 
   const fetchPartsNeedingRestock = async () => {
     try {
+      // Get current user's shop_id
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('shop_id')
+        .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
+        .single();
+
+      if (!profile?.shop_id) {
+        setPartsNeedingRestock([]);
+        return;
+      }
+
       // Récupérer toutes les pièces et filtrer côté client
       const { data: parts, error } = await supabase
         .from('parts')
-        .select('*');
+        .select('*')
+        .eq('shop_id', profile.shop_id);
 
       if (error) throw error;
 
@@ -186,7 +241,8 @@ export function useOrders() {
         .from('order_items')
         .select('part_id, ordered')
         .eq('reason', 'manual')
-        .eq('ordered', true);
+        .eq('ordered', true)
+        .eq('shop_id', profile.shop_id);
 
       // Filtrer les pièces qui ont besoin d'être réapprovisionnées
       const partsNeedingStock = parts?.filter(part => {

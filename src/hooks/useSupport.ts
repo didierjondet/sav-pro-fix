@@ -48,13 +48,42 @@ export function useSupport() {
 
   const fetchTickets = async () => {
     try {
-      const { data, error } = await supabase
+      // Get current user info
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) {
+        console.error('No authenticated user found');
+        setTickets([]);
+        return;
+      }
+
+      // Get current user's profile
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('shop_id, role')
+        .eq('user_id', user.id)
+        .single();
+
+      if (!profile?.shop_id) {
+        console.error('No shop_id found for current user');
+        setTickets([]);
+        return;
+      }
+
+      // Super admins can see all tickets, regular users only their shop's tickets
+      let query = supabase
         .from('support_tickets')
         .select(`
           *,
           shop:shops(name, email)
         `)
         .order('created_at', { ascending: false });
+
+      // If not super admin, filter by shop_id
+      if (profile.role !== 'super_admin') {
+        query = query.eq('shop_id', profile.shop_id);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
       setTickets((data || []) as SupportTicket[]);

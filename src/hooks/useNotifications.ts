@@ -23,9 +23,23 @@ export function useNotifications() {
 
   const fetchNotifications = async () => {
     try {
+      // Get current user's shop_id
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('shop_id')
+        .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
+        .single();
+
+      if (!profile?.shop_id) {
+        console.error('No shop_id found for current user');
+        setNotifications([]);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('notifications')
         .select('*')
+        .eq('shop_id', profile.shop_id)
         .order('created_at', { ascending: false })
         .limit(50);
 
@@ -94,10 +108,20 @@ export function useNotifications() {
 
   const markAllAsRead = async () => {
     try {
+      // Get current user's shop_id
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('shop_id')
+        .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
+        .single();
+
+      if (!profile?.shop_id) return;
+
       const { error } = await supabase
         .from('notifications')
         .update({ read: true })
-        .eq('read', false);
+        .eq('read', false)
+        .eq('shop_id', profile.shop_id);
 
       if (error) throw error;
       fetchNotifications();
