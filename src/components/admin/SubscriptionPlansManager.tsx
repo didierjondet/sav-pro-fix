@@ -294,13 +294,18 @@ export default function SubscriptionPlansManager() {
     }
 
     try {
-      console.log('🚀 [SYNC] Appel de l\'edge function verify-stripe-price...');
+      console.log('🚀 [SYNC] Appel de create-checkout pour vérification...');
       
-      const { data, error } = await supabase.functions.invoke('verify-stripe-price', {
-        body: { price_id: plan.stripe_price_id, plan_id: plan.id }
+      // Utiliser la fonction create-checkout existante avec un paramètre spécial pour la vérification
+      const { data, error } = await supabase.functions.invoke('create-checkout', {
+        body: { 
+          verify_price_only: true, 
+          price_id: plan.stripe_price_id, 
+          plan_id: plan.id 
+        }
       });
 
-      console.log('📊 [SYNC] Réponse de verify-stripe-price:', { data, error });
+      console.log('📊 [SYNC] Réponse de create-checkout:', { data, error });
 
       if (error) {
         console.log('❌ [SYNC] Erreur lors de la vérification:', error);

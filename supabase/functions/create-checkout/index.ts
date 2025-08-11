@@ -45,7 +45,70 @@ serve(async (req) => {
     if (!user?.email) throw new Error("User not authenticated or email not available");
     logStep("User authenticated", { userId: user.id, email: user.email });
 
-    const { plan } = await req.json();
+    const requestBody = await req.json();
+    
+    // Mode vérification de Price ID uniquement
+    if (requestBody.verify_price_only) {
+      logStep("Price verification mode", { price_id: requestBody.price_id });
+      
+      const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
+      
+      try {
+        const price = await stripe.prices.retrieve(requestBody.price_id);
+        logStep("Price retrieved successfully", { 
+          id: price.id, 
+          amount: price.unit_amount, 
+          currency: price.currency,
+          interval: price.recurring?.interval
+        });
+
+        if (!price.recurring) {
+          return new Response(JSON.stringify({ 
+            valid: false, 
+            error: "Ce Price ID n'est pas un abonnement récurrent" 
+          }), {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+            status: 200,
+          });
+        }
+
+        return new Response(JSON.stringify({
+          valid: true,
+          price_id: price.id,
+          amount: price.unit_amount,
+          currency: price.currency,
+          interval: price.recurring.interval,
+          active: price.active
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        });
+
+      } catch (stripeError: any) {
+        logStep("Stripe verification error", { error: stripeError.message });
+        
+        if (stripeError.code === 'resource_missing') {
+          return new Response(JSON.stringify({ 
+            valid: false, 
+            error: `Price ID '${requestBody.price_id}' n'existe pas dans Stripe` 
+          }), {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+            status: 200,
+          });
+        }
+
+        return new Response(JSON.stringify({ 
+          valid: false, 
+          error: `Erreur Stripe: ${stripeError.message}` 
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        });
+      }
+    }
+
+    // Mode normal : création de checkout session
+    const { plan } = requestBody;
     if (!plan || !['premium', 'enterprise'].includes(plan)) {
       throw new Error("Invalid plan specified");
     }
