@@ -533,6 +533,7 @@ export type Database = {
       }
       sav_cases: {
         Row: {
+          attachments: Json | null
           case_number: string
           created_at: string
           customer_id: string | null
@@ -558,6 +559,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          attachments?: Json | null
           case_number: string
           created_at?: string
           customer_id?: string | null
@@ -583,6 +585,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          attachments?: Json | null
           case_number?: string
           created_at?: string
           customer_id?: string | null

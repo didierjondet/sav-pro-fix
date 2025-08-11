@@ -19,6 +19,7 @@ import { SAVPartsEditor } from '@/components/sav/SAVPartsEditor';
 import { SAVPartsRequirements } from '@/components/sav/SAVPartsRequirements';
 import { SAVPrintButton } from '@/components/sav/SAVPrint';
 import { ReviewRequestButton } from '@/components/sav/ReviewRequestButton';
+import { SAVDocuments } from '@/components/sav/SAVDocuments';
 import { generateFullTrackingUrl } from '@/utils/trackingUtils';
 
 export default function SAVDetail() {
@@ -138,6 +139,10 @@ export default function SAVDetail() {
     } finally {
       setSavingComments(false);
     }
+  };
+
+  const handleAttachmentsUpdate = (newAttachments: any[]) => {
+    setSavCase({ ...savCase, attachments: newAttachments });
   };
 
   if (loading) {
@@ -419,6 +424,13 @@ export default function SAVDetail() {
                   </CardContent>
                 </Card>
               )}
+
+              {/* Documents and Photos */}
+              <SAVDocuments
+                savCaseId={savCase.id}
+                attachments={savCase.attachments || []}
+                onAttachmentsUpdate={handleAttachmentsUpdate}
+              />
 
               {/* Parts Requirements */}
               <SAVPartsRequirements 
