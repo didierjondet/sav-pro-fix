@@ -1,5 +1,5 @@
-import React from 'react';
-import { AlertTriangle, CreditCard, ArrowUp, X } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { AlertTriangle, Check, Crown, Zap, Star, X, ArrowRight } from 'lucide-react';
 import { 
   Dialog, 
   DialogContent, 
@@ -9,8 +9,9 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useSubscription } from '@/hooks/useSubscription';
-import { useSMSPackages } from '@/hooks/useSMSPackages';
+import { supabase } from '@/integrations/supabase/client';
 
 interface LimitDialogProps {
   open: boolean;
@@ -20,6 +21,18 @@ interface LimitDialogProps {
   limitType: 'sav' | 'sms';
 }
 
+interface SubscriptionPlan {
+  id: string;
+  name: string;
+  description: string;
+  monthly_price: number;
+  sav_limit: number | null;
+  sms_limit: number;
+  features: any; // JSON field from Supabase
+  is_active: boolean;
+  stripe_price_id: string | null;
+}
+
 export function LimitDialog({ 
   open, 
   onOpenChange, 
@@ -27,89 +40,105 @@ export function LimitDialog({
   reason, 
   limitType 
 }: LimitDialogProps) {
-  const { subscription, createCheckout, openCustomerPortal } = useSubscription();
-  const { packages, purchasePackage } = useSMSPackages();
+  const { subscription, createCheckout } = useSubscription();
+  const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  const handleUpgradePlan = async () => {
-    if (subscription?.subscription_tier === 'free') {
-      // Upgrade vers Premium
-      await createCheckout('premium');
-    } else if (subscription?.subscription_tier === 'premium') {
-      // Upgrade vers Enterprise
-      await createCheckout('enterprise');
-    } else {
-      // Ouvrir le portail client pour gérer l'abonnement
-      await openCustomerPortal();
+  useEffect(() => {
+    if (open) {
+      fetchPlans();
     }
-    onOpenChange(false);
-  };
+  }, [open]);
 
-  const handleBuySMSPackage = async () => {
-    if (packages.length > 0) {
-      await purchasePackage(packages[0].id);
-    } else {
-      // Rediriger vers les paramètres avec l'onglet SMS
-      window.location.href = '/settings?tab=sms';
-    }
-    onOpenChange(false);
-  };
+  const fetchPlans = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('subscription_plans')
+        .select('*')
+        .eq('is_active', true)
+        .order('monthly_price', { ascending: true });
 
-  const handleContactSupport = () => {
-    // Rediriger vers le support
-    window.location.href = '/support';
-    onOpenChange(false);
-  };
-
-  const getIcon = () => {
-    switch (limitType) {
-      case 'sav':
-        return <AlertTriangle className="h-12 w-12 text-orange-500" />;
-      case 'sms':
-        return <CreditCard className="h-12 w-12 text-blue-500" />;
-      default:
-        return <AlertTriangle className="h-12 w-12 text-red-500" />;
+      if (error) throw error;
+      setPlans(data || []);
+    } catch (error) {
+      console.error('Error fetching plans:', error);
     }
   };
 
-  const getTitle = () => {
-    switch (limitType) {
-      case 'sav':
-        return 'Limite SAV atteinte';
-      case 'sms':
-        return 'Crédits SMS épuisés';
-      default:
-        return 'Limite atteinte';
+  const handleSelectPlan = async (plan: SubscriptionPlan) => {
+    if (plan.name.toLowerCase() === 'gratuit' || plan.monthly_price === 0) {
+      onOpenChange(false);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const planKey = plan.name.toLowerCase() as 'premium' | 'enterprise';
+      await createCheckout(planKey);
+      onOpenChange(false);
+    } catch (error) {
+      console.error('Error creating checkout:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const getUpgradeButtonText = () => {
-    if (subscription?.subscription_tier === 'free') {
-      return 'Passer au plan Premium';
-    } else if (subscription?.subscription_tier === 'premium') {
-      return 'Passer au plan Enterprise';
+  const getCurrentLimit = () => {
+    if (limitType === 'sav') {
+      const currentPlan = plans.find(p => p.name.toLowerCase() === subscription?.subscription_tier?.toLowerCase());
+      return currentPlan?.sav_limit || 5;
     }
-    return 'Gérer mon abonnement';
+    return subscription?.sms_credits_allocated || 15;
   };
 
-  const getUpgradeDescription = () => {
-    if (subscription?.subscription_tier === 'free') {
-      return 'Le plan Premium vous offre 50 SAV simultanés et 100 SMS par mois';
-    } else if (subscription?.subscription_tier === 'premium') {
-      return 'Le plan Enterprise vous offre 100 SAV simultanés et 400 SMS par mois';
+  const getPlanIcon = (planName: string) => {
+    const name = planName.toLowerCase();
+    if (name.includes('gratuit') || name.includes('free')) {
+      return <Star className="h-6 w-6 text-gray-500" />;
     }
-    return 'Gérez votre abonnement pour augmenter vos limites';
+    if (name.includes('premium')) {
+      return <Crown className="h-6 w-6 text-blue-500" />;
+    }
+    if (name.includes('enterprise')) {
+      return <Zap className="h-6 w-6 text-purple-500" />;
+    }
+    return <Star className="h-6 w-6 text-gray-500" />;
+  };
+
+  const getPlanColor = (planName: string) => {
+    const name = planName.toLowerCase();
+    if (name.includes('gratuit') || name.includes('free')) {
+      return 'border-gray-200 bg-white';
+    }
+    if (name.includes('premium')) {
+      return 'border-blue-200 bg-blue-50/50';
+    }
+    if (name.includes('enterprise')) {
+      return 'border-purple-200 bg-purple-50/50';
+    }
+    return 'border-gray-200 bg-white';
+  };
+
+  const isCurrentPlan = (planName: string) => {
+    return planName.toLowerCase() === subscription?.subscription_tier?.toLowerCase();
+  };
+
+  const isPlanUpgrade = (planPrice: number) => {
+    const currentPlan = plans.find(p => p.name.toLowerCase() === subscription?.subscription_tier?.toLowerCase());
+    const currentPrice = currentPlan?.monthly_price || 0;
+    return planPrice > currentPrice;
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              {getIcon()}
+              <AlertTriangle className="h-8 w-8 text-orange-500" />
               <div>
-                <DialogTitle className="text-xl font-semibold text-slate-900">
-                  {getTitle()}
+                <DialogTitle className="text-2xl font-bold text-slate-900">
+                  Limite atteinte !
                 </DialogTitle>
                 <Badge 
                   variant="outline" 
@@ -130,62 +159,129 @@ export function LimitDialog({
           </div>
         </DialogHeader>
         
-        <div className="space-y-4">
-          <DialogDescription className="text-base text-slate-600">
-            {reason}
-          </DialogDescription>
+        <div className="space-y-6">
+          <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+            <DialogDescription className="text-base text-orange-800 font-medium">
+              Vous ne pouvez pas dépasser la limite de votre plan actuel qui est de{' '}
+              <span className="font-bold">{getCurrentLimit()} {limitType === 'sav' ? 'SAV simultanés' : 'SMS'}</span>.
+            </DialogDescription>
+            <p className="text-sm text-orange-600 mt-2">
+              Choisissez un plan supérieur pour augmenter vos limites et débloquer plus de fonctionnalités.
+            </p>
+          </div>
 
-          {limitType === 'sav' && (
-            <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-4 rounded-lg border border-blue-200">
-              <div className="flex items-center gap-2 mb-2">
-                <ArrowUp className="h-5 w-5 text-blue-600" />
-                <span className="font-medium text-blue-900">Solution recommandée</span>
-              </div>
-              <p className="text-sm text-blue-700 mb-3">
-                {getUpgradeDescription()}
-              </p>
+          <div>
+            <h3 className="text-lg font-semibold text-slate-900 mb-4">
+              Choisissez votre plan
+            </h3>
+            <div className="grid gap-4 md:grid-cols-3">
+              {plans.map((plan) => (
+                <Card 
+                  key={plan.id} 
+                  className={`relative transition-all duration-200 hover:shadow-lg ${getPlanColor(plan.name)} ${
+                    isCurrentPlan(plan.name) ? 'ring-2 ring-blue-500' : ''
+                  }`}
+                >
+                  {isCurrentPlan(plan.name) && (
+                    <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+                      <Badge className="bg-blue-500 text-white">Plan actuel</Badge>
+                    </div>
+                  )}
+                  
+                  <CardHeader className="pb-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        {getPlanIcon(plan.name)}
+                        <CardTitle className="text-lg">{plan.name}</CardTitle>
+                      </div>
+                    </div>
+                    <div className="mt-2">
+                      <span className="text-3xl font-bold text-slate-900">
+                        {plan.monthly_price === 0 ? 'Gratuit' : `${plan.monthly_price}€`}
+                      </span>
+                      {plan.monthly_price > 0 && (
+                        <span className="text-slate-600 text-sm">/mois</span>
+                      )}
+                    </div>
+                    {plan.description && (
+                      <p className="text-sm text-slate-600 mt-1">{plan.description}</p>
+                    )}
+                  </CardHeader>
+                  
+                  <CardContent className="pt-0">
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2">
+                        <Check className="h-4 w-4 text-green-500" />
+                        <span className="text-sm">
+                          {plan.sav_limit ? `${plan.sav_limit} SAV simultanés` : 'SAV illimités'}
+                        </span>
+                      </div>
+                      
+                      <div className="flex items-center gap-2">
+                        <Check className="h-4 w-4 text-green-500" />
+                        <span className="text-sm">{plan.sms_limit} SMS/mois</span>
+                      </div>
+
+                      {plan.features && plan.features.length > 0 && (
+                        <div className="space-y-1">
+                          {plan.features.slice(0, 3).map((feature, index) => (
+                            <div key={index} className="flex items-center gap-2">
+                              <Check className="h-4 w-4 text-green-500" />
+                              <span className="text-sm">{feature}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="mt-6">
+                      {isCurrentPlan(plan.name) ? (
+                        <Button 
+                          variant="outline" 
+                          className="w-full" 
+                          disabled
+                        >
+                          Plan actuel
+                        </Button>
+                      ) : isPlanUpgrade(plan.monthly_price) ? (
+                        <Button
+                          onClick={() => handleSelectPlan(plan)}
+                          disabled={loading || !plan.stripe_price_id}
+                          className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white"
+                        >
+                          <ArrowRight className="h-4 w-4 mr-2" />
+                          Choisir ce plan
+                        </Button>
+                      ) : (
+                        <Button 
+                          variant="outline" 
+                          className="w-full" 
+                          disabled
+                        >
+                          Plan inférieur
+                        </Button>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
-          )}
+          </div>
 
-          <div className="flex flex-col gap-3">
-            {action === 'upgrade_plan' && (
-              <Button
-                onClick={handleUpgradePlan}
-                className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white"
-                size="lg"
-              >
-                <ArrowUp className="h-4 w-4 mr-2" />
-                {getUpgradeButtonText()}
-              </Button>
-            )}
-
-            {action === 'buy_sms_package' && (
-              <Button
-                onClick={handleBuySMSPackage}
-                className="w-full bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white"
-                size="lg"
-              >
-                <CreditCard className="h-4 w-4 mr-2" />
-                Acheter des crédits SMS
-              </Button>
-            )}
-
-            {action === 'contact_support' && (
-              <Button
-                onClick={handleContactSupport}
-                className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
-                size="lg"
-              >
-                Contacter le support
-              </Button>
-            )}
-
+          <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t">
             <Button
               variant="outline"
               onClick={() => onOpenChange(false)}
-              className="w-full"
+              className="flex-1"
             >
-              Plus tard
+              Annuler
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={() => window.location.href = '/support'}
+              className="flex-1"
+            >
+              Contacter le support
             </Button>
           </div>
         </div>
