@@ -17,7 +17,7 @@ interface SidebarProps {
 }
 
 const baseNavigation = [
-  { name: 'Tableau de bord', href: '/', icon: BarChart3 },
+  { name: 'Tableau de bord', href: '/dashboard', icon: BarChart3 },
   { name: 'Dossiers SAV', href: '/sav', icon: FileText },
   { name: 'Stock pièces', href: '/parts', icon: Package },
   { name: 'Devis', href: '/quotes', icon: FileText },
