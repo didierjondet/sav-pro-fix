@@ -279,10 +279,66 @@ export default function SubscriptionPlansManager() {
   };
 
   const syncWithStripe = async (plan: SubscriptionPlan) => {
-    toast({
-      title: "Info",
-      description: "Synchronisation avec Stripe en cours de développement",
-    });
+    console.log('🔄 [SYNC] Début de synchronisation pour le plan:', plan.name);
+    console.log('📋 [SYNC] Plan ID:', plan.id);
+    console.log('🏷️ [SYNC] Stripe Price ID actuel:', plan.stripe_price_id);
+    
+    if (!plan.stripe_price_id) {
+      console.log('❌ [SYNC] Pas de Price ID Stripe configuré');
+      toast({
+        title: "Erreur",
+        description: "Aucun Price ID Stripe configuré pour ce plan",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      console.log('🚀 [SYNC] Appel de l\'edge function verify-stripe-price...');
+      
+      const { data, error } = await supabase.functions.invoke('verify-stripe-price', {
+        body: { price_id: plan.stripe_price_id, plan_id: plan.id }
+      });
+
+      console.log('📊 [SYNC] Réponse de verify-stripe-price:', { data, error });
+
+      if (error) {
+        console.log('❌ [SYNC] Erreur lors de la vérification:', error);
+        throw error;
+      }
+
+      if (data.valid) {
+        console.log('✅ [SYNC] Price ID valide, mise à jour des informations...');
+        console.log('💰 [SYNC] Prix depuis Stripe:', data.amount, 'centimes');
+        console.log('🔄 [SYNC] Intervalle de facturation:', data.interval);
+        
+        toast({
+          title: "✅ Synchronisation réussie",
+          description: `Prix valide: ${(data.amount / 100).toFixed(2)}€/${data.interval}`,
+        });
+        
+        // Mettre à jour localement le plan avec les données Stripe
+        setPlans(plans.map(p => p.id === plan.id ? {
+          ...p,
+          monthly_price: data.amount / 100,
+          billing_interval: data.interval as 'month' | 'year'
+        } : p));
+      } else {
+        console.log('❌ [SYNC] Price ID invalide:', data.error);
+        toast({
+          title: "❌ Price ID invalide",
+          description: data.error || "Ce Price ID n'existe pas dans Stripe",
+          variant: "destructive",
+        });
+      }
+    } catch (error: any) {
+      console.error('💥 [SYNC] Erreur lors de la synchronisation:', error);
+      toast({
+        title: "Erreur de synchronisation",
+        description: `Impossible de vérifier le Price ID: ${error.message}`,
+        variant: "destructive",
+      });
+    }
   };
 
   if (loading) {

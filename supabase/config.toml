@@ -41,3 +41,6 @@ verify_jwt = true
 
 [functions.send-invitation]
 verify_jwt = true
+
+[functions.verify-stripe-price]
+verify_jwt = true
