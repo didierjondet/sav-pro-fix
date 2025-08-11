@@ -3,6 +3,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useSMSPackages } from '@/hooks/useSMSPackages';
+import { useLimitDialogContext } from '@/contexts/LimitDialogContext';
 
 interface LimitAlertProps {
   action: 'upgrade_plan' | 'buy_sms_package';
@@ -11,12 +12,13 @@ interface LimitAlertProps {
 }
 
 export function LimitAlert({ action, reason, onAction }: LimitAlertProps) {
-  const { createCheckout, openCustomerPortal } = useSubscription();
+  const { openCustomerPortal } = useSubscription();
   const { packages, purchasePackage } = useSMSPackages();
+  const { checkAndShowLimitDialog } = useLimitDialogContext();
 
   const handleUpgradePlan = async () => {
-    // Ouvrir le portail client pour gérer l'abonnement
-    await openCustomerPortal();
+    // Ouvrir la popup de sélection de plans
+    checkAndShowLimitDialog('sav');
     onAction?.();
   };
 
