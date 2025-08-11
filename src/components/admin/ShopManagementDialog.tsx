@@ -69,6 +69,8 @@ interface Shop {
   total_sav_cases?: number;
   total_revenue?: number;
   is_blocked?: boolean;
+  custom_sav_limit?: number;
+  custom_sms_limit?: number;
 }
 
 interface ShopManagementDialogProps {
@@ -983,7 +985,7 @@ export default function ShopManagementDialog({ shop, isOpen, onClose, onUpdate }
                     <Label>Limites actuelles du magasin</Label>
                     <div className="space-y-1 text-sm">
                       <div className="flex items-center justify-between">
-                        <span>SAV simultanés: {shop.active_sav_count} (aucune limite SAV configurée)</span>
+                        <span>SAV simultanés: {shop.active_sav_count}/{shop.custom_sav_limit || currentTier?.sav_limit || 'Illimité'}</span>
                         <div className="flex items-center gap-2">
                           <Input
                             type="number"
