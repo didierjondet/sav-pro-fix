@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { useShop } from '@/hooks/useShop';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { useNavigate } from 'react-router-dom';
 
 interface HeaderProps {
   onMenuClick: () => void;
@@ -21,6 +22,7 @@ export function Header({
   const {
     shop
   } = useShop();
+  const navigate = useNavigate();
   return <header className="bg-card border-b border-border shadow-sm">
       <div className="flex items-center justify-between h-16 px-4">
         <div className="flex items-center space-x-4">
@@ -67,7 +69,7 @@ export function Header({
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>{user?.email}</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate('/settings')}>
                 <Settings className="mr-2 h-4 w-4" />
                 Paramètres
               </DropdownMenuItem>
