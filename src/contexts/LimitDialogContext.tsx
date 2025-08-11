@@ -18,7 +18,10 @@ const LimitDialogContext = createContext<LimitDialogContextType | undefined>(und
 export function useLimitDialogContext() {
   const context = useContext(LimitDialogContext);
   if (!context) {
-    throw new Error('useLimitDialogContext must be used within a LimitDialogProvider');
+    // Return a default implementation to prevent crashes
+    return {
+      checkAndShowLimitDialog: () => true
+    };
   }
   return context;
 }
