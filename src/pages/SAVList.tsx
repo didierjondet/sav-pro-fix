@@ -301,7 +301,7 @@ export default function SAVList() {
                         <div className="flex items-center gap-4 mb-2">
                           <div className="flex items-center gap-2">
                             {hasUnreadMessages && <MessageCircle className="h-5 w-5 text-blue-500 animate-pulse" />}
-                            <PartStatusIcon savCaseId={savCase.id} />
+                            <PartStatusIcon savCaseId={savCase.id} savStatus={savCase.status} />
                             <h3 className="font-semibold text-lg">
                               #{savCase.case_number}
                             </h3>

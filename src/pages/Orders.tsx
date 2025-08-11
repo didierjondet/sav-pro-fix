@@ -17,7 +17,8 @@ import {
   CheckCircle,
   X,
   Printer,
-  Eye
+  Eye,
+  ShoppingCart
 } from 'lucide-react';
 
 export default function Orders() {
@@ -276,7 +277,7 @@ export default function Orders() {
                                   size="sm"
                                   onClick={() => markAsOrdered(item.id)}
                                 >
-                                  <CheckCircle className="h-4 w-4 mr-1" />
+                                  <ShoppingCart className="h-4 w-4 mr-1" />
                                   Commandé
                                 </Button>
                                 <Button 

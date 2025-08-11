@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Check, X } from 'lucide-react';
+import { Check, X, ShoppingCart } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { supabase } from '@/integrations/supabase/client';
 
 interface PartStatusIconProps {
   savCaseId: string;
   className?: string;
+  savStatus?: 'pending' | 'in_progress' | 'testing' | 'parts_ordered' | 'ready' | 'cancelled';
 }
 
 interface PartStatus {
@@ -22,7 +23,7 @@ interface PartDetail {
   isAvailable: boolean;
 }
 
-export function PartStatusIcon({ savCaseId, className = "" }: PartStatusIconProps) {
+export function PartStatusIcon({ savCaseId, className = "", savStatus }: PartStatusIconProps) {
   const [partStatus, setPartStatus] = useState<PartStatus>({
     hasAssignedParts: false,
     missingPartsCount: 0,
@@ -116,6 +117,24 @@ export function PartStatusIcon({ savCaseId, className = "" }: PartStatusIconProp
       {children}
     </div>
   );
+
+  // Si le SAV a le statut "parts_ordered", afficher l'icône caddie
+  if (savStatus === 'parts_ordered') {
+    return (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger>
+            <IconWithCircle bgColor="bg-blue-500/10">
+              <ShoppingCart className={`h-6 w-6 text-blue-500 ${className}`} />
+            </IconWithCircle>
+          </TooltipTrigger>
+          <TooltipContent side="top">
+            <div className="text-sm">Pièces commandées</div>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  }
 
   if (!partStatus.hasAssignedParts) {
     // Aucune pièce rattachée = croix rouge
