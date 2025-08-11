@@ -14,91 +14,122 @@ import { useSAVUnreadMessages } from '@/hooks/useSAVUnreadMessages';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { useProfile } from '@/hooks/useProfile';
 
 export function NotificationBell() {
   const [isOpen, setIsOpen] = useState(false);
   const [hasNewActivity, setHasNewActivity] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
-  const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
+  const { notifications, unreadCount, markAsRead, markAllAsRead, createSAVMessageNotification, createSupportMessageNotification } = useNotifications();
   const { savWithUnreadMessages } = useSAVUnreadMessages();
   const { user } = useAuth();
+  const { profile } = useProfile();
   const navigate = useNavigate();
 
   // Listen to real-time changes
   useEffect(() => {
-    if (!user) return;
+    if (!user || !profile?.shop_id) return;
 
     let savChannel: any;
     let supportChannel: any;
 
-    const setupRealtimeListeners = async () => {
-      // Get user's shop_id first
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('shop_id')
-        .eq('user_id', user.id)
-        .single();
-      
-      if (!profile?.shop_id) return;
-
-      // Listen to SAV messages
-      savChannel = supabase
-        .channel('sav-messages-realtime')
-        .on(
-          'postgres_changes',
-          {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'sav_messages',
-            filter: `shop_id=eq.${profile.shop_id}`
-          },
-          (payload) => {
-            console.log('New SAV message:', payload);
-            if (payload.new.sender_type === 'client') {
-              triggerNotificationEffect();
+    // Listen to SAV messages
+    savChannel = supabase
+      .channel('sav-messages-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'sav_messages',
+          filter: `shop_id=eq.${profile.shop_id}`
+        },
+        async (payload) => {
+          console.log('New SAV message:', payload);
+          if (payload.new.sender_type === 'client') {
+            triggerNotificationEffect();
+            
+            // Créer une notification SAV
+            try {
+              // Récupérer les infos du SAV pour le numéro de cas
+              const { data: savCase } = await supabase
+                .from('sav_cases')
+                .select('case_number')
+                .eq('id', payload.new.sav_case_id)
+                .single();
+              
+              if (savCase) {
+                await createSAVMessageNotification(
+                  payload.new.sav_case_id,
+                  savCase.case_number,
+                  'client'
+                );
+              }
+            } catch (error) {
+              console.error('Erreur création notification SAV:', error);
             }
           }
-        )
-        .subscribe();
+        }
+      )
+      .subscribe();
 
-      // Get shop ticket IDs for support messages
-      const { data: tickets } = await supabase
-        .from('support_tickets')
-        .select('id')
-        .eq('shop_id', profile.shop_id);
-      
-      if (tickets && tickets.length > 0) {
-        const ticketIds = tickets.map(t => t.id);
+    // Get shop ticket IDs for support messages
+    const setupSupportListener = async () => {
+      try {
+        const { data: tickets } = await supabase
+          .from('support_tickets')
+          .select('id, subject')
+          .eq('shop_id', profile.shop_id);
         
-        // Listen to support messages
-        supportChannel = supabase
-          .channel('support-messages-realtime')
-          .on(
-            'postgres_changes',
-            {
-              event: 'INSERT',
-              schema: 'public',
-              table: 'support_messages'
-            },
-            (payload) => {
-              console.log('New support message:', payload);
-              // Only trigger if it's from admin and for this shop's tickets
-              if (payload.new.sender_type === 'admin' && ticketIds.includes(payload.new.ticket_id)) {
-                triggerNotificationEffect();
+        if (tickets && tickets.length > 0) {
+          const ticketIds = tickets.map(t => t.id);
+          
+          // Listen to support messages
+          supportChannel = supabase
+            .channel('support-messages-realtime')
+            .on(
+              'postgres_changes',
+              {
+                event: 'INSERT',
+                schema: 'public',
+                table: 'support_messages'
+              },
+              async (payload) => {
+                console.log('New support message:', payload);
+                // Only trigger if it's from admin and for this shop's tickets
+                if (payload.new.sender_type === 'admin' && ticketIds.includes(payload.new.ticket_id)) {
+                  triggerNotificationEffect();
+                  
+                  // Créer une notification support
+                  try {
+                    const ticket = tickets.find(t => t.id === payload.new.ticket_id);
+                    if (ticket) {
+                      await createSupportMessageNotification(
+                        payload.new.ticket_id,
+                        ticket.subject,
+                        'admin'
+                      );
+                    }
+                  } catch (error) {
+                    console.error('Erreur création notification support:', error);
+                  }
+                }
               }
-            }
-          )
-          .subscribe();
+            )
+            .subscribe();
+        }
+      } catch (error) {
+        console.error('Erreur setup support listener:', error);
       }
     };
 
-    setupRealtimeListeners();
+    setupSupportListener();
 
     return () => {
       if (savChannel) supabase.removeChannel(savChannel);
       if (supportChannel) supabase.removeChannel(supportChannel);
     };
-  }, [user]);
+  }, [user, profile?.shop_id, createSAVMessageNotification, createSupportMessageNotification]);
 
   const triggerNotificationEffect = () => {
     setHasNewActivity(true);

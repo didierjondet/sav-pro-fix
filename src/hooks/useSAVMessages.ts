@@ -135,11 +135,31 @@ export function useSAVMessages(savCaseId?: string) {
     }
   };
 
+  const markAllAsRead = async (readBy: 'client' | 'shop') => {
+    if (!savCaseId) return;
+    
+    try {
+      const updateField = readBy === 'client' ? 'read_by_client' : 'read_by_shop';
+      
+      const { error } = await supabase
+        .from('sav_messages')
+        .update({ [updateField]: true })
+        .eq('sav_case_id', savCaseId)
+        .eq(updateField, false);
+
+      if (error) throw error;
+      fetchMessages();
+    } catch (error: any) {
+      console.error('Error marking all messages as read:', error);
+    }
+  };
+
   return {
     messages,
     loading,
     sendMessage,
     markAsRead,
+    markAllAsRead,
     refetch: fetchMessages,
   };
 }

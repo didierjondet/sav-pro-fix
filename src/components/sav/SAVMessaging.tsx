@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -20,9 +20,16 @@ interface SAVMessagingProps {
 
 export function SAVMessaging({ savCaseId, savCaseNumber, customerPhone, customerName }: SAVMessagingProps) {
   const [newMessage, setNewMessage] = useState('');
-  const { messages, loading, sendMessage } = useSAVMessages(savCaseId);
+  const { messages, loading, sendMessage, markAllAsRead } = useSAVMessages(savCaseId);
   const { profile } = useProfile();
   const [sending, setSending] = useState(false);
+
+  // Marquer tous les messages comme lus par le magasin au montage du composant
+  useEffect(() => {
+    if (savCaseId && markAllAsRead) {
+      markAllAsRead('shop');
+    }
+  }, [savCaseId, markAllAsRead]);
 
   const handleSendMessage = async () => {
     if (!newMessage.trim() || !profile) return;
