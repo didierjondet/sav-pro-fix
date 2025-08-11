@@ -1017,26 +1017,8 @@ export default function SuperAdmin() {
                       </DialogFooter>
                     </DialogContent>
                   </Dialog>
-                </div>
 
-                {/* Search field */}
-                <div className="mt-4 relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Search className="h-5 w-5 text-gray-400" />
-                  </div>
-                  <Input
-                    type="text"
-                    placeholder="Rechercher par nom, code postal ou administrateur..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 max-w-md"
-                  />
-                </div>
-              </CardHeader>
-
-              <CardContent>
-                <div className="space-y-4">
-                  {filteredShops.map((shop) => (
+                  {/* Dialog pour modifier un magasin */}
                   <Dialog open={isEditShopOpen} onOpenChange={setIsEditShopOpen}>
                     <DialogContent className="bg-slate-900 border-slate-700 text-white">
                       <DialogHeader>
