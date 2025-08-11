@@ -15,9 +15,8 @@ import { useToast } from '@/hooks/use-toast';
 import { useShop } from '@/hooks/useShop';
 import { useProfile } from '@/hooks/useProfile';
 import { useSubscription } from '@/hooks/useSubscription';
-import { useSEOConfig } from '@/hooks/useSEOConfig';
 import { supabase } from '@/integrations/supabase/client';
-import { SEOConfigTab } from '@/components/seo/SEOConfigTab';
+import { SAVStatusesManager } from '@/components/sav/SAVStatusesManager';
 import * as XLSX from 'xlsx';
 import { useSearchParams } from 'react-router-dom';
 
@@ -600,9 +599,9 @@ const handleExportParts = async (format: 'csv' | 'xlsx') => {
                 <Upload className="h-4 w-4" />
                 Import/Export
               </TabsTrigger>
-              <TabsTrigger value="seo" className="flex items-center gap-2">
-                <Search className="h-4 w-4" />
-                SEO
+              <TabsTrigger value="sav-statuses" className="flex items-center gap-2">
+                <SettingsIcon className="h-4 w-4" />
+                Statuts SAV
               </TabsTrigger>
               {isAdmin && (
                 <TabsTrigger value="users" className="flex items-center gap-2">
@@ -1233,8 +1232,8 @@ const handleExportParts = async (format: 'csv' | 'xlsx') => {
               )}
             </TabsContent>
 
-            <TabsContent value="seo" className="space-y-6">
-              <SEOConfigTab />
+            <TabsContent value="sav-statuses" className="space-y-6">
+              <SAVStatusesManager />
             </TabsContent>
 
           </Tabs>

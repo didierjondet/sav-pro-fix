@@ -760,6 +760,53 @@ export type Database = {
           },
         ]
       }
+      shop_sav_statuses: {
+        Row: {
+          created_at: string
+          display_order: number
+          id: string
+          is_active: boolean
+          is_default: boolean
+          shop_id: string
+          status_color: string | null
+          status_key: string
+          status_label: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          shop_id: string
+          status_color?: string | null
+          status_key: string
+          status_label: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          shop_id?: string
+          status_color?: string | null
+          status_key?: string
+          status_label?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shop_sav_statuses_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       shop_seo_config: {
         Row: {
           accepts_reservations: boolean | null
