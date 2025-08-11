@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { AlertTriangle, CheckCircle, Package, ShoppingCart, Plus, Trash2 } from 'lucide-react';
+import { CheckCircle, Package, ShoppingCart, Plus, Trash2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { SAVPartsEditor } from '@/components/sav/SAVPartsEditor';
@@ -248,7 +248,7 @@ export function SAVPartsRequirements({ savCaseId, onPartsUpdated }: SAVPartsRequ
             Pièces nécessaires
             {totalPartsToOrder > 0 && (
               <Badge variant="destructive" className="flex items-center gap-1">
-                <AlertTriangle className="h-3 w-3" />
+                <ShoppingCart className="h-3 w-3" />
                 {totalPartsToOrder} à commander
               </Badge>
             )}
@@ -289,7 +289,7 @@ export function SAVPartsRequirements({ savCaseId, onPartsUpdated }: SAVPartsRequ
                 <div className="text-right">
                   {requirement.needs_ordering ? (
                     <Badge variant="destructive" className="flex items-center gap-1">
-                      <AlertTriangle className="h-3 w-3" />
+                      <ShoppingCart className="h-3 w-3" />
                       À commander
                     </Badge>
                   ) : (
@@ -349,7 +349,7 @@ export function SAVPartsRequirements({ savCaseId, onPartsUpdated }: SAVPartsRequ
         {totalPartsToOrder > 0 && (
           <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
             <div className="flex items-center gap-2 text-amber-800">
-              <AlertTriangle className="h-4 w-4" />
+              <ShoppingCart className="h-4 w-4" />
               <span className="font-medium">Action requise</span>
             </div>
             <p className="text-sm text-amber-700 mt-1">
