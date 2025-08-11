@@ -18,6 +18,7 @@ import { Badge } from '@/components/ui/badge';
 import { CustomerSearch } from '@/components/customers/CustomerSearch';
 import { FileUpload } from '@/components/parts/FileUpload';
 import { LimitAlert } from '@/components/subscription/LimitAlert';
+import { useLimitDialogContext } from '@/contexts/LimitDialogContext';
 import { useToast } from '@/hooks/use-toast';
 
 interface CustomerInfo {
@@ -80,6 +81,7 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
   const { createCustomer } = useCustomers();
   const { parts } = useParts();
   const { checkLimits } = useSubscription();
+  const { checkAndShowLimitDialog } = useLimitDialogContext();
   const { toast } = useToast();
 
   // Filtrer les pièces en fonction de la recherche
@@ -145,15 +147,9 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
     e.preventDefault();
     if (!user) return;
     
-    // Vérifier les limites SAV avant création
-    const limits = checkLimits('sav');
-    if (!limits.allowed) {
-      toast({
-        title: "Limite atteinte",
-        description: limits.reason,
-        variant: "destructive",
-      });
-      return;
+    // Vérifier les limites SAV avant création avec popup
+    if (!checkAndShowLimitDialog('sav')) {
+      return; // Les limites sont atteintes, la popup s'affiche
     }
     
     setLoading(true);

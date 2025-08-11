@@ -15,6 +15,7 @@ import { useSAVCases } from '@/hooks/useSAVCases';
 import { useShop } from '@/hooks/useShop';
 import { formatDelayText, calculateSAVDelay } from '@/hooks/useSAVDelay';
 import { useSAVUnreadMessages } from '@/hooks/useSAVUnreadMessages';
+import { useLimitDialogContext } from '@/contexts/LimitDialogContext';
 import { SAVPrintButton } from '@/components/sav/SAVPrint';
 import { 
   Eye,
@@ -62,7 +63,14 @@ export default function SAVList() {
   const { cases, loading, deleteCase } = useSAVCases();
   const { shop } = useShop();
   const { savWithUnreadMessages } = useSAVUnreadMessages();
+  const { checkAndShowLimitDialog } = useLimitDialogContext();
   const navigate = useNavigate();
+
+  const handleNewSAV = () => {
+    if (checkAndShowLimitDialog('sav')) {
+      navigate('/sav/new');
+    }
+  };
 
   // Calculer les informations de délai et appliquer filtres et tri
   const filteredAndSortedCases = useMemo(() => {
@@ -178,7 +186,7 @@ export default function SAVList() {
             <div className="max-w-7xl mx-auto">
               <div className="flex justify-between items-center mb-6">
                 <h1 className="text-2xl font-bold">Dossiers SAV</h1>
-                <Button onClick={() => navigate('/sav/new')}>
+                <Button onClick={handleNewSAV}>
                   Nouveau dossier SAV
                 </Button>
               </div>
@@ -262,7 +270,7 @@ export default function SAVList() {
                     {searchTerm || filterType !== 'all' ? 'Aucun dossier trouvé pour cette recherche/filtre' : 'Aucun dossier SAV trouvé'}
                   </p>
                   {!searchTerm && filterType === 'all' && (
-                    <Button className="mt-4" onClick={() => navigate('/sav/new')}>
+                    <Button className="mt-4" onClick={handleNewSAV}>
                       Créer le premier dossier
                     </Button>
                   )}

@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { LimitDialogProvider } from "@/contexts/LimitDialogContext";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Settings from "./pages/Settings";
@@ -46,49 +47,51 @@ const queryClient = new QueryClient({
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<TestLanding />} />
-            <Route path="/dashboard" element={<Index />} />
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/sav" element={<SAVList />} />
-            <Route path="/sav/new" element={<NewSAV />} />
-            <Route path="/sav/:id" element={<SAVDetail />} />
-            <Route path="/track/:slug" element={<TrackSAV />} />
-            <Route path="/parts" element={<Parts />} />
-            <Route path="/quotes" element={<Quotes />} />
-            <Route path="/orders" element={<Orders />} />
-            <Route path="/customers" element={<Customers />} />
-            <Route path="/client-chats" element={<ClientChats />} />
-            <Route path="/client-chats/*" element={<ClientChats />} />
-            <Route path="/chats" element={<ClientChats />} />
-            <Route path="/statistics" element={<Statistics />} />
-            <Route path="/statistics/revenue" element={<RevenueDetails />} />
-            <Route path="/statistics/revenue/*" element={<RevenueDetails />} />
-            <Route path="/statistics/expenses" element={<ExpensesDetails />} />
-            <Route path="/statistics/expenses/*" element={<ExpensesDetails />} />
-            <Route path="/stats/revenue" element={<RevenueDetails />} />
-            <Route path="/stats/revenue/*" element={<RevenueDetails />} />
-            <Route path="/stats/expenses" element={<ExpensesDetails />} />
-            <Route path="/stats/expenses/*" element={<ExpensesDetails />} />
-            <Route path="/support" element={<Support />} />
-            <Route path="/test" element={<TestLanding />} />
-            <Route path="/subscription-success" element={<SubscriptionSuccess />} />
-            <Route path="/super-admin" element={<SuperAdmin />} />
-            <Route path="/subscription" element={<Subscription />} />
-            <Route path="/landing" element={<Landing />} />
-            <Route path="/features" element={<Features />} />
-            <Route path="/about" element={<About />} />
-            <Route path="/contact" element={<Contact />} />
-            <Route path="/shop/:slug" element={<ShopWebsite />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
+      <LimitDialogProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<TestLanding />} />
+              <Route path="/dashboard" element={<Index />} />
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/settings" element={<Settings />} />
+              <Route path="/sav" element={<SAVList />} />
+              <Route path="/sav/new" element={<NewSAV />} />
+              <Route path="/sav/:id" element={<SAVDetail />} />
+              <Route path="/track/:slug" element={<TrackSAV />} />
+              <Route path="/parts" element={<Parts />} />
+              <Route path="/quotes" element={<Quotes />} />
+              <Route path="/orders" element={<Orders />} />
+              <Route path="/customers" element={<Customers />} />
+              <Route path="/client-chats" element={<ClientChats />} />
+              <Route path="/client-chats/*" element={<ClientChats />} />
+              <Route path="/chats" element={<ClientChats />} />
+              <Route path="/statistics" element={<Statistics />} />
+              <Route path="/statistics/revenue" element={<RevenueDetails />} />
+              <Route path="/statistics/revenue/*" element={<RevenueDetails />} />
+              <Route path="/statistics/expenses" element={<ExpensesDetails />} />
+              <Route path="/statistics/expenses/*" element={<ExpensesDetails />} />
+              <Route path="/stats/revenue" element={<RevenueDetails />} />
+              <Route path="/stats/revenue/*" element={<RevenueDetails />} />
+              <Route path="/stats/expenses" element={<ExpensesDetails />} />
+              <Route path="/stats/expenses/*" element={<ExpensesDetails />} />
+              <Route path="/support" element={<Support />} />
+              <Route path="/test" element={<TestLanding />} />
+              <Route path="/subscription-success" element={<SubscriptionSuccess />} />
+              <Route path="/super-admin" element={<SuperAdmin />} />
+              <Route path="/subscription" element={<Subscription />} />
+              <Route path="/landing" element={<Landing />} />
+              <Route path="/features" element={<Features />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/contact" element={<Contact />} />
+              <Route path="/shop/:slug" element={<ShopWebsite />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </LimitDialogProvider>
     </AuthProvider>
   </QueryClientProvider>
 );
