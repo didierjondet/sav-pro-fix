@@ -4,6 +4,7 @@ import { multiWordSearch } from '@/utils/searchUtils';
 import { Header } from '@/components/layout/Header';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { SAVDashboard } from '@/components/sav/SAVDashboard';
+import { PaginationControls } from '@/components/ui/pagination-controls';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -55,6 +56,8 @@ export default function SAVList() {
   const [filterType, setFilterType] = useState('all'); // 'all', 'client', 'internal'
   const [statusFilter, setStatusFilter] = useState('all-except-ready'); // Par défaut, masquer les SAV prêts
   const [sortOrder, setSortOrder] = useState('priority'); // 'priority', 'oldest', 'newest'
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(20);
   const [qrCodeCase, setQrCodeCase] = useState(null);
   const { cases, loading, deleteCase } = useSAVCases();
   const { shop } = useShop();
@@ -137,6 +140,17 @@ export default function SAVList() {
       }
     });
   }, [cases, shop, filterType, statusFilter, sortOrder, searchTerm]);
+
+  // Calculs de pagination
+  const totalItems = filteredAndSortedCases.length;
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedCases = filteredAndSortedCases.slice(startIndex, endIndex);
+
+  // Réinitialiser la page quand les filtres changent
+  useMemo(() => {
+    setCurrentPage(1);
+  }, [searchTerm, filterType, statusFilter, sortOrder]);
 
   if (loading) {
     return (
@@ -235,13 +249,13 @@ export default function SAVList() {
                   
                   {/* Compteur de résultats */}
                   <div className="text-sm text-muted-foreground ml-auto">
-                    {filteredAndSortedCases.length} dossier{filteredAndSortedCases.length > 1 ? 's' : ''} trouvé{filteredAndSortedCases.length > 1 ? 's' : ''}
+                    {totalItems} dossier{totalItems > 1 ? 's' : ''} trouvé{totalItems > 1 ? 's' : ''}
                   </div>
                 </div>
               </div>
 
           <div className="grid gap-4">
-            {filteredAndSortedCases.length === 0 ? (
+            {totalItems === 0 ? (
               <Card>
                 <CardContent className="text-center py-8">
                   <p className="text-muted-foreground">
@@ -255,7 +269,7 @@ export default function SAVList() {
                 </CardContent>
               </Card>
             ) : (
-              filteredAndSortedCases.map((savCase) => {
+              paginatedCases.map((savCase) => {
                 const isUrgent = savCase.delayInfo.isOverdue;
                 const isHighPriority = !isUrgent && savCase.delayInfo.totalRemainingHours <= 24; // Moins de 24h restantes
                 
@@ -374,6 +388,19 @@ export default function SAVList() {
                 </Card>
                 );
               })
+            )}
+            
+            {/* Pagination */}
+            {totalItems > 0 && (
+              <div className="mt-6">
+                <PaginationControls
+                  totalItems={totalItems}
+                  itemsPerPage={itemsPerPage}
+                  currentPage={currentPage}
+                  onPageChange={setCurrentPage}
+                  onItemsPerPageChange={setItemsPerPage}
+                />
+              </div>
             )}
           </div>
             </div>

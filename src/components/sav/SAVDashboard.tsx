@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { multiWordSearch } from '@/utils/searchUtils';
 import { Plus, Search, Filter, MoreHorizontal, Eye, Edit, Trash2, MessageCircleWarning } from 'lucide-react';
+import { PaginationControls } from '@/components/ui/pagination-controls';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -55,6 +56,8 @@ export function SAVDashboard() {
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('all'); // 'all' | 'client' | 'internal' | 'external'
   const [statusFilter, setStatusFilter] = useState('all-except-ready'); // Par défaut, masquer les SAV prêts
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(20);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const {
     cases,
@@ -127,6 +130,18 @@ export function SAVDashboard() {
     
     return matchesSearch && matchesType && matchesStatus;
   });
+
+  // Calculs de pagination
+  const totalItems = filteredCases.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedCases = filteredCases.slice(startIndex, endIndex);
+
+  // Réinitialiser la page quand les filtres changent
+  useMemo(() => {
+    setCurrentPage(1);
+  }, [searchTerm, typeFilter, statusFilter]);
   return <div className="space-y-6">
       <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
         <div className="flex-1 max-w-sm">
@@ -263,7 +278,7 @@ export function SAVDashboard() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredCases.map(case_ => {
+                {paginatedCases.map(case_ => {
               // Couleurs de fond selon le type de SAV
               const backgroundClass = case_.sav_type === 'client' ? 'bg-red-50' : 'bg-sky-50';
 
@@ -343,6 +358,18 @@ export function SAVDashboard() {
             })}
               </TableBody>
             </Table>}
+          
+          {totalItems > 0 && (
+            <div className="mt-4">
+              <PaginationControls
+                totalItems={totalItems}
+                itemsPerPage={itemsPerPage}
+                currentPage={currentPage}
+                onPageChange={setCurrentPage}
+                onItemsPerPageChange={setItemsPerPage}
+              />
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>;
