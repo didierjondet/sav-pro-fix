@@ -149,7 +149,7 @@ export function CustomerSearch({ customerInfo, setCustomerInfo, onCustomerSelect
         )}
         
         {/* Résultats de recherche */}
-        {showResults && (
+        {showResults && !selectedCustomer && (
           <Card className="mt-2 absolute z-50 w-full border shadow-lg bg-background">
             <CardContent className="p-0 max-h-60 overflow-y-auto">
               {filteredCustomers.map((customer) => (
