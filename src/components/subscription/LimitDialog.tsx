@@ -43,6 +43,7 @@ export function LimitDialog({
   const { subscription, createCheckout } = useSubscription();
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [loading, setLoading] = useState(false);
+  const [processingPlanId, setProcessingPlanId] = useState<string | null>(null);
 
   useEffect(() => {
     if (open) {
@@ -71,26 +72,43 @@ export function LimitDialog({
       return;
     }
 
+    // Empêcher les clics multiples
+    if (processingPlanId) return;
+    
+    setProcessingPlanId(plan.id);
     setLoading(true);
+    
     try {
-      // Map plan names to the expected format
-      const planKey = plan.name.toLowerCase().includes('premium') ? 'premium' : 'enterprise';
-      console.log('Creating checkout for plan:', planKey, 'from plan name:', plan.name);
+      console.log('Plan sélectionné:', plan.name, 'Price:', plan.monthly_price);
+      
+      // Mapper plus intelligemment les noms de plans
+      let planKey: 'premium' | 'enterprise';
+      const planName = plan.name.toLowerCase().trim();
+      
+      if (planName.includes('premium') || plan.monthly_price <= 50) {
+        planKey = 'premium';
+      } else if (planName.includes('enterprise') || planName.includes('entreprise') || plan.monthly_price > 50) {
+        planKey = 'enterprise';
+      } else {
+        // Fallback basé sur le prix
+        planKey = plan.monthly_price <= 30 ? 'premium' : 'enterprise';
+      }
+      
+      console.log('Mapped to planKey:', planKey);
       
       const result = await createCheckout(planKey);
       console.log('Checkout result:', result);
       
       if (result?.error) {
         console.error('Checkout error:', result.error);
-        // Don't close dialog on error so user can retry
         return;
       }
       
       onOpenChange(false);
     } catch (error) {
       console.error('Error creating checkout:', error);
-      // Don't close dialog on error so user can retry
     } finally {
+      setProcessingPlanId(null);
       setLoading(false);
     }
   };
@@ -258,11 +276,20 @@ export function LimitDialog({
                       ) : isPlanUpgrade(plan.monthly_price) ? (
                         <Button
                           onClick={() => handleSelectPlan(plan)}
-                          disabled={loading || !plan.stripe_price_id}
+                          disabled={loading || !plan.stripe_price_id || processingPlanId === plan.id}
                           className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white"
                         >
-                          <ArrowRight className="h-4 w-4 mr-2" />
-                          Choisir ce plan
+                          {processingPlanId === plan.id ? (
+                            <>
+                              <div className="animate-spin h-4 w-4 mr-2 border-2 border-white border-t-transparent rounded-full"></div>
+                              Traitement...
+                            </>
+                          ) : (
+                            <>
+                              <ArrowRight className="h-4 w-4 mr-2" />
+                              Choisir ce plan
+                            </>
+                          )}
                         </Button>
                       ) : (
                         <Button 
