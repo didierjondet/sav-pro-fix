@@ -389,6 +389,18 @@ export function useOrders() {
           }]);
 
         if (createError) throw createError;
+
+        // Si c'est un SAV qui a des pièces commandées, mettre à jour le statut du SAV
+        if (virtualItem.sav_case_id && itemId.startsWith('sav-needed-')) {
+          const { error: updateSAVError } = await supabase
+            .from('sav_cases')
+            .update({ status: 'parts_ordered' })
+            .eq('id', virtualItem.sav_case_id);
+
+          if (updateSAVError) {
+            console.error('Erreur lors de la mise à jour du statut SAV:', updateSAVError);
+          }
+        }
       } else {
         // Pour les vrais items de order_items
         const { error } = await supabase
@@ -397,6 +409,25 @@ export function useOrders() {
           .eq('id', itemId);
 
         if (error) throw error;
+
+        // Récupérer l'item pour voir si c'est lié à un SAV
+        const { data: orderItem } = await supabase
+          .from('order_items')
+          .select('sav_case_id')
+          .eq('id', itemId)
+          .single();
+
+        // Si c'est lié à un SAV, mettre à jour son statut
+        if (orderItem?.sav_case_id) {
+          const { error: updateSAVError } = await supabase
+            .from('sav_cases')
+            .update({ status: 'parts_ordered' })
+            .eq('id', orderItem.sav_case_id);
+
+          if (updateSAVError) {
+            console.error('Erreur lors de la mise à jour du statut SAV:', updateSAVError);
+          }
+        }
       }
 
       toast({
