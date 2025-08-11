@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Check, X, AlertTriangle } from 'lucide-react';
+import { Check, X } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -110,8 +110,29 @@ export function PartStatusIcon({ savCaseId, className = "" }: PartStatusIconProp
     return null; // Ne rien afficher pendant le chargement
   }
 
+  // Composant d'icône avec cercle coloré
+  const IconWithCircle = ({ children, bgColor }: { children: React.ReactNode; bgColor: string }) => (
+    <div className={`rounded-full p-1 ${bgColor}`}>
+      {children}
+    </div>
+  );
+
   if (!partStatus.hasAssignedParts) {
-    return null; // Pas de pièces assignées = pas d'icône
+    // Aucune pièce rattachée = croix rouge
+    return (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger>
+            <IconWithCircle bgColor="bg-red-500/10">
+              <X className={`h-6 w-6 text-red-500 ${className}`} />
+            </IconWithCircle>
+          </TooltipTrigger>
+          <TooltipContent side="top">
+            <div className="text-sm">Aucune pièce rattachée à ce SAV</div>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
   }
 
   // Créer le contenu du tooltip
@@ -132,38 +153,16 @@ export function PartStatusIcon({ savCaseId, className = "" }: PartStatusIconProp
     </div>
   );
 
-  // Composant d'icône avec cercle coloré
-  const IconWithCircle = ({ children, bgColor }: { children: React.ReactNode; bgColor: string }) => (
-    <div className={`rounded-full p-1 ${bgColor}`}>
-      {children}
-    </div>
-  );
 
   // Déterminer la couleur et l'icône selon l'état
-  if (partStatus.missingPartsCount === partStatus.totalPartsCount) {
-    // Toutes les pièces manquent = rouge
-    return (
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger>
-            <IconWithCircle bgColor="bg-red-500/10">
-              <X className={`h-6 w-6 text-red-500 ${className}`} />
-            </IconWithCircle>
-          </TooltipTrigger>
-          <TooltipContent side="top" className="max-w-xs">
-            {tooltipContent}
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
-    );
-  } else if (partStatus.missingPartsCount > 0) {
-    // Quelques pièces manquent = orange
+  if (partStatus.missingPartsCount > 0) {
+    // Il manque des pièces = check orange
     return (
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger>
             <IconWithCircle bgColor="bg-orange-500/10">
-              <AlertTriangle className={`h-6 w-6 text-orange-500 ${className}`} />
+              <Check className={`h-6 w-6 text-orange-500 ${className}`} />
             </IconWithCircle>
           </TooltipTrigger>
           <TooltipContent side="top" className="max-w-xs">
@@ -173,7 +172,7 @@ export function PartStatusIcon({ savCaseId, className = "" }: PartStatusIconProp
       </TooltipProvider>
     );
   } else {
-    // Toutes les pièces disponibles = vert
+    // Toutes les pièces disponibles = check vert
     return (
       <TooltipProvider>
         <Tooltip>
