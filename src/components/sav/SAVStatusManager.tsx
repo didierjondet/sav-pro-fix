@@ -273,15 +273,53 @@ L'équipe ${shopData.name || 'de réparation'}`;
     
     setUpdatingTakeover(true);
     try {
+      const previousTakeoverAmount = savCase.takeover_amount || 0;
+      const newTakeoverAmount = partialTakeover ? takeoverAmount : 0;
+      
       const { error } = await supabase
         .from('sav_cases')
         .update({
           partial_takeover: partialTakeover,
-          takeover_amount: partialTakeover ? takeoverAmount : 0
+          takeover_amount: newTakeoverAmount
         })
         .eq('id', savCase.id);
 
       if (error) throw error;
+
+      // Envoyer un message automatique si la prise en charge a changé
+      if (previousTakeoverAmount !== newTakeoverAmount) {
+        const currentUser = await supabase.auth.getUser();
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('first_name, last_name')
+          .eq('user_id', currentUser.data.user?.id)
+          .single();
+
+        const senderName = profile ? `${profile.first_name} ${profile.last_name}`.trim() : 'Système';
+        
+        let message = '';
+        if (partialTakeover) {
+          const clientAmount = savCase.total_cost - newTakeoverAmount;
+          message = `💰 Prise en charge appliquée :\n` +
+                   `• Montant total : ${savCase.total_cost.toFixed(2)}€\n` +
+                   `• Prise en charge : ${newTakeoverAmount.toFixed(2)}€\n` +
+                   `• Montant restant à votre charge : ${clientAmount.toFixed(2)}€`;
+        } else {
+          message = `❌ Prise en charge supprimée\n` +
+                   `• Montant total à votre charge : ${savCase.total_cost.toFixed(2)}€`;
+        }
+
+        // Envoyer le message automatique
+        await supabase
+          .from('sav_messages')
+          .insert([{
+            sav_case_id: savCase.id,
+            sender_type: 'shop',
+            sender_name: senderName,
+            message: message,
+            shop_id: savCase.shop_id
+          }]);
+      }
 
       toast({
         title: "Succès",
