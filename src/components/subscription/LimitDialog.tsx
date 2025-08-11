@@ -66,7 +66,10 @@ export function LimitDialog({
     }
   };
 
-  const handleSelectPlan = async (plan: SubscriptionPlan) => {
+  const handleSelectPlan = async (e: React.MouseEvent, plan: SubscriptionPlan) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
     if (plan.name.toLowerCase() === 'gratuit' || plan.monthly_price === 0) {
       onOpenChange(false);
       return;
@@ -80,6 +83,7 @@ export function LimitDialog({
     
     try {
       console.log('Plan sélectionné:', plan.name, 'Price:', plan.monthly_price);
+      console.log('Tous les plans disponibles:', plans.map(p => ({ name: p.name, price: p.monthly_price })));
       
       // Mapper plus intelligemment les noms de plans
       let planKey: 'premium' | 'enterprise';
@@ -205,14 +209,18 @@ export function LimitDialog({
               Choisissez votre plan
             </h3>
             <div className="grid gap-4 md:grid-cols-3">
-              {plans.map((plan) => (
-                <Card 
-                  key={plan.id} 
-                  className={`relative transition-all duration-200 hover:shadow-lg ${getPlanColor(plan.name)} ${
-                    isCurrentPlan(plan.name) ? 'ring-2 ring-blue-500' : ''
-                  }`}
-                >
-                  {isCurrentPlan(plan.name) && (
+              {plans.map((plan) => {
+                const isCurrentSelected = isCurrentPlan(plan.name);
+                const canUpgrade = isPlanUpgrade(plan.monthly_price);
+                
+                return (
+                  <Card 
+                    key={plan.id} 
+                    className={`relative transition-all duration-200 hover:shadow-lg ${getPlanColor(plan.name)} ${
+                      isCurrentSelected ? 'ring-2 ring-blue-500' : ''
+                    }`}
+                  >
+                  {isCurrentSelected && (
                     <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
                       <Badge className="bg-blue-500 text-white">Plan actuel</Badge>
                     </div>
@@ -265,7 +273,7 @@ export function LimitDialog({
                     </div>
 
                     <div className="mt-6">
-                      {isCurrentPlan(plan.name) ? (
+                      {isCurrentSelected ? (
                         <Button 
                           variant="outline" 
                           className="w-full" 
@@ -273,9 +281,9 @@ export function LimitDialog({
                         >
                           Plan actuel
                         </Button>
-                      ) : isPlanUpgrade(plan.monthly_price) ? (
+                      ) : canUpgrade ? (
                         <Button
-                          onClick={() => handleSelectPlan(plan)}
+                          onClick={(e) => handleSelectPlan(e, plan)}
                           disabled={loading || !plan.stripe_price_id || processingPlanId === plan.id}
                           className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white"
                         >
@@ -303,7 +311,8 @@ export function LimitDialog({
                     </div>
                   </CardContent>
                 </Card>
-              ))}
+                );
+              })}
             </div>
           </div>
 
