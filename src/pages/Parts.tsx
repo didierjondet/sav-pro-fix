@@ -29,8 +29,10 @@ import {
   TrendingDown,
   BarChart3,
   Eye,
-  Upload
+  Upload,
+  Image as ImageIcon
 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function Parts() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -40,6 +42,7 @@ export default function Parts() {
   const [deletingPart, setDeletingPart] = useState<Part | null>(null);
   const [adjustingPart, setAdjustingPart] = useState<Part | null>(null);
   const [showImport, setShowImport] = useState(false);
+  const [viewingPhoto, setViewingPhoto] = useState<Part | null>(null);
   
   const { parts, loading, createPart, updatePart, deletePart, adjustStock, findSimilarParts, refetch } = useParts();
 
@@ -65,6 +68,22 @@ export default function Parts() {
     const { error } = await deletePart(deletingPart.id);
     if (!error) {
       setDeletingPart(null);
+    }
+  };
+
+  const viewPartPhoto = async (part: Part) => {
+    if (!part.photo_url) return;
+
+    try {
+      const { data: { signedUrl }, error } = await supabase.storage
+        .from('part-photos')
+        .createSignedUrl(part.photo_url, 3600); // 1 heure
+
+      if (error) throw error;
+
+      window.open(signedUrl, '_blank');
+    } catch (error) {
+      console.error('Error viewing photo:', error);
     }
   };
 
@@ -172,7 +191,20 @@ export default function Parts() {
                             <div className="flex items-center justify-between">
                               <div className="flex-1">
                                 <div className="flex items-center gap-4 mb-2">
-                                  <h3 className="font-semibold text-lg">{part.name}</h3>
+                                  <div className="flex items-center gap-2">
+                                    <h3 className="font-semibold text-lg">{part.name}</h3>
+                                    {part.photo_url && (
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => viewPartPhoto(part)}
+                                        className="h-6 w-6 p-0 text-blue-600"
+                                        title="Voir la photo"
+                                      >
+                                        <ImageIcon className="h-4 w-4" />
+                                      </Button>
+                                    )}
+                                  </div>
                                   {part.reference && (
                                     <Badge variant="outline">
                                       Réf: {part.reference}

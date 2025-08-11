@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Part } from '@/hooks/useParts';
 import { SimilarPartsAlert } from './SimilarPartsAlert';
+import { PartPhotoUpload } from './PartPhotoUpload';
 
 interface PartFormProps {
   initialData?: Partial<Part>;
@@ -22,6 +23,7 @@ export function PartForm({ initialData, onSubmit, onCancel, isEdit = false, find
   const [showSimilarAlert, setShowSimilarAlert] = useState(false);
   const [similarParts, setSimilarParts] = useState<Part[]>([]);
   const [pendingData, setPendingData] = useState<any>(null);
+  const [photoUrl, setPhotoUrl] = useState<string | null>(initialData?.photo_url || null);
   
   const {
     register,
@@ -39,6 +41,7 @@ export function PartForm({ initialData, onSubmit, onCancel, isEdit = false, find
       min_stock: initialData?.min_stock || 5,
       time_minutes: initialData?.time_minutes ?? 15,
       notes: initialData?.notes || '',
+      photo_url: initialData?.photo_url || '',
     }
   });
 
@@ -48,8 +51,8 @@ export function PartForm({ initialData, onSubmit, onCancel, isEdit = false, find
   const purchasePrice = watch('purchase_price');
 
   useEffect(() => {
-    if (useMargin) {
-      const computed = Number(purchasePrice || 0) * (1 + Number(marginPercent || 0) / 100);
+    if (useMargin && typeof purchasePrice === 'number') {
+      const computed = purchasePrice * (1 + (marginPercent || 0) / 100);
       const rounded = Math.round(computed * 100) / 100;
       setValue('selling_price', isFinite(rounded) ? rounded : 0);
     }
@@ -81,7 +84,13 @@ export function PartForm({ initialData, onSubmit, onCancel, isEdit = false, find
   const submitPart = async (data: any) => {
     setLoading(true);
     try {
-      const { error } = await onSubmit(data);
+      // Ajouter l'URL de la photo aux données
+      const partData = {
+        ...data,
+        photo_url: photoUrl
+      };
+      
+      const { error } = await onSubmit(partData);
       if (!error) {
         onCancel();
       }
@@ -251,6 +260,14 @@ export function PartForm({ initialData, onSubmit, onCancel, isEdit = false, find
               rows={3}
             />
           </div>
+
+          {/* Upload de photo */}
+          <PartPhotoUpload
+            photoUrl={photoUrl}
+            onPhotoChange={setPhotoUrl}
+            partName={watch('name') || 'cette pièce'}
+            disabled={loading}
+          />
 
           <div className="flex gap-2 justify-end">
             <Button type="button" variant="outline" onClick={onCancel}>
