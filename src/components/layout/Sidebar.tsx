@@ -180,7 +180,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                 </div>
                 <div className="flex justify-between text-sm border-t pt-2 mt-2">
                   <span className="text-destructive font-bold">TOTAL SAV</span>
-                  <span className="font-bold text-destructive">{statusCounts.pendingClient + statusCounts.pendingExternal + statusCounts.pendingShop}</span>
+                  <span className="font-bold text-destructive">{statusCounts.clientWaiting + statusCounts.externalWaiting + statusCounts.shopWaiting}</span>
                 </div>
               </div>
             </div>
