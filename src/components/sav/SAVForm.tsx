@@ -205,6 +205,7 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
         total_cost: totalCost,
         status: 'pending',
         shop_id: profile?.shop_id,
+        attachments: deviceInfo.attachments || [], // Ajouter les attachments ici
       });
       
       if (caseError) throw caseError;
@@ -218,7 +219,6 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
           unit_price: part.unitPrice,
           time_minutes: 0,
           purchase_price: part.isCustom ? 0 : (parts.find(p => p.id === part.part_id)?.purchase_price || 0),
-          attachments: []
         }));
 
         const { error: partsError } = await supabase
