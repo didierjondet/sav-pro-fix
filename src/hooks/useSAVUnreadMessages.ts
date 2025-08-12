@@ -85,7 +85,7 @@ export function useSAVUnreadMessages() {
           customer:customers(first_name, last_name)
         `)
         .in('id', savCaseIds)
-        .not('status', 'in', '(cancelled,delivered)');
+        .not('status', 'in', '(cancelled,delivered,ready)');
 
       console.log('🏪 SAV cases query result:', { savCases, savError });
 
