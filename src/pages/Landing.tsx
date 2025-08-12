@@ -280,10 +280,16 @@ export default function Landing() {
                         <li key={featureIndex}>• {feature}</li>
                       ))}
                     </ul>
-                    <Button 
+                     <Button 
                       className="w-full mt-4" 
                       variant={index === 1 ? 'default' : 'outline'}
-                      onClick={() => navigate('/auth')}
+                      onClick={() => {
+                        if (plan.monthly_price > 50) {
+                          window.location.href = `mailto:contact@fixway.fr?subject=Demande de contact pour le plan ${plan.name}&body=Bonjour,%0D%0A%0D%0AJe souhaite obtenir plus d'informations sur le plan ${plan.name}.%0D%0A%0D%0ACordialement`;
+                        } else {
+                          navigate('/auth');
+                        }
+                      }}
                     >
                       {plan.monthly_price === 0 ? 'Commencer gratuitement' : 
                         index === 1 ? `Essayer ${plan.name}` : 

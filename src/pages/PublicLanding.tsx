@@ -216,13 +216,19 @@ export default function PublicLanding() {
                         <li key={featureIndex}>• {feature}</li>
                       ))}
                     </ul>
-                    <button 
+                     <button 
                       className={`w-full mt-4 px-4 py-2 rounded-md ${
                         index === 1 
                           ? 'bg-blue-600 text-white hover:bg-blue-700' 
                           : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
                       }`}
-                      onClick={handleAuthClick}
+                      onClick={() => {
+                        if (plan.monthly_price > 50) {
+                          window.location.href = `mailto:contact@fixway.fr?subject=Demande de contact pour le plan ${plan.name}&body=Bonjour,%0D%0A%0D%0AJe souhaite obtenir plus d'informations sur le plan ${plan.name}.%0D%0A%0D%0ACordialement`;
+                        } else {
+                          handleAuthClick();
+                        }
+                      }}
                     >
                       {plan.monthly_price === 0 ? 'Commencer gratuitement' : 
                         index === 1 ? `Essayer ${plan.name}` : 
