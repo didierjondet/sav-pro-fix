@@ -92,13 +92,10 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
 
   // Charger les limites SAV au montage et quand l'utilisateur change
   useEffect(() => {
-    const loadLimits = async () => {
-      if (user) {
-        const limits = await checkLimits('sav');
-        setSavLimits(limits);
-      }
-    };
-    loadLimits();
+    if (user) {
+      const limits = checkLimits('sav');
+      setSavLimits(limits);
+    }
   }, [user, checkLimits]);
 
   // Filtrer les pièces en fonction de la recherche
@@ -165,7 +162,7 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
     if (!user) return;
     
     // Vérifier les limites SAV avant création avec popup
-    if (!(await checkAndShowLimitDialog('sav'))) {
+    if (!checkAndShowLimitDialog('sav')) {
       return; // Les limites sont atteintes, la popup s'affiche
     }
     

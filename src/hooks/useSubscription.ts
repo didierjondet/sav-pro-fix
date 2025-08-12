@@ -11,6 +11,8 @@ export interface SubscriptionInfo {
   sms_credits_used: number;
   active_sav_count: number;
   forced?: boolean;
+  custom_sav_limit?: number;
+  custom_sms_limit?: number;
 }
 
 export function useSubscription() {
@@ -41,10 +43,10 @@ export function useSubscription() {
       const profileData: any = profileRes.data;
 
       if (profileData?.shop_id) {
-        // Charger les infos du shop
+        // Charger les infos du shop avec les limites personnalisées
         const shopRes = await (supabase as any)
           .from('shops')
-          .select('subscription_tier, sms_credits_allocated, sms_credits_used, active_sav_count, subscription_plan_id, subscription_forced')
+          .select('subscription_tier, sms_credits_allocated, sms_credits_used, active_sav_count, subscription_plan_id, subscription_forced, custom_sav_limit, custom_sms_limit')
           .eq('id', profileData.shop_id)
           .single();
         const shopData: any = shopRes.data;
@@ -66,10 +68,12 @@ export function useSubscription() {
             subscribed: fallbackSubscribed,
             subscription_tier: tier,
             subscription_end: null,
-            sms_credits_allocated: plan?.sms_limit ?? shopData?.sms_credits_allocated ?? 15,
+            sms_credits_allocated: shopData?.custom_sms_limit ?? plan?.sms_limit ?? shopData?.sms_credits_allocated ?? 15,
             sms_credits_used: shopData?.sms_credits_used ?? 0,
             active_sav_count: shopData?.active_sav_count ?? 0,
             forced: !!shopData?.subscription_forced,
+            custom_sav_limit: shopData?.custom_sav_limit,
+            custom_sms_limit: shopData?.custom_sms_limit
           });
         };
 
@@ -92,10 +96,12 @@ export function useSubscription() {
             subscribed: data?.subscribed ?? false,
             subscription_tier: tier,
             subscription_end: data?.subscription_end ?? null,
-            sms_credits_allocated: plan?.sms_limit ?? shopData?.sms_credits_allocated ?? 15,
+            sms_credits_allocated: shopData?.custom_sms_limit ?? plan?.sms_limit ?? shopData?.sms_credits_allocated ?? 15,
             sms_credits_used: shopData?.sms_credits_used ?? 0,
             active_sav_count: shopData?.active_sav_count ?? 0,
             forced: false,
+            custom_sav_limit: shopData?.custom_sav_limit,
+            custom_sms_limit: shopData?.custom_sms_limit
           });
         } catch (stripeError) {
           console.warn('Stripe API unavailable, using local subscription data');
@@ -156,7 +162,7 @@ export function useSubscription() {
     }
   };
 
-  const checkLimits = async (action?: 'sav' | 'sms') => {
+  const checkLimits = (action?: 'sav' | 'sms') => {
     if (!subscription) {
       return { allowed: false, reason: "Données d'abonnement non disponibles", action: null };
     }
@@ -166,39 +172,58 @@ export function useSubscription() {
       return { allowed: true, reason: 'Abonnement forcé - vérifications désactivées', action: null };
     }
 
-    try {
-      // Récupérer le shop_id de l'utilisateur
-      const profileRes = await supabase
-        .from('profiles')
-        .select('shop_id')
-        .eq('user_id', user?.id)
-        .single();
+    const { subscription_tier, sms_credits_used, sms_credits_allocated, active_sav_count, custom_sav_limit, custom_sms_limit } = subscription;
 
-      if (!profileRes.data?.shop_id) {
-        return { allowed: false, reason: "Shop non trouvé", action: null };
+    // Vérification des limites SAV
+    if (action === 'sav' || !action) {
+      // Utiliser les limites personnalisées en priorité
+      let savLimit = custom_sav_limit;
+      
+      // Si pas de limite personnalisée, utiliser les limites par défaut du plan
+      if (!savLimit) {
+        if (subscription_tier === 'free') {
+          savLimit = 5;
+        } else if (subscription_tier === 'premium') {
+          savLimit = 50;
+        } else if (subscription_tier === 'enterprise') {
+          savLimit = 100;
+        } else {
+          savLimit = 5; // Défaut
+        }
       }
 
-      // Utiliser la fonction de base de données qui prend en compte les limites personnalisées
-      const { data, error } = await supabase.rpc('check_subscription_limits_v2', {
-        p_shop_id: profileRes.data.shop_id,
-        p_action: action
-      });
-
-      if (error) {
-        console.error('Error checking limits:', error);
-        return { allowed: false, reason: "Erreur lors de la vérification des limites", action: null };
+      if (active_sav_count >= savLimit) {
+        const message = custom_sav_limit 
+          ? `Limite SAV personnalisée atteinte (${active_sav_count}/${savLimit}). Contactez le support pour augmenter votre limite.`
+          : `Plan ${subscription_tier} limité à ${savLimit} SAV actifs (${active_sav_count}/${savLimit}). Passez au plan supérieur.`;
+        
+        return { 
+          allowed: false, 
+          reason: message,
+          action: custom_sav_limit ? 'contact_support' : 'upgrade_plan'
+        };
       }
-
-      const result = data as any;
-      return {
-        allowed: result?.allowed || false,
-        reason: result?.reason || "Erreur inconnue",
-        action: result?.action || null
-      };
-    } catch (error) {
-      console.error('Error in checkLimits:', error);
-      return { allowed: false, reason: "Erreur lors de la vérification des limites", action: null };
     }
+
+    // Vérification des limites SMS
+    if (action === 'sms' || !action) {
+      const smsUsed = sms_credits_used || 0;
+      const smsAllocated = custom_sms_limit || sms_credits_allocated || 0;
+      
+      if (smsUsed >= smsAllocated) {
+        const message = custom_sms_limit
+          ? `Limite SMS personnalisée atteinte (${smsUsed}/${smsAllocated}). Contactez le support.`
+          : `Vous avez utilisé tous vos crédits SMS du mois (${smsUsed}/${smsAllocated})`;
+          
+        return { 
+          allowed: false, 
+          reason: message,
+          action: custom_sms_limit ? 'contact_support' : 'buy_sms_package'
+        };
+      }
+    }
+
+    return { allowed: true, reason: 'Dans les limites autorisées', action: null };
   };
 
   return {

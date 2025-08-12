@@ -50,7 +50,7 @@ export function SMSButton({
     if (!customPhone.trim()) return;
 
     // Vérifier les limites SMS avant envoi
-    const smsLimits = await checkLimits('sms');
+    const smsLimits = checkLimits('sms');
     if (!smsLimits.allowed) {
       // Rediriger vers les paramètres avec l'onglet SMS si plus de crédits
       if (smsLimits.action === 'buy_sms_package') {

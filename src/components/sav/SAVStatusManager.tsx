@@ -81,11 +81,8 @@ export function SAVStatusManager({ savCase, onStatusUpdated }: SAVStatusManagerP
 
   // Charger les limites SMS au montage
   useEffect(() => {
-    const loadLimits = async () => {
-      const smsLimits = await checkLimits('sms');
-      setLimits(smsLimits);
-    };
-    loadLimits();
+    const smsLimits = checkLimits('sms');
+    setLimits(smsLimits);
   }, [checkLimits]);
 
   const generateTrackingUrl = () => {

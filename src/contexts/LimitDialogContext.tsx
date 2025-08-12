@@ -3,7 +3,7 @@ import { useSubscription } from '@/hooks/useSubscription';
 import { LimitReachedDialog } from '@/components/dialogs/LimitReachedDialog';
 
 interface LimitDialogContextType {
-  checkAndShowLimitDialog: (type?: 'sav' | 'sms') => Promise<boolean>;
+  checkAndShowLimitDialog: (type?: 'sav' | 'sms') => boolean;
   recheckLimitsAndHideDialog: () => void;
 }
 
@@ -14,7 +14,7 @@ export function useLimitDialogContext() {
   if (!context) {
     // Return a default implementation to prevent crashes
     return {
-      checkAndShowLimitDialog: async () => true,
+      checkAndShowLimitDialog: () => true,
       recheckLimitsAndHideDialog: () => {}
     };
   }
@@ -37,8 +37,8 @@ export function LimitDialogProvider({ children }: LimitDialogProviderProps) {
     reason: ''
   });
 
-  const checkAndShowLimitDialog = useCallback(async (type: 'sav' | 'sms' = 'sav') => {
-    const limits = await checkLimits(type);
+  const checkAndShowLimitDialog = useCallback((type: 'sav' | 'sms' = 'sav') => {
+    const limits = checkLimits(type);
     
     if (!limits.allowed && limits.action) {
       setDialogState({
@@ -67,7 +67,7 @@ export function LimitDialogProvider({ children }: LimitDialogProviderProps) {
     await refetch();
     
     // Re-vérifier les limites avec les données à jour
-    const limits = await checkLimits('sav');
+    const limits = checkLimits('sav');
     
     // Si les limites ne sont plus atteintes, fermer la popup
     if (limits.allowed && dialogState.isOpen) {
