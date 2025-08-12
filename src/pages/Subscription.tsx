@@ -10,12 +10,18 @@ import { Sidebar } from '@/components/layout/Sidebar';
 import { Header } from '@/components/layout/Header';
 import { Loader2, Crown, Zap, Infinity, MessageSquare, AlertTriangle, CheckCircle, CreditCard } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-
 export default function Subscription() {
-  const { user } = useAuth();
-  const { subscription, loading, createCheckout, openCustomerPortal, checkSubscription } = useSubscription();
+  const {
+    user
+  } = useAuth();
+  const {
+    subscription,
+    loading,
+    createCheckout,
+    openCustomerPortal,
+    checkSubscription
+  } = useSubscription();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-
   useEffect(() => {
     if (user) {
       checkSubscription();
@@ -23,27 +29,24 @@ export default function Subscription() {
   }, [user]);
 
   // Charger les plans depuis la base de données
-  const [plans, setPlans] = useState([
-    {
-      id: 'gratuit',
-      name: 'Gratuit',
-      price: '0€',
-      period: '/mois',
-      icon: CheckCircle,
-      features: ['15 SAV maximum', '15 SMS gratuits/mois', 'Support par email'],
-      limits: { sav: 15, sms: 15 }
+  const [plans, setPlans] = useState([{
+    id: 'gratuit',
+    name: 'Gratuit',
+    price: '0€',
+    period: '/mois',
+    icon: CheckCircle,
+    features: ['15 SAV maximum', '15 SMS gratuits/mois', 'Support par email'],
+    limits: {
+      sav: 15,
+      sms: 15
     }
-  ]);
-
+  }]);
   useEffect(() => {
     const fetchPlans = async () => {
       try {
-        const { data: dbPlans } = await supabase
-          .from('subscription_plans')
-          .select('*')
-          .eq('is_active', true)
-          .order('monthly_price');
-
+        const {
+          data: dbPlans
+        } = await supabase.from('subscription_plans').select('*').eq('is_active', true).order('monthly_price');
         if (dbPlans) {
           const formattedPlans = dbPlans.map(plan => ({
             id: plan.name.toLowerCase(),
@@ -63,35 +66,28 @@ export default function Subscription() {
         console.error('Error fetching plans:', error);
       }
     };
-
     fetchPlans();
   }, []);
-
   const getCurrentPlan = () => {
     return plans.find(plan => plan.id === subscription?.subscription_tier) || plans[0];
   };
-
   const isCurrentPlan = (planId: string) => {
     return subscription?.subscription_tier === planId;
   };
-
   const canUpgrade = (planId: string) => {
     if (!subscription) return false;
     const currentIndex = plans.findIndex(p => p.id === subscription.subscription_tier);
     const targetIndex = plans.findIndex(p => p.id === planId);
     return targetIndex > currentIndex;
   };
-
   const getUsageColor = (used: number, limit: number) => {
-    const percentage = (used / limit) * 100;
+    const percentage = used / limit * 100;
     if (percentage >= 90) return 'text-destructive';
     if (percentage >= 75) return 'text-orange-500';
     return 'text-green-500';
   };
-
   if (loading) {
-    return (
-      <div className="min-h-screen flex">
+    return <div className="min-h-screen flex">
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
         <div className="flex-1">
           <Header onMenuClick={() => setSidebarOpen(!sidebarOpen)} isMobileMenuOpen={sidebarOpen} />
@@ -101,14 +97,10 @@ export default function Subscription() {
             </div>
           </main>
         </div>
-      </div>
-    );
+      </div>;
   }
-
   const currentPlan = getCurrentPlan();
-
-  return (
-    <div className="min-h-screen flex">
+  return <div className="min-h-screen flex">
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <div className="flex-1">
         <Header onMenuClick={() => setSidebarOpen(!sidebarOpen)} isMobileMenuOpen={sidebarOpen} />
@@ -118,15 +110,12 @@ export default function Subscription() {
               <h1 className="text-3xl font-bold">Abonnement MySAV</h1>
               <p className="text-muted-foreground">Gérez votre abonnement et consultez votre utilisation</p>
             </div>
-            {subscription?.subscribed && (
-              <Button onClick={openCustomerPortal} variant="outline">
+            {subscription?.subscribed && <Button onClick={openCustomerPortal} variant="outline">
                 Gérer l'abonnement
-              </Button>
-            )}
+              </Button>}
           </div>
 
-          {subscription && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {subscription && <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {/* Current Usage */}
               <Card>
                 <CardHeader>
@@ -145,9 +134,7 @@ export default function Subscription() {
                           {subscription.active_sav_count}/{currentPlan.limits.sav === 999999 ? '∞' : currentPlan.limits.sav}
                         </span>
                       </div>
-                      {currentPlan.limits.sav !== 999999 && (
-                        <Progress value={(subscription.active_sav_count / currentPlan.limits.sav) * 100} />
-                      )}
+                      {currentPlan.limits.sav !== 999999 && <Progress value={subscription.active_sav_count / currentPlan.limits.sav * 100} />}
                     </div>
                      <div>
                        <div className="flex justify-between items-center mb-2">
@@ -156,18 +143,10 @@ export default function Subscription() {
                            {subscription.sms_credits_used}/{subscription.sms_credits_allocated}
                          </span>
                        </div>
-                       <Progress value={(subscription.sms_credits_used / subscription.sms_credits_allocated) * 100} />
+                       <Progress value={subscription.sms_credits_used / subscription.sms_credits_allocated * 100} />
                        
                        {/* Bouton Acheter SMS */}
-                       <Button 
-                         variant="outline" 
-                         size="sm" 
-                         className="w-full mt-3"
-                         onClick={() => window.location.href = '/settings?tab=sms'}
-                       >
-                         <CreditCard className="h-4 w-4 mr-2" />
-                         Acheter des crédits SMS
-                       </Button>
+                       
                      </div>
                   </div>
                 </CardContent>
@@ -189,11 +168,7 @@ export default function Subscription() {
                      <p className="text-sm text-blue-700">
                        Tarifs selon votre plan : {currentPlan.name}
                      </p>
-                     <Button 
-                       className="w-full" 
-                       variant="default"
-                       onClick={() => window.location.href = '/settings?tab=sms'}
-                     >
+                     <Button className="w-full" variant="default" onClick={() => window.location.href = '/settings?tab=sms'}>
                        <CreditCard className="h-4 w-4 mr-2" />
                        Acheter des SMS
                      </Button>
@@ -202,9 +177,7 @@ export default function Subscription() {
                </Card>
 
                {/* Limits Warning */}
-               {(subscription.active_sav_count / (currentPlan.limits.sav === 999999 ? 1000 : currentPlan.limits.sav) > 0.8 || 
-                 subscription.sms_credits_used / subscription.sms_credits_allocated > 0.8) && (
-                 <Card className="border-orange-200 bg-orange-50">
+               {(subscription.active_sav_count / (currentPlan.limits.sav === 999999 ? 1000 : currentPlan.limits.sav) > 0.8 || subscription.sms_credits_used / subscription.sms_credits_allocated > 0.8) && <Card className="border-orange-200 bg-orange-50">
                    <CardHeader>
                      <CardTitle className="flex items-center gap-2 text-orange-700">
                        <AlertTriangle className="h-5 w-5" />
@@ -219,27 +192,21 @@ export default function Subscription() {
                        </AlertDescription>
                      </Alert>
                    </CardContent>
-                 </Card>
-               )}
-            </div>
-          )}
+                 </Card>}
+            </div>}
 
           {/* Plans */}
           <div>
             <h2 className="text-2xl font-semibold mb-6">Choisissez votre plan</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {plans.map((plan) => {
-                const PlanIcon = plan.icon;
-                const isCurrent = isCurrentPlan(plan.id);
-                const canUpgradeToThis = canUpgrade(plan.id);
-                
-                return (
-                  <Card key={plan.id} className={`relative ${isCurrent ? 'border-primary bg-primary/5' : ''}`}>
-                    {isCurrent && (
-                      <Badge className="absolute -top-2 left-4 bg-primary">
+              {plans.map(plan => {
+              const PlanIcon = plan.icon;
+              const isCurrent = isCurrentPlan(plan.id);
+              const canUpgradeToThis = canUpgrade(plan.id);
+              return <Card key={plan.id} className={`relative ${isCurrent ? 'border-primary bg-primary/5' : ''}`}>
+                    {isCurrent && <Badge className="absolute -top-2 left-4 bg-primary">
                         Plan Actuel
-                      </Badge>
-                    )}
+                      </Badge>}
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2">
                         <PlanIcon className="h-5 w-5" />
@@ -266,44 +233,29 @@ export default function Subscription() {
                       <hr className="mb-6" />
                       
                       <ul className="space-y-2 mb-6">
-                        {plan.features.map((feature, index) => (
-                          <li key={index} className="flex items-center gap-2">
+                        {plan.features.map((feature, index) => <li key={index} className="flex items-center gap-2">
                             <CheckCircle className="h-4 w-4 text-green-500" />
                             <span className="text-sm">{feature}</span>
-                          </li>
-                        ))}
+                          </li>)}
                       </ul>
                       
-                      {plan.id === 'free' ? (
-                        <Button variant="outline" disabled className="w-full">
+                      {plan.id === 'free' ? <Button variant="outline" disabled className="w-full">
                           Plan Gratuit
-                        </Button>
-                      ) : isCurrent ? (
-                        <Button variant="outline" disabled className="w-full">
+                        </Button> : isCurrent ? <Button variant="outline" disabled className="w-full">
                           Plan Actuel
-                        </Button>
-                      ) : canUpgradeToThis ? (
-                        <Button 
-                          onClick={() => createCheckout(plan.id as 'premium' | 'enterprise')} 
-                          className="w-full"
-                        >
+                        </Button> : canUpgradeToThis ? <Button onClick={() => createCheckout(plan.id as 'premium' | 'enterprise')} className="w-full">
                           Passer à {plan.name}
-                        </Button>
-                      ) : (
-                        <Button variant="outline" disabled className="w-full">
+                        </Button> : <Button variant="outline" disabled className="w-full">
                           Indisponible
-                        </Button>
-                      )}
+                        </Button>}
                     </CardContent>
-                  </Card>
-                );
-              })}
+                  </Card>;
+            })}
             </div>
           </div>
 
           {/* Billing Info */}
-          {subscription?.subscription_end && (
-            <Card>
+          {subscription?.subscription_end && <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <MessageSquare className="h-5 w-5" />
@@ -318,10 +270,8 @@ export default function Subscription() {
                   Les crédits SMS se remettent à zéro chaque début de mois.
                 </p>
               </CardContent>
-            </Card>
-          )}
+            </Card>}
         </main>
       </div>
-    </div>
-  );
+    </div>;
 }
