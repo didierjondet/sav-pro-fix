@@ -62,7 +62,7 @@ export function useSAVUnreadMessages() {
         return;
       }
 
-      // Get SAV case details with customer info
+      // Get SAV case details with customer info, but only for non-closed SAV cases
       const { data: savCases, error: savError } = await supabase
         .from('sav_cases')
         .select(`
@@ -71,9 +71,11 @@ export function useSAVUnreadMessages() {
           sav_type,
           device_brand,
           device_model,
+          status,
           customer:customers(first_name, last_name)
         `)
-        .in('id', savCaseIds);
+        .in('id', savCaseIds)
+        .not('status', 'in', '(ready,cancelled)');
 
       if (savError) throw savError;
 
