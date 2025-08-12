@@ -66,6 +66,10 @@ export default function SAVDetail() {
               // Conserver les données de relation customer si elles existent
               customer: prevCase?.customer 
             }));
+            // Mettre à jour les commentaires privés si ils ont changé
+            if (payload.new.private_comments !== undefined) {
+              setPrivateComments(payload.new.private_comments || '');
+            }
           }
         }
       )
