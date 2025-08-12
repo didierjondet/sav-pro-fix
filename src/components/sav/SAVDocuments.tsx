@@ -26,7 +26,10 @@ export function SAVDocuments({ savCaseId, attachments, onAttachmentsUpdate }: SA
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const getFileIcon = (type: string) => {
+  const getFileIcon = (type: string | undefined | null) => {
+    if (!type) {
+      return <FileIcon className="h-4 w-4" />;
+    }
     if (type.startsWith('image/')) {
       return <Image className="h-4 w-4" />;
     }
