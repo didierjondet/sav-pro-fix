@@ -55,8 +55,9 @@ export function SAVPartsEditor({ savCaseId, onPartsUpdated, trigger }: SAVPartsE
           part_id,
           quantity,
           time_minutes,
-unit_price,
-parts:part_id(name, reference, quantity, purchase_price)
+          unit_price,
+          purchase_price,
+          parts(name, reference, quantity, purchase_price)
         `)
         .eq('sav_case_id', savCaseId);
 
