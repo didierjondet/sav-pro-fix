@@ -98,8 +98,8 @@ export function CustomerSearch({ customerInfo, setCustomerInfo, onCustomerSelect
     <div className="space-y-4">
       <div className="relative">
         <Label htmlFor="customer-search">Rechercher un client existant</Label>
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+        <div className="relative border-2 border-blue-200 rounded-lg shadow-sm bg-blue-50/30 dark:bg-blue-950/30 dark:border-blue-800 transition-all duration-200 focus-within:border-blue-400 focus-within:shadow-md">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-blue-500 h-4 w-4" />
           <Input
             id="customer-search"
             placeholder="Nom, prénom, email ou téléphone..."
@@ -107,7 +107,7 @@ export function CustomerSearch({ customerInfo, setCustomerInfo, onCustomerSelect
             onChange={(e) => setSearchTerm(e.target.value)}
             onFocus={handleInputFocus}
             onBlur={handleInputBlur}
-            className="pl-10"
+            className="pl-10 bg-transparent border-0 focus-visible:ring-0 focus-visible:ring-offset-0"
             autoComplete="off"
           />
         </div>
