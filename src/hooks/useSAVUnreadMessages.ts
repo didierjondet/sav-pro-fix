@@ -46,15 +46,15 @@ export function useSAVUnreadMessages() {
         return;
       }
 
-      // Get SAV cases with unread messages from clients
+      // Get all SAV cases with messages (read or unread), not just unread ones
       const { data, error } = await supabase
         .from('sav_messages')
         .select(`
-          sav_case_id
+          sav_case_id,
+          read_by_shop
         `)
         .eq('shop_id', profile.shop_id)
-        .eq('sender_type', 'client')
-        .eq('read_by_shop', false);
+        .eq('sender_type', 'client');
 
       console.log('💬 Unread messages query result:', { data, error });
 
@@ -91,7 +91,7 @@ export function useSAVUnreadMessages() {
 
       if (savError) throw savError;
 
-      // Group by SAV case and count unread messages
+      // Group by SAV case and count only unread messages
       const grouped = (data || []).reduce((acc: Record<string, SAVWithUnreadMessages>, message) => {
         const savCase = savCases?.find(sc => sc.id === message.sav_case_id);
         if (savCase) {
@@ -106,7 +106,10 @@ export function useSAVUnreadMessages() {
               unread_count: 0
             };
           }
-          acc[savCase.id].unread_count++;
+          // Only count unread messages
+          if (!message.read_by_shop) {
+            acc[savCase.id].unread_count++;
+          }
         }
         return acc;
       }, {});
