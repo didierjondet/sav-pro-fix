@@ -177,7 +177,20 @@ export default function Support() {
           <main className="flex-1 overflow-hidden p-6">
             <div className="max-w-7xl mx-auto h-full">
               <div className="flex justify-between items-center mb-6">
-                <h1 className="text-2xl font-bold">Support technique</h1>
+                <div>
+                  <h1 className="text-2xl font-bold">Support technique</h1>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Fixway, un service de la société{' '}
+                    <a 
+                      href="https://annuaire-entreprises.data.gouv.fr/entreprise/hapics-803138577" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-primary hover:underline"
+                    >
+                      Hapics
+                    </a>
+                  </p>
+                </div>
                 <Dialog open={showNewTicketDialog} onOpenChange={setShowNewTicketDialog}>
                   <DialogTrigger asChild>
                     <Button onClick={() => {
