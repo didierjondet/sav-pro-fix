@@ -1,27 +1,16 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { multiWordSearch } from '@/utils/searchUtils';
-import { Plus, Search, Filter, MoreHorizontal, Eye, Edit, Trash2, MessageCircleWarning } from 'lucide-react';
-import { PaginationControls } from '@/components/ui/pagination-controls';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Plus } from 'lucide-react';
+import { PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { SAVForm } from './SAVForm';
 import { useSAVCases } from '@/hooks/useSAVCases';
-import { useQuotes } from '@/hooks/useQuotes';
 import { useShop } from '@/hooks/useShop';
 import { useSAVPartsCosts } from '@/hooks/useSAVPartsCosts';
-import { useSAVUnreadMessages } from '@/hooks/useSAVUnreadMessages';
-import { formatDelayText, DelayInfo, calculateSAVDelay } from '@/hooks/useSAVDelay';
-import { ReviewRequestButton } from './ReviewRequestButton';
-import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
-import { cn } from '@/lib/utils';
+import { calculateSAVDelay } from '@/hooks/useSAVDelay';
+import { format, differenceInHours } from 'date-fns';
 const statusConfig = {
   pending: {
     label: 'En attente',
@@ -53,21 +42,11 @@ const statusConfig = {
   }
 };
 export function SAVDashboard() {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [typeFilter, setTypeFilter] = useState('all'); // 'all' | 'client' | 'internal' | 'external'
-  const [statusFilter, setStatusFilter] = useState('all-except-ready'); // Par défaut, masquer les SAV prêts
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(20);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const {
     cases,
-    loading,
-    updateCaseStatus,
-    deleteCase
+    loading
   } = useSAVCases();
-  const {
-    quotes
-  } = useQuotes();
   const {
     shop
   } = useShop();
@@ -75,81 +54,54 @@ export function SAVDashboard() {
     costs,
     loading: costsLoading
   } = useSAVPartsCosts();
-  const {
-    savWithUnreadMessages
-  } = useSAVUnreadMessages();
   const navigate = useNavigate();
 
-  // Calculer les informations de délai pour tous les cas et trier par priorité
-  const casesWithDelayInfo = useMemo(() => {
-    const casesWithDelay = cases.map(case_ => ({
-      ...case_,
-      delayInfo: calculateSAVDelay(case_, shop)
-    }));
-
-    // Trier par priorité : 
-    // 1. SAV en retard (isOverdue = true) en premier
-    // 2. Ensuite par temps restant croissant (le moins de temps restant en premier)
-    // 3. Enfin les SAV livrés ou annulés à la fin
-    return casesWithDelay.sort((a, b) => {
-      // Les SAV annulés vont à la fin
-      const aCompleted = a.status === 'cancelled';
-      const bCompleted = b.status === 'cancelled';
-      if (aCompleted && !bCompleted) return 1;
-      if (!aCompleted && bCompleted) return -1;
-      if (aCompleted && bCompleted) return 0; // Garder l'ordre existant pour les complétés
-
-      // Pour les SAV actifs, trier par urgence
-      // 1. SAV en retard en premier
-      if (a.delayInfo.isOverdue && !b.delayInfo.isOverdue) return -1;
-      if (!a.delayInfo.isOverdue && b.delayInfo.isOverdue) return 1;
-
-      // 2. Si les deux sont en retard ou non en retard, trier par temps restant
-      return a.delayInfo.totalRemainingHours - b.delayInfo.totalRemainingHours;
-    });
-  }, [cases, shop]);
-  const filteredCases = casesWithDelayInfo.filter(case_ => {
-    // Filtrage par recherche textuelle
-    const matchesSearch = multiWordSearch(searchTerm, case_.customer?.first_name, case_.customer?.last_name, case_.case_number, case_.device_brand, case_.device_model);
+  // Données pour le graphique de répartition des SAV
+  const savDistributionData = useMemo(() => {
+    const clientCount = cases.filter(c => c.sav_type === 'client').length;
+    const internalCount = cases.filter(c => c.sav_type === 'internal').length;
+    const externalCount = cases.filter(c => c.sav_type === 'external').length;
     
-    // Filtrage par type
-    let matchesType = true;
-    if (typeFilter !== 'all') {
-      matchesType = case_.sav_type === typeFilter;
-    }
+    return [
+      { name: 'SAV Client', value: clientCount, color: '#ef4444' },
+      { name: 'SAV Magasin', value: internalCount, color: '#3b82f6' },
+      { name: 'SAV Externe', value: externalCount, color: '#10b981' }
+    ];
+  }, [cases]);
 
-    // Filtrage par statut
-    let matchesStatus = true;
-    if (statusFilter === 'all-except-ready') {
-      matchesStatus = case_.status !== 'ready';
-    } else if (statusFilter === 'overdue') {
-      matchesStatus = case_.delayInfo.isOverdue && case_.status !== 'cancelled';
-    } else if (statusFilter !== 'all') {
-      matchesStatus = case_.status === statusFilter;
-    }
+  // Données pour le graphique temps passé par produit
+  const timeSpentData = useMemo(() => {
+    const completedCases = cases.filter(c => c.status === 'cancelled');
     
-    return matchesSearch && matchesType && matchesStatus;
-  });
-
-  // Calculs de pagination
-  const totalItems = filteredCases.length;
-  const totalPages = Math.ceil(totalItems / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const paginatedCases = filteredCases.slice(startIndex, endIndex);
-
-  // Réinitialiser la page quand les filtres changent
-  useMemo(() => {
-    setCurrentPage(1);
-  }, [searchTerm, typeFilter, statusFilter]);
+    return completedCases.map(case_ => {
+      const createdAt = new Date(case_.created_at);
+      const updatedAt = new Date(case_.updated_at);
+      const hoursSpent = differenceInHours(updatedAt, createdAt);
+      
+      return {
+        name: `${case_.device_brand} ${case_.device_model}`.substring(0, 20),
+        caseNumber: case_.case_number,
+        hours: Math.max(hoursSpent, 1) // Minimum 1 heure pour l'affichage
+      };
+    }).sort((a, b) => new Date(a.caseNumber).getTime() - new Date(b.caseNumber).getTime());
+  }, [cases]);
   return <div className="space-y-6">
       <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
-        <div className="flex-1 max-w-sm">
-          <div className="relative">
-            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Rechercher un dossier..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-8" />
-          </div>
-        </div>
+        <h2 className="text-2xl font-bold">Tableau de bord SAV</h2>
+        <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+          <DialogTrigger asChild>
+            <Button>
+              <Plus className="mr-2 h-4 w-4" />
+              Nouveau SAV
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Créer un nouveau dossier SAV</DialogTitle>
+            </DialogHeader>
+            <SAVForm onSuccess={() => setIsFormOpen(false)} />
+          </DialogContent>
+        </Dialog>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5 mb-6">
@@ -210,167 +162,99 @@ export function SAVDashboard() {
         </Card>
       </div>
 
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>Dossiers SAV récents</CardTitle>
-            <div className="flex gap-2">
-              <Select value={typeFilter} onValueChange={setTypeFilter}>
-                <SelectTrigger className="w-[200px]">
-                  <Filter className="mr-2 h-4 w-4" />
-                  <SelectValue placeholder="Filtrer par type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Tous les types</SelectItem>
-                  <SelectItem value="client">SAV Client</SelectItem>
-                  <SelectItem value="internal">SAV Magasin</SelectItem>
-                  <SelectItem value="external">SAV Externe</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-[200px]">
-                  <Filter className="mr-2 h-4 w-4" />
-                  <SelectValue placeholder="Filtrer par statut" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Tous les statuts</SelectItem>
-                  <SelectItem value="all-except-ready">Masquer les prêts</SelectItem>
-                  <SelectItem value="overdue">En retard</SelectItem>
-                  <SelectItem value="pending">En attente</SelectItem>
-                  <SelectItem value="in_progress">En cours</SelectItem>
-                  <SelectItem value="testing">En test</SelectItem>
-                  <SelectItem value="parts_ordered">Pièces commandées</SelectItem>
-                  <SelectItem value="ready">Prêt</SelectItem>
-                  <SelectItem value="cancelled">Annulé</SelectItem>
-                </SelectContent>
-              </Select>
-              <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-                <DialogTrigger asChild>
-                  <Button>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Nouveau SAV
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-                  <DialogHeader>
-                    <DialogTitle>Créer un nouveau dossier SAV</DialogTitle>
-                  </DialogHeader>
-                  <SAVForm onSuccess={() => setIsFormOpen(false)} />
-                </DialogContent>
-              </Dialog>
-            </div>
-          </div>
-          <CardDescription>
-            Gérez vos dossiers de réparation et leur statut
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {loading ? <div className="text-center py-8">Chargement des dossiers...</div> : <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>N° Dossier</TableHead>
-                  <TableHead>Client</TableHead>
-                  <TableHead>Appareil / IMEI</TableHead>
-                  <TableHead>Statut / Délai</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Montant</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {paginatedCases.map(case_ => {
-              // Couleurs de fond selon le type de SAV
-              const backgroundClass = case_.sav_type === 'client' ? 'bg-red-50' : 'bg-sky-50';
+      <div className="grid gap-6 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Répartition des SAV</CardTitle>
+            <CardDescription>
+              Distribution des types de SAV
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <div className="h-80 flex items-center justify-center">
+                <div className="text-sm text-muted-foreground">Chargement...</div>
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie
+                    data={savDistributionData}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ name, value, percent }) => `${name}: ${value} (${(percent * 100).toFixed(0)}%)`}
+                    outerRadius={80}
+                    fill="#8884d8"
+                    dataKey="value"
+                  >
+                    {savDistributionData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            )}
+          </CardContent>
+        </Card>
 
-              // Vérifier s'il y a des messages non lus pour ce SAV
-              const unreadMessages = savWithUnreadMessages.find(sav => sav.id === case_.id);
-              return <TableRow key={case_.id} className={cn(backgroundClass, case_.delayInfo.isOverdue && case_.status !== 'cancelled' ? "border-destructive/20 bg-red-100" : "")}>
-                    <TableCell className="font-medium">
-                      <div className="flex items-center gap-2">
-                        {case_.case_number}
-                        {unreadMessages && <MessageCircleWarning className="h-4 w-4 text-orange-500 animate-pulse" />}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {case_.customer ? `${case_.customer.first_name} ${case_.customer.last_name}` : 'SAV Interne'}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-col">
-                        <span>{case_.device_brand} {case_.device_model}</span>
-                        {case_.device_imei && <span className="text-xs text-muted-foreground">IMEI: {case_.device_imei}</span>}
-                        {case_.sku && <span className="text-xs text-muted-foreground">SKU: {case_.sku}</span>}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-col gap-1">
-                        <Badge variant={statusConfig[case_.status].variant}>
-                          {statusConfig[case_.status].label}
-                        </Badge>
-                        {case_.status !== 'cancelled' && <span className={cn("text-xs", case_.delayInfo.isOverdue ? "text-destructive font-medium" : "text-muted-foreground")}>
-                            {formatDelayText(case_.delayInfo)}
-                          </span>}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {format(new Date(case_.created_at), 'dd/MM/yyyy', {
-                    locale: fr
-                  })}
-                    </TableCell>
-                    <TableCell>{(case_.total_cost || 0).toFixed(2)}€</TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        {case_.status === 'ready' && (
-                          <ReviewRequestButton
-                            savCaseId={case_.id}
-                            shopId={case_.shop_id}
-                            customerName={case_.customer ? `${case_.customer.first_name} ${case_.customer.last_name}`.trim() : ''}
-                            caseNumber={case_.case_number}
-                          />
-                        )}
-                        <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" className="h-8 w-8 p-0">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => navigate(`/sav/${case_.id}`)}>
-                            <Eye className="mr-2 h-4 w-4" />
-                            Voir détails
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => navigate(`/sav/${case_.id}`)}>
-                            <Edit className="mr-2 h-4 w-4" />
-                            Modifier
-                          </DropdownMenuItem>
-                          <DropdownMenuItem className="text-destructive" onClick={() => {
-                        if (confirm('Êtes-vous sûr de vouloir supprimer ce dossier SAV ?')) {
-                          deleteCase(case_.id);
-                        }
-                      }}>
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Supprimer
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                      </div>
-                    </TableCell>
-                  </TableRow>;
-            })}
-              </TableBody>
-            </Table>}
-          
-          {totalItems > 0 && (
-            <div className="mt-4">
-              <PaginationControls
-                totalItems={totalItems}
-                itemsPerPage={itemsPerPage}
-                currentPage={currentPage}
-                onPageChange={setCurrentPage}
-                onItemsPerPageChange={setItemsPerPage}
-              />
-            </div>
-          )}
-        </CardContent>
-      </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Temps passé par produit</CardTitle>
+            <CardDescription>
+              Évolution du temps de traitement des SAV terminés
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <div className="h-80 flex items-center justify-center">
+                <div className="text-sm text-muted-foreground">Chargement...</div>
+              </div>
+            ) : timeSpentData.length === 0 ? (
+              <div className="h-80 flex items-center justify-center">
+                <div className="text-sm text-muted-foreground">Aucun SAV terminé pour afficher les données</div>
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={timeSpentData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis 
+                    dataKey="caseNumber" 
+                    angle={-45}
+                    textAnchor="end"
+                    height={80}
+                    interval={0}
+                  />
+                  <YAxis 
+                    label={{ value: 'Heures', angle: -90, position: 'insideLeft' }}
+                  />
+                  <Tooltip 
+                    formatter={(value, name, props) => [
+                      `${value} heures`,
+                      'Temps passé'
+                    ]}
+                    labelFormatter={(label) => `SAV: ${label}`}
+                    contentStyle={{
+                      backgroundColor: 'hsl(var(--background))',
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '6px'
+                    }}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="hours" 
+                    stroke="#3b82f6" 
+                    strokeWidth={2}
+                    dot={{ fill: '#3b82f6', strokeWidth: 2, r: 4 }}
+                    activeDot={{ r: 6, stroke: '#3b82f6', strokeWidth: 2 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>;
 }
