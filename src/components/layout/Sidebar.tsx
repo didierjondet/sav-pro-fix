@@ -82,8 +82,13 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       acc.shopWaiting++;
     }
     
+    // Count external SAV cases that are not "ready" for "en attente externe"
+    if (savCase.sav_type === 'external' && savCase.status !== 'ready') {
+      acc.externalWaiting++;
+    }
+    
     return acc;
-  }, { pendingClient: 0, pendingExternal: 0, pendingShop: 0, inProgress: 0, completed: 0, clientWaiting: 0, shopWaiting: 0 });
+  }, { pendingClient: 0, pendingExternal: 0, pendingShop: 0, inProgress: 0, completed: 0, clientWaiting: 0, shopWaiting: 0, externalWaiting: 0 });
   return (
     <>
       {/* Mobile overlay */}
@@ -167,7 +172,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                 </div>
                 <div className="flex justify-between text-sm">
                   <span>En attente Externe</span>
-                  <span className="font-medium">{statusCounts.pendingExternal}</span>
+                  <span className="font-medium">{statusCounts.externalWaiting}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span>En attente magasin</span>
