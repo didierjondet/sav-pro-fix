@@ -28,6 +28,8 @@ export function useSAVUnreadMessages() {
     }
 
     try {
+      console.log('🔍 Fetching unread messages for user:', user.id);
+      
       // Get user's shop_id
       const { data: profile } = await supabase
         .from('profiles')
@@ -35,7 +37,10 @@ export function useSAVUnreadMessages() {
         .eq('user_id', user.id)
         .single();
 
+      console.log('👤 User profile:', profile);
+
       if (!profile?.shop_id) {
+        console.log('❌ No shop_id found for user');
         setSavWithUnreadMessages([]);
         setLoading(false);
         return;
@@ -51,12 +56,17 @@ export function useSAVUnreadMessages() {
         .eq('sender_type', 'client')
         .eq('read_by_shop', false);
 
+      console.log('💬 Unread messages query result:', { data, error });
+
       if (error) throw error;
 
       // Get unique SAV case IDs
       const savCaseIds = [...new Set((data || []).map(msg => msg.sav_case_id))];
       
+      console.log('📋 Unique SAV case IDs with unread messages:', savCaseIds);
+      
       if (savCaseIds.length === 0) {
+        console.log('❌ No SAV cases with unread messages found');
         setSavWithUnreadMessages([]);
         setLoading(false);
         return;
@@ -76,6 +86,8 @@ export function useSAVUnreadMessages() {
         `)
         .in('id', savCaseIds)
         .not('status', 'in', '(cancelled,delivered)');
+
+      console.log('🏪 SAV cases query result:', { savCases, savError });
 
       if (savError) throw savError;
 
@@ -99,9 +111,10 @@ export function useSAVUnreadMessages() {
         return acc;
       }, {});
 
+      console.log('📊 Final grouped result:', Object.values(grouped));
       setSavWithUnreadMessages(Object.values(grouped));
     } catch (error: any) {
-      console.error('Error fetching unread SAV messages:', error);
+      console.error('❌ Error fetching unread SAV messages:', error);
       setSavWithUnreadMessages([]);
     } finally {
       setLoading(false);
