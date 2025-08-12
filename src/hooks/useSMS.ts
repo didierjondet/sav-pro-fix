@@ -47,6 +47,36 @@ export function useSMS() {
         throw new Error(data?.error || 'Erreur lors de l\'envoi du SMS');
       }
 
+      // Si c'est un SMS lié à un SAV, l'archiver dans les messages
+      if (request.recordId && (request.type === 'sav_notification' || request.type === 'manual')) {
+        try {
+          // Vérifier que c'est bien un SAV
+          const { data: savCase } = await supabase
+            .from('sav_cases')
+            .select('id, case_number')
+            .eq('id', request.recordId)
+            .single();
+
+          if (savCase) {
+            // Créer un message dans le fil de discussion
+            await supabase
+              .from('sav_messages')
+              .insert({
+                sav_case_id: request.recordId,
+                shop_id: profile.shop_id,
+                sender_type: 'sms',
+                sender_name: 'SMS envoyé',
+                message: `📱 SMS envoyé au ${request.toNumber}: ${request.message}`,
+                read_by_shop: true,
+                read_by_client: true
+              });
+          }
+        } catch (archiveError) {
+          console.error('Erreur lors de l\'archivage du SMS:', archiveError);
+          // Ne pas faire échouer l'envoi du SMS si l'archivage échoue
+        }
+      }
+
       toast({
         title: "SMS envoyé",
         description: "Le SMS a été envoyé avec succès",

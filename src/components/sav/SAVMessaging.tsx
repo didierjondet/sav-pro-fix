@@ -110,19 +110,30 @@ export function SAVMessaging({ savCaseId, savCaseNumber, customerPhone, customer
               messages.map((message) => (
                 <div
                   key={message.id}
-                  className={`flex ${message.sender_type === 'shop' ? 'justify-end' : 'justify-start'}`}
+                  className={`flex ${message.sender_type === 'shop' || message.sender_type === 'sms' ? 'justify-end' : 'justify-start'}`}
                 >
                   <div
                     className={`max-w-[80%] rounded-lg p-3 ${
-                      message.sender_type === 'shop'
+                      message.sender_type === 'sms'
+                        ? 'bg-green-100 border-2 border-green-200 text-green-800 dark:bg-green-900/20 dark:border-green-800 dark:text-green-200'
+                        : message.sender_type === 'shop'
                         ? 'bg-primary text-primary-foreground'
                         : 'bg-muted'
                     }`}
                   >
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-sm font-medium">{message.sender_name}</span>
-                      <Badge variant={message.sender_type === 'shop' ? 'secondary' : 'outline'} className="text-xs">
-                        {message.sender_type === 'shop' ? 'Boutique' : 'Client'}
+                      <Badge 
+                        variant={
+                          message.sender_type === 'sms' ? 'default' :
+                          message.sender_type === 'shop' ? 'secondary' : 'outline'
+                        } 
+                        className={`text-xs ${
+                          message.sender_type === 'sms' ? 'bg-green-500 text-white' : ''
+                        }`}
+                      >
+                        {message.sender_type === 'sms' ? 'SMS' : 
+                         message.sender_type === 'shop' ? 'Boutique' : 'Client'}
                       </Badge>
                     </div>
                     <p className="text-sm whitespace-pre-wrap">{renderMessageWithLinks(message.message)}</p>

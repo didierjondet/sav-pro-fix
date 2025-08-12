@@ -6,7 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 export interface SAVMessage {
   id: string;
   sav_case_id: string;
-  sender_type: 'shop' | 'client';
+  sender_type: 'shop' | 'client' | 'sms';
   sender_name: string;
   message: string;
   created_at: string;

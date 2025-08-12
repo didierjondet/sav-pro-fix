@@ -67,6 +67,7 @@ export function SMSButton({
         toNumber: customPhone,
         message: customMessage,
         type: 'manual',
+        recordId: caseId, // Passer l'ID du SAV pour l'archivage
       });
     } else if (caseNumber && caseId) {
       // Notification SAV automatique
