@@ -51,6 +51,7 @@ interface SelectedPart {
   unitPrice: number;
   availableStock?: number;
   isCustom: boolean; // true pour les champs libres
+  attachments?: string[]; // Ajout du champ attachments
 }
 
 interface SAVFormProps {
@@ -213,12 +214,11 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
         const partsToInsert = selectedParts.map(part => ({
           sav_case_id: newCase.id,
           part_id: part.isCustom ? null : part.part_id,
-          part_name: part.name,
-          part_reference: part.reference || null,
           quantity: part.quantity,
           unit_price: part.unitPrice,
           time_minutes: 0,
-          shop_id: profile?.shop_id,
+          purchase_price: part.isCustom ? 0 : (parts.find(p => p.id === part.part_id)?.purchase_price || 0),
+          attachments: []
         }));
 
         const { error: partsError } = await supabase
