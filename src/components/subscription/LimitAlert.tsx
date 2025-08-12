@@ -1,20 +1,26 @@
-import { AlertTriangle, CreditCard, ArrowUp } from 'lucide-react';
+import { AlertTriangle, CreditCard, ArrowUp, Mail } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useSMSPackages } from '@/hooks/useSMSPackages';
 import { useLimitDialogContext } from '@/contexts/LimitDialogContext';
+import { useLandingContent } from '@/hooks/useLandingContent';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 interface LimitAlertProps {
-  action: 'upgrade_plan' | 'buy_sms_package';
+  action: 'upgrade_plan' | 'buy_sms_package' | 'contact_us';
   reason: string;
+  planName?: string;
   onAction?: () => void;
 }
 
-export function LimitAlert({ action, reason, onAction }: LimitAlertProps) {
+export function LimitAlert({ action, reason, planName, onAction }: LimitAlertProps) {
   const { openCustomerPortal } = useSubscription();
   const { packages, purchasePackage } = useSMSPackages();
   const { checkAndShowLimitDialog } = useLimitDialogContext();
+  const { content } = useLandingContent();
+  const { toast } = useToast();
 
   const handleUpgradePlan = async () => {
     // Ouvrir la popup de sélection de plans
@@ -30,6 +36,42 @@ export function LimitAlert({ action, reason, onAction }: LimitAlertProps) {
       // Rediriger vers les paramètres avec l'onglet SMS
       window.location.href = '/settings?tab=sms';
     }
+    onAction?.();
+  };
+
+  const handleContactUs = async () => {
+    if (!content.contact_email) {
+      toast({
+        title: "Erreur",
+        description: "Email de contact non configuré",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const { error } = await supabase.functions.invoke('send-contact-email', {
+        body: {
+          planName: planName || 'Plan personnalisé',
+          message: `Demande de contact pour le plan ${planName || 'personnalisé'}`,
+          toEmail: content.contact_email
+        }
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Demande envoyée",
+        description: "Votre demande de contact a été envoyée avec succès",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: "Impossible d'envoyer la demande de contact",
+        variant: "destructive",
+      });
+    }
+    
     onAction?.();
   };
 
@@ -59,6 +101,17 @@ export function LimitAlert({ action, reason, onAction }: LimitAlertProps) {
             >
               <CreditCard className="h-4 w-4 mr-2" />
               Acheter SMS
+            </Button>
+          )}
+          {action === 'contact_us' && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleContactUs}
+              className="border-orange-300 text-orange-700 hover:bg-orange-100"
+            >
+              <Mail className="h-4 w-4 mr-2" />
+              Nous contacter
             </Button>
           )}
         </div>

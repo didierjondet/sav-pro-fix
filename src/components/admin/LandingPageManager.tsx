@@ -37,6 +37,12 @@ interface LandingContent {
   cgv_content?: string;
   cgu_content?: string;
   privacy_policy?: string;
+  contact_address?: string;
+  contact_email?: string;
+  contact_phone?: string;
+  show_address?: boolean;
+  show_email?: boolean;
+  show_phone?: boolean;
 }
 
 export function LandingPageManager() {
@@ -75,7 +81,7 @@ export function LandingPageManager() {
     }
   };
 
-  const updateContent = (field: keyof LandingContent, value: string) => {
+  const updateContent = (field: keyof LandingContent, value: string | boolean) => {
     setContent(prev => ({ ...prev, [field]: value }));
   };
 
@@ -83,9 +89,9 @@ export function LandingPageManager() {
     setSaving(section);
     try {
       const sectionData = fields.reduce((acc, field) => {
-        acc[field] = content[field];
+        acc[field as string] = content[field];
         return acc;
-      }, {} as Partial<LandingContent>);
+      }, {} as any);
 
       if (content.id) {
         const { error } = await supabase
@@ -520,6 +526,97 @@ export function LandingPageManager() {
                 <li>• Ces documents sont obligatoires pour toute activité commerciale en ligne</li>
                 <li>• Consultez un juriste pour vous assurer de leur conformité</li>
               </ul>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Section Coordonnées */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <Users className="h-5 w-5" />
+              <CardTitle>Coordonnées</CardTitle>
+            </div>
+            <Button
+              onClick={() => saveSection('Coordonnées', ['contact_address', 'contact_email', 'contact_phone', 'show_address', 'show_email', 'show_phone'])}
+              disabled={saving === 'Coordonnées'}
+              size="sm"
+            >
+              <Save className="h-4 w-4 mr-2" />
+              {saving === 'Coordonnées' ? 'Sauvegarde...' : 'Sauvegarder'}
+            </Button>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="contact_address">Adresse postale</Label>
+                <Textarea
+                  id="contact_address"
+                  value={content.contact_address || ''}
+                  onChange={(e) => updateContent('contact_address', e.target.value)}
+                  placeholder="123 Rue de la République, 75001 Paris"
+                  rows={2}
+                />
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="show_address"
+                    checked={content.show_address || false}
+                    onChange={(e) => updateContent('show_address', e.target.checked)}
+                    className="rounded"
+                  />
+                  <Label htmlFor="show_address">Afficher sur la landing page</Label>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="contact_email">Email de contact</Label>
+                <Input
+                  id="contact_email"
+                  type="email"
+                  value={content.contact_email || ''}
+                  onChange={(e) => updateContent('contact_email', e.target.value)}
+                  placeholder="contact@fixway.fr"
+                />
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="show_email"
+                    checked={content.show_email || false}
+                    onChange={(e) => updateContent('show_email', e.target.checked)}
+                    className="rounded"
+                  />
+                  <Label htmlFor="show_email">Afficher sur la landing page</Label>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="contact_phone">Téléphone</Label>
+                <Input
+                  id="contact_phone"
+                  type="tel"
+                  value={content.contact_phone || ''}
+                  onChange={(e) => updateContent('contact_phone', e.target.value)}
+                  placeholder="01 23 45 67 89"
+                />
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    id="show_phone"
+                    checked={content.show_phone || false}
+                    onChange={(e) => updateContent('show_phone', e.target.checked)}
+                    className="rounded"
+                  />
+                  <Label htmlFor="show_phone">Afficher sur la landing page</Label>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-4 p-4 bg-green-50 rounded-lg border border-green-200">
+              <h4 className="font-semibold text-green-800 mb-2">📧 Email pour les demandes de contact</h4>
+              <p className="text-sm text-green-700">
+                L'email de contact sera utilisé pour recevoir les demandes quand un client clique sur un plan en mode "Nous contacter".
+              </p>
             </div>
           </CardContent>
         </Card>

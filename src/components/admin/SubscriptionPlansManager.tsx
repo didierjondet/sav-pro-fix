@@ -50,6 +50,7 @@ interface SubscriptionPlan {
   sms_limit: number;
   features: string[];
   stripe_price_id: string | null;
+  contact_only: boolean;
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -72,6 +73,7 @@ export default function SubscriptionPlansManager() {
     sms_limit: 15,
     features: '',
     stripe_price_id: '',
+    contact_only: false,
     is_active: true
   });
 
@@ -94,7 +96,8 @@ export default function SubscriptionPlansManager() {
         description: plan.description || '',
         billing_interval: plan.billing_interval as 'month' | 'year',
         features: Array.isArray(plan.features) ? plan.features.map(f => String(f)) : [],
-        stripe_price_id: plan.stripe_price_id || null
+        stripe_price_id: plan.stripe_price_id || null,
+        contact_only: plan.contact_only || false
       }));
       
       setPlans(transformedPlans);
@@ -119,6 +122,7 @@ export default function SubscriptionPlansManager() {
       sms_limit: 15,
       features: '',
       stripe_price_id: '',
+      contact_only: false,
       is_active: true
     });
   };
@@ -138,6 +142,7 @@ export default function SubscriptionPlansManager() {
           sms_limit: formData.sms_limit,
           features: formData.features.split('\n').filter(f => f.trim()),
           stripe_price_id: formData.stripe_price_id || null,
+          contact_only: formData.contact_only,
           is_active: formData.is_active
         })
         .select()
@@ -155,7 +160,8 @@ export default function SubscriptionPlansManager() {
         description: data.description || '',
         billing_interval: data.billing_interval as 'month' | 'year',
         features: Array.isArray(data.features) ? data.features.map(f => String(f)) : [],
-        stripe_price_id: data.stripe_price_id || null
+        stripe_price_id: data.stripe_price_id || null,
+        contact_only: data.contact_only || false
       }]);
       setIsCreateOpen(false);
       resetForm();
@@ -200,6 +206,7 @@ export default function SubscriptionPlansManager() {
         sms_limit: formData.sms_limit,
         features: formData.features.split('\n').filter(f => f.trim()),
         stripe_price_id: formData.stripe_price_id || null,
+        contact_only: formData.contact_only,
         is_active: formData.is_active
       };
       
@@ -233,7 +240,8 @@ export default function SubscriptionPlansManager() {
           description: data.description || '',
           billing_interval: data.billing_interval as 'month' | 'year',
           features: Array.isArray(data.features) ? data.features.map(f => String(f)) : [],
-          stripe_price_id: data.stripe_price_id || null
+          stripe_price_id: data.stripe_price_id || null,
+          contact_only: data.contact_only || false
         } : plan));
         setIsEditOpen(false);
         setEditingPlan(null);
@@ -456,6 +464,14 @@ export default function SubscriptionPlansManager() {
               
               <div className="flex items-center space-x-2">
                 <Switch
+                  checked={formData.contact_only}
+                  onCheckedChange={(checked) => setFormData({ ...formData, contact_only: checked })}
+                />
+                <Label>Mode "Nous contacter" (remplace le paiement par un formulaire de contact)</Label>
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <Switch
                   checked={formData.is_active}
                   onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
                 />
@@ -655,6 +671,14 @@ export default function SubscriptionPlansManager() {
                 value={formData.stripe_price_id}
                 onChange={(e) => setFormData({ ...formData, stripe_price_id: e.target.value })}
               />
+            </div>
+            
+            <div className="flex items-center space-x-2">
+              <Switch
+                checked={formData.contact_only}
+                onCheckedChange={(checked) => setFormData({ ...formData, contact_only: checked })}
+              />
+              <Label>Mode "Nous contacter"</Label>
             </div>
             
             <div className="flex items-center space-x-2">

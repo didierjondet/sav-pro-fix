@@ -139,6 +139,9 @@ export type Database = {
           benefits_title: string | null
           cgu_content: string | null
           cgv_content: string | null
+          contact_address: string | null
+          contact_email: string | null
+          contact_phone: string | null
           created_at: string
           cta_button_text: string | null
           cta_subtitle: string | null
@@ -158,6 +161,9 @@ export type Database = {
           hero_title: string | null
           id: string
           privacy_policy: string | null
+          show_address: boolean | null
+          show_email: boolean | null
+          show_phone: boolean | null
           updated_at: string
         }
         Insert: {
@@ -171,6 +177,9 @@ export type Database = {
           benefits_title?: string | null
           cgu_content?: string | null
           cgv_content?: string | null
+          contact_address?: string | null
+          contact_email?: string | null
+          contact_phone?: string | null
           created_at?: string
           cta_button_text?: string | null
           cta_subtitle?: string | null
@@ -190,6 +199,9 @@ export type Database = {
           hero_title?: string | null
           id?: string
           privacy_policy?: string | null
+          show_address?: boolean | null
+          show_email?: boolean | null
+          show_phone?: boolean | null
           updated_at?: string
         }
         Update: {
@@ -203,6 +215,9 @@ export type Database = {
           benefits_title?: string | null
           cgu_content?: string | null
           cgv_content?: string | null
+          contact_address?: string | null
+          contact_email?: string | null
+          contact_phone?: string | null
           created_at?: string
           cta_button_text?: string | null
           cta_subtitle?: string | null
@@ -222,6 +237,9 @@ export type Database = {
           hero_title?: string | null
           id?: string
           privacy_policy?: string | null
+          show_address?: boolean | null
+          show_email?: boolean | null
+          show_phone?: boolean | null
           updated_at?: string
         }
         Relationships: []
@@ -1254,6 +1272,7 @@ export type Database = {
       subscription_plans: {
         Row: {
           billing_interval: string
+          contact_only: boolean
           created_at: string
           description: string | null
           features: Json | null
@@ -1268,6 +1287,7 @@ export type Database = {
         }
         Insert: {
           billing_interval?: string
+          contact_only?: boolean
           created_at?: string
           description?: string | null
           features?: Json | null
@@ -1282,6 +1302,7 @@ export type Database = {
         }
         Update: {
           billing_interval?: string
+          contact_only?: boolean
           created_at?: string
           description?: string | null
           features?: Json | null
