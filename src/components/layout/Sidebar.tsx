@@ -71,8 +71,14 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     } else if (['delivered', 'ready'].includes(savCase.status)) {
       acc.completed++;
     }
+    
+    // Count client SAV cases that are not "ready" for "en attente client"
+    if (savCase.sav_type === 'client' && savCase.status !== 'ready') {
+      acc.clientWaiting++;
+    }
+    
     return acc;
-  }, { pendingClient: 0, pendingExternal: 0, pendingShop: 0, inProgress: 0, completed: 0 });
+  }, { pendingClient: 0, pendingExternal: 0, pendingShop: 0, inProgress: 0, completed: 0, clientWaiting: 0 });
   return (
     <>
       {/* Mobile overlay */}
@@ -152,7 +158,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span>En attente client</span>
-                  <span className="font-medium">{statusCounts.pendingClient}</span>
+                  <span className="font-medium">{statusCounts.clientWaiting}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span>En attente Externe</span>
