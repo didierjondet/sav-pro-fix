@@ -138,11 +138,10 @@ export const generateQuotePDF = (quote: Quote, shop?: Shop) => {
       <table class="items-table">
         <thead>
           <tr>
-            <th style="width: 40%;">Article</th>
-            <th style="width: 20%;" class="text-center">Quantité</th>
-<th style="width: 20%;" class="text-right">Prix public</th>
-<th style="width: 20%;" class="text-right">Prix d'achat</th>
-<th style="width: 20%;" class="text-right">Total</th>
+            <th style="width: 50%;">Article</th>
+            <th style="width: 15%;" class="text-center">Quantité</th>
+            <th style="width: 20%;" class="text-right">Prix unitaire</th>
+            <th style="width: 15%;" class="text-right">Total</th>
           </tr>
         </thead>
         <tbody>
@@ -153,8 +152,7 @@ export const generateQuotePDF = (quote: Quote, shop?: Shop) => {
                 ${item.part_reference ? `<br><small>Réf: ${item.part_reference}</small>` : ''}
               </td>
               <td class="text-center">${item.quantity}</td>
-<td class="text-right">${(item as any).unit_public_price.toFixed(2)}€</td>
-<td class="text-right">${((item as any).unit_purchase_price || 0).toFixed(2)}€</td>
+              <td class="text-right">${(item as any).unit_public_price.toFixed(2)}€</td>
               <td class="text-right">${item.total_price.toFixed(2)}€</td>
             </tr>
           `).join('')}
