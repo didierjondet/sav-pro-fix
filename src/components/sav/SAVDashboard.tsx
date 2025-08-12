@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus } from 'lucide-react';
-import { PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -69,22 +69,22 @@ export function SAVDashboard() {
     ];
   }, [cases]);
 
-  // Données pour le graphique temps passé par produit
-  const timeSpentData = useMemo(() => {
-    const completedCases = cases.filter(c => c.status === 'cancelled');
+  // Données pour le graphique de rentabilité
+  const profitabilityData = useMemo(() => {
+    if (costsLoading) return [];
     
-    return completedCases.map(case_ => {
-      const createdAt = new Date(case_.created_at);
-      const updatedAt = new Date(case_.updated_at);
-      const hoursSpent = differenceInHours(updatedAt, createdAt);
-      
-      return {
-        name: `${case_.device_brand} ${case_.device_model}`.substring(0, 20),
-        caseNumber: case_.case_number,
-        hours: Math.max(hoursSpent, 1) // Minimum 1 heure pour l'affichage
-      };
-    }).sort((a, b) => new Date(a.caseNumber).getTime() - new Date(b.caseNumber).getTime());
-  }, [cases]);
+    const totalCosts = costs.takeover_cost + costs.client_cost + costs.external_cost + costs.internal_cost;
+    const profit = costs.monthly_revenue - totalCosts;
+    
+    return [
+      {
+        name: 'Rentabilité',
+        'Chiffre d\'affaires': costs.monthly_revenue,
+        'Coûts': totalCosts,
+        'Marge': profit
+      }
+    ];
+  }, [costs, costsLoading]);
   return <div className="space-y-6">
       <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
         <h2 className="text-2xl font-bold">Tableau de bord SAV</h2>
@@ -202,55 +202,40 @@ export function SAVDashboard() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Temps passé par produit</CardTitle>
+            <CardTitle>Rentabilité</CardTitle>
             <CardDescription>
-              Évolution du temps de traitement des SAV terminés
+              Chiffre d'affaires, coûts et marge du mois
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {loading ? (
+            {costsLoading ? (
               <div className="h-80 flex items-center justify-center">
                 <div className="text-sm text-muted-foreground">Chargement...</div>
               </div>
-            ) : timeSpentData.length === 0 ? (
-              <div className="h-80 flex items-center justify-center">
-                <div className="text-sm text-muted-foreground">Aucun SAV terminé pour afficher les données</div>
-              </div>
             ) : (
               <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={timeSpentData}>
+                <BarChart data={profitabilityData}>
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis 
-                    dataKey="caseNumber" 
-                    angle={-45}
-                    textAnchor="end"
-                    height={80}
-                    interval={0}
-                  />
+                  <XAxis dataKey="name" />
                   <YAxis 
-                    label={{ value: 'Heures', angle: -90, position: 'insideLeft' }}
+                    label={{ value: 'Euros (€)', angle: -90, position: 'insideLeft' }}
                   />
                   <Tooltip 
-                    formatter={(value, name, props) => [
-                      `${value} heures`,
-                      'Temps passé'
+                    formatter={(value, name) => [
+                      `${Number(value).toFixed(2)}€`,
+                      name
                     ]}
-                    labelFormatter={(label) => `SAV: ${label}`}
                     contentStyle={{
                       backgroundColor: 'hsl(var(--background))',
                       border: '1px solid hsl(var(--border))',
                       borderRadius: '6px'
                     }}
                   />
-                  <Line 
-                    type="monotone" 
-                    dataKey="hours" 
-                    stroke="#3b82f6" 
-                    strokeWidth={2}
-                    dot={{ fill: '#3b82f6', strokeWidth: 2, r: 4 }}
-                    activeDot={{ r: 6, stroke: '#3b82f6', strokeWidth: 2 }}
-                  />
-                </LineChart>
+                  <Legend />
+                  <Bar dataKey="Chiffre d'affaires" fill="#10b981" />
+                  <Bar dataKey="Coûts" fill="#ef4444" />
+                  <Bar dataKey="Marge" fill="#3b82f6" />
+                </BarChart>
               </ResponsiveContainer>
             )}
           </CardContent>
