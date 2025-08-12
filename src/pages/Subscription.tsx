@@ -251,6 +251,20 @@ export default function Subscription() {
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
+                      {/* Section des limites SAV et SMS */}
+                      <div className="space-y-3 mb-6">
+                        <div className="flex items-center gap-2 text-sm font-medium">
+                          <Zap className="h-4 w-4 text-primary" />
+                          SAV: {plan.limits.sav === 999999 ? 'Illimité' : `${plan.limits.sav} maximum`}
+                        </div>
+                        <div className="flex items-center gap-2 text-sm font-medium">
+                          <MessageSquare className="h-4 w-4 text-primary" />
+                          SMS: {plan.limits.sms} par mois
+                        </div>
+                      </div>
+                      
+                      <hr className="mb-6" />
+                      
                       <ul className="space-y-2 mb-6">
                         {plan.features.map((feature, index) => (
                           <li key={index} className="flex items-center gap-2">
