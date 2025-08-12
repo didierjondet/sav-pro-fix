@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { generateShortTrackingUrl, generateFullTrackingUrl } from '@/utils/trackingUtils';
@@ -72,9 +72,21 @@ export function SAVStatusManager({ savCase, onStatusUpdated }: SAVStatusManagerP
   const [showReadyWarning, setShowReadyWarning] = useState(false);
   const [readyWarningInfo, setReadyWarningInfo] = useState<{ noParts: boolean; noPurchase: boolean }>({ noParts: false, noPurchase: false });
   
+  // État pour les limites SMS
+  const [limits, setLimits] = useState<{ allowed: boolean; reason: string; action: string | null }>({ allowed: true, reason: '', action: null });
+  
   const { updateCaseStatus } = useSAVCases();
   const { subscription, checkLimits } = useSubscription();
   const { toast } = useToast();
+
+  // Charger les limites SMS au montage
+  useEffect(() => {
+    const loadLimits = async () => {
+      const smsLimits = await checkLimits('sms');
+      setLimits(smsLimits);
+    };
+    loadLimits();
+  }, [checkLimits]);
 
   const generateTrackingUrl = () => {
     if (!savCase.tracking_slug) return '';
@@ -341,7 +353,6 @@ L'équipe ${shopData.name || 'de réparation'}`;
   const hasChanges = selectedStatus !== savCase.status || notes.trim();
   const hasTakeoverChanges = partialTakeover !== (savCase.partial_takeover || false) || 
                             takeoverAmount !== (savCase.takeover_amount || 0);
-  const limits = checkLimits('sms');
   const canSendSMS = limits.allowed && savCase.customer?.phone && savCase.tracking_slug;
 
   // Calculer le montant à payer par le client

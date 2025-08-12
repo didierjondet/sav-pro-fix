@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import React from 'react';
 import { multiWordSearch } from '@/utils/searchUtils';
 import { Button } from '@/components/ui/button';
@@ -79,6 +79,7 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [showPrintDialog, setShowPrintDialog] = useState(false);
   const [createdSAVCase, setCreatedSAVCase] = useState<any>(null);
+  const [savLimits, setSavLimits] = useState<{ allowed: boolean; reason: string; action: string | null }>({ allowed: true, reason: '', action: null });
   
   const { user } = useAuth();
   const { profile } = useProfile();
@@ -88,6 +89,17 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
   const { checkLimits } = useSubscription();
   const { checkAndShowLimitDialog } = useLimitDialogContext();
   const { toast } = useToast();
+
+  // Charger les limites SAV au montage et quand l'utilisateur change
+  useEffect(() => {
+    const loadLimits = async () => {
+      if (user) {
+        const limits = await checkLimits('sav');
+        setSavLimits(limits);
+      }
+    };
+    loadLimits();
+  }, [user, checkLimits]);
 
   // Filtrer les pièces en fonction de la recherche
   const filteredParts = parts.filter(part =>
@@ -153,7 +165,7 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
     if (!user) return;
     
     // Vérifier les limites SAV avant création avec popup
-    if (!checkAndShowLimitDialog('sav')) {
+    if (!(await checkAndShowLimitDialog('sav'))) {
       return; // Les limites sont atteintes, la popup s'affiche
     }
     
@@ -258,8 +270,6 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
     }
   };
 
-  // Vérifier les limites SAV en temps réel
-  const savLimits = checkLimits('sav');
 
   return (
     <div className="space-y-6">

@@ -156,7 +156,7 @@ export function useSubscription() {
     }
   };
 
-  const checkLimits = (action?: 'sav' | 'sms') => {
+  const checkLimits = async (action?: 'sav' | 'sms') => {
     if (!subscription) {
       return { allowed: false, reason: "Données d'abonnement non disponibles", action: null };
     }
@@ -166,48 +166,39 @@ export function useSubscription() {
       return { allowed: true, reason: 'Abonnement forcé - vérifications désactivées', action: null };
     }
 
-    const { subscription_tier, sms_credits_used, sms_credits_allocated, active_sav_count } = subscription;
+    try {
+      // Récupérer le shop_id de l'utilisateur
+      const profileRes = await supabase
+        .from('profiles')
+        .select('shop_id')
+        .eq('user_id', user?.id)
+        .single();
 
-    // Vérification des limites SAV basées sur le plan
-    if (action === 'sav' || !action) {
-      if (subscription_tier === 'free' && active_sav_count >= 5) {
-        return { 
-          allowed: false, 
-          reason: `Plan Gratuit limité à 5 SAV actifs (${active_sav_count}/5). Passez au plan Premium.`,
-          action: 'upgrade_plan'
-        };
+      if (!profileRes.data?.shop_id) {
+        return { allowed: false, reason: "Shop non trouvé", action: null };
       }
-      if (subscription_tier === 'premium' && active_sav_count >= 50) {
-        return { 
-          allowed: false, 
-          reason: `Plan Premium limité à 50 SAV simultanés (${active_sav_count}/50). Passez au plan Enterprise.`,
-          action: 'upgrade_plan'
-        };
+
+      // Utiliser la fonction de base de données qui prend en compte les limites personnalisées
+      const { data, error } = await supabase.rpc('check_subscription_limits_v2', {
+        p_shop_id: profileRes.data.shop_id,
+        p_action: action
+      });
+
+      if (error) {
+        console.error('Error checking limits:', error);
+        return { allowed: false, reason: "Erreur lors de la vérification des limites", action: null };
       }
-      if (subscription_tier === 'enterprise' && active_sav_count >= 100) {
-        return { 
-          allowed: false, 
-          reason: `Plan Enterprise limité à 100 SAV simultanés (${active_sav_count}/100).`,
-          action: 'contact_support'
-        };
-      }
+
+      const result = data as any;
+      return {
+        allowed: result?.allowed || false,
+        reason: result?.reason || "Erreur inconnue",
+        action: result?.action || null
+      };
+    } catch (error) {
+      console.error('Error in checkLimits:', error);
+      return { allowed: false, reason: "Erreur lors de la vérification des limites", action: null };
     }
-
-    // Vérification des limites SMS basées sur le plan
-    if (action === 'sms' || !action) {
-      const smsUsed = sms_credits_used || 0;
-      const smsAllocated = sms_credits_allocated || 0;
-      
-      if (smsUsed >= smsAllocated) {
-        return { 
-          allowed: false, 
-          reason: `Vous avez utilisé tous vos crédits SMS du mois (${smsUsed}/${smsAllocated})`,
-          action: 'buy_sms_package'
-        };
-      }
-    }
-
-    return { allowed: true, reason: 'Dans les limites autorisées', action: null };
   };
 
   return {
