@@ -79,12 +79,17 @@ export function useSAVStatuses() {
 
   const updateStatus = async (id: string, updates: Partial<SAVStatus>) => {
     try {
-      const { error } = await supabase
+      console.log('🎨 Updating SAV status:', { id, updates });
+      
+      const { data, error } = await supabase
         .from('shop_sav_statuses')
         .update(updates)
-        .eq('id', id);
+        .eq('id', id)
+        .select();
 
       if (error) throw error;
+      
+      console.log('✅ Status updated successfully:', data);
       
       await fetchStatuses();
       toast({
@@ -92,7 +97,7 @@ export function useSAVStatuses() {
         description: 'Statut mis à jour avec succès'
       });
     } catch (error: any) {
-      console.error('Error updating SAV status:', error);
+      console.error('❌ Error updating SAV status:', error);
       toast({
         title: 'Erreur',
         description: error.message,
