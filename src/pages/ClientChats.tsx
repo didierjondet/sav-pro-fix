@@ -9,8 +9,9 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useSAVUnreadMessages } from '@/hooks/useSAVUnreadMessages';
 import { useProfile } from '@/hooks/useProfile';
 import { SAVMessaging } from '@/components/sav/SAVMessaging';
-import { MessageSquare, Volume2, VolumeX, Search } from 'lucide-react';
+import { MessageSquare, Volume2, VolumeX, Search, Eye } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { useNavigate } from 'react-router-dom';
 
 interface SelectedChat {
   id: string;
@@ -25,6 +26,7 @@ export default function ClientChats() {
   const [query, setQuery] = useState('');
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
+  const navigate = useNavigate();
 
   // SEO: title and meta
   useEffect(() => {
@@ -179,17 +181,53 @@ export default function ClientChats() {
                         </div>
                       ) : (
                         filtered.map((s) => (
-                          <Button
+                          <div
                             key={s.id}
-                            variant={selected?.id === s.id ? 'default' : 'outline'}
-                            className="w-full justify-between"
-                            onClick={() => setSelected({ id: s.id, case_number: s.case_number })}
+                            className={`p-3 border rounded-lg ${
+                              selected?.id === s.id ? 'bg-primary text-primary-foreground' : 'bg-background'
+                            }`}
                           >
-                            <span className="font-mono">#{s.case_number}</span>
-                            {s.unread_count > 0 && (
-                              <Badge variant="destructive">{s.unread_count}</Badge>
-                            )}
-                          </Button>
+                            <div className="flex items-center justify-between gap-2">
+                              <Button
+                                variant="ghost"
+                                className={`flex-1 justify-start p-0 h-auto ${
+                                  selected?.id === s.id ? 'text-primary-foreground hover:text-primary-foreground/80' : ''
+                                }`}
+                                onClick={() => setSelected({ id: s.id, case_number: s.case_number })}
+                              >
+                                <div className="flex flex-col items-start gap-1">
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-mono text-sm">#{s.case_number}</span>
+                                    {s.unread_count > 0 && (
+                                      <Badge variant="destructive" className="text-xs">
+                                        {s.unread_count}
+                                      </Badge>
+                                    )}
+                                  </div>
+                                  <div className="text-xs opacity-75">
+                                    {s.customer?.first_name && s.customer?.last_name
+                                      ? `${s.customer.first_name} ${s.customer.last_name}`
+                                      : 'Client'
+                                    }
+                                  </div>
+                                  <div className="text-xs opacity-60">
+                                    {s.device_brand} {s.device_model}
+                                  </div>
+                                </div>
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className={`p-1 h-8 w-8 ${
+                                  selected?.id === s.id ? 'text-primary-foreground hover:text-primary-foreground/80' : ''
+                                }`}
+                                onClick={() => navigate(`/sav/${s.id}`)}
+                                title="Voir le dossier SAV"
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
                         ))
                       )}
                     </div>
