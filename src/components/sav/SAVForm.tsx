@@ -23,6 +23,7 @@ import { useLimitDialogContext } from '@/contexts/LimitDialogContext';
 import { useToast } from '@/hooks/use-toast';
 import { PrintConfirmDialog } from '@/components/dialogs/PrintConfirmDialog';
 import { SAVPrintButton } from '@/components/sav/SAVPrint';
+import { supabase } from '@/integrations/supabase/client';
 
 interface CustomerInfo {
   firstName: string;
@@ -206,6 +207,34 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
       });
       
       if (caseError) throw caseError;
+      
+      // Sauvegarder les pièces sélectionnées
+      if (selectedParts.length > 0) {
+        const partsToInsert = selectedParts.map(part => ({
+          sav_case_id: newCase.id,
+          part_id: part.isCustom ? null : part.part_id,
+          part_name: part.name,
+          part_reference: part.reference || null,
+          quantity: part.quantity,
+          unit_price: part.unitPrice,
+          time_minutes: 0,
+          shop_id: profile?.shop_id,
+        }));
+
+        const { error: partsError } = await supabase
+          .from('sav_parts')
+          .insert(partsToInsert);
+
+        if (partsError) {
+          console.error('Error saving parts:', partsError);
+          // Ne pas faire échouer toute la création pour des erreurs de pièces
+          toast({
+            title: "Attention",
+            description: "Le SAV a été créé mais certaines pièces n'ont pas été sauvegardées",
+            variant: "destructive",
+          });
+        }
+      }
       
       // Stocker le SAV créé et afficher le popup d'impression
       setCreatedSAVCase(newCase);
