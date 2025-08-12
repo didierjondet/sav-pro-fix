@@ -237,6 +237,7 @@ const handleStatusChange = async (quote: Quote, newStatus: Quote['status']) => {
             total_cost: totalPublic,
             shop_id: shop?.id ?? null,
             customer_id: customerId,
+            attachments: (quoteToConvert as any).attachments || [],
           },
         ])
         .select('id')
