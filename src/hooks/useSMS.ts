@@ -49,17 +49,20 @@ export function useSMS() {
 
       // Si c'est un SMS lié à un SAV, l'archiver dans les messages
       if (request.recordId && (request.type === 'sav_notification' || request.type === 'manual')) {
+        console.log('🔍 Tentative d\'archivage SMS pour recordId:', request.recordId, 'type:', request.type);
         try {
           // Vérifier que c'est bien un SAV
-          const { data: savCase } = await supabase
+          const { data: savCase, error: savError } = await supabase
             .from('sav_cases')
             .select('id, case_number')
             .eq('id', request.recordId)
             .single();
 
+          console.log('📋 SAV Case trouvé:', savCase, 'erreur:', savError);
+
           if (savCase) {
             // Créer un message dans le fil de discussion
-            await supabase
+            const { data: messageData, error: messageError } = await supabase
               .from('sav_messages')
               .insert({
                 sav_case_id: request.recordId,
@@ -69,12 +72,19 @@ export function useSMS() {
                 message: `📱 SMS envoyé au ${request.toNumber}: ${request.message}`,
                 read_by_shop: true,
                 read_by_client: true
-              });
+              })
+              .select();
+
+            console.log('💬 Message SMS archivé:', messageData, 'erreur:', messageError);
+          } else {
+            console.warn('⚠️ SAV case non trouvé pour l\'ID:', request.recordId);
           }
         } catch (archiveError) {
-          console.error('Erreur lors de l\'archivage du SMS:', archiveError);
+          console.error('❌ Erreur lors de l\'archivage du SMS:', archiveError);
           // Ne pas faire échouer l'envoi du SMS si l'archivage échoue
         }
+      } else {
+        console.log('🔍 Pas d\'archivage SMS car recordId:', request.recordId, 'type:', request.type);
       }
 
       toast({
