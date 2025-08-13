@@ -225,10 +225,15 @@ export default function SAVDetail() {
                   <Badge variant={statusConfig[savCase.status as keyof typeof statusConfig]?.variant || 'secondary'}>
                     {statusConfig[savCase.status as keyof typeof statusConfig]?.label || savCase.status}
                   </Badge>
-                  {savCase.sav_type === 'client' && savCase.customer?.phone && (
+                  {/* SMS Button - for all SAV types except internal */}
+                  {savCase.sav_type !== 'internal' && (
                     <SMSButton
-                      customerPhone={savCase.customer.phone}
-                      customerName={`${savCase.customer.first_name} ${savCase.customer.last_name}`}
+                      customerPhone={savCase.customer?.phone || savCase.external_contact_phone || ''}
+                      customerName={
+                        savCase.sav_type === 'client' 
+                          ? `${savCase.customer?.first_name || ''} ${savCase.customer?.last_name || ''}`.trim()
+                          : savCase.external_contact_name || 'Contact externe'
+                      }
                       caseNumber={savCase.case_number}
                       caseId={savCase.id}
                       size="sm"
