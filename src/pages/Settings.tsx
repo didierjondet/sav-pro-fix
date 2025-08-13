@@ -40,7 +40,8 @@ import {
   Sun,
   Monitor,
   Star,
-  Search
+  Search,
+  CreditCard
 } from 'lucide-react';
 import { useTheme } from "next-themes";
 import { Switch } from '@/components/ui/switch';
@@ -579,7 +580,7 @@ const handleExportParts = async (format: 'csv' | 'xlsx') => {
               </div>
 
           <Tabs value={activeTab} onValueChange={(val) => { setActiveTab(val); setSearchParams(prev => { const p = new URLSearchParams(prev); p.set('tab', val); return p; }); }} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-7">
+            <TabsList className="grid w-full grid-cols-8">
               <TabsTrigger value="shop" className="flex items-center gap-2">
                 <Store className="h-4 w-4" />
                 Magasin
@@ -603,6 +604,10 @@ const handleExportParts = async (format: 'csv' | 'xlsx') => {
               <TabsTrigger value="sav-statuses" className="flex items-center gap-2">
                 <SettingsIcon className="h-4 w-4" />
                 Statuts SAV
+              </TabsTrigger>
+              <TabsTrigger value="subscription" className="flex items-center gap-2">
+                <CreditCard className="h-4 w-4" />
+                Abonnement
               </TabsTrigger>
               {isAdmin && (
                 <TabsTrigger value="users" className="flex items-center gap-2">
@@ -1207,6 +1212,37 @@ const handleExportParts = async (format: 'csv' | 'xlsx') => {
 
             <TabsContent value="sav-statuses" className="space-y-6">
               <SAVStatusesManager />
+            </TabsContent>
+
+            <TabsContent value="subscription" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <CreditCard className="h-5 w-5" />
+                    Abonnement et Crédits SMS
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="p-4 bg-muted rounded-lg">
+                      <h3 className="font-medium mb-1">Plan actuel</h3>
+                      <div className="text-2xl font-bold capitalize">
+                        {subscription?.subscription_tier || 'Gratuit'}
+                      </div>
+                      <p className="text-sm text-muted-foreground">Votre abonnement</p>
+                    </div>
+                    <div className="p-4 bg-muted rounded-lg">
+                      <h3 className="font-medium mb-1">Crédits SMS restants</h3>
+                      <div className="text-2xl font-bold">
+                        {(subscription?.sms_credits_allocated || 0) - (subscription?.sms_credits_used || 0)}
+                      </div>
+                      <p className="text-sm text-muted-foreground">SMS disponibles</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <SMSPackagesDisplay />
             </TabsContent>
 
           </Tabs>

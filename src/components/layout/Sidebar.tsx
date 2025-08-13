@@ -24,7 +24,6 @@ const baseNavigation = [
   { name: 'Commandes', href: '/orders', icon: Package },
   { name: 'Clients', href: '/customers', icon: Users },
   { name: 'Chat clients', href: '/client-chats', icon: MessageSquare },
-  { name: 'Statistiques', href: '/statistics', icon: BarChart3 },
 ];
 
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
@@ -45,16 +44,6 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 
   // Créer la navigation dynamique selon les paramètres du magasin
   const navigation = [...baseNavigation];
-  
-  console.log('🔧 Sidebar settings:', settings);
-  console.log('📋 Menu visible:', settings?.subscription_menu_visible);
-  
-  if (settings?.subscription_menu_visible) {
-    console.log('✅ Adding subscription menu to navigation');
-    navigation.push({ name: 'Abonnement', href: '/subscription', icon: CreditCard });
-  } else {
-    console.log('❌ Subscription menu hidden');
-  }
 
   // Calculate status counts with distinction between client, external and shop pending
   const statusCounts = (cases || []).reduce((acc, savCase) => {
