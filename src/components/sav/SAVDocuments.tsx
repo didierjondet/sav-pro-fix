@@ -26,14 +26,33 @@ export function SAVDocuments({ savCaseId, attachments, onAttachmentsUpdate }: SA
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const getFileIcon = (type: string | undefined | null) => {
+  const getFileIcon = (type: string | undefined | null, name?: string) => {
+    if (!type && name) {
+      const ext = name.split('.').pop()?.toLowerCase();
+      if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext || '')) {
+        return <Image className="h-4 w-4 text-blue-500" />;
+      }
+      if (['pdf'].includes(ext || '')) {
+        return <FileText className="h-4 w-4 text-red-500" />;
+      }
+      if (['doc', 'docx'].includes(ext || '')) {
+        return <FileText className="h-4 w-4 text-blue-600" />;
+      }
+    }
+    
     if (!type) {
-      return <FileIcon className="h-4 w-4" />;
+      return <FileIcon className="h-4 w-4 text-muted-foreground" />;
     }
     if (type.startsWith('image/')) {
-      return <Image className="h-4 w-4" />;
+      return <Image className="h-4 w-4 text-green-500" />;
     }
-    return <FileText className="h-4 w-4" />;
+    if (type === 'application/pdf') {
+      return <FileText className="h-4 w-4 text-red-500" />;
+    }
+    if (type.includes('word') || type.includes('document')) {
+      return <FileText className="h-4 w-4 text-blue-600" />;
+    }
+    return <FileText className="h-4 w-4 text-muted-foreground" />;
   };
 
   const formatFileSize = (bytes?: number) => {
@@ -135,18 +154,34 @@ export function SAVDocuments({ savCaseId, attachments, onAttachmentsUpdate }: SA
 
   const handlePreview = async (attachment: Attachment) => {
     try {
-      const { data: { signedUrl }, error } = await supabase.storage
+      console.log('Tentative de prévisualisation pour:', attachment);
+      
+      const { data, error } = await supabase.storage
         .from('sav-attachments')
         .createSignedUrl(attachment.url, 3600); // 1 heure
 
-      if (error) throw error;
+      console.log('Résultat createSignedUrl:', { data, error });
 
-      window.open(signedUrl, '_blank');
+      if (error) {
+        console.error('Erreur Supabase:', error);
+        throw error;
+      }
+
+      if (!data?.signedUrl) {
+        throw new Error('URL signée non générée');
+      }
+
+      window.open(data.signedUrl, '_blank');
+      
+      toast({
+        title: "Succès",
+        description: "Fichier ouvert dans un nouvel onglet",
+      });
     } catch (error: any) {
       console.error('Preview error:', error);
       toast({
         title: "Erreur",
-        description: "Impossible de prévisualiser le fichier",
+        description: `Impossible de prévisualiser le fichier: ${error.message || 'Erreur inconnue'}`,
         variant: "destructive",
       });
     }
@@ -194,7 +229,9 @@ export function SAVDocuments({ savCaseId, attachments, onAttachmentsUpdate }: SA
           <FileIcon className="h-5 w-5" />
           Documents et Photos
           {attachments.length > 0 && (
-            <Badge variant="secondary">{attachments.length}</Badge>
+            <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">
+              {attachments.length} fichier{attachments.length > 1 ? 's' : ''}
+            </Badge>
           )}
         </CardTitle>
       </CardHeader>
@@ -235,9 +272,23 @@ export function SAVDocuments({ savCaseId, attachments, onAttachmentsUpdate }: SA
                 className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50"
               >
                 <div className="flex items-center gap-3">
-                  {getFileIcon(attachment.type)}
+                  <div className="flex-shrink-0 p-2 bg-muted/50 rounded-lg">
+                    {getFileIcon(attachment.type, attachment.name)}
+                  </div>
                   <div>
-                    <div className="font-medium">{attachment.name}</div>
+                    <div className="font-medium flex items-center gap-2">
+                      {attachment.name}
+                      {attachment.type?.startsWith('image/') && (
+                        <Badge variant="outline" className="text-xs bg-green-50 border-green-200 text-green-700">
+                          Image
+                        </Badge>
+                      )}
+                      {attachment.type === 'application/pdf' && (
+                        <Badge variant="outline" className="text-xs bg-red-50 border-red-200 text-red-700">
+                          PDF
+                        </Badge>
+                      )}
+                    </div>
                     <div className="text-sm text-muted-foreground">
                       {formatFileSize(attachment.size)} • {new Date(attachment.uploaded_at).toLocaleDateString()}
                     </div>
