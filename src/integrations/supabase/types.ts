@@ -1540,6 +1540,10 @@ export type Database = {
         Args: { check_user_id?: string }
         Returns: boolean
       }
+      mask_phone_number: {
+        Args: { phone_number: string }
+        Returns: string
+      }
       reset_monthly_sms_credits: {
         Args: Record<PropertyKey, never>
         Returns: undefined
