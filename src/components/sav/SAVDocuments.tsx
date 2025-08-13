@@ -1,8 +1,8 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { FileText, Image, Download, Eye, Upload, Trash2, FileIcon } from 'lucide-react';
+import { FileText, Image, Download, Eye, Upload, Trash2, FileIcon, Paperclip } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -24,6 +24,7 @@ interface SAVDocumentsProps {
 export function SAVDocuments({ savCaseId, attachments, onAttachmentsUpdate }: SAVDocumentsProps) {
   const { toast } = useToast();
   const [uploading, setUploading] = useState(false);
+  const [thumbnails, setThumbnails] = useState<Record<string, string>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const getFileIcon = (type: string | undefined | null, name?: string) => {
@@ -54,6 +55,35 @@ export function SAVDocuments({ savCaseId, attachments, onAttachmentsUpdate }: SA
     }
     return <FileText className="h-4 w-4 text-muted-foreground" />;
   };
+
+  // Générer les miniatures pour les images
+  useEffect(() => {
+    const generateThumbnails = async () => {
+      const newThumbnails: Record<string, string> = {};
+      
+      for (const attachment of attachments) {
+        if (attachment.type?.startsWith('image/')) {
+          try {
+            const { data } = await supabase.storage
+              .from('sav-attachments')
+              .createSignedUrl(attachment.url, 3600);
+            
+            if (data?.signedUrl) {
+              newThumbnails[attachment.url] = data.signedUrl;
+            }
+          } catch (error) {
+            console.error('Erreur génération miniature:', error);
+          }
+        }
+      }
+      
+      setThumbnails(newThumbnails);
+    };
+
+    if (attachments.length > 0) {
+      generateThumbnails();
+    }
+  }, [attachments]);
 
   const formatFileSize = (bytes?: number) => {
     if (!bytes) return 'Taille inconnue';
@@ -123,11 +153,20 @@ export function SAVDocuments({ savCaseId, attachments, onAttachmentsUpdate }: SA
 
   const handleDownload = async (attachment: Attachment) => {
     try {
+      console.log('Téléchargement de:', attachment);
+      
       const { data, error } = await supabase.storage
         .from('sav-attachments')
         .download(attachment.url);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erreur Supabase download:', error);
+        throw error;
+      }
+
+      if (!data) {
+        throw new Error('Aucune donnée reçue');
+      }
 
       const url = URL.createObjectURL(data);
       const a = document.createElement('a');
@@ -146,7 +185,7 @@ export function SAVDocuments({ savCaseId, attachments, onAttachmentsUpdate }: SA
       console.error('Download error:', error);
       toast({
         title: "Erreur",
-        description: "Impossible de télécharger le fichier",
+        description: `Impossible de télécharger le fichier: ${error.message || 'Erreur inconnue'}`,
         variant: "destructive",
       });
     }
@@ -230,6 +269,7 @@ export function SAVDocuments({ savCaseId, attachments, onAttachmentsUpdate }: SA
           Documents et Photos
           {attachments.length > 0 && (
             <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">
+              <Paperclip className="h-3 w-3 mr-1" />
               {attachments.length} fichier{attachments.length > 1 ? 's' : ''}
             </Badge>
           )}
@@ -272,19 +312,42 @@ export function SAVDocuments({ savCaseId, attachments, onAttachmentsUpdate }: SA
                 className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50"
               >
                 <div className="flex items-center gap-3">
-                  <div className="flex-shrink-0 p-2 bg-muted/50 rounded-lg">
-                    {getFileIcon(attachment.type, attachment.name)}
+                  <div className="flex-shrink-0">
+                    {attachment.type?.startsWith('image/') && thumbnails[attachment.url] ? (
+                      <div className="relative">
+                        <img 
+                          src={thumbnails[attachment.url]} 
+                          alt={attachment.name}
+                          className="w-12 h-12 object-cover rounded-lg border border-muted"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                            e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                          }}
+                        />
+                        <div className="hidden w-12 h-12 bg-muted/50 rounded-lg border border-muted flex items-center justify-center">
+                          <Image className="h-6 w-6 text-muted-foreground" />
+                        </div>
+                        <div className="absolute -top-1 -right-1 bg-green-500 text-white rounded-full p-1">
+                          <Image className="h-3 w-3" />
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="w-12 h-12 bg-muted/50 rounded-lg border border-muted flex items-center justify-center">
+                        {getFileIcon(attachment.type, attachment.name)}
+                      </div>
+                    )}
                   </div>
-                  <div>
-                    <div className="font-medium flex items-center gap-2">
-                      {attachment.name}
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium flex items-center gap-2 truncate">
+                      <Paperclip className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                      <span className="truncate">{attachment.name}</span>
                       {attachment.type?.startsWith('image/') && (
-                        <Badge variant="outline" className="text-xs bg-green-50 border-green-200 text-green-700">
+                        <Badge variant="outline" className="text-xs bg-green-50 border-green-200 text-green-700 flex-shrink-0">
                           Image
                         </Badge>
                       )}
                       {attachment.type === 'application/pdf' && (
-                        <Badge variant="outline" className="text-xs bg-red-50 border-red-200 text-red-700">
+                        <Badge variant="outline" className="text-xs bg-red-50 border-red-200 text-red-700 flex-shrink-0">
                           PDF
                         </Badge>
                       )}
