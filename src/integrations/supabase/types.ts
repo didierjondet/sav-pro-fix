@@ -300,6 +300,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "notifications_sav_case_id_fkey"
+            columns: ["sav_case_id"]
+            isOneToOne: false
+            referencedRelation: "sav_tracking_view"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "notifications_support_ticket_id_fkey"
             columns: ["support_ticket_id"]
             isOneToOne: false
@@ -374,6 +381,13 @@ export type Database = {
             columns: ["sav_case_id"]
             isOneToOne: false
             referencedRelation: "sav_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_items_sav_case_id_fkey"
+            columns: ["sav_case_id"]
+            isOneToOne: false
+            referencedRelation: "sav_tracking_view"
             referencedColumns: ["id"]
           },
         ]
@@ -768,6 +782,13 @@ export type Database = {
             referencedRelation: "sav_cases"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "sav_parts_sav_case_id_fkey"
+            columns: ["sav_case_id"]
+            isOneToOne: false
+            referencedRelation: "sav_tracking_view"
+            referencedColumns: ["id"]
+          },
         ]
       }
       sav_status_history: {
@@ -808,6 +829,13 @@ export type Database = {
             columns: ["sav_case_id"]
             isOneToOne: false
             referencedRelation: "sav_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sav_status_history_sav_case_id_fkey"
+            columns: ["sav_case_id"]
+            isOneToOne: false
+            referencedRelation: "sav_tracking_view"
             referencedColumns: ["id"]
           },
         ]
@@ -1479,6 +1507,65 @@ export type Database = {
           masked_phone?: never
         }
         Relationships: []
+      }
+      sav_messages_tracking_view: {
+        Row: {
+          created_at: string | null
+          id: string | null
+          message: string | null
+          read_by_client: boolean | null
+          read_by_shop: boolean | null
+          sav_case_id: string | null
+          sender_name: string | null
+          sender_type: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string | null
+          message?: string | null
+          read_by_client?: boolean | null
+          read_by_shop?: boolean | null
+          sav_case_id?: string | null
+          sender_name?: string | null
+          sender_type?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string | null
+          message?: string | null
+          read_by_client?: boolean | null
+          read_by_shop?: boolean | null
+          sav_case_id?: string | null
+          sender_name?: string | null
+          sender_type?: string | null
+        }
+        Relationships: []
+      }
+      sav_tracking_view: {
+        Row: {
+          case_number: string | null
+          created_at: string | null
+          customer_first_name: string | null
+          device_brand: string | null
+          device_model: string | null
+          id: string | null
+          masked_device_imei: string | null
+          problem_description: string | null
+          shop_id: string | null
+          status: Database["public"]["Enums"]["sav_status"] | null
+          total_cost: number | null
+          tracking_slug: string | null
+          updated_at: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sav_cases_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Functions: {
