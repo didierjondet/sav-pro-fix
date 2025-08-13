@@ -535,11 +535,20 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
                       className="flex items-center justify-between p-3 hover:bg-muted/50 cursor-pointer border-b last:border-b-0"
                       onClick={() => addPartFromStock(part)}
                     >
-                      <div className="flex-1">
-                        <div className="font-medium">{part.name}</div>
-                        {part.reference && (
-                          <div className="text-sm text-muted-foreground">Réf: {part.reference}</div>
+                      <div className="flex-1 flex items-center gap-3">
+                        {part.photo_url && (
+                          <img 
+                            src={part.photo_url} 
+                            alt={part.name}
+                            className="w-12 h-12 object-cover rounded border"
+                          />
                         )}
+                        <div>
+                          <div className="font-medium">{part.name}</div>
+                          {part.reference && (
+                            <div className="text-sm text-muted-foreground">Réf: {part.reference}</div>
+                          )}
+                        </div>
                       </div>
                       <div className="flex items-center gap-2">
                         <Badge variant={part.quantity === 0 ? 'destructive' : part.quantity <= 5 ? 'default' : 'secondary'}>
@@ -572,22 +581,34 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
                     {index > 0 && <Separator className="my-4" />}
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            {part.isCustom ? (
-                              <Badge variant="outline">Pièce libre</Badge>
-                            ) : (
-                              <Badge variant="secondary">En stock</Badge>
-                            )}
-                            {!part.isCustom && part.availableStock !== undefined && (
-                              <Badge variant={part.availableStock === 0 ? 'destructive' : part.availableStock <= 5 ? 'default' : 'secondary'}>
-                                Stock: {part.availableStock}
-                              </Badge>
+                        <div className="flex-1 flex items-center gap-3">
+                          {!part.isCustom && part.part_id && (() => {
+                            const stockPart = parts.find(p => p.id === part.part_id);
+                            return stockPart?.photo_url && (
+                              <img 
+                                src={stockPart.photo_url} 
+                                alt={part.name}
+                                className="w-12 h-12 object-cover rounded border"
+                              />
+                            );
+                          })()}
+                          <div>
+                            <div className="flex items-center gap-2">
+                              {part.isCustom ? (
+                                <Badge variant="outline">Pièce libre</Badge>
+                              ) : (
+                                <Badge variant="secondary">En stock</Badge>
+                              )}
+                              {!part.isCustom && part.availableStock !== undefined && (
+                                <Badge variant={part.availableStock === 0 ? 'destructive' : part.availableStock <= 5 ? 'default' : 'secondary'}>
+                                  Stock: {part.availableStock}
+                                </Badge>
+                              )}
+                            </div>
+                            {part.reference && (
+                              <div className="text-sm text-muted-foreground mt-1">Réf: {part.reference}</div>
                             )}
                           </div>
-                          {part.reference && (
-                            <div className="text-sm text-muted-foreground mt-1">Réf: {part.reference}</div>
-                          )}
                         </div>
                         <Button
                           type="button"

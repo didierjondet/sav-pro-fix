@@ -262,11 +262,20 @@ const partsToInsert = savParts.map(part => ({
                       className="flex items-center justify-between p-3 hover:bg-muted/50 cursor-pointer border-b last:border-b-0"
                       onClick={() => addPartFromStock(part)}
                     >
-                      <div className="flex-1">
-                        <div className="font-medium">{part.name}</div>
-                        {part.reference && (
-                          <div className="text-sm text-muted-foreground">Réf: {part.reference}</div>
+                      <div className="flex-1 flex items-center gap-3">
+                        {part.photo_url && (
+                          <img 
+                            src={part.photo_url} 
+                            alt={part.name}
+                            className="w-12 h-12 object-cover rounded border"
+                          />
                         )}
+                        <div>
+                          <div className="font-medium">{part.name}</div>
+                          {part.reference && (
+                            <div className="text-sm text-muted-foreground">Réf: {part.reference}</div>
+                          )}
+                        </div>
                       </div>
                       <div className="flex items-center gap-2">
                         <Badge variant={part.quantity === 0 ? 'destructive' : part.quantity <= 5 ? 'default' : 'secondary'}>
@@ -306,22 +315,34 @@ const partsToInsert = savParts.map(part => ({
                     {index > 0 && <Separator className="my-4" />}
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            {part.isCustom ? (
-                              <Badge variant="outline">Pièce personnalisée</Badge>
-                            ) : (
-                              <Badge variant="secondary">En stock</Badge>
-                            )}
-                            {!part.isCustom && part.available_stock !== undefined && (
-                              <Badge variant={part.available_stock === 0 ? 'destructive' : part.available_stock <= 5 ? 'default' : 'secondary'}>
-                                Stock: {part.available_stock}
-                              </Badge>
+                        <div className="flex-1 flex items-center gap-3">
+                          {!part.isCustom && (() => {
+                            const stockPart = parts.find(p => p.id === part.part_id);
+                            return stockPart?.photo_url && (
+                              <img 
+                                src={stockPart.photo_url} 
+                                alt={part.part_name}
+                                className="w-12 h-12 object-cover rounded border"
+                              />
+                            );
+                          })()}
+                          <div>
+                            <div className="flex items-center gap-2">
+                              {part.isCustom ? (
+                                <Badge variant="outline">Pièce personnalisée</Badge>
+                              ) : (
+                                <Badge variant="secondary">En stock</Badge>
+                              )}
+                              {!part.isCustom && part.available_stock !== undefined && (
+                                <Badge variant={part.available_stock === 0 ? 'destructive' : part.available_stock <= 5 ? 'default' : 'secondary'}>
+                                  Stock: {part.available_stock}
+                                </Badge>
+                              )}
+                            </div>
+                            {part.part_reference && (
+                              <div className="text-sm text-muted-foreground mt-1">Réf: {part.part_reference}</div>
                             )}
                           </div>
-                          {part.part_reference && (
-                            <div className="text-sm text-muted-foreground mt-1">Réf: {part.part_reference}</div>
-                          )}
                         </div>
                         <Button
                           type="button"

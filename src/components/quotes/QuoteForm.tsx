@@ -358,14 +358,23 @@ const updateUnitPurchasePrice = (partId: string, unitPrice: number) => {
                     className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted cursor-pointer"
                     onClick={() => addPartToQuote(part.id)}
                   >
-                    <div>
-                      <p className="font-medium">{part.name}</p>
-                      {part.reference && (
-                        <p className="text-sm text-muted-foreground">Réf: {part.reference}</p>
+                    <div className="flex items-center gap-3">
+                      {part.photo_url && (
+                        <img 
+                          src={part.photo_url} 
+                          alt={part.name}
+                          className="w-12 h-12 object-cover rounded border"
+                        />
                       )}
-<p className="text-sm text-muted-foreground">
-  Public: {(part.selling_price || 0).toFixed(2)}€ • Achat: {(part.purchase_price || 0).toFixed(2)}€
-</p>
+                      <div>
+                        <p className="font-medium">{part.name}</p>
+                        {part.reference && (
+                          <p className="text-sm text-muted-foreground">Réf: {part.reference}</p>
+                        )}
+                        <p className="text-sm text-muted-foreground">
+                          Public: {(part.selling_price || 0).toFixed(2)}€ • Achat: {(part.purchase_price || 0).toFixed(2)}€
+                        </p>
+                      </div>
                     </div>
                     <Button type="button" size="sm">
                       <Plus className="h-4 w-4" />
@@ -434,22 +443,36 @@ const updateUnitPurchasePrice = (partId: string, unitPrice: number) => {
                       
                       <div className="flex items-center gap-4">
                         <div className="flex-1">
-                          {!isCustomItem && (
-                            <>
-                              <p className="font-medium">{item.part_name}</p>
-                              {item.part_reference && (
-                                <Badge variant="outline">Réf: {item.part_reference}</Badge>
+                          <div className="flex items-center gap-3">
+                            {!isCustomItem && (() => {
+                              const stockPart = parts.find(p => p.id === item.part_id);
+                              return stockPart?.photo_url && (
+                                <img 
+                                  src={stockPart.photo_url} 
+                                  alt={item.part_name}
+                                  className="w-12 h-12 object-cover rounded border"
+                                />
+                              );
+                            })()}
+                            <div>
+                              {!isCustomItem && (
+                                <>
+                                  <p className="font-medium">{item.part_name}</p>
+                                  {item.part_reference && (
+                                    <Badge variant="outline">Réf: {item.part_reference}</Badge>
+                                  )}
+                                </>
                               )}
-                            </>
-                          )}
-                          {isCustomItem && item.part_name && (
-                            <>
-                              <p className="font-medium">{item.part_name}</p>
-                              {item.part_reference && (
-                                <Badge variant="outline">Réf: {item.part_reference}</Badge>
+                              {isCustomItem && item.part_name && (
+                                <>
+                                  <p className="font-medium">{item.part_name}</p>
+                                  {item.part_reference && (
+                                    <Badge variant="outline">Réf: {item.part_reference}</Badge>
+                                  )}
+                                </>
                               )}
-                            </>
-                          )}
+                            </div>
+                          </div>
                         </div>
                         
                         <div className="flex items-center gap-2">
@@ -504,23 +527,6 @@ const updateUnitPurchasePrice = (partId: string, unitPrice: number) => {
                         </Button>
                       </div>
 
-                      {/* Section pour les fichiers joints */}
-                      <div className="mt-4">
-                        <FileUpload
-                          files={(item as any).attachments || []}
-                          onFilesChange={(files) => {
-                            setSelectedItems(items => 
-                              items.map(i => 
-                                i.part_id === item.part_id 
-                                  ? { ...i, attachments: files }
-                                  : i
-                              )
-                            );
-                          }}
-                          partId={item.part_id}
-                          label="Fichiers joints (photos, PDF)"
-                        />
-                      </div>
                     </div>
                   );
                 })}
