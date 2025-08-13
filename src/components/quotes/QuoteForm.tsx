@@ -372,7 +372,7 @@ const updateUnitPurchasePrice = (partId: string, unitPrice: number) => {
                           <p className="text-sm text-muted-foreground">Réf: {part.reference}</p>
                         )}
                         <p className="text-sm text-muted-foreground">
-                          Public: {(part.selling_price || 0).toFixed(2)}€ • Achat: {(part.purchase_price || 0).toFixed(2)}€
+                          Prix: {(part.selling_price || 0).toFixed(2)}€
                         </p>
                       </div>
                     </div>
@@ -499,18 +499,6 @@ const updateUnitPurchasePrice = (partId: string, unitPrice: number) => {
   <span>€</span>
 </div>
 
-<div className="flex items-center gap-2">
-  <Label>Prix d'achat:</Label>
-  <Input
-    type="number"
-    step="0.01"
-    min="0"
-    value={item.unit_purchase_price}
-    onChange={(e) => updateUnitPurchasePrice(item.part_id, parseFloat(e.target.value) || 0)}
-    className="w-24"
-  />
-  <span>€</span>
-</div>
                         
                         <div className="text-right">
                           <p className="font-medium">{item.total_price.toFixed(2)}€</p>
