@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { supabase } from '@/integrations/supabase/client';
-import { useSAVMessages } from '@/hooks/useSAVMessages';
+import { useSAVTrackingMessages } from '@/hooks/useSAVTrackingMessages';
 import { MessageSquare, Send, Smartphone, AlertCircle, CheckCircle, Clock, Package, Wifi } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -94,7 +94,7 @@ export default function SimpleTrack() {
   const [isRealTimeConnected, setIsRealTimeConnected] = useState(false);
   
   const { toast } = useToast();
-  const { messages, sendMessage, markAsRead } = useSAVMessages(savCase?.id || '');
+  const { messages, sendMessage, markAsRead } = useSAVTrackingMessages(slug);
 
   useEffect(() => {
     if (slug) {
@@ -153,37 +153,60 @@ export default function SimpleTrack() {
       
       console.log('🔍 [SimpleTrack] Fetching SAV case for slug:', slug);
 
-      const { data, error } = await supabase
-        .from('sav_cases')
-        .select(`
-          *,
-          customer:customers(first_name, last_name, email, phone),
-          shop:shops(name, phone, email, address, logo_url)
-        `)
-        .eq('tracking_slug', slug)
-        .single();
+      // Utiliser la nouvelle fonction sécurisée pour obtenir les informations de tracking
+      const { data: trackingData, error: trackingError } = await supabase
+        .rpc('get_tracking_info', { p_tracking_slug: slug });
 
-      console.log('📥 [SimpleTrack] Raw response:', { data, error });
-      
-      if (error) {
-        console.error('❌ [SimpleTrack] Database error:', error);
-        if (error.code === 'PGRST116') {
-          setError('Aucun dossier trouvé avec ce lien de suivi.');
-        } else {
-          setError('Erreur lors du chargement du dossier.');
-        }
+      if (trackingError) {
+        console.error('❌ [SimpleTrack] Tracking function error:', trackingError);
+        setError('Erreur lors de la récupération des données de suivi');
         return;
       }
 
-      console.log('✅ [SimpleTrack] SAV case data retrieved:', data);
-      console.log('🏪 [SimpleTrack] Shop data in response:', data?.shop);
-      console.log('🏪 [SimpleTrack] Shop name:', data?.shop?.name);
-      console.log('🏪 [SimpleTrack] Shop address:', data?.shop?.address);
-      console.log('🏪 [SimpleTrack] Shop logo:', data?.shop?.logo_url);
+      if (!trackingData || trackingData.length === 0) {
+        console.log('📭 [SimpleTrack] No tracking data found for slug:', slug);
+        setError('Aucun dossier trouvé avec ce lien de suivi.');
+        return;
+      }
 
-      setSavCase(data as SAVCaseData);
-      if (data.customer) {
-        setClientName(`${data.customer.first_name} ${data.customer.last_name}`);
+      // Récupérer les informations de la boutique (accès authentifié)
+      const { data: shopData, error: shopError } = await supabase
+        .from('sav_cases')
+        .select(`
+          id,
+          shops (name, phone, email, address, logo_url)
+        `)
+        .eq('tracking_slug', slug)
+        .maybeSingle();
+
+      const trackingInfo = trackingData[0];
+      const savCaseData = {
+        id: shopData?.id || '',
+        case_number: trackingInfo.case_number,
+        status: trackingInfo.status,
+        device_brand: trackingInfo.device_brand,
+        device_model: trackingInfo.device_model,
+        created_at: trackingInfo.created_at,
+        total_cost: trackingInfo.total_cost,
+        tracking_slug: slug!,
+        device_imei: undefined,
+        sku: undefined,
+        problem_description: 'Informations non disponibles en mode public',
+        repair_notes: undefined,
+        updated_at: trackingInfo.created_at,
+        sav_type: '',
+        customer: {
+          first_name: trackingInfo.customer_first_name || '',
+          last_name: ''
+        },
+        shop: shopData?.shops || null
+      };
+
+      console.log('✅ [SimpleTrack] SAV case data retrieved:', savCaseData);
+
+      setSavCase(savCaseData as SAVCaseData);
+      if (trackingInfo.customer_first_name) {
+        setClientName(trackingInfo.customer_first_name);
       }
     } catch (error) {
       console.error('❌ [SimpleTrack] Catch error:', error);

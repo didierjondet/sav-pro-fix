@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { supabase } from '@/integrations/supabase/client';
-import { useSAVMessages } from '@/hooks/useSAVMessages';
+import { useSAVTrackingMessages } from '@/hooks/useSAVTrackingMessages';
 import { MessageSquare, Send, Smartphone, AlertCircle, CheckCircle } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -91,7 +91,7 @@ export default function TrackSAV() {
   const [sending, setSending] = useState(false);
   const { toast } = useToast();
 
-  const { messages, sendMessage, refetch: refetchMessages } = useSAVMessages(savCase?.id);
+  const { messages, sendMessage, refetch: refetchMessages } = useSAVTrackingMessages(slug);
 
   useEffect(() => {
     if (slug) {
@@ -104,23 +104,54 @@ export default function TrackSAV() {
     if (!slug) return;
     
     try {
-      const { data, error } = await supabase
+      // Utiliser la nouvelle fonction sécurisée pour obtenir les informations de tracking
+      const { data: trackingData, error: trackingError } = await supabase
+        .rpc('get_tracking_info', { p_tracking_slug: slug });
+
+      if (trackingError) {
+        console.error('❌ [TrackSAV] Tracking function error:', trackingError);
+        throw new Error('Erreur lors de la récupération des données de suivi');
+      }
+
+      if (!trackingData || trackingData.length === 0) {
+        console.log('📭 [TrackSAV] No tracking data found for slug:', slug);
+        throw new Error('Numéro de suivi introuvable');
+      }
+
+      // Récupérer les informations de la boutique
+      const { data: shopData, error: shopError } = await supabase
         .from('sav_cases')
         .select(`
-          *,
-          customer:customers(first_name, last_name, email, phone),
-          shop:shops(name, phone, email, address, logo_url)
+          id,
+          shops (name, phone, email, address, logo_url)
         `)
         .eq('tracking_slug', slug)
-        .single();
+        .maybeSingle();
 
-      console.log('📥 [TrackSAV] Raw response:', { data, error });
-      if (error) throw error;
-      console.log('✅ [TrackSAV] SAV case data retrieved:', data);
-      console.log('🏪 [TrackSAV] Shop data in response:', data?.shop);
-      console.log('🏪 [TrackSAV] Shop name:', data?.shop?.name);
-      console.log('🏪 [TrackSAV] Shop address:', data?.shop?.address);
-      setSavCase(data);
+      const trackingInfo = trackingData[0];
+      const savCaseData = {
+        id: shopData?.id || '',
+        case_number: trackingInfo.case_number,
+        status: trackingInfo.status,
+        device_brand: trackingInfo.device_brand,
+        device_model: trackingInfo.device_model,
+        created_at: trackingInfo.created_at,
+        total_cost: trackingInfo.total_cost,
+        device_imei: undefined,
+        sku: undefined,
+        problem_description: 'Informations disponibles via le magasin',
+        repair_notes: undefined,
+        updated_at: trackingInfo.created_at,
+        sav_type: '',
+        customer: {
+          first_name: trackingInfo.customer_first_name || '',
+          last_name: ''
+        },
+        shop: shopData?.shops || null
+      };
+
+      console.log('✅ [TrackSAV] SAV case data retrieved:', savCaseData);
+      setSavCase(savCaseData);
     } catch (error: any) {
       toast({
         title: "Erreur",

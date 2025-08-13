@@ -1500,6 +1500,27 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      get_tracking_info: {
+        Args: { p_tracking_slug: string }
+        Returns: {
+          case_number: string
+          status: Database["public"]["Enums"]["sav_status"]
+          device_brand: string
+          device_model: string
+          created_at: string
+          total_cost: number
+          customer_first_name: string
+        }[]
+      }
+      get_tracking_messages: {
+        Args: { p_tracking_slug: string }
+        Returns: {
+          sender_type: string
+          sender_name: string
+          message: string
+          created_at: string
+        }[]
+      }
       invite_user_to_shop: {
         Args: {
           p_email: string
