@@ -67,9 +67,9 @@ export function useSMS() {
               .insert({
                 sav_case_id: request.recordId,
                 shop_id: profile.shop_id,
-                sender_type: 'sms',
-                sender_name: 'SMS envoyé',
-                message: `📱 SMS envoyé au ${request.toNumber}: ${request.message}`,
+                sender_type: 'shop', // Changer 'sms' en 'shop' car le type 'sms' n'existe pas
+                sender_name: '📱 SMS automatique',
+                message: `SMS envoyé au ${request.toNumber}: ${request.message}`,
                 read_by_shop: true,
                 read_by_client: true
               })
