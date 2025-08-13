@@ -109,7 +109,7 @@ export const SAVPrintButton = React.forwardRef<HTMLButtonElement, SAVPrintButton
             <div><span class="label">Modèle:</span> ${savCase.device_model || "-"}</div>
             ${savCase.device_imei ? `<div><span class="label">IMEI:</span> <span class="highlight-red">${savCase.device_imei}</span></div>` : ""}
             ${savCase.sku ? `<div><span class="label">SKU:</span> <span class="highlight-red">${savCase.sku}</span></div>` : ""}
-            <div><span class="label">Type:</span> <span class="sav-type">${savCase.sav_type === "client" ? "SAV Client" : savCase.sav_type === "external" ? "SAV Externe" : "SAV Interne"}</span></div>
+            
             <div><span class="label">Statut:</span> ${statusLabels[savCase.status] || savCase.status}</div>
           </div>
         </div>`;
@@ -230,6 +230,7 @@ export const SAVPrintButton = React.forwardRef<HTMLButtonElement, SAVPrintButton
     <div class="header">
       <div class="header-left">
         <div class="title">Dossier SAV N° ${savCase.case_number}</div>
+        <div class="sav-type">${savCase.sav_type === "client" ? "SAV Client" : savCase.sav_type === "external" ? "SAV Externe" : "SAV Interne"}</div>
         <div class="meta">Créé le ${(savCase.created_at ? new Date(savCase.created_at).toLocaleDateString() : "")} · Statut: ${statusLabels[savCase.status] || savCase.status}</div>
       </div>
     </div>
@@ -249,6 +250,7 @@ export const SAVPrintButton = React.forwardRef<HTMLButtonElement, SAVPrintButton
     <div class="header">
       <div class="header-left">
         <div class="title">Dossier SAV N° ${savCase.case_number}</div>
+        <div class="sav-type">${savCase.sav_type === "client" ? "SAV Client" : savCase.sav_type === "external" ? "SAV Externe" : "SAV Interne"}</div>
         <div class="meta">Créé le ${(savCase.created_at ? new Date(savCase.created_at).toLocaleDateString() : "")} · Statut: ${statusLabels[savCase.status] || savCase.status}</div>
       </div>
     </div>
