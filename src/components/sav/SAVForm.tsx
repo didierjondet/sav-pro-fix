@@ -82,6 +82,7 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
   const [showPrintDialog, setShowPrintDialog] = useState(false);
   const [createdSAVCase, setCreatedSAVCase] = useState<any>(null);
   const [savLimits, setSavLimits] = useState<{ allowed: boolean; reason: string; action: string | null }>({ allowed: true, reason: '', action: null });
+  const printButtonRef = React.useRef<HTMLButtonElement>(null);
   
   const { user } = useAuth();
   const { profile } = useProfile();
@@ -271,14 +272,9 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
   };
 
   const handlePrintConfirm = () => {
-    // Lancer l'impression en appelant directement la fonction
-    if (createdSAVCase) {
-      // Simuler le clic sur le bouton d'impression par programmation
-      const printEvent = new MouseEvent('click');
-      const printButton = document.querySelector('[data-print-button]') as HTMLButtonElement;
-      if (printButton) {
-        printButton.dispatchEvent(printEvent);
-      }
+    // Lancer l'impression en cliquant sur le bouton caché
+    if (printButtonRef.current) {
+      printButtonRef.current.click();
     }
     onSuccess?.();
   };
@@ -286,14 +282,6 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
   const handlePrintCancel = () => {
     // Redirection sans impression
     onSuccess?.();
-  };
-
-  // Fonction d'impression directe
-  const triggerPrint = () => {
-    const printButton = document.querySelector('[data-print-button]') as HTMLButtonElement;
-    if (printButton) {
-      printButton.click();
-    }
   };
 
 
@@ -704,7 +692,7 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
         <div style={{ display: 'none' }}>
           <SAVPrintButton 
             savCase={createdSAVCase}
-            data-print-button
+            ref={printButtonRef}
           />
         </div>
       )}

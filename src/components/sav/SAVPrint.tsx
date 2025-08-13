@@ -1,4 +1,5 @@
 import { useState } from "react";
+import React from "react";
 import { Button } from "@/components/ui/button";
 import { useShop } from "@/hooks/useShop";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,7 +14,7 @@ interface SAVPrintButtonProps {
   variant?: "default" | "outline" | "secondary" | "ghost" | "link" | "destructive";
 }
 
-export function SAVPrintButton({ savCase, className, size = "sm", variant = "outline" }: SAVPrintButtonProps) {
+export const SAVPrintButton = React.forwardRef<HTMLButtonElement, SAVPrintButtonProps>(({ savCase, className, size = "sm", variant = "outline" }, ref) => {
   const { shop } = useShop();
   const [printing, setPrinting] = useState(false);
 
@@ -108,7 +109,7 @@ export function SAVPrintButton({ savCase, className, size = "sm", variant = "out
             <div><span class="label">Modèle:</span> ${savCase.device_model || "-"}</div>
             ${savCase.device_imei ? `<div><span class="label">IMEI:</span> <span class="highlight-red">${savCase.device_imei}</span></div>` : ""}
             ${savCase.sku ? `<div><span class="label">SKU:</span> <span class="highlight-red">${savCase.sku}</span></div>` : ""}
-            <div><span class="label">Type:</span> ${savCase.sav_type === "client" ? "Client" : savCase.sav_type === "external" ? "Externe" : "Interne"}</div>
+            <div><span class="label">Type:</span> <span class="sav-type">${savCase.sav_type === "client" ? "SAV Client" : savCase.sav_type === "external" ? "SAV Externe" : "SAV Interne"}</span></div>
             <div><span class="label">Statut:</span> ${statusLabels[savCase.status] || savCase.status}</div>
           </div>
         </div>`;
@@ -215,6 +216,7 @@ export function SAVPrintButton({ savCase, className, size = "sm", variant = "out
     .url { font-size: 7px; word-break: break-all; color:#2563eb; text-align: left; max-width: 100px; }
     .footer { margin-top: 12px; font-size: 7px; color:#777; text-align:left; }
     .highlight-red { color: #dc2626; font-weight: bold; }
+    .sav-type { color: #16a34a; font-weight: bold; font-size: 1.4em; }
     .cut-line { margin: 15px 0; display: flex; align-items: center; justify-content: center; position: relative; }
     .cut-line::before { content: ''; position: absolute; left: 0; right: 0; height: 1px; background: repeating-linear-gradient(to right, #666 0, #666 5px, transparent 5px, transparent 10px); }
     .cut-line .scissors { background: white; padding: 0 8px; color: #666; font-size: 12px; }
@@ -278,9 +280,11 @@ export function SAVPrintButton({ savCase, className, size = "sm", variant = "out
   };
 
   return (
-    <Button variant={variant} size={size} onClick={handlePrint} className={className} disabled={printing}>
+    <Button variant={variant} size={size} onClick={handlePrint} className={className} disabled={printing} ref={ref}>
       <Printer className="h-4 w-4 mr-2" />
       {printing ? "Préparation..." : "Imprimer"}
     </Button>
   );
-}
+});
+
+SAVPrintButton.displayName = "SAVPrintButton";
