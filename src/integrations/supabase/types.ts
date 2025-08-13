@@ -554,6 +554,13 @@ export type Database = {
             foreignKeyName: "quotes_customer_id_fkey"
             columns: ["customer_id"]
             isOneToOne: false
+            referencedRelation: "customer_tracking_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quotes_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
             referencedRelation: "customers"
             referencedColumns: ["id"]
           },
@@ -644,6 +651,13 @@ export type Database = {
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "customer_tracking_info"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sav_cases_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customer_tracking_view"
             referencedColumns: ["id"]
           },
           {
@@ -1425,6 +1439,27 @@ export type Database = {
     }
     Views: {
       customer_tracking_info: {
+        Row: {
+          first_name: string | null
+          id: string | null
+          masked_email: string | null
+          masked_phone: string | null
+        }
+        Insert: {
+          first_name?: string | null
+          id?: string | null
+          masked_email?: never
+          masked_phone?: never
+        }
+        Update: {
+          first_name?: string | null
+          id?: string | null
+          masked_email?: never
+          masked_phone?: never
+        }
+        Relationships: []
+      }
+      customer_tracking_view: {
         Row: {
           first_name: string | null
           id: string | null
