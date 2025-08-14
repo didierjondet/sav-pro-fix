@@ -43,7 +43,7 @@ export default function SAVDetail() {
     }
   }, [cases, id]);
 
-  // Mise à jour en temps réel du SAV case
+  // Mise à jour en temps réel du SAV case et des pièces
   useEffect(() => {
     if (!id) return;
 
@@ -71,6 +71,21 @@ export default function SAVDetail() {
               setPrivateComments(payload.new.private_comments || '');
             }
           }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'sav_parts',
+          filter: `sav_case_id=eq.${id}`
+        },
+        (payload) => {
+          console.log('SAV parts updated:', payload);
+          // Recalculer le prix total automatiquement
+          // Le trigger de la base de données se charge déjà de mettre à jour le total_cost dans sav_cases
+          // La mise à jour sera captée par l'écoute sur sav_cases ci-dessus
         }
       )
       .subscribe();
