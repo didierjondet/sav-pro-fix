@@ -46,13 +46,18 @@ export function SMSButton({
   const { sendSMS, sendSAVNotification, sendQuoteNotification, loading } = useSMS();
   const { checkAndShowLimitDialog } = useLimitDialogContext();
 
+  const handleOpenDialog = async () => {
+    // Vérifier les limites SMS dès l'ouverture
+    if (!checkAndShowLimitDialog('sms')) {
+      return; // Limite atteinte, le dialog de limite s'affichera
+    }
+    
+    // Si pas de limite, ouvrir le dialog de composition SMS
+    setIsOpen(true);
+  };
+
   const handleSendSMS = async () => {
     if (!customPhone.trim()) return;
-
-    // Vérifier les limites SMS avant envoi
-    if (!checkAndShowLimitDialog('sms')) {
-      return; // Limite atteinte, le dialog s'occupera de la redirection
-    }
 
     let success = false;
 
@@ -112,7 +117,7 @@ export function SMSButton({
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant={variant} size={size} disabled={disabled}>
+        <Button variant={variant} size={size} disabled={disabled} onClick={handleOpenDialog}>
           <MessageSquare className="h-4 w-4 mr-2" />
           Envoyer SMS
         </Button>
