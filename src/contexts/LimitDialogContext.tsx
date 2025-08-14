@@ -54,8 +54,12 @@ export function LimitDialogProvider({ children }: LimitDialogProviderProps) {
 
   const handleConfirm = () => {
     setDialogState(prev => ({ ...prev, isOpen: false }));
-    // Rediriger vers la page d'abonnement
-    window.location.href = '/subscription';
+    // Rediriger vers la page appropriée selon l'action
+    if (dialogState.action === 'buy_sms_package') {
+      window.location.href = '/settings?tab=sms';
+    } else {
+      window.location.href = '/subscription';
+    }
   };
 
   const handleClose = () => {
