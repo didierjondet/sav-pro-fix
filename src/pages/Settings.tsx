@@ -84,7 +84,7 @@ export default function Settings() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { shop, updateShop: updateShopData } = useShop();
   const { profile, refetch: refetchProfile } = useProfile();
-  const { subscription } = useSubscription();
+  const { subscription, createCheckout, openCustomerPortal } = useSubscription();
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
@@ -1223,7 +1223,7 @@ const handleExportParts = async (format: 'csv' | 'xlsx') => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="p-4 bg-muted rounded-lg">
                       <h3 className="font-medium mb-1">Plan actuel</h3>
                       <div className="text-2xl font-bold capitalize">
@@ -1238,6 +1238,165 @@ const handleExportParts = async (format: 'csv' | 'xlsx') => {
                       </div>
                       <p className="text-sm text-muted-foreground">SMS disponibles</p>
                     </div>
+                    <div className="p-4 bg-muted rounded-lg">
+                      <h3 className="font-medium mb-1">SAV actifs</h3>
+                      <div className="text-2xl font-bold">
+                        {subscription?.active_sav_count || 0}
+                      </div>
+                      <p className="text-sm text-muted-foreground">Dossiers en cours</p>
+                    </div>
+                  </div>
+                  
+                  {subscription?.subscribed && (
+                    <div className="flex justify-center">
+                      <Button onClick={openCustomerPortal} variant="outline">
+                        Gérer l'abonnement
+                      </Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Plans disponibles */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Plans d'abonnement</CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    Choisissez le plan qui correspond le mieux à vos besoins
+                  </p>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {/* Plan Gratuit */}
+                    <Card className={`relative ${!subscription?.subscribed && subscription?.subscription_tier === 'free' ? 'border-primary bg-primary/5' : ''}`}>
+                      {!subscription?.subscribed && subscription?.subscription_tier === 'free' && (
+                        <Badge className="absolute -top-2 left-4 bg-primary">
+                          Plan Actuel
+                        </Badge>
+                      )}
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <Star className="h-5 w-5" />
+                          Gratuit
+                        </CardTitle>
+                        <div className="text-3xl font-bold">0€<span className="text-sm font-normal text-muted-foreground">/mois</span></div>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2 text-sm">
+                            <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                            5 SAV maximum
+                          </div>
+                          <div className="flex items-center gap-2 text-sm">
+                            <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                            15 SMS par mois
+                          </div>
+                          <div className="flex items-center gap-2 text-sm">
+                            <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                            Fonctionnalités de base
+                          </div>
+                        </div>
+                        <Button variant="outline" disabled className="w-full">
+                          Plan Gratuit
+                        </Button>
+                      </CardContent>
+                    </Card>
+
+                    {/* Plan Premium */}
+                    <Card className={`relative ${subscription?.subscription_tier === 'premium' ? 'border-primary bg-primary/5' : ''}`}>
+                      {subscription?.subscription_tier === 'premium' && (
+                        <Badge className="absolute -top-2 left-4 bg-primary">
+                          Plan Actuel
+                        </Badge>
+                      )}
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <Crown className="h-5 w-5" />
+                          Premium
+                        </CardTitle>
+                        <div className="text-3xl font-bold">29€<span className="text-sm font-normal text-muted-foreground">/mois</span></div>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2 text-sm">
+                            <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                            50 SAV simultanés
+                          </div>
+                          <div className="flex items-center gap-2 text-sm">
+                            <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                            100 SMS par mois
+                          </div>
+                          <div className="flex items-center gap-2 text-sm">
+                            <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                            Support prioritaire
+                          </div>
+                          <div className="flex items-center gap-2 text-sm">
+                            <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                            Statistiques avancées
+                          </div>
+                        </div>
+                        {subscription?.subscription_tier === 'premium' ? (
+                          <Button variant="outline" disabled className="w-full">
+                            Plan Actuel
+                          </Button>
+                        ) : (
+                          <Button 
+                            onClick={() => createCheckout('premium')} 
+                            className="w-full"
+                          >
+                            Passer au Premium
+                          </Button>
+                        )}
+                      </CardContent>
+                    </Card>
+
+                    {/* Plan Enterprise */}
+                    <Card className={`relative ${subscription?.subscription_tier === 'enterprise' ? 'border-primary bg-primary/5' : ''}`}>
+                      {subscription?.subscription_tier === 'enterprise' && (
+                        <Badge className="absolute -top-2 left-4 bg-primary">
+                          Plan Actuel
+                        </Badge>
+                      )}
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <SettingsIcon className="h-5 w-5" />
+                          Enterprise
+                        </CardTitle>
+                        <div className="text-3xl font-bold">99€<span className="text-sm font-normal text-muted-foreground">/mois</span></div>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2 text-sm">
+                            <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                            SAV illimités
+                          </div>
+                          <div className="flex items-center gap-2 text-sm">
+                            <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                            400 SMS par mois
+                          </div>
+                          <div className="flex items-center gap-2 text-sm">
+                            <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                            Support dédié
+                          </div>
+                          <div className="flex items-center gap-2 text-sm">
+                            <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                            Intégrations personnalisées
+                          </div>
+                        </div>
+                        {subscription?.subscription_tier === 'enterprise' ? (
+                          <Button variant="outline" disabled className="w-full">
+                            Plan Actuel
+                          </Button>
+                        ) : (
+                          <Button 
+                            onClick={() => createCheckout('enterprise')} 
+                            className="w-full"
+                          >
+                            Passer à Enterprise
+                          </Button>
+                        )}
+                      </CardContent>
+                    </Card>
                   </div>
                 </CardContent>
               </Card>
