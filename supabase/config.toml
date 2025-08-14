@@ -41,3 +41,6 @@ verify_jwt = true
 
 [functions.send-invitation]
 verify_jwt = true
+
+[functions.purchase-sms-package]
+verify_jwt = true

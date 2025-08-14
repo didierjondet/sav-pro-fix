@@ -48,6 +48,7 @@ import { TwilioCreditsManager } from '@/components/admin/TwilioCreditsManager';
 import { SEOConfigTab } from '@/components/seo/SEOConfigTab';
 import { BrandingManager } from '@/components/admin/BrandingManager';
 import { LandingPageManager } from '@/components/admin/LandingPageManager';
+import { SMSPackagesManager } from '@/components/admin/SMSPackagesManager';
 
 import {
   AlertDialog,
@@ -945,7 +946,7 @@ export default function SuperAdmin() {
         </div>
 
         <Tabs defaultValue="shops" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-9 bg-white border-slate-200">
+          <TabsList className="grid w-full grid-cols-10 bg-white border-slate-200">
             <TabsTrigger value="shops" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-slate-700">
               <Store className="h-4 w-4" />
               Gestion Magasins
@@ -986,6 +987,10 @@ export default function SuperAdmin() {
             <TabsTrigger value="landing" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-slate-700">
               <FileText className="h-4 w-4" />
               Landing Page
+            </TabsTrigger>
+            <TabsTrigger value="sms-packages" className="flex items-center gap-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-slate-700">
+              <Zap className="h-4 w-4" />
+              Packs SMS
             </TabsTrigger>
           </TabsList>
 
@@ -1701,6 +1706,11 @@ export default function SuperAdmin() {
           {/* Landing Page Management */}
           <TabsContent value="landing">
             <LandingPageManager />
+          </TabsContent>
+
+          {/* SMS Packages Management */}
+          <TabsContent value="sms-packages">
+            <SMSPackagesManager />
           </TabsContent>
         </Tabs>
 
