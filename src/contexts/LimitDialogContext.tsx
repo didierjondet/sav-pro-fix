@@ -41,9 +41,19 @@ export function LimitDialogProvider({ children }: LimitDialogProviderProps) {
     const limits = checkLimits(type);
     
     if (!limits.allowed && limits.action) {
+      // Déterminer l'action appropriée selon le type de limite et l'action retournée
+      let dialogAction: 'upgrade_plan' | 'buy_sms_package';
+      
+      if (limits.action === 'contact_support') {
+        // Pour contact_support, déterminer selon le type de limite
+        dialogAction = type === 'sav' ? 'upgrade_plan' : 'buy_sms_package';
+      } else {
+        dialogAction = limits.action as 'upgrade_plan' | 'buy_sms_package';
+      }
+      
       setDialogState({
         isOpen: true,
-        action: limits.action as 'upgrade_plan' | 'buy_sms_package',
+        action: dialogAction,
         reason: limits.reason || 'Limite atteinte'
       });
       return false; // Limite atteinte
