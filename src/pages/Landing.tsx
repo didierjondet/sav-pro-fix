@@ -17,7 +17,6 @@ interface SubscriptionPlan {
   features: string[];
   is_active: boolean;
 }
-
 export default function Landing() {
   const [showDemo, setShowDemo] = useState(false);
   const [subscriptionPlans, setSubscriptionPlans] = useState<SubscriptionPlan[]>([]);
@@ -32,21 +31,17 @@ export default function Landing() {
     title: ''
   });
   const navigate = useNavigate();
-
   useEffect(() => {
     fetchSubscriptionPlans();
   }, []);
-
   const fetchSubscriptionPlans = async () => {
     try {
-      const { data, error } = await supabase
-        .from('subscription_plans')
-        .select('*')
-        .eq('is_active', true)
-        .order('monthly_price');
-
+      const {
+        data,
+        error
+      } = await supabase.from('subscription_plans').select('*').eq('is_active', true).order('monthly_price');
       if (error) throw error;
-      
+
       // Transform data to match our interface
       const transformedPlans = (data || []).map(plan => ({
         ...plan,
@@ -54,7 +49,6 @@ export default function Landing() {
         billing_interval: plan.billing_interval as 'month' | 'year',
         features: Array.isArray(plan.features) ? plan.features.map(f => String(f)) : []
       }));
-      
       setSubscriptionPlans(transformedPlans);
     } catch (error) {
       console.error('Error fetching subscription plans:', error);
@@ -128,9 +122,7 @@ export default function Landing() {
                 <CardTitle>Gestion optimisée</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-gray-600">
-                  Suivez tous vos dossiers SAV en temps réel, gérez votre stock de pièces détachées et optimisez votre planning.
-                </p>
+                <p className="text-gray-600">Suivez tous vos dossiers SAV en temps réel, gérez votre stock de pièces détachées et optimisez vos marges. Que vous facturiez vos Sav ou que ce soit vos propres Sav, à tout moment vous avez une vue sur votre rentabilité !</p>
               </CardContent>
             </Card>
 
@@ -140,21 +132,17 @@ export default function Landing() {
                 <CardTitle>Communication automatique</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-gray-600">
-                  Envoyez automatiquement des SMS et emails à vos clients pour les tenir informés de l'avancement de leur réparation.
-                </p>
+                <p className="text-gray-600">Envoyez automatiquement des SMS ou passez par le fil de discussion avec vos clients pour les tenir informés de l'avancement de leur réparation. Vous pouvez communiquer en temps réel grâce au Qr code que vous leur donnez.</p>
               </CardContent>
             </Card>
 
             <Card className="hover:shadow-lg transition-shadow">
               <CardHeader>
                 <BarChart3 className="h-12 w-12 text-purple-600 mb-4" />
-                <CardTitle>Suivi client en temps réel</CardTitle>
+                <CardTitle>Commandes Automatisée</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-gray-600">
-                  Vos clients accèdent à une timeline détaillée de leur réparation et reçoivent des notifications automatiques.
-                </p>
+                <p className="text-gray-600">Gagnez en efficacité grâce au module qui anticipe les commandes en fonction de vos Sav et de vos stocks.</p>
               </CardContent>
             </Card>
           </div>
@@ -173,29 +161,29 @@ export default function Landing() {
                 <div className="flex items-start">
                   <CheckCircle className="h-6 w-6 text-green-500 mr-3 mt-1" />
                   <div>
-                    <h3 className="font-semibold text-gray-900">Page magasin personnalisée</h3>
-                    <p className="text-gray-600">Configurez vos horaires, coordonnées et liens réseaux sociaux</p>
+                    <h3 className="font-semibold text-gray-900">Page magasin personnalisée (SAV)</h3>
+                    <p className="text-gray-600">Configurez vos horaires, coordonnées</p>
                   </div>
                 </div>
                 <div className="flex items-start">
                   <CheckCircle className="h-6 w-6 text-green-500 mr-3 mt-1" />
                   <div>
                     <h3 className="font-semibold text-gray-900">Notifications automatiques</h3>
-                    <p className="text-gray-600">SMS et emails envoyés automatiquement à chaque étape</p>
+                    <p className="text-gray-600">SMS et/ou fils de discussion envoyés automatiquement à chaque étape</p>
                   </div>
                 </div>
                 <div className="flex items-start">
                   <CheckCircle className="h-6 w-6 text-green-500 mr-3 mt-1" />
                   <div>
                     <h3 className="font-semibold text-gray-900">Gestion des stocks</h3>
-                    <p className="text-gray-600">Suivez vos pièces détachées et recevez des alertes de stock faible</p>
+                    <p className="text-gray-600">Suivez vos pièces détachées et recevez des alertes de stock faible. Importez Exportez vos stock constrisuez votre base de donne prix et temps d'intervention </p>
                   </div>
                 </div>
                 <div className="flex items-start">
                   <CheckCircle className="h-6 w-6 text-green-500 mr-3 mt-1" />
                   <div>
                     <h3 className="font-semibold text-gray-900">Statistiques avancées</h3>
-                    <p className="text-gray-600">Analysez vos performances et optimisez votre activité</p>
+                    <p className="text-gray-600">Analysez vos performances et optimisez votre activité. Mesurez l'efficacité de vos collaborateurs sur les temps de traitement des sav. Vous benéficiez d'un tableau de bord clair et fonctionnel</p>
                   </div>
                 </div>
               </div>
@@ -249,58 +237,37 @@ export default function Landing() {
             </p>
           </div>
 
-          {loading ? (
-            <div className="text-center">
+          {loading ? <div className="text-center">
               <div className="animate-pulse">Chargement des tarifs...</div>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {subscriptionPlans.map((plan, index) => (
-                <Card key={plan.id} className={index === 1 ? 'border-blue-500 shadow-lg' : ''}>
+            </div> : <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {subscriptionPlans.map((plan, index) => <Card key={plan.id} className={index === 1 ? 'border-blue-500 shadow-lg' : ''}>
                   <CardHeader>
                     {index === 1 && <Badge className="mb-2">Populaire</Badge>}
                     <CardTitle>{plan.name}</CardTitle>
                     <div className="text-3xl font-bold">
-                      {plan.monthly_price === 0 ? 'Gratuit' : 
-                        `${plan.monthly_price}€${plan.billing_interval === 'month' ? '/mois' : '/an'}`
-                      }
+                      {plan.monthly_price === 0 ? 'Gratuit' : `${plan.monthly_price}€${plan.billing_interval === 'month' ? '/mois' : '/an'}`}
                     </div>
                   </CardHeader>
                   <CardContent>
-                    {plan.description && (
-                      <p className="text-sm text-gray-600 mb-4">{plan.description}</p>
-                    )}
+                    {plan.description && <p className="text-sm text-gray-600 mb-4">{plan.description}</p>}
                     <ul className="space-y-2 text-sm">
-                      {plan.sav_limit && (
-                        <li>• {plan.sav_limit === 0 ? 'Dossiers SAV illimités' : `Jusqu'à ${plan.sav_limit} dossiers SAV${plan.billing_interval === 'month' ? '/mois' : '/an'}`}</li>
-                      )}
+                      {plan.sav_limit && <li>• {plan.sav_limit === 0 ? 'Dossiers SAV illimités' : `Jusqu'à ${plan.sav_limit} dossiers SAV${plan.billing_interval === 'month' ? '/mois' : '/an'}`}</li>}
                       {!plan.sav_limit && <li>• Dossiers SAV illimités</li>}
                       <li>• {plan.sms_limit} SMS inclus</li>
-                      {plan.features.map((feature, featureIndex) => (
-                        <li key={featureIndex}>• {feature}</li>
-                      ))}
+                      {plan.features.map((feature, featureIndex) => <li key={featureIndex}>• {feature}</li>)}
                     </ul>
-                     <Button 
-                      className="w-full mt-4" 
-                      variant={index === 1 ? 'default' : 'outline'}
-                      onClick={() => {
-                        if (plan.monthly_price > 50) {
-                          window.location.href = `mailto:contact@fixway.fr?subject=Demande de contact pour le plan ${plan.name}&body=Bonjour,%0D%0A%0D%0AJe souhaite obtenir plus d'informations sur le plan ${plan.name}.%0D%0A%0D%0ACordialement`;
-                        } else {
-                          navigate('/auth');
-                        }
-                      }}
-                    >
-                      {plan.monthly_price === 0 ? 'Commencer gratuitement' : 
-                        index === 1 ? `Essayer ${plan.name}` : 
-                        plan.monthly_price > 50 ? 'Nous contacter' : `Choisir ${plan.name}`
-                      }
+                     <Button className="w-full mt-4" variant={index === 1 ? 'default' : 'outline'} onClick={() => {
+                if (plan.monthly_price > 50) {
+                  window.location.href = `mailto:contact@fixway.fr?subject=Demande de contact pour le plan ${plan.name}&body=Bonjour,%0D%0A%0D%0AJe souhaite obtenir plus d'informations sur le plan ${plan.name}.%0D%0A%0D%0ACordialement`;
+                } else {
+                  navigate('/auth');
+                }
+              }}>
+                      {plan.monthly_price === 0 ? 'Commencer gratuitement' : index === 1 ? `Essayer ${plan.name}` : plan.monthly_price > 50 ? 'Nous contacter' : `Choisir ${plan.name}`}
                     </Button>
                   </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
+                </Card>)}
+            </div>}
         </div>
       </section>
 
@@ -325,34 +292,25 @@ export default function Landing() {
           <div className="text-center text-gray-400">
             <p>&copy; 2024 SAV Pro. Tous droits réservés.</p>
             <div className="flex justify-center gap-6 mt-4 text-sm">
-              <button 
-                onClick={() => setLegalDialog({
-                  isOpen: true,
-                  type: 'cgu_content',
-                  title: 'Conditions Générales d\'Utilisation'
-                })}
-                className="hover:text-white transition-colors"
-              >
+              <button onClick={() => setLegalDialog({
+              isOpen: true,
+              type: 'cgu_content',
+              title: 'Conditions Générales d\'Utilisation'
+            })} className="hover:text-white transition-colors">
                 Conditions Générales d'Utilisation
               </button>
-              <button 
-                onClick={() => setLegalDialog({
-                  isOpen: true,
-                  type: 'cgv_content',
-                  title: 'Conditions Générales de Vente'
-                })}
-                className="hover:text-white transition-colors"
-              >
+              <button onClick={() => setLegalDialog({
+              isOpen: true,
+              type: 'cgv_content',
+              title: 'Conditions Générales de Vente'
+            })} className="hover:text-white transition-colors">
                 Conditions Générales de Vente
               </button>
-              <button 
-                onClick={() => setLegalDialog({
-                  isOpen: true,
-                  type: 'privacy_policy',
-                  title: 'Politique de Confidentialité'
-                })}
-                className="hover:text-white transition-colors"
-              >
+              <button onClick={() => setLegalDialog({
+              isOpen: true,
+              type: 'privacy_policy',
+              title: 'Politique de Confidentialité'
+            })} className="hover:text-white transition-colors">
                 Politique de Confidentialité
               </button>
             </div>
@@ -364,11 +322,9 @@ export default function Landing() {
       </footer>
 
       {/* Legal Document Dialog */}
-      <LegalDocumentDialog
-        type={legalDialog.type}
-        title={legalDialog.title}
-        isOpen={legalDialog.isOpen}
-        onClose={() => setLegalDialog(prev => ({ ...prev, isOpen: false }))}
-      />
+      <LegalDocumentDialog type={legalDialog.type} title={legalDialog.title} isOpen={legalDialog.isOpen} onClose={() => setLegalDialog(prev => ({
+      ...prev,
+      isOpen: false
+    }))} />
     </div>;
 }
