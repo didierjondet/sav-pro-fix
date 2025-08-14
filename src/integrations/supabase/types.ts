@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.12 (cd3cf9e)"
@@ -1418,7 +1418,7 @@ export type Database = {
         Returns: Json
       }
       check_subscription_limits_v2: {
-        Args: { p_shop_id: string; p_action?: string }
+        Args: { p_action?: string; p_shop_id: string }
         Returns: Json
       }
       create_profile_only: {
@@ -1435,9 +1435,9 @@ export type Database = {
       create_real_user_for_shop: {
         Args: {
           p_email: string
-          p_password: string
           p_first_name: string
           p_last_name: string
+          p_password: string
           p_phone: string
           p_role: Database["public"]["Enums"]["user_role"]
           p_shop_id: string
@@ -1447,9 +1447,9 @@ export type Database = {
       create_user_for_shop: {
         Args: {
           p_email: string
-          p_password: string
           p_first_name: string
           p_last_name: string
+          p_password: string
           p_phone: string
           p_role: Database["public"]["Enums"]["user_role"]
           p_shop_id: string
@@ -1459,9 +1459,9 @@ export type Database = {
       create_user_with_profile: {
         Args: {
           p_email: string
-          p_password: string
           p_first_name: string
           p_last_name: string
+          p_password: string
           p_phone: string
           p_role: Database["public"]["Enums"]["user_role"]
           p_shop_id: string
@@ -1504,21 +1504,21 @@ export type Database = {
         Args: { p_tracking_slug: string }
         Returns: {
           case_number: string
-          status: Database["public"]["Enums"]["sav_status"]
+          created_at: string
+          customer_first_name: string
           device_brand: string
           device_model: string
-          created_at: string
+          status: Database["public"]["Enums"]["sav_status"]
           total_cost: number
-          customer_first_name: string
         }[]
       }
       get_tracking_messages: {
         Args: { p_tracking_slug: string }
         Returns: {
-          sender_type: string
-          sender_name: string
-          message: string
           created_at: string
+          message: string
+          sender_name: string
+          sender_type: string
         }[]
       }
       invite_user_to_shop: {
