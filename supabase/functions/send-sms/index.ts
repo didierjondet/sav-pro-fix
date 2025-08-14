@@ -72,10 +72,10 @@ async function sendTwilioSMS(to: string, body: string): Promise<any> {
 }
 
 async function checkSMSCredits(shopId: string): Promise<boolean> {
-  // Vérifier les crédits SMS de la boutique
+  // Vérifier les crédits SMS de la boutique avec les limites personnalisées
   const { data: shop, error } = await supabase
     .from('shops')
-    .select('sms_credits_used, sms_credits_allocated')
+    .select('sms_credits_used, sms_credits_allocated, custom_sms_limit, subscription_forced')
     .eq('id', shopId)
     .single();
 
@@ -84,7 +84,16 @@ async function checkSMSCredits(shopId: string): Promise<boolean> {
     return false;
   }
 
-  return shop.sms_credits_used < shop.sms_credits_allocated;
+  // Si l'abonnement est forcé, autoriser l'envoi
+  if (shop.subscription_forced) {
+    return true;
+  }
+
+  // Utiliser la limite personnalisée en priorité, sinon la limite allouée
+  const smsLimit = shop.custom_sms_limit || shop.sms_credits_allocated;
+  console.log(`Vérification SMS: ${shop.sms_credits_used}/${smsLimit} (custom: ${shop.custom_sms_limit})`);
+  
+  return shop.sms_credits_used < smsLimit;
 }
 
 async function updateSMSCredits(shopId: string): Promise<void> {
