@@ -1,8 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { MessageSquare } from 'lucide-react';
 import { useSMS } from '@/hooks/useSMS';
 import { useLimitDialogContext } from '@/contexts/LimitDialogContext';
+import { generateShortTrackingUrl } from '@/utils/trackingUtils';
+import { supabase } from '@/integrations/supabase/client';
 import {
   Dialog,
   DialogContent,
@@ -43,8 +45,27 @@ export function SMSButton({
   const [customMessage, setCustomMessage] = useState('');
   const [customPhone, setCustomPhone] = useState(customerPhone || '');
   const [useCustomMessage, setUseCustomMessage] = useState(false);
+  const [trackingSlug, setTrackingSlug] = useState<string>('');
   const { sendSMS, sendSAVNotification, sendQuoteNotification, loading } = useSMS();
   const { checkAndShowLimitDialog } = useLimitDialogContext();
+
+  // Récupérer le tracking_slug si c'est un SAV
+  useEffect(() => {
+    if (caseId) {
+      const fetchTrackingSlug = async () => {
+        const { data } = await supabase
+          .from('sav_cases')
+          .select('tracking_slug')
+          .eq('id', caseId)
+          .single();
+        
+        if (data?.tracking_slug) {
+          setTrackingSlug(data.tracking_slug);
+        }
+      };
+      fetchTrackingSlug();
+    }
+  }, [caseId]);
 
   const handleOpenDialog = async () => {
     // Vérifier les limites SMS dès l'ouverture
@@ -62,8 +83,14 @@ export function SMSButton({
     let success = false;
 
     if (useCustomMessage && customMessage.trim()) {
-      // Ajouter l'avertissement aux messages personnalisés
-      const smsWarning = "\n\n⚠️ Ne répondez pas à ce SMS. Contactez-nous directement pour toute question.";
+      // Ajouter l'avertissement aux messages personnalisés avec lien SAV si disponible
+      const shortUrl = trackingSlug ? generateShortTrackingUrl(trackingSlug) : '';
+      let smsWarning = "\n\n⚠️ Ne répondez pas à ce SMS.";
+      if (shortUrl) {
+        smsWarning += ` Pour échanger avec nous, consultez votre SAV : ${shortUrl}`;
+      } else {
+        smsWarning += " Contactez-nous directement pour toute question.";
+      }
       const messageWithWarning = customMessage + smsWarning;
       
       // Envoi d'un message personnalisé
@@ -100,11 +127,16 @@ export function SMSButton({
   };
 
   const getDefaultMessage = () => {
+    const shortUrl = trackingSlug ? generateShortTrackingUrl(trackingSlug) : '';
+    const smsWarning = shortUrl ? 
+      `\n\n⚠️ Ne répondez pas à ce SMS. Pour échanger avec nous, consultez votre SAV : ${shortUrl}` :
+      "\n\n⚠️ Ne répondez pas à ce SMS. Contactez-nous directement pour toute question.";
+    
     if (caseNumber) {
-      return `Bonjour ${customerName || 'Client'}, nous vous informons que votre dossier SAV ${caseNumber} a été mis à jour. Nous vous tiendrons informé de l'avancement.`;
+      return `Bonjour ${customerName || 'Client'}, votre dossier SAV ${caseNumber} a été mis à jour.${smsWarning}`;
     }
     if (quoteNumber) {
-      return `Bonjour ${customerName || 'Client'}, votre devis ${quoteNumber} est prêt ! Consultez-le en ligne ou contactez-nous pour plus d'informations.`;
+      return `Bonjour ${customerName || 'Client'}, votre devis ${quoteNumber} est prêt ! Consultez-le en ligne ou contactez-nous.${smsWarning}`;
     }
     return '';
   };
