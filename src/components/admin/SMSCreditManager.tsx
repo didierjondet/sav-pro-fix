@@ -15,6 +15,7 @@ interface Shop {
   sms_credits_allocated: number;
   sms_credits_used: number;
   subscription_tier: string;
+  purchased_sms: number;
 }
 
 interface SMSCreditManagerProps {
@@ -49,6 +50,19 @@ export function SMSCreditManager({ shops, onUpdate }: SMSCreditManagerProps) {
         .single();
 
       if (fetchError) throw fetchError;
+
+      // Ajouter à la table des achats SMS pour refléter l'allocation manuelle
+      const { error: purchaseError } = await supabase
+        .from('sms_package_purchases')
+        .insert({
+          shop_id: shopId,
+          package_id: '00000000-0000-0000-0000-000000000000', // ID spécial pour allocations manuelles
+          sms_count: credits,
+          price_paid_cents: 0,
+          status: 'completed'
+        });
+
+      if (purchaseError) throw purchaseError;
 
       const { error } = await supabase
         .from('shops')
@@ -165,17 +179,20 @@ export function SMSCreditManager({ shops, onUpdate }: SMSCreditManagerProps) {
                 <TableHead>Boutique</TableHead>
                 <TableHead>Plan</TableHead>
                 <TableHead>Crédits Alloués</TableHead>
+                <TableHead>SMS Achetés</TableHead>
+                <TableHead>Total Disponible</TableHead>
                 <TableHead>Crédits Utilisés</TableHead>
-                <TableHead>Utilisation</TableHead>
+                <TableHead>Restants</TableHead>
                 <TableHead>Ajouter Crédits</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {shops.map((shop) => {
-                const remainingCredits = shop.sms_credits_allocated - shop.sms_credits_used;
-                const usagePercentage = shop.sms_credits_allocated > 0 
-                  ? Math.round((shop.sms_credits_used / shop.sms_credits_allocated) * 100)
+                const totalAvailable = shop.sms_credits_allocated + shop.purchased_sms;
+                const remainingCredits = totalAvailable - shop.sms_credits_used;
+                const usagePercentage = totalAvailable > 0 
+                  ? Math.round((shop.sms_credits_used / totalAvailable) * 100)
                   : 0;
 
                 return (
@@ -187,16 +204,19 @@ export function SMSCreditManager({ shops, onUpdate }: SMSCreditManagerProps) {
                       </Badge>
                     </TableCell>
                     <TableCell>{shop.sms_credits_allocated}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline">{shop.purchased_sms}</Badge>
+                    </TableCell>
+                    <TableCell className="font-semibold">{totalAvailable}</TableCell>
                     <TableCell>{shop.sms_credits_used}</TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Badge variant={getUsageColor(shop.sms_credits_used, shop.sms_credits_allocated)}>
-                          {remainingCredits} restants
-                        </Badge>
-                        <span className="text-sm text-muted-foreground">
-                          ({usagePercentage}%)
-                        </span>
-                      </div>
+                      <Badge variant={remainingCredits < 0 ? "destructive" : 
+                                   remainingCredits < 5 ? "secondary" : "default"}>
+                        {remainingCredits}
+                      </Badge>
+                      <span className="text-sm text-muted-foreground ml-2">
+                        ({usagePercentage}%)
+                      </span>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">

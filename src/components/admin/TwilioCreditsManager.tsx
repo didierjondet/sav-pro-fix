@@ -9,7 +9,7 @@ import { RefreshCw, CreditCard, Zap, RotateCcw, AlertCircle } from 'lucide-react
 import { useTwilioCredits } from '@/hooks/useTwilioCredits';
 import { useGlobalSMSCredits } from '@/hooks/useGlobalSMSCredits';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { ShopSMSCreditsManager } from './ShopSMSCreditsManager';
+
 
 export function TwilioCreditsManager() {
   const { balance, loading, purchasing, fetchTwilioBalance, purchaseCredits, syncCreditsWithShops } = useTwilioCredits();
@@ -40,8 +40,6 @@ export function TwilioCreditsManager() {
 
   return (
     <div className="space-y-6">
-      {/* Gestionnaire des crédits par magasin */}
-      <ShopSMSCreditsManager />
       
       <Card>
         <CardHeader>
