@@ -132,7 +132,9 @@ export default function Landing() {
                 <CardTitle>Communication automatique</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-gray-600">Envoyez automatiquement des SMS ou passez par le fil de discussion avec vos clients pour les tenir informés de l'avancement de leur réparation. Vous pouvez communiquer en temps réel grâce au Qr code que vous leur donnez.</p>
+                <p className="text-gray-600">Rassurez vos clients !
+Envoyez automatiquement des SMS ou passez par le fil de discussion pour les tenir informés de l'avancement de leur réparation. Vous pouvez communiquer en temps réel grâce au Qr code que vous leur donnez.
+Achetez vos sms selon vos besoins</p>
               </CardContent>
             </Card>
 
@@ -169,14 +171,14 @@ export default function Landing() {
                   <CheckCircle className="h-6 w-6 text-green-500 mr-3 mt-1" />
                   <div>
                     <h3 className="font-semibold text-gray-900">Notifications automatiques</h3>
-                    <p className="text-gray-600">SMS et/ou fils de discussion envoyés automatiquement à chaque étape</p>
+                    <p className="text-gray-600">SMS et/ou fils de discussion envoyés automatiquement à chaque étape, ne recevez plus de coups de téléphones intempestifs !</p>
                   </div>
                 </div>
                 <div className="flex items-start">
                   <CheckCircle className="h-6 w-6 text-green-500 mr-3 mt-1" />
                   <div>
                     <h3 className="font-semibold text-gray-900">Gestion des stocks</h3>
-                    <p className="text-gray-600">Suivez vos pièces détachées et recevez des alertes de stock faible. Importez Exportez vos stock constrisuez votre base de donne prix et temps d'intervention </p>
+                    <p className="text-gray-600">Suivez vos pièces détachées et recevez des alertes de stock faible. Importez Exportez vos stock constrisuez votre base de donnée prix et temps d'intervention. </p>
                   </div>
                 </div>
                 <div className="flex items-start">
