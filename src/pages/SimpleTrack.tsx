@@ -221,7 +221,9 @@ export default function SimpleTrack() {
 
     setIsSendingMessage(true);
     try {
-      await sendMessage(newMessage, clientName || 'Client', 'client');
+      // Utiliser le nom du client du SAV
+      const customerName = savCase?.customer?.first_name || 'Client';
+      await sendMessage(newMessage, customerName, 'client');
       setNewMessage('');
       toast({
         title: "Message envoyé",
@@ -453,12 +455,6 @@ export default function SimpleTrack() {
 
               {/* Zone de saisie */}
               <div className="space-y-3">
-                <Input
-                  placeholder="Votre nom (optionnel)"
-                  value={clientName}
-                  onChange={(e) => setClientName(e.target.value)}
-                  className="text-sm"
-                />
                 <div className="flex gap-2">
                   <Textarea
                     placeholder="Tapez votre message..."

@@ -42,6 +42,30 @@ export function useSAVTrackingMessages(trackingSlug?: string) {
 
   useEffect(() => {
     fetchMessages();
+
+    // Setup real-time subscription for messages
+    if (trackingSlug) {
+      const channel = supabase
+        .channel(`tracking-messages-${trackingSlug}`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'sav_messages',
+            filter: `sav_case_id=in.(select id from sav_cases where tracking_slug='${trackingSlug}')`
+          },
+          () => {
+            console.log('Real-time message update detected');
+            fetchMessages();
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
   }, [trackingSlug]);
 
   const sendMessage = async (message: string, senderName: string, senderType: 'client' | 'shop' = 'client') => {

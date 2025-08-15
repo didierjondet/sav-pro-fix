@@ -132,21 +132,23 @@ export function useSMS() {
     const shortTrackingUrl = savCase?.tracking_slug ? generateShortTrackingUrl(savCase.tracking_slug) : '';
     let message = '';
     
+    const smsWarning = "\n\n⚠️ Ne répondez pas à ce SMS. Pour communiquer avec nous, utilisez votre espace SAV via le lien ci-dessus.";
+    
     switch (status) {
       case 'in_progress':
-        message = `Bonjour ${customerName}, votre dossier SAV ${caseNumber} est maintenant en cours de réparation. Suivi : ${shortTrackingUrl}`;
+        message = `Bonjour ${customerName}, votre dossier SAV ${caseNumber} est maintenant en cours de réparation. Suivi : ${shortTrackingUrl}${smsWarning}`;
         break;
       case 'waiting_parts':
-        message = `Bonjour ${customerName}, votre dossier SAV ${caseNumber} est en attente de pièces. Suivi : ${shortTrackingUrl}`;
+        message = `Bonjour ${customerName}, votre dossier SAV ${caseNumber} est en attente de pièces. Suivi : ${shortTrackingUrl}${smsWarning}`;
         break;
       case 'ready_for_pickup':
-        message = `Bonjour ${customerName}, votre appareil (dossier ${caseNumber}) est prêt ! Vous pouvez venir le récupérer. Suivi : ${shortTrackingUrl}`;
+        message = `Bonjour ${customerName}, votre appareil (dossier ${caseNumber}) est prêt ! Vous pouvez venir le récupérer. Suivi : ${shortTrackingUrl}${smsWarning}`;
         break;
       case 'delivered':
-        message = `Bonjour ${customerName}, merci d'avoir fait confiance à nos services pour votre dossier SAV ${caseNumber}. Suivi : ${shortTrackingUrl}`;
+        message = `Bonjour ${customerName}, merci d'avoir fait confiance à nos services pour votre dossier SAV ${caseNumber}. Suivi : ${shortTrackingUrl}${smsWarning}`;
         break;
       default:
-        message = `Bonjour ${customerName}, le statut de votre dossier SAV ${caseNumber} a été mis à jour. Suivi : ${shortTrackingUrl}`;
+        message = `Bonjour ${customerName}, le statut de votre dossier SAV ${caseNumber} a été mis à jour. Suivi : ${shortTrackingUrl}${smsWarning}`;
     }
 
     return await sendSMS({
@@ -163,7 +165,8 @@ export function useSMS() {
     quoteNumber: string,
     quoteId: string
   ): Promise<boolean> => {
-    const message = `Bonjour ${customerName}, votre devis ${quoteNumber} est prêt ! Consultez-le en ligne ou contactez-nous pour plus d'informations.`;
+    const smsWarning = "\n\n⚠️ Ne répondez pas à ce SMS. Contactez-nous directement pour toute question.";
+    const message = `Bonjour ${customerName}, votre devis ${quoteNumber} est prêt ! Consultez-le en ligne ou contactez-nous pour plus d'informations.${smsWarning}`;
 
     return await sendSMS({
       toNumber: customerPhone,

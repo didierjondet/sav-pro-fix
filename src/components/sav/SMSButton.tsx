@@ -62,10 +62,14 @@ export function SMSButton({
     let success = false;
 
     if (useCustomMessage && customMessage.trim()) {
+      // Ajouter l'avertissement aux messages personnalisés
+      const smsWarning = "\n\n⚠️ Ne répondez pas à ce SMS. Contactez-nous directement pour toute question.";
+      const messageWithWarning = customMessage + smsWarning;
+      
       // Envoi d'un message personnalisé
       success = await sendSMS({
         toNumber: customPhone,
-        message: customMessage,
+        message: messageWithWarning,
         type: 'manual',
         recordId: caseId, // Passer l'ID du SAV pour l'archivage
       });

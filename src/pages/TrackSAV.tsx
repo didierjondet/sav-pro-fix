@@ -164,14 +164,15 @@ export default function TrackSAV() {
   };
 
   const handleSendMessage = async () => {
-    if (!newMessage.trim() || !clientName.trim() || !savCase) return;
+    if (!newMessage.trim()) return;
     
     setSending(true);
-    const result = await sendMessage(newMessage.trim(), clientName.trim(), 'client');
+    // Utiliser le nom du client du SAV
+    const customerName = savCase?.customer?.first_name || 'Client';
+    const result = await sendMessage(newMessage.trim(), customerName, 'client');
     
     if (result?.data) {
       setNewMessage('');
-      refetchMessages();
     }
     setSending(false);
   };
@@ -375,11 +376,6 @@ export default function TrackSAV() {
             </ScrollArea>
 
             <div className="space-y-2">
-              <Input
-                placeholder="Votre nom"
-                value={clientName}
-                onChange={(e) => setClientName(e.target.value)}
-              />
               <Textarea
                 placeholder="Tapez votre message ici..."
                 value={newMessage}
@@ -389,7 +385,7 @@ export default function TrackSAV() {
               <div className="flex justify-end">
                 <Button
                   onClick={handleSendMessage}
-                  disabled={!newMessage.trim() || !clientName.trim() || sending}
+                  disabled={!newMessage.trim() || sending}
                   size="sm"
                 >
                   <Send className="h-4 w-4 mr-2" />
