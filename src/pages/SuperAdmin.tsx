@@ -101,6 +101,7 @@ interface Shop {
   active_sav_count: number;
   subscription_menu_visible: boolean;
   created_at: string;
+  purchased_sms: number;
   total_users?: number;
   total_sav_cases?: number;
   pending_cases?: number;
@@ -240,6 +241,14 @@ export default function SuperAdmin() {
 
       if (shopsError) throw shopsError;
 
+      // Fetch SMS purchases for each shop
+      const { data: smsPurchases, error: smsPurchasesError } = await supabase
+        .from('sms_package_purchases')
+        .select('shop_id, sms_count')
+        .eq('status', 'completed');
+
+      if (smsPurchasesError) throw smsPurchasesError;
+
       // Fetch profiles count for each shop
       const { data: profilesCount, error: profilesCountError } = await supabase
         .from('profiles')
@@ -264,9 +273,12 @@ export default function SuperAdmin() {
       const shopsWithStats = shopsData?.map(shop => {
         const shopProfiles = profilesCount?.filter(p => p.shop_id === shop.id) || [];
         const shopSavCases = savCasesData?.filter(sc => sc.shop_id === shop.id) || [];
+        const shopSMSPurchases = smsPurchases?.filter(sp => sp.shop_id === shop.id) || [];
+        const purchasedSMS = shopSMSPurchases.reduce((sum, purchase) => sum + purchase.sms_count, 0);
         
         return {
           ...shop,
+          purchased_sms: purchasedSMS,
           total_users: shopProfiles.length,
           total_sav_cases: shopSavCases.length,
           pending_cases: shopSavCases.filter(c => c.status === 'pending').length,
@@ -346,7 +358,7 @@ export default function SuperAdmin() {
 
       if (error) throw error;
 
-      setShops([...shops, data]);
+      setShops([...shops, { ...data, purchased_sms: 0 }]);
       setIsCreateShopOpen(false);
       setNewShop({ name: '', email: '', phone: '', address: '' });
       
