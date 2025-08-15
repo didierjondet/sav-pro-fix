@@ -1,5 +1,6 @@
 import { Quote } from '@/hooks/useQuotes';
 import { Shop } from '@/hooks/useShop';
+import { SAVCase } from '@/hooks/useSAVCases';
 
 export const generateQuotePDF = (quote: Quote, shop?: Shop) => {
   // Créer le contenu HTML du PDF
@@ -205,5 +206,374 @@ const getStatusText = (status: string) => {
     case 'rejected': return 'Refusé';
     case 'expired': return 'Expiré';
     default: return status;
+  }
+};
+
+export const generateSAVRestitutionPDF = async (savCase: SAVCase, shop?: Shop): Promise<string | null> => {
+  try {
+    // Créer le contenu HTML du document de restitution
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>Document de Restitution SAV ${savCase.case_number}</title>
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+            line-height: 1.6;
+          }
+          .shop-header {
+            text-align: left;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #0066cc;
+            padding-bottom: 20px;
+          }
+          .shop-logo {
+            max-height: 80px;
+            max-width: 200px;
+            object-fit: contain;
+            margin-bottom: 10px;
+          }
+          .shop-name {
+            font-size: 24px;
+            font-weight: bold;
+            color: #0066cc;
+            margin: 0;
+          }
+          .shop-contact {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+          }
+          .document-header {
+            text-align: center;
+            margin-bottom: 30px;
+          }
+          .document-title {
+            font-size: 28px;
+            font-weight: bold;
+            color: #0066cc;
+            margin-bottom: 10px;
+          }
+          .case-info {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            border-left: 4px solid #0066cc;
+          }
+          .case-info h3 {
+            margin-top: 0;
+            color: #0066cc;
+          }
+          .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+          }
+          .info-item {
+            display: flex;
+            flex-direction: column;
+          }
+          .info-label {
+            font-weight: bold;
+            color: #333;
+            font-size: 12px;
+            text-transform: uppercase;
+            margin-bottom: 2px;
+          }
+          .info-value {
+            font-size: 14px;
+            color: #666;
+          }
+          .parts-section {
+            margin-bottom: 30px;
+          }
+          .section-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #0066cc;
+            margin-bottom: 15px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #ddd;
+          }
+          .parts-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+          }
+          .parts-table th,
+          .parts-table td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+          }
+          .parts-table th {
+            background-color: #0066cc;
+            color: white;
+            font-weight: bold;
+          }
+          .parts-table .text-center {
+            text-align: center;
+          }
+          .parts-table .text-right {
+            text-align: right;
+          }
+          .total-section {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            border: 2px solid #0066cc;
+            margin-bottom: 30px;
+          }
+          .total-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 16px;
+          }
+          .total-final {
+            font-size: 20px;
+            font-weight: bold;
+            color: #0066cc;
+            border-top: 2px solid #0066cc;
+            padding-top: 10px;
+            margin-top: 10px;
+          }
+          .takeover-info {
+            background-color: #e8f5e8;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #28a745;
+          }
+          .no-charge-info {
+            background-color: #fff3cd;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #ffc107;
+            text-align: center;
+          }
+          .footer {
+            margin-top: 40px;
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+            border-top: 1px solid #ddd;
+            padding-top: 20px;
+          }
+          .signature-section {
+            margin-top: 40px;
+            display: flex;
+            justify-content: space-between;
+          }
+          .signature-box {
+            width: 45%;
+            text-align: center;
+          }
+          .signature-line {
+            border-bottom: 1px solid #333;
+            height: 60px;
+            margin-bottom: 10px;
+          }
+          @media print {
+            body { margin: 0; padding: 15px; }
+            .no-print { display: none; }
+          }
+        </style>
+      </head>
+      <body>
+        ${shop ? `
+          <div class="shop-header">
+            ${shop.logo_url ? `<img src="${shop.logo_url}" alt="${shop.name}" class="shop-logo">` : ''}
+            <h1 class="shop-name">${shop.name}</h1>
+            <div class="shop-contact">
+              ${shop.address ? `${shop.address}<br>` : ''}
+              ${shop.phone ? `Tél: ${shop.phone}` : ''}
+              ${shop.email ? ` - Email: ${shop.email}` : ''}
+            </div>
+          </div>
+        ` : ''}
+        
+        <div class="document-header">
+          <div class="document-title">DOCUMENT DE RESTITUTION</div>
+          <p>Date: ${new Date().toLocaleDateString('fr-FR')}</p>
+        </div>
+        
+        <div class="case-info">
+          <h3>Informations du dossier</h3>
+          <div class="info-grid">
+            <div class="info-item">
+              <span class="info-label">Numéro de dossier</span>
+              <span class="info-value">${savCase.case_number}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Date de création</span>
+              <span class="info-value">${new Date(savCase.created_at).toLocaleDateString('fr-FR')}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Client</span>
+              <span class="info-value">${savCase.customer ? `${savCase.customer.first_name} ${savCase.customer.last_name}` : 'Non renseigné'}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Appareil</span>
+              <span class="info-value">${savCase.device_brand} ${savCase.device_model}</span>
+            </div>
+          </div>
+          ${savCase.device_imei ? `
+            <div class="info-item">
+              <span class="info-label">IMEI</span>
+              <span class="info-value">${savCase.device_imei}</span>
+            </div>
+          ` : ''}
+        </div>
+
+        <div class="parts-section">
+          <h3 class="section-title">Détail de l'intervention</h3>
+          
+          ${savCase.problem_description ? `
+            <div style="margin-bottom: 20px;">
+              <strong>Problème signalé :</strong>
+              <p style="margin: 5px 0; padding: 10px; background-color: #f8f9fa; border-radius: 4px;">
+                ${savCase.problem_description}
+              </p>
+            </div>
+          ` : ''}
+
+          ${savCase.repair_notes ? `
+            <div style="margin-bottom: 20px;">
+              <strong>Notes de réparation :</strong>
+              <p style="margin: 5px 0; padding: 10px; background-color: #f8f9fa; border-radius: 4px;">
+                ${savCase.repair_notes}
+              </p>
+            </div>
+          ` : ''}
+
+          ${(savCase as any).sav_parts && (savCase as any).sav_parts.length > 0 ? `
+            <h4>Pièces remplacées :</h4>
+            <table class="parts-table">
+              <thead>
+                <tr>
+                  <th style="width: 40%;">Pièce</th>
+                  <th style="width: 15%;" class="text-center">Quantité</th>
+                  <th style="width: 20%;" class="text-right">Prix unitaire</th>
+                  <th style="width: 15%;" class="text-right">Temps (min)</th>
+                  <th style="width: 15%;" class="text-right">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${(savCase as any).sav_parts.map((part: any) => `
+                  <tr>
+                    <td>
+                      <strong>${part.parts?.name || 'Pièce inconnue'}</strong>
+                      ${part.parts?.reference ? `<br><small>Réf: ${part.parts.reference}</small>` : ''}
+                    </td>
+                    <td class="text-center">${part.quantity}</td>
+                    <td class="text-right">${(part.unit_price || 0).toFixed(2)}€</td>
+                    <td class="text-center">${part.time_minutes || 0}</td>
+                    <td class="text-right">${((part.unit_price || 0) * part.quantity).toFixed(2)}€</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          ` : `
+            <p style="text-align: center; color: #666; font-style: italic; padding: 20px;">
+              Aucune pièce remplacée lors de cette intervention
+            </p>
+          `}
+        </div>
+
+        <div class="total-section">
+          <div class="total-row">
+            <span>Sous-total pièces et main d'œuvre :</span>
+            <span>${(savCase.total_cost || 0).toFixed(2)}€</span>
+          </div>
+          
+          ${(savCase as any).taken_over ? `
+            <div class="takeover-info">
+              <strong>Prise en charge :</strong>
+              ${(savCase as any).partial_takeover ? `
+                <div>Prise en charge partielle de ${((savCase as any).takeover_amount || 0).toFixed(2)}€</div>
+                <div>Montant restant à la charge du client : ${((savCase.total_cost || 0) - ((savCase as any).takeover_amount || 0)).toFixed(2)}€</div>
+              ` : `
+                <div>Prise en charge totale - Aucun coût pour le client</div>
+              `}
+            </div>
+          ` : ''}
+          
+          <div class="total-final">
+            <div class="total-row">
+              <span>TOTAL À RÉGLER :</span>
+              <span>${(savCase as any).taken_over ? 
+                ((savCase as any).partial_takeover ? 
+                  ((savCase.total_cost || 0) - ((savCase as any).takeover_amount || 0)).toFixed(2) : 
+                  '0.00'
+                ) : 
+                (savCase.total_cost || 0).toFixed(2)
+              }€</span>
+            </div>
+          </div>
+          
+          ${(((savCase as any).taken_over && !(savCase as any).partial_takeover) || (savCase.total_cost || 0) === 0) ? `
+            <div class="no-charge-info">
+              <h4 style="margin: 0; color: #856404;">INTERVENTION GRATUITE</h4>
+              <p style="margin: 5px 0 0 0; font-size: 14px;">
+                ${(savCase as any).taken_over ? 'Prise en charge totale par le magasin' : 'Aucun frais appliqué pour cette intervention'}
+              </p>
+            </div>
+          ` : ''}
+        </div>
+
+        <div class="signature-section">
+          <div class="signature-box">
+            <div class="signature-line"></div>
+            <p><strong>Signature du client</strong><br>
+            <small>Bon pour accord et réception</small></p>
+          </div>
+          <div class="signature-box">
+            <div class="signature-line"></div>
+            <p><strong>Signature du technicien</strong><br>
+            <small>${shop?.name || 'Magasin'}</small></p>
+          </div>
+        </div>
+
+        <div class="footer">
+          <p>Document généré le ${new Date().toLocaleDateString('fr-FR')} à ${new Date().toLocaleTimeString('fr-FR')}</p>
+          <p style="font-size: 10px; margin-top: 10px;">Propulsé par <strong>FixWay Pro</strong></p>
+        </div>
+      </body>
+      </html>
+    `;
+
+    // Créer une nouvelle fenêtre pour l'impression
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(htmlContent);
+      printWindow.document.close();
+      
+      // Attendre que le contenu soit chargé avant d'imprimer
+      printWindow.onload = () => {
+        printWindow.print();
+        // Fermer la fenêtre après l'impression (optionnel)
+        printWindow.onafterprint = () => {
+          printWindow.close();
+        };
+      };
+      
+      // Retourner une URL factice pour l'archivage (dans un vrai projet, on sauvegarderait le PDF)
+      const documentUrl = `${window.location.origin}/sav-documents/${savCase.case_number}-restitution.pdf`;
+      return documentUrl;
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('Erreur lors de la génération du PDF de restitution:', error);
+    return null;
   }
 };

@@ -16,6 +16,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Settings, Save, MessageSquare, AlertTriangle, CreditCard, Euro } from 'lucide-react';
 import { SMSButton } from '@/components/sav/SMSButton';
+import { SAVCloseDialog } from './SAVCloseDialog';
+import { useShop } from '@/hooks/useShop';
 
 interface SAVStatusManagerProps {
   savCase: {
@@ -75,8 +77,12 @@ export function SAVStatusManager({ savCase, onStatusUpdated }: SAVStatusManagerP
   // État pour les limites SMS
   const [limits, setLimits] = useState<{ allowed: boolean; reason: string; action: string | null }>({ allowed: true, reason: '', action: null });
   
+  // État pour le dialog de clôture SAV
+  const [showCloseDialog, setShowCloseDialog] = useState(false);
+  
   const { updateCaseStatus } = useSAVCases();
   const { subscription, checkLimits } = useSubscription();
+  const { shop } = useShop();
   const { toast } = useToast();
 
   // Charger les limites SMS au montage
@@ -91,6 +97,13 @@ export function SAVStatusManager({ savCase, onStatusUpdated }: SAVStatusManagerP
   };
 
   const handleUpdateStatus = async (sendSMS = false) => {
+    // Si on passe au statut "ready", montrer le dialog de clôture
+    if (selectedStatus === 'ready' && savCase.status !== 'ready') {
+      setShowCloseDialog(true);
+      return;
+    }
+    
+    // Logique normale pour les autres statuts
     if (selectedStatus === savCase.status && !notes.trim()) return;
     
     setUpdating(true);
@@ -152,6 +165,32 @@ export function SAVStatusManager({ savCase, onStatusUpdated }: SAVStatusManagerP
       setUpdating(false);
       setShowSMSDialog(false);
       setPendingStatusData(null);
+    }
+  };
+
+  const handleCloseConfirm = async () => {
+    setShowCloseDialog(false);
+    setUpdating(true);
+    
+    try {
+      await updateCaseStatus(savCase.id, 'ready', notes.trim() || undefined);
+      
+      // Envoi automatique de demande d'avis si c'est activé
+      if (savCase.sav_type === 'client' || savCase.sav_type === 'external') {
+        await sendAutomaticReviewRequest();
+      }
+      
+      setNotes('');
+      setSelectedStatus('ready');
+      onStatusUpdated?.();
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setUpdating(false);
     }
   };
 
@@ -599,6 +638,15 @@ L'équipe ${shopData.name || 'de réparation'}`;
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Dialog de clôture SAV avec génération de document */}
+        <SAVCloseDialog
+          isOpen={showCloseDialog}
+          onClose={() => setShowCloseDialog(false)}
+          onConfirm={handleCloseConfirm}
+          savCase={savCase as any}
+          shop={shop}
+        />
       </CardContent>
     </Card>
   );
