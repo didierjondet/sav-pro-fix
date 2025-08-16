@@ -179,7 +179,10 @@ const handleStatusChange = async (quote: Quote, newStatus: Quote['status']) => {
       // helper: récupérer ou créer le client pour lier le SAV
       const getOrCreateCustomerId = async (): Promise<string | null> => {
         const existingId = (quoteToConvert as any).customer_id as string | null | undefined;
-        if (existingId) return existingId;
+        // Only use existing ID if it's a valid UUID format, not a temporary custom ID
+        if (existingId && existingId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+          return existingId;
+        }
         if (!shop?.id) return null;
 
         // Tenter de retrouver par email dans la boutique
