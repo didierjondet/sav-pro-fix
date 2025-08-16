@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { useQuotes, Quote } from '@/hooks/useQuotes';
 import { useShop } from '@/hooks/useShop';
+import { useSAVCases } from '@/hooks/useSAVCases';
 import { QuoteForm } from '@/components/quotes/QuoteForm';
 import { QuoteView } from '@/components/quotes/QuoteView';
 import { generateQuotePDF } from '@/utils/pdfGenerator';
@@ -49,6 +50,7 @@ export default function Quotes() {
   const [quoteToConvert, setQuoteToConvert] = useState<Quote | null>(null);
   const [editingQuote, setEditingQuote] = useState<Quote | null>(null);
   const { quotes, loading, createQuote, deleteQuote, updateQuote } = useQuotes();
+  const { createCase } = useSAVCases();
   const { shop } = useShop();
   const { toast } = useToast();
 
@@ -222,30 +224,25 @@ const handleStatusChange = async (quote: Quote, newStatus: Quote['status']) => {
           0
         ) || 0;
 
-      const { data: savCase, error: savError } = await (supabase as any)
-        .from('sav_cases')
-        .insert([
-          {
-            sav_type: type,
-            status: 'pending',
-            device_brand: (quoteToConvert as any).device_brand ? (quoteToConvert as any).device_brand.toUpperCase().trim() : null,
-            device_model: (quoteToConvert as any).device_model ? (quoteToConvert as any).device_model.toUpperCase().trim() : null,
-            device_imei: (quoteToConvert as any).device_imei || null,
-            sku: (quoteToConvert as any).sku || null,
-            problem_description: (quoteToConvert as any).problem_description || `Créé depuis devis ${quoteToConvert.quote_number}`,
-            total_time_minutes: 0,
-            total_cost: totalPublic,
-            shop_id: shop?.id ?? null,
-            customer_id: customerId,
-            attachments: (quoteToConvert as any).attachments || [],
-          },
-        ])
-        .select('id')
-        .maybeSingle();
+      const savCaseData = {
+        sav_type: type,
+        status: 'pending',
+        device_brand: (quoteToConvert as any).device_brand ? (quoteToConvert as any).device_brand.toUpperCase().trim() : null,
+        device_model: (quoteToConvert as any).device_model ? (quoteToConvert as any).device_model.toUpperCase().trim() : null,
+        device_imei: (quoteToConvert as any).device_imei || null,
+        sku: (quoteToConvert as any).sku || null,
+        problem_description: (quoteToConvert as any).problem_description || `Créé depuis devis ${quoteToConvert.quote_number}`,
+        total_time_minutes: 0,
+        total_cost: totalPublic,
+        shop_id: shop?.id ?? null,
+        customer_id: customerId,
+        attachments: (quoteToConvert as any).attachments || [],
+      };
 
-      if (savError || !savCase?.id) throw savError ?? new Error('Création SAV échouée');
+      const savResult = await createCase(savCaseData);
+      if (savResult.error || !savResult.data) throw savResult.error ?? new Error('Création SAV échouée');
 
-      const savCaseId = (savCase as any).id as string;
+      const savCaseId = savResult.data.id;
 
       // 2) Insérer les lignes pièces dans sav_parts
       const partsToInsert = (quoteToConvert.items || []).map((it) => ({
