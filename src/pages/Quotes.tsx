@@ -247,15 +247,22 @@ const handleStatusChange = async (quote: Quote, newStatus: Quote['status']) => {
 
       const savCaseId = savResult.data.id;
 
-      // 2) Insérer les lignes pièces dans sav_parts
-      const partsToInsert = (quoteToConvert.items || []).map((it) => ({
-        sav_case_id: savCaseId,
-        part_id: it.part_id ?? null,
-        quantity: it.quantity || 0,
-        time_minutes: 0,
-        unit_price: it.unit_public_price || 0,
-        purchase_price: it.unit_purchase_price ?? null,
-      }));
+      // 2) Insérer les lignes pièces dans sav_parts (uniquement les pièces avec des IDs valides)
+      const partsToInsert = (quoteToConvert.items || [])
+        .filter((it) => {
+          // Ignorer les pièces avec des IDs temporaires ou invalides
+          const partId = it.part_id;
+          return partId && typeof partId === 'string' && 
+                 partId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
+        })
+        .map((it) => ({
+          sav_case_id: savCaseId,
+          part_id: it.part_id,
+          quantity: it.quantity || 0,
+          time_minutes: 0,
+          unit_price: it.unit_public_price || 0,
+          purchase_price: it.unit_purchase_price ?? null,
+        }));
 
       if (partsToInsert.length > 0) {
         const { error: partsError } = await supabase.from('sav_parts').insert(partsToInsert);
