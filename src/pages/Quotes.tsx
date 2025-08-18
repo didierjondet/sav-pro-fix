@@ -172,32 +172,38 @@ const handleStatusChange = async (quote: Quote, newStatus: Quote['status']) => {
   const convertQuoteToSAV = async (type: 'client' | 'external') => {
     if (!quoteToConvert) return;
     try {
-      // 0) Mettre le devis à "accepté" pour refléter l'état et nourrir les stats
+      // 0) Nettoyer les IDs invalides du devis AVANT toute opération
+      const cleanQuote = {
+        ...quoteToConvert,
+        items: (quoteToConvert.items || []).map(item => ({
+          ...item,
+          part_id: item.part_id?.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i) 
+            ? item.part_id 
+            : null
+        }))
+      };
+
+      // 1) Mettre le devis à "accepté" pour refléter l'état et nourrir les stats
       const updateRes = await updateQuote(quoteToConvert.id, { status: 'accepted' });
       if (updateRes.error) throw updateRes.error;
 
-      // helper: récupérer ou créer le client pour lier le SAV
+      // 2) Récupérer ou créer le client pour lier le SAV
       const getOrCreateCustomerId = async (): Promise<string | null> => {
-        const existingId = (quoteToConvert as any).customer_id as string | null | undefined;
-        // Only use existing ID if it's a valid UUID format, not a temporary custom ID
-        if (existingId && existingId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
-          return existingId;
-        }
         if (!shop?.id) return null;
 
         // Tenter de retrouver par email dans la boutique
-        if (quoteToConvert.customer_email) {
+        if (cleanQuote.customer_email) {
           const { data: existing, error: findErr } = await supabase
             .from('customers')
             .select('id')
             .eq('shop_id', shop.id)
-            .eq('email', quoteToConvert.customer_email)
+            .eq('email', cleanQuote.customer_email)
             .maybeSingle();
           if (!findErr && existing?.id) return existing.id;
         }
 
         // Créer le client à partir du nom / email / téléphone du devis
-        const nameParts = (quoteToConvert.customer_name || '').trim().split(/\s+/);
+        const nameParts = (cleanQuote.customer_name || '').trim().split(/\s+/);
         const firstName = nameParts[0] || 'Client';
         const lastName = nameParts.slice(1).join(' ') || 'Devis';
 
@@ -208,8 +214,8 @@ const handleStatusChange = async (quote: Quote, newStatus: Quote['status']) => {
               shop_id: shop.id,
               first_name: firstName,
               last_name: lastName,
-              email: quoteToConvert.customer_email || null,
-              phone: quoteToConvert.customer_phone || null,
+              email: cleanQuote.customer_email || null,
+              phone: cleanQuote.customer_phone || null,
             },
           ])
           .select('id')
@@ -220,9 +226,9 @@ const handleStatusChange = async (quote: Quote, newStatus: Quote['status']) => {
 
       const customerId = await getOrCreateCustomerId();
 
-      // 1) Créer le dossier SAV avec le client lié
+      // 3) Créer le dossier SAV avec le client lié
       const totalPublic =
-        quoteToConvert.items?.reduce(
+        cleanQuote.items?.reduce(
           (sum, it) => sum + (it.total_price ?? ( (it.quantity || 0) * (it.unit_public_price || 0) )),
           0
         ) || 0;
@@ -230,16 +236,16 @@ const handleStatusChange = async (quote: Quote, newStatus: Quote['status']) => {
       const savCaseData = {
         sav_type: type,
         status: 'pending',
-        device_brand: (quoteToConvert as any).device_brand ? (quoteToConvert as any).device_brand.toUpperCase().trim() : null,
-        device_model: (quoteToConvert as any).device_model ? (quoteToConvert as any).device_model.toUpperCase().trim() : null,
-        device_imei: (quoteToConvert as any).device_imei || null,
-        sku: (quoteToConvert as any).sku || null,
-        problem_description: (quoteToConvert as any).problem_description || `Créé depuis devis ${quoteToConvert.quote_number}`,
+        device_brand: (cleanQuote as any).device_brand ? (cleanQuote as any).device_brand.toUpperCase().trim() : null,
+        device_model: (cleanQuote as any).device_model ? (cleanQuote as any).device_model.toUpperCase().trim() : null,
+        device_imei: (cleanQuote as any).device_imei || null,
+        sku: (cleanQuote as any).sku || null,
+        problem_description: (cleanQuote as any).problem_description || `Créé depuis devis ${cleanQuote.quote_number}`,
         total_time_minutes: 0,
         total_cost: totalPublic,
         shop_id: shop?.id ?? null,
         customer_id: customerId,
-        attachments: (quoteToConvert as any).attachments || [],
+        attachments: (cleanQuote as any).attachments || [],
       };
 
       const savResult = await createCase(savCaseData);
@@ -247,17 +253,12 @@ const handleStatusChange = async (quote: Quote, newStatus: Quote['status']) => {
 
       const savCaseId = savResult.data.id;
 
-      // 2) Insérer les lignes pièces dans sav_parts (uniquement les pièces avec des IDs valides)
-      const partsToInsert = (quoteToConvert.items || [])
-        .filter((it) => {
-          // Ignorer les pièces avec des IDs temporaires ou invalides
-          const partId = it.part_id;
-          return partId && typeof partId === 'string' && 
-                 partId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
-        })
+      // 4) Insérer les lignes pièces dans sav_parts (uniquement les pièces avec des IDs valides)
+      const partsToInsert = cleanQuote.items
+        .filter((it) => it.part_id !== null)
         .map((it) => ({
           sav_case_id: savCaseId,
-          part_id: it.part_id,
+          part_id: it.part_id!,
           quantity: it.quantity || 0,
           time_minutes: 0,
           unit_price: it.unit_public_price || 0,
@@ -269,7 +270,7 @@ const handleStatusChange = async (quote: Quote, newStatus: Quote['status']) => {
         if (partsError) throw partsError;
       }
 
-      // 3) Supprimer le devis après conversion
+      // 5) Supprimer le devis après conversion
       const { error: deleteErr } = await deleteQuote(quoteToConvert.id);
       if (deleteErr) throw deleteErr;
 
