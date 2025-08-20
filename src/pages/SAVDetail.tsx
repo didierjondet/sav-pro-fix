@@ -21,6 +21,7 @@ import { SAVPrintButton } from '@/components/sav/SAVPrint';
 import { ReviewRequestButton } from '@/components/sav/ReviewRequestButton';
 import { SAVDocuments } from '@/components/sav/SAVDocuments';
 import { generateFullTrackingUrl } from '@/utils/trackingUtils';
+import { generateSAVRestitutionPDF } from '@/utils/pdfGenerator';
 
 export default function SAVDetail() {
   const { id } = useParams<{ id: string }>();
@@ -240,6 +241,17 @@ export default function SAVDetail() {
                   <Badge variant={statusConfig[savCase.status as keyof typeof statusConfig]?.variant || 'secondary'}>
                     {statusConfig[savCase.status as keyof typeof statusConfig]?.label || savCase.status}
                   </Badge>
+                  {/* Bouton Imprimer restitution - uniquement pour les SAV prêts */}
+                  {savCase.status === 'ready' && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => generateSAVRestitutionPDF(savCase)}
+                      className="bg-primary/10 hover:bg-primary/20"
+                    >
+                      Imprimer restitution
+                    </Button>
+                  )}
                   {/* SMS Button - for all SAV types except internal */}
                   {savCase.sav_type !== 'internal' && (
                     <SMSButton
