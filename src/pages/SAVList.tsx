@@ -73,6 +73,214 @@ export default function SAVList() {
     }
   };
 
+  const printSAVList = () => {
+    // Filtrer les SAV pour exclure ceux avec le statut "ready"
+    const savForPrint = cases.filter(savCase => savCase.status !== 'ready');
+    
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>Liste des dossiers SAV</title>
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+            font-size: 12px;
+            line-height: 1.4;
+          }
+          .header {
+            text-align: center;
+            border-bottom: 2px solid #0066cc;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+          }
+          .shop-name {
+            font-size: 18px;
+            font-weight: bold;
+            color: #0066cc;
+            margin-bottom: 5px;
+          }
+          .document-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+          }
+          .date {
+            font-size: 11px;
+            color: #666;
+          }
+          .stats {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            text-align: center;
+            font-size: 11px;
+          }
+          .sav-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 10px;
+            font-size: 10px;
+          }
+          .sav-table th,
+          .sav-table td {
+            border: 1px solid #ddd;
+            padding: 6px;
+            text-align: left;
+            vertical-align: top;
+          }
+          .sav-table th {
+            background-color: #0066cc;
+            color: white;
+            font-weight: bold;
+            font-size: 10px;
+          }
+          .sav-table .text-center {
+            text-align: center;
+          }
+          .status-badge {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 12px;
+            font-size: 9px;
+            font-weight: bold;
+            text-transform: uppercase;
+          }
+          .status-pending { background-color: #fef3c7; color: #92400e; }
+          .status-in_progress { background-color: #dbeafe; color: #1e40af; }
+          .status-testing { background-color: #e9d5ff; color: #7c3aed; }
+          .status-parts_ordered { background-color: #fed7aa; color: #ea580c; }
+          .status-cancelled { background-color: #fecaca; color: #dc2626; }
+          .type-client { background-color: #fef2f2; }
+          .type-internal { background-color: #f0f9ff; }
+          .type-external { background-color: #f9fafb; }
+          .urgent { 
+            border-left: 3px solid #dc2626;
+            background-color: #fef2f2;
+          }
+          .high-priority {
+            border-left: 3px solid #ea580c;
+            background-color: #fff7ed;
+          }
+          .footer {
+            margin-top: 20px;
+            text-align: center;
+            font-size: 9px;
+            color: #666;
+            border-top: 1px solid #ddd;
+            padding-top: 10px;
+          }
+          @media print {
+            body { margin: 0; padding: 15px; font-size: 11px; }
+            .no-print { display: none; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          ${shop ? `<div class="shop-name">${shop.name}</div>` : ''}
+          <div class="document-title">LISTE DES DOSSIERS SAV</div>
+          <div class="date">Générée le ${new Date().toLocaleDateString('fr-FR')} à ${new Date().toLocaleTimeString('fr-FR')}</div>
+        </div>
+        
+        <div class="stats">
+          <strong>${savForPrint.length} dossiers SAV actifs</strong> (hors dossiers prêts)
+        </div>
+
+        <table class="sav-table">
+          <thead>
+            <tr>
+              <th style="width: 10%;">N° Dossier</th>
+              <th style="width: 12%;">Type</th>
+              <th style="width: 10%;">Statut</th>
+              <th style="width: 15%;">Client</th>
+              <th style="width: 15%;">Appareil</th>
+              <th style="width: 10%;">IMEI/SKU</th>
+              <th style="width: 18%;">Problème</th>
+              <th style="width: 10%;">Créé le</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${savForPrint.map(savCase => {
+              const delayInfo = calculateSAVDelay(savCase, shop);
+              const isUrgent = delayInfo.isOverdue;
+              const isHighPriority = !isUrgent && delayInfo.totalRemainingHours <= 24;
+              
+              const rowClass = isUrgent ? 'urgent' : isHighPriority ? 'high-priority' : '';
+              const typeClass = savCase.sav_type === 'client' ? 'type-client' : 
+                               savCase.sav_type === 'external' ? 'type-external' : 'type-internal';
+              
+              return `
+                <tr class="${rowClass} ${typeClass}">
+                  <td class="text-center"><strong>#${savCase.case_number}</strong></td>
+                  <td class="text-center">
+                    ${savCase.sav_type === 'client' ? 'Client' : 
+                      savCase.sav_type === 'external' ? 'Externe' : 'Interne'}
+                  </td>
+                  <td class="text-center">
+                    <span class="status-badge status-${savCase.status}">
+                      ${statusLabels[savCase.status] || savCase.status}
+                    </span>
+                  </td>
+                  <td>
+                    ${savCase.customer ? 
+                      `${savCase.customer.last_name} ${savCase.customer.first_name}` : 
+                      savCase.sav_type === 'external' ? 'Contact externe' : 'SAV interne'
+                    }
+                  </td>
+                  <td>${savCase.device_brand} ${savCase.device_model}</td>
+                  <td class="text-center">
+                    ${savCase.device_imei ? savCase.device_imei.substring(0, 8) + '...' : ''}
+                    ${savCase.sku ? `<br><small>SKU: ${savCase.sku}</small>` : ''}
+                  </td>
+                  <td style="font-size: 9px;">
+                    ${savCase.problem_description ? 
+                      (savCase.problem_description.length > 80 ? 
+                        savCase.problem_description.substring(0, 80) + '...' : 
+                        savCase.problem_description
+                      ) : 'N/A'
+                    }
+                  </td>
+                  <td class="text-center">
+                    ${new Date(savCase.created_at).toLocaleDateString('fr-FR')}
+                  </td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+
+        <div class="footer">
+          <p>Liste générée le ${new Date().toLocaleDateString('fr-FR')} à ${new Date().toLocaleTimeString('fr-FR')}</p>
+          <p style="font-size: 8px; margin-top: 5px;">Propulsé par <strong>FixWay Pro</strong></p>
+        </div>
+      </body>
+      </html>
+    `;
+
+    // Créer une nouvelle fenêtre pour l'impression
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(htmlContent);
+      printWindow.document.close();
+      
+      // Attendre que le contenu soit chargé avant d'imprimer
+      printWindow.onload = () => {
+        printWindow.print();
+        // Fermer la fenêtre après l'impression (optionnel)
+        printWindow.onafterprint = () => {
+          printWindow.close();
+        };
+      };
+    }
+  };
+
   // Calculer les informations de délai et appliquer filtres et tri
   const filteredAndSortedCases = useMemo(() => {
     // 1. Ajouter les informations de délai
@@ -187,9 +395,15 @@ export default function SAVList() {
             <div className="max-w-7xl mx-auto">
               <div className="flex justify-between items-center mb-6">
                 <h1 className="text-2xl font-bold">Dossiers SAV</h1>
-                <Button onClick={handleNewSAV}>
-                  Nouveau dossier SAV
-                </Button>
+                <div className="flex gap-2">
+                  <Button variant="outline" onClick={printSAVList}>
+                    <Printer className="h-4 w-4 mr-2" />
+                    Imprimer liste
+                  </Button>
+                  <Button onClick={handleNewSAV}>
+                    Nouveau dossier SAV
+                  </Button>
+                </div>
               </div>
 
               {/* Barre de recherche et filtres */}
