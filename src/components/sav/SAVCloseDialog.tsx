@@ -40,14 +40,14 @@ export function SAVCloseDialog({ isOpen, onClose, onConfirm, savCase, shop }: SA
     setIsPrintingDocument(true);
     
     try {
-      // Générer le PDF et obtenir l'URL
-      const pdfUrl = await generateSAVRestitutionPDF(savCase, shop);
+      // Générer et imprimer le PDF
+      generateSAVRestitutionPDF(savCase, shop);
       
-      if (pdfUrl && sendMessage && profile) {
-        // Ajouter le lien PDF dans les messages SAV
+      if (sendMessage && profile) {
+        // Ajouter un message dans le SAV pour indiquer la génération du document
         const senderName = `${profile.first_name} ${profile.last_name}`.trim() || 'Équipe SAV';
         await sendMessage(
-          `📄 Document de restitution généré pour la clôture du dossier SAV ${savCase.case_number}.\n\nConsultez le document : ${pdfUrl}`,
+          `📄 Document de restitution généré pour la clôture du dossier SAV ${savCase.case_number}.`,
           senderName,
           'shop'
         );

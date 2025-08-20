@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useSAVCases } from '@/hooks/useSAVCases';
 import { useShop } from '@/hooks/useShop';
+import { useToast } from '@/hooks/use-toast';
 import { formatDelayText, calculateSAVDelay } from '@/hooks/useSAVDelay';
 import { useSAVUnreadMessages } from '@/hooks/useSAVUnreadMessages';
 import { useLimitDialogContext } from '@/contexts/LimitDialogContext';
@@ -63,6 +64,7 @@ export default function SAVList() {
   const [qrCodeCase, setQrCodeCase] = useState(null);
   const { cases, loading, deleteCase } = useSAVCases();
   const { shop } = useShop();
+  const { toast } = useToast();
   const { savWithUnreadMessages } = useSAVUnreadMessages();
   const { checkAndShowLimitDialog } = useLimitDialogContext();
   const navigate = useNavigate();
@@ -76,6 +78,15 @@ export default function SAVList() {
   const printSAVList = () => {
     // Filtrer les SAV pour exclure ceux avec le statut "ready"
     const savForPrint = cases.filter(savCase => savCase.status !== 'ready');
+    
+    if (savForPrint.length === 0) {
+      toast({
+        title: "Aucun dossier à imprimer",
+        description: "Il n'y a aucun dossier SAV actif à imprimer (hors dossiers prêts).",
+        variant: "destructive",
+      });
+      return;
+    }
     
     const htmlContent = `
       <!DOCTYPE html>
@@ -278,6 +289,17 @@ export default function SAVList() {
           printWindow.close();
         };
       };
+      
+      toast({
+        title: "Document envoyé à l'impression",
+        description: `Liste de ${savForPrint.length} dossiers SAV générée.`,
+      });
+    } else {
+      toast({
+        title: "Erreur d'impression",
+        description: "Impossible d'ouvrir la fenêtre d'impression. Vérifiez que les popups ne sont pas bloqués.",
+        variant: "destructive",
+      });
     }
   };
 

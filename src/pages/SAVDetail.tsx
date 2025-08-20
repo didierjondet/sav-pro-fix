@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { useSAVCases } from '@/hooks/useSAVCases';
+import { useShop } from '@/hooks/useShop';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { QrCode, ExternalLink, ArrowLeft, Copy, Share, Save, Lock, User, Mail, Phone, MapPin } from 'lucide-react';
@@ -31,6 +32,7 @@ export default function SAVDetail() {
   const [privateComments, setPrivateComments] = useState('');
   const [savingComments, setSavingComments] = useState(false);
   const { cases, loading } = useSAVCases();
+  const { shop } = useShop();
   const [savCase, setSavCase] = useState<any>(null);
 
   useEffect(() => {
@@ -246,7 +248,13 @@ export default function SAVDetail() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => generateSAVRestitutionPDF(savCase)}
+                      onClick={() => {
+                        generateSAVRestitutionPDF(savCase, shop);
+                        toast({
+                          title: "Document de restitution",
+                          description: "Le document de restitution est en cours d'impression.",
+                        });
+                      }}
                       className="bg-primary/10 hover:bg-primary/20"
                     >
                       Imprimer restitution

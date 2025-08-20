@@ -209,10 +209,9 @@ const getStatusText = (status: string) => {
   }
 };
 
-export const generateSAVRestitutionPDF = async (savCase: SAVCase, shop?: Shop): Promise<string | null> => {
-  try {
-    // Créer le contenu HTML du document de restitution
-    const htmlContent = `
+export const generateSAVRestitutionPDF = (savCase: SAVCase, shop?: Shop) => {
+  // Créer le contenu HTML du document de restitution
+  const htmlContent = `
       <!DOCTYPE html>
       <html>
       <head>
@@ -579,29 +578,19 @@ export const generateSAVRestitutionPDF = async (savCase: SAVCase, shop?: Shop): 
       </html>
     `;
 
-    // Créer une nouvelle fenêtre pour l'impression
-    const printWindow = window.open('', '_blank');
-    if (printWindow) {
-      printWindow.document.write(htmlContent);
-      printWindow.document.close();
-      
-      // Attendre que le contenu soit chargé avant d'imprimer
-      printWindow.onload = () => {
-        printWindow.print();
-        // Fermer la fenêtre après l'impression (optionnel)
-        printWindow.onafterprint = () => {
-          printWindow.close();
-        };
-      };
-      
-      // Retourner une URL factice pour l'archivage (dans un vrai projet, on sauvegarderait le PDF)
-      const documentUrl = `${window.location.origin}/sav-documents/${savCase.case_number}-restitution.pdf`;
-      return documentUrl;
-    }
+  // Créer une nouvelle fenêtre pour l'impression
+  const printWindow = window.open('', '_blank');
+  if (printWindow) {
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
     
-    return null;
-  } catch (error) {
-    console.error('Erreur lors de la génération du PDF de restitution:', error);
-    return null;
+    // Attendre que le contenu soit chargé avant d'imprimer
+    printWindow.onload = () => {
+      printWindow.print();
+      // Fermer la fenêtre après l'impression (optionnel)
+      printWindow.onafterprint = () => {
+        printWindow.close();
+      };
+    };
   }
 };
