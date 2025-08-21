@@ -179,20 +179,47 @@ export const generateQuotePDF = (quote: Quote, shop?: Shop) => {
     </html>
   `;
 
-  // Créer une nouvelle fenêtre pour l'impression
-  const printWindow = window.open('', '_blank');
-  if (printWindow) {
-    printWindow.document.write(htmlContent);
-    printWindow.document.close();
+  // Créer un iframe masqué pour l'impression
+  const iframe = document.createElement('iframe');
+  iframe.style.position = 'absolute';
+  iframe.style.top = '-9999px';
+  iframe.style.left = '-9999px';
+  iframe.style.width = '0';
+  iframe.style.height = '0';
+  iframe.style.border = 'none';
+  
+  document.body.appendChild(iframe);
+  
+  const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+  if (iframeDoc) {
+    iframeDoc.open();
+    iframeDoc.write(htmlContent);
+    iframeDoc.close();
     
-    // Attendre que le contenu soit chargé avant d'imprimer
-    printWindow.onload = () => {
-      printWindow.print();
-      // Fermer la fenêtre après l'impression (optionnel)
-      printWindow.onafterprint = () => {
-        printWindow.close();
-      };
-    };
+    // Attendre un peu avant d'imprimer
+    setTimeout(() => {
+      try {
+        iframe.contentWindow?.focus();
+        iframe.contentWindow?.print();
+        
+        // Nettoyer l'iframe après l'impression
+        setTimeout(() => {
+          document.body.removeChild(iframe);
+        }, 1000);
+      } catch (error) {
+        console.error('Erreur lors de l\'impression:', error);
+        document.body.removeChild(iframe);
+        
+        // Fallback : télécharger en HTML
+        const blob = new Blob([htmlContent], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `devis-${quote.quote_number}.html`;
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+    }, 500);
   }
 };
 
@@ -578,19 +605,337 @@ export const generateSAVRestitutionPDF = (savCase: SAVCase, shop?: Shop) => {
       </html>
     `;
 
-  // Créer une nouvelle fenêtre pour l'impression
-  const printWindow = window.open('', '_blank');
-  if (printWindow) {
-    printWindow.document.write(htmlContent);
-    printWindow.document.close();
+  // Créer un iframe masqué pour l'impression
+  const iframe = document.createElement('iframe');
+  iframe.style.position = 'absolute';
+  iframe.style.top = '-9999px';
+  iframe.style.left = '-9999px';
+  iframe.style.width = '0';
+  iframe.style.height = '0';
+  iframe.style.border = 'none';
+  
+  document.body.appendChild(iframe);
+  
+  const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+  if (iframeDoc) {
+    iframeDoc.open();
+    iframeDoc.write(htmlContent);
+    iframeDoc.close();
     
-    // Attendre que le contenu soit chargé avant d'imprimer
-    printWindow.onload = () => {
-      printWindow.print();
-      // Fermer la fenêtre après l'impression (optionnel)
-      printWindow.onafterprint = () => {
-        printWindow.close();
-      };
-    };
+    // Attendre un peu avant d'imprimer
+    setTimeout(() => {
+      try {
+        iframe.contentWindow?.focus();
+        iframe.contentWindow?.print();
+        
+        // Nettoyer l'iframe après l'impression
+        setTimeout(() => {
+          document.body.removeChild(iframe);
+        }, 1000);
+      } catch (error) {
+        console.error('Erreur lors de l\'impression:', error);
+        document.body.removeChild(iframe);
+        
+        // Fallback : télécharger en HTML
+        const blob = new Blob([htmlContent], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `restitution-${savCase.case_number}.html`;
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+    }, 500);
   }
+};
+
+export const generateSAVListPDF = (savCases: SAVCase[], shop?: Shop) => {
+  // Filtrer les SAV (exclure les statuts "ready")
+  const filteredCases = savCases.filter(savCase => savCase.status !== 'ready');
+  
+  if (filteredCases.length === 0) {
+    return null; // Pas de SAV à imprimer
+  }
+
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'received': return 'Reçu';
+      case 'diagnostic': return 'Diagnostic';
+      case 'waiting_parts': return 'Attente pièces';
+      case 'in_repair': return 'En réparation';
+      case 'waiting_customer': return 'Attente client';
+      case 'ready': return 'Prêt';
+      case 'delivered': return 'Livré';
+      case 'cancelled': return 'Annulé';
+      default: return status;
+    }
+  };
+
+  const getStatusClass = (status: string) => {
+    switch (status) {
+      case 'received': return 'status-received';
+      case 'diagnostic': return 'status-diagnostic';
+      case 'waiting_parts': return 'status-waiting-parts';
+      case 'in_repair': return 'status-in-repair';
+      case 'waiting_customer': return 'status-waiting-customer';
+      case 'ready': return 'status-ready';
+      case 'delivered': return 'status-delivered';
+      case 'cancelled': return 'status-cancelled';
+      default: return 'status-default';
+    }
+  };
+
+  // Créer le contenu HTML de la liste des SAV
+  const htmlContent = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <title>Liste des dossiers SAV</title>
+      <style>
+        body {
+          font-family: Arial, sans-serif;
+          margin: 0;
+          padding: 15px;
+          color: #333;
+          font-size: 11px;
+          line-height: 1.3;
+        }
+        .shop-header {
+          text-align: left;
+          margin-bottom: 20px;
+          border-bottom: 2px solid #0066cc;
+          padding-bottom: 10px;
+        }
+        .shop-logo {
+          max-height: 50px;
+          max-width: 150px;
+          object-fit: contain;
+          margin-bottom: 8px;
+        }
+        .shop-name {
+          font-size: 20px;
+          font-weight: bold;
+          color: #0066cc;
+          margin: 0;
+        }
+        .shop-contact {
+          font-size: 9px;
+          color: #666;
+          margin-top: 3px;
+        }
+        .document-header {
+          text-align: center;
+          margin-bottom: 20px;
+        }
+        .document-title {
+          font-size: 18px;
+          font-weight: bold;
+          color: #0066cc;
+          margin-bottom: 5px;
+        }
+        .stats-info {
+          background-color: #f8f9fa;
+          padding: 8px;
+          border-radius: 4px;
+          margin-bottom: 15px;
+          text-align: center;
+          border-left: 3px solid #0066cc;
+        }
+        .sav-table {
+          width: 100%;
+          border-collapse: collapse;
+          margin-bottom: 15px;
+          font-size: 9px;
+        }
+        .sav-table th,
+        .sav-table td {
+          border: 1px solid #ddd;
+          padding: 4px;
+          text-align: left;
+          vertical-align: top;
+        }
+        .sav-table th {
+          background-color: #0066cc;
+          color: white;
+          font-weight: bold;
+          font-size: 9px;
+          text-align: center;
+        }
+        .sav-table .text-center {
+          text-align: center;
+        }
+        .case-number {
+          font-weight: bold;
+          color: #0066cc;
+        }
+        .status-badge {
+          display: inline-block;
+          padding: 2px 6px;
+          border-radius: 8px;
+          font-size: 7px;
+          font-weight: bold;
+          text-transform: uppercase;
+          text-align: center;
+        }
+        .status-received { background-color: #e3f2fd; color: #1976d2; }
+        .status-diagnostic { background-color: #fff3e0; color: #f57c00; }
+        .status-waiting-parts { background-color: #fce4ec; color: #c2185b; }
+        .status-in-repair { background-color: #e8f5e8; color: #388e3c; }
+        .status-waiting-customer { background-color: #fff8e1; color: #f9a825; }
+        .status-ready { background-color: #e0f2f1; color: #00695c; }
+        .status-delivered { background-color: #f3e5f5; color: #7b1fa2; }
+        .status-cancelled { background-color: #ffebee; color: #d32f2f; }
+        .status-default { background-color: #f5f5f5; color: #757575; }
+        .customer-info {
+          font-size: 8px;
+        }
+        .device-info {
+          font-size: 8px;
+          color: #666;
+        }
+        .problem-desc {
+          font-size: 7px;
+          max-width: 120px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+        .footer {
+          margin-top: 20px;
+          text-align: center;
+          font-size: 8px;
+          color: #666;
+          border-top: 1px solid #ddd;
+          padding-top: 10px;
+        }
+        @media print {
+          body { margin: 0; padding: 8px; font-size: 10px; }
+          .no-print { display: none; }
+          .sav-table { font-size: 8px; }
+        }
+      </style>
+    </head>
+    <body>
+      ${shop ? `
+        <div class="shop-header">
+          ${shop.logo_url ? `<img src="${shop.logo_url}" alt="${shop.name}" class="shop-logo">` : ''}
+          <h1 class="shop-name">${shop.name}</h1>
+          <div class="shop-contact">
+            ${shop.address ? `${shop.address}<br>` : ''}
+            ${shop.phone ? `Tél: ${shop.phone}` : ''}
+            ${shop.email ? ` - Email: ${shop.email}` : ''}
+          </div>
+        </div>
+      ` : ''}
+      
+      <div class="document-header">
+        <div class="document-title">LISTE DES DOSSIERS SAV EN COURS</div>
+        <p>Édité le ${new Date().toLocaleDateString('fr-FR')} à ${new Date().toLocaleTimeString('fr-FR')}</p>
+      </div>
+      
+      <div class="stats-info">
+        <strong>${filteredCases.length} dossier(s) en cours</strong> (hors dossiers terminés)
+      </div>
+
+      <table class="sav-table">
+        <thead>
+          <tr>
+            <th style="width: 12%;">N° Dossier</th>
+            <th style="width: 8%;">Date</th>
+            <th style="width: 15%;">Client</th>
+            <th style="width: 15%;">Appareil</th>
+            <th style="width: 20%;">Problème</th>
+            <th style="width: 12%;">Statut</th>
+            <th style="width: 8%;">Coût</th>
+            <th style="width: 10%;">Dernière MAJ</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${filteredCases.map(savCase => `
+            <tr>
+              <td class="case-number">${savCase.case_number}</td>
+              <td class="text-center">${new Date(savCase.created_at).toLocaleDateString('fr-FR')}</td>
+              <td class="customer-info">
+                ${savCase.customer ? 
+                  `<strong>${savCase.customer.first_name} ${savCase.customer.last_name}</strong><br>
+                   ${savCase.customer.phone ? `${savCase.customer.phone}` : ''}` : 
+                  'Non renseigné'}
+              </td>
+              <td class="device-info">
+                <strong>${savCase.device_brand}</strong><br>
+                ${savCase.device_model}
+                ${savCase.device_imei ? `<br><small>IMEI: ${savCase.device_imei.substring(0, 8)}...</small>` : ''}
+              </td>
+              <td class="problem-desc" title="${savCase.problem_description || ''}">
+                ${savCase.problem_description || 'Non renseigné'}
+              </td>
+              <td class="text-center">
+                <span class="status-badge ${getStatusClass(savCase.status)}">
+                  ${getStatusText(savCase.status)}
+                </span>
+              </td>
+              <td class="text-center">
+                ${savCase.total_cost ? `${savCase.total_cost.toFixed(2)}€` : '-'}
+              </td>
+              <td class="text-center">
+                ${new Date(savCase.updated_at).toLocaleDateString('fr-FR')}
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+
+      <div class="footer">
+        <p>Liste générée le ${new Date().toLocaleDateString('fr-FR')} à ${new Date().toLocaleTimeString('fr-FR')}</p>
+        <p style="font-size: 10px; margin-top: 8px;">Propulsé par <strong>FixWay Pro</strong></p>
+      </div>
+    </body>
+    </html>
+  `;
+
+  // Créer un iframe masqué pour l'impression
+  const iframe = document.createElement('iframe');
+  iframe.style.position = 'absolute';
+  iframe.style.top = '-9999px';
+  iframe.style.left = '-9999px';
+  iframe.style.width = '0';
+  iframe.style.height = '0';
+  iframe.style.border = 'none';
+  
+  document.body.appendChild(iframe);
+  
+  const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+  if (iframeDoc) {
+    iframeDoc.open();
+    iframeDoc.write(htmlContent);
+    iframeDoc.close();
+    
+    // Attendre un peu avant d'imprimer
+    setTimeout(() => {
+      try {
+        iframe.contentWindow?.focus();
+        iframe.contentWindow?.print();
+        
+        // Nettoyer l'iframe après l'impression
+        setTimeout(() => {
+          document.body.removeChild(iframe);
+        }, 1000);
+      } catch (error) {
+        console.error('Erreur lors de l\'impression:', error);
+        document.body.removeChild(iframe);
+        
+        // Fallback : télécharger en HTML
+        const blob = new Blob([htmlContent], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `liste-sav-${new Date().toISOString().split('T')[0]}.html`;
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+    }, 500);
+  }
+
+  return true;
 };

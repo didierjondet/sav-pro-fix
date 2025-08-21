@@ -13,7 +13,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useSAVCases } from '@/hooks/useSAVCases';
 import { useShop } from '@/hooks/useShop';
-import { useToast } from '@/hooks/use-toast';
+import { generateSAVListPDF } from '@/utils/pdfGenerator';
+import { toast } from 'sonner';
 import { formatDelayText, calculateSAVDelay } from '@/hooks/useSAVDelay';
 import { useSAVUnreadMessages } from '@/hooks/useSAVUnreadMessages';
 import { useLimitDialogContext } from '@/contexts/LimitDialogContext';
@@ -64,7 +65,6 @@ export default function SAVList() {
   const [qrCodeCase, setQrCodeCase] = useState(null);
   const { cases, loading, deleteCase } = useSAVCases();
   const { shop } = useShop();
-  const { toast } = useToast();
   const { savWithUnreadMessages } = useSAVUnreadMessages();
   const { checkAndShowLimitDialog } = useLimitDialogContext();
   const navigate = useNavigate();
@@ -76,230 +76,26 @@ export default function SAVList() {
   };
 
   const printSAVList = () => {
-    // Filtrer les SAV pour exclure ceux avec le statut "ready"
-    const savForPrint = cases.filter(savCase => savCase.status !== 'ready');
-    
-    if (savForPrint.length === 0) {
-      toast({
-        title: "Aucun dossier à imprimer",
-        description: "Il n'y a aucun dossier SAV actif à imprimer (hors dossiers prêts).",
-        variant: "destructive",
-      });
+    if (!cases || cases.length === 0) {
+      toast.error("Aucun dossier SAV à imprimer");
       return;
     }
+
+    const filteredCases = cases.filter(savCase => savCase.status !== 'ready');
     
-    const htmlContent = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="UTF-8">
-        <title>Liste des dossiers SAV</title>
-        <style>
-          body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 20px;
-            color: #333;
-            font-size: 12px;
-            line-height: 1.4;
-          }
-          .header {
-            text-align: center;
-            border-bottom: 2px solid #0066cc;
-            padding-bottom: 10px;
-            margin-bottom: 20px;
-          }
-          .shop-name {
-            font-size: 18px;
-            font-weight: bold;
-            color: #0066cc;
-            margin-bottom: 5px;
-          }
-          .document-title {
-            font-size: 16px;
-            font-weight: bold;
-            color: #333;
-            margin-bottom: 5px;
-          }
-          .date {
-            font-size: 11px;
-            color: #666;
-          }
-          .stats {
-            background-color: #f8f9fa;
-            padding: 10px;
-            border-radius: 4px;
-            margin-bottom: 15px;
-            text-align: center;
-            font-size: 11px;
-          }
-          .sav-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 10px;
-            font-size: 10px;
-          }
-          .sav-table th,
-          .sav-table td {
-            border: 1px solid #ddd;
-            padding: 6px;
-            text-align: left;
-            vertical-align: top;
-          }
-          .sav-table th {
-            background-color: #0066cc;
-            color: white;
-            font-weight: bold;
-            font-size: 10px;
-          }
-          .sav-table .text-center {
-            text-align: center;
-          }
-          .status-badge {
-            display: inline-block;
-            padding: 2px 6px;
-            border-radius: 12px;
-            font-size: 9px;
-            font-weight: bold;
-            text-transform: uppercase;
-          }
-          .status-pending { background-color: #fef3c7; color: #92400e; }
-          .status-in_progress { background-color: #dbeafe; color: #1e40af; }
-          .status-testing { background-color: #e9d5ff; color: #7c3aed; }
-          .status-parts_ordered { background-color: #fed7aa; color: #ea580c; }
-          .status-cancelled { background-color: #fecaca; color: #dc2626; }
-          .type-client { background-color: #fef2f2; }
-          .type-internal { background-color: #f0f9ff; }
-          .type-external { background-color: #f9fafb; }
-          .urgent { 
-            border-left: 3px solid #dc2626;
-            background-color: #fef2f2;
-          }
-          .high-priority {
-            border-left: 3px solid #ea580c;
-            background-color: #fff7ed;
-          }
-          .footer {
-            margin-top: 20px;
-            text-align: center;
-            font-size: 9px;
-            color: #666;
-            border-top: 1px solid #ddd;
-            padding-top: 10px;
-          }
-          @media print {
-            body { margin: 0; padding: 15px; font-size: 11px; }
-            .no-print { display: none; }
-          }
-        </style>
-      </head>
-      <body>
-        <div class="header">
-          ${shop ? `<div class="shop-name">${shop.name}</div>` : ''}
-          <div class="document-title">LISTE DES DOSSIERS SAV</div>
-          <div class="date">Générée le ${new Date().toLocaleDateString('fr-FR')} à ${new Date().toLocaleTimeString('fr-FR')}</div>
-        </div>
-        
-        <div class="stats">
-          <strong>${savForPrint.length} dossiers SAV actifs</strong> (hors dossiers prêts)
-        </div>
+    if (filteredCases.length === 0) {
+      toast.error("Aucun dossier SAV en cours à imprimer (tous les dossiers sont prêts ou terminés)");
+      return;
+    }
 
-        <table class="sav-table">
-          <thead>
-            <tr>
-              <th style="width: 10%;">N° Dossier</th>
-              <th style="width: 12%;">Type</th>
-              <th style="width: 10%;">Statut</th>
-              <th style="width: 15%;">Client</th>
-              <th style="width: 15%;">Appareil</th>
-              <th style="width: 10%;">IMEI/SKU</th>
-              <th style="width: 18%;">Problème</th>
-              <th style="width: 10%;">Créé le</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${savForPrint.map(savCase => {
-              const delayInfo = calculateSAVDelay(savCase, shop);
-              const isUrgent = delayInfo.isOverdue;
-              const isHighPriority = !isUrgent && delayInfo.totalRemainingHours <= 24;
-              
-              const rowClass = isUrgent ? 'urgent' : isHighPriority ? 'high-priority' : '';
-              const typeClass = savCase.sav_type === 'client' ? 'type-client' : 
-                               savCase.sav_type === 'external' ? 'type-external' : 'type-internal';
-              
-              return `
-                <tr class="${rowClass} ${typeClass}">
-                  <td class="text-center"><strong>#${savCase.case_number}</strong></td>
-                  <td class="text-center">
-                    ${savCase.sav_type === 'client' ? 'Client' : 
-                      savCase.sav_type === 'external' ? 'Externe' : 'Interne'}
-                  </td>
-                  <td class="text-center">
-                    <span class="status-badge status-${savCase.status}">
-                      ${statusLabels[savCase.status] || savCase.status}
-                    </span>
-                  </td>
-                  <td>
-                    ${savCase.customer ? 
-                      `${savCase.customer.last_name} ${savCase.customer.first_name}` : 
-                      savCase.sav_type === 'external' ? 'Contact externe' : 'SAV interne'
-                    }
-                  </td>
-                  <td>${savCase.device_brand} ${savCase.device_model}</td>
-                  <td class="text-center">
-                    ${savCase.device_imei ? savCase.device_imei.substring(0, 8) + '...' : ''}
-                    ${savCase.sku ? `<br><small>SKU: ${savCase.sku}</small>` : ''}
-                  </td>
-                  <td style="font-size: 9px;">
-                    ${savCase.problem_description ? 
-                      (savCase.problem_description.length > 80 ? 
-                        savCase.problem_description.substring(0, 80) + '...' : 
-                        savCase.problem_description
-                      ) : 'N/A'
-                    }
-                  </td>
-                  <td class="text-center">
-                    ${new Date(savCase.created_at).toLocaleDateString('fr-FR')}
-                  </td>
-                </tr>
-              `;
-            }).join('')}
-          </tbody>
-        </table>
-
-        <div class="footer">
-          <p>Liste générée le ${new Date().toLocaleDateString('fr-FR')} à ${new Date().toLocaleTimeString('fr-FR')}</p>
-          <p style="font-size: 8px; margin-top: 5px;">Propulsé par <strong>FixWay Pro</strong></p>
-        </div>
-      </body>
-      </html>
-    `;
-
-    // Créer une nouvelle fenêtre pour l'impression
-    const printWindow = window.open('', '_blank');
-    if (printWindow) {
-      printWindow.document.write(htmlContent);
-      printWindow.document.close();
-      
-      // Attendre que le contenu soit chargé avant d'imprimer
-      printWindow.onload = () => {
-        printWindow.print();
-        // Fermer la fenêtre après l'impression (optionnel)
-        printWindow.onafterprint = () => {
-          printWindow.close();
-        };
-      };
-      
-      toast({
-        title: "Document envoyé à l'impression",
-        description: `Liste de ${savForPrint.length} dossiers SAV générée.`,
-      });
-    } else {
-      toast({
-        title: "Erreur d'impression",
-        description: "Impossible d'ouvrir la fenêtre d'impression. Vérifiez que les popups ne sont pas bloqués.",
-        variant: "destructive",
-      });
+    try {
+      const result = generateSAVListPDF(cases, shop);
+      if (result) {
+        toast.success("Ouverture de la boîte de dialogue d'impression...");
+      }
+    } catch (error) {
+      console.error('Erreur lors de la génération de la liste:', error);
+      toast.error("Erreur lors de la génération du document");
     }
   };
 
