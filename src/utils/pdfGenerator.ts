@@ -575,13 +575,6 @@ export const generateSAVRestitutionPDF = async (savCase: SAVCase, shop?: Shop) =
                 return total + (unitPrice * part.quantity);
               }, 0).toFixed(2)}€</span>
             </div>
-            <div class="total-row">
-              <span>Main d'œuvre :</span>
-              <span>${Math.max(0, (savCase.total_cost || 0) - savCaseWithParts.sav_parts.reduce((total: number, part: any) => {
-                const unitPrice = part.public_price || part.unit_price || 0;
-                return total + (unitPrice * part.quantity);
-              }, 0)).toFixed(2)}€</span>
-            </div>
           ` : ''}
           <div class="total-row">
             <span><strong>Sous-total :</strong></span>
@@ -589,13 +582,12 @@ export const generateSAVRestitutionPDF = async (savCase: SAVCase, shop?: Shop) =
           </div>
           
           ${(savCase as any).taken_over ? `
-            <div class="takeover-info">
-              <strong>Remise magasin :</strong>
-              ${(savCase as any).partial_takeover ? `
-                <div>Remise partielle : -${((savCase as any).takeover_amount || 0).toFixed(2)}€</div>
-              ` : `
-                <div>Remise totale : -${(savCase.total_cost || 0).toFixed(2)}€</div>
-              `}
+            <div class="total-row" style="color: #d63384; font-weight: bold;">
+              <span>Réduction magasin :</span>
+              <span>-${(savCase as any).partial_takeover ? 
+                ((savCase as any).takeover_amount || 0).toFixed(2) : 
+                (savCase.total_cost || 0).toFixed(2)
+              }€</span>
             </div>
           ` : ''}
           
