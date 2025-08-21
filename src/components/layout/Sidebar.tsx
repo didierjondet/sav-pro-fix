@@ -10,37 +10,69 @@ import { useSAVUnreadMessages } from '@/hooks/useSAVUnreadMessages';
 import { useShopSettings } from '@/hooks/useShopSettings';
 import { MessageSquare, Package, Users, BarChart3, FileText, Settings, X, Plus, Shield, CreditCard, HelpCircle } from 'lucide-react';
 import { useQuotes } from '@/hooks/useQuotes';
-
 interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
 }
-
-const baseNavigation = [
-  { name: 'Tableau de bord', href: '/dashboard', icon: BarChart3 },
-  { name: 'Dossiers SAV', href: '/sav', icon: FileText },
-  { name: 'Stock pièces', href: '/parts', icon: Package },
-  { name: 'Devis', href: '/quotes', icon: FileText },
-  { name: 'Commandes', href: '/orders', icon: Package },
-  { name: 'Clients', href: '/customers', icon: Users },
-  { name: 'Chat clients', href: '/client-chats', icon: MessageSquare },
-];
-
-export function Sidebar({ isOpen, onClose }: SidebarProps) {
+const baseNavigation = [{
+  name: 'Tableau de bord',
+  href: '/dashboard',
+  icon: BarChart3
+}, {
+  name: 'Dossiers SAV',
+  href: '/sav',
+  icon: FileText
+}, {
+  name: 'Stock pièces',
+  href: '/parts',
+  icon: Package
+}, {
+  name: 'Devis',
+  href: '/quotes',
+  icon: FileText
+}, {
+  name: 'Commandes',
+  href: '/orders',
+  icon: Package
+}, {
+  name: 'Clients',
+  href: '/customers',
+  icon: Users
+}, {
+  name: 'Chat clients',
+  href: '/client-chats',
+  icon: MessageSquare
+}];
+export function Sidebar({
+  isOpen,
+  onClose
+}: SidebarProps) {
   const navigate = useNavigate();
   const location = useLocation();
-  const { cases } = useSAVCases();
-  const { profile } = useProfile();
-  const { settings } = useShopSettings();
-  const { savWithUnreadMessages } = useSAVUnreadMessages();
+  const {
+    cases
+  } = useSAVCases();
+  const {
+    profile
+  } = useProfile();
+  const {
+    settings
+  } = useShopSettings();
+  const {
+    savWithUnreadMessages
+  } = useSAVUnreadMessages();
   const totalUnread = (savWithUnreadMessages || []).reduce((sum, s) => sum + s.unread_count, 0);
-  const { quotes } = useQuotes();
+  const {
+    quotes
+  } = useQuotes();
   const quoteCounts = (quotes || []).reduce((acc, q) => {
-    if (q.status === 'accepted') acc.accepted++;
-    else if (q.status === 'rejected') acc.rejected++;
-    else acc.inProgress++;
+    if (q.status === 'accepted') acc.accepted++;else if (q.status === 'rejected') acc.rejected++;else acc.inProgress++;
     return acc;
-  }, { inProgress: 0, accepted: 0, rejected: 0 });
+  }, {
+    inProgress: 0,
+    accepted: 0,
+    rejected: 0
+  });
 
   // Créer la navigation dynamique selon les paramètres du magasin
   const navigation = [...baseNavigation];
@@ -60,41 +92,38 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     } else if (['delivered', 'ready'].includes(savCase.status)) {
       acc.completed++;
     }
-    
+
     // Count client SAV cases that are not "ready" for "en attente client"
     if (savCase.sav_type === 'client' && savCase.status !== 'ready') {
       acc.clientWaiting++;
     }
-    
+
     // Count internal SAV cases that are not "ready" for "en attente magasin"
     if (savCase.sav_type === 'internal' && savCase.status !== 'ready') {
       acc.shopWaiting++;
     }
-    
+
     // Count external SAV cases that are not "ready" for "en attente externe"
     if (savCase.sav_type === 'external' && savCase.status !== 'ready') {
       acc.externalWaiting++;
     }
-    
     return acc;
-  }, { pendingClient: 0, pendingExternal: 0, pendingShop: 0, inProgress: 0, completed: 0, clientWaiting: 0, shopWaiting: 0, externalWaiting: 0 });
-  return (
-    <>
+  }, {
+    pendingClient: 0,
+    pendingExternal: 0,
+    pendingShop: 0,
+    inProgress: 0,
+    completed: 0,
+    clientWaiting: 0,
+    shopWaiting: 0,
+    externalWaiting: 0
+  });
+  return <>
       {/* Mobile overlay */}
-      {isOpen && (
-        <div
-          className="fixed inset-0 z-20 bg-black bg-opacity-50 md:hidden"
-          onClick={onClose}
-        />
-      )}
+      {isOpen && <div className="fixed inset-0 z-20 bg-black bg-opacity-50 md:hidden" onClick={onClose} />}
 
       {/* Sidebar */}
-      <div
-        className={cn(
-          'fixed inset-y-0 left-0 z-30 w-64 bg-card border-r border-border transform transition-transform duration-200 ease-in-out md:relative md:translate-x-0',
-          isOpen ? 'translate-x-0' : '-translate-x-full'
-        )}
-      >
+      <div className={cn('fixed inset-y-0 left-0 z-30 w-64 bg-card border-r border-border transform transition-transform duration-200 ease-in-out md:relative md:translate-x-0', isOpen ? 'translate-x-0' : '-translate-x-full')}>
         <div className="flex flex-col h-full">
           {/* Mobile close button */}
           <div className="flex items-center justify-between p-4 md:hidden">
@@ -106,48 +135,27 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 
           <ScrollArea className="flex-1 p-4">
             <nav className="space-y-2">
-              {navigation.map((item) => {
-                const Icon = item.icon;
-                const isActive = location.pathname === item.href;
-                return (
-                  <Button
-                    key={item.name}
-                    variant={isActive ? 'default' : 'ghost'}
-                    className={cn(
-                      'w-full justify-start',
-                      isActive && 'bg-primary text-primary-foreground'
-                    )}
-                    onClick={() => {
-                      navigate(item.href);
-                      onClose();
-                    }}
-                  >
+              {navigation.map(item => {
+              const Icon = item.icon;
+              const isActive = location.pathname === item.href;
+              return <Button key={item.name} variant={isActive ? 'default' : 'ghost'} className={cn('w-full justify-start', isActive && 'bg-primary text-primary-foreground')} onClick={() => {
+                navigate(item.href);
+                onClose();
+              }}>
                     <Icon className="mr-3 h-5 w-5" />
                     <span>{item.name}</span>
-                    {item.href === '/client-chats' && totalUnread > 0 && (
-                      <Badge variant="destructive" className="ml-auto">{totalUnread}</Badge>
-                    )}
-                  </Button>
-                );
-              })}
+                    {item.href === '/client-chats' && totalUnread > 0 && <Badge variant="destructive" className="ml-auto">{totalUnread}</Badge>}
+                  </Button>;
+            })}
               
               {/* Super Admin Link */}
-              {profile?.role === 'super_admin' && (
-                <Button
-                  variant={location.pathname === '/super-admin' ? 'default' : 'ghost'}
-                  className={cn(
-                    'w-full justify-start',
-                    location.pathname === '/super-admin' && 'bg-primary text-primary-foreground'
-                  )}
-                  onClick={() => {
-                    navigate('/super-admin');
-                    onClose();
-                  }}
-                >
+              {profile?.role === 'super_admin' && <Button variant={location.pathname === '/super-admin' ? 'default' : 'ghost'} className={cn('w-full justify-start', location.pathname === '/super-admin' && 'bg-primary text-primary-foreground')} onClick={() => {
+              navigate('/super-admin');
+              onClose();
+            }}>
                   <Shield className="mr-3 h-5 w-5" />
                   Super Admin
-                </Button>
-              )}
+                </Button>}
             </nav>
 
             <div className="mt-8 p-4 bg-muted rounded-lg">
@@ -183,10 +191,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                   <span>En cours</span>
                   <span className="font-medium">{quoteCounts.inProgress}</span>
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span>Validé</span>
-                  <span className="font-medium">{quoteCounts.accepted}</span>
-                </div>
+                
                 <div className="flex justify-between text-sm">
                   <span>Refusé</span>
                   <span className="font-medium">{quoteCounts.rejected}</span>
@@ -196,31 +201,22 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
           </ScrollArea>
 
           <div className="p-4 border-t border-border">
-            <Button 
-              variant="ghost" 
-              className="w-full justify-start mb-2"
-              onClick={() => {
-                navigate('/support');
-                onClose();
-              }}
-            >
+            <Button variant="ghost" className="w-full justify-start mb-2" onClick={() => {
+            navigate('/support');
+            onClose();
+          }}>
               <HelpCircle className="mr-3 h-5 w-5" />
               Support
             </Button>
-            <Button
-              variant="ghost" 
-              className="w-full justify-start"
-              onClick={() => {
-                navigate('/settings');
-                onClose();
-              }}
-            >
+            <Button variant="ghost" className="w-full justify-start" onClick={() => {
+            navigate('/settings');
+            onClose();
+          }}>
               <Settings className="mr-3 h-5 w-5" />
               Paramètres
             </Button>
           </div>
         </div>
       </div>
-    </>
-  );
+    </>;
 }
