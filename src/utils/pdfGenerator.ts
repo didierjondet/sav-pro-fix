@@ -1,3 +1,4 @@
+import { supabase } from '@/integrations/supabase/client';
 import { Quote } from '@/hooks/useQuotes';
 import { Shop } from '@/hooks/useShop';
 import { SAVCase } from '@/hooks/useSAVCases';
@@ -236,7 +237,34 @@ const getStatusText = (status: string) => {
   }
 };
 
-export const generateSAVRestitutionPDF = (savCase: SAVCase, shop?: Shop) => {
+export const generateSAVRestitutionPDF = async (savCase: SAVCase, shop?: Shop) => {
+  // Récupérer les pièces du SAV avec les informations complètes
+  let savCaseWithParts = savCase as any;
+  
+  try {
+    const { data: savParts, error } = await supabase
+      .from('sav_parts')
+      .select(`
+        *,
+        parts(name, reference, selling_price, purchase_price)
+      `)
+      .eq('sav_case_id', savCase.id);
+
+    if (error) {
+      console.error('Erreur lors de la récupération des pièces SAV:', error);
+    } else {
+      // Ajouter les pièces au SAV case avec le prix public correct
+      savCaseWithParts.sav_parts = savParts?.map(part => ({
+        ...part,
+        // Utiliser le prix public (selling_price) de la pièce du stock ou le prix unitaire saisi
+        public_price: part.parts?.selling_price || part.unit_price || 0
+      })) || [];
+    }
+  } catch (error) {
+    console.error('Erreur lors de la récupération des pièces SAV:', error);
+    savCaseWithParts.sav_parts = [];
+  }
+
   // Créer le contenu HTML du document de restitution
   const htmlContent = `
       <!DOCTYPE html>
@@ -500,7 +528,7 @@ export const generateSAVRestitutionPDF = (savCase: SAVCase, shop?: Shop) => {
             </div>
           ` : ''}
 
-          ${(savCase as any).sav_parts && (savCase as any).sav_parts.length > 0 ? `
+          ${savCaseWithParts.sav_parts && savCaseWithParts.sav_parts.length > 0 ? `
             <h4>Pièces remplacées :</h4>
             <table class="parts-table">
               <thead>
@@ -513,18 +541,22 @@ export const generateSAVRestitutionPDF = (savCase: SAVCase, shop?: Shop) => {
                 </tr>
               </thead>
               <tbody>
-                ${(savCase as any).sav_parts.map((part: any) => `
-                  <tr>
-                    <td>
-                      <strong>${part.parts?.name || 'Pièce inconnue'}</strong>
-                      ${part.parts?.reference ? `<br><small>Réf: ${part.parts.reference}</small>` : ''}
-                    </td>
-                    <td class="text-center">${part.quantity}</td>
-                    <td class="text-right">${(part.unit_price || 0).toFixed(2)}€</td>
-                    <td class="text-center">${part.time_minutes || 0}</td>
-                    <td class="text-right">${((part.unit_price || 0) * part.quantity).toFixed(2)}€</td>
-                  </tr>
-                `).join('')}
+                ${savCaseWithParts.sav_parts.map((part: any) => {
+                  const unitPrice = part.public_price || part.unit_price || 0;
+                  const totalPrice = unitPrice * part.quantity;
+                  return `
+                    <tr>
+                      <td>
+                        <strong>${part.parts?.name || 'Pièce personnalisée'}</strong>
+                        ${part.parts?.reference ? `<br><small>Réf: ${part.parts.reference}</small>` : ''}
+                      </td>
+                      <td class="text-center">${part.quantity}</td>
+                      <td class="text-right">${unitPrice.toFixed(2)}€</td>
+                      <td class="text-center">${part.time_minutes || 0}</td>
+                      <td class="text-right">${totalPrice.toFixed(2)}€</td>
+                    </tr>
+                  `;
+                }).join('')}
               </tbody>
             </table>
           ` : `
@@ -535,14 +567,20 @@ export const generateSAVRestitutionPDF = (savCase: SAVCase, shop?: Shop) => {
         </div>
 
         <div class="total-section">
-          ${(savCase as any).sav_parts && (savCase as any).sav_parts.length > 0 ? `
+          ${savCaseWithParts.sav_parts && savCaseWithParts.sav_parts.length > 0 ? `
             <div class="total-row">
               <span>Sous-total pièces :</span>
-              <span>${(savCase as any).sav_parts.reduce((total: number, part: any) => total + ((part.unit_price || 0) * part.quantity), 0).toFixed(2)}€</span>
+              <span>${savCaseWithParts.sav_parts.reduce((total: number, part: any) => {
+                const unitPrice = part.public_price || part.unit_price || 0;
+                return total + (unitPrice * part.quantity);
+              }, 0).toFixed(2)}€</span>
             </div>
             <div class="total-row">
               <span>Main d'œuvre :</span>
-              <span>${Math.max(0, (savCase.total_cost || 0) - (savCase as any).sav_parts.reduce((total: number, part: any) => total + ((part.unit_price || 0) * part.quantity), 0)).toFixed(2)}€</span>
+              <span>${Math.max(0, (savCase.total_cost || 0) - savCaseWithParts.sav_parts.reduce((total: number, part: any) => {
+                const unitPrice = part.public_price || part.unit_price || 0;
+                return total + (unitPrice * part.quantity);
+              }, 0)).toFixed(2)}€</span>
             </div>
           ` : ''}
           <div class="total-row">

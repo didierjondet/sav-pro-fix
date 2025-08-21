@@ -248,13 +248,22 @@ export default function SAVDetail() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => {
-                        generateSAVRestitutionPDF(savCase, shop);
-                        toast({
-                          title: "Document de restitution",
-                          description: "Le document de restitution est en cours d'impression.",
-                        });
-                      }}
+                       onClick={async () => {
+                         try {
+                           await generateSAVRestitutionPDF(savCase, shop);
+                           toast({
+                             title: "Document de restitution",
+                             description: "Le document de restitution est en cours d'impression.",
+                           });
+                         } catch (error) {
+                           console.error('Erreur lors de la génération du PDF:', error);
+                           toast({
+                             title: "Erreur",
+                             description: "Impossible de générer le document de restitution.",
+                             variant: "destructive",
+                           });
+                         }
+                       }}
                       className="bg-primary/10 hover:bg-primary/20"
                     >
                       Imprimer restitution
