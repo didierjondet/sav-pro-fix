@@ -76,20 +76,13 @@ export default function SAVList() {
   };
 
   const printSAVList = () => {
-    if (!cases || cases.length === 0) {
-      toast.error("Aucun dossier SAV à imprimer");
-      return;
-    }
-
-    const filteredCases = cases.filter(savCase => savCase.status !== 'ready');
-    
-    if (filteredCases.length === 0) {
-      toast.error("Aucun dossier SAV en cours à imprimer (tous les dossiers sont prêts ou terminés)");
+    if (filteredAndSortedCases.length === 0) {
+      toast.error("Aucun dossier SAV à imprimer selon les filtres appliqués");
       return;
     }
 
     try {
-      const result = generateSAVListPDF(cases, shop);
+      const result = generateSAVListPDF(filteredAndSortedCases, shop);
       if (result) {
         toast.success("Ouverture de la boîte de dialogue d'impression...");
       }
