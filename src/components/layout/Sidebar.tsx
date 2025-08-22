@@ -192,10 +192,7 @@ export function Sidebar({
                   <span className="font-medium">{quoteCounts.inProgress}</span>
                 </div>
                 
-                <div className="flex justify-between text-sm">
-                  <span>Refusé</span>
-                  <span className="font-medium">{quoteCounts.rejected}</span>
-                </div>
+                
               </div>
             </div>
           </ScrollArea>
