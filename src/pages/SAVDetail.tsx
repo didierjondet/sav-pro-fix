@@ -13,7 +13,7 @@ import { useSAVCases } from '@/hooks/useSAVCases';
 import { useShop } from '@/hooks/useShop';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { QrCode, ExternalLink, ArrowLeft, Copy, Share, Save, Lock, User, Mail, Phone, MapPin } from 'lucide-react';
+import { QrCode, ExternalLink, ArrowLeft, Copy, Share, Save, Lock, User, Mail, Phone, MapPin, CheckCircle, X } from 'lucide-react';
 import { SMSButton } from '@/components/sav/SMSButton';
 import { useNavigate } from 'react-router-dom';
 import { SAVPartsEditor } from '@/components/sav/SAVPartsEditor';
@@ -21,6 +21,7 @@ import { SAVPartsRequirements } from '@/components/sav/SAVPartsRequirements';
 import { SAVPrintButton } from '@/components/sav/SAVPrint';
 import { ReviewRequestButton } from '@/components/sav/ReviewRequestButton';
 import { SAVDocuments } from '@/components/sav/SAVDocuments';
+import { PatternLock } from '@/components/sav/PatternLock';
 import { generateFullTrackingUrl } from '@/utils/trackingUtils';
 import { generateSAVRestitutionPDF } from '@/utils/pdfGenerator';
 
@@ -382,6 +383,77 @@ export default function SAVDetail() {
                   )}
                 </CardContent>
               </Card>
+
+              {/* Accessoires présents */}
+              {(savCase.accessories?.charger || savCase.accessories?.case || savCase.accessories?.screen_protector) && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      Accessoires présents
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="flex items-center gap-2">
+                        {savCase.accessories?.charger ? (
+                          <CheckCircle className="h-4 w-4 text-green-500" />
+                        ) : (
+                          <X className="h-4 w-4 text-muted-foreground" />
+                        )}
+                        <span className={savCase.accessories?.charger ? 'text-green-600' : 'text-muted-foreground'}>
+                          Chargeur
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {savCase.accessories?.case ? (
+                          <CheckCircle className="h-4 w-4 text-green-500" />
+                        ) : (
+                          <X className="h-4 w-4 text-muted-foreground" />
+                        )}
+                        <span className={savCase.accessories?.case ? 'text-green-600' : 'text-muted-foreground'}>
+                          Coque
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {savCase.accessories?.screen_protector ? (
+                          <CheckCircle className="h-4 w-4 text-green-500" />
+                        ) : (
+                          <X className="h-4 w-4 text-muted-foreground" />
+                        )}
+                        <span className={savCase.accessories?.screen_protector ? 'text-green-600' : 'text-muted-foreground'}>
+                          Protection d'écran
+                        </span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Schéma de verrouillage */}
+              {savCase.unlock_pattern && savCase.unlock_pattern.length > 0 && (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <PatternLock
+                    pattern={savCase.unlock_pattern}
+                    onChange={() => {}} // Read-only in view mode
+                    disabled={true}
+                    showPattern={true}
+                  />
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Schéma de verrouillage enregistré</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-muted-foreground">
+                        Ce schéma de verrouillage a été enregistré lors de la création du dossier SAV. 
+                        Il contient {savCase.unlock_pattern.length} points connectés.
+                      </p>
+                      <div className="mt-3 p-3 bg-muted rounded-lg">
+                        <p className="text-xs font-medium">Séquence: {savCase.unlock_pattern.join(' → ')}</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
 
               {/* Private Comments - Only visible to shop staff */}
               <Card>

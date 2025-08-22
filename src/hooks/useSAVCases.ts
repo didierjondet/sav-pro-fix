@@ -23,6 +23,12 @@ export interface SAVCase {
   customer_id?: string;
   technician_id?: string;
   shop_id: string;
+  accessories?: {
+    charger: boolean;
+    case: boolean;
+    screen_protector: boolean;
+  };
+  unlock_pattern?: number[];
   customer?: {
     first_name: string;
     last_name: string;
@@ -67,7 +73,9 @@ export function useSAVCases() {
       // Mapper les anciens statuts vers les nouveaux
       const mappedData = data?.map(item => ({
         ...item,
-        status: item.status === 'delivered' ? 'ready' : item.status
+        status: item.status === 'delivered' ? 'ready' : item.status,
+        accessories: item.accessories as SAVCase['accessories'],
+        unlock_pattern: item.unlock_pattern as number[]
       })) as SAVCase[];
       
       setCases(mappedData || []);

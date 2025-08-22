@@ -23,6 +23,8 @@ import { useLimitDialogContext } from '@/contexts/LimitDialogContext';
 import { useToast } from '@/hooks/use-toast';
 import { PrintConfirmDialog } from '@/components/dialogs/PrintConfirmDialog';
 import { SAVPrintButton } from '@/components/sav/SAVPrint';
+import { PatternLock } from '@/components/sav/PatternLock';
+import { Checkbox } from '@/components/ui/checkbox';
 import { supabase } from '@/integrations/supabase/client';
 
 interface CustomerInfo {
@@ -40,6 +42,12 @@ interface DeviceInfo {
   sku: string;
   problemDescription: string;
   attachments: string[];
+}
+
+interface AccessoriesInfo {
+  charger: boolean;
+  case: boolean;
+  screen_protector: boolean;
 }
 
 interface SelectedPart {
@@ -76,6 +84,12 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
     problemDescription: '',
     attachments: [],
   });
+  const [accessories, setAccessories] = useState<AccessoriesInfo>({
+    charger: false,
+    case: false,
+    screen_protector: false,
+  });
+  const [unlockPattern, setUnlockPattern] = useState<number[]>([]);
   const [selectedParts, setSelectedParts] = useState<SelectedPart[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -207,6 +221,8 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
         status: 'pending',
         shop_id: profile?.shop_id,
         attachments: deviceInfo.attachments || [], // Ajouter les attachments ici
+        accessories,
+        unlock_pattern: unlockPattern.length > 0 ? unlockPattern : null,
       });
       
       if (caseError) throw caseError;
@@ -258,6 +274,12 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
         problemDescription: '',
         attachments: [],
       });
+      setAccessories({
+        charger: false,
+        case: false,
+        screen_protector: false,
+      });
+      setUnlockPattern([]);
       setSelectedParts([]);
     } catch (error: any) {
       console.error('Error creating SAV case:', error);
@@ -473,6 +495,74 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
           />
         </CardContent>
       </Card>
+
+      {/* Accessoires présents */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Accessoires présents</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="charger"
+                checked={accessories.charger}
+                onCheckedChange={(checked) => 
+                  setAccessories({ ...accessories, charger: !!checked })
+                }
+              />
+              <Label htmlFor="charger" className="text-sm font-normal">
+                Chargeur
+              </Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="case"
+                checked={accessories.case}
+                onCheckedChange={(checked) => 
+                  setAccessories({ ...accessories, case: !!checked })
+                }
+              />
+              <Label htmlFor="case" className="text-sm font-normal">
+                Coque
+              </Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="screen_protector"
+                checked={accessories.screen_protector}
+                onCheckedChange={(checked) => 
+                  setAccessories({ ...accessories, screen_protector: !!checked })
+                }
+              />
+              <Label htmlFor="screen_protector" className="text-sm font-normal">
+                Protection d'écran
+              </Label>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Schéma de verrouillage */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <PatternLock
+          pattern={unlockPattern}
+          onChange={setUnlockPattern}
+        />
+        <Card className="lg:col-span-1">
+          <CardHeader>
+            <CardTitle>Instructions</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ul className="text-sm text-muted-foreground space-y-2">
+              <li>• Dessinez le schéma de verrouillage en reliant les points</li>
+              <li>• Maintenez le bouton de la souris enfoncé et déplacez sur les points</li>
+              <li>• Le schéma sera visible dans les détails du SAV</li>
+              <li>• Vous pouvez effacer et recommencer à tout moment</li>
+            </ul>
+          </CardContent>
+        </Card>
+      </div>
 
       <Card>
         <CardHeader>

@@ -557,6 +557,7 @@ export type Database = {
       }
       sav_cases: {
         Row: {
+          accessories: Json | null
           attachments: Json | null
           case_number: string
           created_at: string
@@ -580,9 +581,11 @@ export type Database = {
           total_cost: number | null
           total_time_minutes: number | null
           tracking_slug: string | null
+          unlock_pattern: Json | null
           updated_at: string
         }
         Insert: {
+          accessories?: Json | null
           attachments?: Json | null
           case_number: string
           created_at?: string
@@ -606,9 +609,11 @@ export type Database = {
           total_cost?: number | null
           total_time_minutes?: number | null
           tracking_slug?: string | null
+          unlock_pattern?: Json | null
           updated_at?: string
         }
         Update: {
+          accessories?: Json | null
           attachments?: Json | null
           case_number?: string
           created_at?: string
@@ -632,6 +637,7 @@ export type Database = {
           total_cost?: number | null
           total_time_minutes?: number | null
           tracking_slug?: string | null
+          unlock_pattern?: Json | null
           updated_at?: string
         }
         Relationships: [
