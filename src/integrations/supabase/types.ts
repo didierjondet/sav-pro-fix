@@ -391,6 +391,7 @@ export type Database = {
           reference: string | null
           selling_price: number | null
           shop_id: string | null
+          sku: string | null
           time_minutes: number
           updated_at: string
         }
@@ -406,6 +407,7 @@ export type Database = {
           reference?: string | null
           selling_price?: number | null
           shop_id?: string | null
+          sku?: string | null
           time_minutes?: number
           updated_at?: string
         }
@@ -421,6 +423,7 @@ export type Database = {
           reference?: string | null
           selling_price?: number | null
           shop_id?: string | null
+          sku?: string | null
           time_minutes?: number
           updated_at?: string
         }

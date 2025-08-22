@@ -35,6 +35,7 @@ export function PartForm({ initialData, onSubmit, onCancel, isEdit = false, find
     defaultValues: {
       name: initialData?.name || '',
       reference: initialData?.reference || '',
+      sku: initialData?.sku || '',
       purchase_price: initialData?.purchase_price || 0,
       selling_price: initialData?.selling_price || 0,
       quantity: initialData?.quantity || 0,
@@ -158,6 +159,17 @@ export function PartForm({ initialData, onSubmit, onCancel, isEdit = false, find
                 id="reference"
                 {...register('reference')}
                 placeholder="Ex: REF-001"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="sku">SKU</Label>
+              <Input
+                id="sku"
+                {...register('sku')}
+                placeholder="Ex: SKU-001"
               />
             </div>
           </div>

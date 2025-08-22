@@ -6,6 +6,7 @@ export interface Part {
   id: string;
   name: string;
   reference?: string;
+  sku?: string;
   purchase_price?: number;
   selling_price?: number;
   quantity: number;
