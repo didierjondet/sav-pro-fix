@@ -46,9 +46,31 @@ export default function Parts() {
   
   const { parts, loading, createPart, updatePart, deletePart, adjustStock, findSimilarParts, refetch } = useParts();
 
-  const filteredParts = parts.filter(part =>
-    multiWordSearch(searchTerm, part.name, part.reference)
-  );
+  const filteredParts = parts
+    .filter(part => multiWordSearch(searchTerm, part.name, part.reference))
+    .sort((a, b) => {
+      if (!searchTerm.trim()) return a.name.localeCompare(b.name);
+      
+      const searchLower = searchTerm.toLowerCase();
+      const aNameMatch = a.name.toLowerCase().includes(searchLower);
+      const bNameMatch = b.name.toLowerCase().includes(searchLower);
+      const aRefMatch = a.reference?.toLowerCase().includes(searchLower) || false;
+      const bRefMatch = b.reference?.toLowerCase().includes(searchLower) || false;
+      
+      // Priorité 1: Correspondance exacte dans le nom
+      if (aNameMatch && !bNameMatch) return -1;
+      if (bNameMatch && !aNameMatch) return 1;
+      
+      // Priorité 2: Si les deux matchent le nom, tri alphabétique
+      if (aNameMatch && bNameMatch) return a.name.localeCompare(b.name);
+      
+      // Priorité 3: Correspondance dans la référence
+      if (aRefMatch && !bRefMatch) return -1;
+      if (bRefMatch && !aRefMatch) return 1;
+      
+      // Par défaut: tri alphabétique par nom
+      return a.name.localeCompare(b.name);
+    });
 
   const lowStockParts = parts.filter(part => (part.quantity || 0) <= (part.min_stock || 0));
   const totalValue = parts.reduce((sum, part) => sum + ((part.purchase_price || 0) * (part.quantity || 0)), 0);
