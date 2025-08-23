@@ -589,6 +589,16 @@ export const generateSAVRestitutionPDF = async (savCase: SAVCase, shop?: Shop) =
                 (savCase.total_cost || 0).toFixed(2)
               }€</span>
             </div>
+            <div class="total-row" style="font-weight: bold; border-top: 2px solid #333; margin-top: 10px; padding-top: 10px;">
+              <span>MONTANT FINAL À PAYER :</span>
+              <span><strong>${(
+                (savCase.total_cost || 0) - 
+                ((savCase as any).partial_takeover ? 
+                  ((savCase as any).takeover_amount || 0) : 
+                  (savCase.total_cost || 0)
+                )
+              ).toFixed(2)}€</strong></span>
+            </div>
           ` : ''}
           
           <div class="total-final">
