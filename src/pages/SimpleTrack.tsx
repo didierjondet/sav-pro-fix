@@ -9,17 +9,18 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { supabase } from '@/integrations/supabase/client';
 import { useSAVTrackingMessages } from '@/hooks/useSAVTrackingMessages';
-import { MessageSquare, Send, Smartphone, AlertCircle, CheckCircle, Clock, Package, Wifi } from 'lucide-react';
+import { MessageSquare, Send, Smartphone, AlertCircle, CheckCircle, Clock, Package, Wifi, Timer } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
+import { calculateSAVDelay, formatDelayText } from '@/hooks/useSAVDelay';
 
 interface SAVCaseData {
   id: string;
   case_number: string;
   tracking_slug: string;
-  sav_type: string;
-  status: string;
+  sav_type: "client" | "internal" | "external";
+  status: "pending" | "in_progress" | "testing" | "ready" | "cancelled" | "parts_ordered";
   device_brand: string;
   device_model: string;
   device_imei?: string;
@@ -27,6 +28,8 @@ interface SAVCaseData {
   problem_description: string;
   repair_notes?: string;
   total_cost: number;
+  total_time_minutes: number;
+  shop_id: string;
   created_at: string;
   updated_at: string;
   customer?: {
@@ -41,6 +44,8 @@ interface SAVCaseData {
     email?: string;
     address?: string;
     logo_url?: string;
+    max_sav_processing_days_client?: number;
+    max_sav_processing_days_internal?: number;
   };
 }
 
@@ -69,17 +74,17 @@ const statusConfig = {
     description: 'Votre appareil est réparé et prêt à être récupéré',
     icon: CheckCircle
   },
-  delivered: { 
-    label: 'Livré', 
-    variant: 'default' as const,
-    description: 'Votre appareil vous a été rendu',
-    icon: CheckCircle
-  },
   cancelled: { 
     label: 'Annulé', 
     variant: 'destructive' as const,
     description: 'Ce dossier a été annulé',
     icon: AlertCircle
+  },
+  parts_ordered: { 
+    label: 'Pièces commandées', 
+    variant: 'default' as const,
+    description: 'Les pièces nécessaires ont été commandées',
+    icon: Package
   }
 };
 
@@ -174,37 +179,46 @@ export default function SimpleTrack() {
         .from('sav_cases')
         .select(`
           id,
-          shops (name, phone, email, address, logo_url)
+          sav_type,
+          shops (name, phone, email, address, logo_url, max_sav_processing_days_client, max_sav_processing_days_internal)
         `)
         .eq('tracking_slug', slug)
         .maybeSingle();
 
       const trackingInfo = trackingData[0];
-      const savCaseData = {
+      const savCaseData: SAVCaseData = {
         id: shopData?.id || '',
         case_number: trackingInfo.case_number,
-        status: trackingInfo.status,
+        status: trackingInfo.status as any,
         device_brand: trackingInfo.device_brand,
         device_model: trackingInfo.device_model,
         created_at: trackingInfo.created_at,
         total_cost: trackingInfo.total_cost,
+        total_time_minutes: 0,
+        shop_id: shopData?.id || '',
         tracking_slug: slug!,
         device_imei: undefined,
         sku: undefined,
         problem_description: 'Informations non disponibles en mode public',
         repair_notes: undefined,
         updated_at: trackingInfo.created_at,
-        sav_type: '',
+        sav_type: (shopData?.sav_type) || 'client',
         customer: {
           first_name: trackingInfo.customer_first_name || '',
-          last_name: ''
+          last_name: '',
+          email: undefined,
+          phone: undefined
         },
-        shop: shopData?.shops || null
+        shop: {
+          ...shopData?.shops,
+          max_sav_processing_days_client: shopData?.shops?.max_sav_processing_days_client || 7,
+          max_sav_processing_days_internal: shopData?.shops?.max_sav_processing_days_internal || 5
+        }
       };
 
       console.log('✅ [SimpleTrack] SAV case data retrieved:', savCaseData);
 
-      setSavCase(savCaseData as SAVCaseData);
+      setSavCase(savCaseData);
       if (trackingInfo.customer_first_name) {
         setClientName(trackingInfo.customer_first_name);
       }
@@ -280,6 +294,9 @@ export default function SimpleTrack() {
 
   const statusInfo = statusConfig[savCase.status as keyof typeof statusConfig];
   const StatusIcon = statusInfo?.icon || AlertCircle;
+  
+  // Calculer les informations de délai
+  const delayInfo = calculateSAVDelay(savCase as any, savCase.shop as any);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -315,6 +332,48 @@ export default function SimpleTrack() {
             Propulsé par <span className="font-medium">FixWay Pro</span>
           </div>
         </div>
+
+        {/* Indicateur de délai */}
+        {savCase.status !== 'ready' && savCase.status !== 'cancelled' && (
+          <Card className={`mb-6 border-2 ${delayInfo.isOverdue ? 'border-red-500 bg-red-50' : 'border-orange-500 bg-orange-50'}`}>
+            <CardContent className="p-4">
+              <div className="text-center">
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <Timer className={`h-5 w-5 ${delayInfo.isOverdue ? 'text-red-600' : 'text-orange-600'}`} />
+                  <h3 className={`font-semibold ${delayInfo.isOverdue ? 'text-red-600' : 'text-orange-600'}`}>
+                    Délai de traitement
+                  </h3>
+                </div>
+                
+                {delayInfo.isOverdue ? (
+                  <div className="text-red-600">
+                    <p className="font-bold text-lg">⚠️ EN RETARD</p>
+                    <p className="text-sm">Le délai de traitement standard a été dépassé</p>
+                    <p className="text-xs mt-1">Contactez le magasin pour plus d'informations</p>
+                  </div>
+                ) : (
+                  <div className="text-orange-600">
+                    <p className="font-bold text-lg">⏱️ {formatDelayText(delayInfo)}</p>
+                    <p className="text-sm">Délai de traitement estimé</p>
+                    
+                    {/* Barre de progression */}
+                    <div className="mt-3 mx-auto max-w-md">
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div 
+                          className="bg-orange-500 h-2 rounded-full transition-all duration-300"
+                          style={{ width: `${Math.min(delayInfo.progress, 100)}%` }}
+                        ></div>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {Math.round(delayInfo.progress)}% du délai écoulé
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         <div className="grid gap-6 md:grid-cols-2">
           {/* Informations du dossier */}
