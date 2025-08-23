@@ -592,15 +592,17 @@ export const generateSAVRestitutionPDF = async (savCase: SAVCase, shop?: Shop) =
           ` : ''}
           
           <div class="total-final">
-            <div class="total-row">
+            <div class="total-row" style="color: #0066cc; font-weight: bold; background-color: #e6f3ff; padding: 8px; border-radius: 5px; border: 2px solid #0066cc;">
               <span><strong>TOTAL À RÉGLER :</strong></span>
-              <span><strong>${(savCase as any).taken_over ? 
-                ((savCase as any).partial_takeover ? 
-                  ((savCase.total_cost || 0) - ((savCase as any).takeover_amount || 0)).toFixed(2) : 
-                  '0.00'
-                ) : 
-                (savCase.total_cost || 0).toFixed(2)
-              }€</strong></span>
+              <span><strong>${(
+                (savCase.total_cost || 0) - 
+                (((savCase as any).taken_over || (savCase as any).partial_takeover) ? 
+                  ((savCase as any).partial_takeover ? 
+                    ((savCase as any).takeover_amount || 0) : 
+                    (savCase.total_cost || 0)
+                  ) : 0
+                )
+              ).toFixed(2)}€</strong></span>
             </div>
           </div>
           
