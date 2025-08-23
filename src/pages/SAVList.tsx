@@ -82,7 +82,12 @@ export default function SAVList() {
     }
 
     try {
-      const result = generateSAVListPDF(filteredAndSortedCases, shop);
+      const result = generateSAVListPDF(filteredAndSortedCases, shop, {
+        searchTerm,
+        filterType,
+        statusFilter,
+        sortOrder
+      });
       if (result) {
         toast.success("Ouverture de la boîte de dialogue d'impression...");
       }

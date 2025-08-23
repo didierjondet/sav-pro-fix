@@ -681,9 +681,14 @@ export const generateSAVRestitutionPDF = async (savCase: SAVCase, shop?: Shop) =
   }
 };
 
-export const generateSAVListPDF = (savCases: SAVCase[], shop?: Shop) => {
-  // Filtrer les SAV (exclure les statuts "ready")
-  const filteredCases = savCases.filter(savCase => savCase.status !== 'ready');
+export const generateSAVListPDF = (savCases: SAVCase[], shop?: Shop, filterInfo?: {
+  searchTerm: string;
+  filterType: string;
+  statusFilter: string;
+  sortOrder: string;
+}) => {
+  // Utiliser directement les cases filtrées passées en paramètre
+  const filteredCases = savCases;
   
   if (filteredCases.length === 0) {
     return null; // Pas de SAV à imprimer
@@ -714,6 +719,40 @@ export const generateSAVListPDF = (savCases: SAVCase[], shop?: Shop) => {
       case 'delivered': return 'status-delivered';
       case 'cancelled': return 'status-cancelled';
       default: return 'status-default';
+    }
+  };
+
+  const getFilterTypeLabel = (filterType: string) => {
+    switch (filterType) {
+      case 'all': return 'Tous les SAV';
+      case 'client': return 'SAV Client';
+      case 'internal': return 'SAV Magasin';
+      case 'external': return 'SAV Externe';
+      default: return filterType;
+    }
+  };
+
+  const getStatusFilterLabel = (statusFilter: string) => {
+    switch (statusFilter) {
+      case 'all': return 'Tous les statuts';
+      case 'all-except-ready': return 'Masquer les prêts';
+      case 'overdue': return 'En retard';
+      case 'pending': return 'En attente';
+      case 'in_progress': return 'En cours';
+      case 'testing': return 'En test';
+      case 'parts_ordered': return 'Pièces commandées';
+      case 'ready': return 'Prêt';
+      case 'cancelled': return 'Annulé';
+      default: return statusFilter;
+    }
+  };
+
+  const getSortOrderLabel = (sortOrder: string) => {
+    switch (sortOrder) {
+      case 'priority': return 'Par priorité';
+      case 'oldest': return 'Plus vieux en premier';
+      case 'newest': return 'Plus récent en premier';
+      default: return sortOrder;
     }
   };
 
@@ -862,12 +901,21 @@ export const generateSAVListPDF = (savCases: SAVCase[], shop?: Shop) => {
       ` : ''}
       
       <div class="document-header">
-        <div class="document-title">LISTE DES DOSSIERS SAV EN COURS</div>
+        <div class="document-title">LISTE DES DOSSIERS SAV</div>
         <p>Édité le ${new Date().toLocaleDateString('fr-FR')} à ${new Date().toLocaleTimeString('fr-FR')}</p>
+        ${filterInfo ? `
+          <div class="filter-info" style="margin-top: 10px; padding: 8px; background-color: #f8f9fa; border-radius: 5px; font-size: 10px;">
+            <strong>Filtres appliqués :</strong>
+            ${filterInfo.searchTerm ? `<br>• Recherche : "${filterInfo.searchTerm}"` : ''}
+            <br>• Type : ${getFilterTypeLabel(filterInfo.filterType)}
+            <br>• Statut : ${getStatusFilterLabel(filterInfo.statusFilter)}
+            <br>• Tri : ${getSortOrderLabel(filterInfo.sortOrder)}
+          </div>
+        ` : ''}
       </div>
       
       <div class="stats-info">
-        <strong>${filteredCases.length} dossier(s) en cours</strong> (hors dossiers terminés)
+        <strong>${filteredCases.length} dossier(s) trouvé(s)</strong>
       </div>
 
       <table class="sav-table">
