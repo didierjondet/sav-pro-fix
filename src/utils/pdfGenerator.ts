@@ -581,9 +581,9 @@ export const generateSAVRestitutionPDF = async (savCase: SAVCase, shop?: Shop) =
             <span><strong>${(savCase.total_cost || 0).toFixed(2)}€</strong></span>
           </div>
           
-          ${(savCase as any).taken_over ? `
-            <div class="total-row" style="color: #d63384; font-weight: bold;">
-              <span>Réduction magasin :</span>
+          ${((savCase as any).taken_over || (savCase as any).partial_takeover) ? `
+            <div class="total-row" style="color: #dc3545; font-weight: bold; background-color: #f8d7da; padding: 5px; border-radius: 3px;">
+              <span>🏪 Prise en charge magasin :</span>
               <span>-${(savCase as any).partial_takeover ? 
                 ((savCase as any).takeover_amount || 0).toFixed(2) : 
                 (savCase.total_cost || 0).toFixed(2)
