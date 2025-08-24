@@ -15,7 +15,18 @@ interface TimelineProps {
 }
 
 export function SAVTimeline({ savCase, shop }: TimelineProps) {
-  if (!shop) return null;
+  if (!shop || !savCase) {
+    return (
+      <div className="w-full bg-white rounded-lg p-4 border">
+        <h3 className="text-sm font-medium text-gray-700 mb-4 text-center">
+          Progression du traitement
+        </h3>
+        <div className="text-center text-gray-500">
+          <p className="text-sm">Chargement de la timeline...</p>
+        </div>
+      </div>
+    );
+  }
 
   const maxDays = savCase.sav_type === 'client' 
     ? (shop.max_sav_processing_days_client || 7) 

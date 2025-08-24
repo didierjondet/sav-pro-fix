@@ -336,7 +336,17 @@ export default function SimpleTrack() {
 
         {/* Timeline de progression */}
         <div className="mb-6">
-          <SAVTimeline savCase={savCase} shop={savCase.shop} />
+          <SAVTimeline 
+            savCase={{
+              created_at: savCase.created_at,
+              sav_type: savCase.sav_type,
+              status: savCase.status
+            }} 
+            shop={{
+              max_sav_processing_days_client: savCase.shop?.max_sav_processing_days_client || 7,
+              max_sav_processing_days_internal: savCase.shop?.max_sav_processing_days_internal || 5
+            }} 
+          />
         </div>
 
         {/* Indicateur de délai */}
@@ -498,17 +508,17 @@ export default function SimpleTrack() {
                           className={`flex ${message.sender_type === 'client' ? 'justify-end' : 'justify-start'}`}
                         >
                           <div
-                            className={`max-w-[80%] p-3 rounded-lg relative group ${
+                            className={`max-w-[80%] p-3 rounded-lg relative ${
                               message.sender_type === 'client'
                                 ? 'bg-blue-600 text-white'
                                 : 'bg-gray-100 text-gray-800'
                             }`}
                           >
-                            {/* Bouton de suppression */}
+                            {/* Bouton de suppression - toujours visible si supprimable */}
                             {canDelete && (
                               <button
                                 onClick={() => deleteMessage(message.id)}
-                                className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                                className="absolute -top-1 -right-1 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center shadow-md border border-white transition-colors"
                                 title="Supprimer le message (disponible pendant 1 minute)"
                               >
                                 <X className="w-3 h-3" />
