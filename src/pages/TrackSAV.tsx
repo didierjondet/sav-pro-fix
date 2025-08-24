@@ -150,29 +150,29 @@ export default function TrackSAV() {
         .maybeSingle();
 
       const trackingInfo = trackingData[0];
-      const savCaseData = {
+      const savCaseData: SAVCaseData = {
         id: shopData?.id || '',
         case_number: trackingInfo.case_number,
         status: trackingInfo.status as "pending" | "in_progress" | "testing" | "ready" | "cancelled" | "parts_ordered" | "delivered",
         device_brand: trackingInfo.device_brand,
         device_model: trackingInfo.device_model,
         created_at: trackingInfo.created_at,
+        updated_at: trackingInfo.created_at, // Use created_at as fallback
         total_cost: trackingInfo.total_cost,
-        device_imei: trackingInfo.device_imei || undefined,
-        sku: trackingInfo.sku || undefined,
-        problem_description: trackingInfo.problem_description || 'Informations disponibles via le magasin',
-        repair_notes: trackingInfo.repair_notes || undefined,
-        updated_at: trackingInfo.updated_at || trackingInfo.created_at,
-        sav_type: (trackingInfo.sav_type || 'client') as "client" | "internal" | "external",
+        device_imei: undefined, // Not available in tracking info
+        sku: undefined, // Not available in tracking info
+        problem_description: 'Informations disponibles via le magasin',
+        repair_notes: undefined, // Not available in tracking info
+        sav_type: 'client' as "client" | "internal" | "external", // Default to client
         customer: {
           first_name: trackingInfo.customer_first_name || '',
-          last_name: trackingInfo.customer_last_name || trackingInfo.customer_first_name || ''
+          last_name: '' // customer_last_name not available in tracking info
         },
         shop: shopData?.shops ? {
           ...shopData.shops,
           max_sav_processing_days_client: 7, // Valeurs par défaut
           max_sav_processing_days_internal: 5
-        } : null
+        } : undefined
       };
 
       console.log('✅ [TrackSAV] SAV case data retrieved:', savCaseData);

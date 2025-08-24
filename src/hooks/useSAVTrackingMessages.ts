@@ -45,7 +45,7 @@ export function useSAVTrackingMessages(trackingSlug?: string) {
 
     // Setup real-time subscription for messages
     if (trackingSlug) {
-      console.log('Setting up real-time for tracking slug:', trackingSlug);
+      console.log('🔄 Setting up real-time for tracking slug:', trackingSlug);
       
       const channel = supabase
         .channel(`tracking-messages-${trackingSlug}`)
@@ -57,14 +57,13 @@ export function useSAVTrackingMessages(trackingSlug?: string) {
             table: 'sav_messages'
           },
           (payload) => {
-            console.log('Real-time tracking message update:', payload);
-            // Refetch messages for any change in the sav_messages table
-            // We don't filter here as the server-side RPC will handle filtering
-            fetchMessages();
+            console.log('📨 Real-time tracking message update:', payload);
+            // Refetch messages immediately for any change in the sav_messages table
+            setTimeout(() => fetchMessages(), 100); // Small delay to ensure DB consistency
           }
         )
         .subscribe((status) => {
-          console.log('Tracking messages subscription status:', status);
+          console.log('📡 Tracking messages subscription status:', status);
         });
 
       return () => {

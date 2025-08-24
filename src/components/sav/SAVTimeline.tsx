@@ -15,7 +15,10 @@ interface TimelineProps {
 }
 
 export function SAVTimeline({ savCase, shop }: TimelineProps) {
+  console.log('🕐 SAVTimeline render:', { savCase, shop });
+  
   if (!shop || !savCase) {
+    console.log('❌ Timeline: Missing data', { shop: !!shop, savCase: !!savCase });
     return (
       <div className="w-full bg-white rounded-lg p-4 border">
         <h3 className="text-sm font-medium text-gray-700 mb-4 text-center">
@@ -27,6 +30,8 @@ export function SAVTimeline({ savCase, shop }: TimelineProps) {
       </div>
     );
   }
+
+  console.log('✅ Timeline: Data available, rendering timeline');
 
   const maxDays = savCase.sav_type === 'client' 
     ? (shop.max_sav_processing_days_client || 7) 
