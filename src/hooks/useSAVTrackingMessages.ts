@@ -45,42 +45,30 @@ export function useSAVTrackingMessages(trackingSlug?: string) {
 
     // Setup real-time subscription for messages
     if (trackingSlug) {
-      let channel: any = null;
+      console.log('Setting up real-time for tracking slug:', trackingSlug);
       
-      // D'abord, obtenir l'ID du SAV case pour le filtre
-      const setupRealtime = async () => {
-        const { data } = await supabase
-          .from('sav_cases')
-          .select('id')
-          .eq('tracking_slug', trackingSlug)
-          .single();
-          
-        if (data) {
-          channel = supabase
-            .channel(`tracking-messages-${trackingSlug}`)
-            .on(
-              'postgres_changes',
-              {
-                event: '*',
-                schema: 'public',
-                table: 'sav_messages',
-                filter: `sav_case_id=eq.${data.id}`
-              },
-              (payload) => {
-                console.log('Real-time message update detected:', payload);
-                fetchMessages();
-              }
-            )
-            .subscribe();
-        }
-      };
-      
-      setupRealtime();
+      const channel = supabase
+        .channel(`tracking-messages-${trackingSlug}`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'sav_messages'
+          },
+          (payload) => {
+            console.log('Real-time tracking message update:', payload);
+            // Vérifier si le message est pour notre SAV case
+            fetchMessages();
+          }
+        )
+        .subscribe((status) => {
+          console.log('Tracking messages subscription status:', status);
+        });
 
       return () => {
-        if (channel) {
-          supabase.removeChannel(channel);
-        }
+        console.log('Cleaning up tracking messages subscription');
+        supabase.removeChannel(channel);
       };
     }
   }, [trackingSlug]);
@@ -157,11 +145,38 @@ export function useSAVTrackingMessages(trackingSlug?: string) {
     }
   };
 
+  const deleteMessage = async (messageId: string) => {
+    try {
+      const { error } = await supabase
+        .from('sav_messages')
+        .delete()
+        .eq('id', messageId);
+
+      if (error) throw error;
+      
+      // Actualiser les messages après suppression
+      fetchMessages();
+      
+      toast({
+        title: "Message supprimé",
+        description: "Le message a été supprimé avec succès",
+      });
+    } catch (error: any) {
+      console.error('Error deleting message:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de supprimer le message",
+        variant: "destructive",
+      });
+    }
+  };
+
   return {
     messages,
     loading,
     sendMessage,
     markAsRead,
+    deleteMessage,
     refetch: fetchMessages,
   };
 }

@@ -9,7 +9,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { supabase } from '@/integrations/supabase/client';
 import { useSAVTrackingMessages } from '@/hooks/useSAVTrackingMessages';
-import { MessageSquare, Send, Smartphone, AlertCircle, CheckCircle, Clock, Package, Wifi, Timer } from 'lucide-react';
+import { MessageSquare, Send, Smartphone, AlertCircle, CheckCircle, Clock, Package, Wifi, Timer, X } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
@@ -100,7 +100,7 @@ export default function SimpleTrack() {
   const [isRealTimeConnected, setIsRealTimeConnected] = useState(false);
   
   const { toast } = useToast();
-  const { messages, sendMessage, markAsRead } = useSAVTrackingMessages(slug);
+  const { messages, sendMessage, markAsRead, deleteMessage } = useSAVTrackingMessages(slug);
 
   useEffect(() => {
     if (slug) {
@@ -485,33 +485,52 @@ export default function SimpleTrack() {
                       <p className="text-sm">Démarrez une conversation avec le magasin</p>
                     </div>
                   ) : (
-                    messages.map((message) => (
-                      <div
-                        key={message.id}
-                        className={`flex ${message.sender_type === 'client' ? 'justify-end' : 'justify-start'}`}
-                      >
+                    messages.map((message) => {
+                      // Calculer si le message peut être supprimé (moins d'1 minute)
+                      const messageTime = new Date(message.created_at);
+                      const now = new Date();
+                      const canDelete = message.sender_type === 'client' && 
+                        (now.getTime() - messageTime.getTime()) < 60000; // 1 minute
+                      
+                      return (
                         <div
-                          className={`max-w-[80%] p-3 rounded-lg ${
-                            message.sender_type === 'client'
-                              ? 'bg-blue-600 text-white'
-                              : 'bg-gray-100 text-gray-800'
-                          }`}
+                          key={message.id}
+                          className={`flex ${message.sender_type === 'client' ? 'justify-end' : 'justify-start'}`}
                         >
-                          <p className="text-sm">{message.message}</p>
-                          <div className="flex items-center justify-between mt-1">
-                            <span className="text-xs opacity-70">
-                              {message.sender_name}
-                            </span>
-                            <span className="text-xs opacity-70">
-                              {formatDistanceToNow(new Date(message.created_at), { 
-                                addSuffix: true, 
-                                locale: fr 
-                              })}
-                            </span>
+                          <div
+                            className={`max-w-[80%] p-3 rounded-lg relative group ${
+                              message.sender_type === 'client'
+                                ? 'bg-blue-600 text-white'
+                                : 'bg-gray-100 text-gray-800'
+                            }`}
+                          >
+                            {/* Bouton de suppression */}
+                            {canDelete && (
+                              <button
+                                onClick={() => deleteMessage(message.id)}
+                                className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                                title="Supprimer le message (disponible pendant 1 minute)"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            )}
+                            
+                            <p className="text-sm">{message.message}</p>
+                            <div className="flex items-center justify-between mt-1">
+                              <span className="text-xs opacity-70">
+                                {message.sender_name}
+                              </span>
+                              <span className="text-xs opacity-70">
+                                {formatDistanceToNow(new Date(message.created_at), { 
+                                  addSuffix: true, 
+                                  locale: fr 
+                                })}
+                              </span>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))
+                      );
+                    })
                   )}
                 </div>
               </ScrollArea>
