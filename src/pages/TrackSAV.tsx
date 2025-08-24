@@ -9,16 +9,18 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { supabase } from '@/integrations/supabase/client';
 import { useSAVTrackingMessages } from '@/hooks/useSAVTrackingMessages';
-import { MessageSquare, Send, Smartphone, AlertCircle, CheckCircle } from 'lucide-react';
+import { MessageSquare, Send, Smartphone, AlertCircle, CheckCircle, X, Timer, Wifi } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
+import { calculateSAVDelay, formatDelayText } from '@/hooks/useSAVDelay';
+import { SAVTimeline } from '@/components/sav/SAVTimeline';
 
 interface SAVCaseData {
   id: string;
   case_number: string;
-  sav_type: string;
-  status: string;
+  sav_type: "client" | "internal" | "external";
+  status: "pending" | "in_progress" | "testing" | "ready" | "cancelled" | "parts_ordered";
   device_brand: string;
   device_model: string;
   device_imei?: string;
@@ -40,6 +42,8 @@ interface SAVCaseData {
     email?: string;
     address?: string;
     logo_url?: string;
+    max_sav_processing_days_client?: number;
+    max_sav_processing_days_internal?: number;
   };
 }
 
@@ -86,16 +90,33 @@ export default function TrackSAV() {
   const { slug } = useParams<{ slug: string }>();
   const [savCase, setSavCase] = useState<SAVCaseData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [clientName, setClientName] = useState('');
   const [newMessage, setNewMessage] = useState('');
   const [sending, setSending] = useState(false);
+  const [isRealTimeConnected, setIsRealTimeConnected] = useState(false);
   const { toast } = useToast();
 
-  const { messages, sendMessage, refetch: refetchMessages } = useSAVTrackingMessages(slug);
+  const { messages, sendMessage, deleteMessage, refetch: refetchMessages } = useSAVTrackingMessages(slug);
 
   useEffect(() => {
     if (slug) {
       fetchSAVCase();
+    }
+  }, [slug]);
+
+  // Setup real-time connection status
+  useEffect(() => {
+    if (slug) {
+      const channel = supabase
+        .channel(`tracking-${slug}`)
+        .on('presence', { event: 'sync' }, () => {
+          setIsRealTimeConnected(true);
+        })
+        .subscribe();
+
+      return () => {
+        setIsRealTimeConnected(false);
+        supabase.removeChannel(channel);
+      };
     }
   }, [slug]);
 
@@ -137,17 +158,21 @@ export default function TrackSAV() {
         device_model: trackingInfo.device_model,
         created_at: trackingInfo.created_at,
         total_cost: trackingInfo.total_cost,
-        device_imei: undefined,
-        sku: undefined,
-        problem_description: 'Informations disponibles via le magasin',
-        repair_notes: undefined,
-        updated_at: trackingInfo.created_at,
-        sav_type: '',
+        device_imei: trackingInfo.device_imei,
+        sku: trackingInfo.sku,
+        problem_description: trackingInfo.problem_description || 'Informations disponibles via le magasin',
+        repair_notes: trackingInfo.repair_notes,
+        updated_at: trackingInfo.updated_at || trackingInfo.created_at,
+        sav_type: trackingInfo.sav_type as "client" | "internal" | "external",
         customer: {
           first_name: trackingInfo.customer_first_name || '',
-          last_name: ''
+          last_name: trackingInfo.customer_last_name || ''
         },
-        shop: shopData?.shops || null
+        shop: shopData?.shops ? {
+          ...shopData.shops,
+          max_sav_processing_days_client: 7, // Valeurs par défaut
+          max_sav_processing_days_internal: 5
+        } : null
       };
 
       console.log('✅ [TrackSAV] SAV case data retrieved:', savCaseData);
@@ -251,7 +276,15 @@ export default function TrackSAV() {
           )}
           
           <div className="text-center">
-            <h2 className="text-lg font-semibold">Suivi de votre dossier SAV</h2>
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <h2 className="text-lg font-semibold">Suivi de votre dossier SAV</h2>
+              {isRealTimeConnected && (
+                <div className="flex items-center gap-1 text-green-600 text-sm">
+                  <Wifi className="h-4 w-4" />
+                  <span>Temps réel</span>
+                </div>
+              )}
+            </div>
             <p className="text-primary font-medium">Dossier n° {savCase?.case_number}</p>
           </div>
         </div>
@@ -259,6 +292,63 @@ export default function TrackSAV() {
 
       {/* Contenu principal */}
       <div className="max-w-4xl mx-auto p-6 space-y-6">
+
+        {/* Timeline de progression */}
+        {savCase && (
+          <div className="mb-6">
+            <SAVTimeline 
+              savCase={savCase} 
+              shop={savCase.shop} 
+            />
+          </div>
+        )}
+
+        {/* Indicateur de délai */}
+        {savCase && savCase.status !== 'ready' && savCase.status !== 'cancelled' && (
+          (() => {
+            const delayInfo = calculateSAVDelay(savCase as any, savCase.shop as any);
+            return (
+              <Card className={`mb-6 border-2 ${delayInfo.isOverdue ? 'border-red-500 bg-red-50' : 'border-orange-500 bg-orange-50'}`}>
+                <CardContent className="p-4">
+                  <div className="text-center">
+                    <div className="flex items-center justify-center gap-2 mb-2">
+                      <Timer className={`h-5 w-5 ${delayInfo.isOverdue ? 'text-red-600' : 'text-orange-600'}`} />
+                      <h3 className={`font-semibold ${delayInfo.isOverdue ? 'text-red-600' : 'text-orange-600'}`}>
+                        Délai de traitement
+                      </h3>
+                    </div>
+                    
+                    {delayInfo.isOverdue ? (
+                      <div className="text-red-600">
+                        <p className="font-bold text-lg">⚠️ EN RETARD</p>
+                        <p className="text-sm">Le délai de traitement standard a été dépassé</p>
+                        <p className="text-xs mt-1">Contactez le magasin pour plus d'informations</p>
+                      </div>
+                    ) : (
+                      <div className="text-orange-600">
+                        <p className="font-bold text-lg">⏱️ {formatDelayText(delayInfo)}</p>
+                        <p className="text-sm">Délai de traitement estimé</p>
+                        
+                        {/* Barre de progression */}
+                        <div className="mt-3 mx-auto max-w-md">
+                          <div className="w-full bg-gray-200 rounded-full h-2">
+                            <div 
+                              className="bg-orange-500 h-2 rounded-full transition-all duration-300"
+                              style={{ width: `${Math.min(delayInfo.progress, 100)}%` }}
+                            ></div>
+                          </div>
+                          <p className="text-xs text-gray-500 mt-1">
+                            {Math.round(delayInfo.progress)}% du délai écoulé
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })()
+        )}
 
         {/* Status */}
         <Card>
@@ -343,56 +433,100 @@ export default function TrackSAV() {
               <div className="p-4 space-y-4">
                 {messages.length === 0 ? (
                   <div className="text-center text-muted-foreground">
-                    Aucun message pour l'instant.
+                    <MessageSquare className="h-12 w-12 mx-auto mb-2 text-gray-300" />
+                    <p>Aucun message pour le moment</p>
+                    <p className="text-sm">Démarrez une conversation avec le magasin</p>
                   </div>
                 ) : (
-                  messages.map((message) => (
-                    <div
-                      key={message.id}
-                      className={`flex ${message.sender_type === 'client' ? 'justify-end' : 'justify-start'}`}
-                    >
+                  messages.map((message) => {
+                    // Calculer si le message peut être supprimé (moins d'1 minute)
+                    const messageTime = new Date(message.created_at);
+                    const now = new Date();
+                    const canDelete = message.sender_type === 'client' && 
+                      (now.getTime() - messageTime.getTime()) < 60000; // 1 minute
+                    
+                    return (
                       <div
-                        className={`max-w-[80%] rounded-lg p-3 ${
-                          message.sender_type === 'client'
-                            ? 'bg-primary text-primary-foreground'
-                            : 'bg-card'
-                        }`}
+                        key={message.id}
+                        className={`flex ${message.sender_type === 'client' ? 'justify-end' : 'justify-start'}`}
                       >
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-sm font-medium">{message.sender_name}</span>
-                          <Badge variant={message.sender_type === 'client' ? 'secondary' : 'outline'} className="text-xs">
-                            {message.sender_type === 'client' ? 'Vous' : 'Boutique'}
-                          </Badge>
-                        </div>
-                        <p className="text-sm whitespace-pre-wrap">{message.message}</p>
-                        <div className="text-xs opacity-70 mt-1">
-                          {formatTime(message.created_at)}
+                        <div
+                          className={`max-w-[80%] rounded-lg p-3 relative ${
+                            message.sender_type === 'client'
+                              ? 'bg-primary text-primary-foreground'
+                              : 'bg-card'
+                          }`}
+                        >
+                          {/* Bouton de suppression - toujours visible si supprimable */}
+                          {canDelete && (
+                            <button
+                              onClick={() => deleteMessage(message.id)}
+                              className="absolute -top-1 -right-1 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center shadow-md border border-white transition-colors"
+                              title="Supprimer le message (disponible pendant 1 minute)"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          )}
+                          
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-sm font-medium">{message.sender_name}</span>
+                            <Badge variant={message.sender_type === 'client' ? 'secondary' : 'outline'} className="text-xs">
+                              {message.sender_type === 'client' ? 'Vous' : 'Boutique'}
+                            </Badge>
+                          </div>
+                          <p className="text-sm whitespace-pre-wrap">{message.message}</p>
+                          <div className="text-xs opacity-70 mt-1">
+                            {formatTime(message.created_at)}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))
+                    );
+                  })
                 )}
               </div>
             </ScrollArea>
 
-            <div className="space-y-2">
-              <Textarea
-                placeholder="Tapez votre message ici..."
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                rows={3}
-              />
-              <div className="flex justify-end">
-                <Button
-                  onClick={handleSendMessage}
-                  disabled={!newMessage.trim() || sending}
-                  size="sm"
-                >
-                  <Send className="h-4 w-4 mr-2" />
-                  {sending ? 'Envoi...' : 'Envoyer'}
-                </Button>
+            {/* Zone de saisie ou avertissement si fermé */}
+            {savCase?.status === 'ready' || savCase?.status === 'cancelled' ? (
+              // Avertissement quand le SAV est clôturé
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                <div className="flex items-center gap-2 text-amber-700">
+                  <AlertCircle className="h-5 w-5" />
+                  <h4 className="font-medium">Chat fermé</h4>
+                </div>
+                <p className="text-sm text-amber-600 mt-1">
+                  {savCase.status === 'ready' 
+                    ? 'Ce dossier SAV est terminé. Vous ne pouvez plus envoyer de messages via ce chat. Contactez directement le magasin si nécessaire.'
+                    : 'Ce dossier SAV a été annulé. Vous ne pouvez plus envoyer de messages via ce chat. Contactez directement le magasin si nécessaire.'
+                  }
+                </p>
+                {savCase.shop?.phone && (
+                  <p className="text-xs text-amber-600 mt-2">
+                    📞 Téléphone du magasin : <span className="font-medium">{savCase.shop.phone}</span>
+                  </p>
+                )}
               </div>
-            </div>
+            ) : (
+              // Zone de saisie normale
+              <div className="space-y-2">
+                <Textarea
+                  placeholder="Tapez votre message ici..."
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  rows={3}
+                />
+                <div className="flex justify-end">
+                  <Button
+                    onClick={handleSendMessage}
+                    disabled={!newMessage.trim() || sending}
+                    size="sm"
+                  >
+                    <Send className="h-4 w-4 mr-2" />
+                    {sending ? 'Envoi...' : 'Envoyer'}
+                  </Button>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

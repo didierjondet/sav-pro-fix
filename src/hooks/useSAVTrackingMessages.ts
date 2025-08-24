@@ -58,7 +58,8 @@ export function useSAVTrackingMessages(trackingSlug?: string) {
           },
           (payload) => {
             console.log('Real-time tracking message update:', payload);
-            // Vérifier si le message est pour notre SAV case
+            // Refetch messages for any change in the sav_messages table
+            // We don't filter here as the server-side RPC will handle filtering
             fetchMessages();
           }
         )
@@ -77,45 +78,61 @@ export function useSAVTrackingMessages(trackingSlug?: string) {
     if (!trackingSlug) return null;
 
     try {
-      // Pour envoyer un message, nous devons d'abord obtenir l'ID du SAV case
-      const { data: trackingData } = await supabase
-        .rpc('get_tracking_info', { p_tracking_slug: trackingSlug });
+      // Pour envoyer un message côté client, utiliser une approche publique
+      if (senderType === 'client') {
+        // Utiliser directement la fonction RPC pour envoyer un message client
+        const { data, error } = await supabase
+          .rpc('send_client_tracking_message', { 
+            p_tracking_slug: trackingSlug,
+            p_sender_name: senderName,
+            p_message: message
+          });
 
-      if (!trackingData || trackingData.length === 0) {
-        throw new Error('SAV case non trouvé');
+        if (error) throw error;
+
+        // Actualiser les messages après envoi
+        fetchMessages();
+        
+        return { data, error: null };
+      } else {
+        // Pour les messages du magasin, utiliser l'approche authentifiée
+        const { data: trackingData } = await supabase
+          .rpc('get_tracking_info', { p_tracking_slug: trackingSlug });
+
+        if (!trackingData || trackingData.length === 0) {
+          throw new Error('SAV case non trouvé');
+        }
+
+        const { data: savCaseData } = await supabase
+          .from('sav_cases')
+          .select('id, shop_id')
+          .eq('tracking_slug', trackingSlug)
+          .single();
+
+        if (!savCaseData) {
+          throw new Error('Impossible de récupérer l\'ID du dossier SAV');
+        }
+
+        const { data, error } = await supabase
+          .from('sav_messages')
+          .insert({
+            sav_case_id: savCaseData.id,
+            shop_id: savCaseData.shop_id,
+            sender_type: senderType,
+            sender_name: senderName,
+            message: message,
+            read_by_client: senderType === 'client',
+            read_by_shop: senderType === 'shop',
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        fetchMessages();
+        
+        return { data, error: null };
       }
-
-      // Récupérer l'ID réel du SAV case depuis la table (accès authentifié requis)
-      const { data: savCaseData } = await supabase
-        .from('sav_cases')
-        .select('id, shop_id')
-        .eq('tracking_slug', trackingSlug)
-        .single();
-
-      if (!savCaseData) {
-        throw new Error('Impossible de récupérer l\'ID du dossier SAV');
-      }
-
-      const { data, error } = await supabase
-        .from('sav_messages')
-        .insert({
-          sav_case_id: savCaseData.id,
-          shop_id: savCaseData.shop_id,
-          sender_type: senderType,
-          sender_name: senderName,
-          message: message,
-          read_by_client: senderType === 'client',
-          read_by_shop: senderType === 'shop',
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      // Actualiser les messages après envoi
-      fetchMessages();
-      
-      return { data, error: null };
     } catch (error: any) {
       console.error('Error sending message:', error);
       toast({
