@@ -22,6 +22,8 @@ import * as XLSX from 'xlsx';
 import { useSearchParams } from 'react-router-dom';
 
 import { ImportStock } from '@/components/parts/ImportStock';
+import { ImportQuotes } from '@/components/import/ImportQuotes';
+import { ImportSAVs } from '@/components/import/ImportSAVs';
 import { 
   Store, 
   Users, 
@@ -89,8 +91,10 @@ export default function Settings() {
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState<'admin' | 'technician' | 'super_admin' | 'shop_admin'>('technician');
-const [logoUploading, setLogoUploading] = useState(false);
+  const [logoUploading, setLogoUploading] = useState(false);
   const [showStockImport, setShowStockImport] = useState(false);
+  const [showQuotesImport, setShowQuotesImport] = useState(false);
+  const [showSAVsImport, setShowSAVsImport] = useState(false);
   
   // Local state for form data
   const [shopForm, setShopForm] = useState({
@@ -1172,33 +1176,74 @@ const handleExportParts = async (format: 'csv' | 'xlsx') => {
                     setShowStockImport(false);
                   }}
                 />
+              ) : showQuotesImport ? (
+                <ImportQuotes
+                  onBack={() => setShowQuotesImport(false)}
+                  onSuccess={() => {
+                    toast({ title: 'Import devis', description: 'Import terminé avec succès.' });
+                    setShowQuotesImport(false);
+                  }}
+                />
+              ) : showSAVsImport ? (
+                <ImportSAVs
+                  onBack={() => setShowSAVsImport(false)}
+                  onSuccess={() => {
+                    toast({ title: 'Import SAV', description: 'Import terminé avec succès.' });
+                    setShowSAVsImport(false);
+                  }}
+                />
               ) : (
                 <>
                   <Card>
                     <CardHeader>
-                      <CardTitle>Exporter les Devis</CardTitle>
+                      <CardTitle className="flex items-center gap-2">
+                        <Upload className="h-5 w-5" />
+                        Exporter les Devis
+                      </CardTitle>
                     </CardHeader>
                     <CardContent className="flex flex-wrap gap-2">
                       <Button variant="outline" onClick={() => handleExportQuotes('csv')}>Exporter CSV</Button>
                       <Button variant="outline" onClick={() => handleExportQuotes('xlsx')}>Exporter Excel</Button>
                       <Button variant="outline" onClick={() => handleExportQuotes('pdf')}>Exporter PDF</Button>
+                      <Button 
+                        onClick={() => setShowQuotesImport(true)}
+                        variant="destructive"
+                        className="ml-4"
+                      >
+                        <Upload className="h-4 w-4 mr-2" />
+                        Importer les devis
+                      </Button>
                     </CardContent>
                   </Card>
 
                   <Card>
                     <CardHeader>
-                      <CardTitle>Exporter les SAV</CardTitle>
+                      <CardTitle className="flex items-center gap-2">
+                        <Upload className="h-5 w-5" />
+                        Exporter les SAV
+                      </CardTitle>
                     </CardHeader>
                     <CardContent className="flex flex-wrap gap-2">
                       <Button variant="outline" onClick={() => handleExportSAVs('csv')}>Exporter CSV</Button>
                       <Button variant="outline" onClick={() => handleExportSAVs('xlsx')}>Exporter Excel</Button>
                       <Button variant="outline" onClick={() => handleExportSAVs('pdf')}>Exporter PDF</Button>
+                      <Button 
+                        onClick={() => setShowSAVsImport(true)}
+                        variant="destructive"
+                        className="ml-4"
+                      >
+                        <Upload className="h-4 w-4 mr-2" />
+                        Importer les SAV
+                      </Button>
                     </CardContent>
                   </Card>
 
                   <Card>
                     <CardHeader>
-                      <CardTitle>Stock (Pièces)</CardTitle>
+                      <CardTitle className="flex items-center gap-2">
+                        <Upload className="h-5 w-5" />
+                        Stock (Pièces)
+                      </CardTitle>
                     </CardHeader>
                     <CardContent className="flex flex-wrap gap-2">
                       <Button variant="outline" onClick={() => handleExportParts('csv')}>Exporter CSV</Button>
