@@ -78,24 +78,47 @@ export function useSAVTrackingMessages(trackingSlug?: string) {
     if (!trackingSlug) return null;
 
     try {
-      // Pour envoyer un message côté client, utiliser une approche publique
       if (senderType === 'client') {
-        // Utiliser directement la fonction RPC pour envoyer un message client
+        // Pour les messages clients publics, insérer directement sans RPC
+        const { data: trackingData } = await supabase
+          .rpc('get_tracking_info', { p_tracking_slug: trackingSlug });
+
+        if (!trackingData || trackingData.length === 0) {
+          throw new Error('SAV case non trouvé');
+        }
+
+        // Récupérer les IDs nécessaires
+        const { data: savCaseData } = await supabase
+          .from('sav_cases')
+          .select('id, shop_id')
+          .eq('tracking_slug', trackingSlug)
+          .single();
+
+        if (!savCaseData) {
+          throw new Error('Impossible de récupérer les informations du dossier SAV');
+        }
+
+        // Insérer le message directement 
         const { data, error } = await supabase
-          .rpc('send_client_tracking_message', { 
-            p_tracking_slug: trackingSlug,
-            p_sender_name: senderName,
-            p_message: message
-          });
+          .from('sav_messages')
+          .insert({
+            sav_case_id: savCaseData.id,
+            shop_id: savCaseData.shop_id,
+            sender_type: 'client',
+            sender_name: senderName,
+            message: message,
+            read_by_client: true,
+            read_by_shop: false,
+          })
+          .select()
+          .single();
 
         if (error) throw error;
 
-        // Actualiser les messages après envoi
         fetchMessages();
-        
         return { data, error: null };
       } else {
-        // Pour les messages du magasin, utiliser l'approche authentifiée
+        // Pour les messages du magasin (authentifiés)
         const { data: trackingData } = await supabase
           .rpc('get_tracking_info', { p_tracking_slug: trackingSlug });
 
@@ -121,8 +144,8 @@ export function useSAVTrackingMessages(trackingSlug?: string) {
             sender_type: senderType,
             sender_name: senderName,
             message: message,
-            read_by_client: senderType === 'client',
-            read_by_shop: senderType === 'shop',
+            read_by_client: false,
+            read_by_shop: true,
           })
           .select()
           .single();
@@ -130,7 +153,6 @@ export function useSAVTrackingMessages(trackingSlug?: string) {
         if (error) throw error;
 
         fetchMessages();
-        
         return { data, error: null };
       }
     } catch (error: any) {

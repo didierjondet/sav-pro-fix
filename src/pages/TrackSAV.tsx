@@ -20,7 +20,7 @@ interface SAVCaseData {
   id: string;
   case_number: string;
   sav_type: "client" | "internal" | "external";
-  status: "pending" | "in_progress" | "testing" | "ready" | "cancelled" | "parts_ordered";
+  status: "pending" | "in_progress" | "testing" | "ready" | "cancelled" | "parts_ordered" | "delivered";
   device_brand: string;
   device_model: string;
   device_imei?: string;
@@ -153,20 +153,20 @@ export default function TrackSAV() {
       const savCaseData = {
         id: shopData?.id || '',
         case_number: trackingInfo.case_number,
-        status: trackingInfo.status,
+        status: trackingInfo.status as "pending" | "in_progress" | "testing" | "ready" | "cancelled" | "parts_ordered" | "delivered",
         device_brand: trackingInfo.device_brand,
         device_model: trackingInfo.device_model,
         created_at: trackingInfo.created_at,
         total_cost: trackingInfo.total_cost,
-        device_imei: trackingInfo.device_imei,
-        sku: trackingInfo.sku,
+        device_imei: trackingInfo.device_imei || undefined,
+        sku: trackingInfo.sku || undefined,
         problem_description: trackingInfo.problem_description || 'Informations disponibles via le magasin',
-        repair_notes: trackingInfo.repair_notes,
+        repair_notes: trackingInfo.repair_notes || undefined,
         updated_at: trackingInfo.updated_at || trackingInfo.created_at,
-        sav_type: trackingInfo.sav_type as "client" | "internal" | "external",
+        sav_type: (trackingInfo.sav_type || 'client') as "client" | "internal" | "external",
         customer: {
           first_name: trackingInfo.customer_first_name || '',
-          last_name: trackingInfo.customer_last_name || ''
+          last_name: trackingInfo.customer_last_name || trackingInfo.customer_first_name || ''
         },
         shop: shopData?.shops ? {
           ...shopData.shops,

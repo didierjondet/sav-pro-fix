@@ -1557,6 +1557,14 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      send_client_tracking_message: {
+        Args: {
+          p_message: string
+          p_sender_name: string
+          p_tracking_slug: string
+        }
+        Returns: string
+      }
     }
     Enums: {
       sav_status:
