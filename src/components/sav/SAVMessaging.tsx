@@ -120,13 +120,13 @@ export function SAVMessaging({ savCaseId, savCaseNumber, customerPhone, customer
                     className={`flex ${message.sender_type === 'shop' || message.sender_name.includes('📱 SMS') ? 'justify-end' : 'justify-start'}`}
                   >
                     <div
-                      className={`max-w-[80%] rounded-lg p-3 relative ${
-                        message.sender_name.includes('📱 SMS')
-                          ? 'bg-green-100 border-2 border-green-200 text-green-800 dark:bg-green-900/20 dark:border-green-800 dark:text-green-200'
-                          : message.sender_type === 'shop'
-                          ? 'bg-primary text-primary-foreground'
-                          : 'bg-muted'
-                      }`}
+                    className={`max-w-[80%] rounded-lg p-3 relative ${
+                      message.sender_name.includes('📱 SMS')
+                        ? 'bg-green-50 border-2 border-green-300 text-green-900 shadow-md dark:bg-green-900/30 dark:border-green-700 dark:text-green-100'
+                        : message.sender_type === 'shop'
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-muted'
+                    }`}
                     >
                       {/* Bouton de suppression - visible si supprimable */}
                       {canDelete && (
@@ -147,10 +147,10 @@ export function SAVMessaging({ savCaseId, savCaseNumber, customerPhone, customer
                             message.sender_type === 'shop' ? 'secondary' : 'outline'
                           } 
                           className={`text-xs ${
-                            message.sender_name.includes('📱 SMS') ? 'bg-green-500 text-white' : ''
+                            message.sender_name.includes('📱 SMS') ? 'bg-green-600 hover:bg-green-700 text-white font-medium' : ''
                           }`}
                         >
-                          {message.sender_name.includes('📱 SMS') ? 'SMS' : 
+                          {message.sender_name.includes('📱 SMS') ? '📱 SMS' : 
                            message.sender_type === 'shop' ? 'Boutique' : 'Client'}
                         </Badge>
                       </div>

@@ -18,7 +18,7 @@ interface SMSRequest {
   shopId: string;
   toNumber: string;
   message: string;
-  type: 'sav_notification' | 'quote_notification' | 'manual';
+  type: 'sav_notification' | 'quote_notification' | 'manual' | 'status_change';
   recordId?: string;
 }
 
@@ -142,6 +142,60 @@ async function logSMSHistory(request: SMSRequest, status: string): Promise<void>
     });
 }
 
+async function addSMSToSAVChat(request: SMSRequest, messageSid: string): Promise<void> {
+  // Ajouter l'envoi SMS dans le chat du SAV si c'est lié à un dossier SAV
+  if (request.recordId && (request.type === 'sav_notification' || request.type === 'manual' || request.type === 'status_change')) {
+    try {
+      // Vérifier si c'est un dossier SAV
+      const { data: savCase } = await supabase
+        .from('sav_cases')
+        .select('id, case_number')
+        .eq('id', request.recordId)
+        .single();
+
+      if (savCase) {
+        // Formater le message pour le chat avec style SMS
+        const chatMessage = `📱 SMS envoyé au ${formatPhoneNumberForDisplay(request.toNumber)}\n\n"${request.message}"\n\n✅ Message ID: ${messageSid}`;
+        
+        // Obtenir le nom de la boutique pour le sender
+        const { data: shop } = await supabase
+          .from('shops')
+          .select('name')
+          .eq('id', request.shopId)
+          .single();
+
+        const shopName = shop?.name || 'Boutique';
+        
+        // Ajouter le message dans le chat SAV
+        await supabase
+          .from('sav_messages')
+          .insert({
+            sav_case_id: request.recordId,
+            shop_id: request.shopId,
+            sender_type: 'shop',
+            sender_name: `📱 SMS - ${shopName}`,
+            message: chatMessage,
+            read_by_shop: true,
+            read_by_client: false
+          });
+
+        console.log(`Message SMS ajouté au chat du dossier SAV ${savCase.case_number}`);
+      }
+    } catch (error) {
+      console.error('Erreur lors de l\'ajout du SMS au chat SAV:', error);
+      // Ne pas faire échouer l'envoi SMS pour une erreur de chat
+    }
+  }
+}
+
+function formatPhoneNumberForDisplay(phoneNumber: string): string {
+  // Masquer partiellement le numéro pour la sécurité
+  if (phoneNumber.length > 6) {
+    return phoneNumber.substring(0, 3) + '***' + phoneNumber.substring(phoneNumber.length - 2);
+  }
+  return phoneNumber;
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -185,6 +239,9 @@ serve(async (req) => {
       // SMS envoyé avec succès
       await updateSMSCredits(smsRequest.shopId);
       await logSMSHistory(smsRequest, 'sent');
+
+      // Ajouter un message dans le chat SAV pour tracer l'envoi SMS
+      await addSMSToSAVChat(smsRequest, twilioResponse.sid);
 
       return new Response(
         JSON.stringify({ 
