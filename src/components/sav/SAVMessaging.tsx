@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useSAVMessages } from '@/hooks/useSAVMessages';
 import { useProfile } from '@/hooks/useProfile';
-import { MessageSquare, Send } from 'lucide-react';
+import { MessageSquare, Send, X } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { SMSButton } from './SMSButton';
@@ -20,7 +20,7 @@ interface SAVMessagingProps {
 
 export function SAVMessaging({ savCaseId, savCaseNumber, customerPhone, customerName }: SAVMessagingProps) {
   const [newMessage, setNewMessage] = useState('');
-  const { messages, loading, sendMessage, markAllAsRead } = useSAVMessages(savCaseId);
+  const { messages, loading, sendMessage, markAllAsRead, deleteMessage } = useSAVMessages(savCaseId);
   const { profile } = useProfile();
   const [sending, setSending] = useState(false);
 
@@ -107,45 +107,64 @@ export function SAVMessaging({ savCaseId, savCaseNumber, customerPhone, customer
                 Aucun message pour l'instant. Commencez la conversation !
               </div>
             ) : (
-              messages.map((message) => (
-                <div
-                  key={message.id}
-                  className={`flex ${message.sender_type === 'shop' || message.sender_name.includes('📱 SMS') ? 'justify-end' : 'justify-start'}`}
-                >
+              messages.map((message) => {
+                // Calculer si le message peut être supprimé (moins d'1 minute et par le bon sender)
+                const messageTime = new Date(message.created_at);
+                const now = new Date();
+                const canDelete = message.sender_type === 'shop' && 
+                  (now.getTime() - messageTime.getTime()) < 60000; // 1 minute
+                
+                return (
                   <div
-                    className={`max-w-[80%] rounded-lg p-3 ${
-                      message.sender_name.includes('📱 SMS')
-                        ? 'bg-green-100 border-2 border-green-200 text-green-800 dark:bg-green-900/20 dark:border-green-800 dark:text-green-200'
-                        : message.sender_type === 'shop'
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-muted'
-                    }`}
+                    key={message.id}
+                    className={`flex ${message.sender_type === 'shop' || message.sender_name.includes('📱 SMS') ? 'justify-end' : 'justify-start'}`}
                   >
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-sm font-medium">{message.sender_name}</span>
-                      <Badge 
-                        variant={
-                          message.sender_name.includes('📱 SMS') ? 'default' :
-                          message.sender_type === 'shop' ? 'secondary' : 'outline'
-                        } 
-                        className={`text-xs ${
-                          message.sender_name.includes('📱 SMS') ? 'bg-green-500 text-white' : ''
-                        }`}
-                      >
-                        {message.sender_name.includes('📱 SMS') ? 'SMS' : 
-                         message.sender_type === 'shop' ? 'Boutique' : 'Client'}
-                      </Badge>
-                    </div>
-                    <p className="text-sm whitespace-pre-wrap">{renderMessageWithLinks(message.message)}</p>
-                    <div className="text-xs opacity-70 mt-1">
-                      {formatTime(message.created_at)}
-                      {message.sender_type === 'shop' && !message.read_by_client && !message.sender_name.includes('📱 SMS') && (
-                        <span className="ml-2">• Non lu</span>
+                    <div
+                      className={`max-w-[80%] rounded-lg p-3 relative ${
+                        message.sender_name.includes('📱 SMS')
+                          ? 'bg-green-100 border-2 border-green-200 text-green-800 dark:bg-green-900/20 dark:border-green-800 dark:text-green-200'
+                          : message.sender_type === 'shop'
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-muted'
+                      }`}
+                    >
+                      {/* Bouton de suppression - visible si supprimable */}
+                      {canDelete && (
+                        <button
+                          onClick={() => deleteMessage && deleteMessage(message.id)}
+                          className="absolute -top-1 -right-1 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center shadow-md border border-white transition-colors"
+                          title="Supprimer le message (disponible pendant 1 minute)"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
                       )}
+                      
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-sm font-medium">{message.sender_name}</span>
+                        <Badge 
+                          variant={
+                            message.sender_name.includes('📱 SMS') ? 'default' :
+                            message.sender_type === 'shop' ? 'secondary' : 'outline'
+                          } 
+                          className={`text-xs ${
+                            message.sender_name.includes('📱 SMS') ? 'bg-green-500 text-white' : ''
+                          }`}
+                        >
+                          {message.sender_name.includes('📱 SMS') ? 'SMS' : 
+                           message.sender_type === 'shop' ? 'Boutique' : 'Client'}
+                        </Badge>
+                      </div>
+                      <p className="text-sm whitespace-pre-wrap">{renderMessageWithLinks(message.message)}</p>
+                      <div className="text-xs opacity-70 mt-1">
+                        {formatTime(message.created_at)}
+                        {message.sender_type === 'shop' && !message.read_by_client && !message.sender_name.includes('📱 SMS') && (
+                          <span className="ml-2">• Non lu</span>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         </ScrollArea>

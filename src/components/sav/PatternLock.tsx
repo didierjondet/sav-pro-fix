@@ -137,11 +137,12 @@ export function PatternLock({ pattern = [], onChange, disabled = false, showPatt
     const dotIndex = getDotFromPosition(x, y);
     if (dotIndex !== -1 && !currentPattern.includes(dotIndex)) {
       setCurrentPattern(prev => [...prev, dotIndex]);
-    } else if (dotIndex !== -1 && dotIndex === currentPattern[0] && currentPattern.length > 2) {
-      // Fermer le pattern si on revient au point de départ avec au moins 3 points
-      setCurrentPattern(prev => [...prev, dotIndex]);
+    } else if (dotIndex !== -1 && dotIndex === currentPattern[0] && currentPattern.length >= 2) {
+      // Fermer le pattern si on revient au point de départ avec au moins 2 points
+      const newPattern = [...currentPattern, dotIndex];
+      setCurrentPattern(newPattern);
       setIsDrawing(false);
-      onChange([...currentPattern, dotIndex]);
+      onChange(newPattern);
     }
   };
 

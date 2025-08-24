@@ -64,8 +64,9 @@ export function useSAVMessages(savCaseId?: string) {
           filter: `sav_case_id=eq.${savCaseId}`
         },
         (payload) => {
-          console.log('SAV message change detected:', payload);
-          fetchMessages(); // Refetch messages when any change occurs
+          console.log('📨 SAV message change detected:', payload);
+          // Refetch messages immediately for any change
+          setTimeout(() => fetchMessages(), 100); // Small delay to ensure DB consistency
         }
       )
       .subscribe();
@@ -154,12 +155,37 @@ export function useSAVMessages(savCaseId?: string) {
     }
   };
 
+  const deleteMessage = async (messageId: string) => {
+    try {
+      const { error } = await supabase
+        .from('sav_messages')
+        .delete()
+        .eq('id', messageId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Message supprimé",
+        description: "Le message a été supprimé avec succès",
+      });
+
+      fetchMessages();
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
   return {
     messages,
     loading,
     sendMessage,
     markAsRead,
     markAllAsRead,
+    deleteMessage,
     refetch: fetchMessages,
   };
 }
