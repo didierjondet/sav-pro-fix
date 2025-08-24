@@ -538,28 +538,50 @@ export default function SimpleTrack() {
               <Separator className="my-3" />
 
               {/* Zone de saisie */}
-              <div className="space-y-3">
-                <div className="flex gap-2">
-                  <Textarea
-                    placeholder="Tapez votre message..."
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    onKeyPress={handleKeyPress}
-                    className="flex-1 min-h-[60px] resize-none"
-                  />
-                  <Button
-                    onClick={handleSendMessage}
-                    disabled={!newMessage.trim() || isSendingMessage}
-                    size="sm"
-                    className="self-end"
-                  >
-                    <Send className="h-4 w-4" />
-                  </Button>
+              {savCase.status === 'ready' || savCase.status === 'cancelled' ? (
+                // Avertissement quand le SAV est clôturé
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                  <div className="flex items-center gap-2 text-amber-700">
+                    <AlertCircle className="h-5 w-5" />
+                    <h4 className="font-medium">Chat fermé</h4>
+                  </div>
+                  <p className="text-sm text-amber-600 mt-1">
+                    {savCase.status === 'ready' 
+                      ? 'Ce dossier SAV est terminé. Vous ne pouvez plus envoyer de messages via ce chat. Contactez directement le magasin si nécessaire.'
+                      : 'Ce dossier SAV a été annulé. Vous ne pouvez plus envoyer de messages via ce chat. Contactez directement le magasin si nécessaire.'
+                    }
+                  </p>
+                  {savCase.shop?.phone && (
+                    <p className="text-xs text-amber-600 mt-2">
+                      📞 Téléphone du magasin : <span className="font-medium">{savCase.shop.phone}</span>
+                    </p>
+                  )}
                 </div>
-                <p className="text-xs text-gray-500">
-                  Appuyez sur Entrée pour envoyer votre message
-                </p>
-              </div>
+              ) : (
+                // Zone de saisie normale
+                <div className="space-y-3">
+                  <div className="flex gap-2">
+                    <Textarea
+                      placeholder="Tapez votre message..."
+                      value={newMessage}
+                      onChange={(e) => setNewMessage(e.target.value)}
+                      onKeyPress={handleKeyPress}
+                      className="flex-1 min-h-[60px] resize-none"
+                    />
+                    <Button
+                      onClick={handleSendMessage}
+                      disabled={!newMessage.trim() || isSendingMessage}
+                      size="sm"
+                      className="self-end"
+                    >
+                      <Send className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    Appuyez sur Entrée pour envoyer votre message
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>

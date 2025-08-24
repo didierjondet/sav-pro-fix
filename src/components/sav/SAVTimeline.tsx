@@ -1,5 +1,5 @@
 import React from 'react';
-import { CheckCircle, Clock, AlertCircle } from 'lucide-react';
+import { CheckCircle, Clock, AlertCircle, Flag } from 'lucide-react';
 import { calculateSAVDelay } from '@/hooks/useSAVDelay';
 
 interface TimelineProps {
@@ -35,7 +35,7 @@ export function SAVTimeline({ savCase, shop }: TimelineProps) {
     const isPast = day < currentDay;
     const isCurrent = day === currentDay && !delayInfo.isOverdue;
     const isOverdue = delayInfo.isOverdue && day <= currentDay;
-    const isReady = savCase.status === 'ready';
+    const isReady = savCase.status === 'ready' || savCase.status === 'cancelled';
 
     return {
       day,
@@ -45,6 +45,10 @@ export function SAVTimeline({ savCase, shop }: TimelineProps) {
       isReady,
     };
   });
+
+  // Ajouter un point final de jonction si le SAV est terminé
+  const isClosed = savCase.status === 'ready' || savCase.status === 'cancelled';
+  const shouldShowFinalPoint = isClosed;
 
   return (
     <div className="w-full bg-white rounded-lg p-4 border">
@@ -58,10 +62,10 @@ export function SAVTimeline({ savCase, shop }: TimelineProps) {
           <div 
             className={`h-full transition-all duration-500 ${
               delayInfo.isOverdue ? 'bg-red-500' : 
-              savCase.status === 'ready' ? 'bg-green-500' : 'bg-blue-500'
+              isClosed ? 'bg-green-500' : 'bg-blue-500'
             }`}
             style={{ 
-              width: savCase.status === 'ready' ? '100%' : `${Math.min((currentDay / maxDays) * 100, 100)}%` 
+              width: isClosed ? '100%' : `${Math.min((currentDay / maxDays) * 100, 100)}%` 
             }}
           />
         </div>
@@ -111,13 +115,33 @@ export function SAVTimeline({ savCase, shop }: TimelineProps) {
               </div>
             </div>
           ))}
+          
+          {/* Point final de jonction si le SAV est terminé */}
+          {shouldShowFinalPoint && (
+            <div className="flex flex-col items-center">
+              {/* Point final */}
+              <div className="w-10 h-10 rounded-full border-3 border-green-500 bg-green-500 text-white flex items-center justify-center shadow-lg">
+                <Flag className="w-5 h-5" />
+              </div>
+              
+              {/* Label du point final */}
+              <div className="mt-2 text-xs text-center text-green-600 font-medium">
+                <div>Terminé</div>
+                <div className="text-xs text-gray-500">
+                  {savCase.status === 'ready' ? 'Prêt' : 'Annulé'}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Légende */}
         <div className="mt-4 text-center">
           <div className="text-xs text-gray-600">
-            {savCase.status === 'ready' ? (
-              <span className="text-green-600 font-medium">✅ Dossier terminé</span>
+            {isClosed ? (
+              <span className="text-green-600 font-medium">
+                {savCase.status === 'ready' ? '✅ Dossier terminé - Prêt à récupérer' : '❌ Dossier annulé'}
+              </span>
             ) : delayInfo.isOverdue ? (
               <span className="text-red-600 font-medium">⚠️ Délai dépassé</span>
             ) : (
