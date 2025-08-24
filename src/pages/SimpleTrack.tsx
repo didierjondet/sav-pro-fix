@@ -14,6 +14,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
 import { calculateSAVDelay, formatDelayText } from '@/hooks/useSAVDelay';
+import { SAVTimeline } from '@/components/sav/SAVTimeline';
 
 interface SAVCaseData {
   id: string;
@@ -331,6 +332,11 @@ export default function SimpleTrack() {
           <div className="text-xs text-gray-500">
             Propulsé par <span className="font-medium">FixWay Pro</span>
           </div>
+        </div>
+
+        {/* Timeline de progression */}
+        <div className="mb-6">
+          <SAVTimeline savCase={savCase} shop={savCase.shop} />
         </div>
 
         {/* Indicateur de délai */}

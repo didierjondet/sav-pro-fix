@@ -45,25 +45,42 @@ export function useSAVTrackingMessages(trackingSlug?: string) {
 
     // Setup real-time subscription for messages
     if (trackingSlug) {
-      const channel = supabase
-        .channel(`tracking-messages-${trackingSlug}`)
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'sav_messages',
-            filter: `sav_case_id=in.(select id from sav_cases where tracking_slug='${trackingSlug}')`
-          },
-          () => {
-            console.log('Real-time message update detected');
-            fetchMessages();
-          }
-        )
-        .subscribe();
+      let channel: any = null;
+      
+      // D'abord, obtenir l'ID du SAV case pour le filtre
+      const setupRealtime = async () => {
+        const { data } = await supabase
+          .from('sav_cases')
+          .select('id')
+          .eq('tracking_slug', trackingSlug)
+          .single();
+          
+        if (data) {
+          channel = supabase
+            .channel(`tracking-messages-${trackingSlug}`)
+            .on(
+              'postgres_changes',
+              {
+                event: '*',
+                schema: 'public',
+                table: 'sav_messages',
+                filter: `sav_case_id=eq.${data.id}`
+              },
+              (payload) => {
+                console.log('Real-time message update detected:', payload);
+                fetchMessages();
+              }
+            )
+            .subscribe();
+        }
+      };
+      
+      setupRealtime();
 
       return () => {
-        supabase.removeChannel(channel);
+        if (channel) {
+          supabase.removeChannel(channel);
+        }
       };
     }
   }, [trackingSlug]);
