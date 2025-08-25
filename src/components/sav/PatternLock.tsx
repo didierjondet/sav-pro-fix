@@ -74,7 +74,7 @@ export function PatternLock({ pattern = [], onChange, disabled = false }: Patter
     }
 
     // Draw pattern lines
-    if (currentPattern.length > 1 && isDrawing) {
+    if (currentPattern.length > 1) {
       ctx.strokeStyle = 'hsl(var(--primary))';
       ctx.lineWidth = 4;
       ctx.lineCap = 'round';
@@ -92,7 +92,7 @@ export function PatternLock({ pattern = [], onChange, disabled = false }: Patter
     }
 
     // Draw numbers when pattern exists
-    if (currentPattern.length > 0 && isDrawing) {
+    if (currentPattern.length > 0) {
       ctx.fillStyle = 'hsl(var(--primary-foreground))';
       ctx.font = 'bold 14px sans-serif';
       ctx.textAlign = 'center';
