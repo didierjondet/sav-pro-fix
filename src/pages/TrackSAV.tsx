@@ -1,21 +1,26 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
 import { supabase } from '@/integrations/supabase/client';
-import { useSAVTrackingMessages } from '@/hooks/useSAVTrackingMessages';
-import { MessageSquare, Send, Smartphone, AlertCircle, CheckCircle, X, Timer, Wifi } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
-import { fr } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
-import { calculateSAVDelay, formatDelayText } from '@/hooks/useSAVDelay';
-import { SAVTimeline } from '@/components/sav/SAVTimeline';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import { Progress } from '@/components/ui/progress';
 import { useShopSAVStatuses } from '@/hooks/useShopSAVStatuses';
+import { useSAVDelay } from '@/hooks/useSAVDelay';
+import { SAVTimeline } from '@/components/sav/SAVTimeline';
+import { MessagingInterface } from '@/components/sav/MessagingInterface';
+import { 
+  MapPin, 
+  Phone, 
+  Mail,
+  Clock,
+  Euro,
+  Smartphone,
+  CheckCircle,
+  Timer,
+  Wifi
+} from 'lucide-react';
 
 interface SAVCaseData {
   id: string;
@@ -52,13 +57,9 @@ export default function TrackSAV() {
   const { slug } = useParams<{ slug: string }>();
   const [savCase, setSavCase] = useState<SAVCaseData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [newMessage, setNewMessage] = useState('');
-  const [sending, setSending] = useState(false);
   const [isRealTimeConnected, setIsRealTimeConnected] = useState(false);
   const { toast } = useToast();
   const { getStatusInfo } = useShopSAVStatuses();
-
-  const { messages, sendMessage, deleteMessage, refetch: refetchMessages } = useSAVTrackingMessages(slug);
 
   useEffect(() => {
     if (slug) {
@@ -66,7 +67,7 @@ export default function TrackSAV() {
     }
   }, [slug]);
 
-  // Setup real-time connection status and SAV case updates
+  // Real-time setup for SAV case updates only
   useEffect(() => {
     if (slug && savCase?.id) {
       const channel = supabase
@@ -85,11 +86,9 @@ export default function TrackSAV() {
           (payload) => {
             console.log('SAV case updated via realtime:', payload);
             if (payload.new) {
-              // Mettre à jour directement le savCase avec les nouvelles données
               setSavCase(prevCase => ({
                 ...prevCase,
                 ...payload.new,
-                // Conserver les données qui ne changent pas
                 customer: prevCase?.customer,
                 shop: prevCase?.shop
               }));
@@ -129,7 +128,7 @@ export default function TrackSAV() {
         .from('sav_cases')
         .select(`
           id,
-          shops (name, phone, email, address, logo_url)
+          shops (name, phone, email, address, logo_url, max_sav_processing_days_client, max_sav_processing_days_internal)
         `)
         .eq('tracking_slug', slug)
         .maybeSingle();
@@ -142,21 +141,21 @@ export default function TrackSAV() {
         device_brand: trackingInfo.device_brand,
         device_model: trackingInfo.device_model,
         created_at: trackingInfo.created_at,
-        updated_at: trackingInfo.created_at, // Use created_at as fallback
+        updated_at: trackingInfo.created_at,
         total_cost: trackingInfo.total_cost,
-        device_imei: undefined, // Not available in tracking info
-        sku: undefined, // Not available in tracking info
+        device_imei: undefined,
+        sku: undefined,
         problem_description: 'Informations disponibles via le magasin',
-        repair_notes: undefined, // Not available in tracking info
-        sav_type: 'client' as "client" | "internal" | "external", // Default to client
+        repair_notes: undefined,
+        sav_type: 'client' as "client" | "internal" | "external",
         customer: {
           first_name: trackingInfo.customer_first_name || '',
-          last_name: '' // customer_last_name not available in tracking info
+          last_name: ''
         },
         shop: shopData?.shops ? {
           ...shopData.shops,
-          max_sav_processing_days_client: 7, // Valeurs par défaut
-          max_sav_processing_days_internal: 5
+          max_sav_processing_days_client: shopData.shops.max_sav_processing_days_client || 7,
+          max_sav_processing_days_internal: shopData.shops.max_sav_processing_days_internal || 5
         } : undefined
       };
 
@@ -173,26 +172,10 @@ export default function TrackSAV() {
     }
   };
 
-  const handleSendMessage = async () => {
-    if (!newMessage.trim()) return;
-    
-    setSending(true);
-    // Utiliser le nom du client du SAV
-    const customerName = savCase?.customer?.first_name || 'Client';
-    const result = await sendMessage(newMessage.trim(), customerName, 'client');
-    
-    if (result?.data) {
-      setNewMessage('');
-    }
-    setSending(false);
-  };
-
-  const formatTime = (dateString: string) => {
-    return formatDistanceToNow(new Date(dateString), { 
-      addSuffix: true, 
-      locale: fr 
-    });
-  };
+  const delayInfo = useSAVDelay(
+    savCase?.created_at,
+    savCase?.status
+  );
 
   if (loading) {
     return (
@@ -289,50 +272,40 @@ export default function TrackSAV() {
         )}
 
         {/* Indicateur de délai */}
-        {savCase && savCase.status !== 'ready' && savCase.status !== 'cancelled' && (
-          (() => {
-            const delayInfo = calculateSAVDelay(savCase as any, savCase.shop as any);
-            return (
-              <Card className={`mb-6 border-2 ${delayInfo.isOverdue ? 'border-red-500 bg-red-50' : 'border-orange-500 bg-orange-50'}`}>
-                <CardContent className="p-4">
-                  <div className="text-center">
-                    <div className="flex items-center justify-center gap-2 mb-2">
-                      <Timer className={`h-5 w-5 ${delayInfo.isOverdue ? 'text-red-600' : 'text-orange-600'}`} />
-                      <h3 className={`font-semibold ${delayInfo.isOverdue ? 'text-red-600' : 'text-orange-600'}`}>
-                        Délai de traitement
-                      </h3>
-                    </div>
-                    
-                    {delayInfo.isOverdue ? (
-                      <div className="text-red-600">
-                        <p className="font-bold text-lg">⚠️ EN RETARD</p>
-                        <p className="text-sm">Le délai de traitement standard a été dépassé</p>
-                        <p className="text-xs mt-1">Contactez le magasin pour plus d'informations</p>
-                      </div>
-                    ) : (
-                      <div className="text-orange-600">
-                        <p className="font-bold text-lg">⏱️ {formatDelayText(delayInfo)}</p>
-                        <p className="text-sm">Délai de traitement estimé</p>
-                        
-                        {/* Barre de progression */}
-                        <div className="mt-3 mx-auto max-w-md">
-                          <div className="w-full bg-gray-200 rounded-full h-2">
-                            <div 
-                              className="bg-orange-500 h-2 rounded-full transition-all duration-300"
-                              style={{ width: `${Math.min(delayInfo.progress, 100)}%` }}
-                            ></div>
-                          </div>
-                          <p className="text-xs text-gray-500 mt-1">
-                            {Math.round(delayInfo.progress)}% du délai écoulé
-                          </p>
-                        </div>
-                      </div>
-                    )}
+        {savCase && savCase.status !== 'ready' && savCase.status !== 'cancelled' && delayInfo && (
+          <Card className={`mb-6 border-2 ${delayInfo.isOverdue ? 'border-red-500 bg-red-50' : 'border-orange-500 bg-orange-50'}`}>
+            <CardContent className="p-4">
+              <div className="text-center">
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <Timer className={`h-5 w-5 ${delayInfo.isOverdue ? 'text-red-600' : 'text-orange-600'}`} />
+                  <h3 className={`font-semibold ${delayInfo.isOverdue ? 'text-red-600' : 'text-orange-600'}`}>
+                    Délai de traitement
+                  </h3>
+                </div>
+                
+                {delayInfo.isOverdue ? (
+                  <div className="text-red-600">
+                    <p className="font-bold text-lg">⚠️ EN RETARD</p>
+                    <p className="text-sm">Le délai de traitement standard a été dépassé</p>
+                    <p className="text-xs mt-1">Contactez le magasin pour plus d'informations</p>
                   </div>
-                </CardContent>
-              </Card>
-            );
-          })()
+                ) : (
+                  <div className="text-orange-600">
+                    <p className="font-bold text-lg">⏱️ {delayInfo.remainingDays} jours restants</p>
+                    <p className="text-sm">Délai de traitement estimé</p>
+                    
+                    {/* Barre de progression */}
+                    <div className="mt-3 mx-auto max-w-md">
+                      <Progress value={delayInfo.progress} className="h-2" />
+                      <p className="text-xs text-gray-500 mt-1">
+                        {Math.round(delayInfo.progress)}% du délai écoulé
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
         )}
 
         {/* Status */}
@@ -414,115 +387,17 @@ export default function TrackSAV() {
           </CardContent>
         </Card>
 
-        {/* Messages */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <MessageSquare className="h-5 w-5" />
-              Discussion
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <ScrollArea className="h-[400px] w-full pr-4 border rounded-lg bg-muted/30">
-              <div className="p-4 space-y-4">
-                {messages.length === 0 ? (
-                  <div className="text-center text-muted-foreground">
-                    <MessageSquare className="h-12 w-12 mx-auto mb-2 text-gray-300" />
-                    <p>Aucun message pour le moment</p>
-                    <p className="text-sm">Démarrez une conversation avec le magasin</p>
-                  </div>
-                ) : (
-                  messages.map((message) => {
-                    // Calculer si le message peut être supprimé (moins d'1 minute)
-                    const messageTime = new Date(message.created_at);
-                    const now = new Date();
-                    const canDelete = message.sender_type === 'client' && 
-                      (now.getTime() - messageTime.getTime()) < 60000; // 1 minute
-                    
-                    return (
-                      <div
-                        key={message.id}
-                        className={`flex ${message.sender_type === 'client' ? 'justify-end' : 'justify-start'}`}
-                      >
-                        <div
-                          className={`max-w-[80%] rounded-lg p-3 relative ${
-                            message.sender_type === 'client'
-                              ? 'bg-primary text-primary-foreground'
-                              : 'bg-card'
-                          }`}
-                        >
-                          {/* Bouton de suppression - toujours visible si supprimable */}
-                          {canDelete && (
-                            <button
-                              onClick={() => deleteMessage(message.id, message.sender_name)}
-                              className="absolute -top-1 -right-1 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center shadow-md border border-white transition-colors"
-                              title="Supprimer le message (disponible pendant 1 minute)"
-                            >
-                              <X className="w-3 h-3" />
-                            </button>
-                          )}
-                          
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="text-sm font-medium">{message.sender_name}</span>
-                            <Badge variant={message.sender_type === 'client' ? 'secondary' : 'outline'} className="text-xs">
-                              {message.sender_type === 'client' ? 'Vous' : 'Boutique'}
-                            </Badge>
-                          </div>
-                          <p className="text-sm whitespace-pre-wrap">{message.message}</p>
-                          <div className="text-xs opacity-70 mt-1">
-                            {formatTime(message.created_at)}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
-              </div>
-            </ScrollArea>
-
-            {/* Zone de saisie ou avertissement si fermé */}
-            {savCase?.status === 'ready' || savCase?.status === 'cancelled' ? (
-              // Avertissement quand le SAV est clôturé
-              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-                <div className="flex items-center gap-2 text-amber-700">
-                  <AlertCircle className="h-5 w-5" />
-                  <h4 className="font-medium">Chat fermé</h4>
-                </div>
-                <p className="text-sm text-amber-600 mt-1">
-                  {savCase.status === 'ready' 
-                    ? 'Ce dossier SAV est terminé. Vous ne pouvez plus envoyer de messages via ce chat. Contactez directement le magasin si nécessaire.'
-                    : 'Ce dossier SAV a été annulé. Vous ne pouvez plus envoyer de messages via ce chat. Contactez directement le magasin si nécessaire.'
-                  }
-                </p>
-                {savCase.shop?.phone && (
-                  <p className="text-xs text-amber-600 mt-2">
-                    📞 Téléphone du magasin : <span className="font-medium">{savCase.shop.phone}</span>
-                  </p>
-                )}
-              </div>
-            ) : (
-              // Zone de saisie normale
-              <div className="space-y-2">
-                <Textarea
-                  placeholder="Tapez votre message ici..."
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  rows={3}
-                />
-                <div className="flex justify-end">
-                  <Button
-                    onClick={handleSendMessage}
-                    disabled={!newMessage.trim() || sending}
-                    size="sm"
-                  >
-                    <Send className="h-4 w-4 mr-2" />
-                    {sending ? 'Envoi...' : 'Envoyer'}
-                  </Button>
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        {/* Section Chat */}
+        {savCase && slug && (
+          <MessagingInterface
+            trackingSlug={slug}
+            userType="client"
+            caseNumber={savCase.case_number}
+            senderName={savCase.customer?.first_name || "Client"}
+            isCaseClosed={savCase.status === 'ready' || savCase.status === 'cancelled'}
+            shopPhone={savCase.shop?.phone}
+          />
+        )}
       </div>
       
       {/* Footer */}
