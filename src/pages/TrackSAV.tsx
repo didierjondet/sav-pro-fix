@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -7,15 +7,9 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Progress } from '@/components/ui/progress';
 import { useShopSAVStatuses } from '@/hooks/useShopSAVStatuses';
-import { useSAVDelay } from '@/hooks/useSAVDelay';
 import { SAVTimeline } from '@/components/sav/SAVTimeline';
 import { MessagingInterface } from '@/components/sav/MessagingInterface';
 import { 
-  MapPin, 
-  Phone, 
-  Mail,
-  Clock,
-  Euro,
   Smartphone,
   CheckCircle,
   Timer,
@@ -172,10 +166,46 @@ export default function TrackSAV() {
     }
   };
 
-  const delayInfo = useSAVDelay(
-    savCase?.created_at,
-    savCase?.status
-  );
+  // Créer un objet SAVCase compatible pour useSAVDelay
+  const delayInfo = useMemo(() => {
+    if (!savCase || !savCase.shop) {
+      return {
+        isOverdue: false,
+        remainingDays: 0,
+        remainingHours: 0,
+        totalRemainingHours: 0,
+        progress: 0
+      };
+    }
+
+    const maxDays = savCase.sav_type === 'client' 
+      ? savCase.shop.max_sav_processing_days_client || 7
+      : savCase.shop.max_sav_processing_days_internal || 5;
+
+    const createdAt = new Date(savCase.created_at);
+    const now = new Date();
+    const maxDate = new Date(createdAt.getTime() + maxDays * 24 * 60 * 60 * 1000);
+    
+    const remainingMs = maxDate.getTime() - now.getTime();
+    const totalRemainingHours = Math.floor(remainingMs / (1000 * 60 * 60));
+    
+    const isOverdue = remainingMs <= 0;
+    const remainingDays = Math.floor(totalRemainingHours / 24);
+    const remainingHours = totalRemainingHours % 24;
+    
+    // Calculer le pourcentage de temps écoulé
+    const totalMaxHours = maxDays * 24;
+    const elapsedHours = Math.floor((now.getTime() - createdAt.getTime()) / (1000 * 60 * 60));
+    const progress = Math.min(100, Math.max(0, (elapsedHours / totalMaxHours) * 100));
+
+    return {
+      isOverdue,
+      remainingDays: Math.max(0, remainingDays),
+      remainingHours: Math.max(0, remainingHours),
+      totalRemainingHours: Math.max(0, totalRemainingHours),
+      progress
+    };
+  }, [savCase?.created_at, savCase?.sav_type, savCase?.shop?.max_sav_processing_days_client, savCase?.shop?.max_sav_processing_days_internal]);
 
   if (loading) {
     return (
