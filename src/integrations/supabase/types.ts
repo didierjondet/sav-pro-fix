@@ -1477,6 +1477,14 @@ export type Database = {
         }
         Returns: string
       }
+      delete_client_tracking_message: {
+        Args: {
+          p_message_id: string
+          p_sender_name: string
+          p_tracking_slug: string
+        }
+        Returns: string
+      }
       ensure_super_admin_profile: {
         Args: Record<PropertyKey, never>
         Returns: undefined

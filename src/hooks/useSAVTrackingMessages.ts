@@ -183,12 +183,17 @@ export function useSAVTrackingMessages(trackingSlug?: string) {
     }
   };
 
-  const deleteMessage = async (messageId: string) => {
+  const deleteMessage = async (messageId: string, senderName?: string) => {
+    if (!trackingSlug) return;
+
     try {
+      // Utiliser la fonction sécurisée pour les clients publics
       const { error } = await supabase
-        .from('sav_messages')
-        .delete()
-        .eq('id', messageId);
+        .rpc('delete_client_tracking_message', {
+          p_tracking_slug: trackingSlug,
+          p_message_id: messageId,
+          p_sender_name: senderName || 'Client' // Fallback au cas où le nom ne serait pas fourni
+        });
 
       if (error) throw error;
       
@@ -201,9 +206,17 @@ export function useSAVTrackingMessages(trackingSlug?: string) {
       });
     } catch (error: any) {
       console.error('Error deleting message:', error);
+      let errorMessage = "Impossible de supprimer le message";
+      
+      if (error.message?.includes('can only be deleted within 1 minute')) {
+        errorMessage = "Le message ne peut être supprimé que dans la minute suivant son envoi";
+      } else if (error.message?.includes('permission denied')) {
+        errorMessage = "Vous ne pouvez supprimer que vos propres messages";
+      }
+      
       toast({
         title: "Erreur",
-        description: "Impossible de supprimer le message",
+        description: errorMessage,
         variant: "destructive",
       });
     }
