@@ -66,6 +66,12 @@ const statusConfig = {
     description: 'Votre appareil est en phase de test',
     icon: AlertCircle
   },
+  parts_ordered: { 
+    label: 'Pièces commandées', 
+    variant: 'default' as const,
+    description: 'Les pièces nécessaires ont été commandées',
+    icon: AlertCircle
+  },
   ready: { 
     label: 'Prêt', 
     variant: 'default' as const,
@@ -105,7 +111,7 @@ export default function TrackSAV() {
 
   // Setup real-time connection status and SAV case updates
   useEffect(() => {
-    if (slug) {
+    if (slug && savCase?.id) {
       const channel = supabase
         .channel(`tracking-${slug}`)
         .on('presence', { event: 'sync' }, () => {
@@ -117,12 +123,20 @@ export default function TrackSAV() {
             event: 'UPDATE',
             schema: 'public',
             table: 'sav_cases',
-            filter: `tracking_slug=eq.${slug}`
+            filter: `id=eq.${savCase.id}`
           },
           (payload) => {
             console.log('SAV case updated via realtime:', payload);
-            // Refetch les données pour avoir les dernières mises à jour
-            fetchSAVCase();
+            if (payload.new) {
+              // Mettre à jour directement le savCase avec les nouvelles données
+              setSavCase(prevCase => ({
+                ...prevCase,
+                ...payload.new,
+                // Conserver les données qui ne changent pas
+                customer: prevCase?.customer,
+                shop: prevCase?.shop
+              }));
+            }
           }
         )
         .subscribe();
@@ -132,7 +146,7 @@ export default function TrackSAV() {
         supabase.removeChannel(channel);
       };
     }
-  }, [slug]);
+  }, [slug, savCase?.id]);
 
   const fetchSAVCase = async () => {
     console.log('🔍 [TrackSAV] Starting fetch for slug:', slug);
