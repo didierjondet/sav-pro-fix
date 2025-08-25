@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Trash2, Eye, EyeOff } from 'lucide-react';
+import { Trash2 } from 'lucide-react';
 
 interface PatternLockProps {
   pattern?: number[];
@@ -10,11 +10,10 @@ interface PatternLockProps {
   showPattern?: boolean;
 }
 
-export function PatternLock({ pattern = [], onChange, disabled = false, showPattern = false }: PatternLockProps) {
+export function PatternLock({ pattern = [], onChange, disabled = false }: PatternLockProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [currentPattern, setCurrentPattern] = useState<number[]>(pattern);
-  const [showPatternState, setShowPatternState] = useState(showPattern);
 
   const GRID_SIZE = 3;
   const CANVAS_SIZE = 300;
@@ -75,7 +74,7 @@ export function PatternLock({ pattern = [], onChange, disabled = false, showPatt
     }
 
     // Draw pattern lines
-    if (currentPattern.length > 1 && (showPatternState || isDrawing)) {
+    if (currentPattern.length > 1 && isDrawing) {
       ctx.strokeStyle = 'hsl(var(--primary))';
       ctx.lineWidth = 4;
       ctx.lineCap = 'round';
@@ -92,8 +91,8 @@ export function PatternLock({ pattern = [], onChange, disabled = false, showPatt
       ctx.stroke();
     }
 
-    // Draw numbers if showing pattern
-    if (showPatternState && currentPattern.length > 0) {
+    // Draw numbers when pattern exists
+    if (currentPattern.length > 0 && isDrawing) {
       ctx.fillStyle = 'hsl(var(--primary-foreground))';
       ctx.font = 'bold 14px sans-serif';
       ctx.textAlign = 'center';
@@ -104,7 +103,7 @@ export function PatternLock({ pattern = [], onChange, disabled = false, showPatt
         ctx.fillText((patternIndex + 1).toString(), x, y);
       });
     }
-  }, [currentPattern, showPatternState, isDrawing]);
+  }, [currentPattern, isDrawing]);
 
   // Handle mouse events
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -158,9 +157,6 @@ export function PatternLock({ pattern = [], onChange, disabled = false, showPatt
     onChange([]);
   };
 
-  const toggleShowPattern = () => {
-    setShowPatternState(!showPatternState);
-  };
 
   // Update pattern when prop changes
   useEffect(() => {
@@ -179,26 +175,15 @@ export function PatternLock({ pattern = [], onChange, disabled = false, showPatt
           Schéma de verrouillage
           <div className="flex gap-2">
             {currentPattern.length > 0 && (
-              <>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={toggleShowPattern}
-                  disabled={disabled}
-                >
-                  {showPatternState ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={clearPattern}
-                  disabled={disabled}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={clearPattern}
+                disabled={disabled}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
             )}
           </div>
         </CardTitle>
