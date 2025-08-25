@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useSAVCases } from '@/hooks/useSAVCases';
 import { useSubscription } from '@/hooks/useSubscription';
+import { useShopSAVStatuses } from '@/hooks/useShopSAVStatuses';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Settings, Save, MessageSquare, AlertTriangle, CreditCard, Euro } from 'lucide-react';
@@ -40,24 +41,6 @@ interface SAVStatusManagerProps {
   onStatusUpdated?: () => void;
 }
 
-const statusConfig = {
-  pending: { label: 'En attente', variant: 'secondary' as const },
-  in_progress: { label: 'En cours', variant: 'default' as const },
-  testing: { label: 'Tests', variant: 'default' as const },
-  parts_ordered: { label: 'Pièce commandée', variant: 'outline' as const },
-  ready: { label: 'Prêt', variant: 'default' as const },
-  cancelled: { label: 'Annulé', variant: 'destructive' as const },
-};
-
-const statusOptions = [
-  { value: 'pending', label: 'En attente' },
-  { value: 'in_progress', label: 'En cours' },
-  { value: 'testing', label: 'Tests' },
-  { value: 'parts_ordered', label: 'Pièce commandée' },
-  { value: 'ready', label: 'Prêt' },
-  { value: 'cancelled', label: 'Annulé' },
-];
-
 export function SAVStatusManager({ savCase, onStatusUpdated }: SAVStatusManagerProps) {
   const [selectedStatus, setSelectedStatus] = useState(savCase.status);
   const [notes, setNotes] = useState('');
@@ -84,6 +67,7 @@ export function SAVStatusManager({ savCase, onStatusUpdated }: SAVStatusManagerP
   const { subscription, checkLimits } = useSubscription();
   const { shop } = useShop();
   const { toast } = useToast();
+  const { getStatusInfo, getAllStatuses } = useShopSAVStatuses();
 
   // Charger les limites SMS au montage
   useEffect(() => {
@@ -115,7 +99,8 @@ export function SAVStatusManager({ savCase, onStatusUpdated }: SAVStatusManagerP
       if (sendSMS && savCase.customer?.phone && savCase.tracking_slug) {
         const customerName = `${savCase.customer.first_name} ${savCase.customer.last_name}`;
         const shortTrackingUrl = generateShortTrackingUrl(savCase.tracking_slug);
-        const statusLabel = statusConfig[selectedStatus as keyof typeof statusConfig]?.label || selectedStatus;
+        const statusInfo = getStatusInfo(selectedStatus);
+        const statusLabel = statusInfo.label;
         
         const message = `Bonjour ${customerName}, votre dossier de réparation ${savCase.case_number} a été mis à jour : ${statusLabel}. Suivez l'évolution : ${shortTrackingUrl}`;
         
@@ -409,8 +394,12 @@ L'équipe ${shopData.name || 'de réparation'}`;
           <div className="flex-1">
             <label className="text-sm font-medium">Statut actuel</label>
             <div className="mt-1">
-              <Badge variant={statusConfig[savCase.status as keyof typeof statusConfig]?.variant || 'secondary'}>
-                {statusConfig[savCase.status as keyof typeof statusConfig]?.label || savCase.status}
+              <Badge style={getStatusInfo(savCase.status).color ? {
+                backgroundColor: `${getStatusInfo(savCase.status).color}20`,
+                color: getStatusInfo(savCase.status).color,
+                borderColor: getStatusInfo(savCase.status).color
+              } : undefined}>
+                {getStatusInfo(savCase.status).label}
               </Badge>
             </div>
           </div>
@@ -422,9 +411,15 @@ L'équipe ${shopData.name || 'de réparation'}`;
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {statusOptions.map((option) => (
+                {getAllStatuses().map((option) => (
                   <SelectItem key={option.value} value={option.value}>
-                    {option.label}
+                    <div className="flex items-center gap-2">
+                      <div 
+                        className="w-3 h-3 rounded-full" 
+                        style={{ backgroundColor: option.color }}
+                      />
+                      {option.label}
+                    </div>
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -546,8 +541,8 @@ L'équipe ${shopData.name || 'de réparation'}`;
             
             <div className="space-y-4">
               <p className="text-sm text-muted-foreground">
-                Le statut du dossier va passer de "{statusConfig[savCase.status as keyof typeof statusConfig]?.label}" 
-                à "{statusConfig[selectedStatus as keyof typeof statusConfig]?.label}".
+                Le statut du dossier va passer de "{getStatusInfo(savCase.status).label}" 
+                à "{getStatusInfo(selectedStatus).label}".
               </p>
               
               {savCase.customer?.phone ? (

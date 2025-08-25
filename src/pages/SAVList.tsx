@@ -18,8 +18,9 @@ import { toast } from 'sonner';
 import { formatDelayText, calculateSAVDelay } from '@/hooks/useSAVDelay';
 import { useSAVUnreadMessages } from '@/hooks/useSAVUnreadMessages';
 import { useLimitDialogContext } from '@/contexts/LimitDialogContext';
-import { SAVPrintButton } from '@/components/sav/SAVPrint';
 import { supabase } from '@/integrations/supabase/client';
+import { useShopSAVStatuses } from '@/hooks/useShopSAVStatuses';
+import { SAVPrintButton } from '@/components/sav/SAVPrint';
 import { PartStatusIcon } from '@/components/sav/PartStatusIcon';
 import { 
   Eye,
@@ -37,24 +38,6 @@ import {
   MessageCircle
 } from 'lucide-react';
 
-const statusColors = {
-  pending: 'bg-yellow-100 text-yellow-800',
-  in_progress: 'bg-blue-100 text-blue-800', 
-  testing: 'bg-purple-100 text-purple-800',
-  parts_ordered: 'bg-orange-100 text-orange-800',
-  ready: 'bg-green-100 text-green-800',
-  cancelled: 'bg-red-100 text-red-800',
-};
-
-const statusLabels = {
-  pending: 'En attente',
-  in_progress: 'En cours',
-  testing: 'En test',
-  parts_ordered: 'Pièce commandée',
-  ready: 'Prêt',
-  cancelled: 'Annulé',
-};
-
 export default function SAVList() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -68,6 +51,7 @@ export default function SAVList() {
   const { shop } = useShop();
   const { savWithUnreadMessages } = useSAVUnreadMessages();
   const { checkAndShowLimitDialog } = useLimitDialogContext();
+  const { getStatusInfo } = useShopSAVStatuses();
   const navigate = useNavigate();
 
   // Mise à jour en temps réel des statuts SAV
@@ -361,8 +345,12 @@ export default function SAVList() {
                               #{savCase.case_number}
                             </h3>
                           </div>
-                          <Badge className={statusColors[savCase.status]}>
-                            {statusLabels[savCase.status]}
+                          <Badge style={getStatusInfo(savCase.status).color ? {
+                            backgroundColor: `${getStatusInfo(savCase.status).color}20`,
+                            color: getStatusInfo(savCase.status).color,
+                            borderColor: getStatusInfo(savCase.status).color
+                          } : undefined}>
+                            {getStatusInfo(savCase.status).label}
                           </Badge>
                           <Badge variant="outline">
                             {savCase.sav_type === 'client' ? 'Client' : savCase.sav_type === 'external' ? 'Externe' : 'Interne'}

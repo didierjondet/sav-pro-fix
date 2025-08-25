@@ -15,6 +15,7 @@ import { fr } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
 import { calculateSAVDelay, formatDelayText } from '@/hooks/useSAVDelay';
 import { SAVTimeline } from '@/components/sav/SAVTimeline';
+import { useShopSAVStatuses } from '@/hooks/useShopSAVStatuses';
 
 interface SAVCaseData {
   id: string;
@@ -47,51 +48,6 @@ interface SAVCaseData {
   };
 }
 
-const statusConfig = {
-  pending: { 
-    label: 'En attente', 
-    variant: 'secondary' as const, 
-    description: 'Votre dossier est en attente de prise en charge',
-    icon: AlertCircle
-  },
-  in_progress: { 
-    label: 'En cours', 
-    variant: 'default' as const,
-    description: 'Nous travaillons actuellement sur votre appareil',
-    icon: AlertCircle
-  },
-  testing: { 
-    label: 'Tests', 
-    variant: 'default' as const,
-    description: 'Votre appareil est en phase de test',
-    icon: AlertCircle
-  },
-  parts_ordered: { 
-    label: 'Pièces commandées', 
-    variant: 'default' as const,
-    description: 'Les pièces nécessaires ont été commandées',
-    icon: AlertCircle
-  },
-  ready: { 
-    label: 'Prêt', 
-    variant: 'default' as const,
-    description: 'Votre appareil est prêt, vous pouvez venir le récupérer',
-    icon: CheckCircle
-  },
-  delivered: { 
-    label: 'Livré', 
-    variant: 'default' as const,
-    description: 'Votre appareil a été livré',
-    icon: CheckCircle
-  },
-  cancelled: { 
-    label: 'Annulé', 
-    variant: 'destructive' as const,
-    description: 'Ce dossier a été annulé',
-    icon: AlertCircle
-  },
-};
-
 export default function TrackSAV() {
   const { slug } = useParams<{ slug: string }>();
   const [savCase, setSavCase] = useState<SAVCaseData | null>(null);
@@ -100,6 +56,7 @@ export default function TrackSAV() {
   const [sending, setSending] = useState(false);
   const [isRealTimeConnected, setIsRealTimeConnected] = useState(false);
   const { toast } = useToast();
+  const { getStatusInfo } = useShopSAVStatuses();
 
   const { messages, sendMessage, deleteMessage, refetch: refetchMessages } = useSAVTrackingMessages(slug);
 
@@ -258,8 +215,8 @@ export default function TrackSAV() {
     );
   }
 
-  const statusInfo = statusConfig[savCase.status as keyof typeof statusConfig];
-  const StatusIcon = statusInfo?.icon || AlertCircle;
+  const statusInfo = getStatusInfo(savCase.status);
+  const StatusIcon = CheckCircle;
 
   return (
     <div className="min-h-screen bg-background">
@@ -385,13 +342,22 @@ export default function TrackSAV() {
               <StatusIcon className="h-8 w-8 text-primary" />
               <div className="text-center">
                 <Badge 
-                  variant={statusInfo?.variant || 'secondary'} 
+                  style={statusInfo.color ? {
+                    backgroundColor: `${statusInfo.color}20`,
+                    color: statusInfo.color,
+                    borderColor: statusInfo.color
+                  } : undefined}
                   className="text-lg px-4 py-2"
                 >
-                  {statusInfo?.label || savCase.status}
+                  {statusInfo.label}
                 </Badge>
                 <p className="text-sm text-muted-foreground mt-2">
-                  {statusInfo?.description}
+                  {savCase.status === 'ready' ? 'Votre appareil est prêt, vous pouvez venir le récupérer' :
+                   savCase.status === 'cancelled' ? 'Ce dossier a été annulé' :
+                   savCase.status === 'in_progress' ? 'Nous travaillons actuellement sur votre appareil' :
+                   savCase.status === 'testing' ? 'Votre appareil est en phase de test' :
+                   savCase.status === 'parts_ordered' ? 'Les pièces nécessaires ont été commandées' :
+                   'Votre dossier est en attente de prise en charge'}
                 </p>
               </div>
             </div>
