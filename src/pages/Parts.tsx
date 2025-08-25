@@ -206,66 +206,84 @@ export default function Parts() {
                           )}
                         </CardContent>
                       </Card>
-                    ) : (
-                      filteredParts.map((part) => (
+                     ) : (
+                       filteredParts.map((part) => (
                         <Card key={part.id} className="hover:shadow-md transition-shadow">
                           <CardContent className="p-6">
                             <div className="flex items-center justify-between">
-                              <div className="flex-1">
-                                <div className="flex items-center gap-4 mb-2">
-                                  <div className="flex items-center gap-2">
-                                    <h3 className="font-semibold text-lg">{part.name}</h3>
-                                    {part.photo_url && (
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => viewPartPhoto(part)}
-                                        className="h-6 w-6 p-0 text-blue-600"
-                                        title="Voir la photo"
-                                      >
-                                        <ImageIcon className="h-4 w-4" />
-                                      </Button>
+                              <div className="flex items-center gap-4 flex-1">
+                                {/* Vignette de l'image */}
+                                {part.photo_url && (
+                                  <div className="w-16 h-16 flex-shrink-0">
+                                    <img 
+                                      src={`${supabase.storage.from('part-photos').getPublicUrl(part.photo_url).data.publicUrl}`}
+                                      alt={part.name}
+                                      className="w-full h-full object-cover rounded-md border border-gray-200 cursor-pointer"
+                                      onClick={() => viewPartPhoto(part)}
+                                      onError={(e) => {
+                                        // Si l'image ne charge pas, la masquer
+                                        (e.target as HTMLImageElement).style.display = 'none';
+                                      }}
+                                    />
+                                  </div>
+                                )}
+                                
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-4 mb-2">
+                                    <div className="flex items-center gap-2">
+                                      <h3 className="font-semibold text-lg">{part.name}</h3>
+                                      {part.photo_url && (
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={() => viewPartPhoto(part)}
+                                          className="h-6 w-6 p-0 text-blue-600"
+                                          title="Voir la photo en grand"
+                                        >
+                                          <ImageIcon className="h-4 w-4" />
+                                        </Button>
+                                      )}
+                                    </div>
+                                    {part.reference && (
+                                      <Badge variant="outline">
+                                        Réf: {part.reference}
+                                      </Badge>
+                                    )}
+                                    {part.quantity <= part.min_stock && (
+                                      <Badge variant="destructive" className="flex items-center gap-1">
+                                        <AlertTriangle className="h-3 w-3" />
+                                        Stock faible
+                                      </Badge>
                                     )}
                                   </div>
-                                  {part.reference && (
-                                    <Badge variant="outline">
-                                      Réf: {part.reference}
-                                    </Badge>
-                                  )}
-                                  {part.quantity <= part.min_stock && (
-                                    <Badge variant="destructive" className="flex items-center gap-1">
-                                      <AlertTriangle className="h-3 w-3" />
-                                      Stock faible
-                                    </Badge>
-                                  )}
-                                </div>
-                                
-                                <div className="grid grid-cols-1 md:grid-cols-5 gap-4 text-sm text-muted-foreground">
-                                  <div>
-                                    <span className="font-medium">Quantité: </span>
-                                    <span className={part.quantity <= part.min_stock ? 'text-red-600 font-medium' : ''}>
-                                      {part.quantity}
-                                    </span>
-                                  </div>
                                   
-                                  <div>
-                                    <span className="font-medium">Prix d'achat HT: </span>
-                                    <span>{(part.purchase_price || 0).toFixed(2)}€</span>
-                                  </div>
-                                  
-                                  <div>
-                                    <span className="font-medium">Prix public TTC: </span>
-                                    <span>{(part.selling_price || 0).toFixed(2)}€</span>
-                                  </div>
-                                  
-                                  <div>
-                                    <span className="font-medium">Stock min: </span>
-                                    <span>{part.min_stock}</span>
-                                  </div>
+                                  <div className="grid grid-cols-1 md:grid-cols-5 gap-4 text-sm text-muted-foreground">
+                                    <div>
+                                      <span className="font-medium">Quantité: </span>
+                                      <span className={part.quantity <= part.min_stock ? 'text-red-600 font-medium' : ''}>
+                                        {part.quantity}
+                                      </span>
+                                    </div>
+                                    
+                                    <div>
+                                      <span className="font-medium">Prix d'achat HT: </span>
+                                      <span>{(part.purchase_price || 0).toFixed(2)}€</span>
+                                    </div>
+                                    
+                                    <div>
+                                      <span className="font-medium">Prix public TTC: </span>
+                                      <span>{(part.selling_price || 0).toFixed(2)}€</span>
+                                    </div>
+                                    
+                                    <div>
+                                      <span className="font-medium">Stock min: </span>
+                                      <span>{part.min_stock}</span>
+                                    </div>
 
-                                  <div>
-                                    <span className="font-medium">Valeur: </span>
-                                    <span>{((part.purchase_price || 0) * part.quantity).toFixed(2)}€</span>
+                                    <div>
+                                      <span className="font-medium">Valeur: </span>
+                                      <span>{((part.purchase_price || 0) * part.quantity).toFixed(2)}€</span>
+                                    </div>
                                   </div>
                                 </div>
                               </div>
@@ -300,8 +318,8 @@ export default function Parts() {
                             </div>
                           </CardContent>
                         </Card>
-                      ))
-                    )}
+                       ))
+                     )}
                   </div>
                 </>
               ) : showImport ? (
