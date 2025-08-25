@@ -28,42 +28,43 @@ export default function Subscription() {
     }
   }, [user]);
 
-  // Charger les plans depuis la base de données
-  const [plans, setPlans] = useState([{
-    id: 'gratuit',
-    name: 'Gratuit',
-    price: '0€',
-    period: '/mois',
-    icon: CheckCircle,
-    features: ['15 SAV maximum', '15 SMS gratuits/mois', 'Support par email'],
-    limits: {
-      sav: 15,
-      sms: 15
-    }
-  }]);
+  // Plans chargés depuis la base de données (gérée par le superuser)
+  const [plans, setPlans] = useState<any[]>([]);
   useEffect(() => {
     const fetchPlans = async () => {
       try {
-        const {
-          data: dbPlans
-        } = await supabase.from('subscription_plans').select('*').eq('is_active', true).order('monthly_price');
+        console.log('🔄 Chargement des plans depuis la base (gérée par superuser)...');
+        const { data: dbPlans, error } = await supabase
+          .from('subscription_plans')
+          .select('*')
+          .eq('is_active', true)
+          .order('monthly_price');
+        
+        if (error) {
+          console.error('❌ Erreur lors du chargement des plans:', error);
+          return;
+        }
+
         if (dbPlans) {
+          console.log('✅ Plans chargés depuis superuser:', dbPlans);
           const formattedPlans = dbPlans.map(plan => ({
             id: plan.name.toLowerCase(),
             name: plan.name,
-            price: `${plan.monthly_price}€`,
-            period: plan.monthly_price > 0 ? '/mois HT' : '/mois',
-            icon: plan.name === 'Enterprise' ? Infinity : plan.name === 'Premium' ? Crown : CheckCircle,
+            price: plan.monthly_price === 0 ? 'Gratuit' : `${plan.monthly_price}€`,
+            period: plan.monthly_price > 0 ? (plan.billing_interval === 'year' ? '/an HT' : '/mois HT') : '',
+            icon: plan.name.toLowerCase().includes('enterprise') ? Infinity : 
+                  plan.name.toLowerCase().includes('premium') ? Crown : CheckCircle,
             features: Array.isArray(plan.features) ? plan.features.map(f => String(f)) : [],
             limits: {
               sav: plan.sav_limit || 999999,
               sms: plan.sms_limit || 0
-            }
+            },
+            contact_only: plan.contact_only || false
           }));
           setPlans(formattedPlans);
         }
       } catch (error) {
-        console.error('Error fetching plans:', error);
+        console.error('💥 Erreur lors du chargement des plans:', error);
       }
     };
     fetchPlans();
@@ -239,13 +240,19 @@ export default function Subscription() {
                           </li>)}
                       </ul>
                       
-                      {plan.id === 'free' ? <Button variant="outline" disabled className="w-full">
+                      {plan.id === 'free' || (plan.price === 'Gratuit') ? <Button variant="outline" disabled className="w-full">
                           Plan Gratuit
                         </Button> : isCurrent ? <Button variant="outline" disabled className="w-full">
                           Plan Actuel
-                        </Button> : canUpgradeToThis ? <Button onClick={() => createCheckout(plan.id as 'premium' | 'enterprise')} className="w-full">
-                          Passer à {plan.name}
-                        </Button> : <Button variant="outline" disabled className="w-full">
+                        </Button> : canUpgradeToThis ? 
+                          plan.contact_only ? <Button 
+                            onClick={() => window.location.href = `mailto:contact@fixway.fr?subject=Demande de contact pour le plan ${plan.name}&body=Bonjour,%0D%0A%0D%0AJe souhaite obtenir plus d'informations sur le plan ${plan.name}.%0D%0A%0D%0ACordialement`}
+                            className="w-full"
+                          >
+                            Nous contacter
+                          </Button> : <Button onClick={() => createCheckout(plan.id as 'premium' | 'enterprise')} className="w-full">
+                            Passer à {plan.name}
+                          </Button> : <Button variant="outline" disabled className="w-full">
                           Indisponible
                         </Button>}
                     </CardContent>
