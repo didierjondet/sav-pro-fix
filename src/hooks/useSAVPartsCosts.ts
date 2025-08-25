@@ -69,8 +69,8 @@ export function useSAVPartsCosts() {
           const partRevenue = unit * qty;
           const savCase = item.sav_cases;
 
-          // Répartition des coûts par type de SAV
-          if (savCase.sav_type === 'client') {
+          // CORRECTION: Coût prise en charge uniquement pour SAV prêts avec prise en charge magasin
+          if (savCase.status === 'ready' && savCase.sav_type === 'client') {
             if (savCase.taken_over) {
               takeover_cost += partCost; // totalement pris en charge
             } else if (savCase.partial_takeover && savCase.takeover_amount) {
