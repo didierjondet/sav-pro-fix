@@ -616,9 +616,12 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
                       <div className="flex-1 flex items-center gap-3">
                         {part.photo_url && (
                           <img 
-                            src={part.photo_url} 
+                            src={`${supabase.storage.from('part-photos').getPublicUrl(part.photo_url).data.publicUrl}`} 
                             alt={part.name}
                             className="w-12 h-12 object-cover rounded border"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).style.display = 'none';
+                            }}
                           />
                         )}
                         <div>
@@ -660,16 +663,19 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
                         <div className="flex-1 flex items-center gap-3">
-                          {!part.isCustom && part.part_id && (() => {
-                            const stockPart = parts.find(p => p.id === part.part_id);
-                            return stockPart?.photo_url && (
-                              <img 
-                                src={stockPart.photo_url} 
-                                alt={part.name}
-                                className="w-12 h-12 object-cover rounded border"
-                              />
-                            );
-                          })()}
+                           {!part.isCustom && part.part_id && (() => {
+                             const stockPart = parts.find(p => p.id === part.part_id);
+                             return stockPart?.photo_url && (
+                               <img 
+                                 src={`${supabase.storage.from('part-photos').getPublicUrl(stockPart.photo_url).data.publicUrl}`} 
+                                 alt={part.name}
+                                 className="w-8 h-8 object-cover rounded"
+                                 onError={(e) => {
+                                   (e.target as HTMLImageElement).style.display = 'none';
+                                 }}
+                               />
+                             );
+                           })()}
                           <div>
                             <div className="flex items-center gap-2">
                               {part.isCustom ? (

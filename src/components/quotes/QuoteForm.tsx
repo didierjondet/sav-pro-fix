@@ -12,6 +12,7 @@ import { QuoteItem, Quote } from '@/hooks/useQuotes';
 import { CustomerSearch } from '@/components/customers/CustomerSearch';
 import { FileUpload } from '@/components/parts/FileUpload';
 import { useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface QuoteFormProps {
   onSubmit: (data: any) => Promise<{ data: any; error: any }>;
@@ -361,9 +362,12 @@ const updateUnitPurchasePrice = (partId: string, unitPrice: number) => {
                     <div className="flex items-center gap-3">
                       {part.photo_url && (
                         <img 
-                          src={part.photo_url} 
+                          src={`${supabase.storage.from('part-photos').getPublicUrl(part.photo_url).data.publicUrl}`}
                           alt={part.name}
                           className="w-12 h-12 object-cover rounded border"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = 'none';
+                          }}
                         />
                       )}
                       <div>
@@ -444,16 +448,19 @@ const updateUnitPurchasePrice = (partId: string, unitPrice: number) => {
                       <div className="flex items-center gap-4">
                         <div className="flex-1">
                           <div className="flex items-center gap-3">
-                            {!isCustomItem && (() => {
-                              const stockPart = parts.find(p => p.id === item.part_id);
-                              return stockPart?.photo_url && (
-                                <img 
-                                  src={stockPart.photo_url} 
-                                  alt={item.part_name}
-                                  className="w-12 h-12 object-cover rounded border"
-                                />
-                              );
-                            })()}
+                             {!isCustomItem && (() => {
+                               const stockPart = parts.find(p => p.id === item.part_id);
+                               return stockPart?.photo_url && (
+                                 <img 
+                                   src={`${supabase.storage.from('part-photos').getPublicUrl(stockPart.photo_url).data.publicUrl}`} 
+                                   alt={item.part_name}
+                                   className="w-8 h-8 object-cover rounded"
+                                   onError={(e) => {
+                                     (e.target as HTMLImageElement).style.display = 'none';
+                                   }}
+                                 />
+                               );
+                             })()}
                             <div>
                               {!isCustomItem && (
                                 <>
