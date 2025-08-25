@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { multiWordSearch } from '@/utils/searchUtils';
 import { Header } from '@/components/layout/Header';
@@ -19,6 +19,7 @@ import { formatDelayText, calculateSAVDelay } from '@/hooks/useSAVDelay';
 import { useSAVUnreadMessages } from '@/hooks/useSAVUnreadMessages';
 import { useLimitDialogContext } from '@/contexts/LimitDialogContext';
 import { SAVPrintButton } from '@/components/sav/SAVPrint';
+import { supabase } from '@/integrations/supabase/client';
 import { PartStatusIcon } from '@/components/sav/PartStatusIcon';
 import { 
   Eye,
@@ -63,11 +64,35 @@ export default function SAVList() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(20);
   const [qrCodeCase, setQrCodeCase] = useState(null);
-  const { cases, loading, deleteCase } = useSAVCases();
+  const { cases, loading, deleteCase, refetch } = useSAVCases();
   const { shop } = useShop();
   const { savWithUnreadMessages } = useSAVUnreadMessages();
   const { checkAndShowLimitDialog } = useLimitDialogContext();
   const navigate = useNavigate();
+
+  // Mise à jour en temps réel des statuts SAV
+  useEffect(() => {
+    const channel = supabase
+      .channel('sav-list-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'sav_cases'
+        },
+        (payload) => {
+          console.log('SAV case status updated:', payload);
+          // Refetch les données pour avoir les dernières mises à jour
+          refetch();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [refetch]);
 
   const handleNewSAV = () => {
     if (checkAndShowLimitDialog('sav')) {

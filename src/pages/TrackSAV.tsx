@@ -103,7 +103,7 @@ export default function TrackSAV() {
     }
   }, [slug]);
 
-  // Setup real-time connection status
+  // Setup real-time connection status and SAV case updates
   useEffect(() => {
     if (slug) {
       const channel = supabase
@@ -111,6 +111,20 @@ export default function TrackSAV() {
         .on('presence', { event: 'sync' }, () => {
           setIsRealTimeConnected(true);
         })
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'sav_cases',
+            filter: `tracking_slug=eq.${slug}`
+          },
+          (payload) => {
+            console.log('SAV case updated via realtime:', payload);
+            // Refetch les données pour avoir les dernières mises à jour
+            fetchSAVCase();
+          }
+        )
         .subscribe();
 
       return () => {
