@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus } from 'lucide-react';
+import { Plus, HardDrive } from 'lucide-react';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,6 +9,7 @@ import { SAVForm } from './SAVForm';
 import { useSAVCases } from '@/hooks/useSAVCases';
 import { useShop } from '@/hooks/useShop';
 import { useSAVPartsCosts } from '@/hooks/useSAVPartsCosts';
+import { useShopStorageUsage } from '@/hooks/useStorageUsage';
 import { calculateSAVDelay } from '@/hooks/useSAVDelay';
 import { format, differenceInHours } from 'date-fns';
 const statusConfig = {
@@ -54,6 +55,10 @@ export function SAVDashboard() {
     costs,
     loading: costsLoading
   } = useSAVPartsCosts();
+  const {
+    storageGB,
+    loading: storageLoading
+  } = useShopStorageUsage(shop?.id);
   const navigate = useNavigate();
 
   // Données pour le graphique de répartition des SAV
@@ -104,7 +109,7 @@ export function SAVDashboard() {
         </Dialog>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5 mb-6">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-6 mb-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">CA du mois</CardTitle>
@@ -158,6 +163,18 @@ export function SAVDashboard() {
               {costsLoading ? '...' : (costs.monthly_revenue - costs.takeover_cost - costs.client_cost - costs.external_cost).toFixed(2)}€
             </div>
             <p className="text-xs text-muted-foreground">CA - Coûts (hors interne)</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Stockage</CardTitle>
+            <HardDrive className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {storageLoading ? '...' : `${storageGB.toFixed(3)} GB`}
+            </div>
+            <p className="text-xs text-muted-foreground">Espace utilisé</p>
           </CardContent>
         </Card>
       </div>
