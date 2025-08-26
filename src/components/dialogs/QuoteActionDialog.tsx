@@ -65,7 +65,7 @@ export function QuoteActionDialog({
           {hasPhone && (
             <Button onClick={handleSendSMS} variant="outline" className="w-full">
               <MessageSquare className="h-4 w-4 mr-2" />
-              Envoyer par SMS
+              Envoyer le PDF par SMS
             </Button>
           )}
           <Button onClick={handleConvertToSAV} variant="outline" className="w-full">
