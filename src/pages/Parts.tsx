@@ -273,12 +273,24 @@ export default function Parts() {
                                     )}
                                   </div>
                                   
-                                  <div className="grid grid-cols-1 md:grid-cols-5 gap-4 text-sm text-muted-foreground">
+                                  <div className="grid grid-cols-1 md:grid-cols-6 gap-4 text-sm text-muted-foreground">
                                     <div>
-                                      <span className="font-medium">Quantité: </span>
+                                      <span className="font-medium">Stock total: </span>
                                       <span className={part.quantity <= part.min_stock ? 'text-red-600 font-medium' : ''}>
                                         {part.quantity}
                                       </span>
+                                    </div>
+                                    
+                                    <div>
+                                      <span className="font-medium">Disponible: </span>
+                                      <span className="text-green-600 font-medium">
+                                        {Math.max(0, part.quantity - (part.reserved_quantity || 0))}
+                                      </span>
+                                      {(part.reserved_quantity || 0) > 0 && (
+                                        <div className="text-xs text-orange-600">
+                                          ({part.reserved_quantity} réservé)
+                                        </div>
+                                      )}
                                     </div>
                                     
                                     <div>

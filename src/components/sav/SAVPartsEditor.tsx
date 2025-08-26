@@ -57,7 +57,7 @@ export function SAVPartsEditor({ savCaseId, onPartsUpdated, trigger }: SAVPartsE
           time_minutes,
           unit_price,
           purchase_price,
-          parts(name, reference, quantity, purchase_price)
+          parts(name, reference, quantity, reserved_quantity, purchase_price)
         `)
         .eq('sav_case_id', savCaseId);
 
@@ -70,10 +70,10 @@ export function SAVPartsEditor({ savCaseId, onPartsUpdated, trigger }: SAVPartsE
         part_reference: item.parts?.reference,
         quantity: item.quantity,
         time_minutes: item.time_minutes || 0,
-unit_price: item.unit_price || 0,
-available_stock: item.parts?.quantity,
-purchase_price: item.parts?.purchase_price || 0,
-isCustom: !item.part_id
+        unit_price: item.unit_price || 0,
+        available_stock: item.parts ? Math.max(0, (item.parts.quantity || 0) - (item.parts.reserved_quantity || 0)) : undefined,
+        purchase_price: item.parts?.purchase_price || 0,
+        isCustom: !item.part_id
       })) || [];
 
       setSavParts(formattedParts);
@@ -93,9 +93,32 @@ isCustom: !item.part_id
   }, [open, savCaseId]);
 
   const addPartFromStock = (part: any) => {
+    // Calculer le stock disponible
+    const availableStock = Math.max(0, (part.quantity || 0) - (part.reserved_quantity || 0));
+    
+    // Vérifier si on peut ajouter cette pièce
+    if (availableStock === 0) {
+      toast({
+        title: "Stock insuffisant",
+        description: "Cette pièce n'est plus disponible en stock",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     const existingPart = savParts.find(p => p.part_id === part.id && !p.isCustom);
     
     if (existingPart) {
+      // Vérifier si on peut incrémenter la quantité
+      if (existingPart.quantity >= availableStock) {
+        toast({
+          title: "Stock insuffisant",
+          description: `Stock disponible : ${availableStock}`,
+          variant: "destructive",
+        });
+        return;
+      }
+      
       // Incrémenter la quantité si la pièce existe déjà
       setSavParts(savParts.map(p =>
         p.id === existingPart.id ? { ...p, quantity: p.quantity + 1 } : p
@@ -109,10 +132,10 @@ isCustom: !item.part_id
         part_reference: part.reference,
         quantity: 1,
         time_minutes: 0,
-unit_price: part.selling_price || 0,
-available_stock: part.quantity,
-purchase_price: part.purchase_price || 0,
-isCustom: false,
+        unit_price: part.selling_price || 0,
+        available_stock: availableStock,
+        purchase_price: part.purchase_price || 0,
+        isCustom: false,
       };
       setSavParts([...savParts, newPart]);
     }
@@ -281,10 +304,22 @@ const partsToInsert = savParts.map(part => ({
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Badge variant={part.quantity === 0 ? 'destructive' : part.quantity <= 5 ? 'default' : 'secondary'}>
-                          Stock: {part.quantity}
-                        </Badge>
-                        <Button size="sm" variant="outline">
+                        {(() => {
+                          const availableStock = Math.max(0, (part.quantity || 0) - (part.reserved_quantity || 0));
+                          return (
+                            <>
+                              <Badge variant={availableStock === 0 ? 'destructive' : availableStock <= 5 ? 'default' : 'secondary'}>
+                                Disponible: {availableStock}
+                              </Badge>
+                              {part.reserved_quantity > 0 && (
+                                <Badge variant="outline">
+                                  Réservé: {part.reserved_quantity}
+                                </Badge>
+                              )}
+                            </>
+                          );
+                        })()}
+                        <Button size="sm" variant="outline" disabled={Math.max(0, (part.quantity || 0) - (part.reserved_quantity || 0)) === 0}>
                           <Plus className="h-3 w-3" />
                         </Button>
                       </div>
