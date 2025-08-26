@@ -7,6 +7,7 @@ export interface ShopSettings {
   sms_credits_allocated: number;
   sms_credits_used: number;
   subscription_tier: string;
+  sav_warning_enabled: boolean;
 }
 
 export function useShopSettings() {
@@ -44,7 +45,7 @@ export function useShopSettings() {
         // Récupérer les paramètres du magasin
         const { data: shopData, error: shopError } = await supabase
           .from('shops')
-          .select('subscription_menu_visible, sms_credits_allocated, sms_credits_used, subscription_tier')
+          .select('subscription_menu_visible, sms_credits_allocated, sms_credits_used, subscription_tier, sav_warning_enabled')
           .eq('id', profileData.shop_id)
           .single();
 
@@ -58,7 +59,8 @@ export function useShopSettings() {
             subscription_menu_visible: shopData.subscription_menu_visible ?? true,
             sms_credits_allocated: shopData.sms_credits_allocated || 0,
             sms_credits_used: shopData.sms_credits_used || 0,
-            subscription_tier: shopData.subscription_tier || 'free'
+            subscription_tier: shopData.subscription_tier || 'free',
+            sav_warning_enabled: shopData.sav_warning_enabled ?? true
           });
         }
       }
@@ -69,7 +71,8 @@ export function useShopSettings() {
         subscription_menu_visible: true,
         sms_credits_allocated: 0,
         sms_credits_used: 0,
-        subscription_tier: 'free'
+        subscription_tier: 'free',
+        sav_warning_enabled: true
       });
     } finally {
       setLoading(false);

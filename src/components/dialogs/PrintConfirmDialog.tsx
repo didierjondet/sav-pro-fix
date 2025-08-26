@@ -1,10 +1,12 @@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Printer, X, MessageSquare } from 'lucide-react';
+import { Printer, X, MessageSquare, AlertTriangle } from 'lucide-react';
 import { useSMS } from '@/hooks/useSMS';
 import { generateShortTrackingUrl } from '@/utils/trackingUtils';
 import { useToast } from '@/hooks/use-toast';
 import { useState } from 'react';
+import { useShopSettings } from '@/hooks/useShopSettings';
+import { Checkbox } from '@/components/ui/checkbox';
 
 interface PrintConfirmDialogProps {
   isOpen: boolean;
@@ -24,10 +26,20 @@ export function PrintConfirmDialog({
   savCase 
 }: PrintConfirmDialogProps) {
   const [sendingSMS, setSendingSMS] = useState(false);
+  const [warningAcknowledged, setWarningAcknowledged] = useState(false);
   const { sendSMS } = useSMS();
   const { toast } = useToast();
+  const { settings } = useShopSettings();
 
   const handleConfirm = () => {
+    if (settings?.sav_warning_enabled && !warningAcknowledged) {
+      toast({
+        title: "Vérification requise",
+        description: "Veuillez confirmer que vous avez effectué les vérifications nécessaires",
+        variant: "destructive",
+      });
+      return;
+    }
     onConfirm();
     onClose();
   };
@@ -38,6 +50,15 @@ export function PrintConfirmDialog({
   };
 
   const handleSendSMS = async () => {
+    if (settings?.sav_warning_enabled && !warningAcknowledged) {
+      toast({
+        title: "Vérification requise",
+        description: "Veuillez confirmer que vous avez effectué les vérifications nécessaires",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (!savCase?.customer?.phone || !savCase?.tracking_slug) {
       toast({
         title: "Impossible d'envoyer le SMS",
@@ -93,6 +114,35 @@ export function PrintConfirmDialog({
             Souhaitez-vous l'imprimer maintenant ?
           </DialogDescription>
         </DialogHeader>
+
+        {settings?.sav_warning_enabled && (
+          <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4 mb-4">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
+              <div className="flex-1">
+                <h4 className="text-sm font-medium text-amber-800 dark:text-amber-200 mb-2">
+                  Vérifications importantes
+                </h4>
+                <p className="text-sm text-amber-700 dark:text-amber-300 mb-3">
+                  Avez-vous bien déconnecté l'iCloud ou les comptes Gmail/Samsung/etc... et/ou pris le code de déverrouillage ?
+                </p>
+                <div className="flex items-center space-x-2">
+                  <Checkbox 
+                    id="warning-acknowledgment"
+                    checked={warningAcknowledged}
+                    onCheckedChange={(checked) => setWarningAcknowledged(checked === true)}
+                  />
+                  <label 
+                    htmlFor="warning-acknowledgment" 
+                    className="text-sm font-medium text-amber-800 dark:text-amber-200 cursor-pointer"
+                  >
+                    J'ai effectué toutes les vérifications nécessaires
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
         <DialogFooter className="flex flex-col gap-2 sm:flex-row sm:justify-between">
           <Button variant="outline" onClick={handleCancel} className="order-3 sm:order-1">
             <X className="h-4 w-4 mr-2" />

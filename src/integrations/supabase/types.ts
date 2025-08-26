@@ -1035,6 +1035,7 @@ export type Database = {
           name: string
           phone: string | null
           review_link: string | null
+          sav_warning_enabled: boolean | null
           slug: string | null
           sms_credits_allocated: number | null
           sms_credits_used: number | null
@@ -1064,6 +1065,7 @@ export type Database = {
           name: string
           phone?: string | null
           review_link?: string | null
+          sav_warning_enabled?: boolean | null
           slug?: string | null
           sms_credits_allocated?: number | null
           sms_credits_used?: number | null
@@ -1093,6 +1095,7 @@ export type Database = {
           name?: string
           phone?: string | null
           review_link?: string | null
+          sav_warning_enabled?: boolean | null
           slug?: string | null
           sms_credits_allocated?: number | null
           sms_credits_used?: number | null

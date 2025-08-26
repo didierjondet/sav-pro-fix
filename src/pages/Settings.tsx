@@ -105,6 +105,7 @@ export default function Settings() {
     logo_url: '',
     review_link: '',
     auto_review_enabled: true,
+    sav_warning_enabled: true,
     max_sav_processing_days_client: 7,
     max_sav_processing_days_internal: 5
   });
@@ -131,6 +132,7 @@ export default function Settings() {
         logo_url: shop.logo_url || '',
         review_link: (shop as any).review_link || '',
         auto_review_enabled: (shop as any).auto_review_enabled ?? true,
+        sav_warning_enabled: (shop as any).sav_warning_enabled ?? true,
         max_sav_processing_days_client: shop.max_sav_processing_days_client || 7,
         max_sav_processing_days_internal: shop.max_sav_processing_days_internal || 5
       });
@@ -764,6 +766,20 @@ const handleExportParts = async (format: 'csv' | 'xlsx') => {
                         <Switch
                           checked={shopForm.auto_review_enabled}
                           onCheckedChange={(checked) => setShopForm({...shopForm, auto_review_enabled: checked})}
+                          disabled={!isAdmin}
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="font-medium">Avertissement code SAV</div>
+                          <p className="text-sm text-muted-foreground">
+                            Afficher un avertissement pour vérifier les comptes et codes de déverrouillage avant impression/SMS
+                          </p>
+                        </div>
+                        <Switch
+                          checked={shopForm.sav_warning_enabled}
+                          onCheckedChange={(checked) => setShopForm({...shopForm, sav_warning_enabled: checked})}
                           disabled={!isAdmin}
                         />
                       </div>

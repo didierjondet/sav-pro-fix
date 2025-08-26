@@ -25,6 +25,7 @@ export interface Shop {
   sms_credits_used?: number;
   active_sav_count?: number;
   subscription_end?: string;
+  sav_warning_enabled?: boolean;
 }
 
 export function useShop() {
