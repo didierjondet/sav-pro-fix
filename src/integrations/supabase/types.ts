@@ -1428,6 +1428,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calculate_shop_storage_usage: {
+        Args: { p_shop_id: string }
+        Returns: number
+      }
       check_subscription_limits: {
         Args: { p_shop_id: string }
         Returns: Json
@@ -1514,6 +1518,15 @@ export type Database = {
       generate_tracking_slug: {
         Args: { customer_name: string }
         Returns: string
+      }
+      get_all_shops_storage_usage: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          shop_id: string
+          shop_name: string
+          storage_bytes: number
+          storage_gb: number
+        }[]
       }
       get_available_stock: {
         Args: { part_id: string }

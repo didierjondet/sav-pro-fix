@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Menu, Settings, User, Bell, LogOut } from 'lucide-react';
+import { Menu, Settings, User, Bell, LogOut, HardDrive } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { useShop } from '@/hooks/useShop';
+import { useShopStorageUsage } from '@/hooks/useStorageUsage';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useNavigate } from 'react-router-dom';
 
@@ -22,6 +23,7 @@ export function Header({
   const {
     shop
   } = useShop();
+  const { storageGB } = useShopStorageUsage(shop?.id);
   const navigate = useNavigate();
   return <header className="bg-card border-b border-border shadow-sm">
       <div className="flex items-center justify-between h-16 px-4">
@@ -41,7 +43,15 @@ export function Header({
                   <h1 className="text-xl font-bold text-foreground">
                     {shop.name}
                   </h1>
-                  <span className="text-xs text-muted-foreground">Propulsé par FixWay.fr</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground">Propulsé par FixWay.fr</span>
+                    {storageGB > 0 && (
+                      <span className="text-xs text-muted-foreground/60 flex items-center gap-1">
+                        <HardDrive className="h-3 w-3" />
+                        {storageGB} GB
+                      </span>
+                    )}
+                  </div>
                 </div>
               </>
             ) : (

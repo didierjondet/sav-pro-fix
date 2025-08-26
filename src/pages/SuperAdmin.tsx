@@ -30,6 +30,7 @@ import {
   Search,
   Palette,
   FileText,
+  HardDrive,
 } from 'lucide-react';
 import {
   Dialog,
@@ -49,6 +50,7 @@ import { SEOConfigTab } from '@/components/seo/SEOConfigTab';
 import { BrandingManager } from '@/components/admin/BrandingManager';
 import { LandingPageManager } from '@/components/admin/LandingPageManager';
 import { SMSPackagesManager } from '@/components/admin/SMSPackagesManager';
+import { useStorageUsage } from '@/hooks/useStorageUsage';
 
 import {
   AlertDialog,
@@ -111,6 +113,7 @@ interface Shop {
   total_revenue?: number;
   average_case_value?: number;
   is_blocked?: boolean;
+  storage_gb?: number;
 }
 
 interface Profile {
@@ -171,6 +174,7 @@ export default function SuperAdmin() {
   const [selectedUserForPassword, setSelectedUserForPassword] = useState<Profile | null>(null);
   const [newPassword, setNewPassword] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  const { storageUsage, getShopStorageUsage } = useStorageUsage();
   
   const [newShop, setNewShop] = useState({
     name: '',
@@ -275,6 +279,7 @@ export default function SuperAdmin() {
         const shopSavCases = savCasesData?.filter(sc => sc.shop_id === shop.id) || [];
         const shopSMSPurchases = smsPurchases?.filter(sp => sp.shop_id === shop.id) || [];
         const purchasedSMS = shopSMSPurchases.reduce((sum, purchase) => sum + purchase.sms_count, 0);
+        const shopStorage = getShopStorageUsage(shop.id);
         
         return {
           ...shop,
@@ -288,7 +293,8 @@ export default function SuperAdmin() {
           total_revenue: shopSavCases.filter(c => c.sav_type !== 'internal').reduce((sum, c) => sum + (c.total_cost || 0), 0),
           average_case_value: shopSavCases.length > 0 
             ? shopSavCases.filter(c => c.sav_type !== 'internal').reduce((sum, c) => sum + (c.total_cost || 0), 0) / shopSavCases.filter(c => c.sav_type !== 'internal').length
-            : 0
+            : 0,
+          storage_gb: shopStorage?.storage_gb || 0
         };
       }) || [];
 
@@ -1175,6 +1181,12 @@ export default function SuperAdmin() {
                               <Badge variant="outline" className="border-blue-600 text-blue-700">
                                 {shop.total_sav_cases} dossier(s) SAV
                               </Badge>
+                              {shop.storage_gb && shop.storage_gb > 0 && (
+                                <Badge variant="outline" className="border-purple-600 text-purple-700">
+                                  <HardDrive className="h-3 w-3 mr-1" />
+                                  {shop.storage_gb} GB
+                                </Badge>
+                              )}
                             </div>
                             
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm mb-2">
@@ -1533,7 +1545,7 @@ export default function SuperAdmin() {
                   {shops.map((shop) => (
                     <Card key={shop.id} className="bg-white border-slate-200">
                       <CardContent className="p-6">
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                           <div>
                             <h4 className="font-medium text-slate-900">{shop.name}</h4>
                             <p className="text-sm text-slate-600">{shop.email}</p>
@@ -1549,6 +1561,13 @@ export default function SuperAdmin() {
                           <div className="text-center">
                             <div className="text-2xl font-bold text-purple-600">{shop.average_case_value?.toFixed(2)}€</div>
                             <div className="text-sm text-slate-600">Panier moyen</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="text-2xl font-bold text-orange-600 flex items-center justify-center gap-1">
+                              <HardDrive className="h-5 w-5" />
+                              {shop.storage_gb?.toFixed(3) || '0.000'} GB
+                            </div>
+                            <div className="text-sm text-slate-600">Stockage utilisé</div>
                           </div>
                         </div>
                         
