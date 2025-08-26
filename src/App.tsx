@@ -33,8 +33,8 @@ import About from "./pages/About";
 import Contact from "./pages/Contact";
 import Home from "./pages/Home";
 import TestLanding from "./pages/TestLanding";
-import QuotePublic from "./pages/QuotePublic";
 import SubscriptionSuccess from "./pages/SubscriptionSuccess";
+import QuotePublic from "./pages/QuotePublic";
 
 const queryClient = new QueryClient({
   defaultOptions: {
