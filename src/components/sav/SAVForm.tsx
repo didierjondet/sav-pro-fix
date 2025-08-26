@@ -226,6 +226,17 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
       });
       
       if (caseError) throw caseError;
+
+      // Enrichir les données du SAV avec les informations du client pour le SMS
+      const enrichedCase = {
+        ...newCase,
+        customer: customerId ? {
+          first_name: selectedCustomer?.first_name || customerInfo.firstName,
+          last_name: selectedCustomer?.last_name || customerInfo.lastName,
+          phone: selectedCustomer?.phone || customerInfo.phone,
+          email: selectedCustomer?.email || customerInfo.email,
+        } : null
+      };
       
       // Sauvegarder les pièces sélectionnées
       if (selectedParts.length > 0) {
@@ -254,7 +265,7 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
       }
       
       // Stocker le SAV créé et afficher le popup d'impression
-      setCreatedSAVCase(newCase);
+      setCreatedSAVCase(enrichedCase);
       setShowPrintDialog(true);
       
       // Reset form
@@ -800,6 +811,7 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
         onConfirm={handlePrintConfirm}
         onCancel={handlePrintCancel}
         savCaseNumber={createdSAVCase?.case_number || ''}
+        savCase={createdSAVCase}
       />
     </div>
   );
