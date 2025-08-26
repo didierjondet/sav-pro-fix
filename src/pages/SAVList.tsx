@@ -129,7 +129,7 @@ export default function SAVList() {
     if (statusFilter === 'all-except-ready') {
       filteredByStatus = filteredByType.filter(case_ => case_.status !== 'ready');
     } else if (statusFilter === 'overdue') {
-      filteredByStatus = filteredByType.filter(case_ => case_.delayInfo.isOverdue && case_.status !== 'cancelled');
+      filteredByStatus = filteredByType.filter(case_ => case_.delayInfo.isOverdue && case_.status !== 'cancelled' && case_.status !== 'ready');
     } else if (statusFilter !== 'all') {
       filteredByStatus = filteredByType.filter(case_ => case_.status === statusFilter);
     }
