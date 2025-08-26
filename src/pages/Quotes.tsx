@@ -11,6 +11,7 @@ import { useSMS } from '@/hooks/useSMS';
 import { useSAVCases } from '@/hooks/useSAVCases';
 import { QuoteForm } from '@/components/quotes/QuoteForm';
 import { QuoteView } from '@/components/quotes/QuoteView';
+import { QuoteActionDialog } from '@/components/dialogs/QuoteActionDialog';
 import { generateQuotePDF } from '@/utils/pdfGenerator';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -53,6 +54,7 @@ export default function Quotes() {
   const [viewingQuote, setViewingQuote] = useState<Quote | null>(null);
   const [quoteToConvert, setQuoteToConvert] = useState<Quote | null>(null);
   const [editingQuote, setEditingQuote] = useState<Quote | null>(null);
+  const [showQuoteActionDialog, setShowQuoteActionDialog] = useState<Quote | null>(null);
   const { quotes, loading, createQuote, deleteQuote, updateQuote } = useQuotes();
   const { createCase } = useSAVCases();
   const { sendSMS } = useSMS();
@@ -171,7 +173,12 @@ export default function Quotes() {
 
 const handleStatusChange = async (quote: Quote, newStatus: Quote['status']) => {
   if (newStatus === 'accepted') {
-    setQuoteToConvert(quote);
+    // Mettre à jour le statut d'abord
+    const result = await updateQuote(quote.id, { status: newStatus });
+    if (!result.error) {
+      // Afficher le dialog d'action
+      setShowQuoteActionDialog(quote);
+    }
     return;
   }
   const result = await updateQuote(quote.id, { status: newStatus });
@@ -553,6 +560,36 @@ const handleStatusChange = async (quote: Quote, newStatus: Quote['status']) => {
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
+
+{/* Dialog d'action après validation du devis */}
+<QuoteActionDialog
+  isOpen={!!showQuoteActionDialog}
+  onClose={() => setShowQuoteActionDialog(null)}
+  onPrint={() => {
+    if (showQuoteActionDialog) {
+      handleDownloadPDF(showQuoteActionDialog);
+    }
+  }}
+  onSendSMS={() => {
+    if (showQuoteActionDialog) {
+      handleSendSMS(showQuoteActionDialog);
+    }
+  }}
+  onSkip={() => {
+    // Option pour passer sans action
+    toast({
+      title: "Devis accepté",
+      description: `Le devis ${showQuoteActionDialog?.quote_number} a été marqué comme accepté`,
+    });
+  }}
+  onConvertToSAV={() => {
+    if (showQuoteActionDialog) {
+      setQuoteToConvert(showQuoteActionDialog);
+    }
+  }}
+  quoteNumber={showQuoteActionDialog?.quote_number || ''}
+  hasPhone={!!showQuoteActionDialog?.customer_phone}
+/>
 
 {/* Dialog de conversion en SAV */}
 <Dialog open={!!quoteToConvert} onOpenChange={(open) => { if (!open) setQuoteToConvert(null); }}>
