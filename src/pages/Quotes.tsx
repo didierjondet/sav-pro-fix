@@ -57,7 +57,7 @@ export default function Quotes() {
   const [showQuoteActionDialog, setShowQuoteActionDialog] = useState<Quote | null>(null);
   const { quotes, loading, createQuote, deleteQuote, updateQuote } = useQuotes();
   const { createCase } = useSAVCases();
-  const { sendSMS } = useSMS();
+  const { sendQuoteNotification } = useSMS();
   const { shop } = useShop();
   const { toast } = useToast();
 
@@ -139,14 +139,12 @@ export default function Quotes() {
     }
 
     try {
-      const message = `Votre devis ${quote.quote_number} de ${quote.total_amount.toFixed(2)}€ est prêt. Vous pouvez le consulter ou le télécharger.`;
-      
-      const result = await sendSMS({
-        toNumber: quote.customer_phone,
-        message,
-        type: 'manual',
-        recordId: quote.id
-      });
+      const result = await sendQuoteNotification(
+        quote.customer_phone,
+        quote.customer_name,
+        quote.quote_number,
+        quote.id
+      );
 
       if (result) {
         // Mettre à jour le statut du devis à "sent" avec l'heure d'envoi

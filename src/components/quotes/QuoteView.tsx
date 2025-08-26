@@ -17,7 +17,7 @@ interface QuoteViewProps {
 }
 
 export function QuoteView({ quote, isOpen, onClose, onDownloadPDF, onSendEmail, onQuoteUpdate }: QuoteViewProps) {
-  const { sendSMS } = useSMS();
+  const { sendQuoteNotification } = useSMS();
   const { toast } = useToast();
   if (!quote) return null;
 
@@ -58,14 +58,12 @@ export function QuoteView({ quote, isOpen, onClose, onDownloadPDF, onSendEmail, 
     }
 
     try {
-      const message = `Votre devis ${quote.quote_number} de ${quote.total_amount.toFixed(2)}€ est prêt. Vous pouvez le consulter ou le télécharger.`;
-      
-      const result = await sendSMS({
-        toNumber: quote.customer_phone,
-        message,
-        type: 'manual',
-        recordId: quote.id
-      });
+      const result = await sendQuoteNotification(
+        quote.customer_phone,
+        quote.customer_name,
+        quote.quote_number,
+        quote.id
+      );
 
       if (result) {
         toast({
