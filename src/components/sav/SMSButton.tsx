@@ -46,6 +46,7 @@ export function SMSButton({
   const [customPhone, setCustomPhone] = useState(customerPhone || '');
   const [useCustomMessage, setUseCustomMessage] = useState(false);
   const [trackingSlug, setTrackingSlug] = useState<string>('');
+  const [sending, setSending] = useState(false);
   const { sendSMS, sendSAVNotification, sendQuoteNotification, loading } = useSMS();
   const { checkAndShowLimitDialog } = useLimitDialogContext();
 
@@ -78,51 +79,56 @@ export function SMSButton({
   };
 
   const handleSendSMS = async () => {
-    if (!customPhone.trim()) return;
+    if (!customPhone.trim() || sending || loading) return;
 
+    setSending(true);
     let success = false;
 
-    if (useCustomMessage && customMessage.trim()) {
-      // Ajouter l'avertissement aux messages personnalisés avec lien SAV si disponible
-      const shortUrl = trackingSlug ? generateShortTrackingUrl(trackingSlug) : '';
-      let smsWarning = "\n\n⚠️ Ne répondez pas à ce SMS.";
-      if (shortUrl) {
-        smsWarning += ` Pour échanger avec nous, consultez votre SAV : ${shortUrl}`;
-      } else {
-        smsWarning += " Contactez-nous directement pour toute question.";
+    try {
+      if (useCustomMessage && customMessage.trim()) {
+        // Ajouter l'avertissement aux messages personnalisés avec lien SAV si disponible
+        const shortUrl = trackingSlug ? generateShortTrackingUrl(trackingSlug) : '';
+        let smsWarning = "\n\n⚠️ Ne répondez pas à ce SMS.";
+        if (shortUrl) {
+          smsWarning += ` Pour échanger avec nous, consultez votre SAV : ${shortUrl}`;
+        } else {
+          smsWarning += " Contactez-nous directement pour toute question.";
+        }
+        const messageWithWarning = customMessage + smsWarning;
+        
+        // Envoi d'un message personnalisé
+        success = await sendSMS({
+          toNumber: customPhone,
+          message: messageWithWarning,
+          type: 'manual',
+          recordId: caseId, // Passer l'ID du SAV pour l'archivage
+        });
+      } else if (caseNumber && caseId) {
+        // Notification SAV automatique
+        success = await sendSAVNotification(
+          customPhone,
+          customerName || 'Client',
+          caseNumber,
+          'in_progress', // Statut par défaut
+          caseId
+        );
+      } else if (quoteNumber && quoteId) {
+        // Notification devis automatique
+        success = await sendQuoteNotification(
+          customPhone,
+          customerName || 'Client',
+          quoteNumber,
+          quoteId
+        );
       }
-      const messageWithWarning = customMessage + smsWarning;
-      
-      // Envoi d'un message personnalisé
-      success = await sendSMS({
-        toNumber: customPhone,
-        message: messageWithWarning,
-        type: 'manual',
-        recordId: caseId, // Passer l'ID du SAV pour l'archivage
-      });
-    } else if (caseNumber && caseId) {
-      // Notification SAV automatique
-      success = await sendSAVNotification(
-        customPhone,
-        customerName || 'Client',
-        caseNumber,
-        'in_progress', // Statut par défaut
-        caseId
-      );
-    } else if (quoteNumber && quoteId) {
-      // Notification devis automatique
-      success = await sendQuoteNotification(
-        customPhone,
-        customerName || 'Client',
-        quoteNumber,
-        quoteId
-      );
-    }
 
-    if (success) {
-      setIsOpen(false);
-      setCustomMessage('');
-      setUseCustomMessage(false);
+      if (success) {
+        setIsOpen(false);
+        setCustomMessage('');
+        setUseCustomMessage(false);
+      }
+    } finally {
+      setSending(false);
     }
   };
 
@@ -227,9 +233,9 @@ export function SMSButton({
           <Button
             type="button"
             onClick={handleSendSMS}
-            disabled={loading || !customPhone.trim() || (useCustomMessage && !customMessage.trim())}
+            disabled={loading || sending || !customPhone.trim() || (useCustomMessage && !customMessage.trim())}
           >
-            {loading ? 'Envoi...' : 'Envoyer SMS'}
+            {loading || sending ? 'Envoi...' : 'Envoyer SMS'}
           </Button>
         </DialogFooter>
       </DialogContent>
