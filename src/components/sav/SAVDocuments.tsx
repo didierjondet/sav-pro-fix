@@ -8,6 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 
 interface Attachment {
   [key: string]: any;
+  id: string;
   name: string;
   url: string;
   size?: number;
@@ -109,11 +110,14 @@ export function SAVDocuments({ savCaseId, attachments, onAttachmentsUpdate }: SA
         throw new Error('Shop ID non trouvé');
       }
 
-      const uploadPromises = Array.from(selectedFiles).map(async (file) => {
+      const uploadPromises = Array.from(selectedFiles).map(async (file, index) => {
         const fileExt = file.name.split('.').pop();
-        const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+        const timestamp = Date.now();
+        const randomId = Math.random().toString(36).substring(7);
+        const fileName = `${timestamp}_${randomId}_${index}.${fileExt}`;
         // Inclure le shop_id dans le chemin pour respecter les RLS policies
         const filePath = `${profile.shop_id}/${savCaseId}/${fileName}`;
+        const uniqueId = `${timestamp}_${randomId}_${index}`;
 
         const { error: uploadError } = await supabase.storage
           .from('sav-attachments')
@@ -122,6 +126,7 @@ export function SAVDocuments({ savCaseId, attachments, onAttachmentsUpdate }: SA
         if (uploadError) throw uploadError;
 
         return {
+          id: uniqueId,
           name: file.name,
           url: filePath,
           size: file.size,
@@ -247,8 +252,8 @@ export function SAVDocuments({ savCaseId, attachments, onAttachmentsUpdate }: SA
 
       if (storageError) throw storageError;
 
-      // Mettre à jour la liste des attachments
-      const updatedAttachments = attachments.filter(a => a.url !== attachment.url);
+      // Mettre à jour la liste des attachments en utilisant l'ID unique
+      const updatedAttachments = attachments.filter(a => a.id !== attachment.id);
 
       // Mettre à jour la base de données
       const { error } = await supabase
@@ -318,9 +323,9 @@ export function SAVDocuments({ savCaseId, attachments, onAttachmentsUpdate }: SA
         {/* Liste des documents */}
         {attachments.length > 0 ? (
           <div className="space-y-2">
-            {attachments.map((attachment, index) => (
+            {attachments.map((attachment) => (
               <div
-                key={index}
+                key={attachment.id || attachment.url}
                 className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50"
               >
                 <div className="flex items-center gap-3">
