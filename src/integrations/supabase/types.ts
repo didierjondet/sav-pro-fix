@@ -389,6 +389,7 @@ export type Database = {
           purchase_price: number | null
           quantity: number | null
           reference: string | null
+          reserved_quantity: number | null
           selling_price: number | null
           shop_id: string | null
           sku: string | null
@@ -405,6 +406,7 @@ export type Database = {
           purchase_price?: number | null
           quantity?: number | null
           reference?: string | null
+          reserved_quantity?: number | null
           selling_price?: number | null
           shop_id?: string | null
           sku?: string | null
@@ -421,6 +423,7 @@ export type Database = {
           purchase_price?: number | null
           quantity?: number | null
           reference?: string | null
+          reserved_quantity?: number | null
           selling_price?: number | null
           shop_id?: string | null
           sku?: string | null
@@ -1508,6 +1511,10 @@ export type Database = {
       generate_tracking_slug: {
         Args: { customer_name: string }
         Returns: string
+      }
+      get_available_stock: {
+        Args: { part_id: string }
+        Returns: number
       }
       get_current_user_role: {
         Args: Record<PropertyKey, never>
