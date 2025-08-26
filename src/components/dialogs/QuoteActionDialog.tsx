@@ -49,10 +49,10 @@ export function QuoteActionDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Printer className="h-5 w-5" />
-            Devis validé
+            Devis créé
           </DialogTitle>
           <DialogDescription>
-            Le devis <span className="font-semibold">{quoteNumber}</span> a été accepté avec succès.
+            Le devis <span className="font-semibold">{quoteNumber}</span> a été créé avec succès.
             <br />
             Que souhaitez-vous faire maintenant ?
           </DialogDescription>

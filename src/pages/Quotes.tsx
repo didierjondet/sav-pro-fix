@@ -105,7 +105,19 @@ export default function Quotes() {
       }
       return { data: null, error: result.error } as any;
     }
-    return await createQuote(data);
+    
+    // Création d'un nouveau devis
+    const result = await createQuote(data);
+    if (!result.error && result.data) {
+      setShowForm(false);
+      // Afficher la popup d'action pour le nouveau devis
+      setShowQuoteActionDialog(result.data);
+      toast({
+        title: "Devis créé",
+        description: `Le devis ${result.data.quote_number} a été créé avec succès`,
+      });
+    }
+    return result;
   };
 
   const handleDeleteQuote = async () => {
