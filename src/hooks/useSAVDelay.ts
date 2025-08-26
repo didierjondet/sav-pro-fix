@@ -23,8 +23,8 @@ export function useSAVDelay(savCase: SAVCase, shop: Shop | null): DelayInfo {
     }
 
     const maxDays = savCase.sav_type === 'client' 
-      ? shop.max_sav_processing_days_client 
-      : shop.max_sav_processing_days_internal;
+      ? (shop.max_sav_processing_days_client ?? 7)
+      : (shop.max_sav_processing_days_internal ?? 5);
 
     const createdAt = new Date(savCase.created_at);
     const now = new Date();
@@ -64,8 +64,8 @@ export function calculateSAVDelay(savCase: SAVCase, shop: Shop | null): DelayInf
   }
 
   const maxDays = savCase.sav_type === 'client' 
-    ? shop.max_sav_processing_days_client 
-    : shop.max_sav_processing_days_internal;
+    ? (shop.max_sav_processing_days_client ?? 7)
+    : (shop.max_sav_processing_days_internal ?? 5);
 
   const createdAt = new Date(savCase.created_at);
   const now = new Date();

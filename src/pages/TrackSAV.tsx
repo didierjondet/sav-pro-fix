@@ -148,8 +148,8 @@ export default function TrackSAV() {
         },
         shop: shopData?.shops ? {
           ...shopData.shops,
-          max_sav_processing_days_client: shopData.shops.max_sav_processing_days_client || 7,
-          max_sav_processing_days_internal: shopData.shops.max_sav_processing_days_internal || 5
+          max_sav_processing_days_client: shopData.shops.max_sav_processing_days_client ?? 7,
+          max_sav_processing_days_internal: shopData.shops.max_sav_processing_days_internal ?? 5
         } : undefined
       };
 
@@ -179,8 +179,8 @@ export default function TrackSAV() {
     }
 
     const maxDays = savCase.sav_type === 'client' 
-      ? savCase.shop.max_sav_processing_days_client || 7
-      : savCase.shop.max_sav_processing_days_internal || 5;
+      ? savCase.shop.max_sav_processing_days_client ?? 7
+      : savCase.shop.max_sav_processing_days_internal ?? 5;
 
     const createdAt = new Date(savCase.created_at);
     const now = new Date();

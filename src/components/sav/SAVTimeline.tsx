@@ -34,8 +34,8 @@ export function SAVTimeline({ savCase, shop }: TimelineProps) {
   console.log('✅ Timeline: Data available, rendering timeline');
 
   const maxDays = savCase.sav_type === 'client' 
-    ? (shop.max_sav_processing_days_client || 7) 
-    : (shop.max_sav_processing_days_internal || 5);
+    ? (shop.max_sav_processing_days_client ?? 7) 
+    : (shop.max_sav_processing_days_internal ?? 5);
 
   const delayInfo = calculateSAVDelay(savCase as any, shop as any);
   const createdAt = new Date(savCase.created_at);

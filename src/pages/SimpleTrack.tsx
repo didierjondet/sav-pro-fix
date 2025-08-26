@@ -205,8 +205,8 @@ export default function SimpleTrack() {
         },
         shop: {
           ...shopData?.shops,
-          max_sav_processing_days_client: shopData?.shops?.max_sav_processing_days_client || 7,
-          max_sav_processing_days_internal: shopData?.shops?.max_sav_processing_days_internal || 5
+          max_sav_processing_days_client: shopData?.shops?.max_sav_processing_days_client ?? 7,
+          max_sav_processing_days_internal: shopData?.shops?.max_sav_processing_days_internal ?? 5
         }
       };
 
@@ -311,8 +311,8 @@ export default function SimpleTrack() {
               status: savCase.status
             }} 
             shop={{
-              max_sav_processing_days_client: savCase.shop?.max_sav_processing_days_client || 7,
-              max_sav_processing_days_internal: savCase.shop?.max_sav_processing_days_internal || 5
+              max_sav_processing_days_client: savCase.shop?.max_sav_processing_days_client ?? 7,
+              max_sav_processing_days_internal: savCase.shop?.max_sav_processing_days_internal ?? 5
             }} 
           />
         </div>
