@@ -33,6 +33,7 @@ import About from "./pages/About";
 import Contact from "./pages/Contact";
 import Home from "./pages/Home";
 import TestLanding from "./pages/TestLanding";
+import QuotePublic from "./pages/QuotePublic";
 import SubscriptionSuccess from "./pages/SubscriptionSuccess";
 
 const queryClient = new QueryClient({
@@ -63,6 +64,7 @@ const App = () => (
               <Route path="/track/:slug" element={<TrackSAV />} />
               <Route path="/parts" element={<Parts />} />
               <Route path="/quotes" element={<Quotes />} />
+              <Route path="/quote/:id" element={<QuotePublic />} />
               <Route path="/orders" element={<Orders />} />
               <Route path="/customers" element={<Customers />} />
               <Route path="/client-chats" element={<ClientChats />} />

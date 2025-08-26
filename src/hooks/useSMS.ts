@@ -165,8 +165,12 @@ export function useSMS() {
     quoteNumber: string,
     quoteId: string
   ): Promise<boolean> => {
+    // Générer l'URL publique du devis
+    const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+    const quoteUrl = `${baseUrl}/quote/${quoteId}`;
+    
     const smsWarning = "\n\n⚠️ Ne répondez pas à ce SMS. Contactez-nous directement pour toute question.";
-    const message = `Bonjour ${customerName}, votre devis ${quoteNumber} est prêt ! Vous pouvez venir le récupérer en magasin ou nous contacter pour plus d'informations.${smsWarning}`;
+    const message = `Bonjour ${customerName}, votre devis ${quoteNumber} est prêt ! Consultez-le ici: ${quoteUrl}${smsWarning}`;
 
     return await sendSMS({
       toNumber: customerPhone,
