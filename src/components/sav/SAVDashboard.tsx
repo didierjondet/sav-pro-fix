@@ -12,6 +12,9 @@ import { useSAVPartsCosts } from '@/hooks/useSAVPartsCosts';
 import { useShopStorageUsage } from '@/hooks/useStorageUsage';
 import { calculateSAVDelay } from '@/hooks/useSAVDelay';
 import { format, differenceInHours } from 'date-fns';
+
+// Limite de stockage par magasin (500 MB = 0.5 GB)
+const STORAGE_LIMIT_GB = 0.5;
 const statusConfig = {
   pending: {
     label: 'En attente',
@@ -60,6 +63,23 @@ export function SAVDashboard() {
     loading: storageLoading
   } = useShopStorageUsage(shop?.id);
   const navigate = useNavigate();
+
+  // Calculs pour le stockage
+  const storageUsagePercent = useMemo(() => {
+    if (storageLoading) return 0;
+    return Math.min((storageGB / STORAGE_LIMIT_GB) * 100, 100);
+  }, [storageGB, storageLoading]);
+
+  const storageChartData = useMemo(() => {
+    if (storageLoading) return [];
+    const usedGB = Math.min(storageGB, STORAGE_LIMIT_GB);
+    const freeGB = Math.max(STORAGE_LIMIT_GB - storageGB, 0);
+    
+    return [
+      { name: 'Espace utilisé', value: usedGB, color: storageUsagePercent > 80 ? '#ef4444' : '#3b82f6' },
+      { name: 'Espace libre', value: freeGB, color: '#e5e7eb' }
+    ];
+  }, [storageGB, storageLoading, storageUsagePercent]);
 
   // Données pour le graphique de répartition des SAV
   const savDistributionData = useMemo(() => {
@@ -171,10 +191,15 @@ export function SAVDashboard() {
             <HardDrive className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {storageLoading ? '...' : `${storageGB.toFixed(3)} GB`}
+            <div className={`text-2xl font-bold ${storageUsagePercent > 80 ? 'text-destructive' : ''}`}>
+              {storageLoading ? '...' : `${storageGB.toFixed(2)} GB`}
             </div>
-            <p className="text-xs text-muted-foreground">Espace utilisé</p>
+            <p className="text-xs text-muted-foreground">
+              {storageLoading ? 'Chargement...' : `${storageUsagePercent.toFixed(1)}% de ${STORAGE_LIMIT_GB} GB`}
+            </p>
+            {storageUsagePercent > 90 && (
+              <p className="text-xs text-destructive mt-1">Limite presque atteinte</p>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -258,5 +283,86 @@ export function SAVDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Graphique d'occupation du stockage */}
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle>Occupation du stockage</CardTitle>
+          <CardDescription>
+            Utilisation de l'espace disque (limite : {STORAGE_LIMIT_GB} GB)
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {storageLoading ? (
+            <div className="h-80 flex items-center justify-center">
+              <div className="text-sm text-muted-foreground">Chargement...</div>
+            </div>
+          ) : (
+            <div className="flex flex-col md:flex-row items-center gap-8">
+              <div className="w-full md:w-1/2">
+                <ResponsiveContainer width="100%" height={300}>
+                  <PieChart>
+                    <Pie
+                      data={storageChartData}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({ name, value, percent }) => `${name}: ${value.toFixed(3)} GB (${(percent * 100).toFixed(1)}%)`}
+                      outerRadius={100}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
+                      {storageChartData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip 
+                      formatter={(value) => [`${Number(value).toFixed(3)} GB`, '']}
+                      contentStyle={{
+                        backgroundColor: 'hsl(var(--background))',
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: '6px'
+                      }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="w-full md:w-1/2 space-y-4">
+                <div className="text-center md:text-left">
+                  <h4 className="text-lg font-semibold mb-2">Résumé du stockage</h4>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span>Espace utilisé :</span>
+                      <span className={storageUsagePercent > 80 ? 'text-destructive font-medium' : ''}>{storageGB.toFixed(3)} GB</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Limite autorisée :</span>
+                      <span>{STORAGE_LIMIT_GB} GB</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Pourcentage utilisé :</span>
+                      <span className={storageUsagePercent > 80 ? 'text-destructive font-medium' : ''}>{storageUsagePercent.toFixed(1)}%</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Espace restant :</span>
+                      <span>{Math.max(STORAGE_LIMIT_GB - storageGB, 0).toFixed(3)} GB</span>
+                    </div>
+                  </div>
+                  {storageUsagePercent > 90 && (
+                    <div className="mt-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+                      <p className="text-sm text-destructive font-medium">
+                        ⚠️ Attention : Vous approchez de votre limite de stockage !
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Contactez le support pour augmenter votre espace de stockage.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>;
 }
