@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { multiWordSearch } from '@/utils/searchUtils';
 import { Header } from '@/components/layout/Header';
 import { Sidebar } from '@/components/layout/Sidebar';
+import { PaginationControls } from '@/components/ui/pagination-controls';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -37,6 +38,8 @@ import { supabase } from '@/integrations/supabase/client';
 export default function Parts() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(20);
   const [showForm, setShowForm] = useState(false);
   const [editingPart, setEditingPart] = useState<Part | null>(null);
   const [deletingPart, setDeletingPart] = useState<Part | null>(null);
@@ -46,31 +49,44 @@ export default function Parts() {
   
   const { parts, loading, createPart, updatePart, deletePart, adjustStock, findSimilarParts, refetch } = useParts();
 
-  const filteredParts = parts
-    .filter(part => multiWordSearch(searchTerm, part.name, part.reference))
-    .sort((a, b) => {
-      if (!searchTerm.trim()) return a.name.localeCompare(b.name);
-      
-      const searchLower = searchTerm.toLowerCase();
-      const aNameMatch = a.name.toLowerCase().includes(searchLower);
-      const bNameMatch = b.name.toLowerCase().includes(searchLower);
-      const aRefMatch = a.reference?.toLowerCase().includes(searchLower) || false;
-      const bRefMatch = b.reference?.toLowerCase().includes(searchLower) || false;
-      
-      // Priorité 1: Correspondance exacte dans le nom
-      if (aNameMatch && !bNameMatch) return -1;
-      if (bNameMatch && !aNameMatch) return 1;
-      
-      // Priorité 2: Si les deux matchent le nom, tri alphabétique
-      if (aNameMatch && bNameMatch) return a.name.localeCompare(b.name);
-      
-      // Priorité 3: Correspondance dans la référence
-      if (aRefMatch && !bRefMatch) return -1;
-      if (bRefMatch && !aRefMatch) return 1;
-      
-      // Par défaut: tri alphabétique par nom
-      return a.name.localeCompare(b.name);
-    });
+  const filteredParts = useMemo(() => {
+    return parts
+      .filter(part => multiWordSearch(searchTerm, part.name, part.reference))
+      .sort((a, b) => {
+        if (!searchTerm.trim()) return a.name.localeCompare(b.name);
+        
+        const searchLower = searchTerm.toLowerCase();
+        const aNameMatch = a.name.toLowerCase().includes(searchLower);
+        const bNameMatch = b.name.toLowerCase().includes(searchLower);
+        const aRefMatch = a.reference?.toLowerCase().includes(searchLower) || false;
+        const bRefMatch = b.reference?.toLowerCase().includes(searchLower) || false;
+        
+        // Priorité 1: Correspondance exacte dans le nom
+        if (aNameMatch && !bNameMatch) return -1;
+        if (bNameMatch && !aNameMatch) return 1;
+        
+        // Priorité 2: Si les deux matchent le nom, tri alphabétique
+        if (aNameMatch && bNameMatch) return a.name.localeCompare(b.name);
+        
+        // Priorité 3: Correspondance dans la référence
+        if (aRefMatch && !bRefMatch) return -1;
+        if (bRefMatch && !aRefMatch) return 1;
+        
+        // Par défaut: tri alphabétique par nom
+        return a.name.localeCompare(b.name);
+      });
+  }, [parts, searchTerm]);
+
+  // Calculs de pagination
+  const totalItems = filteredParts.length;
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedParts = filteredParts.slice(startIndex, endIndex);
+
+  // Réinitialiser la page quand la recherche change
+  useMemo(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
 
   const lowStockParts = parts.filter(part => (part.quantity || 0) <= (part.min_stock || 0));
   const totalValue = parts.reduce((sum, part) => sum + ((part.purchase_price || 0) * (part.quantity || 0)), 0);
@@ -189,25 +205,25 @@ export default function Parts() {
                     </div>
                   </div>
 
-                  {/* Liste des pièces */}
-                  <div className="grid gap-4">
-                    {filteredParts.length === 0 ? (
-                      <Card>
-                        <CardContent className="text-center py-8">
-                          <Package className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                          <p className="text-muted-foreground">
-                            {searchTerm ? 'Aucune pièce trouvée' : 'Aucune pièce en stock'}
-                          </p>
-                          {!searchTerm && (
-                            <Button className="mt-4" onClick={() => setShowForm(true)}>
-                              <Plus className="h-4 w-4 mr-2" />
-                              Ajouter la première pièce
-                            </Button>
-                          )}
-                        </CardContent>
-                      </Card>
-                     ) : (
-                       filteredParts.map((part) => (
+                   {/* Liste des pièces */}
+                   <div className="grid gap-4">
+                     {paginatedParts.length === 0 ? (
+                       <Card>
+                         <CardContent className="text-center py-8">
+                           <Package className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                           <p className="text-muted-foreground">
+                             {searchTerm ? 'Aucune pièce trouvée' : 'Aucune pièce en stock'}
+                           </p>
+                           {!searchTerm && (
+                             <Button className="mt-4" onClick={() => setShowForm(true)}>
+                               <Plus className="h-4 w-4 mr-2" />
+                               Ajouter la première pièce
+                             </Button>
+                           )}
+                         </CardContent>
+                       </Card>
+                      ) : (
+                        paginatedParts.map((part) => (
                         <Card key={part.id} className="hover:shadow-md transition-shadow">
                           <CardContent className="p-6">
                             <div className="flex items-center justify-between">
@@ -318,9 +334,22 @@ export default function Parts() {
                             </div>
                           </CardContent>
                         </Card>
-                       ))
-                     )}
-                  </div>
+                        ))
+                      )}
+                   </div>
+
+                   {/* Pagination */}
+                   {totalItems > 0 && (
+                     <div className="mt-6">
+                       <PaginationControls
+                         totalItems={totalItems}
+                         itemsPerPage={itemsPerPage}
+                         currentPage={currentPage}
+                         onPageChange={setCurrentPage}
+                         onItemsPerPageChange={setItemsPerPage}
+                       />
+                     </div>
+                   )}
                 </>
               ) : showImport ? (
                 <ImportStock
