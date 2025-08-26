@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Download, AlertCircle } from 'lucide-react';
+import { Download, AlertCircle, Check, X } from 'lucide-react';
 import { generateQuotePDF } from '@/utils/pdfGenerator';
 
 interface QuoteData {
@@ -39,6 +39,7 @@ export default function QuotePublic() {
   const [data, setData] = useState<ApiResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [updating, setUpdating] = useState(false);
 
   useEffect(() => {
     const fetchQuote = async () => {
@@ -87,6 +88,42 @@ export default function QuotePublic() {
         email: data.shop.email
       };
       generateQuotePDF(data.quote as any, shopForPDF as any);
+    }
+  };
+
+  const handleStatusUpdate = async (newStatus: 'accepted' | 'rejected') => {
+    if (!id || !data) return;
+
+    setUpdating(true);
+    try {
+      const supabaseUrl = 'https://jljkrthymaqxkebosqko.supabase.co';
+      const response = await fetch(`${supabaseUrl}/functions/v1/quote-public/${id}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: newStatus }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Erreur lors de la mise à jour');
+      }
+
+      // Mettre à jour les données locales
+      setData(prev => prev ? {
+        ...prev,
+        quote: { ...prev.quote, status: newStatus }
+      } : null);
+
+      // Message de confirmation
+      const statusText = newStatus === 'accepted' ? 'accepté' : 'refusé';
+      alert(`Devis ${statusText} avec succès !`);
+    } catch (error) {
+      console.error('Erreur:', error);
+      alert('Erreur lors de la mise à jour du statut');
+    } finally {
+      setUpdating(false);
     }
   };
 
@@ -257,12 +294,36 @@ export default function QuotePublic() {
             </div>
 
             {/* Actions */}
-            <div className="flex justify-center">
+            <div className="flex justify-center gap-4">
               {!isExpired && (
-                <Button onClick={handleDownloadPDF}>
-                  <Download className="h-4 w-4 mr-2" />
-                  Télécharger le PDF
-                </Button>
+                <>
+                  <Button onClick={handleDownloadPDF} variant="outline">
+                    <Download className="h-4 w-4 mr-2" />
+                    Télécharger le PDF
+                  </Button>
+                  
+                  {quote.status !== 'accepted' && quote.status !== 'rejected' && (
+                    <>
+                      <Button 
+                        onClick={() => handleStatusUpdate('accepted')}
+                        disabled={updating}
+                        className="bg-green-600 hover:bg-green-700"
+                      >
+                        <Check className="h-4 w-4 mr-2" />
+                        {updating ? 'Mise à jour...' : 'Valider'}
+                      </Button>
+                      
+                      <Button 
+                        onClick={() => handleStatusUpdate('rejected')}
+                        disabled={updating}
+                        variant="destructive"
+                      >
+                        <X className="h-4 w-4 mr-2" />
+                        {updating ? 'Mise à jour...' : 'Refuser'}
+                      </Button>
+                    </>
+                  )}
+                </>
               )}
             </div>
 

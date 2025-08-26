@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useQuotes, Quote } from '@/hooks/useQuotes';
 import { useShop } from '@/hooks/useShop';
 import { useSMS } from '@/hooks/useSMS';
@@ -78,9 +79,16 @@ export default function Quotes() {
     return now > oneMonthLater;
   };
 
-  const filteredQuotes = quotes.filter(quote =>
-    quote.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    quote.quote_number.toLowerCase().includes(searchTerm.toLowerCase())
+  const activeQuotes = quotes.filter(quote => 
+    quote.status !== 'rejected' &&
+    (quote.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+     quote.quote_number.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
+
+  const rejectedQuotes = quotes.filter(quote => 
+    quote.status === 'rejected' &&
+    (quote.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+     quote.quote_number.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   const handleCreateOrUpdateQuote = async (data: any) => {
@@ -189,24 +197,24 @@ export default function Quotes() {
     }
   };
 
-const handleStatusChange = async (quote: Quote, newStatus: Quote['status']) => {
-  if (newStatus === 'accepted') {
-    // Mettre à jour le statut d'abord
+  const handleStatusChange = async (quote: Quote, newStatus: Quote['status']) => {
+    if (newStatus === 'accepted') {
+      // Mettre à jour le statut d'abord
+      const result = await updateQuote(quote.id, { status: newStatus });
+      if (!result.error) {
+        // Afficher le dialog d'action
+        setShowQuoteActionDialog(quote);
+      }
+      return;
+    }
     const result = await updateQuote(quote.id, { status: newStatus });
     if (!result.error) {
-      // Afficher le dialog d'action
-      setShowQuoteActionDialog(quote);
+      toast({
+        title: "Statut mis à jour",
+        description: `Le devis ${quote.quote_number} est maintenant ${getStatusText(newStatus)}`,
+      });
     }
-    return;
-  }
-  const result = await updateQuote(quote.id, { status: newStatus });
-  if (!result.error) {
-    toast({
-      title: "Statut mis à jour",
-      description: `Le devis ${quote.quote_number} est maintenant ${getStatusText(newStatus)}`,
-    });
-  }
-};
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -350,6 +358,138 @@ const handleStatusChange = async (quote: Quote, newStatus: Quote['status']) => {
     }
   };
 
+  const renderQuoteCard = (quote: Quote) => (
+    <Card key={quote.id} className="hover:shadow-md transition-shadow">
+      <CardContent className="p-6">
+        <div className="flex items-center justify-between">
+          <div className="flex-1">
+            <div className="flex items-center gap-4 mb-2">
+              <h3 className="font-semibold text-lg">{formatCustomerDisplay(quote.customer_name)}</h3>
+              <Badge variant="outline">
+                {quote.quote_number}
+              </Badge>
+              {isQuoteExpired(quote.created_at) ? (
+                <Badge variant="destructive">
+                  Devis expiré
+                </Badge>
+              ) : (
+                <Badge variant={getStatusColor(quote.status)}>
+                  {getStatusText(quote.status)}
+                </Badge>
+              )}
+              {quote.status !== 'rejected' && (
+                <Select
+                  value={quote.status}
+                  onValueChange={(value) => handleStatusChange(quote, value as Quote['status'])}
+                >
+                  <SelectTrigger className="w-40">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="draft">Brouillon</SelectItem>
+                    <SelectItem value="pending_review">En révision</SelectItem>
+                    <SelectItem value="sent">Envoyé</SelectItem>
+                    <SelectItem value="under_negotiation">En négociation</SelectItem>
+                    <SelectItem value="accepted">Accepté</SelectItem>
+                    <SelectItem value="rejected">Refusé</SelectItem>
+                    <SelectItem value="expired">Expiré</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-4 text-sm text-muted-foreground">
+              <div>
+                <span className="font-medium">Total: </span>
+                <span className="text-lg font-bold text-foreground">
+                  {quote.total_amount.toFixed(2)}€
+                </span>
+              </div>
+              
+              {quote.customer_email && (
+                <div>
+                  <span className="font-medium">Email: </span>
+                  <span>{quote.customer_email}</span>
+                </div>
+              )}
+              
+              {quote.customer_phone && (
+                <div>
+                  <span className="font-medium">Téléphone: </span>
+                  <span>{quote.customer_phone}</span>
+                </div>
+              )}
+              
+              <div>
+                <span className="font-medium">Créé le: </span>
+                <span>{new Date(quote.created_at).toLocaleDateString()}</span>
+              </div>
+              
+              {quote.status === 'sent' && (
+                <div className="flex items-center gap-1 text-green-600">
+                  <CheckCircle className="h-3 w-3" />
+                  <span className="font-medium text-xs">PDF envoyé par SMS</span>
+                </div>
+              )}
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-2 ml-4">
+            {quote.status !== 'rejected' && (
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => { setEditingQuote(quote); setShowForm(true); }}
+              >
+                Modifier
+              </Button>
+            )}
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => handleViewQuote(quote)}
+            >
+              <Eye className="h-4 w-4 mr-1" />
+              Voir
+            </Button>
+            {quote.status !== 'rejected' && (
+              <>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => handleDownloadPDF(quote)}
+                >
+                  <Download className="h-4 w-4 mr-1" />
+                  PDF
+                </Button>
+                {quote.customer_phone && (
+                  <Button 
+                    variant={quote.status === 'sent' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => handleSendSMS(quote)}
+                    className={quote.status === 'sent' ? 'bg-green-600 hover:bg-green-700' : ''}
+                  >
+                    <MessageSquare className="h-4 w-4 mr-1" />
+                    {quote.status === 'sent' ? 'Renvoyé SMS' : 'Envoyer SMS'}
+                  </Button>
+                )}
+              </>
+            )}
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="text-destructive hover:text-destructive"
+              onClick={() => setDeletingQuote(quote)}
+            >
+              <Trash2 className="h-4 w-4 mr-1" />
+              Supprimer
+            </Button>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
@@ -397,149 +537,57 @@ const handleStatusChange = async (quote: Quote, newStatus: Quote['status']) => {
                     </div>
                   </div>
 
-                  {/* Liste des devis */}
-                  <div className="grid gap-4">
-                    {filteredQuotes.length === 0 ? (
-                      <Card>
-                        <CardContent className="text-center py-8">
-                          <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                          <p className="text-muted-foreground">
-                            {searchTerm ? 'Aucun devis trouvé' : 'Aucun devis créé'}
-                          </p>
-                          {!searchTerm && (
-                            <Button className="mt-4" onClick={() => setShowForm(true)}>
-                              <Plus className="h-4 w-4 mr-2" />
-                              Créer le premier devis
-                            </Button>
-                          )}
-                        </CardContent>
-                      </Card>
-                    ) : (
-                      filteredQuotes.map((quote) => (
-                        <Card key={quote.id} className="hover:shadow-md transition-shadow">
-                          <CardContent className="p-6">
-                            <div className="flex items-center justify-between">
-                              <div className="flex-1">
-                                <div className="flex items-center gap-4 mb-2">
-                                  <h3 className="font-semibold text-lg">{formatCustomerDisplay(quote.customer_name)}</h3>
-                                  <Badge variant="outline">
-                                    {quote.quote_number}
-                                  </Badge>
-                                  {isQuoteExpired(quote.created_at) ? (
-                                    <Badge variant="destructive">
-                                      Devis expiré
-                                    </Badge>
-                                  ) : (
-                                    <Badge variant={getStatusColor(quote.status)}>
-                                      {getStatusText(quote.status)}
-                                    </Badge>
-                                  )}
-                                  <Select
-                                    value={quote.status}
-                                    onValueChange={(value) => handleStatusChange(quote, value as Quote['status'])}
-                                  >
-                                    <SelectTrigger className="w-40">
-                                      <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="draft">Brouillon</SelectItem>
-                                      <SelectItem value="pending_review">En révision</SelectItem>
-                                      <SelectItem value="sent">Envoyé</SelectItem>
-                                      <SelectItem value="under_negotiation">En négociation</SelectItem>
-                                      <SelectItem value="accepted">Accepté</SelectItem>
-                                      <SelectItem value="rejected">Refusé</SelectItem>
-                                      <SelectItem value="expired">Expiré</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                </div>
-                                
-                                <div className="grid grid-cols-1 md:grid-cols-5 gap-4 text-sm text-muted-foreground">
-                                  <div>
-                                    <span className="font-medium">Total: </span>
-                                    <span className="text-lg font-bold text-foreground">
-                                      {quote.total_amount.toFixed(2)}€
-                                    </span>
-                                  </div>
-                                  
-                                  {quote.customer_email && (
-                                    <div>
-                                      <span className="font-medium">Email: </span>
-                                      <span>{quote.customer_email}</span>
-                                    </div>
-                                  )}
-                                  
-                                  {quote.customer_phone && (
-                                    <div>
-                                      <span className="font-medium">Téléphone: </span>
-                                      <span>{quote.customer_phone}</span>
-                                    </div>
-                                  )}
-                                  
-                                  <div>
-                                    <span className="font-medium">Créé le: </span>
-                                    <span>{new Date(quote.created_at).toLocaleDateString()}</span>
-                                  </div>
-                                  
-                                  {quote.status === 'sent' && (
-                                    <div className="flex items-center gap-1 text-green-600">
-                                      <CheckCircle className="h-3 w-3" />
-                                      <span className="font-medium text-xs">PDF envoyé par SMS</span>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                              
-                              <div className="flex items-center gap-2 ml-4">
-                                <Button 
-                                  variant="outline" 
-                                  size="sm"
-                                  onClick={() => { setEditingQuote(quote); setShowForm(true); }}
-                                >
-                                  Modifier
+                  {/* Onglets pour séparer les devis actifs et refusés */}
+                  <Tabs defaultValue="active" className="w-full">
+                    <TabsList className="grid w-full grid-cols-2">
+                      <TabsTrigger value="active">
+                        Devis actifs ({activeQuotes.length})
+                      </TabsTrigger>
+                      <TabsTrigger value="rejected">
+                        Devis refusés ({rejectedQuotes.length})
+                      </TabsTrigger>
+                    </TabsList>
+                    
+                    <TabsContent value="active" className="mt-6">
+                      <div className="grid gap-4">
+                        {activeQuotes.length === 0 ? (
+                          <Card>
+                            <CardContent className="text-center py-8">
+                              <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                              <p className="text-muted-foreground">
+                                {searchTerm ? 'Aucun devis actif trouvé' : 'Aucun devis actif'}
+                              </p>
+                              {!searchTerm && (
+                                <Button className="mt-4" onClick={() => setShowForm(true)}>
+                                  <Plus className="h-4 w-4 mr-2" />
+                                  Créer le premier devis
                                 </Button>
-                                <Button 
-                                  variant="outline" 
-                                  size="sm"
-                                  onClick={() => handleViewQuote(quote)}
-                                >
-                                  <Eye className="h-4 w-4 mr-1" />
-                                  Voir
-                                </Button>
-                                <Button 
-                                  variant="outline" 
-                                  size="sm"
-                                  onClick={() => handleDownloadPDF(quote)}
-                                >
-                                  <Download className="h-4 w-4 mr-1" />
-                                  PDF
-                                </Button>
-                                {quote.customer_phone && (
-                                  <Button 
-                                    variant={quote.status === 'sent' ? 'default' : 'outline'}
-                                    size="sm"
-                                    onClick={() => handleSendSMS(quote)}
-                                    className={quote.status === 'sent' ? 'bg-green-600 hover:bg-green-700' : ''}
-                                  >
-                                    <MessageSquare className="h-4 w-4 mr-1" />
-                                    {quote.status === 'sent' ? 'Renvoyé SMS' : 'Envoyer SMS'}
-                                  </Button>
-                                )}
-                                <Button 
-                                  variant="outline" 
-                                  size="sm" 
-                                  className="text-destructive hover:text-destructive"
-                                  onClick={() => setDeletingQuote(quote)}
-                                >
-                                  <Trash2 className="h-4 w-4 mr-1" />
-                                  Supprimer
-                                </Button>
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))
-                    )}
-                  </div>
+                              )}
+                            </CardContent>
+                          </Card>
+                        ) : (
+                          activeQuotes.map(renderQuoteCard)
+                        )}
+                      </div>
+                    </TabsContent>
+                    
+                    <TabsContent value="rejected" className="mt-6">
+                      <div className="grid gap-4">
+                        {rejectedQuotes.length === 0 ? (
+                          <Card>
+                            <CardContent className="text-center py-8">
+                              <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                              <p className="text-muted-foreground">
+                                {searchTerm ? 'Aucun devis refusé trouvé' : 'Aucun devis refusé'}
+                              </p>
+                            </CardContent>
+                          </Card>
+                        ) : (
+                          rejectedQuotes.map(renderQuoteCard)
+                        )}
+                      </div>
+                    </TabsContent>
+                  </Tabs>
                 </>
               ) : (
                 <QuoteForm
@@ -551,20 +599,20 @@ const handleStatusChange = async (quote: Quote, newStatus: Quote['status']) => {
                 />
               )}
 
-{/* Dialog de vue détaillée */}
-<QuoteView
-  quote={viewingQuote}
-  isOpen={!!viewingQuote}
-  onClose={() => setViewingQuote(null)}
-  onDownloadPDF={handleDownloadPDF}
-  onSendEmail={() => {}}
-  onQuoteUpdate={() => {
-    // Rafraîchir la liste des devis après mise à jour
-    window.location.reload();
-  }}
-/>
+              {/* Dialog de vue détaillée */}
+              <QuoteView
+                quote={viewingQuote}
+                isOpen={!!viewingQuote}
+                onClose={() => setViewingQuote(null)}
+                onDownloadPDF={handleDownloadPDF}
+                onSendEmail={() => {}}
+                onQuoteUpdate={() => {
+                  // Rafraîchir la liste des devis après mise à jour
+                  window.location.reload();
+                }}
+              />
 
-{/* Dialog de suppression */}
+              {/* Dialog de suppression */}
               <Dialog open={!!deletingQuote} onOpenChange={(open) => { if (!open) setDeletingQuote(null); }}>
                 <DialogContent>
                   <DialogHeader>
@@ -585,52 +633,52 @@ const handleStatusChange = async (quote: Quote, newStatus: Quote['status']) => {
                 </DialogContent>
               </Dialog>
 
-{/* Dialog d'action après validation du devis */}
-<QuoteActionDialog
-  isOpen={!!showQuoteActionDialog}
-  onClose={() => setShowQuoteActionDialog(null)}
-  onPrint={() => {
-    if (showQuoteActionDialog) {
-      handleDownloadPDF(showQuoteActionDialog);
-    }
-  }}
-  onSendSMS={() => {
-    if (showQuoteActionDialog) {
-      handleSendSMS(showQuoteActionDialog);
-    }
-  }}
-  onSkip={() => {
-    // Option pour passer sans action
-    toast({
-      title: "Devis accepté",
-      description: `Le devis ${showQuoteActionDialog?.quote_number} a été marqué comme accepté`,
-    });
-  }}
-  onConvertToSAV={() => {
-    if (showQuoteActionDialog) {
-      setQuoteToConvert(showQuoteActionDialog);
-    }
-  }}
-  quoteNumber={showQuoteActionDialog?.quote_number || ''}
-  hasPhone={!!showQuoteActionDialog?.customer_phone}
-/>
+              {/* Dialog d'action après validation du devis */}
+              <QuoteActionDialog
+                isOpen={!!showQuoteActionDialog}
+                onClose={() => setShowQuoteActionDialog(null)}
+                onPrint={() => {
+                  if (showQuoteActionDialog) {
+                    handleDownloadPDF(showQuoteActionDialog);
+                  }
+                }}
+                onSendSMS={() => {
+                  if (showQuoteActionDialog) {
+                    handleSendSMS(showQuoteActionDialog);
+                  }
+                }}
+                onSkip={() => {
+                  // Option pour passer sans action
+                  toast({
+                    title: "Devis accepté",
+                    description: `Le devis ${showQuoteActionDialog?.quote_number} a été marqué comme accepté`,
+                  });
+                }}
+                onConvertToSAV={() => {
+                  if (showQuoteActionDialog) {
+                    setQuoteToConvert(showQuoteActionDialog);
+                  }
+                }}
+                quoteNumber={showQuoteActionDialog?.quote_number || ''}
+                hasPhone={!!showQuoteActionDialog?.customer_phone}
+              />
 
-{/* Dialog de conversion en SAV */}
-<Dialog open={!!quoteToConvert} onOpenChange={(open) => { if (!open) setQuoteToConvert(null); }}>
-  <DialogContent>
-    <DialogHeader>
-      <DialogTitle>Convertir en SAV</DialogTitle>
-      <DialogDescription id="convert-sav-desc">
-        Choisissez le type de SAV à créer pour le devis "{quoteToConvert?.quote_number}".
-      </DialogDescription>
-    </DialogHeader>
-    <div className="flex gap-3 justify-end">
-      <Button variant="outline" onClick={() => setQuoteToConvert(null)}>Annuler</Button>
-      <Button onClick={() => convertQuoteToSAV('client')} aria-describedby="convert-sav-desc">SAV Client</Button>
-      <Button onClick={() => convertQuoteToSAV('external')} aria-describedby="convert-sav-desc">SAV Externe</Button>
-    </div>
-  </DialogContent>
-</Dialog>
+              {/* Dialog de conversion en SAV */}
+              <Dialog open={!!quoteToConvert} onOpenChange={(open) => { if (!open) setQuoteToConvert(null); }}>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Convertir en SAV</DialogTitle>
+                    <DialogDescription id="convert-sav-desc">
+                      Choisissez le type de SAV à créer pour le devis "{quoteToConvert?.quote_number}".
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="flex gap-3 justify-end">
+                    <Button variant="outline" onClick={() => setQuoteToConvert(null)}>Annuler</Button>
+                    <Button onClick={() => convertQuoteToSAV('client')} aria-describedby="convert-sav-desc">SAV Client</Button>
+                    <Button onClick={() => convertQuoteToSAV('external')} aria-describedby="convert-sav-desc">SAV Externe</Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
             </div>
           </main>
         </div>
@@ -638,4 +686,3 @@ const handleStatusChange = async (quote: Quote, newStatus: Quote['status']) => {
     </div>
   );
 }
-

@@ -42,7 +42,50 @@ Deno.serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Récupérer le devis avec les informations de la boutique
+    // Handle POST/PUT requests for status updates
+    if (req.method === 'POST' || req.method === 'PUT') {
+      const body = await req.json();
+      const { status } = body;
+
+      if (!status || !['accepted', 'rejected'].includes(status)) {
+        return new Response(
+          JSON.stringify({ error: 'Invalid status. Must be "accepted" or "rejected"' }),
+          { 
+            status: 400, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        );
+      }
+
+      // Update quote status
+      const { data: updatedQuote, error: updateError } = await supabase
+        .from('quotes')
+        .update({ status })
+        .eq('id', quoteId)
+        .select()
+        .single();
+
+      if (updateError || !updatedQuote) {
+        console.error('Error updating quote:', updateError);
+        return new Response(
+          JSON.stringify({ error: 'Failed to update quote status' }),
+          { 
+            status: 500, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        );
+      }
+
+      return new Response(
+        JSON.stringify({ success: true, quote: updatedQuote }),
+        { 
+          status: 200, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
+    // Handle GET requests for quote display
     const { data: quote, error: quoteError } = await supabase
       .from('quotes')
       .select('*')
