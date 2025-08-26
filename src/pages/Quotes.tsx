@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { useQuotes, Quote } from '@/hooks/useQuotes';
 import { useShop } from '@/hooks/useShop';
+import { useSMS } from '@/hooks/useSMS';
 import { useSAVCases } from '@/hooks/useSAVCases';
 import { QuoteForm } from '@/components/quotes/QuoteForm';
 import { QuoteView } from '@/components/quotes/QuoteView';
@@ -36,7 +37,10 @@ import {
   Download,
   Eye,
   Trash2,
-  Calendar
+  Calendar,
+  MessageSquare,
+  Clock,
+  CheckCircle
 } from 'lucide-react';
 
 import { supabase } from '@/integrations/supabase/client';
@@ -51,6 +55,7 @@ export default function Quotes() {
   const [editingQuote, setEditingQuote] = useState<Quote | null>(null);
   const { quotes, loading, createQuote, deleteQuote, updateQuote } = useQuotes();
   const { createCase } = useSAVCases();
+  const { sendSMS } = useSMS();
   const { shop } = useShop();
   const { toast } = useToast();
 
@@ -121,12 +126,47 @@ export default function Quotes() {
     }
   };
 
-  const handleSendEmail = (quote: Quote) => {
-    // TODO: Implémenter l'envoi d'email
-    toast({
-      title: "Fonctionnalité à venir",
-      description: "L'envoi par email sera bientôt disponible",
-    });
+  const handleSendSMS = async (quote: Quote) => {
+    if (!quote.customer_phone) {
+      toast({
+        title: "Erreur",
+        description: "Aucun numéro de téléphone renseigné pour ce client",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const message = `Votre devis ${quote.quote_number} de ${quote.total_amount.toFixed(2)}€ est prêt. Vous pouvez le consulter ou le télécharger.`;
+      
+      const result = await sendSMS({
+        toNumber: quote.customer_phone,
+        message,
+        type: 'manual',
+        recordId: quote.id
+      });
+
+      if (result) {
+        // Mettre à jour le statut du devis à "sent" avec l'heure d'envoi
+        await updateQuote(quote.id, { 
+          status: 'sent',
+          updated_at: new Date().toISOString()
+        });
+        
+        toast({
+          title: "SMS envoyé",
+          description: `Le devis a été envoyé par SMS à ${quote.customer_phone}`,
+        });
+      } else {
+        throw new Error('Erreur lors de l\'envoi du SMS');
+      }
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error.message || "Impossible d'envoyer le SMS",
+        variant: "destructive",
+      });
+    }
   };
 
 const handleStatusChange = async (quote: Quote, newStatus: Quote['status']) => {
@@ -382,7 +422,7 @@ const handleStatusChange = async (quote: Quote, newStatus: Quote['status']) => {
                                   </Select>
                                 </div>
                                 
-                                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm text-muted-foreground">
+                                <div className="grid grid-cols-1 md:grid-cols-5 gap-4 text-sm text-muted-foreground">
                                   <div>
                                     <span className="font-medium">Total: </span>
                                     <span className="text-lg font-bold text-foreground">
@@ -408,6 +448,13 @@ const handleStatusChange = async (quote: Quote, newStatus: Quote['status']) => {
                                     <span className="font-medium">Créé le: </span>
                                     <span>{new Date(quote.created_at).toLocaleDateString()}</span>
                                   </div>
+                                  
+                                  {quote.status === 'sent' && (
+                                    <div className="flex items-center gap-1 text-green-600">
+                                      <CheckCircle className="h-3 w-3" />
+                                      <span className="font-medium text-xs">PDF envoyé par SMS</span>
+                                    </div>
+                                  )}
                                 </div>
                               </div>
                               
@@ -435,14 +482,15 @@ const handleStatusChange = async (quote: Quote, newStatus: Quote['status']) => {
                                   <Download className="h-4 w-4 mr-1" />
                                   PDF
                                 </Button>
-                                {quote.customer_email && (
+                                {quote.customer_phone && (
                                   <Button 
-                                    variant="outline" 
+                                    variant={quote.status === 'sent' ? 'default' : 'outline'}
                                     size="sm"
-                                    onClick={() => handleSendEmail(quote)}
+                                    onClick={() => handleSendSMS(quote)}
+                                    className={quote.status === 'sent' ? 'bg-green-600 hover:bg-green-700' : ''}
                                   >
-                                    <Mail className="h-4 w-4 mr-1" />
-                                    Envoyer
+                                    <MessageSquare className="h-4 w-4 mr-1" />
+                                    {quote.status === 'sent' ? 'Renvoyé SMS' : 'Envoyer SMS'}
                                   </Button>
                                 )}
                                 <Button 
@@ -478,7 +526,11 @@ const handleStatusChange = async (quote: Quote, newStatus: Quote['status']) => {
   isOpen={!!viewingQuote}
   onClose={() => setViewingQuote(null)}
   onDownloadPDF={handleDownloadPDF}
-  onSendEmail={handleSendEmail}
+  onSendEmail={() => {}}
+  onQuoteUpdate={() => {
+    // Rafraîchir la liste des devis après mise à jour
+    window.location.reload();
+  }}
 />
 
 {/* Dialog de suppression */}

@@ -3,8 +3,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
-import { Download, Mail, X } from 'lucide-react';
-import { SMSButton } from '@/components/sav/SMSButton';
+import { Download, Mail, X, MessageSquare, Clock, CheckCircle } from 'lucide-react';
+import { useSMS } from '@/hooks/useSMS';
+import { useToast } from '@/hooks/use-toast';
 
 interface QuoteViewProps {
   quote: Quote | null;
@@ -12,9 +13,12 @@ interface QuoteViewProps {
   onClose: () => void;
   onDownloadPDF: (quote: Quote) => void;
   onSendEmail?: (quote: Quote) => void;
+  onQuoteUpdate?: () => void;
 }
 
-export function QuoteView({ quote, isOpen, onClose, onDownloadPDF, onSendEmail }: QuoteViewProps) {
+export function QuoteView({ quote, isOpen, onClose, onDownloadPDF, onSendEmail, onQuoteUpdate }: QuoteViewProps) {
+  const { sendSMS } = useSMS();
+  const { toast } = useToast();
   if (!quote) return null;
 
   const getStatusColor = (status: string) => {
@@ -43,15 +47,61 @@ export function QuoteView({ quote, isOpen, onClose, onDownloadPDF, onSendEmail }
     }
   };
 
+  const handleSendSMS = async () => {
+    if (!quote?.customer_phone) {
+      toast({
+        title: "Erreur",
+        description: "Aucun numéro de téléphone renseigné pour ce client",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const message = `Votre devis ${quote.quote_number} de ${quote.total_amount.toFixed(2)}€ est prêt. Vous pouvez le consulter ou le télécharger.`;
+      
+      const result = await sendSMS({
+        toNumber: quote.customer_phone,
+        message,
+        type: 'manual',
+        recordId: quote.id
+      });
+
+      if (result) {
+        toast({
+          title: "SMS envoyé",
+          description: `Le devis a été envoyé par SMS à ${quote.customer_phone}`,
+        });
+        if (onQuoteUpdate) onQuoteUpdate();
+      } else {
+        throw new Error('Erreur lors de l\'envoi du SMS');
+      }
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error.message || "Impossible d'envoyer le SMS",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex items-center justify-between">
             <DialogTitle className="text-xl">Devis {quote.quote_number}</DialogTitle>
-            <Badge variant={getStatusColor(quote.status)}>
-              {getStatusText(quote.status)}
-            </Badge>
+            <div className="flex items-center gap-2">
+              <Badge variant={getStatusColor(quote.status)}>
+                {getStatusText(quote.status)}
+              </Badge>
+              {quote.status === 'sent' && (
+                <div className="flex items-center gap-1 text-green-600 text-xs">
+                  <CheckCircle className="h-3 w-3" />
+                  <span>PDF envoyé par SMS</span>
+                </div>
+              )}
+            </div>
           </div>
         </DialogHeader>
         
@@ -80,6 +130,15 @@ export function QuoteView({ quote, isOpen, onClose, onDownloadPDF, onSendEmail }
                 <span className="font-medium text-sm text-muted-foreground">Date de création:</span>
                 <p className="text-sm">{new Date(quote.created_at).toLocaleDateString()}</p>
               </div>
+              {quote.status === 'sent' && (
+                <div className="md:col-span-2">
+                  <span className="font-medium text-sm text-muted-foreground">Envoi SMS:</span>
+                  <div className="flex items-center gap-2 text-sm">
+                    <CheckCircle className="h-4 w-4 text-green-600" />
+                    <span>PDF envoyé le {new Date(quote.updated_at || quote.created_at).toLocaleDateString()} à {new Date(quote.updated_at || quote.created_at).toLocaleTimeString()}</span>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -127,14 +186,15 @@ export function QuoteView({ quote, isOpen, onClose, onDownloadPDF, onSendEmail }
           {/* Actions */}
           <div className="flex justify-end gap-2 flex-wrap">
             {quote.customer_phone && (
-              <SMSButton
-                customerPhone={quote.customer_phone}
-                customerName={quote.customer_name}
-                quoteNumber={quote.quote_number}
-                quoteId={quote.id}
+              <Button 
+                variant={quote.status === 'sent' ? 'default' : 'outline'}
                 size="sm"
-                variant="outline"
-              />
+                onClick={handleSendSMS}
+                className={quote.status === 'sent' ? 'bg-green-600 hover:bg-green-700' : ''}
+              >
+                <MessageSquare className="h-4 w-4 mr-2" />
+                {quote.status === 'sent' ? 'Renvoyer SMS' : 'Envoyer par SMS'}
+              </Button>
             )}
             <Button variant="outline" onClick={() => onDownloadPDF(quote)}>
               <Download className="h-4 w-4 mr-2" />
