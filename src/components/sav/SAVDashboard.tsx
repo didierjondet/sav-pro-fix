@@ -129,7 +129,7 @@ export function SAVDashboard() {
         </Dialog>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-6 mb-6">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5 mb-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">CA du mois</CardTitle>
@@ -183,23 +183,6 @@ export function SAVDashboard() {
               {costsLoading ? '...' : (costs.monthly_revenue - costs.takeover_cost - costs.client_cost - costs.external_cost).toFixed(2)}€
             </div>
             <p className="text-xs text-muted-foreground">CA - Coûts (hors interne)</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Stockage</CardTitle>
-            <HardDrive className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className={`text-2xl font-bold ${storageUsagePercent > 80 ? 'text-destructive' : ''}`}>
-              {storageLoading ? '...' : `${storageGB.toFixed(2)} GB`}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {storageLoading ? 'Chargement...' : `${storageUsagePercent.toFixed(1)}% de ${STORAGE_LIMIT_GB} GB`}
-            </p>
-            {storageUsagePercent > 90 && (
-              <p className="text-xs text-destructive mt-1">Limite presque atteinte</p>
-            )}
           </CardContent>
         </Card>
       </div>
