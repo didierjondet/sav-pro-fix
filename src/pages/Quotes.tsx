@@ -70,6 +70,14 @@ export default function Quotes() {
     return `${last.toUpperCase()} ${first.toLowerCase()}`;
   };
 
+  const isQuoteExpired = (createdAt: string) => {
+    const now = new Date();
+    const created = new Date(createdAt);
+    const oneMonthLater = new Date(created);
+    oneMonthLater.setMonth(oneMonthLater.getMonth() + 1);
+    return now > oneMonthLater;
+  };
+
   const filteredQuotes = quotes.filter(quote =>
     quote.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     quote.quote_number.toLowerCase().includes(searchTerm.toLowerCase())
@@ -405,9 +413,15 @@ const handleStatusChange = async (quote: Quote, newStatus: Quote['status']) => {
                                   <Badge variant="outline">
                                     {quote.quote_number}
                                   </Badge>
-                                  <Badge variant={getStatusColor(quote.status)}>
-                                    {getStatusText(quote.status)}
-                                  </Badge>
+                                  {isQuoteExpired(quote.created_at) ? (
+                                    <Badge variant="destructive">
+                                      Devis expiré
+                                    </Badge>
+                                  ) : (
+                                    <Badge variant={getStatusColor(quote.status)}>
+                                      {getStatusText(quote.status)}
+                                    </Badge>
+                                  )}
                                   <Select
                                     value={quote.status}
                                     onValueChange={(value) => handleStatusChange(quote, value as Quote['status'])}

@@ -21,6 +21,14 @@ export function QuoteView({ quote, isOpen, onClose, onDownloadPDF, onSendEmail, 
   const { toast } = useToast();
   if (!quote) return null;
 
+  const isQuoteExpired = (createdAt: string) => {
+    const now = new Date();
+    const created = new Date(createdAt);
+    const oneMonthLater = new Date(created);
+    oneMonthLater.setMonth(oneMonthLater.getMonth() + 1);
+    return now > oneMonthLater;
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'draft': return 'default';
@@ -90,10 +98,16 @@ export function QuoteView({ quote, isOpen, onClose, onDownloadPDF, onSendEmail, 
           <div className="flex items-center justify-between">
             <DialogTitle className="text-xl">Devis {quote.quote_number}</DialogTitle>
             <div className="flex items-center gap-2">
-              <Badge variant={getStatusColor(quote.status)}>
-                {getStatusText(quote.status)}
-              </Badge>
-              {quote.status === 'sent' && (
+              {isQuoteExpired(quote.created_at) ? (
+                <Badge variant="destructive">
+                  Devis expiré
+                </Badge>
+              ) : (
+                <Badge variant={getStatusColor(quote.status)}>
+                  {getStatusText(quote.status)}
+                </Badge>
+              )}
+              {quote.status === 'sent' && !isQuoteExpired(quote.created_at) && (
                 <div className="flex items-center gap-1 text-green-600 text-xs">
                   <CheckCircle className="h-3 w-3" />
                   <span>PDF envoyé par SMS</span>
@@ -128,12 +142,19 @@ export function QuoteView({ quote, isOpen, onClose, onDownloadPDF, onSendEmail, 
                 <span className="font-medium text-sm text-muted-foreground">Date de création:</span>
                 <p className="text-sm">{new Date(quote.created_at).toLocaleDateString()}</p>
               </div>
-              {quote.status === 'sent' && (
+              {quote.status === 'sent' && !isQuoteExpired(quote.created_at) && (
                 <div className="md:col-span-2">
                   <span className="font-medium text-sm text-muted-foreground">Envoi SMS:</span>
                   <div className="flex items-center gap-2 text-sm">
                     <CheckCircle className="h-4 w-4 text-green-600" />
                     <span>PDF envoyé le {new Date(quote.updated_at || quote.created_at).toLocaleDateString()} à {new Date(quote.updated_at || quote.created_at).toLocaleTimeString()}</span>
+                  </div>
+                </div>
+              )}
+              {isQuoteExpired(quote.created_at) && (
+                <div className="md:col-span-2">
+                  <div className="flex items-center gap-2 text-sm text-red-600">
+                    <span className="font-medium">⚠️ Ce devis a expiré (plus d'un mois)</span>
                   </div>
                 </div>
               )}
@@ -183,7 +204,7 @@ export function QuoteView({ quote, isOpen, onClose, onDownloadPDF, onSendEmail, 
 
           {/* Actions */}
           <div className="flex justify-end gap-2 flex-wrap">
-            {quote.customer_phone && (
+            {quote.customer_phone && !isQuoteExpired(quote.created_at) && (
               <Button 
                 variant={quote.status === 'sent' ? 'default' : 'outline'}
                 size="sm"
@@ -194,15 +215,23 @@ export function QuoteView({ quote, isOpen, onClose, onDownloadPDF, onSendEmail, 
                 {quote.status === 'sent' ? 'Renvoyer SMS' : 'Envoyer par SMS'}
               </Button>
             )}
-            <Button variant="outline" onClick={() => onDownloadPDF(quote)}>
-              <Download className="h-4 w-4 mr-2" />
-              Télécharger PDF
-            </Button>
-            {quote.customer_email && onSendEmail && (
+            {!isQuoteExpired(quote.created_at) && (
+              <Button variant="outline" onClick={() => onDownloadPDF(quote)}>
+                <Download className="h-4 w-4 mr-2" />
+                Télécharger PDF
+              </Button>
+            )}
+            {quote.customer_email && onSendEmail && !isQuoteExpired(quote.created_at) && (
               <Button variant="outline" onClick={() => onSendEmail(quote)}>
                 <Mail className="h-4 w-4 mr-2" />
                 Envoyer par email
               </Button>
+            )}
+            {isQuoteExpired(quote.created_at) && (
+              <div className="w-full text-center p-4 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-red-600 font-medium">Ce devis a expiré et n'est plus valide</p>
+                <p className="text-red-500 text-sm mt-1">Créez un nouveau devis pour ce client</p>
+              </div>
             )}
           </div>
         </div>
