@@ -12,6 +12,7 @@ export interface Message {
   read_by_client: boolean;
   read_by_shop: boolean;
   shop_id: string;
+  attachments?: any[];
 }
 
 interface UseMessagingProps {
@@ -119,7 +120,7 @@ export function useMessaging({ savCaseId, trackingSlug, userType }: UseMessaging
   }, [savCaseId, trackingSlug]);
 
   // Fonction pour envoyer un message
-  const sendMessage = async (message: string, senderName: string) => {
+  const sendMessage = async (message: string, senderName: string, attachments: any[] = []) => {
     if (!message.trim()) return null;
 
     try {
@@ -144,7 +145,8 @@ export function useMessaging({ savCaseId, trackingSlug, userType }: UseMessaging
           message: message.trim(),
           shop_id: shopId,
           read_by_shop: true,
-          read_by_client: false
+          read_by_client: false,
+          attachments: attachments
         };
       } else if (userType === 'client' && trackingSlug) {
         // Pour les clients publics
@@ -163,7 +165,8 @@ export function useMessaging({ savCaseId, trackingSlug, userType }: UseMessaging
           message: message.trim(),
           shop_id: savCase.shop_id,
           read_by_client: true,
-          read_by_shop: false
+          read_by_shop: false,
+          attachments: attachments
         };
       } else {
         throw new Error('Configuration invalide pour l\'envoi');

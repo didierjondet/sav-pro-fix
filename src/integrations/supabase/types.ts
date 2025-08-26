@@ -669,6 +669,7 @@ export type Database = {
       }
       sav_messages: {
         Row: {
+          attachments: Json | null
           created_at: string
           id: string
           message: string
@@ -680,6 +681,7 @@ export type Database = {
           shop_id: string
         }
         Insert: {
+          attachments?: Json | null
           created_at?: string
           id?: string
           message: string
@@ -691,6 +693,7 @@ export type Database = {
           shop_id: string
         }
         Update: {
+          attachments?: Json | null
           created_at?: string
           id?: string
           message?: string

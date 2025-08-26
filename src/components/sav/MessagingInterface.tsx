@@ -4,11 +4,13 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { MessageSquare, Send, X, AlertCircle } from 'lucide-react';
+import { MessageSquare, Send, X, AlertCircle, Camera, Eye } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useMessaging, Message } from '@/hooks/useMessaging';
 import { SMSButton } from './SMSButton';
+import { MessagePhotoUpload } from './MessagePhotoUpload';
+import { supabase } from '@/integrations/supabase/client';
 
 interface MessagingInterfaceProps {
   // Configuration du SAV
@@ -42,6 +44,7 @@ export function MessagingInterface({
 }: MessagingInterfaceProps) {
   const [newMessage, setNewMessage] = useState('');
   const [sending, setSending] = useState(false);
+  const [messagePhotos, setMessagePhotos] = useState<any[]>([]);
   
   const { 
     messages, 
@@ -60,19 +63,40 @@ export function MessagingInterface({
   }, [markAllAsRead]);
 
   const handleSendMessage = async () => {
-    if (!newMessage.trim() || sending) return;
+    if ((!newMessage.trim() && messagePhotos.length === 0) || sending) return;
     
     setSending(true);
-    const result = await sendMessage(newMessage.trim(), senderName);
+    const result = await sendMessage(
+      newMessage.trim() || "📸 Photo(s) envoyée(s)", 
+      senderName, 
+      messagePhotos
+    );
     
     if (result?.data) {
       setNewMessage('');
+      setMessagePhotos([]);
     }
     setSending(false);
   };
 
   const handleDeleteMessage = async (messageId: string) => {
     await deleteMessage(messageId);
+  };
+
+  const handlePreviewPhoto = async (photoUrl: string) => {
+    try {
+      const { data, error } = await supabase.storage
+        .from('sav-attachments')
+        .createSignedUrl(photoUrl, 3600);
+
+      if (error) throw error;
+
+      if (data?.signedUrl) {
+        window.open(data.signedUrl, '_blank');
+      }
+    } catch (error) {
+      console.error('Error previewing photo:', error);
+    }
   };
 
   const formatTime = (dateString: string) => {
@@ -217,6 +241,26 @@ export function MessagingInterface({
                         {renderMessageWithLinks(message.message)}
                       </p>
                       
+                      {/* Affichage des photos */}
+                      {message.attachments && message.attachments.length > 0 && (
+                        <div className="mt-2 space-y-1">
+                          {message.attachments.map((attachment: any, index: number) => (
+                            <div key={index} className="flex items-center gap-2 p-2 bg-background/50 rounded border">
+                              <Camera className="h-4 w-4 text-muted-foreground" />
+                              <span className="text-xs flex-1 truncate">{attachment.name}</span>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handlePreviewPhoto(attachment.url)}
+                                className="h-6 w-6 p-0"
+                              >
+                                <Eye className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      
                       <div className="text-xs opacity-70 mt-1">
                         {formatTime(message.created_at)}
                         {userType === 'shop' && 
@@ -265,13 +309,23 @@ export function MessagingInterface({
               }}
               rows={3}
             />
+            
+            {/* Upload de photos (uniquement pour les techniciens) */}
+            {userType === 'shop' && (
+              <MessagePhotoUpload
+                photos={messagePhotos}
+                onPhotosChange={setMessagePhotos}
+                disabled={sending}
+              />
+            )}
+            
             <div className="flex justify-between items-center">
               <span className="text-sm text-muted-foreground">
                 Appuyez sur Entrée pour envoyer, Shift+Entrée pour une nouvelle ligne
               </span>
               <Button
                 onClick={handleSendMessage}
-                disabled={!newMessage.trim() || sending}
+                disabled={(!newMessage.trim() && messagePhotos.length === 0) || sending}
                 size="sm"
               >
                 <Send className="h-4 w-4 mr-2" />
