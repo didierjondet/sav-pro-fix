@@ -98,10 +98,22 @@ export function SAVDocuments({ savCaseId, attachments, onAttachmentsUpdate }: SA
 
     setUploading(true);
     try {
+      // Récupérer le shop_id de l'utilisateur connecté
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('shop_id')
+        .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
+        .single();
+
+      if (!profile?.shop_id) {
+        throw new Error('Shop ID non trouvé');
+      }
+
       const uploadPromises = Array.from(selectedFiles).map(async (file) => {
         const fileExt = file.name.split('.').pop();
         const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
-        const filePath = `${savCaseId}/${fileName}`;
+        // Inclure le shop_id dans le chemin pour respecter les RLS policies
+        const filePath = `${profile.shop_id}/${savCaseId}/${fileName}`;
 
         const { error: uploadError } = await supabase.storage
           .from('sav-attachments')
