@@ -1,36 +1,44 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Download, AlertCircle } from 'lucide-react';
 import { generateQuotePDF } from '@/utils/pdfGenerator';
-import { Quote } from '@/hooks/useQuotes';
 
-interface QuoteWithShop extends Quote {
-  shops?: {
-    name: string;
-    logo_url?: string;
-    address?: string;
-    phone?: string;
-    email?: string;
-  };
+interface QuoteData {
+  id: string;
+  quote_number: string;
+  customer_name: string;
+  customer_email: string;
+  customer_phone: string;
+  total_amount: number;
+  status: string;
+  created_at: string;
+  items: any[];
+  device_brand?: string;
+  device_model?: string;
+}
+
+interface ShopData {
+  name: string;
+  logo_url?: string;
+  address?: string;
+  phone?: string;
+  email?: string;
+}
+
+interface ApiResponse {
+  quote: QuoteData;
+  shop: ShopData;
+  isExpired: boolean;
 }
 
 export default function QuotePublic() {
   const { id } = useParams<{ id: string }>();
-  const [quote, setQuote] = useState<QuoteWithShop | null>(null);
+  const [data, setData] = useState<ApiResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  const isQuoteExpired = (createdAt: string) => {
-    const now = new Date();
-    const created = new Date(createdAt);
-    const oneMonthLater = new Date(created);
-    oneMonthLater.setMonth(oneMonthLater.getMonth() + 1);
-    return now > oneMonthLater;
-  };
 
   useEffect(() => {
     const fetchQuote = async () => {
@@ -41,44 +49,25 @@ export default function QuotePublic() {
       }
 
       try {
-        // Récupérer le devis
-        const { data: quoteData, error: quoteError } = await supabase
-          .from('quotes')
-          .select('*')
-          .eq('id', id)
-          .single();
+        // Appeler l'edge function publique
+        const supabaseUrl = 'https://jljkrthymaqxkebosqko.supabase.co';
+        const response = await fetch(`${supabaseUrl}/functions/v1/quote-public/${id}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
 
-        if (quoteError || !quoteData) {
-          console.error('Erreur lors de la récupération du devis:', quoteError);
-          setError('Devis non trouvé');
-          return;
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Erreur lors de la récupération du devis');
         }
 
-        // Récupérer les informations de la boutique
-        const { data: shopData, error: shopError } = await supabase
-          .from('shops')
-          .select('name, logo_url, address, phone, email')
-          .eq('id', quoteData.shop_id)
-          .single();
-
-        if (shopError || !shopData) {
-          console.error('Erreur lors de la récupération de la boutique:', shopError);
-          setError('Informations boutique non disponibles');
-          return;
-        }
-
-        // Structurer les données
-        const structuredQuote = {
-          ...quoteData,
-          // Convertir les items JSON en array si nécessaire
-          items: typeof quoteData.items === 'string' ? JSON.parse(quoteData.items) : quoteData.items,
-          shops: shopData
-        } as QuoteWithShop;
-
-        setQuote(structuredQuote);
+        const apiData: ApiResponse = await response.json();
+        setData(apiData);
       } catch (error) {
         console.error('Erreur:', error);
-        setError('Erreur lors du chargement du devis');
+        setError(error instanceof Error ? error.message : 'Erreur lors du chargement du devis');
       } finally {
         setLoading(false);
       }
@@ -88,16 +77,16 @@ export default function QuotePublic() {
   }, [id]);
 
   const handleDownloadPDF = () => {
-    if (quote && quote.shops) {
-      // Créer un objet shop avec les propriétés minimales requises
+    if (data) {
+      // Créer un objet shop compatible
       const shopForPDF = {
-        name: quote.shops.name,
-        logo_url: quote.shops.logo_url,
-        address: quote.shops.address,
-        phone: quote.shops.phone,
-        email: quote.shops.email
+        name: data.shop.name,
+        logo_url: data.shop.logo_url,
+        address: data.shop.address,
+        phone: data.shop.phone,
+        email: data.shop.email
       };
-      generateQuotePDF(quote, shopForPDF as any);
+      generateQuotePDF(data.quote as any, shopForPDF as any);
     }
   };
 
@@ -138,7 +127,7 @@ export default function QuotePublic() {
     );
   }
 
-  if (error || !quote) {
+  if (error || !data) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <Card className="w-full max-w-md">
@@ -159,22 +148,22 @@ export default function QuotePublic() {
     );
   }
 
-  const expired = isQuoteExpired(quote.created_at);
+  const { quote, shop, isExpired } = data;
 
   return (
     <div className="min-h-screen bg-background p-4">
       <div className="max-w-4xl mx-auto">
         {/* Header avec logo boutique */}
-        {quote.shops && (
+        {shop && (
           <div className="text-center mb-8">
-            {quote.shops.logo_url && (
+            {shop.logo_url && (
               <img 
-                src={quote.shops.logo_url} 
-                alt={quote.shops.name} 
+                src={shop.logo_url} 
+                alt={shop.name} 
                 className="h-16 mx-auto mb-4 object-contain"
               />
             )}
-            <h1 className="text-2xl font-bold text-primary">{quote.shops.name}</h1>
+            <h1 className="text-2xl font-bold text-primary">{shop.name}</h1>
           </div>
         )}
 
@@ -183,7 +172,7 @@ export default function QuotePublic() {
             <div className="flex items-center justify-between">
               <CardTitle className="text-xl">Devis {quote.quote_number}</CardTitle>
               <div className="flex items-center gap-2">
-                {expired ? (
+                {isExpired ? (
                   <Badge variant="destructive">Devis expiré</Badge>
                 ) : (
                   <Badge variant={getStatusColor(quote.status)}>
@@ -195,7 +184,7 @@ export default function QuotePublic() {
           </CardHeader>
           
           <CardContent className="space-y-6">
-            {expired && (
+            {isExpired && (
               <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
                 <AlertCircle className="h-8 w-8 text-red-500 mx-auto mb-2" />
                 <p className="text-red-600 font-medium">Ce devis a expiré</p>
@@ -269,7 +258,7 @@ export default function QuotePublic() {
 
             {/* Actions */}
             <div className="flex justify-center">
-              {!expired && (
+              {!isExpired && (
                 <Button onClick={handleDownloadPDF}>
                   <Download className="h-4 w-4 mr-2" />
                   Télécharger le PDF
@@ -278,11 +267,11 @@ export default function QuotePublic() {
             </div>
 
             {/* Footer boutique */}
-            {quote.shops && (
+            {shop && (
               <div className="text-center text-sm text-muted-foreground border-t pt-4">
-                {quote.shops.address && <p>{quote.shops.address}</p>}
-                {quote.shops.phone && <p>Tél: {quote.shops.phone}</p>}
-                {quote.shops.email && <p>Email: {quote.shops.email}</p>}
+                {shop.address && <p>{shop.address}</p>}
+                {shop.phone && <p>Tél: {shop.phone}</p>}
+                {shop.email && <p>Email: {shop.email}</p>}
                 <p className="mt-2 text-xs">
                   <strong>Validité:</strong> Ce devis est valable 1 mois à compter de sa date de création.
                 </p>

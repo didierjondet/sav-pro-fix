@@ -44,3 +44,6 @@ verify_jwt = true
 
 [functions.purchase-sms-package]
 verify_jwt = true
+
+[functions.quote-public]
+verify_jwt = false
