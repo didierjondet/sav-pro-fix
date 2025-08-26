@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Camera, X, Eye, Upload } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useProfile } from '@/hooks/useProfile';
 
 interface MessagePhoto {
   name: string;
@@ -27,6 +28,7 @@ export function MessagePhotoUpload({
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+  const { profile } = useProfile();
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
@@ -44,22 +46,33 @@ export function MessagePhotoUpload({
       return;
     }
 
+    // Vérifier le profil d'abord
+    if (!profile?.shop_id) {
+      toast({
+        title: "Erreur",
+        description: "Impossible d'identifier votre magasin",
+        variant: "destructive",
+      });
+      return;
+    }
+
     // Vérifier les types et tailles
     const validFiles = selectedFiles.filter(file => {
-      if (!file.type.startsWith('image/')) {
+      const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+      if (!allowedTypes.includes(file.type)) {
         toast({
           title: "Type de fichier non supporté",
-          description: `${file.name} n'est pas une image valide`,
+          description: `${file.name} - Seuls les fichiers JPG, PNG et WebP sont acceptés`,
           variant: "destructive",
         });
         return false;
       }
       
-      const maxSize = 5 * 1024 * 1024; // 5MB
+      const maxSize = 2 * 1024 * 1024; // 2MB
       if (file.size > maxSize) {
         toast({
           title: "Fichier trop volumineux",
-          description: `${file.name} dépasse la limite de 5MB`,
+          description: `${file.name} dépasse la limite de 2MB`,
           variant: "destructive",
         });
         return false;
@@ -75,7 +88,9 @@ export function MessagePhotoUpload({
     try {
       const uploadPromises = validFiles.map(async (file) => {
         const fileExt = file.name.split('.').pop();
-        const fileName = `message_${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+        const timestamp = Date.now();
+        const randomString = Math.random().toString(36).substring(2, 15);
+        const fileName = `${profile.shop_id}/message_${timestamp}_${randomString}.${fileExt}`;
 
         const { data, error } = await supabase.storage
           .from('sav-attachments')
@@ -192,7 +207,7 @@ export function MessagePhotoUpload({
           className="w-full"
         >
           <Camera className="h-4 w-4 mr-2" />
-          {uploading ? 'Upload en cours...' : `Ajouter une photo (${photos.length}/${maxPhotos})`}
+          {uploading ? 'Upload en cours...' : `Ajouter une photo (${photos.length}/${maxPhotos}) - max 2MB`}
         </Button>
       )}
 
