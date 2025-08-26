@@ -124,6 +124,7 @@ export const generateQuotePDF = (quote: Quote, shop?: Shop) => {
       <div class="header">
         <div class="quote-number">DEVIS ${quote.quote_number}</div>
         <p>Date: ${new Date(quote.created_at).toLocaleDateString('fr-FR')}</p>
+        <p><strong>Validité: 1 mois à compter de la date de création</strong></p>
         <span class="status-badge status-${quote.status}">
           ${getStatusText(quote.status)}
         </span>
@@ -173,6 +174,7 @@ export const generateQuotePDF = (quote: Quote, shop?: Shop) => {
             ${shop.email ? `<p><strong>Email:</strong> ${shop.email}</p>` : ''}
           </div>
         ` : ''}
+        <p><strong>IMPORTANT:</strong> Ce devis est valable 1 mois à compter de sa date de création. Passé ce délai, il ne sera plus accessible et devra être renouvelé.</p>
         <p>Devis généré le ${new Date().toLocaleDateString('fr-FR')} à ${new Date().toLocaleTimeString('fr-FR')}</p>
         <p style="font-size: 10px; margin-top: 10px;">Propulsé par <strong>FixWay Pro</strong></p>
       </div>
