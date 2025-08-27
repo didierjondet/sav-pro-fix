@@ -308,7 +308,8 @@ export function SAVDashboard() {
                       formatter={(value, name) => [
                         `${Number(value).toFixed(2)}€`,
                         name === 'revenue' ? 'Chiffre d\'affaires' : 
-                        name === 'costs' ? 'Coûts' : 'Profit'
+                        name === 'costs' ? 'Coûts' : 
+                        name === 'profit' ? 'Profit' : name
                       ]}
                       contentStyle={{
                         backgroundColor: 'hsl(var(--background))',
@@ -343,7 +344,8 @@ export function SAVDashboard() {
                       formatter={(value, name) => [
                         value,
                         name === 'overdue_client' ? 'SAV Client en retard' : 
-                        name === 'overdue_external' ? 'SAV Externe en retard' : 'SAV Interne en retard'
+                        name === 'overdue_external' ? 'SAV Externe en retard' : 
+                        name === 'overdue_internal' ? 'SAV Interne en retard' : name
                       ]}
                       contentStyle={{
                         backgroundColor: 'hsl(var(--background))',
