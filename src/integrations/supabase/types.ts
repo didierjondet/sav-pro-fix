@@ -494,6 +494,7 @@ export type Database = {
           device_brand: string | null
           device_imei: string | null
           device_model: string | null
+          discount_info: Json | null
           id: string
           items: Json
           problem_description: string | null
@@ -515,6 +516,7 @@ export type Database = {
           device_brand?: string | null
           device_imei?: string | null
           device_model?: string | null
+          discount_info?: Json | null
           id?: string
           items?: Json
           problem_description?: string | null
@@ -536,6 +538,7 @@ export type Database = {
           device_brand?: string | null
           device_imei?: string | null
           device_model?: string | null
+          discount_info?: Json | null
           id?: string
           items?: Json
           problem_description?: string | null
@@ -568,6 +571,7 @@ export type Database = {
           device_brand: string | null
           device_imei: string | null
           device_model: string | null
+          discount_info: Json | null
           id: string
           partial_takeover: boolean | null
           private_comments: string | null
@@ -596,6 +600,7 @@ export type Database = {
           device_brand?: string | null
           device_imei?: string | null
           device_model?: string | null
+          discount_info?: Json | null
           id?: string
           partial_takeover?: boolean | null
           private_comments?: string | null
@@ -624,6 +629,7 @@ export type Database = {
           device_brand?: string | null
           device_imei?: string | null
           device_model?: string | null
+          discount_info?: Json | null
           id?: string
           partial_takeover?: boolean | null
           private_comments?: string | null
