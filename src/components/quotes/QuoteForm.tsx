@@ -11,6 +11,7 @@ import { Search, Plus, Trash2, ArrowLeft } from 'lucide-react';
 import { QuoteItem, Quote } from '@/hooks/useQuotes';
 import { CustomerSearch } from '@/components/customers/CustomerSearch';
 import { FileUpload } from '@/components/parts/FileUpload';
+import { DiscountManager, DiscountInfo } from '@/components/ui/discount-manager';
 import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -29,6 +30,7 @@ export function QuoteForm({ onSubmit, onCancel, initialQuote, submitLabel, title
   const [notes, setNotes] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedItems, setSelectedItems] = useState<QuoteItem[]>([]);
+  const [discount, setDiscount] = useState<DiscountInfo | null>(null);
   const [deviceInfo, setDeviceInfo] = useState({ brand: '', model: '', imei: '', sku: '', problemDescription: '', attachments: [] as string[] });
 
   useEffect(() => {
@@ -159,7 +161,9 @@ const updateUnitPurchasePrice = (partId: string, unitPrice: number) => {
     setSelectedItems(items => items.filter(item => item.part_id !== partId));
   };
 
-  const totalAmount = selectedItems.reduce((sum, item) => sum + item.total_price, 0);
+  const subtotal = selectedItems.reduce((sum, item) => sum + item.total_price, 0);
+  const discountAmount = discount?.amount || 0;
+  const totalAmount = Math.max(0, subtotal - discountAmount);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -187,6 +191,7 @@ const updateUnitPurchasePrice = (partId: string, unitPrice: number) => {
       notes: notes || null,
       items: selectedItems,
       total_amount: totalAmount,
+      discount_info: discount ? JSON.stringify(discount) : null,
       status: initialQuote?.status ?? 'draft'
     });
 
@@ -526,10 +531,29 @@ const updateUnitPurchasePrice = (partId: string, unitPrice: number) => {
                   );
                 })}
                 
+                {/* Système de remise */}
+                <DiscountManager 
+                  subtotal={subtotal}
+                  discount={discount}
+                  onDiscountChange={setDiscount}
+                />
+                
                 <div className="border-t pt-4">
-                  <div className="flex justify-between items-center text-lg font-bold">
-                    <span>Total:</span>
-                    <span>{totalAmount.toFixed(2)}€</span>
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span>Sous-total:</span>
+                      <span>{subtotal.toFixed(2)}€</span>
+                    </div>
+                    {discount && (
+                      <div className="flex justify-between text-primary">
+                        <span>Remise:</span>
+                        <span>-{discount.amount.toFixed(2)}€</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between items-center text-lg font-bold border-t pt-2">
+                      <span>Total:</span>
+                      <span>{totalAmount.toFixed(2)}€</span>
+                    </div>
                   </div>
                 </div>
               </div>

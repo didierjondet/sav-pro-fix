@@ -25,6 +25,7 @@ import { PrintConfirmDialog } from '@/components/dialogs/PrintConfirmDialog';
 import { SAVPrintButton } from '@/components/sav/SAVPrint';
 import { PatternLock } from '@/components/sav/PatternLock';
 import { Checkbox } from '@/components/ui/checkbox';
+import { DiscountManager, DiscountInfo } from '@/components/ui/discount-manager';
 import { supabase } from '@/integrations/supabase/client';
 
 interface CustomerInfo {
@@ -91,6 +92,7 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
   });
   const [unlockPattern, setUnlockPattern] = useState<number[]>([]);
   const [selectedParts, setSelectedParts] = useState<SelectedPart[]>([]);
+  const [discount, setDiscount] = useState<DiscountInfo | null>(null);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [showPrintDialog, setShowPrintDialog] = useState(false);
@@ -205,7 +207,9 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
       // Calculate totals
       const totalTimeMinutes = 0; // Suppression du calcul du temps
       // Pour les SAV internes, ne pas compter les prix TTC dans le chiffre d'affaires
-      const totalCost = savType === 'internal' ? 0 : selectedParts.reduce((acc, part) => acc + part.unitPrice * part.quantity, 0);
+      const subtotal = selectedParts.reduce((acc, part) => acc + part.unitPrice * part.quantity, 0);
+      const discountAmount = discount?.amount || 0;
+      const totalCost = savType === 'internal' ? 0 : Math.max(0, subtotal - discountAmount);
       
       // Create SAV case
       const { data: newCase, error: caseError } = await createCase({
@@ -223,6 +227,7 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
         attachments: deviceInfo.attachments || [], // Ajouter les attachments ici
         accessories,
         unlock_pattern: unlockPattern.length > 0 ? unlockPattern : null,
+        discount_info: discount ? JSON.stringify(discount) : null,
       });
       
       if (caseError) throw caseError;
@@ -292,6 +297,7 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
       });
       setUnlockPattern([]);
       setSelectedParts([]);
+      setDiscount(null);
     } catch (error: any) {
       console.error('Error creating SAV case:', error);
       toast({
@@ -761,10 +767,19 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
             )}
           </div>
 
-          {/* Résumé */}
+          {/* Résumé et remise */}
           {selectedParts.length > 0 && (
             <>
               <Separator />
+              
+              {/* Composant de remise */}
+              <DiscountManager 
+                subtotal={selectedParts.reduce((acc, part) => acc + (part.quantity * part.unitPrice), 0)}
+                discount={discount}
+                onDiscountChange={setDiscount}
+                disabled={savType === 'internal'}
+              />
+
               <div className="bg-muted/50 p-4 rounded-lg">
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
@@ -772,9 +787,19 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
                     <span>{selectedParts.reduce((acc, part) => acc + part.quantity, 0)}</span>
                   </div>
                   <div className="md:col-span-2">
-                    <span className="font-medium">Coût total: </span>
-                    <span className="font-bold">
-                      {selectedParts.reduce((acc, part) => acc + (part.quantity * part.unitPrice), 0).toFixed(2)}€
+                    <span className="font-medium">Sous-total: </span>
+                    <span>{selectedParts.reduce((acc, part) => acc + (part.quantity * part.unitPrice), 0).toFixed(2)}€</span>
+                  </div>
+                  {discount && (
+                    <div className="md:col-span-2 text-primary">
+                      <span className="font-medium">Remise: </span>
+                      <span>-{discount.amount.toFixed(2)}€</span>
+                    </div>
+                  )}
+                  <div className="md:col-span-2 border-t pt-2">
+                    <span className="font-bold text-lg">Total: </span>
+                    <span className="font-bold text-lg">
+                      {Math.max(0, selectedParts.reduce((acc, part) => acc + (part.quantity * part.unitPrice), 0) - (discount?.amount || 0)).toFixed(2)}€
                     </span>
                   </div>
                 </div>

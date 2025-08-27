@@ -163,7 +163,25 @@ export const generateQuotePDF = (quote: Quote, shop?: Shop) => {
       </table>
       
       <div class="total-section">
-        TOTAL: ${quote.total_amount.toFixed(2)}€
+        ${(() => {
+          const subtotal = quote.items.reduce((sum, item) => sum + item.total_price, 0);
+          const discountInfo = (quote as any).discount_info ? JSON.parse((quote as any).discount_info) : null;
+          const discountAmount = discountInfo?.amount || 0;
+          
+          return `
+            <div style="margin-bottom: 10px; text-align: right;">
+              <span>Sous-total: ${subtotal.toFixed(2)}€</span>
+            </div>
+            ${discountInfo ? `
+              <div style="margin-bottom: 10px; text-align: right; color: #0066cc;">
+                <span>Remise ${discountInfo.type === 'percentage' ? `(${discountInfo.value}%)` : 'fixe'}: -${discountAmount.toFixed(2)}€</span>
+              </div>
+            ` : ''}
+            <div style="font-size: 18px; font-weight: bold;">
+              TOTAL: ${quote.total_amount.toFixed(2)}€
+            </div>
+          `;
+        })()}
       </div>
       
       <div class="footer">
@@ -611,19 +629,36 @@ export const generateSAVRestitutionPDF = async (savCase: SAVCase, shop?: Shop) =
         </div>
 
         <div class="total-section">
-          ${savCaseWithParts.sav_parts && savCaseWithParts.sav_parts.length > 0 ? `
-            <div class="total-row">
-              <span>Sous-total pièces :</span>
-              <span>${savCaseWithParts.sav_parts.reduce((total: number, part: any) => {
-                const unitPrice = part.public_price || part.unit_price || 0;
-                return total + (unitPrice * part.quantity);
-              }, 0).toFixed(2)}€</span>
-            </div>
-          ` : ''}
-          <div class="total-row">
-            <span><strong>Sous-total :</strong></span>
-            <span><strong>${(savCase.total_cost || 0).toFixed(2)}€</strong></span>
-          </div>
+          ${(() => {
+            const subtotal = savCaseWithParts.sav_parts ? savCaseWithParts.sav_parts.reduce((total: number, part: any) => {
+              const unitPrice = part.public_price || part.unit_price || 0;
+              return total + (unitPrice * part.quantity);
+            }, 0) : 0;
+            
+            const discountInfo = (savCase as any).discount_info ? JSON.parse((savCase as any).discount_info) : null;
+            const discountAmount = discountInfo?.amount || 0;
+            
+            return `
+              ${savCaseWithParts.sav_parts && savCaseWithParts.sav_parts.length > 0 ? `
+                <div class="total-row">
+                  <span>Sous-total pièces :</span>
+                  <span>${subtotal.toFixed(2)}€</span>
+                </div>
+              ` : ''}
+              
+              ${discountInfo ? `
+                <div class="total-row" style="color: #0066cc;">
+                  <span>Remise ${discountInfo.type === 'percentage' ? `(${discountInfo.value}%)` : 'fixe'} :</span>
+                  <span>-${discountAmount.toFixed(2)}€</span>
+                </div>
+              ` : ''}
+              
+              <div class="total-row">
+                <span><strong>Sous-total :</strong></span>
+                <span><strong>${(savCase.total_cost || 0).toFixed(2)}€</strong></span>
+              </div>
+            `;
+          })()}
           
           ${((savCase as any).taken_over || (savCase as any).partial_takeover) ? `
             <div class="total-row" style="color: #dc3545; font-weight: bold; background-color: #f8d7da; padding: 5px; border-radius: 3px;">
