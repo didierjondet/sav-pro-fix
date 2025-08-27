@@ -716,6 +716,7 @@ export type Database = {
         Row: {
           attachments: Json | null
           created_at: string
+          discount_info: Json | null
           id: string
           part_id: string | null
           purchase_price: number | null
@@ -727,6 +728,7 @@ export type Database = {
         Insert: {
           attachments?: Json | null
           created_at?: string
+          discount_info?: Json | null
           id?: string
           part_id?: string | null
           purchase_price?: number | null
@@ -738,6 +740,7 @@ export type Database = {
         Update: {
           attachments?: Json | null
           created_at?: string
+          discount_info?: Json | null
           id?: string
           part_id?: string | null
           purchase_price?: number | null

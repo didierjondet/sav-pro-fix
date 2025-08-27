@@ -11,7 +11,6 @@ import { Search, Plus, Trash2, ArrowLeft } from 'lucide-react';
 import { QuoteItem, Quote } from '@/hooks/useQuotes';
 import { CustomerSearch } from '@/components/customers/CustomerSearch';
 import { FileUpload } from '@/components/parts/FileUpload';
-import { DiscountManager, DiscountInfo } from '@/components/ui/discount-manager';
 import { PartDiscountManager, PartDiscountInfo } from '@/components/ui/part-discount-manager';
 import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';

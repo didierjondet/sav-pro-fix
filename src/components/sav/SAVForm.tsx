@@ -25,7 +25,6 @@ import { PrintConfirmDialog } from '@/components/dialogs/PrintConfirmDialog';
 import { SAVPrintButton } from '@/components/sav/SAVPrint';
 import { PatternLock } from '@/components/sav/PatternLock';
 import { Checkbox } from '@/components/ui/checkbox';
-import { DiscountManager, DiscountInfo } from '@/components/ui/discount-manager';
 import { PartDiscountManager, PartDiscountInfo } from '@/components/ui/part-discount-manager';
 import { supabase } from '@/integrations/supabase/client';
 
