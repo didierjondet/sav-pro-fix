@@ -8,7 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useOrders } from '@/hooks/useOrders';
+import { useOrders, OrderItemWithPart } from '@/hooks/useOrders';
+import { ReceiveOrderDialog } from '@/components/orders/ReceiveOrderDialog';
 import { 
   Package, 
   Search, 
@@ -18,18 +19,30 @@ import {
   X,
   Printer,
   Eye,
-  ShoppingCart
+  ShoppingCart,
+  PackageCheck
 } from 'lucide-react';
 
 export default function Orders() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeFilter, setActiveFilter] = useState<'all' | 'sav' | 'quotes'>('sav');
+  const [activeFilter, setActiveFilter] = useState<'all' | 'sav' | 'quotes' | 'reception'>('sav');
+  const [receiveDialogOpen, setReceiveDialogOpen] = useState(false);
+  const [selectedOrderItem, setSelectedOrderItem] = useState<OrderItemWithPart | null>(null);
   const navigate = useNavigate();
   
-  const { orderItems, loading, markAsOrdered, removeFromOrder, getOrdersByFilter } = useOrders();
+  const { orderItems, loading, markAsOrdered, removeFromOrder, receiveOrderItem, getOrdersByFilter } = useOrders();
 
-  const filteredItems = getOrdersByFilter(activeFilter).filter(item =>
+  // Récupérer les items selon le filtre
+  const getFilteredItems = () => {
+    if (activeFilter === 'reception') {
+      // Pour l'onglet réception, afficher seulement les items commandés (ordered: true)
+      return orderItems.filter(item => item.ordered);
+    }
+    return getOrdersByFilter(activeFilter);
+  };
+
+  const filteredItems = getFilteredItems().filter(item =>
     multiWordSearch(searchTerm, item.part_name, item.part_reference)
   );
 
@@ -65,6 +78,7 @@ export default function Orders() {
       case 'sav': return 'Aucune pièce manquante pour les SAV';
       case 'quotes': return 'Aucune pièce manquante pour les devis';
       case 'all': return 'Aucune pièce en dessous du stock minimum';
+      case 'reception': return 'Aucune commande en attente de réception';
       default: return 'Aucune pièce trouvée';
     }
   };
@@ -138,6 +152,17 @@ export default function Orders() {
     }
   };
 
+  const handleReceiveOrder = (orderItem: OrderItemWithPart) => {
+    setSelectedOrderItem(orderItem);
+    setReceiveDialogOpen(true);
+  };
+
+  const handleConfirmReceive = (quantityReceived: number) => {
+    if (selectedOrderItem) {
+      receiveOrderItem(selectedOrderItem.id, quantityReceived);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
@@ -185,10 +210,11 @@ export default function Orders() {
 
               {/* Filtres */}
               <Tabs value={activeFilter} onValueChange={(value) => setActiveFilter(value as any)} className="mb-6">
-                <TabsList className="grid w-full grid-cols-3">
+                <TabsList className="grid w-full grid-cols-4">
                   <TabsTrigger value="sav">SAV</TabsTrigger>
                   <TabsTrigger value="quotes">Devis</TabsTrigger>
                   <TabsTrigger value="all">Stock minimum</TabsTrigger>
+                  <TabsTrigger value="reception">Réception commandes</TabsTrigger>
                 </TabsList>
               </Tabs>
 
@@ -257,40 +283,71 @@ export default function Orders() {
                               </div>
                             </div>
                             
-                            {!item.ordered && (
-                              <div className="flex items-center gap-2 ml-4">
-                                {/* Bouton Voir - affiché seulement pour SAV et Devis */}
-                                {(item.sav_case_id || item.quote_id) && (
+                            <div className="flex items-center gap-2 ml-4">
+                              {/* Boutons pour l'onglet réception */}
+                              {activeFilter === 'reception' && item.ordered && (
+                                <>
+                                  {/* Bouton Voir - affiché seulement pour SAV et Devis */}
+                                  {(item.sav_case_id || item.quote_id) && (
+                                    <Button 
+                                      variant="outline" 
+                                      size="sm"
+                                      onClick={() => handleViewItem(item)}
+                                      className="text-blue-600 hover:text-blue-700"
+                                    >
+                                      <Eye className="h-4 w-4 mr-1" />
+                                      Voir
+                                    </Button>
+                                  )}
+                                  
+                                  <Button 
+                                    variant="default" 
+                                    size="sm"
+                                    onClick={() => handleReceiveOrder(item)}
+                                    className="bg-green-600 hover:bg-green-700"
+                                  >
+                                    <PackageCheck className="h-4 w-4 mr-1" />
+                                    Valider réception
+                                  </Button>
+                                </>
+                              )}
+                              
+                              {/* Boutons pour les autres onglets */}
+                              {activeFilter !== 'reception' && !item.ordered && (
+                                <>
+                                  {/* Bouton Voir - affiché seulement pour SAV et Devis */}
+                                  {(item.sav_case_id || item.quote_id) && (
+                                    <Button 
+                                      variant="outline" 
+                                      size="sm"
+                                      onClick={() => handleViewItem(item)}
+                                      className="text-blue-600 hover:text-blue-700"
+                                    >
+                                      <Eye className="h-4 w-4 mr-1" />
+                                      Voir
+                                    </Button>
+                                  )}
+                                  
                                   <Button 
                                     variant="outline" 
                                     size="sm"
-                                    onClick={() => handleViewItem(item)}
-                                    className="text-blue-600 hover:text-blue-700"
+                                    onClick={() => markAsOrdered(item.id)}
                                   >
-                                    <Eye className="h-4 w-4 mr-1" />
-                                    Voir
+                                    <ShoppingCart className="h-4 w-4 mr-1" />
+                                    Commandé
                                   </Button>
-                                )}
-                                
-                                <Button 
-                                  variant="outline" 
-                                  size="sm"
-                                  onClick={() => markAsOrdered(item.id)}
-                                >
-                                  <ShoppingCart className="h-4 w-4 mr-1" />
-                                  Commandé
-                                </Button>
-                                <Button 
-                                  variant="outline" 
-                                  size="sm" 
-                                  className="text-destructive hover:text-destructive"
-                                  onClick={() => removeFromOrder(item.id)}
-                                >
-                                  <X className="h-4 w-4 mr-1" />
-                                  Retirer
-                                </Button>
-                              </div>
-                            )}
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm" 
+                                    className="text-destructive hover:text-destructive"
+                                    onClick={() => removeFromOrder(item.id)}
+                                  >
+                                    <X className="h-4 w-4 mr-1" />
+                                    Retirer
+                                  </Button>
+                                </>
+                              )}
+                            </div>
                           </div>
                         </CardContent>
                       </Card>
@@ -298,6 +355,14 @@ export default function Orders() {
                   </div>
                 )}
               </div>
+
+              {/* Dialog de validation de réception */}
+              <ReceiveOrderDialog
+                isOpen={receiveDialogOpen}
+                onClose={() => setReceiveDialogOpen(false)}
+                onConfirm={handleConfirmReceive}
+                orderItem={selectedOrderItem}
+              />
             </div>
           </main>
         </div>

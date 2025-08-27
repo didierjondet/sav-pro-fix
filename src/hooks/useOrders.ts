@@ -520,6 +520,120 @@ export function useOrders() {
     fetchPartsNeedingRestock();
   };
 
+  const receiveOrderItem = async (itemId: string, quantityReceived: number) => {
+    try {
+      // Get current user's shop_id
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('shop_id')
+        .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
+        .single();
+
+      if (!profile?.shop_id) {
+        throw new Error('Shop non trouvé');
+      }
+
+      // Récupérer l'item de commande
+      const { data: orderItem, error: fetchError } = await supabase
+        .from('order_items')
+        .select('*')
+        .eq('id', itemId)
+        .single();
+
+      if (fetchError || !orderItem) {
+        throw new Error('Commande non trouvée');
+      }
+
+      // Mettre à jour le stock de la pièce
+      if (orderItem.part_id) {
+        const { error: stockError } = await supabase
+          .rpc('update_part_quantity', {
+            part_id: orderItem.part_id,
+            quantity_to_add: quantityReceived
+          });
+
+        if (stockError) {
+          // Fallback si la fonction n'existe pas
+          const { data: currentPart } = await supabase
+            .from('parts')
+            .select('quantity')
+            .eq('id', orderItem.part_id)
+            .single();
+
+          const { error: stockUpdateError } = await supabase
+            .from('parts')
+            .update({ 
+              quantity: (currentPart?.quantity || 0) + quantityReceived
+            })
+            .eq('id', orderItem.part_id);
+
+          if (stockUpdateError) throw stockUpdateError;
+        }
+      }
+
+      // Supprimer l'item de commande (réception terminée)
+      const { error: deleteError } = await supabase
+        .from('order_items')
+        .delete()
+        .eq('id', itemId);
+
+      if (deleteError) throw deleteError;
+
+      // Si lié à un SAV, mettre à jour le statut et envoyer un message
+      if (orderItem.sav_case_id) {
+        // Mettre à jour le statut du SAV
+        const { error: savUpdateError } = await supabase
+          .from('sav_cases')
+          .update({ status: 'parts_received' })
+          .eq('id', orderItem.sav_case_id);
+
+        if (savUpdateError) {
+          console.error('Erreur lors de la mise à jour du statut SAV:', savUpdateError);
+        }
+
+        // Récupérer les informations du shop pour le message
+        const { data: shop, error: shopError } = await supabase
+          .from('shops')
+          .select('name')
+          .eq('id', profile.shop_id)
+          .single();
+
+        // Envoyer un message automatique dans le chat du SAV
+        const { error: messageError } = await supabase
+          .from('sav_messages')
+          .insert({
+            sav_case_id: orderItem.sav_case_id,
+            shop_id: profile.shop_id,
+            sender_type: 'shop',
+            sender_name: shop?.name || 'Atelier',
+            message: quantityReceived === 1 
+              ? "Nous venons de recevoir votre pièce, votre SAV va pouvoir avancer, on vous tient au courant !"
+              : "Nous venons de recevoir vos pièces, votre SAV va pouvoir avancer, on vous tient au courant !",
+            read_by_shop: true,
+            read_by_client: false
+          });
+
+        if (messageError) {
+          console.error('Erreur lors de l\'envoi du message automatique:', messageError);
+        }
+      }
+
+      toast({
+        title: "Succès",
+        description: `Réception validée : ${quantityReceived} pièce(s) reçue(s)`,
+      });
+
+      // Refetch toutes les données pour mettre à jour l'affichage
+      refreshAllData();
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
   return {
     orderItems,
     partsNeededForSAV,
@@ -529,6 +643,7 @@ export function useOrders() {
     addToOrder,
     markAsOrdered,
     removeFromOrder,
+    receiveOrderItem,
     getOrdersByFilter,
     refetch: refreshAllData,
   };

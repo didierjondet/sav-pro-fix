@@ -21,6 +21,7 @@ const defaultStatusConfig = {
   in_progress: { label: 'En cours', color: '#3b82f6', variant: 'default' as const },
   testing: { label: 'Tests', color: '#8b5cf6', variant: 'default' as const },
   parts_ordered: { label: 'Pièces commandées', color: '#f59e0b', variant: 'outline' as const },
+  parts_received: { label: 'Pièces réceptionnées', color: '#22c55e', variant: 'default' as const },
   ready: { label: 'Prêt', color: '#10b981', variant: 'default' as const },
   cancelled: { label: 'Annulé', color: '#ef4444', variant: 'destructive' as const },
 };
