@@ -122,6 +122,9 @@ export default function SAVList() {
       filteredByType = casesWithDelay.filter(case_ => case_.sav_type === 'internal');
     } else if (filterType === 'external') {
       filteredByType = casesWithDelay.filter(case_ => case_.sav_type === 'external');
+    } else if (filterType === 'shop') {
+      // Regrouper SAV magasin et externes sous "SAV Magasin" pour une présentation unifiée
+      filteredByType = casesWithDelay.filter(case_ => case_.sav_type === 'internal' || case_.sav_type === 'external');
     }
 
     // 3. Filtrer par statut
@@ -158,11 +161,14 @@ export default function SAVList() {
         // Trier du plus récent au plus vieux (par date de création)
         return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
       } else {
-        // Tri par défaut : SAV client en premier, puis SAV magasin, puis par priorité
+        // Tri par défaut : SAV client en premier, puis SAV magasin/externes (même priorité), puis par urgence
         
-        // 1. Prioriser les SAV client vs magasin
-        if (a.sav_type === 'client' && b.sav_type === 'internal') return -1;
-        if (a.sav_type === 'internal' && b.sav_type === 'client') return 1;
+        // 1. Prioriser les SAV client vs magasin/externes (traiter externes comme internes)
+        const aIsClient = a.sav_type === 'client';
+        const bIsClient = b.sav_type === 'client';
+        
+        if (aIsClient && !bIsClient) return -1;
+        if (!aIsClient && bIsClient) return 1;
         
         // 2. Les SAV annulés vont à la fin (même logique pour client et magasin)
         const aCompleted = a.status === 'cancelled';
@@ -252,12 +258,13 @@ export default function SAVList() {
                       <SelectTrigger className="w-40">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">Tous les SAV</SelectItem>
-                        <SelectItem value="client">SAV Client</SelectItem>
-                        <SelectItem value="internal">SAV Magasin</SelectItem>
-                        <SelectItem value="external">SAV Externe</SelectItem>
-                      </SelectContent>
+                       <SelectContent>
+                         <SelectItem value="all">Tous les SAV</SelectItem>
+                         <SelectItem value="client">SAV Client</SelectItem>
+                         <SelectItem value="shop">SAV Magasin (Interne + Externe)</SelectItem>
+                         <SelectItem value="internal">SAV Interne seulement</SelectItem>
+                         <SelectItem value="external">SAV Externe seulement</SelectItem>
+                       </SelectContent>
                     </Select>
                   </div>
                   
@@ -325,6 +332,7 @@ export default function SAVList() {
                 const hasUnreadMessages = savWithUnreadMessages.some(sav => sav.id === savCase.id);
                 
                 // Couleurs de fond selon le type de SAV
+                // SAV clients : fond rouge, SAV magasin et externes : fond bleu (même présentation)
                 const backgroundClass = savCase.sav_type === 'client' ? 'bg-red-50' : 'bg-sky-50';
                 
                 const cardClassName = `hover:shadow-md transition-shadow ${backgroundClass} ${
@@ -352,9 +360,11 @@ export default function SAVList() {
                           } : undefined}>
                             {getStatusInfo(savCase.status).label}
                           </Badge>
-                          <Badge variant="outline">
-                            {savCase.sav_type === 'client' ? 'Client' : savCase.sav_type === 'external' ? 'Externe' : 'Interne'}
-                          </Badge>
+                           <Badge variant="outline" className={
+                             savCase.sav_type === 'client' ? 'border-red-200 text-red-700' : 'border-blue-200 text-blue-700'
+                           }>
+                             {savCase.sav_type === 'client' ? 'Client' : savCase.sav_type === 'external' ? 'Externe' : 'Interne'}
+                           </Badge>
                         </div>
                         
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm text-muted-foreground">
