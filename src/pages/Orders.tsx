@@ -214,7 +214,12 @@ export default function Orders() {
                   <TabsTrigger value="sav">SAV</TabsTrigger>
                   <TabsTrigger value="quotes">Devis</TabsTrigger>
                   <TabsTrigger value="all">Stock minimum</TabsTrigger>
-                  <TabsTrigger value="reception">Réception commandes</TabsTrigger>
+                  <TabsTrigger 
+                    value="reception" 
+                    className="data-[state=active]:bg-green-100 data-[state=active]:text-green-800 data-[state=active]:border-green-300"
+                  >
+                    Réception commandes
+                  </TabsTrigger>
                 </TabsList>
               </Tabs>
 
