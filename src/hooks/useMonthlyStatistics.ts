@@ -12,6 +12,9 @@ export interface MonthlyData {
   takeover_cost: number;
   client_cost: number;
   external_cost: number;
+  overdue_client: number;
+  overdue_internal: number;
+  overdue_external: number;
 }
 
 export function useMonthlyStatistics(year: number) {
@@ -40,7 +43,10 @@ export function useMonthlyStatistics(year: number) {
             savCount: 0,
             takeover_cost: 0,
             client_cost: 0,
-            external_cost: 0
+            external_cost: 0,
+            overdue_client: 0,
+            overdue_internal: 0,
+            overdue_external: 0
           });
         }
 
@@ -135,6 +141,42 @@ export function useMonthlyStatistics(year: number) {
         (quotesData || []).forEach((quote: any) => {
           const monthIndex = new Date(quote.created_at).getMonth();
           monthlyData[monthIndex].revenue += Number(quote.total_amount) || 0;
+        });
+
+        // Récupérer tous les SAV terminés pour calculer les retards
+        const { data: allClosedSavCases, error: closedSavError } = await supabase
+          .from('sav_cases')
+          .select(`
+            *,
+            shops!inner(max_sav_processing_days_client, max_sav_processing_days_internal)
+          `)
+          .eq('shop_id', shop.id)
+          .in('status', ['ready', 'delivered'])
+          .gte('created_at', yearStart.toISOString())
+          .lte('created_at', yearEnd.toISOString());
+
+        if (closedSavError) throw closedSavError;
+
+        // Calculer les SAV en retard par mois
+        (allClosedSavCases || []).forEach((savCase: any) => {
+          const monthIndex = new Date(savCase.created_at).getMonth();
+          const maxDays = savCase.sav_type === 'client' 
+            ? (savCase.shops?.max_sav_processing_days_client || 7)
+            : (savCase.shops?.max_sav_processing_days_internal || 7);
+          
+          const createdDate = new Date(savCase.created_at);
+          const now = new Date();
+          const daysDiff = Math.floor((now.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24));
+          
+          if (daysDiff > maxDays) {
+            if (savCase.sav_type === 'client') {
+              monthlyData[monthIndex].overdue_client += 1;
+            } else if (savCase.sav_type === 'internal') {
+              monthlyData[monthIndex].overdue_internal += 1;
+            } else if (savCase.sav_type === 'external') {
+              monthlyData[monthIndex].overdue_external += 1;
+            }
+          }
         });
 
         // Calculer les profits
