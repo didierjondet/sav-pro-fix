@@ -199,30 +199,72 @@ export const generateQuotePDF = (quote: Quote, shop?: Shop) => {
     iframeDoc.write(htmlContent);
     iframeDoc.close();
     
-    // Attendre un peu avant d'imprimer
-    setTimeout(() => {
-      try {
-        iframe.contentWindow?.focus();
-        iframe.contentWindow?.print();
-        
-        // Nettoyer l'iframe après l'impression
-        setTimeout(() => {
+  // Attendre un peu avant d'imprimer
+  setTimeout(() => {
+    try {
+      const contentWindow = iframe.contentWindow;
+      if (!contentWindow) {
+        throw new Error('Impossible d\'accéder à la fenêtre de l\'iframe');
+      }
+      
+      // S'assurer que le contenu est chargé
+      contentWindow.focus();
+      
+      // Vérifier si print est disponible et fonctionnel
+      if (typeof contentWindow.print !== 'function') {
+        throw new Error('Fonction d\'impression non disponible');
+      }
+      
+      // Tenter l'impression
+      contentWindow.print();
+      
+      // Nettoyer l'iframe après l'impression
+      setTimeout(() => {
+        if (document.body.contains(iframe)) {
           document.body.removeChild(iframe);
-        }, 1000);
-      } catch (error) {
-        console.error('Erreur lors de l\'impression:', error);
+        }
+      }, 1000);
+    } catch (error) {
+      console.error('Erreur lors de l\'impression:', error);
+      
+      // Nettoyer l'iframe en cas d'erreur
+      if (document.body.contains(iframe)) {
         document.body.removeChild(iframe);
+      }
+      
+      // Fallback 1: Ouvrir dans une nouvelle fenêtre
+      try {
+        const newWindow = window.open('', '_blank', 'width=800,height=600');
+        if (newWindow) {
+          newWindow.document.write(htmlContent);
+          newWindow.document.close();
+          newWindow.focus();
+          newWindow.print();
+          setTimeout(() => {
+            newWindow.close();
+          }, 1000);
+        } else {
+          throw new Error('Popup bloquée');
+        }
+      } catch (popupError) {
+        console.error('Erreur popup:', popupError);
         
-        // Fallback : télécharger en HTML
+        // Fallback 2: télécharger en HTML
         const blob = new Blob([htmlContent], { type: 'text/html' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
         a.download = `devis-${quote.quote_number}.html`;
+        document.body.appendChild(a);
         a.click();
+        document.body.removeChild(a);
         URL.revokeObjectURL(url);
+        
+        // Afficher un message d'information
+        console.info('Le fichier HTML du devis a été téléchargé. Ouvrez-le dans votre navigateur et imprimez-le.');
       }
-    }, 500);
+    }
+  }, 500);
   }
 };
 

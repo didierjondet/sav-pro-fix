@@ -143,30 +143,30 @@ export function PrintConfirmDialog({
             </div>
           </div>
         )}
-        <DialogFooter className="flex flex-col gap-2 sm:flex-row sm:justify-between">
-          <Button variant="outline" onClick={handleCancel} className="order-3 sm:order-1">
-            <X className="h-4 w-4 mr-2" />
-            Non, merci
-          </Button>
-          
-          <div className="flex gap-2 order-1 sm:order-2">
+        <DialogFooter className="flex flex-col gap-3 sm:gap-2">
+          <div className="flex flex-col sm:flex-row gap-2 w-full">
             {savCase?.customer?.phone && savCase?.tracking_slug && (
               <Button 
                 variant="secondary" 
                 onClick={handleSendSMS}
                 disabled={sendingSMS}
-                className="flex-1 sm:flex-none"
+                className="w-full sm:flex-1"
               >
                 <MessageSquare className="h-4 w-4 mr-2" />
                 {sendingSMS ? 'Envoi...' : 'Envoyer SMS'}
               </Button>
             )}
             
-            <Button onClick={handleConfirm} className="flex-1 sm:flex-none">
+            <Button onClick={handleConfirm} className="w-full sm:flex-1">
               <Printer className="h-4 w-4 mr-2" />
               Imprimer
             </Button>
           </div>
+          
+          <Button variant="outline" onClick={handleCancel} className="w-full">
+            <X className="h-4 w-4 mr-2" />
+            Non, merci
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

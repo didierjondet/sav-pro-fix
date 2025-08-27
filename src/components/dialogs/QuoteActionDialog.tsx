@@ -57,21 +57,23 @@ export function QuoteActionDialog({
             Que souhaitez-vous faire maintenant ?
           </DialogDescription>
         </DialogHeader>
-        <DialogFooter className="flex flex-col gap-2 sm:flex-col">
-          <Button onClick={handlePrint} className="w-full">
-            <Printer className="h-4 w-4 mr-2" />
-            Imprimer le devis
-          </Button>
-          {hasPhone && (
-            <Button onClick={handleSendSMS} variant="outline" className="w-full">
-              <MessageSquare className="h-4 w-4 mr-2" />
-              Envoyer le PDF par SMS
+        <DialogFooter className="flex flex-col gap-3 sm:gap-2">
+          <div className="flex flex-col gap-2 w-full">
+            <Button onClick={handlePrint} className="w-full">
+              <Printer className="h-4 w-4 mr-2" />
+              Imprimer le devis
             </Button>
-          )}
-          <Button onClick={handleConvertToSAV} variant="outline" className="w-full">
-            <FileText className="h-4 w-4 mr-2" />
-            Convertir en SAV
-          </Button>
+            {hasPhone && (
+              <Button onClick={handleSendSMS} variant="outline" className="w-full">
+                <MessageSquare className="h-4 w-4 mr-2" />
+                Envoyer le PDF par SMS
+              </Button>
+            )}
+            <Button onClick={handleConvertToSAV} variant="outline" className="w-full">
+              <FileText className="h-4 w-4 mr-2" />
+              Convertir en SAV
+            </Button>
+          </div>
           <Button variant="ghost" onClick={handleSkip} className="w-full">
             <X className="h-4 w-4 mr-2" />
             Passer
