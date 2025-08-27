@@ -302,19 +302,37 @@ L'équipe ${shopData.name || 'de réparation'}`;
 
   // Fonction pour mettre à jour la prise en charge
   const updateTakeover = async () => {
-    if (savCase.sav_type !== 'client') return;
+    if (savCase.sav_type === 'internal') return;
+    
+    // Validation: notes privées obligatoires si prise en charge appliquée
+    if (partialTakeover && takeoverAmount > 0 && !notes.trim()) {
+      toast({
+        title: "Notes privées requises",
+        description: "Veuillez ajouter des notes privées pour justifier la prise en charge",
+        variant: "destructive",
+      });
+      return;
+    }
     
     setUpdatingTakeover(true);
     try {
       const previousTakeoverAmount = savCase.takeover_amount || 0;
       const newTakeoverAmount = partialTakeover ? takeoverAmount : 0;
       
+      // Mise à jour des données du SAV avec les notes privées
+      const updateData: any = {
+        partial_takeover: partialTakeover,
+        takeover_amount: newTakeoverAmount
+      };
+      
+      // Ajouter les notes privées si elles existent ou si une prise en charge est appliquée
+      if (notes.trim() || (partialTakeover && takeoverAmount > 0)) {
+        updateData.private_comments = notes;
+      }
+      
       const { error } = await supabase
         .from('sav_cases')
-        .update({
-          partial_takeover: partialTakeover,
-          takeover_amount: newTakeoverAmount
-        })
+        .update(updateData)
         .eq('id', savCase.id);
 
       if (error) throw error;
@@ -331,15 +349,17 @@ L'équipe ${shopData.name || 'de réparation'}`;
         const senderName = profile ? `${profile.first_name} ${profile.last_name}`.trim() : 'Système';
         
         let message = '';
+        const contactType = savCase.sav_type === 'client' ? 'votre' : 'la';
+        
         if (partialTakeover) {
           const clientAmount = savCase.total_cost - newTakeoverAmount;
           message = `💰 Prise en charge appliquée :\n` +
                    `• Montant total : ${savCase.total_cost.toFixed(2)}€\n` +
                    `• Prise en charge : ${newTakeoverAmount.toFixed(2)}€\n` +
-                   `• Montant restant à votre charge : ${clientAmount.toFixed(2)}€`;
+                   `• Montant restant à ${contactType} charge : ${clientAmount.toFixed(2)}€`;
         } else {
           message = `❌ Prise en charge supprimée\n` +
-                   `• Montant total à votre charge : ${savCase.total_cost.toFixed(2)}€`;
+                   `• Montant total à ${contactType} charge : ${savCase.total_cost.toFixed(2)}€`;
         }
 
         // Envoyer le message automatique
@@ -437,8 +457,8 @@ L'équipe ${shopData.name || 'de réparation'}`;
           {updating ? 'Mise à jour...' : 'Mettre à jour le statut'}
         </Button>
 
-        {/* Section Prise en charge - Uniquement pour les SAV clients */}
-        {savCase.sav_type === 'client' && (
+        {/* Section Prise en charge - Pour les SAV clients et externes */}
+        {savCase.sav_type !== 'internal' && (
           <>
             <div className="border-t pt-4">
               <div className="flex items-center gap-2 mb-4">
@@ -495,22 +515,34 @@ L'équipe ${shopData.name || 'de réparation'}`;
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium">Notes privées (optionnel)</label>
+                  <label className="text-sm font-medium">
+                    Notes privées {partialTakeover && takeoverAmount > 0 ? '(obligatoire)' : '(optionnel)'}
+                  </label>
                   <p className="text-xs text-muted-foreground mb-2">
-                    ⚠️ Ces notes sont privées et ne seront pas visibles par le client
+                    ⚠️ {partialTakeover && takeoverAmount > 0 
+                      ? 'Notes obligatoires pour justifier la prise en charge - non visibles par le client' 
+                      : 'Ces notes sont privées et ne seront pas visibles par le client'}
                   </p>
                   <Textarea
-                    placeholder="Ajoutez des notes privées sur le changement de statut..."
+                    placeholder={partialTakeover && takeoverAmount > 0 
+                      ? "Justification obligatoire de la prise en charge..." 
+                      : "Ajoutez des notes privées sur le changement de statut..."}
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
                     rows={3}
-                    className="mt-1"
+                    className={`mt-1 ${partialTakeover && takeoverAmount > 0 && !notes.trim() ? 'border-destructive' : ''}`}
+                    required={partialTakeover && takeoverAmount > 0}
                   />
+                  {partialTakeover && takeoverAmount > 0 && !notes.trim() && (
+                    <p className="text-xs text-destructive mt-1">
+                      Notes obligatoires pour justifier la prise en charge
+                    </p>
+                  )}
                 </div>
 
                 <Button
                   onClick={updateTakeover}
-                  disabled={!hasTakeoverChanges || updatingTakeover}
+                  disabled={!hasTakeoverChanges || updatingTakeover || (partialTakeover && takeoverAmount > 0 && !notes.trim())}
                   variant="outline"
                   className="w-full"
                 >
