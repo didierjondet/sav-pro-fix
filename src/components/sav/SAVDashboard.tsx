@@ -342,8 +342,8 @@ export function SAVDashboard() {
                     <Tooltip 
                       formatter={(value, name) => [
                         value,
-                        name === 'overdue_client' ? 'SAV Client' : 
-                        name === 'overdue_external' ? 'SAV Externe' : 'SAV Interne'
+                        name === 'overdue_client' ? 'SAV Client en retard' : 
+                        name === 'overdue_external' ? 'SAV Externe en retard' : 'SAV Interne en retard'
                       ]}
                       contentStyle={{
                         backgroundColor: 'hsl(var(--background))',
@@ -352,9 +352,9 @@ export function SAVDashboard() {
                       }}
                     />
                     <Legend />
-                    <Bar dataKey="overdue_client" fill="#ef4444" name="SAV Client" />
-                    <Bar dataKey="overdue_external" fill="#10b981" name="SAV Externe" />
-                    <Bar dataKey="overdue_internal" fill="#3b82f6" name="SAV Interne" />
+                    <Bar dataKey="overdue_client" fill="#ef4444" name="SAV Client en retard" />
+                    <Bar dataKey="overdue_external" fill="#10b981" name="SAV Externe en retard" />
+                    <Bar dataKey="overdue_internal" fill="#3b82f6" name="SAV Interne en retard" />
                   </BarChart>
                 </ResponsiveContainer>
               )}
