@@ -300,7 +300,7 @@ export default function Parts() {
                                     
                                     <div>
                                       <span className="font-medium">Prix public TTC: </span>
-                                      <span>{(part.selling_price || 0).toFixed(2)}€</span>
+                                      <span className="text-black text-lg font-bold">{(part.selling_price || 0).toFixed(2)}€</span>
                                     </div>
                                     
                                     <div>
