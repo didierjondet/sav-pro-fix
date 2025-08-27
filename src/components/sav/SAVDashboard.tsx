@@ -1,15 +1,17 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, HardDrive } from 'lucide-react';
-import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { Plus, HardDrive, Calendar } from 'lucide-react';
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, LineChart, Line } from 'recharts';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { SAVForm } from './SAVForm';
 import { useSAVCases } from '@/hooks/useSAVCases';
 import { useShop } from '@/hooks/useShop';
 import { useSAVPartsCosts } from '@/hooks/useSAVPartsCosts';
 import { useShopStorageUsage } from '@/hooks/useStorageUsage';
+import { useMonthlyStatistics } from '@/hooks/useMonthlyStatistics';
 import { calculateSAVDelay } from '@/hooks/useSAVDelay';
 import { format, differenceInHours } from 'date-fns';
 
@@ -47,6 +49,7 @@ const statusConfig = {
 };
 export function SAVDashboard() {
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const {
     cases,
     loading
@@ -62,7 +65,38 @@ export function SAVDashboard() {
     storageGB,
     loading: storageLoading
   } = useShopStorageUsage(shop?.id);
+  const {
+    data: monthlyData,
+    loading: monthlyLoading
+  } = useMonthlyStatistics(selectedYear);
   const navigate = useNavigate();
+
+  // Calculs pour les statistiques annuelles
+  const yearlyStats = useMemo(() => {
+    if (monthlyLoading) return { totalRevenue: 0, totalCosts: 0, totalProfit: 0, totalSavs: 0, avgMonthlySavs: 0 };
+    
+    const totals = monthlyData.reduce((acc, month) => ({
+      totalRevenue: acc.totalRevenue + month.revenue,
+      totalCosts: acc.totalCosts + month.costs,
+      totalProfit: acc.totalProfit + month.profit,
+      totalSavs: acc.totalSavs + month.savCount
+    }), { totalRevenue: 0, totalCosts: 0, totalProfit: 0, totalSavs: 0 });
+
+    return {
+      ...totals,
+      avgMonthlySavs: Math.round(totals.totalSavs / 12)
+    };
+  }, [monthlyData, monthlyLoading]);
+
+  // Générer les années disponibles (5 années passées + année courante + 1 année future)
+  const availableYears = useMemo(() => {
+    const currentYear = new Date().getFullYear();
+    const years = [];
+    for (let i = currentYear - 5; i <= currentYear + 1; i++) {
+      years.push(i);
+    }
+    return years;
+  }, []);
 
   // Calculs pour le stockage
   const storageUsagePercent = useMemo(() => {
@@ -186,6 +220,147 @@ export function SAVDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Statistiques annuelles */}
+      <Card className="mb-6">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Calendar className="h-5 w-5" />
+                Statistiques annuelles
+              </CardTitle>
+              <CardDescription>
+                Vue d'ensemble des performances pour l'année {selectedYear}
+              </CardDescription>
+            </div>
+            <Select value={selectedYear.toString()} onValueChange={(value) => setSelectedYear(parseInt(value))}>
+              <SelectTrigger className="w-32">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {availableYears.map((year) => (
+                  <SelectItem key={year} value={year.toString()}>
+                    {year}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {/* Indicateurs annuels */}
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
+            <Card>
+              <CardContent className="p-4">
+                <div className="text-sm font-medium text-muted-foreground">CA Total {selectedYear}</div>
+                <div className="text-2xl font-bold">
+                  {monthlyLoading ? '...' : yearlyStats.totalRevenue.toFixed(2)}€
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="text-sm font-medium text-muted-foreground">Coûts Totaux {selectedYear}</div>
+                <div className="text-2xl font-bold">
+                  {monthlyLoading ? '...' : yearlyStats.totalCosts.toFixed(2)}€
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="text-sm font-medium text-muted-foreground">Bénéfice {selectedYear}</div>
+                <div className={`text-2xl font-bold ${yearlyStats.totalProfit < 0 ? 'text-destructive' : 'text-primary'}`}>
+                  {monthlyLoading ? '...' : yearlyStats.totalProfit.toFixed(2)}€
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="text-sm font-medium text-muted-foreground">SAV Terminés {selectedYear}</div>
+                <div className="text-2xl font-bold">
+                  {monthlyLoading ? '...' : yearlyStats.totalSavs}
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  Moy. {yearlyStats.avgMonthlySavs}/mois
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Graphique mensuel */}
+          <div className="grid gap-6 md:grid-cols-2">
+            <div>
+              <h4 className="text-lg font-semibold mb-4">Évolution mensuelle - Chiffres d'affaires et coûts</h4>
+              {monthlyLoading ? (
+                <div className="h-80 flex items-center justify-center">
+                  <div className="text-sm text-muted-foreground">Chargement...</div>
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={monthlyData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="month" />
+                    <YAxis 
+                      label={{ value: 'Euros (€)', angle: -90, position: 'insideLeft' }}
+                    />
+                    <Tooltip 
+                      formatter={(value, name) => [
+                        `${Number(value).toFixed(2)}€`,
+                        name === 'revenue' ? 'Chiffre d\'affaires' : 
+                        name === 'costs' ? 'Coûts' : 'Profit'
+                      ]}
+                      contentStyle={{
+                        backgroundColor: 'hsl(var(--background))',
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: '6px'
+                      }}
+                    />
+                    <Legend />
+                    <Bar dataKey="revenue" fill="#10b981" name="Chiffre d'affaires" />
+                    <Bar dataKey="costs" fill="#ef4444" name="Coûts" />
+                    <Bar dataKey="profit" fill="#3b82f6" name="Profit" />
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+
+            <div>
+              <h4 className="text-lg font-semibold mb-4">Nombre de SAV terminés par mois</h4>
+              {monthlyLoading ? (
+                <div className="h-80 flex items-center justify-center">
+                  <div className="text-sm text-muted-foreground">Chargement...</div>
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart data={monthlyData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="month" />
+                    <YAxis 
+                      label={{ value: 'Nb SAV', angle: -90, position: 'insideLeft' }}
+                    />
+                    <Tooltip 
+                      formatter={(value) => [`${value} SAV`, 'Terminés']}
+                      contentStyle={{
+                        backgroundColor: 'hsl(var(--background))',
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: '6px'
+                      }}
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="savCount" 
+                      stroke="#8b5cf6" 
+                      strokeWidth={3}
+                      dot={{ fill: '#8b5cf6', strokeWidth: 2, r: 4 }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="grid gap-6 md:grid-cols-2">
         <Card>
