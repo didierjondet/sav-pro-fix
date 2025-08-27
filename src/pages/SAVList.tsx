@@ -282,6 +282,7 @@ export default function SAVList() {
                         <SelectItem value="in_progress">En cours</SelectItem>
                         <SelectItem value="testing">En test</SelectItem>
                         <SelectItem value="parts_ordered">Pièces commandées</SelectItem>
+                        <SelectItem value="parts_received">Pièces réceptionnées</SelectItem>
                         <SelectItem value="ready">Prêt</SelectItem>
                         <SelectItem value="cancelled">Annulé</SelectItem>
                       </SelectContent>

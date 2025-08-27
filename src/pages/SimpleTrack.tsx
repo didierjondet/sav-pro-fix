@@ -17,7 +17,7 @@ interface SAVCaseData {
   case_number: string;
   tracking_slug: string;
   sav_type: "client" | "internal" | "external";
-  status: "pending" | "in_progress" | "testing" | "ready" | "cancelled" | "parts_ordered";
+  status: "pending" | "in_progress" | "testing" | "ready" | "cancelled" | "parts_ordered" | "parts_received";
   device_brand: string;
   device_model: string;
   device_imei?: string;

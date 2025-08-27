@@ -20,7 +20,7 @@ interface SAVCaseData {
   id: string;
   case_number: string;
   sav_type: "client" | "internal" | "external";
-  status: "pending" | "in_progress" | "testing" | "ready" | "cancelled" | "parts_ordered" | "delivered";
+  status: "pending" | "in_progress" | "testing" | "ready" | "cancelled" | "parts_ordered" | "parts_received" | "delivered";
   device_brand: string;
   device_model: string;
   device_imei?: string;
@@ -131,7 +131,7 @@ export default function TrackSAV() {
       const savCaseData: SAVCaseData = {
         id: shopData?.id || '',
         case_number: trackingInfo.case_number,
-        status: trackingInfo.status as "pending" | "in_progress" | "testing" | "ready" | "cancelled" | "parts_ordered" | "delivered",
+        status: trackingInfo.status as "pending" | "in_progress" | "testing" | "ready" | "cancelled" | "parts_ordered" | "parts_received" | "delivered",
         device_brand: trackingInfo.device_brand,
         device_model: trackingInfo.device_model,
         created_at: trackingInfo.created_at,

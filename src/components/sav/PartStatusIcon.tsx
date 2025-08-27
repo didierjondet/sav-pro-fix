@@ -6,7 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 interface PartStatusIconProps {
   savCaseId: string;
   className?: string;
-  savStatus?: 'pending' | 'in_progress' | 'testing' | 'parts_ordered' | 'ready' | 'cancelled';
+  savStatus?: 'pending' | 'in_progress' | 'testing' | 'parts_ordered' | 'parts_received' | 'ready' | 'cancelled';
 }
 
 interface PartStatus {
@@ -130,6 +130,24 @@ export function PartStatusIcon({ savCaseId, className = "", savStatus }: PartSta
           </TooltipTrigger>
           <TooltipContent side="top">
             <div className="text-sm">Pièces commandées</div>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  }
+
+  // Si le SAV a le statut "parts_received", afficher l'icône check vert avec cercle
+  if (savStatus === 'parts_received') {
+    return (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger>
+            <IconWithCircle bgColor="bg-green-500/10">
+              <Check className={`h-6 w-6 text-green-500 ${className}`} />
+            </IconWithCircle>
+          </TooltipTrigger>
+          <TooltipContent side="top">
+            <div className="text-sm">Pièces réceptionnées</div>
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>

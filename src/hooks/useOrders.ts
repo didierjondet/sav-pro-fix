@@ -546,29 +546,22 @@ export function useOrders() {
 
       // Mettre à jour le stock de la pièce
       if (orderItem.part_id) {
-        const { error: stockError } = await supabase
-          .rpc('update_part_quantity', {
-            part_id: orderItem.part_id,
-            quantity_to_add: quantityReceived
-          });
+        // Récupérer la quantité actuelle
+        const { data: currentPart } = await supabase
+          .from('parts')
+          .select('quantity')
+          .eq('id', orderItem.part_id)
+          .single();
 
-        if (stockError) {
-          // Fallback si la fonction n'existe pas
-          const { data: currentPart } = await supabase
-            .from('parts')
-            .select('quantity')
-            .eq('id', orderItem.part_id)
-            .single();
+        // Mettre à jour la quantité
+        const { error: stockUpdateError } = await supabase
+          .from('parts')
+          .update({ 
+            quantity: (currentPart?.quantity || 0) + quantityReceived
+          })
+          .eq('id', orderItem.part_id);
 
-          const { error: stockUpdateError } = await supabase
-            .from('parts')
-            .update({ 
-              quantity: (currentPart?.quantity || 0) + quantityReceived
-            })
-            .eq('id', orderItem.part_id);
-
-          if (stockUpdateError) throw stockUpdateError;
-        }
+        if (stockUpdateError) throw stockUpdateError;
       }
 
       // Supprimer l'item de commande (réception terminée)
@@ -584,7 +577,7 @@ export function useOrders() {
         // Mettre à jour le statut du SAV
         const { error: savUpdateError } = await supabase
           .from('sav_cases')
-          .update({ status: 'parts_received' })
+          .update({ status: 'parts_received' as any })
           .eq('id', orderItem.sav_case_id);
 
         if (savUpdateError) {

@@ -22,7 +22,7 @@ interface ImportedSAV {
   created_at?: string;
   updated_at?: string;
   sav_type: 'client' | 'internal' | 'external';
-  status: 'pending' | 'in_progress' | 'testing' | 'ready' | 'delivered' | 'cancelled' | 'parts_ordered';
+  status: 'pending' | 'in_progress' | 'testing' | 'ready' | 'delivered' | 'cancelled' | 'parts_ordered' | 'parts_received';
   total_cost: number;
   total_time_minutes: number;
   device_brand: string;
@@ -154,7 +154,7 @@ export function ImportSAVs({ onBack, onSuccess }: ImportSAVsProps) {
           id: row['ID'] || undefined,
           case_number: row['Dossier'],
           sav_type: (['client', 'internal', 'external'].includes(row['Type']) ? row['Type'] : 'client') as 'client' | 'internal' | 'external',
-          status: (['pending', 'in_progress', 'testing', 'ready', 'delivered', 'cancelled', 'parts_ordered'].includes(row['Statut']) ? row['Statut'] : 'pending') as 'pending' | 'in_progress' | 'testing' | 'ready' | 'delivered' | 'cancelled' | 'parts_ordered',
+          status: (['pending', 'in_progress', 'testing', 'ready', 'delivered', 'cancelled', 'parts_ordered', 'parts_received'].includes(row['Statut']) ? row['Statut'] : 'pending') as 'pending' | 'in_progress' | 'testing' | 'ready' | 'delivered' | 'cancelled' | 'parts_ordered' | 'parts_received',
           total_cost: parseFloat(row['Coût (€)'] || '0'),
           total_time_minutes: parseInt(row['Temps (min)'] || '0'),
           device_brand: row['Marque'],
