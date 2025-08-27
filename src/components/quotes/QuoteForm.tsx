@@ -12,6 +12,7 @@ import { QuoteItem, Quote } from '@/hooks/useQuotes';
 import { CustomerSearch } from '@/components/customers/CustomerSearch';
 import { FileUpload } from '@/components/parts/FileUpload';
 import { DiscountManager, DiscountInfo } from '@/components/ui/discount-manager';
+import { PartDiscountManager, PartDiscountInfo } from '@/components/ui/part-discount-manager';
 import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -30,7 +31,6 @@ export function QuoteForm({ onSubmit, onCancel, initialQuote, submitLabel, title
   const [notes, setNotes] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedItems, setSelectedItems] = useState<QuoteItem[]>([]);
-  const [discount, setDiscount] = useState<DiscountInfo | null>(null);
   const [deviceInfo, setDeviceInfo] = useState({ brand: '', model: '', imei: '', sku: '', problemDescription: '', attachments: [] as string[] });
 
   useEffect(() => {
@@ -109,21 +109,35 @@ const updateQuantity = (partId: string, quantity: number) => {
   }
 
   setSelectedItems(items =>
-    items.map(item =>
-      item.part_id === partId
-        ? { ...item, quantity, total_price: quantity * item.unit_public_price }
-        : item
-    )
+    items.map(item => {
+      if (item.part_id === partId) {
+        const newTotalPrice = quantity * item.unit_public_price;
+        const discountAmount = item.discount?.amount || 0;
+        return { 
+          ...item, 
+          quantity, 
+          total_price: Math.max(0, newTotalPrice - discountAmount)
+        };
+      }
+      return item;
+    })
   );
 };
 
 const updateUnitPublicPrice = (partId: string, unitPrice: number) => {
   setSelectedItems(items =>
-    items.map(item =>
-      item.part_id === partId
-        ? { ...item, unit_public_price: unitPrice, total_price: item.quantity * unitPrice }
-        : item
-    )
+    items.map(item => {
+      if (item.part_id === partId) {
+        const newTotalPrice = item.quantity * unitPrice;
+        const discountAmount = item.discount?.amount || 0;
+        return { 
+          ...item, 
+          unit_public_price: unitPrice, 
+          total_price: Math.max(0, newTotalPrice - discountAmount)
+        };
+      }
+      return item;
+    })
   );
 };
 
@@ -161,9 +175,29 @@ const updateUnitPurchasePrice = (partId: string, unitPrice: number) => {
     setSelectedItems(items => items.filter(item => item.part_id !== partId));
   };
 
-  const subtotal = selectedItems.reduce((sum, item) => sum + item.total_price, 0);
-  const discountAmount = discount?.amount || 0;
-  const totalAmount = Math.max(0, subtotal - discountAmount);
+  const updateItemDiscount = (partId: string, discount: PartDiscountInfo | null) => {
+    setSelectedItems(items =>
+      items.map(item => {
+        if (item.part_id === partId) {
+          const lineTotal = item.quantity * item.unit_public_price;
+          const discountAmount = discount?.amount || 0;
+          return { 
+            ...item, 
+            discount,
+            total_price: Math.max(0, lineTotal - discountAmount)
+          };
+        }
+        return item;
+      })
+    );
+  };
+
+  const subtotal = selectedItems.reduce((sum, item) => {
+    const lineTotal = item.quantity * item.unit_public_price;
+    const discountAmount = item.discount?.amount || 0;
+    return sum + Math.max(0, lineTotal - discountAmount);
+  }, 0);
+  const totalAmount = subtotal;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -191,7 +225,6 @@ const updateUnitPurchasePrice = (partId: string, unitPrice: number) => {
       notes: notes || null,
       items: selectedItems,
       total_amount: totalAmount,
-      discount_info: discount ? JSON.stringify(discount) : null,
       status: initialQuote?.status ?? 'draft'
     });
 
@@ -527,29 +560,32 @@ const updateUnitPurchasePrice = (partId: string, unitPrice: number) => {
                         </Button>
                       </div>
 
+                      {/* Gestionnaire de remise pour cette pièce */}
+                      <PartDiscountManager
+                        partName={item.part_name}
+                        unitPrice={item.unit_public_price}
+                        quantity={item.quantity}
+                        discount={item.discount || null}
+                        onDiscountChange={(discount) => updateItemDiscount(item.part_id, discount)}
+                      />
                     </div>
                   );
                 })}
                 
-                {/* Système de remise */}
-                <DiscountManager 
-                  subtotal={subtotal}
-                  discount={discount}
-                  onDiscountChange={setDiscount}
-                />
-                
                 <div className="border-t pt-4">
                   <div className="space-y-2">
                     <div className="flex justify-between">
-                      <span>Sous-total:</span>
-                      <span>{subtotal.toFixed(2)}€</span>
+                      <span>Sous-total brut:</span>
+                      <span>{selectedItems.reduce((sum, item) => sum + (item.quantity * item.unit_public_price), 0).toFixed(2)}€</span>
                     </div>
-                    {discount && (
+                    
+                    {selectedItems.some(item => item.discount) && (
                       <div className="flex justify-between text-primary">
-                        <span>Remise:</span>
-                        <span>-{discount.amount.toFixed(2)}€</span>
+                        <span>Total remises:</span>
+                        <span>-{selectedItems.reduce((sum, item) => sum + (item.discount?.amount || 0), 0).toFixed(2)}€</span>
                       </div>
                     )}
+                    
                     <div className="flex justify-between items-center text-lg font-bold border-t pt-2">
                       <span>Total:</span>
                       <span>{totalAmount.toFixed(2)}€</span>

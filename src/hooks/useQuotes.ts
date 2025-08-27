@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { PartDiscountInfo } from '@/components/ui/part-discount-manager';
 
 export interface QuoteItem {
   part_id: string;
@@ -10,6 +11,7 @@ export interface QuoteItem {
   unit_public_price: number; // Prix public (vente)
   unit_purchase_price: number; // Prix d'achat (coût)
   total_price: number;
+  discount?: PartDiscountInfo | null; // Remise appliquée à cette pièce
 }
 
 export interface Quote {

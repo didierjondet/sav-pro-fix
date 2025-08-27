@@ -26,6 +26,7 @@ import { SAVPrintButton } from '@/components/sav/SAVPrint';
 import { PatternLock } from '@/components/sav/PatternLock';
 import { Checkbox } from '@/components/ui/checkbox';
 import { DiscountManager, DiscountInfo } from '@/components/ui/discount-manager';
+import { PartDiscountManager, PartDiscountInfo } from '@/components/ui/part-discount-manager';
 import { supabase } from '@/integrations/supabase/client';
 
 interface CustomerInfo {
@@ -61,6 +62,7 @@ interface SelectedPart {
   availableStock?: number;
   isCustom: boolean; // true pour les champs libres
   attachments?: string[]; // Ajout du champ attachments
+  discount?: PartDiscountInfo | null; // Remise appliquée à cette pièce
 }
 
 interface SAVFormProps {
@@ -92,7 +94,6 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
   });
   const [unlockPattern, setUnlockPattern] = useState<number[]>([]);
   const [selectedParts, setSelectedParts] = useState<SelectedPart[]>([]);
-  const [discount, setDiscount] = useState<DiscountInfo | null>(null);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [showPrintDialog, setShowPrintDialog] = useState(false);
@@ -168,7 +169,7 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
     setSelectedParts(selectedParts.filter((part) => part.id !== id));
   };
 
-  const updatePart = (id: string, field: keyof SelectedPart, value: string | number) => {
+  const updatePart = (id: string, field: keyof SelectedPart, value: string | number | PartDiscountInfo | null) => {
     setSelectedParts(
       selectedParts.map((part) =>
         part.id === id ? { ...part, [field]: value } : part
@@ -204,12 +205,14 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
         customerId = customer.id;
       }
       
-      // Calculate totals
+      // Calculate totals with individual part discounts
       const totalTimeMinutes = 0; // Suppression du calcul du temps
       // Pour les SAV internes, ne pas compter les prix TTC dans le chiffre d'affaires
-      const subtotal = selectedParts.reduce((acc, part) => acc + part.unitPrice * part.quantity, 0);
-      const discountAmount = discount?.amount || 0;
-      const totalCost = savType === 'internal' ? 0 : Math.max(0, subtotal - discountAmount);
+      const totalCost = savType === 'internal' ? 0 : selectedParts.reduce((acc, part) => {
+        const lineTotal = part.unitPrice * part.quantity;
+        const discountAmount = part.discount?.amount || 0;
+        return acc + Math.max(0, lineTotal - discountAmount);
+      }, 0);
       
       // Create SAV case
       const { data: newCase, error: caseError } = await createCase({
@@ -227,7 +230,6 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
         attachments: deviceInfo.attachments || [], // Ajouter les attachments ici
         accessories,
         unlock_pattern: unlockPattern.length > 0 ? unlockPattern : null,
-        discount_info: discount ? JSON.stringify(discount) : null,
       });
       
       if (caseError) throw caseError;
@@ -243,16 +245,17 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
         } : null
       };
       
-      // Sauvegarder les pièces sélectionnées
-      if (selectedParts.length > 0) {
-        const partsToInsert = selectedParts.map(part => ({
-          sav_case_id: newCase.id,
-          part_id: part.isCustom ? null : part.part_id,
-          quantity: part.quantity,
-          unit_price: part.unitPrice,
-          time_minutes: 0,
-          purchase_price: part.isCustom ? 0 : (parts.find(p => p.id === part.part_id)?.purchase_price || 0),
-        }));
+        // Sauvegarder les pièces sélectionnées avec leurs remises
+        if (selectedParts.length > 0) {
+          const partsToInsert = selectedParts.map(part => ({
+            sav_case_id: newCase.id,
+            part_id: part.isCustom ? null : part.part_id,
+            quantity: part.quantity,
+            unit_price: part.unitPrice,
+            time_minutes: 0,
+            purchase_price: part.isCustom ? 0 : (parts.find(p => p.id === part.part_id)?.purchase_price || 0),
+            discount_info: part.discount ? JSON.stringify(part.discount) : null,
+          }));
 
         const { error: partsError } = await supabase
           .from('sav_parts')
@@ -297,7 +300,6 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
       });
       setUnlockPattern([]);
       setSelectedParts([]);
-      setDiscount(null);
     } catch (error: any) {
       console.error('Error creating SAV case:', error);
       toast({
@@ -759,6 +761,16 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
                             disabled={!part.isCustom}
                           />
                         </div>
+                        
+                        {/* Gestionnaire de remise pour cette pièce */}
+                        <PartDiscountManager
+                          partName={part.name}
+                          unitPrice={part.unitPrice}
+                          quantity={part.quantity}
+                          discount={part.discount || null}
+                          onDiscountChange={(discount) => updatePart(part.id, 'discount', discount)}
+                          disabled={savType === 'internal'}
+                        />
                       </div>
                     </div>
                   </div>
@@ -767,40 +779,43 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
             )}
           </div>
 
-          {/* Résumé et remise */}
+          {/* Résumé final */}
           {selectedParts.length > 0 && (
             <>
               <Separator />
-              
-              {/* Composant de remise */}
-              <DiscountManager 
-                subtotal={selectedParts.reduce((acc, part) => acc + (part.quantity * part.unitPrice), 0)}
-                discount={discount}
-                onDiscountChange={setDiscount}
-                disabled={savType === 'internal'}
-              />
 
               <div className="bg-muted/50 p-4 rounded-lg">
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
+                <div className="grid grid-cols-1 gap-4 text-sm">
+                  <div className="flex justify-between">
                     <span className="font-medium">Total pièces: </span>
                     <span>{selectedParts.reduce((acc, part) => acc + part.quantity, 0)}</span>
                   </div>
-                  <div className="md:col-span-2">
-                    <span className="font-medium">Sous-total: </span>
-                    <span>{selectedParts.reduce((acc, part) => acc + (part.quantity * part.unitPrice), 0).toFixed(2)}€</span>
-                  </div>
-                  {discount && (
-                    <div className="md:col-span-2 text-primary">
-                      <span className="font-medium">Remise: </span>
-                      <span>-{discount.amount.toFixed(2)}€</span>
+                  
+                  <div className="space-y-1">
+                    <div className="flex justify-between">
+                      <span className="font-medium">Sous-total: </span>
+                      <span>{selectedParts.reduce((acc, part) => acc + (part.quantity * part.unitPrice), 0).toFixed(2)}€</span>
                     </div>
-                  )}
-                  <div className="md:col-span-2 border-t pt-2">
-                    <span className="font-bold text-lg">Total: </span>
-                    <span className="font-bold text-lg">
-                      {Math.max(0, selectedParts.reduce((acc, part) => acc + (part.quantity * part.unitPrice), 0) - (discount?.amount || 0)).toFixed(2)}€
-                    </span>
+                    
+                    {selectedParts.some(part => part.discount) && (
+                      <div className="flex justify-between text-primary">
+                        <span className="font-medium">Total remises: </span>
+                        <span>-{selectedParts.reduce((acc, part) => acc + (part.discount?.amount || 0), 0).toFixed(2)}€</span>
+                      </div>
+                    )}
+                    
+                    <div className="border-t pt-2">
+                      <div className="flex justify-between font-bold text-lg">
+                        <span>Total: </span>
+                        <span>
+                          {selectedParts.reduce((acc, part) => {
+                            const lineTotal = part.quantity * part.unitPrice;
+                            const discountAmount = part.discount?.amount || 0;
+                            return acc + Math.max(0, lineTotal - discountAmount);
+                          }, 0).toFixed(2)}€
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
