@@ -326,36 +326,121 @@ export function SAVDashboard() {
             </div>
 
             <div>
-              <h4 className="text-lg font-semibold mb-4">Nombre de SAV terminés par mois</h4>
-              {monthlyLoading ? (
+              <h4 className="text-lg font-semibold mb-4">SAV clôturés en retard</h4>
+              {loading ? (
                 <div className="h-80 flex items-center justify-center">
                   <div className="text-sm text-muted-foreground">Chargement...</div>
                 </div>
               ) : (
-                <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={monthlyData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="month" />
-                    <YAxis 
-                      label={{ value: 'Nb SAV', angle: -90, position: 'insideLeft' }}
-                    />
-                    <Tooltip 
-                      formatter={(value) => [`${value} SAV`, 'Terminés']}
-                      contentStyle={{
-                        backgroundColor: 'hsl(var(--background))',
-                        border: '1px solid hsl(var(--border))',
-                        borderRadius: '6px'
-                      }}
-                    />
-                    <Line 
-                      type="monotone" 
-                      dataKey="savCount" 
-                      stroke="#8b5cf6" 
-                      strokeWidth={3}
-                      dot={{ fill: '#8b5cf6', strokeWidth: 2, r: 4 }}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
+                <div className="space-y-4">
+                  {/* Statistiques des retards */}
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <Card>
+                      <CardContent className="p-4">
+                        <div className="text-sm font-medium text-muted-foreground">SAV Client en retard</div>
+                        <div className="text-2xl font-bold text-destructive">
+                          {cases.filter(c => {
+                            if (c.sav_type !== 'client' || !['ready', 'delivered'].includes(c.status)) return false;
+                            const maxDays = shop?.max_sav_processing_days_client || 7;
+                            const createdDate = new Date(c.created_at);
+                            const now = new Date();
+                            const daysDiff = Math.floor((now.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24));
+                            return daysDiff > maxDays;
+                          }).length}
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Délai max: {shop?.max_sav_processing_days_client || 7} jours
+                        </p>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="p-4">
+                        <div className="text-sm font-medium text-muted-foreground">SAV Magasin en retard</div>
+                        <div className="text-2xl font-bold text-destructive">
+                          {cases.filter(c => {
+                            if (!['internal', 'external'].includes(c.sav_type) || !['ready', 'delivered'].includes(c.status)) return false;
+                            const maxDays = shop?.max_sav_processing_days_internal || 7;
+                            const createdDate = new Date(c.created_at);
+                            const now = new Date();
+                            const daysDiff = Math.floor((now.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24));
+                            return daysDiff > maxDays;
+                          }).length}
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Délai max: {shop?.max_sav_processing_days_internal || 7} jours
+                        </p>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* Liste des SAV en retard */}
+                  <div className="bg-muted/30 rounded-lg p-4">
+                    <h5 className="font-medium mb-3">Détail des SAV en retard:</h5>
+                    <div className="space-y-2 max-h-48 overflow-y-auto">
+                      {cases
+                        .filter(c => {
+                          if (!['ready', 'delivered'].includes(c.status)) return false;
+                          const maxDays = c.sav_type === 'client' 
+                            ? (shop?.max_sav_processing_days_client || 7)
+                            : (shop?.max_sav_processing_days_internal || 7);
+                          const createdDate = new Date(c.created_at);
+                          const now = new Date();
+                          const daysDiff = Math.floor((now.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24));
+                          return daysDiff > maxDays;
+                        })
+                        .sort((a, b) => {
+                          const daysDiffA = Math.floor((new Date().getTime() - new Date(a.created_at).getTime()) / (1000 * 60 * 60 * 24));
+                          const daysDiffB = Math.floor((new Date().getTime() - new Date(b.created_at).getTime()) / (1000 * 60 * 60 * 24));
+                          return daysDiffB - daysDiffA;
+                        })
+                        .slice(0, 10)
+                        .map(c => {
+                          const createdDate = new Date(c.created_at);
+                          const daysDiff = Math.floor((new Date().getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24));
+                          const maxDays = c.sav_type === 'client' 
+                            ? (shop?.max_sav_processing_days_client || 7)
+                            : (shop?.max_sav_processing_days_internal || 7);
+                          const delayDays = daysDiff - maxDays;
+                          
+                          return (
+                            <div key={c.id} className="flex justify-between items-center text-sm p-2 bg-background rounded border">
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium">{c.case_number}</span>
+                                <span className={`px-2 py-1 rounded text-xs ${
+                                  c.sav_type === 'client' ? 'bg-red-100 text-red-800' :
+                                  c.sav_type === 'internal' ? 'bg-blue-100 text-blue-800' :
+                                  'bg-green-100 text-green-800'
+                                }`}>
+                                  {c.sav_type === 'client' ? 'Client' : 
+                                   c.sav_type === 'internal' ? 'Magasin' : 'Externe'}
+                                </span>
+                              </div>
+                              <div className="text-right">
+                                <div className="text-destructive font-medium">+{delayDays} jours</div>
+                                <div className="text-xs text-muted-foreground">
+                                  Créé le {format(createdDate, 'dd/MM/yyyy')}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      {cases.filter(c => {
+                        if (!['ready', 'delivered'].includes(c.status)) return false;
+                        const maxDays = c.sav_type === 'client' 
+                          ? (shop?.max_sav_processing_days_client || 7)
+                          : (shop?.max_sav_processing_days_internal || 7);
+                        const createdDate = new Date(c.created_at);
+                        const now = new Date();
+                        const daysDiff = Math.floor((now.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24));
+                        return daysDiff > maxDays;
+                      }).length === 0 && (
+                        <div className="text-center text-muted-foreground text-sm py-4">
+                          ✅ Aucun SAV clôturé en retard
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
               )}
             </div>
           </div>
