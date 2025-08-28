@@ -16,6 +16,7 @@ interface SubscriptionPlan {
   sms_limit: number;
   features: string[];
   is_active: boolean;
+  contact_only: boolean;
 }
 export default function Landing() {
   const [showDemo, setShowDemo] = useState(false);
@@ -259,13 +260,13 @@ Achetez vos sms selon vos besoins</p>
                       {plan.features.map((feature, featureIndex) => <li key={featureIndex}>• {feature}</li>)}
                     </ul>
                      <Button className="w-full mt-4" variant={index === 1 ? 'default' : 'outline'} onClick={() => {
-                if (plan.monthly_price > 50) {
+                if ((plan as any).contact_only) {
                   window.location.href = `mailto:contact@fixway.fr?subject=Demande de contact pour le plan ${plan.name}&body=Bonjour,%0D%0A%0D%0AJe souhaite obtenir plus d'informations sur le plan ${plan.name}.%0D%0A%0D%0ACordialement`;
                 } else {
                   navigate('/auth');
                 }
               }}>
-                      {plan.monthly_price === 0 ? 'Commencer gratuitement' : index === 1 ? `Essayer ${plan.name}` : plan.monthly_price > 50 ? 'Nous contacter' : `Choisir ${plan.name}`}
+                      {plan.monthly_price === 0 ? 'Commencer gratuitement' : index === 1 ? `Essayer ${plan.name}` : (plan as any).contact_only ? 'Nous contacter' : `Choisir ${plan.name}`}
                     </Button>
                   </CardContent>
                 </Card>)}

@@ -15,6 +15,7 @@ interface SubscriptionPlan {
   sms_limit: number;
   features: string[];
   is_active: boolean;
+  contact_only: boolean;
 }
 
 export default function PublicLanding() {
@@ -223,7 +224,7 @@ export default function PublicLanding() {
                           : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
                       }`}
                       onClick={() => {
-                        if (plan.monthly_price > 50) {
+                        if ((plan as any).contact_only) {
                           window.location.href = `mailto:contact@fixway.fr?subject=Demande de contact pour le plan ${plan.name}&body=Bonjour,%0D%0A%0D%0AJe souhaite obtenir plus d'informations sur le plan ${plan.name}.%0D%0A%0D%0ACordialement`;
                         } else {
                           handleAuthClick();
@@ -232,7 +233,7 @@ export default function PublicLanding() {
                     >
                       {plan.monthly_price === 0 ? 'Commencer gratuitement' : 
                         index === 1 ? `Essayer ${plan.name}` : 
-                        plan.monthly_price > 50 ? 'Nous contacter' : `Choisir ${plan.name}`
+                        (plan as any).contact_only ? 'Nous contacter' : `Choisir ${plan.name}`
                       }
                     </button>
                   </CardContent>
