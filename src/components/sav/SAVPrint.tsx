@@ -1,11 +1,17 @@
 import { useState } from "react";
-import React from "react";
+import React, { useImperativeHandle } from "react";
 import { Button } from "@/components/ui/button";
 import { useShop } from "@/hooks/useShop";
 import { supabase } from "@/integrations/supabase/client";
 import type { SAVCase } from "@/hooks/useSAVCases";
 import { Printer, Scissors } from "lucide-react";
 import { generateShortTrackingUrl } from '@/utils/trackingUtils';
+
+interface SAVPrintButtonRef {
+  print: () => void;
+}
+
+export type { SAVPrintButtonRef };
 
 interface SAVPrintButtonProps {
   savCase: SAVCase & { customer?: { first_name: string; last_name: string; email?: string; phone?: string; address?: string } };
@@ -14,9 +20,14 @@ interface SAVPrintButtonProps {
   variant?: "default" | "outline" | "secondary" | "ghost" | "link" | "destructive";
 }
 
-export const SAVPrintButton = React.forwardRef<HTMLButtonElement, SAVPrintButtonProps>(({ savCase, className, size = "sm", variant = "outline" }, ref) => {
+export const SAVPrintButton = React.forwardRef<SAVPrintButtonRef, SAVPrintButtonProps>(({ savCase, className, size = "sm", variant = "outline" }, ref) => {
   const { shop } = useShop();
   const [printing, setPrinting] = useState(false);
+
+  // Exposer la méthode print via useImperativeHandle
+  useImperativeHandle(ref, () => ({
+    print: handlePrint
+  }), []);
 
   const generateTrackingUrl = () => {
     if (!savCase?.tracking_slug) return "";
@@ -281,7 +292,7 @@ export const SAVPrintButton = React.forwardRef<HTMLButtonElement, SAVPrintButton
   };
 
   return (
-    <Button variant={variant} size={size} onClick={handlePrint} className={className} disabled={printing} ref={ref}>
+    <Button variant={variant} size={size} onClick={handlePrint} className={className} disabled={printing}>
       <Printer className="h-4 w-4 mr-2" />
       {printing ? "Préparation..." : "Imprimer"}
     </Button>

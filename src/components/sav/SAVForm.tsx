@@ -22,7 +22,7 @@ import { LimitAlert } from '@/components/subscription/LimitAlert';
 import { useLimitDialogContext } from '@/contexts/LimitDialogContext';
 import { useToast } from '@/hooks/use-toast';
 import { PrintConfirmDialog } from '@/components/dialogs/PrintConfirmDialog';
-import { SAVPrintButton } from '@/components/sav/SAVPrint';
+import { SAVPrintButton, type SAVPrintButtonRef } from '@/components/sav/SAVPrint';
 import { PatternLock } from '@/components/sav/PatternLock';
 import { Checkbox } from '@/components/ui/checkbox';
 import { PartDiscountManager, PartDiscountInfo } from '@/components/ui/part-discount-manager';
@@ -98,7 +98,7 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
   const [showPrintDialog, setShowPrintDialog] = useState(false);
   const [createdSAVCase, setCreatedSAVCase] = useState<any>(null);
   const [savLimits, setSavLimits] = useState<{ allowed: boolean; reason: string; action: string | null }>({ allowed: true, reason: '', action: null });
-  const printButtonRef = React.useRef<HTMLButtonElement>(null);
+  const printButtonRef = React.useRef<SAVPrintButtonRef>(null);
   
   const { user } = useAuth();
   const { profile } = useProfile();
@@ -312,9 +312,9 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
   };
 
   const handlePrintConfirm = () => {
-    // Lancer l'impression en cliquant sur le bouton caché
+    // Lancer l'impression via la méthode exposée
     if (printButtonRef.current) {
-      printButtonRef.current.click();
+      printButtonRef.current.print();
     }
     onSuccess?.();
   };
