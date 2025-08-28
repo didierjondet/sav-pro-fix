@@ -220,7 +220,7 @@ export default function Orders() {
                   <TabsTrigger value="all">Stock minimum</TabsTrigger>
                   <TabsTrigger 
                     value="reception" 
-                    className="bg-green-100 text-green-800 border-green-300"
+                    className="data-[state=active]:bg-green-100 data-[state=active]:text-green-800 data-[state=active]:border-green-300"
                   >
                     Réception commandes
                   </TabsTrigger>
