@@ -150,29 +150,24 @@ export function useMessaging({ savCaseId, trackingSlug, userType }: UseMessaging
           attachments: attachments
         };
       } else if (userType === 'client' && trackingSlug) {
-        // Pour les clients publics
-        const { data: savCase } = await supabase
-          .from('sav_cases')
-          .select('id, shop_id')
-          .eq('tracking_slug', trackingSlug)
-          .single();
+        // Pour les clients publics - utiliser la fonction RPC sécurisée
+        const { data, error } = await supabase.rpc('send_client_tracking_message', {
+          p_tracking_slug: trackingSlug,
+          p_sender_name: senderName,
+          p_message: message.trim()
+        });
 
-        if (!savCase) throw new Error('Dossier SAV introuvable');
+        if (error) throw error;
 
-        insertData = {
-          sav_case_id: savCase.id,
-          sender_type: 'client',
-          sender_name: senderName,
-          message: message.trim(),
-          shop_id: savCase.shop_id,
-          read_by_client: true,
-          read_by_shop: false,
-          attachments: attachments
-        };
+        // Refetch messages après l'envoi
+        fetchMessages();
+        
+        return { data: 'success', error: null };
       } else {
         throw new Error('Configuration invalide pour l\'envoi');
       }
 
+      // Pour les utilisateurs du magasin seulement
       const { data, error } = await supabase
         .from('sav_messages')
         .insert(insertData)
