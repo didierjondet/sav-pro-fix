@@ -18,6 +18,7 @@ export interface Part {
   shop_id: string;
   created_at: string;
   updated_at: string;
+  price_last_updated?: string;
 }
 
 export function useParts() {
@@ -42,7 +43,7 @@ export function useParts() {
 
       const { data, error } = await supabase
         .from('parts')
-        .select('*, reserved_quantity')
+        .select('*, reserved_quantity, price_last_updated')
         .eq('shop_id', profile.shop_id)
         .order('name', { ascending: true });
 

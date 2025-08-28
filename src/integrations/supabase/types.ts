@@ -386,6 +386,7 @@ export type Database = {
           name: string
           notes: string | null
           photo_url: string | null
+          price_last_updated: string | null
           purchase_price: number | null
           quantity: number | null
           reference: string | null
@@ -403,6 +404,7 @@ export type Database = {
           name: string
           notes?: string | null
           photo_url?: string | null
+          price_last_updated?: string | null
           purchase_price?: number | null
           quantity?: number | null
           reference?: string | null
@@ -420,6 +422,7 @@ export type Database = {
           name?: string
           notes?: string | null
           photo_url?: string | null
+          price_last_updated?: string | null
           purchase_price?: number | null
           quantity?: number | null
           reference?: string | null

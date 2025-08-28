@@ -183,7 +183,7 @@ export function useOrders() {
             // Vérifier le stock disponible
             const { data: part, error: partError } = await supabase
               .from('parts')
-              .select('*')
+              .select('*, price_last_updated')
               .eq('id', item.part_id)
               .maybeSingle();
 
@@ -231,7 +231,7 @@ export function useOrders() {
       // Récupérer toutes les pièces et filtrer côté client
       const { data: parts, error } = await supabase
         .from('parts')
-        .select('*')
+        .select('*, price_last_updated')
         .eq('shop_id', profile.shop_id);
 
       if (error) throw error;

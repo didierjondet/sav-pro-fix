@@ -209,6 +209,17 @@ export function PartForm({ initialData, onSubmit, onCancel, isEdit = false, find
                 {...register('purchase_price', { valueAsNumber: true })}
                 placeholder="0.00"
               />
+              {initialData?.price_last_updated && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Dernière modification des prix : {new Date(initialData.price_last_updated).toLocaleDateString('fr-FR', {
+                    day: '2-digit',
+                    month: '2-digit', 
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}
+                </p>
+              )}
             </div>
 
             <div>
@@ -222,6 +233,17 @@ export function PartForm({ initialData, onSubmit, onCancel, isEdit = false, find
                 placeholder="0.00"
                 readOnly={useMargin}
               />
+              {initialData?.price_last_updated && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Dernière modification des prix : {new Date(initialData.price_last_updated).toLocaleDateString('fr-FR', {
+                    day: '2-digit',
+                    month: '2-digit', 
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}
+                </p>
+              )}
             </div>
           </div>
 
