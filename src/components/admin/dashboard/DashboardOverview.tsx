@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { 
@@ -8,11 +9,13 @@ import {
   TrendingUp,
   Activity
 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Shop {
   id: string;
   name: string;
   subscription_tier: string;
+  subscription_plan_id?: string;
   total_revenue?: number;
   total_sav_cases?: number;
   total_users?: number;
@@ -23,28 +26,81 @@ interface Profile {
   role: string;
 }
 
+interface SubscriptionPlan {
+  id: string;
+  name: string;
+  monthly_price: number;
+}
+
 interface DashboardOverviewProps {
   shops: Shop[];
   profiles: Profile[];
   activeSupportCount: number;
 }
 
-// Fonction pour calculer le revenu des abonnements basé sur les plans
-const calculateSubscriptionRevenue = (shops: Shop[]) => {
-  const planPrices = { 'free': 0, 'premium': 29, 'enterprise': 99 };
-  
-  return shops.reduce((sum, shop) => {
-    return sum + (planPrices[shop.subscription_tier as keyof typeof planPrices] || 0);
-  }, 0);
-};
-
 export function DashboardOverview({ shops, profiles, activeSupportCount }: DashboardOverviewProps) {
+  const [subscriptionPlans, setSubscriptionPlans] = useState<SubscriptionPlan[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchSubscriptionPlans();
+  }, []);
+
+  const fetchSubscriptionPlans = async () => {
+    try {
+      console.log('🔍 Récupération des plans d\'abonnement...');
+      const { data, error } = await supabase
+        .from('subscription_plans')
+        .select('id, name, monthly_price')
+        .eq('is_active', true)
+        .order('monthly_price');
+
+      if (error) throw error;
+      console.log('📊 Plans récupérés:', data);
+      setSubscriptionPlans(data || []);
+    } catch (error) {
+      console.error('❌ Erreur lors du chargement des plans:', error);
+      setSubscriptionPlans([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Calculer les statistiques basées sur les vrais plans
+  const getShopsByPlan = () => {
+    const planStats = subscriptionPlans.map(plan => {
+      const shopsWithPlan = shops.filter(shop => shop.subscription_plan_id === plan.id);
+      return {
+        ...plan,
+        shopCount: shopsWithPlan.length,
+        revenue: shopsWithPlan.length * plan.monthly_price
+      };
+    });
+
+    // Ajouter les magasins sans plan assigné
+    const shopsWithoutPlan = shops.filter(shop => !shop.subscription_plan_id);
+    if (shopsWithoutPlan.length > 0) {
+      planStats.push({
+        id: 'no-plan',
+        name: 'Sans plan assigné',
+        monthly_price: 0,
+        shopCount: shopsWithoutPlan.length,
+        revenue: 0
+      });
+    }
+
+    return planStats;
+  };
+
+  const planStats = getShopsByPlan();
+  const totalSubscriptionRevenue = planStats.reduce((sum, plan) => sum + plan.revenue, 0);
+
   const totalStats = {
     totalShops: shops.length,
     totalUsers: profiles.length,
     totalRevenue: shops.reduce((sum, shop) => sum + (shop.total_revenue || 0), 0),
     totalCases: shops.reduce((sum, shop) => sum + (shop.total_sav_cases || 0), 0),
-    totalSubscriptionRevenue: calculateSubscriptionRevenue(shops),
+    totalSubscriptionRevenue,
     activeSupportTickets: activeSupportCount,
   };
 
@@ -128,30 +184,33 @@ export function DashboardOverview({ shops, profiles, activeSupportCount }: Dashb
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {['free', 'premium', 'enterprise'].map(tier => {
-                const count = shops.filter(shop => shop.subscription_tier === tier).length;
-                const percentage = shops.length > 0 ? (count / shops.length * 100).toFixed(1) : 0;
-                const planPrice = tier === 'free' ? 0 : tier === 'premium' ? 29 : 99;
-                
-                return (
-                  <div key={tier} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-3 h-3 rounded-full ${
-                        tier === 'free' ? 'bg-gray-400' : 
-                        tier === 'premium' ? 'bg-blue-500' : 'bg-purple-600'
-                      }`}></div>
-                      <div>
-                        <p className="font-medium capitalize">{tier === 'free' ? 'Gratuit' : tier === 'premium' ? 'Premium' : 'Enterprise'}</p>
-                        <p className="text-sm text-slate-600">{planPrice}€/mois</p>
+              {loading ? (
+                <div className="text-center py-4">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mx-auto"></div>
+                  <p className="text-sm text-slate-600 mt-2">Chargement des plans...</p>
+                </div>
+              ) : (
+                planStats.map((plan, index) => {
+                  const percentage = shops.length > 0 ? (plan.shopCount / shops.length * 100).toFixed(1) : 0;
+                  const colors = ['bg-gray-400', 'bg-green-500', 'bg-blue-500', 'bg-purple-600', 'bg-orange-500'];
+                  
+                  return (
+                    <div key={plan.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-3 h-3 rounded-full ${colors[index % colors.length]}`}></div>
+                        <div>
+                          <p className="font-medium">{plan.name}</p>
+                          <p className="text-sm text-slate-600">{plan.monthly_price}€/mois</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-bold">{plan.shopCount} magasins</p>
+                        <p className="text-sm text-slate-600">{percentage}%</p>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="font-bold">{count} magasins</p>
-                      <p className="text-sm text-slate-600">{percentage}%</p>
-                    </div>
-                  </div>
-                );
-              })}
+                  );
+                })
+              )}
             </div>
           </CardContent>
         </Card>
@@ -180,7 +239,8 @@ export function DashboardOverview({ shops, profiles, activeSupportCount }: Dashb
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-blue-800 font-medium">CA Abonnements (annuel)</p>
-                    <p className="text-2xl font-bold text-blue-900">{(totalStats.totalSubscriptionRevenue * 12).toLocaleString()}€</p>
+                    <p className="text-2xl font-bold text-blue-900">0€</p>
+                    <p className="text-xs text-blue-600 mt-1">Aucun abonnement annuel</p>
                   </div>
                   <BarChart3 className="h-8 w-8 text-blue-600" />
                 </div>

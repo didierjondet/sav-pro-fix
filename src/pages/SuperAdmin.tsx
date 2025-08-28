@@ -169,7 +169,7 @@ export default function SuperAdmin() {
       // Fetch shops
       const { data: shopsData, error: shopsError } = await supabase
         .from('shops')
-        .select('*')
+        .select('*, subscription_plans!shops_subscription_plan_id_fkey(name, monthly_price)')
         .order('created_at', { ascending: false });
 
       if (shopsError) throw shopsError;
@@ -365,7 +365,8 @@ export default function SuperAdmin() {
 
         <SuperAdminSidebar 
           activeSection={activeSection} 
-          onSectionChange={setActiveSection} 
+          onSectionChange={setActiveSection}
+          activeSupportCount={activeSupportCount}
         />
 
         <main className="flex-1 pt-20 px-6 py-8">

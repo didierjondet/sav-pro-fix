@@ -28,6 +28,7 @@ import {
 interface SuperAdminSidebarProps {
   activeSection: string;
   onSectionChange: (section: string) => void;
+  activeSupportCount: number;
 }
 
 const menuItems = [
@@ -69,7 +70,7 @@ const menuItems = [
   }
 ];
 
-export function SuperAdminSidebar({ activeSection, onSectionChange }: SuperAdminSidebarProps) {
+export function SuperAdminSidebar({ activeSection, onSectionChange, activeSupportCount }: SuperAdminSidebarProps) {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
 
@@ -87,7 +88,7 @@ export function SuperAdminSidebar({ activeSection, onSectionChange }: SuperAdmin
                   <SidebarMenuItem key={item.id}>
                     <SidebarMenuButton 
                       onClick={() => onSectionChange(item.id)}
-                      className={`cursor-pointer ${
+                      className={`cursor-pointer relative ${
                         activeSection === item.id 
                           ? "bg-primary text-primary-foreground" 
                           : "hover:bg-muted/50"
@@ -95,6 +96,11 @@ export function SuperAdminSidebar({ activeSection, onSectionChange }: SuperAdmin
                     >
                       <item.icon className="mr-2 h-4 w-4" />
                       {!collapsed && <span>{item.title}</span>}
+                      {item.id === 'support' && activeSupportCount > 0 && (
+                        <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full min-w-[20px] h-5 flex items-center justify-center font-medium">
+                          {activeSupportCount}
+                        </div>
+                      )}
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 ))}
