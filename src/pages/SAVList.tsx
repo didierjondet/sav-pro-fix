@@ -4,6 +4,7 @@ import { multiWordSearch } from '@/utils/searchUtils';
 import { Header } from '@/components/layout/Header';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { SAVDashboard } from '@/components/sav/SAVDashboard';
+import { SAVTimeline } from '@/components/sav/SAVTimeline';
 import { PaginationControls } from '@/components/ui/pagination-controls';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -421,6 +422,11 @@ export default function SAVList() {
                         <p className="mt-2 text-sm line-clamp-2">
                           {savCase.problem_description}
                         </p>
+                        
+                        {/* Timeline SAV */}
+                        <div className="mt-4 pt-4 border-t border-border">
+                          <SAVTimeline savCase={savCase} shop={shop} />
+                        </div>
                       </div>
                       
                       <div className="flex items-center gap-2 ml-4">
