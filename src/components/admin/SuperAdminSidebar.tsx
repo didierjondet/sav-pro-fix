@@ -70,10 +70,11 @@ const menuItems = [
 ];
 
 export function SuperAdminSidebar({ activeSection, onSectionChange }: SuperAdminSidebarProps) {
-  const { collapsed } = useSidebar();
+  const { state } = useSidebar();
+  const collapsed = state === "collapsed";
 
   return (
-    <Sidebar className={collapsed ? "w-14" : "w-60"} collapsible>
+    <Sidebar className={collapsed ? "w-14" : "w-60"} collapsible="icon">
       <SidebarTrigger className="m-2 self-end" />
       
       <SidebarContent>

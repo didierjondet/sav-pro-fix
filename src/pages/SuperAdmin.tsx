@@ -303,7 +303,7 @@ export default function SuperAdmin() {
   }
 
   return (
-    <SidebarProvider collapsedWidth={56}>
+    <SidebarProvider>
       <div className="min-h-screen bg-slate-50 flex w-full">
         {/* Header spécial Super Admin */}
         <header className="fixed top-0 left-0 right-0 bg-white border-b border-slate-200 z-50 shadow-sm">

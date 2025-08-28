@@ -233,9 +233,15 @@ export function ShopsManagement({ shops, onUpdate }: ShopsManagementProps) {
 
       // Supprimer tous les autres éléments liés...
       const tablesToClean = [
-        'parts', 'customers', 'quotes', 'order_items', 
-        'notifications', 'sav_messages', 'sav_cases', 'profiles'
-      ];
+        'parts' as const, 
+        'customers' as const, 
+        'quotes' as const, 
+        'order_items' as const, 
+        'notifications' as const, 
+        'sav_messages' as const, 
+        'sav_cases' as const, 
+        'profiles' as const
+      ] as const;
 
       for (const table of tablesToClean) {
         console.log(`Deleting ${table} for shop`, shopId);
