@@ -130,6 +130,7 @@ export default function SuperAdmin() {
     }
     
     if (user && user.email === 'djondet@gmail.com') {
+      console.log('🔧 Super Admin connecté, chargement des données...');
       fetchData();
     }
   }, [user, authLoading]);
