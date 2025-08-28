@@ -42,19 +42,29 @@ export function SupportTicketsOverview({ onTicketSelect }: SupportTicketsOvervie
 
   const fetchTickets = async () => {
     try {
+      console.log('🔄 [SUPPORT] Chargement tickets pour super admin...');
+      
       const { data, error } = await supabase
         .from('support_tickets')
         .select(`
           *,
-          shop:shops(name, email),
+          shop:shops!inner(name, email),
           creator:profiles!support_tickets_created_by_fkey(first_name, last_name)
         `)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      console.log('📊 [SUPPORT] Résultat:', { ticketsCount: data?.length, error });
+
+      if (error) {
+        console.error('❌ [SUPPORT] Erreur:', error);
+        throw error;
+      }
+      
+      console.log('✅ [SUPPORT] Tickets chargés:', data);
       setTickets((data || []) as SupportTicket[]);
     } catch (error) {
-      console.error('Error fetching tickets:', error);
+      console.error('💥 [SUPPORT] Erreur critique:', error);
+      setTickets([]);
     } finally {
       setLoading(false);
     }

@@ -136,20 +136,31 @@ export default function SuperAdmin() {
 
   const fetchSupportTickets = async () => {
     try {
+      console.log('🔄 Récupération des tickets de support pour super admin...');
+      
       const { data, error } = await supabase
         .from('support_tickets')
         .select(`
           *,
-          shop:shops(name, email)
+          shop:shops!inner(name, email),
+          creator:profiles!support_tickets_created_by_fkey(first_name, last_name)
         `)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      console.log('📊 Résultat requête tickets:', { data, error });
+
+      if (error) {
+        console.error('❌ Erreur lors du chargement des tickets:', error);
+        throw error;
+      }
       
+      console.log(`✅ ${data?.length || 0} tickets récupérés`);
       setSupportTickets((data || []) as SupportTicket[]);
       setActiveSupportCount((data || []).filter(ticket => ticket.status === 'open' || ticket.status === 'in_progress').length);
     } catch (error: any) {
-      console.error('Error fetching support tickets:', error);
+      console.error('💥 Erreur critique fetchSupportTickets:', error);
+      setSupportTickets([]);
+      setActiveSupportCount(0);
     }
   };
 
