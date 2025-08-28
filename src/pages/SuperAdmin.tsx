@@ -142,8 +142,7 @@ export default function SuperAdmin() {
         .from('support_tickets')
         .select(`
           *,
-          shop:shops!inner(name, email),
-          creator:profiles!support_tickets_created_by_fkey(first_name, last_name)
+          shop:shops!inner(name, email)
         `)
         .order('created_at', { ascending: false });
 
