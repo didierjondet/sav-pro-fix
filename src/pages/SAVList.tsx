@@ -162,29 +162,7 @@ export default function SAVList() {
         // Trier du plus récent au plus vieux (par date de création)
         return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
       } else {
-        // Tri par défaut : SAV client en premier, puis SAV magasin/externes (même priorité), puis par urgence
-        
-        // 1. Prioriser les SAV client vs magasin/externes (traiter externes comme internes)
-        const aIsClient = a.sav_type === 'client';
-        const bIsClient = b.sav_type === 'client';
-        
-        if (aIsClient && !bIsClient) return -1;
-        if (!aIsClient && bIsClient) return 1;
-        
-        // 2. Les SAV annulés vont à la fin (même logique pour client et magasin)
-        const aCompleted = a.status === 'cancelled';
-        const bCompleted = b.status === 'cancelled';
-        
-        if (aCompleted && !bCompleted) return 1;
-        if (!aCompleted && bCompleted) return -1;
-        if (aCompleted && bCompleted) return 0; // Garder l'ordre existant pour les complétés
-        
-        // 3. Pour les SAV actifs, trier par urgence
-        // SAV en retard en premier
-        if (a.delayInfo.isOverdue && !b.delayInfo.isOverdue) return -1;
-        if (!a.delayInfo.isOverdue && b.delayInfo.isOverdue) return 1;
-        
-        // 4. Si les deux sont en retard ou non en retard, trier par temps restant
+        // Tri par priorité : tous les SAV du plus vieux au plus récent (par temps restant croissant)
         return a.delayInfo.totalRemainingHours - b.delayInfo.totalRemainingHours;
       }
     });
