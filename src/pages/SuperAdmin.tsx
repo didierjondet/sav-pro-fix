@@ -17,6 +17,7 @@ import { UsersManagement } from '@/components/admin/dashboard/UsersManagement';
 import { StatisticsView } from '@/components/admin/dashboard/StatisticsView';
 import SubscriptionPlansManager from '@/components/admin/SubscriptionPlansManager';
 import SupportTicketManager from '@/components/admin/SupportTicketManager';
+import { SupportTicketsOverview } from '@/components/admin/SupportTicketsOverview';
 import { SMSCreditManager } from '@/components/admin/SMSCreditManager';
 import { TwilioCreditsManager } from '@/components/admin/TwilioCreditsManager';
 import { SEOConfigTab } from '@/components/seo/SEOConfigTab';
@@ -274,7 +275,9 @@ export default function SuperAdmin() {
             }}
           />
         ) : (
-          <div>Support tickets management here</div>
+          <SupportTicketsOverview 
+            onTicketSelect={setSelectedTicket}
+          />
         );
       case 'statistics':
         return <StatisticsView shops={shops} />;
