@@ -1567,7 +1567,9 @@ export type Database = {
       get_tracking_messages: {
         Args: { p_tracking_slug: string }
         Returns: {
+          attachments: Json
           created_at: string
+          id: string
           message: string
           sender_name: string
           sender_type: string

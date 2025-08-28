@@ -66,7 +66,8 @@ export function useMessaging({ savCaseId, trackingSlug, userType }: UseMessaging
           created_at: msg.created_at,
           read_by_client: true,
           read_by_shop: msg.sender_type === 'shop',
-          shop_id: ''
+          shop_id: '',
+          attachments: msg.attachments || []
         })) : (data || []);
 
       setMessages(normalizedData as Message[]);

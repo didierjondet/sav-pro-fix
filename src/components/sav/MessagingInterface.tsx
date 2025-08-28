@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { MessageSquare, Send, X, AlertCircle, Camera, Eye } from 'lucide-react';
+import { MessageSquare, Send, X, AlertCircle, Camera, Eye, Download } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useMessaging, Message } from '@/hooks/useMessaging';
@@ -85,17 +85,71 @@ export function MessagingInterface({
 
   const handlePreviewPhoto = async (photoUrl: string) => {
     try {
-      const { data, error } = await supabase.storage
-        .from('sav-attachments')
-        .createSignedUrl(photoUrl, 3600);
+      if (userType === 'shop') {
+        // Pour les utilisateurs authentifiés du magasin
+        const { data, error } = await supabase.storage
+          .from('sav-attachments')
+          .createSignedUrl(photoUrl, 3600);
 
-      if (error) throw error;
+        if (error) throw error;
 
-      if (data?.signedUrl) {
-        window.open(data.signedUrl, '_blank');
+        if (data?.signedUrl) {
+          window.open(data.signedUrl, '_blank');
+        }
+      } else {
+        // Pour les clients non authentifiés, utiliser l'edge function
+        const response = await fetch(`https://jljkrthymaqxkebosqko.supabase.co/functions/v1/get-message-photo?tracking_slug=${trackingSlug}&photo_path=${encodeURIComponent(photoUrl)}`);
+        
+        if (!response.ok) {
+          throw new Error('Impossible de récupérer la photo');
+        }
+        
+        const result = await response.json();
+        if (result.signedUrl) {
+          window.open(result.signedUrl, '_blank');
+        }
       }
     } catch (error) {
       console.error('Error previewing photo:', error);
+    }
+  };
+
+  const handleDownloadPhoto = async (photoUrl: string, fileName: string) => {
+    try {
+      let downloadUrl: string;
+      
+      if (userType === 'shop') {
+        // Pour les utilisateurs authentifiés du magasin
+        const { data, error } = await supabase.storage
+          .from('sav-attachments')
+          .createSignedUrl(photoUrl, 3600);
+
+        if (error) throw error;
+        downloadUrl = data?.signedUrl || '';
+      } else {
+        // Pour les clients non authentifiés, utiliser l'edge function
+        const response = await fetch(`https://jljkrthymaqxkebosqko.supabase.co/functions/v1/get-message-photo?tracking_slug=${trackingSlug}&photo_path=${encodeURIComponent(photoUrl)}`);
+        
+        if (!response.ok) {
+          throw new Error('Impossible de récupérer la photo');
+        }
+        
+        const result = await response.json();
+        downloadUrl = result.signedUrl || '';
+      }
+
+      if (downloadUrl) {
+        // Créer un lien temporaire pour télécharger
+        const link = document.createElement('a');
+        link.href = downloadUrl;
+        link.download = fileName;
+        link.target = '_blank';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+    } catch (error) {
+      console.error('Error downloading photo:', error);
     }
   };
 
@@ -248,14 +302,26 @@ export function MessagingInterface({
                             <div key={index} className="flex items-center gap-2 p-2 bg-background/50 rounded border">
                               <Camera className="h-4 w-4 text-muted-foreground" />
                               <span className="text-xs flex-1 truncate">{attachment.name}</span>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handlePreviewPhoto(attachment.url)}
-                                className="h-6 w-6 p-0"
-                              >
-                                <Eye className="h-3 w-3" />
-                              </Button>
+                              <div className="flex gap-1">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handlePreviewPhoto(attachment.url)}
+                                  className="h-6 w-6 p-0"
+                                  title="Voir la photo"
+                                >
+                                  <Eye className="h-3 w-3" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleDownloadPhoto(attachment.url, attachment.name)}
+                                  className="h-6 w-6 p-0"
+                                  title="Télécharger la photo"
+                                >
+                                  <Download className="h-3 w-3" />
+                                </Button>
+                              </div>
                             </div>
                           ))}
                         </div>
