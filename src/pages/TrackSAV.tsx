@@ -118,32 +118,34 @@ export default function TrackSAV() {
       }
 
       const trackingInfo = trackingData[0];
+      console.log('🔍 [TrackSAV] Raw tracking info:', trackingInfo);
+      
       const savCaseData: SAVCaseData = {
-        id: trackingInfo.sav_case_id,
-        case_number: trackingInfo.case_number,
+        id: String(trackingInfo.sav_case_id || ''),
+        case_number: String(trackingInfo.case_number || ''),
         status: trackingInfo.status as "pending" | "in_progress" | "testing" | "ready" | "cancelled" | "parts_ordered" | "parts_received" | "delivered",
-        device_brand: trackingInfo.device_brand,
-        device_model: trackingInfo.device_model,
-        created_at: trackingInfo.created_at,
-        updated_at: trackingInfo.created_at,
-        total_cost: trackingInfo.total_cost,
+        device_brand: String(trackingInfo.device_brand || ''),
+        device_model: String(trackingInfo.device_model || ''),
+        created_at: trackingInfo.created_at || new Date().toISOString(),
+        updated_at: trackingInfo.created_at || new Date().toISOString(),
+        total_cost: Number(trackingInfo.total_cost || 0),
         device_imei: undefined,
         sku: undefined,
         problem_description: 'Informations disponibles via le magasin',
         repair_notes: undefined,
-        sav_type: trackingInfo.sav_type as "client" | "internal" | "external",
+        sav_type: (trackingInfo.sav_type || 'client') as "client" | "internal" | "external",
         customer: {
-          first_name: trackingInfo.customer_first_name || '',
+          first_name: String(trackingInfo.customer_first_name || ''),
           last_name: ''
         },
         shop: {
-          name: trackingInfo.shop_name,
-          phone: trackingInfo.shop_phone,
-          email: trackingInfo.shop_email,
-          address: trackingInfo.shop_address,
-          logo_url: trackingInfo.shop_logo_url,
-          max_sav_processing_days_client: trackingInfo.max_sav_processing_days_client ?? 7,
-          max_sav_processing_days_internal: trackingInfo.max_sav_processing_days_internal ?? 5
+          name: String(trackingInfo.shop_name || ''),
+          phone: String(trackingInfo.shop_phone || ''),
+          email: String(trackingInfo.shop_email || ''),
+          address: String(trackingInfo.shop_address || ''),
+          logo_url: String(trackingInfo.shop_logo_url || ''),
+          max_sav_processing_days_client: Number(trackingInfo.max_sav_processing_days_client) || 7,
+          max_sav_processing_days_internal: Number(trackingInfo.max_sav_processing_days_internal) || 5
         }
       };
 
