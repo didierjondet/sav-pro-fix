@@ -34,6 +34,9 @@ export function useShopSAVStatuses() {
   useEffect(() => {
     if (user) {
       fetchStatuses();
+    } else {
+      // Pour les utilisateurs non connectés (page publique), utiliser les statuts par défaut
+      setLoading(false);
     }
   }, [user]);
 
