@@ -124,8 +124,8 @@ export default function SAVList() {
     } else if (filterType === 'external') {
       filteredByType = casesWithDelay.filter(case_ => case_.sav_type === 'external');
     } else if (filterType === 'shop') {
-      // Regrouper SAV magasin et externes sous "SAV Magasin" pour une présentation unifiée
-      filteredByType = casesWithDelay.filter(case_ => case_.sav_type === 'internal' || case_.sav_type === 'external');
+      // Regrouper SAV client et externes sous "SAV CLIENTS (INTERNE+EXTERNE)"
+      filteredByType = casesWithDelay.filter(case_ => case_.sav_type === 'client' || case_.sav_type === 'external');
     }
 
     // 3. Filtrer par statut
@@ -259,10 +259,10 @@ export default function SAVList() {
                       <SelectTrigger className="w-40">
                         <SelectValue />
                       </SelectTrigger>
-                       <SelectContent>
+                        <SelectContent>
                          <SelectItem value="all">Tous les SAV</SelectItem>
                          <SelectItem value="client">SAV Client</SelectItem>
-                         <SelectItem value="shop">SAV Magasin (Interne + Externe)</SelectItem>
+                         <SelectItem value="shop">SAV CLIENTS (INTERNE+EXTERNE)</SelectItem>
                          <SelectItem value="internal">SAV Interne seulement</SelectItem>
                          <SelectItem value="external">SAV Externe seulement</SelectItem>
                        </SelectContent>
