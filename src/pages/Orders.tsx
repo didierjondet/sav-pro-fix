@@ -31,7 +31,7 @@ export default function Orders() {
   const [selectedOrderItem, setSelectedOrderItem] = useState<OrderItemWithPart | null>(null);
   const navigate = useNavigate();
   
-  const { orderItems, loading, markAsOrdered, removeFromOrder, receiveOrderItem, getOrdersByFilter } = useOrders();
+  const { orderItems, loading, markAsOrdered, removeFromOrder, receiveOrderItem, cancelOrder, getOrdersByFilter } = useOrders();
 
   // Récupérer les items selon le filtre
   const getFilteredItems = () => {
@@ -161,6 +161,10 @@ export default function Orders() {
     if (selectedOrderItem) {
       receiveOrderItem(selectedOrderItem.id, quantityReceived);
     }
+  };
+
+  const handleCancelOrder = (itemId: string) => {
+    cancelOrder(itemId);
   };
 
   if (loading) {
@@ -366,6 +370,7 @@ export default function Orders() {
                 isOpen={receiveDialogOpen}
                 onClose={() => setReceiveDialogOpen(false)}
                 onConfirm={handleConfirmReceive}
+                onCancelOrder={handleCancelOrder}
                 orderItem={selectedOrderItem}
               />
             </div>

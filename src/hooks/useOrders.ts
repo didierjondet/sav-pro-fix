@@ -627,6 +627,112 @@ export function useOrders() {
     }
   };
 
+  const cancelOrder = async (itemId: string) => {
+    try {
+      // Get current user's shop_id
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('shop_id')
+        .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
+        .single();
+
+      if (!profile?.shop_id) {
+        throw new Error('Shop non trouvé');
+      }
+
+      // Récupérer l'item de commande pour connaître les détails
+      const { data: orderItem, error: fetchError } = await supabase
+        .from('order_items')
+        .select('*')
+        .eq('id', itemId)
+        .single();
+
+      if (fetchError || !orderItem) {
+        throw new Error('Commande non trouvée');
+      }
+
+      // Si la commande est liée à un SAV, libérer les pièces réservées
+      if (orderItem.sav_case_id && orderItem.part_id) {
+        // Récupérer les pièces SAV liées à cette commande
+        const { data: savParts, error: savPartsError } = await supabase
+          .from('sav_parts')
+          .select('quantity')
+          .eq('sav_case_id', orderItem.sav_case_id)
+          .eq('part_id', orderItem.part_id);
+
+        if (!savPartsError && savParts && savParts.length > 0) {
+          // Calculer la quantité totale à libérer
+          const totalQuantityToRelease = savParts.reduce((sum, part) => sum + part.quantity, 0);
+          
+          // Libérer les quantités réservées dans le stock
+          const { data: currentPart, error: partError } = await supabase
+            .from('parts')
+            .select('reserved_quantity')
+            .eq('id', orderItem.part_id)
+            .single();
+
+          if (!partError && currentPart) {
+            const newReservedQuantity = Math.max(0, currentPart.reserved_quantity - totalQuantityToRelease);
+            
+            const { error: updatePartError } = await supabase
+              .from('parts')
+              .update({ reserved_quantity: newReservedQuantity })
+              .eq('id', orderItem.part_id);
+
+            if (updatePartError) {
+              console.error('Erreur lors de la libération des quantités réservées:', updatePartError);
+            }
+          }
+        }
+
+        // Envoyer un message automatique dans le chat SAV pour informer de l'annulation
+        const { data: shop, error: shopError } = await supabase
+          .from('shops')
+          .select('name')
+          .eq('id', profile.shop_id)
+          .single();
+
+        const { error: messageError } = await supabase
+          .from('sav_messages')
+          .insert({
+            sav_case_id: orderItem.sav_case_id,
+            shop_id: profile.shop_id,
+            sender_type: 'shop',
+            sender_name: shop?.name || 'Atelier',
+            message: `La commande de pièce "${orderItem.part_name}" a été annulée. Nous recherchons une solution alternative pour votre SAV.`,
+            read_by_shop: true,
+            read_by_client: false
+          });
+
+        if (messageError) {
+          console.error('Erreur lors de l\'envoi du message d\'annulation:', messageError);
+        }
+      }
+
+      // Supprimer l'item de commande
+      const { error: deleteError } = await supabase
+        .from('order_items')
+        .delete()
+        .eq('id', itemId);
+
+      if (deleteError) throw deleteError;
+
+      toast({
+        title: "Commande annulée",
+        description: "La commande a été annulée et les répercussions ont été appliquées",
+      });
+
+      // Refetch toutes les données pour mettre à jour l'affichage
+      refreshAllData();
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
   return {
     orderItems,
     partsNeededForSAV,
@@ -637,6 +743,7 @@ export function useOrders() {
     markAsOrdered,
     removeFromOrder,
     receiveOrderItem,
+    cancelOrder,
     getOrdersByFilter,
     refetch: refreshAllData,
   };
