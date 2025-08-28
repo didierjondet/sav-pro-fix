@@ -103,7 +103,7 @@ export default function TrackSAV() {
     if (!slug) return;
     
     try {
-      // Utiliser la nouvelle fonction sécurisée pour obtenir les informations de tracking
+      // Utiliser la nouvelle fonction sécurisée pour obtenir toutes les informations nécessaires
       const { data: trackingData, error: trackingError } = await supabase
         .rpc('get_tracking_info', { p_tracking_slug: slug });
 
@@ -117,19 +117,9 @@ export default function TrackSAV() {
         throw new Error('Numéro de suivi introuvable');
       }
 
-      // Récupérer les informations de la boutique
-      const { data: shopData, error: shopError } = await supabase
-        .from('sav_cases')
-        .select(`
-          id,
-          shops (name, phone, email, address, logo_url, max_sav_processing_days_client, max_sav_processing_days_internal)
-        `)
-        .eq('tracking_slug', slug)
-        .maybeSingle();
-
       const trackingInfo = trackingData[0];
       const savCaseData: SAVCaseData = {
-        id: shopData?.id || '',
+        id: trackingInfo.sav_case_id,
         case_number: trackingInfo.case_number,
         status: trackingInfo.status as "pending" | "in_progress" | "testing" | "ready" | "cancelled" | "parts_ordered" | "parts_received" | "delivered",
         device_brand: trackingInfo.device_brand,
@@ -141,16 +131,20 @@ export default function TrackSAV() {
         sku: undefined,
         problem_description: 'Informations disponibles via le magasin',
         repair_notes: undefined,
-        sav_type: 'client' as "client" | "internal" | "external",
+        sav_type: trackingInfo.sav_type as "client" | "internal" | "external",
         customer: {
           first_name: trackingInfo.customer_first_name || '',
           last_name: ''
         },
-        shop: shopData?.shops ? {
-          ...shopData.shops,
-          max_sav_processing_days_client: shopData.shops.max_sav_processing_days_client ?? 7,
-          max_sav_processing_days_internal: shopData.shops.max_sav_processing_days_internal ?? 5
-        } : undefined
+        shop: {
+          name: trackingInfo.shop_name,
+          phone: trackingInfo.shop_phone,
+          email: trackingInfo.shop_email,
+          address: trackingInfo.shop_address,
+          logo_url: trackingInfo.shop_logo_url,
+          max_sav_processing_days_client: trackingInfo.max_sav_processing_days_client ?? 7,
+          max_sav_processing_days_internal: trackingInfo.max_sav_processing_days_internal ?? 5
+        }
       };
 
       console.log('✅ [TrackSAV] SAV case data retrieved:', savCaseData);
