@@ -424,7 +424,7 @@ export default function SAVList() {
                         </p>
                         
                         {/* Timeline SAV */}
-                        <div className="mt-4 pt-4 border-t border-border">
+                        <div className="mt-3 pt-3 border-t border-border/30">
                           <SAVTimeline savCase={savCase} shop={shop} />
                         </div>
                       </div>

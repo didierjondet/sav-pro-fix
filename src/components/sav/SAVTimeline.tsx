@@ -20,12 +20,9 @@ export function SAVTimeline({ savCase, shop }: TimelineProps) {
   if (!shop || !savCase) {
     console.log('❌ Timeline: Missing data', { shop: !!shop, savCase: !!savCase });
     return (
-      <div className="w-full bg-white rounded-lg p-4 border">
-        <h3 className="text-sm font-medium text-gray-700 mb-4 text-center">
-          Progression du traitement
-        </h3>
-        <div className="text-center text-gray-500">
-          <p className="text-sm">Chargement de la timeline...</p>
+      <div className="w-full py-2">
+        <div className="text-center text-muted-foreground">
+          <p className="text-xs">Chargement de la timeline...</p>
         </div>
       </div>
     );
@@ -67,18 +64,14 @@ export function SAVTimeline({ savCase, shop }: TimelineProps) {
   const shouldShowFinalPoint = isClosed;
 
   return (
-    <div className="w-full bg-white rounded-lg p-4 border">
-      <h3 className="text-sm font-medium text-gray-700 mb-4 text-center">
-        Progression du traitement
-      </h3>
-      
+    <div className="w-full py-2">
       <div className="relative">
-        {/* Ligne de progression */}
-        <div className="absolute top-4 left-0 right-0 h-0.5 bg-gray-200">
+        {/* Ligne de progression fine */}
+        <div className="absolute top-2.5 left-4 right-4 h-px bg-border/50">
           <div 
             className={`h-full transition-all duration-500 ${
-              delayInfo.isOverdue ? 'bg-red-500' : 
-              isClosed ? 'bg-green-500' : 'bg-blue-500'
+              delayInfo.isOverdue ? 'bg-destructive' : 
+              isClosed ? 'bg-success' : 'bg-primary'
             }`}
             style={{ 
               width: isClosed ? '100%' : `${Math.min((currentDay / maxDays) * 100, 100)}%` 
@@ -86,87 +79,77 @@ export function SAVTimeline({ savCase, shop }: TimelineProps) {
           />
         </div>
 
-        {/* Points de la timeline */}
-        <div className="flex justify-between relative">
+        {/* Points de la timeline minimalistes */}
+        <div className="flex justify-between relative px-4">
           {timelinePoints.map((point) => (
             <div key={point.day} className="flex flex-col items-center">
-              {/* Point */}
+              {/* Point réduit */}
               <div className={`
-                w-8 h-8 rounded-full border-2 flex items-center justify-center text-xs font-medium
-                ${point.isReady ? 'bg-green-500 border-green-500 text-white' :
-                  point.isOverdue ? 'bg-red-500 border-red-500 text-white' :
-                  point.isPast ? 'bg-blue-500 border-blue-500 text-white' :
-                  point.isCurrent ? 'bg-blue-100 border-blue-500 text-blue-600' :
-                  'bg-gray-100 border-gray-300 text-gray-400'
+                w-5 h-5 rounded-full border flex items-center justify-center
+                ${point.isReady ? 'bg-success border-success' :
+                  point.isOverdue ? 'bg-destructive border-destructive' :
+                  point.isPast ? 'bg-primary border-primary' :
+                  point.isCurrent ? 'bg-primary/20 border-primary' :
+                  'bg-muted border-border'
                 }
                 transition-all duration-300
               `}>
                 {point.isReady ? (
-                  <CheckCircle className="w-4 h-4" />
+                  <CheckCircle className="w-3 h-3 text-white" />
                 ) : point.isOverdue ? (
-                  <AlertCircle className="w-4 h-4" />
+                  <AlertCircle className="w-3 h-3 text-white" />
                 ) : point.isCurrent ? (
-                  <Clock className="w-4 h-4" />
-                ) : (
-                  point.day
-                )}
+                  <div className="w-2 h-2 rounded-full bg-primary" />
+                ) : point.isPast ? (
+                  <div className="w-2 h-2 rounded-full bg-white" />
+                ) : null}
               </div>
               
-              {/* Label du jour */}
-              <div className={`
-                mt-2 text-xs text-center
-                ${point.isReady ? 'text-green-600 font-medium' :
-                  point.isOverdue ? 'text-red-600 font-medium' :
-                  point.isCurrent ? 'text-blue-600 font-medium' :
-                  point.isPast ? 'text-gray-600' : 'text-gray-400'
-                }
-              `}>
-                <div>J{point.day}</div>
-                {maxDays <= 7 && (
-                  <div className="text-xs text-gray-500">
-                    {new Date(createdAt.getTime() + (point.day - 1) * 24 * 60 * 60 * 1000)
-                      .toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })}
-                  </div>
-                )}
-              </div>
+              {/* Label minimal */}
+              {(point.isCurrent || point.isOverdue || maxDays <= 5) && (
+                <div className={`
+                  mt-1 text-xs leading-tight text-center
+                  ${point.isReady ? 'text-success' :
+                    point.isOverdue ? 'text-destructive' :
+                    point.isCurrent ? 'text-primary' :
+                    'text-muted-foreground'
+                  }
+                `}>
+                  <div className="font-medium">J{point.day}</div>
+                </div>
+              )}
             </div>
           ))}
           
-          {/* Point final de jonction si le SAV est terminé */}
+          {/* Point final si terminé */}
           {shouldShowFinalPoint && (
             <div className="flex flex-col items-center">
-              {/* Point final */}
-              <div className="w-10 h-10 rounded-full border-3 border-green-500 bg-green-500 text-white flex items-center justify-center shadow-lg">
-                <Flag className="w-5 h-5" />
+              <div className="w-6 h-6 rounded-full border-2 border-success bg-success text-white flex items-center justify-center">
+                <Flag className="w-3 h-3" />
               </div>
-              
-              {/* Label du point final */}
-              <div className="mt-2 text-xs text-center text-green-600 font-medium">
-                <div>Terminé</div>
-                <div className="text-xs text-gray-500">
-                  {savCase.status === 'ready' ? 'Prêt' : 'Annulé'}
-                </div>
+              <div className="mt-1 text-xs text-success font-medium">
+                Terminé
               </div>
             </div>
           )}
         </div>
 
-        {/* Légende */}
-        <div className="mt-4 text-center">
-          <div className="text-xs text-gray-600">
+        {/* Légende compacte */}
+        <div className="mt-2 text-center">
+          <div className="text-xs text-muted-foreground">
             {isClosed ? (
-              <span className="text-green-600 font-medium">
-                {savCase.status === 'ready' ? '✅ Dossier terminé - Prêt à récupérer' : '❌ Dossier annulé'}
+              <span className="text-success font-medium">
+                {savCase.status === 'ready' ? 'Dossier prêt' : 'Dossier annulé'}
               </span>
             ) : delayInfo.isOverdue ? (
-              <span className="text-red-600 font-medium">⚠️ Délai dépassé</span>
+              <span className="text-destructive font-medium">En retard</span>
             ) : (
-              <>
-                <span className="font-medium">Jour {currentDay}</span> sur {maxDays} jours de traitement
+              <span>
+                Jour {currentDay}/{maxDays}
                 {delayInfo.remainingDays > 0 && (
-                  <span className="text-gray-500"> • {delayInfo.remainingDays} jour{delayInfo.remainingDays > 1 ? 's' : ''} restant{delayInfo.remainingDays > 1 ? 's' : ''}</span>
+                  <span className="text-muted-foreground/70"> • {delayInfo.remainingDays}j restant{delayInfo.remainingDays > 1 ? 's' : ''}</span>
                 )}
-              </>
+              </span>
             )}
           </div>
         </div>
