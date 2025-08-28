@@ -30,50 +30,125 @@ export default function Subscription() {
 
   // Plans chargés depuis la base de données (gérée par le superuser)
   const [plans, setPlans] = useState<any[]>([]);
+  const [plansLoading, setPlansLoading] = useState(true);
+  
   useEffect(() => {
     const fetchPlans = async () => {
       try {
-        console.log('🔄 Chargement des plans depuis la base (gérée par superuser)...');
+        setPlansLoading(true);
+        console.log('🔄 FORCER le rechargement des plans depuis superuser...');
+        
+        // FORCER le rechargement sans cache
+        const timestamp = Date.now();
         const { data: dbPlans, error } = await supabase
           .from('subscription_plans')
           .select('*')
           .eq('is_active', true)
-          .order('monthly_price');
+          .order('monthly_price')
+          .limit(100); // Ajouter une limite pour forcer une nouvelle requête
         
         if (error) {
-          console.error('❌ Erreur lors du chargement des plans:', error);
+          console.error('❌ ERREUR chargement plans:', error);
+          setPlansLoading(false);
           return;
         }
 
-        if (dbPlans) {
-          console.log('✅ Plans chargés depuis superuser:', dbPlans);
-          const formattedPlans = dbPlans.map(plan => ({
-            id: plan.name.toLowerCase(),
-            name: plan.name,
-            price: plan.monthly_price === 0 ? 'Gratuit' : `${plan.monthly_price}€`,
-            period: plan.monthly_price > 0 ? (plan.billing_interval === 'year' ? '/an HT' : '/mois HT') : '',
-            icon: plan.name.toLowerCase().includes('enterprise') ? Infinity : 
-                  plan.name.toLowerCase().includes('premium') ? Crown : CheckCircle,
-            features: Array.isArray(plan.features) ? plan.features.map(f => String(f)) : [],
-            limits: {
-              sav: plan.sav_limit || 999999,
-              sms: plan.sms_limit || 0
-            },
-            contact_only: plan.contact_only || false
-          }));
+        console.log('✅ PLANS RÉCUPÉRÉS depuis superuser:', dbPlans);
+        
+        if (dbPlans && dbPlans.length > 0) {
+          const formattedPlans = dbPlans.map(plan => {
+            console.log(`🔧 Formatage plan: ${plan.name} - ${plan.monthly_price}€`);
+            
+            // Déterminer l'icône basée sur le nom du plan
+            let planIcon = CheckCircle;
+            const planNameLower = plan.name.toLowerCase();
+            if (planNameLower.includes('enterprise') || planNameLower.includes('sur mesure')) {
+              planIcon = Infinity;
+            } else if (planNameLower.includes('premium')) {
+              planIcon = Crown;
+            }
+
+            return {
+              id: planNameLower.replace(/\s+/g, '-'), // Normaliser l'ID
+              name: plan.name,
+              price: plan.monthly_price === 0 ? 'Gratuit' : `${plan.monthly_price}€`,
+              period: plan.monthly_price > 0 ? (plan.billing_interval === 'year' ? '/an HT' : '/mois HT') : '',
+              icon: planIcon,
+              features: Array.isArray(plan.features) ? plan.features.map(f => String(f)) : [],
+              limits: {
+                sav: plan.sav_limit || 999999,
+                sms: plan.sms_limit || 0
+              },
+              contact_only: plan.contact_only || false,
+              stripe_price_id: plan.stripe_price_id,
+              original_name: plan.name, // Garder le nom original pour Stripe
+              db_id: plan.id
+            };
+          });
+          
+          console.log('✅ PLANS FORMATÉS:', formattedPlans);
           setPlans(formattedPlans);
+        } else {
+          console.warn('⚠️  Aucun plan actif trouvé!');
+          setPlans([]);
         }
       } catch (error) {
-        console.error('💥 Erreur lors du chargement des plans:', error);
+        console.error('💥 ERREUR CRITIQUE lors du chargement des plans:', error);
+      } finally {
+        setPlansLoading(false);
       }
     };
+    
     fetchPlans();
+    
+    // Écouter les changements en temps réel des plans
+    const channel = supabase
+      .channel('subscription-plans-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'subscription_plans'
+        },
+        (payload) => {
+          console.log('🔄 Changement détecté dans les plans:', payload);
+          fetchPlans();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
   const getCurrentPlan = () => {
-    return plans.find(plan => plan.id === subscription?.subscription_tier) || plans[0];
+    if (!subscription || !plans.length) return null;
+    
+    // Essayer de trouver par nom d'abord, puis par ID
+    let currentPlan = plans.find(plan => 
+      plan.original_name?.toLowerCase() === subscription.subscription_tier?.toLowerCase() ||
+      plan.name?.toLowerCase() === subscription.subscription_tier?.toLowerCase() ||
+      plan.id === subscription.subscription_tier
+    );
+    
+    // Si pas trouvé, prendre le premier (gratuit)
+    if (!currentPlan) {
+      currentPlan = plans[0];
+    }
+    
+    console.log('🔍 Plan actuel identifié:', { 
+      subscription_tier: subscription.subscription_tier, 
+      found_plan: currentPlan?.name 
+    });
+    
+    return currentPlan;
   };
+  
   const isCurrentPlan = (planId: string) => {
-    return subscription?.subscription_tier === planId;
+    if (!subscription) return false;
+    const current = getCurrentPlan();
+    return current?.id === planId || current?.original_name?.toLowerCase() === planId.toLowerCase();
   };
   const canUpgrade = (planId: string) => {
     if (!subscription) return false;
@@ -87,7 +162,7 @@ export default function Subscription() {
     if (percentage >= 75) return 'text-orange-500';
     return 'text-green-500';
   };
-  if (loading) {
+  if (loading || plansLoading) {
     return <div className="min-h-screen flex">
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
         <div className="flex-1">
@@ -116,7 +191,7 @@ export default function Subscription() {
               </Button>}
           </div>
 
-          {subscription && <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {subscription && currentPlan && <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {/* Current Usage */}
               <Card>
                 <CardHeader>
@@ -131,11 +206,11 @@ export default function Subscription() {
                     <div>
                       <div className="flex justify-between items-center mb-2">
                         <span className="text-sm">SAV Actifs</span>
-                        <span className={`text-sm font-medium ${getUsageColor(subscription.active_sav_count, currentPlan.limits.sav)}`}>
-                          {subscription.active_sav_count}/{currentPlan.limits.sav === 999999 ? '∞' : currentPlan.limits.sav}
+                        <span className={`text-sm font-medium ${getUsageColor(subscription.active_sav_count, currentPlan?.limits?.sav || 999)}`}>
+                          {subscription.active_sav_count}/{currentPlan?.limits?.sav === 999999 ? '∞' : currentPlan?.limits?.sav}
                         </span>
                       </div>
-                      {currentPlan.limits.sav !== 999999 && <Progress value={subscription.active_sav_count / currentPlan.limits.sav * 100} />}
+                      {currentPlan && currentPlan.limits.sav !== 999999 && <Progress value={subscription.active_sav_count / currentPlan.limits.sav * 100} />}
                     </div>
                      <div>
                        <div className="flex justify-between items-center mb-2">
@@ -167,7 +242,7 @@ export default function Subscription() {
                  <CardContent>
                    <div className="space-y-3">
                      <p className="text-sm text-blue-700">
-                       Tarifs selon votre plan : {currentPlan.name}
+                       Tarifs selon votre plan : {currentPlan?.name || 'Non défini'}
                      </p>
                      <Button className="w-full" variant="default" onClick={() => window.location.href = '/settings?tab=sms'}>
                        <CreditCard className="h-4 w-4 mr-2" />
@@ -178,7 +253,7 @@ export default function Subscription() {
                </Card>
 
                {/* Limits Warning */}
-               {(subscription.active_sav_count / (currentPlan.limits.sav === 999999 ? 1000 : currentPlan.limits.sav) > 0.8 || subscription.sms_credits_used / subscription.sms_credits_allocated > 0.8) && <Card className="border-orange-200 bg-orange-50">
+               {(subscription.active_sav_count / ((currentPlan?.limits?.sav === 999999 ? 1000 : currentPlan?.limits?.sav) || 1000) > 0.8 || subscription.sms_credits_used / subscription.sms_credits_allocated > 0.8) && <Card className="border-orange-200 bg-orange-50">
                    <CardHeader>
                      <CardTitle className="flex items-center gap-2 text-orange-700">
                        <AlertTriangle className="h-5 w-5" />
@@ -250,7 +325,10 @@ export default function Subscription() {
                             className="w-full"
                           >
                             Nous contacter
-                          </Button> : <Button onClick={() => createCheckout(plan.id as 'premium' | 'enterprise')} className="w-full">
+                          </Button> : <Button onClick={() => {
+                            console.log('🚀 Création checkout pour:', plan.original_name || plan.name);
+                            createCheckout(plan.original_name?.toLowerCase() as 'premium' | 'enterprise' || plan.id as 'premium' | 'enterprise');
+                          }} className="w-full">
                             Passer à {plan.name}
                           </Button> : <Button variant="outline" disabled className="w-full">
                           Indisponible
