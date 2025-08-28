@@ -277,15 +277,38 @@ export const SAVPrintButton = React.forwardRef<SAVPrintButtonRef, SAVPrintButton
 </html>`;
 
       const printWindow = window.open("", "_blank");
-      if (!printWindow) return;
+      if (!printWindow) {
+        console.error("Popup bloquée ou erreur lors de l'ouverture de la fenêtre d'impression");
+        // Fallback: télécharger le fichier HTML
+        const blob = new Blob([html], { type: "text/html" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `SAV_${savCase.case_number}.html`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        return;
+      }
+      
       printWindow.document.write(html);
       printWindow.document.close();
-      printWindow.onload = () => {
+      
+      // Attendre que le contenu soit chargé avant d'imprimer
+      if (printWindow.document.readyState === 'complete') {
         setTimeout(() => {
           printWindow.print();
           printWindow.close();
-        }, 400);
-      };
+        }, 500);
+      } else {
+        printWindow.onload = () => {
+          setTimeout(() => {
+            printWindow.print();
+            printWindow.close();
+          }, 500);
+        };
+      }
     } finally {
       setPrinting(false);
     }

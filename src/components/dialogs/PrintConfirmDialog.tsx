@@ -87,7 +87,9 @@ export function PrintConfirmDialog({
           title: "SMS envoyé",
           description: "Le lien de suivi a été envoyé par SMS",
         });
-        onClose(); // Fermer la popup après envoi du SMS
+        // Appeler onCancel pour déclencher la redirection sans impression
+        onCancel();
+        onClose();
       }
     } catch (error) {
       console.error('Erreur lors de l\'envoi du SMS:', error);
