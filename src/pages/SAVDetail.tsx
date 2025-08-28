@@ -515,11 +515,10 @@ export default function SAVDetail() {
                       <label className="text-sm font-medium">
                         Lien de suivi simplifié pour le {savCase.sav_type === 'client' ? 'client' : 'contact'}
                       </label>
-                      <div className="mt-2 p-3 bg-muted rounded-lg border text-sm break-all">
-                        {savCase?.tracking_slug ? generateTrackingUrl() : 'Slug de suivi non généré'}
+                      <div className="mt-2 p-3 bg-primary text-primary-foreground rounded-lg border text-sm break-all font-mono">
+                        {savCase?.tracking_slug ? `fixway.fr/track/${savCase.tracking_slug}` : 'Slug de suivi non généré'}
                       </div>
                       <p className="text-xs text-muted-foreground mt-1">
-                        Lien simplifié : <strong>fixwaypro.com/{savCase?.tracking_slug || 'nomcontact123'}</strong><br/>
                         Le {savCase.sav_type === 'client' ? 'client' : 'contact'} pourra suivre l'état de sa réparation et communiquer avec vous via ce lien
                       </p>
                     </div>

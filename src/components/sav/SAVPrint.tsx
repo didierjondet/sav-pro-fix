@@ -117,7 +117,7 @@ export const SAVPrintButton = React.forwardRef<HTMLButtonElement, SAVPrintButton
       const descriptionBlock = `
         <div class="block">
           <div class="block-title">Description du problème</div>
-          <div class="text">${(savCase.problem_description || "").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</div>
+          <div class="text problem-description">${(savCase.problem_description || "").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</div>
         </div>`;
 
       const notesBlock = savCase.repair_notes
@@ -203,6 +203,7 @@ export const SAVPrintButton = React.forwardRef<HTMLButtonElement, SAVPrintButton
     .block { margin-top: 8px; }
     .block-title { font-size: 10px; font-weight: 700; margin-bottom: 4px; border-bottom:1px solid #eee; padding-bottom:2px; text-align: left; }
     .text { white-space: pre-wrap; font-size: 9px; text-align: left; }
+    .problem-description { font-weight: bold; font-size: 10px; }
     .text-muted { color:#666; }
     .table { width:100%; border-collapse: collapse; margin-top:4px; font-size: 8px; }
     .table th, .table td { border: 1px solid #e5e7eb; padding: 3px 4px; text-align:left; }
@@ -240,7 +241,6 @@ export const SAVPrintButton = React.forwardRef<HTMLButtonElement, SAVPrintButton
     ${notesBlock}
     ${partsTable}
     ${qrBlock}
-    <div class="footer">Document généré par Fixway Pro</div>
   </div>
   <div class="cut-line">
     <span class="scissors">✂</span>
@@ -260,7 +260,7 @@ export const SAVPrintButton = React.forwardRef<HTMLButtonElement, SAVPrintButton
     ${notesBlock}
     ${partsTable}
     ${qrBlock}
-    <div class="footer">Document généré par Fixway Pro</div>
+    
   </div>
 </div>
 </body>
