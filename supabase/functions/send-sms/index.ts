@@ -72,10 +72,10 @@ async function sendTwilioSMS(to: string, body: string): Promise<any> {
 }
 
 async function checkSMSCredits(shopId: string): Promise<boolean> {
-  // Vérifier les crédits SMS de la boutique avec plan + packages SMS
+  // Vérifier les crédits SMS de la boutique avec plan + packages SMS + limite personnalisée
   const { data: shop, error } = await supabase
     .from('shops')
-    .select('sms_credits_used, sms_credits_allocated, subscription_forced, subscription_tier')
+    .select('sms_credits_used, sms_credits_allocated, subscription_forced, subscription_tier, custom_sms_limit')
     .eq('id', shopId)
     .single();
 
@@ -102,10 +102,15 @@ async function checkSMSCredits(shopId: string): Promise<boolean> {
 
   const packagedSMS = packages?.reduce((total, pkg) => total + pkg.sms_count, 0) || 0;
   
-  // Total disponible = limite du plan + SMS achetés via packages
-  const totalSMSAvailable = shop.sms_credits_allocated + packagedSMS;
+  // Total disponible = limite du plan + limite custom + SMS achetés via packages
+  let totalSMSAvailable = shop.sms_credits_allocated + packagedSMS;
   
-  console.log(`Vérification SMS: ${shop.sms_credits_used}/${totalSMSAvailable} (plan: ${shop.sms_credits_allocated}, packages: ${packagedSMS})`);
+  // Ajouter la limite personnalisée si elle existe
+  if (shop.custom_sms_limit) {
+    totalSMSAvailable += shop.custom_sms_limit;
+  }
+  
+  console.log(`Vérification SMS: ${shop.sms_credits_used}/${totalSMSAvailable} (plan: ${shop.sms_credits_allocated}, custom: ${shop.custom_sms_limit || 0}, packages: ${packagedSMS})`);
   
   return shop.sms_credits_used < totalSMSAvailable;
 }
@@ -197,23 +202,33 @@ function formatPhoneNumberForDisplay(phoneNumber: string): string {
 }
 
 serve(async (req) => {
+  console.log('=== DEBUT FONCTION SEND-SMS ===');
+  
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    console.log('1. Vérification configuration Twilio...');
     if (!accountSid || !authToken || !twilioPhoneNumber) {
+      console.error('❌ Configuration Twilio manquante:', { 
+        accountSid: !!accountSid, 
+        authToken: !!authToken, 
+        twilioPhoneNumber: !!twilioPhoneNumber 
+      });
       throw new Error('Configuration Twilio manquante');
     }
+    console.log('✅ Configuration Twilio OK');
 
+    console.log('2. Parsing de la requête...');
     const smsRequest: SMSRequest = await req.json();
+    console.log('✅ Requête parsée:', smsRequest);
     
-    console.log('Demande d\'envoi SMS:', smsRequest);
-
-    // Vérifier les crédits SMS
+    console.log('3. Vérification des crédits SMS...');
     const hasCredits = await checkSMSCredits(smsRequest.shopId);
     if (!hasCredits) {
+      console.error('❌ Crédits SMS insuffisants');
       await logSMSHistory(smsRequest, 'failed_no_credits');
       return new Response(
         JSON.stringify({ 
@@ -226,23 +241,30 @@ serve(async (req) => {
         }
       );
     }
+    console.log('✅ Crédits SMS OK');
 
-    // Formatter le numéro au format international
+    console.log('4. Formatage du numéro...');
     const formattedNumber = formatPhoneNumber(smsRequest.toNumber);
-    console.log(`Numéro formaté: ${smsRequest.toNumber} -> ${formattedNumber}`);
+    console.log(`✅ Numéro formaté: ${smsRequest.toNumber} -> ${formattedNumber}`);
 
-    // Envoyer le SMS via Twilio
+    console.log('5. Envoi SMS via Twilio...');
     const twilioResponse = await sendTwilioSMS(formattedNumber, smsRequest.message);
-    console.log('Réponse Twilio:', twilioResponse);
+    console.log('✅ Réponse Twilio:', twilioResponse);
 
     if (twilioResponse.sid) {
-      // SMS envoyé avec succès
+      console.log('6. Mise à jour des crédits...');
       await updateSMSCredits(smsRequest.shopId);
+      console.log('✅ Crédits mis à jour');
+      
+      console.log('7. Log de l\'historique...');
       await logSMSHistory(smsRequest, 'sent');
+      console.log('✅ Historique loggé');
 
-      // Ajouter un message dans le chat SAV pour tracer l'envoi SMS
+      console.log('8. Ajout au chat SAV (si applicable)...');
       await addSMSToSAVChat(smsRequest, twilioResponse.sid);
+      console.log('✅ Chat SAV traité');
 
+      console.log('=== SMS ENVOYÉ AVEC SUCCÈS ===');
       return new Response(
         JSON.stringify({ 
           success: true, 
@@ -254,13 +276,14 @@ serve(async (req) => {
         }
       );
     } else {
-      // Erreur lors de l'envoi
+      console.error('❌ Pas de SID dans la réponse Twilio');
       await logSMSHistory(smsRequest, 'failed');
       throw new Error('Erreur lors de l\'envoi du SMS');
     }
 
   } catch (error: any) {
-    console.error('Erreur dans send-sms function:', error);
+    console.error('💥 ERREUR DANS SEND-SMS:', error);
+    console.error('Stack trace:', error.stack);
     
     return new Response(
       JSON.stringify({ 
