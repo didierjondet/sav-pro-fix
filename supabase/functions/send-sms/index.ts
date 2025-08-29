@@ -143,7 +143,7 @@ async function logSMSHistory(request: SMSRequest, status: string): Promise<void>
 }
 
 async function addSMSToSAVChat(request: SMSRequest, messageSid: string): Promise<void> {
-  // Ajouter l'envoi SMS dans le chat du SAV si c'est lié à un dossier SAV
+  // Ajouter l'envoi SMS dans le chat du SAV si c'est lié à un dossier SAV (pas pour les devis)
   if (request.recordId && (request.type === 'sav_notification' || request.type === 'manual' || request.type === 'status_change')) {
     try {
       // Vérifier si c'est un dossier SAV
