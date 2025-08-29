@@ -13,7 +13,7 @@ import { useSAVCases } from '@/hooks/useSAVCases';
 import { useShop } from '@/hooks/useShop';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { QrCode, ExternalLink, ArrowLeft, Copy, Share, Save, Lock, User, Mail, Phone, MapPin, CheckCircle, X } from 'lucide-react';
+import { QrCode, ExternalLink, ArrowLeft, Copy, Share, Save, Lock, User, Mail, Phone, MapPin, CheckCircle, X, MessageSquare } from 'lucide-react';
 import { SMSButton } from '@/components/sav/SMSButton';
 import { useNavigate } from 'react-router-dom';
 import { SAVPartsEditor } from '@/components/sav/SAVPartsEditor';
@@ -32,9 +32,11 @@ export default function SAVDetail() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [privateComments, setPrivateComments] = useState('');
   const [savingComments, setSavingComments] = useState(false);
-  const { cases, loading } = useSAVCases();
+  const { cases, loading, updateTechnicianComments } = useSAVCases();
   const { shop } = useShop();
   const [savCase, setSavCase] = useState<any>(null);
+  const [technicianComments, setTechnicianComments] = useState('');
+  const [savingTechnicianComments, setSavingTechnicianComments] = useState(false);
 
   useEffect(() => {
     if (cases && id) {
@@ -43,6 +45,10 @@ export default function SAVDetail() {
       // Charger les commentaires privés
       if (foundCase?.private_comments) {
         setPrivateComments(foundCase.private_comments);
+      }
+      // Charger les commentaires technicien
+      if (foundCase?.technician_comments) {
+        setTechnicianComments(foundCase.technician_comments);
       }
     }
   }, [cases, id]);
@@ -73,6 +79,10 @@ export default function SAVDetail() {
             // Mettre à jour les commentaires privés si ils ont changé
             if (payload.new.private_comments !== undefined) {
               setPrivateComments(payload.new.private_comments || '');
+            }
+            // Mettre à jour les commentaires technicien si ils ont changé
+            if (payload.new.technician_comments !== undefined) {
+              setTechnicianComments(payload.new.technician_comments || '');
             }
           }
         }
@@ -132,6 +142,22 @@ export default function SAVDetail() {
 
   const handleStatusUpdated = () => {
     // Plus besoin de refetch, le realtime se charge de la mise à jour
+  };
+
+  const saveTechnicianComments = async () => {
+    if (!savCase?.id) return;
+    
+    setSavingTechnicianComments(true);
+    try {
+      await updateTechnicianComments(savCase.id, technicianComments);
+      
+      // Mettre à jour l'état local
+      setSavCase({ ...savCase, technician_comments: technicianComments });
+    } catch (error) {
+      // L'erreur est déjà gérée dans le hook
+    } finally {
+      setSavingTechnicianComments(false);
+    }
   };
 
   const savePrivateComments = async () => {
@@ -460,6 +486,40 @@ export default function SAVDetail() {
                   </Card>
                 </div>
               )}
+
+              {/* Technician Comments - Visible to all */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <MessageSquare className="h-5 w-5" />
+                    Commentaire technicien
+                  </CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    Commentaire visible par le client et imprimé sur le bon de restitution.
+                  </p>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <Label htmlFor="technician-comments">Commentaire pour le client</Label>
+                    <Textarea
+                      id="technician-comments"
+                      placeholder="Décrivez l'intervention réalisée, les problèmes rencontrés ou les recommandations pour le client..."
+                      value={technicianComments}
+                      onChange={(e) => setTechnicianComments(e.target.value)}
+                      rows={4}
+                      className="mt-2"
+                    />
+                  </div>
+                  <Button 
+                    onClick={saveTechnicianComments}
+                    disabled={savingTechnicianComments}
+                    size="sm"
+                  >
+                    <Save className="h-4 w-4 mr-2" />
+                    {savingTechnicianComments ? 'Sauvegarde...' : 'Sauvegarder le commentaire'}
+                  </Button>
+                </CardContent>
+              </Card>
 
               {/* Private Comments - Only visible to shop staff */}
               <Card>

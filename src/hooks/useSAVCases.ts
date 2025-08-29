@@ -16,6 +16,7 @@ export interface SAVCase {
   problem_description: string;
   repair_notes?: string;
   private_comments?: string;
+  technician_comments?: string;
   total_time_minutes: number;
   total_cost: number;
   created_at: string;
@@ -217,11 +218,36 @@ export function useSAVCases() {
     }
   };
 
+  const updateTechnicianComments = async (caseId: string, comments: string) => {
+    try {
+      const { error } = await supabase
+        .from('sav_cases')
+        .update({ technician_comments: comments })
+        .eq('id', caseId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Succès",
+        description: "Commentaires technicien mis à jour",
+      });
+
+      fetchCases();
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
   return {
     cases,
     loading,
     createCase,
     updateCaseStatus,
+    updateTechnicianComments,
     deleteCase,
     refetch: fetchCases,
   };

@@ -587,6 +587,7 @@ export type Database = {
           taken_over: boolean
           taken_over_at: string | null
           takeover_amount: number | null
+          technician_comments: string | null
           technician_id: string | null
           total_cost: number | null
           total_time_minutes: number | null
@@ -616,6 +617,7 @@ export type Database = {
           taken_over?: boolean
           taken_over_at?: string | null
           takeover_amount?: number | null
+          technician_comments?: string | null
           technician_id?: string | null
           total_cost?: number | null
           total_time_minutes?: number | null
@@ -645,6 +647,7 @@ export type Database = {
           taken_over?: boolean
           taken_over_at?: string | null
           takeover_amount?: number | null
+          technician_comments?: string | null
           technician_id?: string | null
           total_cost?: number | null
           total_time_minutes?: number | null

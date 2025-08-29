@@ -709,7 +709,18 @@ export const generateSAVRestitutionPDF = async (savCase: SAVCase, shop?: Shop) =
               </p>
             </div>
           ` : ''}
-        </div>
+         </div>
+
+        ${savCase.technician_comments ? `
+          <div class="technician-comments">
+            <h4 style="color: #0066cc; border-bottom: 1px solid #0066cc; padding-bottom: 5px; margin: 20px 0 10px 0;">
+              Commentaires technicien
+            </h4>
+            <div style="background-color: #f8f9fa; padding: 15px; border-left: 4px solid #0066cc; border-radius: 3px; margin-bottom: 20px;">
+              <p style="margin: 0; white-space: pre-wrap; line-height: 1.4;">${savCase.technician_comments}</p>
+            </div>
+          </div>
+        ` : ''}
 
         <div class="signature-section">
           <div class="signature-box">
