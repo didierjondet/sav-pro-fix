@@ -56,7 +56,7 @@ export function useSubscription() {
         if (shopData?.subscription_plan_id) {
           const planRes = await (supabase as any)
             .from('subscription_plans')
-            .select('name, sms_limit, sav_limit, monthly_price')
+            .select('name, sms_limit, sms_cost, sav_limit, monthly_price')
             .eq('id', shopData.subscription_plan_id)
             .single();
           plan = planRes.data;
