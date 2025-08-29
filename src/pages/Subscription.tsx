@@ -36,16 +36,14 @@ export default function Subscription() {
     const fetchPlans = async () => {
       try {
         setPlansLoading(true);
-        console.log('🔄 FORCER le rechargement des plans depuis superuser...');
+        console.log('🔄 RECHARGEMENT des plans d\'abonnement...');
         
-        // FORCER le rechargement sans cache avec timestamp unique
-        const timestamp = Date.now();
+        // Requête directe sans cache avec headers spécifiques
         const { data: dbPlans, error } = await supabase
           .from('subscription_plans')
-          .select('*')
+          .select('id, name, monthly_price, sms_limit, sav_limit, features, billing_interval, stripe_price_id, contact_only, is_active')
           .eq('is_active', true)
           .order('monthly_price')
-          .limit(1000) // Assurer une nouvelle requête
         
         if (error) {
           console.error('❌ ERREUR chargement plans:', error);
@@ -187,9 +185,18 @@ export default function Subscription() {
               <h1 className="text-3xl font-bold">Abonnement MySAV</h1>
               <p className="text-muted-foreground">Gérez votre abonnement et consultez votre utilisation</p>
             </div>
-            {subscription?.subscribed && <Button onClick={openCustomerPortal} variant="outline">
-                Gérer l'abonnement
-              </Button>}
+            <div className="flex gap-2">
+              <Button 
+                onClick={() => window.location.reload()} 
+                variant="outline" 
+                size="sm"
+              >
+                🔄 Actualiser les Prix
+              </Button>
+              {subscription?.subscribed && <Button onClick={openCustomerPortal} variant="outline">
+                  Gérer l'abonnement
+                </Button>}
+            </div>
           </div>
 
           {subscription && currentPlan && <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
