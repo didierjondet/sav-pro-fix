@@ -44,6 +44,33 @@ export function PartsSelection({ selectedParts, onPartsChange, savCaseId }: Part
   const addPart = (part: Part) => {
     const existingPart = selectedParts.find(p => p.part_id === part.id);
     
+    // Permettre l'ajout même avec stock à zéro
+    if (part.quantity === 0) {
+      if (existingPart) {
+        const updatedParts = selectedParts.map(p =>
+          p.part_id === part.id ? { ...p, quantity: p.quantity + 1 } : p
+        );
+        onPartsChange(updatedParts);
+      } else {
+        const newPart: SelectedPart = {
+          part_id: part.id,
+          part_name: part.name,
+          part_reference: part.reference,
+          quantity: 1,
+          time_minutes: 0,
+          unit_price: part.selling_price || 0,
+          available_stock: part.quantity,
+          attachments: [],
+        };
+        onPartsChange([...selectedParts, newPart]);
+      }
+      
+      // Afficher une notification pour le stock zéro
+      checkStockAndCreateAlerts(part);
+      setSearchTerm('');
+      return;
+    }
+    
     if (existingPart) {
       // Increment quantity
       const updatedParts = selectedParts.map(p =>
@@ -162,7 +189,7 @@ export function PartsSelection({ selectedParts, onPartsChange, savCaseId }: Part
                     </div>
                     <div className="flex items-center gap-2">
                       <Badge variant={part.quantity === 0 ? 'destructive' : part.quantity <= 5 ? 'default' : 'secondary'}>
-                        Stock: {part.quantity}
+                        {part.quantity === 0 ? 'À commander' : `Stock: ${part.quantity}`}
                       </Badge>
                       <Button size="sm" variant="outline">
                         <Plus className="h-3 w-3" />

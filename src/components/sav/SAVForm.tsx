@@ -246,6 +246,20 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
       
         // Sauvegarder les pièces sélectionnées avec leurs remises
         if (selectedParts.length > 0) {
+          // Identifier les pièces avec stock insuffisant
+          const partsWithInsufficientStock = selectedParts
+            .filter(part => !part.isCustom && part.part_id)
+            .map(part => {
+              const stockPart = parts.find(p => p.id === part.part_id);
+              const availableStock = stockPart ? Math.max(0, (stockPart.quantity || 0) - (stockPart.reserved_quantity || 0)) : 0;
+              return {
+                ...part,
+                availableStock,
+                missingQuantity: Math.max(0, part.quantity - availableStock)
+              };
+            })
+            .filter(part => part.missingQuantity > 0);
+
           const partsToInsert = selectedParts.map(part => ({
             sav_case_id: newCase.id,
             part_id: part.isCustom ? null : part.part_id,
@@ -268,6 +282,39 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
             description: "Le SAV a été créé mais certaines pièces n'ont pas été sauvegardées",
             variant: "destructive",
           });
+        } else {
+          // Créer automatiquement des commandes pour les pièces avec stock insuffisant
+          if (partsWithInsufficientStock.length > 0) {
+            const ordersToInsert = partsWithInsufficientStock.map(part => ({
+              shop_id: profile?.shop_id,
+              sav_case_id: newCase.id,
+              part_id: part.part_id,
+              part_name: part.name,
+              part_reference: part.reference,
+              quantity_needed: part.missingQuantity,
+              reason: 'sav_stock_insufficient',
+              priority: 'high'
+            }));
+
+            const { error: ordersError } = await supabase
+              .from('order_items')
+              .insert(ordersToInsert);
+
+            if (ordersError) {
+              console.error('Error creating orders:', ordersError);
+            }
+
+            // Changer le statut du SAV à "parts_ordered"
+            await supabase
+              .from('sav_cases')
+              .update({ status: 'parts_ordered' })
+              .eq('id', newCase.id);
+
+            toast({
+              title: "Pièces à commander détectées",
+              description: `${partsWithInsufficientStock.length} pièce(s) ajoutée(s) aux commandes. Statut changé en "Pièces commandées".`,
+            });
+          }
         }
       }
       

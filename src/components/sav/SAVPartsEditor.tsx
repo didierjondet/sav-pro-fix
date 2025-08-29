@@ -96,27 +96,25 @@ export function SAVPartsEditor({ savCaseId, onPartsUpdated, trigger }: SAVPartsE
     // Calculer le stock disponible
     const availableStock = Math.max(0, (part.quantity || 0) - (part.reserved_quantity || 0));
     
-    // Vérifier si on peut ajouter cette pièce
+    // Permettre l'ajout même avec stock à zéro
     if (availableStock === 0) {
       toast({
-        title: "Stock insuffisant",
-        description: "Cette pièce n'est plus disponible en stock",
-        variant: "destructive",
+        title: "Stock à zéro",
+        description: "Cette pièce sera automatiquement commandée lors de la validation",
+        variant: "default",
       });
-      return;
     }
     
     const existingPart = savParts.find(p => p.part_id === part.id && !p.isCustom);
     
     if (existingPart) {
-      // Vérifier si on peut incrémenter la quantité
-      if (existingPart.quantity >= availableStock) {
+      // Permettre l'incrémentation même si stock insuffisant
+      if (existingPart.quantity >= availableStock && availableStock > 0) {
         toast({
           title: "Stock insuffisant",
-          description: `Stock disponible : ${availableStock}`,
-          variant: "destructive",
+          description: `Stock disponible : ${availableStock}. La pièce sera commandée automatiquement.`,
+          variant: "default",
         });
-        return;
       }
       
       // Incrémenter la quantité si la pièce existe déjà
@@ -168,6 +166,11 @@ export function SAVPartsEditor({ savCaseId, onPartsUpdated, trigger }: SAVPartsE
   const saveParts = async () => {
     setLoading(true);
     try {
+      // Identifier les pièces avec stock zéro
+      const partsWithZeroStock = savParts.filter(part => 
+        part.part_id && part.available_stock !== undefined && part.available_stock < part.quantity
+      );
+
       // Supprimer toutes les pièces existantes du dossier SAV
       const { error: deleteError } = await supabase
         .from('sav_parts')
@@ -194,6 +197,43 @@ const partsToInsert = savParts.map(part => ({
         if (insertError) throw insertError;
       }
 
+      // Créer automatiquement des commandes pour les pièces à stock insuffisant
+      if (partsWithZeroStock.length > 0) {
+        const { data: shopData } = await supabase
+          .from('sav_cases')
+          .select('shop_id')
+          .eq('id', savCaseId)
+          .single();
+
+        if (shopData) {
+          const ordersToInsert = partsWithZeroStock.map(part => {
+            const missingQuantity = Math.max(0, part.quantity - (part.available_stock || 0));
+            return {
+              shop_id: shopData.shop_id,
+              sav_case_id: savCaseId,
+              part_id: part.part_id,
+              part_name: part.part_name,
+              part_reference: part.part_reference,
+              quantity_needed: missingQuantity,
+              reason: 'sav_stock_insufficient',
+              priority: 'high'
+            };
+          }).filter(order => order.quantity_needed > 0);
+
+          if (ordersToInsert.length > 0) {
+            await supabase
+              .from('order_items')
+              .insert(ordersToInsert);
+          }
+        }
+
+        // Changer automatiquement le statut du SAV à "parts_ordered"
+        await supabase
+          .from('sav_cases')
+          .update({ status: 'parts_ordered' })
+          .eq('id', savCaseId);
+      }
+
       // Calculer et mettre à jour le coût total du dossier SAV
       const totalCost = savParts.reduce((acc, part) => acc + (part.quantity * part.unit_price), 0);
       const totalTime = savParts.reduce((acc, part) => acc + part.time_minutes, 0);
@@ -210,7 +250,9 @@ const partsToInsert = savParts.map(part => ({
 
       toast({
         title: "Succès",
-        description: "Les pièces ont été mises à jour avec succès",
+        description: partsWithZeroStock.length > 0 
+          ? `Les pièces ont été mises à jour. ${partsWithZeroStock.length} pièce(s) ajoutée(s) aux commandes et statut changé en "Pièces commandées".`
+          : "Les pièces ont été mises à jour avec succès",
       });
 
       setOpen(false);
@@ -319,7 +361,7 @@ const partsToInsert = savParts.map(part => ({
                             </>
                           );
                         })()}
-                        <Button size="sm" variant="outline" disabled={Math.max(0, (part.quantity || 0) - (part.reserved_quantity || 0)) === 0}>
+                        <Button size="sm" variant="outline">
                           <Plus className="h-3 w-3" />
                         </Button>
                       </div>
