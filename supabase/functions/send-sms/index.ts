@@ -29,11 +29,28 @@ function formatPhoneNumber(phoneNumber: string): string {
   let cleaned = phoneNumber.replace(/[\s\-\(\)\.]/g, '');
   console.log('📱 Après nettoyage:', cleaned, 'longueur:', cleaned.length);
   
-  // Si le numéro commence par 0 et fait 10 chiffres (format français)
+  // Si le numéro commence par 0 et fait 10 chiffres (format français standard)
   if (cleaned.startsWith('0') && cleaned.length === 10) {
     const formatted = '+33' + cleaned.substring(1);
-    console.log('📱 Format français détecté, résultat:', formatted);
+    console.log('📱 Format français standard détecté, résultat:', formatted);
     return formatted;
+  }
+  
+  // Si le numéro commence par 0 et fait 11 chiffres (cas avec chiffre en trop)
+  if (cleaned.startsWith('0') && cleaned.length === 11) {
+    // Vérifier si c'est un mobile français (06, 07)
+    if (cleaned.startsWith('06') || cleaned.startsWith('07')) {
+      // Prendre les 10 premiers chiffres et convertir
+      const truncated = cleaned.substring(0, 10);
+      const formatted = '+33' + truncated.substring(1);
+      console.log('📱 Format français 11 chiffres (mobile) détecté, tronqué et converti:', formatted);
+      return formatted;
+    } else {
+      // Pour les autres préfixes (01, 02, 03, 04, 05, 08, 09)
+      const formatted = '+33' + cleaned.substring(1, 10);
+      console.log('📱 Format français 11 chiffres (fixe) détecté, tronqué et converti:', formatted);
+      return formatted;
+    }
   }
   
   // Si le numéro commence déjà par +33
