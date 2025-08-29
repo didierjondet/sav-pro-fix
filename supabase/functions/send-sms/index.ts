@@ -23,27 +23,36 @@ interface SMSRequest {
 }
 
 function formatPhoneNumber(phoneNumber: string): string {
+  console.log('📱 Formatage numéro - Input:', phoneNumber);
+  
   // Nettoie le numéro (supprime espaces, tirets, etc.)
   let cleaned = phoneNumber.replace(/[\s\-\(\)\.]/g, '');
+  console.log('📱 Après nettoyage:', cleaned, 'longueur:', cleaned.length);
   
   // Si le numéro commence par 0 et fait 10 chiffres (format français)
   if (cleaned.startsWith('0') && cleaned.length === 10) {
-    // Convertit au format international français
-    return '+33' + cleaned.substring(1);
+    const formatted = '+33' + cleaned.substring(1);
+    console.log('📱 Format français détecté, résultat:', formatted);
+    return formatted;
   }
   
   // Si le numéro commence déjà par +33
   if (cleaned.startsWith('+33')) {
+    console.log('📱 Déjà au format +33, résultat:', cleaned);
     return cleaned;
   }
   
   // Si le numéro commence par 33 sans le +
   if (cleaned.startsWith('33') && cleaned.length === 11) {
-    return '+' + cleaned;
+    const formatted = '+' + cleaned;
+    console.log('📱 Format 33 sans +, résultat:', formatted);
+    return formatted;
   }
   
-  // Pour les autres formats, on assume que c'est déjà correct
-  return cleaned.startsWith('+') ? cleaned : '+' + cleaned;
+  // Pour les autres formats, ajouter + si manquant
+  const formatted = cleaned.startsWith('+') ? cleaned : '+' + cleaned;
+  console.log('📱 Autre format, résultat:', formatted);
+  return formatted;
 }
 
 async function sendTwilioSMS(to: string, body: string): Promise<any> {
