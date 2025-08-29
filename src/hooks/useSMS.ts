@@ -29,6 +29,12 @@ export function useSMS() {
     setLoading(true);
 
     try {
+      console.log('Envoi SMS - Données:', {
+        shopId: profile.shop_id,
+        toNumber: request.toNumber,
+        type: request.type
+      });
+
       const { data, error } = await supabase.functions.invoke('send-sms', {
         body: {
           shopId: profile.shop_id,
@@ -39,11 +45,15 @@ export function useSMS() {
         },
       });
 
+      console.log('Réponse fonction SMS:', { data, error });
+
       if (error) {
-        throw new Error(error.message);
+        console.error('Erreur fonction SMS:', error);
+        throw new Error(`Erreur technique: ${error.message}`);
       }
 
       if (!data?.success) {
+        console.error('Échec SMS:', data);
         throw new Error(data?.error || 'Erreur lors de l\'envoi du SMS');
       }
 
