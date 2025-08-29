@@ -72,10 +72,10 @@ async function sendTwilioSMS(to: string, body: string): Promise<any> {
 }
 
 async function checkSMSCredits(shopId: string): Promise<boolean> {
-  // Vérifier les crédits SMS de la boutique avec plan + packages SMS + limite personnalisée
+  // Vérifier les crédits SMS de la boutique avec plan + packages SMS
   const { data: shop, error } = await supabase
     .from('shops')
-    .select('sms_credits_used, sms_credits_allocated, subscription_forced, subscription_tier, custom_sms_limit')
+    .select('sms_credits_used, sms_credits_allocated, subscription_forced, subscription_tier')
     .eq('id', shopId)
     .single();
 
@@ -102,15 +102,10 @@ async function checkSMSCredits(shopId: string): Promise<boolean> {
 
   const packagedSMS = packages?.reduce((total, pkg) => total + pkg.sms_count, 0) || 0;
   
-  // Total disponible = limite du plan + limite custom + SMS achetés via packages
-  let totalSMSAvailable = shop.sms_credits_allocated + packagedSMS;
+  // Total disponible = limite du plan + SMS achetés via packages
+  const totalSMSAvailable = shop.sms_credits_allocated + packagedSMS;
   
-  // Ajouter la limite personnalisée si elle existe
-  if (shop.custom_sms_limit) {
-    totalSMSAvailable += shop.custom_sms_limit;
-  }
-  
-  console.log(`Vérification SMS: ${shop.sms_credits_used}/${totalSMSAvailable} (plan: ${shop.sms_credits_allocated}, custom: ${shop.custom_sms_limit || 0}, packages: ${packagedSMS})`);
+  console.log(`Vérification SMS: ${shop.sms_credits_used}/${totalSMSAvailable} (plan: ${shop.sms_credits_allocated}, packages: ${packagedSMS})`);
   
   return shop.sms_credits_used < totalSMSAvailable;
 }
