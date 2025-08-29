@@ -75,6 +75,7 @@ export default function Settings() {
   const [showStockImport, setShowStockImport] = useState(false);
   const [showQuotesImport, setShowQuotesImport] = useState(false);
   const [showSAVsImport, setShowSAVsImport] = useState(false);
+  const [plans, setPlans] = useState<any[]>([]);
 
   // Local state for form data
   const [shopForm, setShopForm] = useState({
@@ -97,6 +98,7 @@ export default function Settings() {
   useEffect(() => {
     if (user) {
       fetchProfiles();
+      fetchPlans();
     }
   }, [user]);
   useEffect(() => {
@@ -143,6 +145,24 @@ export default function Settings() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchPlans = async () => {
+    try {
+      const { data: dbPlans, error } = await supabase
+        .from('subscription_plans')
+        .select('id, name, monthly_price, sms_limit, sav_limit, features, billing_interval, stripe_price_id, contact_only, is_active')
+        .eq('is_active', true)
+        .order('monthly_price');
+
+      if (error) throw error;
+
+      if (dbPlans && dbPlans.length > 0) {
+        setPlans(dbPlans);
+      }
+    } catch (error: any) {
+      console.error('Erreur lors du chargement des plans:', error);
     }
   };
   const handleSaveShop = async () => {
@@ -1113,116 +1133,80 @@ export default function Settings() {
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {/* Plan Gratuit */}
-                    <Card className={`relative ${!subscription?.subscribed && subscription?.subscription_tier === 'free' ? 'border-primary bg-primary/5' : ''}`}>
-                      {!subscription?.subscribed && subscription?.subscription_tier === 'free' && <Badge className="absolute -top-2 left-4 bg-primary">
-                          Plan Actuel
-                        </Badge>}
-                      <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                          <Star className="h-5 w-5" />
-                          Gratuit
-                        </CardTitle>
-                        <div className="text-3xl font-bold">0€<span className="text-sm font-normal text-muted-foreground">/mois</span></div>
-                      </CardHeader>
-                      <CardContent className="space-y-4">
-                        <div className="space-y-2">
-                          <div className="flex items-center gap-2 text-sm">
-                            <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                            5 SAV maximum
-                          </div>
-                          <div className="flex items-center gap-2 text-sm">
-                            <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                            15 SMS par mois
-                          </div>
-                          <div className="flex items-center gap-2 text-sm">
-                            <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                            Fonctionnalités de base
-                          </div>
-                        </div>
-                        <Button variant="outline" disabled className="w-full">
-                          Plan Gratuit
-                        </Button>
-                      </CardContent>
-                    </Card>
+                    {plans.map(plan => {
+                      const isCurrentPlan = subscription?.subscription_tier === plan.name.toLowerCase() || 
+                                           (plan.monthly_price === 0 && (!subscription?.subscribed || subscription?.subscription_tier === 'free'));
+                      
+                      // Déterminer l'icône basée sur le nom du plan  
+                      let PlanIcon = Star;
+                      const planNameLower = plan.name.toLowerCase();
+                      if (planNameLower.includes('premium')) {
+                        PlanIcon = Crown;
+                      } else if (planNameLower.includes('enterprise') || planNameLower.includes('sur mesure')) {
+                        PlanIcon = SettingsIcon;
+                      }
 
-                    {/* Plan Premium */}
-                    <Card className={`relative ${subscription?.subscription_tier === 'premium' ? 'border-primary bg-primary/5' : ''}`}>
-                      {subscription?.subscription_tier === 'premium' && <Badge className="absolute -top-2 left-4 bg-primary">
-                          Plan Actuel
-                        </Badge>}
-                      <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                          <Crown className="h-5 w-5" />
-                          Premium
-                        </CardTitle>
-                        <div className="text-3xl font-bold">29€<span className="text-sm font-normal text-muted-foreground">/mois</span></div>
-                      </CardHeader>
-                      <CardContent className="space-y-4">
-                        <div className="space-y-2">
-                          <div className="flex items-center gap-2 text-sm">
-                            <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                            50 SAV simultanés
-                          </div>
-                          <div className="flex items-center gap-2 text-sm">
-                            <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                            100 SMS par mois
-                          </div>
-                          <div className="flex items-center gap-2 text-sm">
-                            <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                            Support prioritaire
-                          </div>
-                          <div className="flex items-center gap-2 text-sm">
-                            <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                            Statistiques avancées
-                          </div>
-                        </div>
-                        {subscription?.subscription_tier === 'premium' ? <Button variant="outline" disabled className="w-full">
-                            Plan Actuel
-                          </Button> : <Button onClick={() => createCheckout('premium')} className="w-full">
-                            Passer au Premium
-                          </Button>}
-                      </CardContent>
-                    </Card>
-
-                    {/* Plan Enterprise */}
-                    <Card className={`relative ${subscription?.subscription_tier === 'enterprise' ? 'border-primary bg-primary/5' : ''}`}>
-                      {subscription?.subscription_tier === 'enterprise' && <Badge className="absolute -top-2 left-4 bg-primary">
-                          Plan Actuel
-                        </Badge>}
-                      <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                          <SettingsIcon className="h-5 w-5" />
-                          Enterprise
-                        </CardTitle>
-                        <div className="text-3xl font-bold">99€<span className="text-sm font-normal text-muted-foreground">/mois</span></div>
-                      </CardHeader>
-                      <CardContent className="space-y-4">
-                        <div className="space-y-2">
-                          <div className="flex items-center gap-2 text-sm">
-                            <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                            SAV illimités
-                          </div>
-                          <div className="flex items-center gap-2 text-sm">
-                            <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                            400 SMS par mois
-                          </div>
-                          <div className="flex items-center gap-2 text-sm">
-                            <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                            Support dédié
-                          </div>
-                          <div className="flex items-center gap-2 text-sm">
-                            <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                            Intégrations personnalisées
-                          </div>
-                        </div>
-                        {subscription?.subscription_tier === 'enterprise' ? <Button variant="outline" disabled className="w-full">
-                            Plan Actuel
-                          </Button> : <Button onClick={() => createCheckout('enterprise')} className="w-full">
-                            Passer à Enterprise
-                          </Button>}
-                      </CardContent>
-                    </Card>
+                      return (
+                        <Card key={plan.id} className={`relative ${isCurrentPlan ? 'border-primary bg-primary/5' : ''}`}>
+                          {isCurrentPlan && (
+                            <Badge className="absolute -top-2 left-4 bg-primary">
+                              Plan Actuel
+                            </Badge>
+                          )}
+                          <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                              <PlanIcon className="h-5 w-5" />
+                              {plan.name}
+                            </CardTitle>
+                            <div className="text-3xl font-bold">
+                              {plan.monthly_price === 0 ? 'Gratuit' : `${Number(plan.monthly_price).toFixed(0)}€`}
+                              <span className="text-sm font-normal text-muted-foreground">
+                                {plan.monthly_price > 0 ? (plan.billing_interval === 'year' ? '/an' : '/mois') : ''}
+                              </span>
+                            </div>
+                          </CardHeader>
+                          <CardContent className="space-y-4">
+                            <div className="space-y-2">
+                              <div className="flex items-center gap-2 text-sm">
+                                <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                                {plan.sav_limit === null ? 'SAV illimités' : `${plan.sav_limit} SAV ${plan.sav_limit > 5 ? 'simultanés' : 'maximum'}`}
+                              </div>
+                              <div className="flex items-center gap-2 text-sm">
+                                <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                                {plan.sms_limit} SMS par mois
+                              </div>
+                              {Array.isArray(plan.features) && plan.features.map((feature, index) => (
+                                <div key={index} className="flex items-center gap-2 text-sm">
+                                  <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                                  {feature}
+                                </div>
+                              ))}
+                            </div>
+                            
+                            {plan.monthly_price === 0 ? (
+                              <Button variant="outline" disabled className="w-full">
+                                Plan Gratuit
+                              </Button>
+                            ) : isCurrentPlan ? (
+                              <Button variant="outline" disabled className="w-full">
+                                Plan Actuel
+                              </Button>
+                            ) : plan.contact_only ? (
+                              <Button 
+                                onClick={() => window.location.href = `mailto:contact@fixway.fr?subject=Demande de contact pour le plan ${plan.name}&body=Bonjour,%0D%0A%0D%0AJe souhaite obtenir plus d'informations sur le plan ${plan.name}.%0D%0A%0D%0ACordialement`}
+                                className="w-full"
+                              >
+                                Nous contacter
+                              </Button>
+                            ) : (
+                              <Button onClick={() => createCheckout(plan.name.toLowerCase() as 'premium' | 'enterprise')} className="w-full">
+                                Passer à {plan.name}
+                              </Button>
+                            )}
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
                   </div>
                 </CardContent>
               </Card>
