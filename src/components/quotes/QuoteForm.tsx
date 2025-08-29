@@ -7,13 +7,18 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { useParts } from '@/hooks/useParts';
-import { Search, Plus, Trash2, ArrowLeft } from 'lucide-react';
+import { Search, Plus, Trash2, ArrowLeft, AlertCircle, CheckCircle } from 'lucide-react';
 import { QuoteItem, Quote } from '@/hooks/useQuotes';
 import { CustomerSearch } from '@/components/customers/CustomerSearch';
 import { FileUpload } from '@/components/parts/FileUpload';
 import { PartDiscountManager, PartDiscountInfo } from '@/components/ui/part-discount-manager';
 import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { validateFrenchPhoneNumber, formatPhoneInput } from '@/utils/phoneValidation';
+import { useCustomers } from '@/hooks/useCustomers';
+import { useProfile } from '@/hooks/useProfile';
+import { useToast } from '@/hooks/use-toast';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface QuoteFormProps {
   onSubmit: (data: any) => Promise<{ data: any; error: any }>;
@@ -25,12 +30,20 @@ interface QuoteFormProps {
 
 export function QuoteForm({ onSubmit, onCancel, initialQuote, submitLabel, title }: QuoteFormProps) {
   const { parts } = useParts();
+  const { customers, createCustomer } = useCustomers();
+  const { profile } = useProfile();
+  const { toast } = useToast();
+  
   const [customerInfo, setCustomerInfo] = useState({ firstName: '', lastName: '', email: '', phone: '', address: '' });
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
   const [notes, setNotes] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedItems, setSelectedItems] = useState<QuoteItem[]>([]);
   const [deviceInfo, setDeviceInfo] = useState({ brand: '', model: '', imei: '', sku: '', problemDescription: '', attachments: [] as string[] });
+  
+  // États pour validation téléphone et détection doublons
+  const [phoneValidation, setPhoneValidation] = useState({ isValid: true, message: '' });
+  const [duplicateWarning, setDuplicateWarning] = useState<string | null>(null);
 
   useEffect(() => {
     if (initialQuote) {
@@ -56,6 +69,108 @@ export function QuoteForm({ onSubmit, onCancel, initialQuote, submitLabel, title
       setSelectedCustomerId(null);
     }
   }, [initialQuote]);
+  
+  // Validation du numéro de téléphone en temps réel
+  useEffect(() => {
+    if (customerInfo.phone.trim()) {
+      const validation = validateFrenchPhoneNumber(customerInfo.phone);
+      setPhoneValidation({
+        isValid: validation.isValid,
+        message: validation.message
+      });
+    } else {
+      setPhoneValidation({ isValid: true, message: '' });
+    }
+  }, [customerInfo.phone]);
+
+  // Détection de doublons en temps réel
+  useEffect(() => {
+    const checkDuplicates = async () => {
+      if (!customerInfo.firstName.trim() || !customerInfo.lastName.trim()) {
+        setDuplicateWarning(null);
+        return;
+      }
+
+      // Ne pas vérifier si un client est déjà sélectionné
+      if (selectedCustomerId) {
+        setDuplicateWarning(null);
+        return;
+      }
+
+      const nameMatch = customers.find(customer => 
+        customer.first_name.toLowerCase().trim() === customerInfo.firstName.toLowerCase().trim() &&
+        customer.last_name.toLowerCase().trim() === customerInfo.lastName.toLowerCase().trim()
+      );
+
+      if (nameMatch) {
+        setDuplicateWarning(`Un client avec le nom "${customerInfo.firstName} ${customerInfo.lastName}" existe déjà.`);
+      } else if (customerInfo.email.trim()) {
+        const emailMatch = customers.find(customer => 
+          customer.email && customer.email.toLowerCase().trim() === customerInfo.email.toLowerCase().trim()
+        );
+        
+        if (emailMatch) {
+          setDuplicateWarning(`Un client avec l'email "${customerInfo.email}" existe déjà.`);
+        } else {
+          setDuplicateWarning(null);
+        }
+      } else {
+        setDuplicateWarning(null);
+      }
+    };
+
+    // Debounce la vérification pour éviter trop d'appels
+    const timer = setTimeout(checkDuplicates, 500);
+    return () => clearTimeout(timer);
+  }, [customerInfo.firstName, customerInfo.lastName, customerInfo.email, customers, selectedCustomerId]);
+
+  // Fonction pour créer automatiquement le client lors de l'acceptation du devis
+  const createCustomerFromQuote = async (quoteData: any) => {
+    if (!profile?.shop_id) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de déterminer la boutique",
+        variant: "destructive",
+      });
+      return null;
+    }
+
+    // Vérifier si le client existe déjà
+    const existingCustomer = customers.find(customer => 
+      customer.first_name.toLowerCase().trim() === customerInfo.firstName.toLowerCase().trim() &&
+      customer.last_name.toLowerCase().trim() === customerInfo.lastName.toLowerCase().trim()
+    );
+
+    if (existingCustomer) {
+      // Le client existe déjà, ne pas le recréer
+      return existingCustomer;
+    }
+
+    // Créer le nouveau client
+    const customerData = {
+      first_name: customerInfo.firstName.trim(),
+      last_name: customerInfo.lastName.trim(),
+      email: customerInfo.email.trim() || undefined,
+      phone: customerInfo.phone.trim() || undefined,
+      address: customerInfo.address.trim() || undefined,
+      shop_id: profile.shop_id
+    };
+
+    const { data: newCustomer, error } = await createCustomer(customerData);
+    
+    if (error) {
+      console.error('Erreur lors de la création du client:', error);
+      return null;
+    }
+
+    return newCustomer;
+  };
+
+  // Fonction pour gérer le changement du téléphone avec formatage automatique
+  const handlePhoneChange = (value: string) => {
+    const formattedPhone = formatPhoneInput(value);
+    setCustomerInfo({ ...customerInfo, phone: formattedPhone });
+  };
   const filteredParts = parts.filter(part =>
     multiWordSearch(searchTerm, part.name, part.reference)
   );
@@ -202,13 +317,42 @@ const updateUnitPurchasePrice = (partId: string, unitPrice: number) => {
     e.preventDefault();
     
     if (!customerInfo.firstName.trim() || !customerInfo.lastName.trim()) {
-      alert('Le nom et prénom du client sont requis');
+      toast({
+        title: "Informations manquantes",
+        description: "Le nom et prénom du client sont requis",
+        variant: "destructive",
+      });
       return;
     }
 
     if (selectedItems.length === 0) {
-      alert('Veuillez ajouter au moins une pièce au devis');
+      toast({
+        title: "Devis incomplet",
+        description: "Veuillez ajouter au moins une pièce au devis",
+        variant: "destructive",
+      });
       return;
+    }
+
+    // Validation du numéro de téléphone si fourni
+    if (customerInfo.phone.trim()) {
+      const phoneValidationResult = validateFrenchPhoneNumber(customerInfo.phone);
+      if (!phoneValidationResult.isValid) {
+        toast({
+          title: "Numéro de téléphone invalide",
+          description: phoneValidationResult.message,
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
+    // Avertissement si un doublon est détecté mais permettre la soumission
+    if (duplicateWarning) {
+      const userConfirmed = confirm(`⚠️ ${duplicateWarning}\n\nVoulez-vous continuer malgré tout ?`);
+      if (!userConfirmed) {
+        return;
+      }
     }
 
     const { error } = await onSubmit({
@@ -228,6 +372,11 @@ const updateUnitPurchasePrice = (partId: string, unitPrice: number) => {
     });
 
     if (!error) {
+      // Si le devis est accepté, le client sera automatiquement créé par le trigger de la DB
+      toast({
+        title: "Succès",
+        description: initialQuote ? "Devis mis à jour avec succès" : "Devis créé avec succès",
+      });
       onCancel();
     }
   };
@@ -289,10 +438,32 @@ const updateUnitPurchasePrice = (partId: string, unitPrice: number) => {
                 <Input
                   id="customerPhone"
                   value={customerInfo.phone}
-                  onChange={(e) => setCustomerInfo({ ...customerInfo, phone: e.target.value })}
+                  onChange={(e) => handlePhoneChange(e.target.value)}
+                  placeholder="Ex: 06.12.34.56.78 ou +33 6 12 34 56 78"
+                  className={!phoneValidation.isValid ? 'border-destructive' : ''}
                 />
+                {phoneValidation.message && (
+                  <div className={`flex items-center gap-1 mt-1 text-sm ${phoneValidation.isValid ? 'text-green-600' : 'text-destructive'}`}>
+                    {phoneValidation.isValid ? (
+                      <CheckCircle className="h-3 w-3" />
+                    ) : (
+                      <AlertCircle className="h-3 w-3" />
+                    )}
+                    {phoneValidation.message}
+                  </div>
+                )}
               </div>
             </div>
+            
+            {/* Alerte de doublons */}
+            {duplicateWarning && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  {duplicateWarning}
+                </AlertDescription>
+              </Alert>
+            )}
             <div>
               <Label htmlFor="notes">Notes (optionnel)</Label>
               <Textarea

@@ -4,7 +4,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, AlertCircle, CheckCircle } from 'lucide-react';
+import { validateFrenchPhoneNumber, formatPhoneInput } from '@/utils/phoneValidation';
+import { useEffect } from 'react';
 
 interface Customer {
   id?: string;
@@ -29,6 +31,28 @@ export function CustomerForm({ customer, onSubmit, onCancel, isEdit = false }: C
   const [phone, setPhone] = useState(customer?.phone || '');
   const [address, setAddress] = useState(customer?.address || '');
   const [loading, setLoading] = useState(false);
+  
+  // État pour validation téléphone
+  const [phoneValidation, setPhoneValidation] = useState({ isValid: true, message: '' });
+
+  // Validation du numéro de téléphone en temps réel
+  useEffect(() => {
+    if (phone.trim()) {
+      const validation = validateFrenchPhoneNumber(phone);
+      setPhoneValidation({
+        isValid: validation.isValid,
+        message: validation.message
+      });
+    } else {
+      setPhoneValidation({ isValid: true, message: '' });
+    }
+  }, [phone]);
+
+  // Fonction pour gérer le changement du téléphone avec formatage automatique
+  const handlePhoneChange = (value: string) => {
+    const formattedPhone = formatPhoneInput(value);
+    setPhone(formattedPhone);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,6 +60,15 @@ export function CustomerForm({ customer, onSubmit, onCancel, isEdit = false }: C
     if (!firstName.trim() || !lastName.trim()) {
       alert('Le prénom et le nom sont requis');
       return;
+    }
+
+    // Validation du numéro de téléphone si fourni
+    if (phone.trim()) {
+      const phoneValidationResult = validateFrenchPhoneNumber(phone);
+      if (!phoneValidationResult.isValid) {
+        alert(`Numéro de téléphone invalide: ${phoneValidationResult.message}`);
+        return;
+      }
     }
 
     setLoading(true);
@@ -109,8 +142,20 @@ export function CustomerForm({ customer, onSubmit, onCancel, isEdit = false }: C
                 <Input
                   id="phone"
                   value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
+                  onChange={(e) => handlePhoneChange(e.target.value)}
+                  placeholder="Ex: 06.12.34.56.78 ou +33 6 12 34 56 78"
+                  className={!phoneValidation.isValid ? 'border-red-500' : ''}
                 />
+                {phoneValidation.message && (
+                  <div className={`flex items-center gap-1 mt-1 text-sm ${phoneValidation.isValid ? 'text-green-600' : 'text-red-500'}`}>
+                    {phoneValidation.isValid ? (
+                      <CheckCircle className="h-3 w-3" />
+                    ) : (
+                      <AlertCircle className="h-3 w-3" />
+                    )}
+                    {phoneValidation.message}
+                  </div>
+                )}
               </div>
             </div>
 
