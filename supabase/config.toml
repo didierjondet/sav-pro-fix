@@ -50,3 +50,6 @@ verify_jwt = false
 
 [functions.get-message-photo]
 verify_jwt = false
+
+[functions.send-sms]
+verify_jwt = true
