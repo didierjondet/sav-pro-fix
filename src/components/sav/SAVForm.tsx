@@ -180,6 +180,27 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
     e.preventDefault();
     if (!user) return;
     
+    // Validation des coordonnées client pour les SAV client et externe
+    if ((savType === 'client' || savType === 'external')) {
+      if (!selectedCustomer && (!customerInfo.firstName.trim() || !customerInfo.lastName.trim())) {
+        toast({
+          title: "Informations manquantes",
+          description: "Le prénom et le nom du client sont obligatoires pour ce type de SAV.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      if (!selectedCustomer && !customerInfo.phone.trim() && !customerInfo.email.trim()) {
+        toast({
+          title: "Contact manquant",
+          description: "Au moins un moyen de contact (téléphone ou email) est requis.",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+    
     // Vérifier les limites SAV avant création avec popup
     if (!checkAndShowLimitDialog('sav')) {
       return; // Les limites sont atteintes, la popup s'affiche

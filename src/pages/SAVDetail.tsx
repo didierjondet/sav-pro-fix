@@ -299,7 +299,7 @@ export default function SAVDetail() {
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <User className="h-5 w-5" />
-                      {savCase.sav_type === 'client' ? 'Coordonnées du client' : 'Coordonnées du contact'}
+                      Coordonnées du client
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -308,48 +308,42 @@ export default function SAVDetail() {
                       <div>
                         <p className="text-sm text-muted-foreground">Nom complet</p>
                         <p className="font-medium">
-                          {savCase.sav_type === 'client' 
-                            ? `${savCase.customer?.first_name || ''} ${savCase.customer?.last_name || ''}`.trim()
-                            : savCase.external_contact_name || 'Contact externe'
-                          }
+                          {`${savCase.customer?.first_name || ''} ${savCase.customer?.last_name || ''}`.trim() || 'Non renseigné'}
                         </p>
                       </div>
                     </div>
                     
-                    {((savCase.sav_type === 'client' && savCase.customer?.email) || 
-                      (savCase.sav_type === 'external' && savCase.external_contact_email)) && (
+                    {savCase.customer?.email && (
                       <div className="flex items-center gap-2">
                         <Mail className="h-4 w-4 text-muted-foreground" />
                         <div>
                           <p className="text-sm text-muted-foreground">Email</p>
                           <p className="font-medium">
-                            {savCase.sav_type === 'client' ? savCase.customer?.email : savCase.external_contact_email}
+                            {savCase.customer?.email}
                           </p>
                         </div>
                       </div>
                     )}
                     
-                    {((savCase.sav_type === 'client' && savCase.customer?.phone) || 
-                      (savCase.sav_type === 'external' && savCase.external_contact_phone)) && (
+                    {savCase.customer?.phone && (
                       <div className="flex items-center gap-2">
                         <Phone className="h-4 w-4 text-muted-foreground" />
                         <div>
                           <p className="text-sm text-muted-foreground">Téléphone</p>
                           <p className="font-medium">
-                            {savCase.sav_type === 'client' ? savCase.customer?.phone : savCase.external_contact_phone}
+                            {savCase.customer?.phone}
                           </p>
                         </div>
                       </div>
                     )}
                     
-                    {((savCase.sav_type === 'client' && savCase.customer?.address) || 
-                      (savCase.sav_type === 'external' && savCase.external_contact_address)) && (
+                    {savCase.customer?.address && (
                       <div className="flex items-center gap-2">
                         <MapPin className="h-4 w-4 text-muted-foreground" />
                         <div>
                           <p className="text-sm text-muted-foreground">Adresse</p>
                           <p className="font-medium">
-                            {savCase.sav_type === 'client' ? savCase.customer?.address : savCase.external_contact_address}
+                            {savCase.customer?.address}
                           </p>
                         </div>
                       </div>
