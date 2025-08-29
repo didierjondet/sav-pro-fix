@@ -38,14 +38,14 @@ export default function Subscription() {
         setPlansLoading(true);
         console.log('🔄 FORCER le rechargement des plans depuis superuser...');
         
-        // FORCER le rechargement sans cache
+        // FORCER le rechargement sans cache avec timestamp unique
         const timestamp = Date.now();
         const { data: dbPlans, error } = await supabase
           .from('subscription_plans')
           .select('*')
           .eq('is_active', true)
           .order('monthly_price')
-          .limit(100); // Ajouter une limite pour forcer une nouvelle requête
+          .limit(1000) // Assurer une nouvelle requête
         
         if (error) {
           console.error('❌ ERREUR chargement plans:', error);
@@ -71,7 +71,7 @@ export default function Subscription() {
             return {
               id: planNameLower.replace(/\s+/g, '-'), // Normaliser l'ID
               name: plan.name,
-              price: plan.monthly_price === 0 ? 'Gratuit' : `${plan.monthly_price}€`,
+              price: plan.monthly_price === 0 ? 'Gratuit' : `${Number(plan.monthly_price).toFixed(0)}€`,
               period: plan.monthly_price > 0 ? (plan.billing_interval === 'year' ? '/an HT' : '/mois HT') : '',
               icon: planIcon,
               features: Array.isArray(plan.features) ? plan.features.map(f => String(f)) : [],
@@ -82,7 +82,8 @@ export default function Subscription() {
               contact_only: plan.contact_only || false,
               stripe_price_id: plan.stripe_price_id,
               original_name: plan.name, // Garder le nom original pour Stripe
-              db_id: plan.id
+              db_id: plan.id,
+              real_price: plan.monthly_price // Ajouter le prix brut pour debug
             };
           });
           
