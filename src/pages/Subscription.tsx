@@ -187,9 +187,14 @@ export default function Subscription() {
               <h1 className="text-3xl font-bold">Abonnement MySAV</h1>
               <p className="text-muted-foreground">Gérez votre abonnement et consultez votre utilisation</p>
             </div>
-            {subscription?.subscribed && <Button onClick={openCustomerPortal} variant="outline">
-                Gérer l'abonnement
-              </Button>}
+            <div className="flex gap-2">
+              <Button onClick={() => window.location.reload()} variant="outline" size="sm">
+                🔄 Actualiser Cache
+              </Button>
+              {subscription?.subscribed && <Button onClick={openCustomerPortal} variant="outline">
+                  Gérer l'abonnement
+                </Button>}
+            </div>
           </div>
 
           {subscription && currentPlan && <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
