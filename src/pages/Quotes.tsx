@@ -322,6 +322,7 @@ export default function Quotes() {
         device_imei: (cleanQuote as any).device_imei || null,
         sku: (cleanQuote as any).sku || null,
         problem_description: (cleanQuote as any).problem_description || `Créé depuis devis ${cleanQuote.quote_number}`,
+        repair_notes: `[DEVIS] Converti depuis le devis ${cleanQuote.quote_number}`,
         total_time_minutes: 0,
         total_cost: totalPublic,
         shop_id: shop?.id ?? null,
@@ -334,21 +335,88 @@ export default function Quotes() {
 
       const savCaseId = savResult.data.id;
 
-      // 4) Insérer les lignes pièces dans sav_parts (uniquement les pièces avec des IDs valides)
-      const partsToInsert = cleanQuote.items
-        .filter((it) => it.part_id !== null)
-        .map((it) => ({
-          sav_case_id: savCaseId,
-          part_id: it.part_id!,
-          quantity: it.quantity || 0,
-          time_minutes: 0,
-          unit_price: it.unit_public_price || 0,
-          purchase_price: it.unit_purchase_price ?? null,
-        }));
+      // 4) Traitement intelligent des pièces avec gestion du stock
+      const partsWithValidIds = cleanQuote.items.filter((it) => it.part_id !== null);
+      
+      if (partsWithValidIds.length > 0) {
+        // Récupérer les infos de stock pour toutes les pièces
+        const partIds = partsWithValidIds.map(it => it.part_id!);
+        const { data: partsStock, error: stockError } = await supabase
+          .from('parts')
+          .select('id, quantity, reserved_quantity')
+          .in('id', partIds);
 
-      if (partsToInsert.length > 0) {
-        const { error: partsError } = await supabase.from('sav_parts').insert(partsToInsert);
-        if (partsError) throw partsError;
+        if (stockError) throw stockError;
+
+        const partsStockMap = new Map(partsStock?.map(p => [p.id, p]) || []);
+        
+        const partsToInsert = [];
+        const ordersToInsert = [];
+
+        for (const item of partsWithValidIds) {
+          const stockInfo = partsStockMap.get(item.part_id!);
+          const availableStock = stockInfo ? (stockInfo.quantity - stockInfo.reserved_quantity) : 0;
+          const requestedQuantity = item.quantity || 0;
+
+          if (availableStock >= requestedQuantity) {
+            // Stock suffisant - insérer directement dans sav_parts
+            partsToInsert.push({
+              sav_case_id: savCaseId,
+              part_id: item.part_id!,
+              quantity: requestedQuantity,
+              time_minutes: 0,
+              unit_price: item.unit_public_price || 0,
+              purchase_price: item.unit_purchase_price ?? null,
+            });
+          } else {
+            // Stock insuffisant - créer une commande pour la quantité manquante
+            const missingQuantity = requestedQuantity - Math.max(0, availableStock);
+            
+            // Si il y a du stock partiel, l'ajouter au SAV
+            if (availableStock > 0) {
+              partsToInsert.push({
+                sav_case_id: savCaseId,
+                part_id: item.part_id!,
+                quantity: availableStock,
+                time_minutes: 0,
+                unit_price: item.unit_public_price || 0,
+                purchase_price: item.unit_purchase_price ?? null,
+              });
+            }
+
+            // Créer la commande pour la quantité manquante
+            ordersToInsert.push({
+              shop_id: shop?.id,
+              sav_case_id: savCaseId,
+              part_id: item.part_id!,
+               part_name: item.part_name || 'Pièce du devis',
+               part_reference: item.part_reference || '',
+              quantity_needed: missingQuantity,
+              reason: 'sav_from_quote_stock_insufficient',
+              priority: 'high'
+            });
+          }
+        }
+
+        // Insérer les pièces disponibles en stock
+        if (partsToInsert.length > 0) {
+          const { error: partsError } = await supabase.from('sav_parts').insert(partsToInsert);
+          if (partsError) throw partsError;
+        }
+
+        // Créer les commandes pour les pièces manquantes
+        if (ordersToInsert.length > 0) {
+          const { error: ordersError } = await supabase.from('order_items').insert(ordersToInsert);
+          if (ordersError) throw ordersError;
+
+          // Changer le statut du SAV à "parts_ordered" si des pièces sont en commande
+          const { error: statusError } = await supabase
+            .from('sav_cases')
+            .update({ status: 'parts_ordered' })
+            .eq('id', savCaseId);
+          
+          if (statusError) throw statusError;
+        }
       }
 
       // 5) Supprimer le devis après conversion
