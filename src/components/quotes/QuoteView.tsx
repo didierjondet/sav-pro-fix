@@ -168,25 +168,54 @@ export function QuoteView({ quote, isOpen, onClose, onDownloadPDF, onSendEmail, 
             <h3 className="text-lg font-semibold mb-3">Articles</h3>
             <div className="border rounded-lg overflow-hidden">
               <div className="grid grid-cols-12 gap-4 p-3 bg-muted/50 text-sm font-medium">
-                <div className="col-span-6">Article</div>
-                <div className="col-span-2 text-center">Quantité</div>
+                <div className="col-span-5">Article</div>
+                <div className="col-span-1 text-center">Qté</div>
                 <div className="col-span-2 text-right">Prix unitaire</div>
+                <div className="col-span-2 text-right">Remise</div>
                 <div className="col-span-2 text-right">Total</div>
               </div>
               
-              {quote.items.map((item, index) => (
-                <div key={index} className="grid grid-cols-12 gap-4 p-3 border-t text-sm">
-                  <div className="col-span-6">
-                    <div className="font-medium">{item.part_name}</div>
-                    {item.part_reference && (
-                      <div className="text-xs text-muted-foreground">Réf: {item.part_reference}</div>
-                    )}
+              {quote.items.map((item, index) => {
+                const originalPrice = item.unit_public_price;
+                const finalPrice = item.total_price / item.quantity;
+                const hasDiscount = item.discount && (item.discount.type === 'percentage' || item.discount.type === 'fixed');
+                const discountAmount = hasDiscount ? originalPrice - finalPrice : 0;
+                
+                return (
+                  <div key={index} className="grid grid-cols-12 gap-4 p-3 border-t text-sm">
+                    <div className="col-span-5">
+                      <div className="font-medium">{item.part_name}</div>
+                      {item.part_reference && (
+                        <div className="text-xs text-muted-foreground">Réf: {item.part_reference}</div>
+                      )}
+                    </div>
+                    <div className="col-span-1 text-center">{item.quantity}</div>
+                    <div className="col-span-2 text-right">
+                      {hasDiscount ? (
+                        <div>
+                          <div className="line-through text-muted-foreground text-xs">{originalPrice.toFixed(2)}€</div>
+                          <div className="font-medium">{finalPrice.toFixed(2)}€</div>
+                        </div>
+                      ) : (
+                        <div>{originalPrice.toFixed(2)}€</div>
+                      )}
+                    </div>
+                    <div className="col-span-2 text-right">
+                      {hasDiscount ? (
+                        <div className="text-red-600 font-medium">
+                          {item.discount?.type === 'percentage' 
+                            ? `-${item.discount.value}%`
+                            : `-${discountAmount.toFixed(2)}€`
+                          }
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground">-</span>
+                      )}
+                    </div>
+                    <div className="col-span-2 text-right font-medium">{item.total_price.toFixed(2)}€</div>
                   </div>
-                  <div className="col-span-2 text-center">{item.quantity}</div>
-                  <div className="col-span-2 text-right">{item.unit_public_price.toFixed(2)}€</div>
-                  <div className="col-span-2 text-right font-medium">{item.total_price.toFixed(2)}€</div>
-                </div>
-              ))}
+                );
+              })}
               
               <div className="border-t bg-muted/30 p-3">
                 <div className="flex justify-end">
