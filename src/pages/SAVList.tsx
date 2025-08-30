@@ -240,8 +240,8 @@ export default function SAVList() {
                         <SelectContent>
                          <SelectItem value="all">Tous les SAV</SelectItem>
                          <SelectItem value="client">SAV Client</SelectItem>
+                         <SelectItem value="internal">SAV MAGASIN</SelectItem>
                          <SelectItem value="shop">SAV CLIENTS (INTERNE+EXTERNE)</SelectItem>
-                         <SelectItem value="internal">SAV Interne seulement</SelectItem>
                          <SelectItem value="external">SAV Externe seulement</SelectItem>
                        </SelectContent>
                     </Select>
