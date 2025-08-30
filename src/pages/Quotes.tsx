@@ -80,13 +80,13 @@ export default function Quotes() {
   };
 
   const activeQuotes = quotes.filter(quote => 
-    quote.status !== 'rejected' && quote.status !== 'accepted' &&
+    quote.status !== 'rejected' && quote.status !== 'accepted' && quote.status !== 'sms_accepted' &&
     (quote.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
      quote.quote_number.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   const acceptedQuotes = quotes.filter(quote => 
-    quote.status === 'accepted' &&
+    (quote.status === 'accepted' || quote.status === 'sms_accepted') &&
     (quote.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
      quote.quote_number.toLowerCase().includes(searchTerm.toLowerCase()))
   );
@@ -228,6 +228,7 @@ export default function Quotes() {
       case 'pending_review': return 'secondary';
       case 'sent': return 'outline';
       case 'under_negotiation': return 'secondary';
+      case 'sms_accepted': return 'default';
       case 'accepted': return 'default';
       case 'rejected': return 'destructive';
       case 'expired': return 'outline';
@@ -241,6 +242,7 @@ export default function Quotes() {
       case 'pending_review': return 'En révision';
       case 'sent': return 'Envoyé';
       case 'under_negotiation': return 'En négociation';
+      case 'sms_accepted': return 'Accepté par SMS';
       case 'accepted': return 'Accepté';
       case 'rejected': return 'Refusé';
       case 'expired': return 'Expiré';
@@ -396,6 +398,7 @@ export default function Quotes() {
                     <SelectItem value="pending_review">En révision</SelectItem>
                     <SelectItem value="sent">Envoyé</SelectItem>
                     <SelectItem value="under_negotiation">En négociation</SelectItem>
+                    <SelectItem value="sms_accepted">Accepté par SMS</SelectItem>
                     <SelectItem value="accepted">Accepté</SelectItem>
                     <SelectItem value="rejected">Refusé</SelectItem>
                     <SelectItem value="expired">Expiré</SelectItem>
