@@ -80,7 +80,13 @@ export default function Quotes() {
   };
 
   const activeQuotes = quotes.filter(quote => 
-    quote.status !== 'rejected' &&
+    quote.status !== 'rejected' && quote.status !== 'accepted' &&
+    (quote.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+     quote.quote_number.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
+
+  const acceptedQuotes = quotes.filter(quote => 
+    quote.status === 'accepted' &&
     (quote.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
      quote.quote_number.toLowerCase().includes(searchTerm.toLowerCase()))
   );
@@ -538,10 +544,13 @@ export default function Quotes() {
                   </div>
 
                   {/* Onglets pour séparer les devis actifs et refusés */}
-                  <Tabs defaultValue="active" className="w-full">
-                    <TabsList className="grid w-full grid-cols-2">
+                   <Tabs defaultValue="active" className="w-full">
+                    <TabsList className="grid w-full grid-cols-3">
                       <TabsTrigger value="active">
                         Devis actifs ({activeQuotes.length})
+                      </TabsTrigger>
+                      <TabsTrigger value="accepted">
+                        Devis acceptés ({acceptedQuotes.length})
                       </TabsTrigger>
                       <TabsTrigger value="rejected">
                         Devis refusés ({rejectedQuotes.length})
@@ -567,6 +576,97 @@ export default function Quotes() {
                           </Card>
                         ) : (
                           activeQuotes.map(renderQuoteCard)
+                        )}
+                      </div>
+                    </TabsContent>
+                    
+                    <TabsContent value="accepted" className="mt-6">
+                      <div className="grid gap-4">
+                        {acceptedQuotes.length === 0 ? (
+                          <Card>
+                            <CardContent className="text-center py-8">
+                              <CheckCircle className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                              <p className="text-muted-foreground">
+                                {searchTerm ? 'Aucun devis accepté trouvé' : 'Aucun devis accepté'}
+                              </p>
+                            </CardContent>
+                          </Card>
+                        ) : (
+                          acceptedQuotes.map((quote) => (
+                            <Card key={quote.id} className="hover:shadow-md transition-shadow border-green-200">
+                              <CardContent className="p-6">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-4 mb-2">
+                                      <h3 className="font-semibold text-lg">{formatCustomerDisplay(quote.customer_name)}</h3>
+                                      <Badge variant="outline">
+                                        {quote.quote_number}
+                                      </Badge>
+                                      <Badge variant="default" className="bg-green-100 text-green-800 border-green-300">
+                                        {getStatusText(quote.status)}
+                                      </Badge>
+                                    </div>
+                                    
+                                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm text-muted-foreground">
+                                      <div>
+                                        <span className="font-medium">Total: </span>
+                                        <span className="text-lg font-bold text-foreground">
+                                          {quote.total_amount.toFixed(2)}€
+                                        </span>
+                                      </div>
+                                      
+                                      {quote.customer_phone && (
+                                        <div>
+                                          <span className="font-medium">Téléphone: </span>
+                                          <span>{quote.customer_phone}</span>
+                                        </div>
+                                      )}
+                                      
+                                      <div>
+                                        <span className="font-medium">Accepté le: </span>
+                                        <span>{new Date(quote.updated_at || quote.created_at).toLocaleDateString()}</span>
+                                      </div>
+                                      
+                                      <div className="flex items-center gap-1 text-green-600">
+                                        <CheckCircle className="h-3 w-3" />
+                                        <span className="font-medium text-xs">Devis validé</span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                  
+                                  <div className="flex items-center gap-2 ml-4">
+                                    <Button 
+                                      variant="outline" 
+                                      size="sm"
+                                      onClick={() => handleViewQuote(quote)}
+                                    >
+                                      <Eye className="h-4 w-4 mr-1" />
+                                      Voir
+                                    </Button>
+                                    <Button 
+                                      variant="outline" 
+                                      size="sm"
+                                      onClick={() => handleDownloadPDF(quote)}
+                                    >
+                                      <Download className="h-4 w-4 mr-1" />
+                                      PDF
+                                    </Button>
+                                    <Button 
+                                      variant="default"
+                                      size="sm"
+                                      className="bg-green-600 hover:bg-green-700"
+                                      onClick={() => {
+                                        setQuoteToConvert(quote);
+                                      }}
+                                    >
+                                      <CheckCircle className="h-4 w-4 mr-1" />
+                                      Produit reçu
+                                    </Button>
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          ))
                         )}
                       </div>
                     </TabsContent>

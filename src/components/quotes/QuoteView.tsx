@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
-import { Download, Mail, X, MessageSquare, Clock, CheckCircle } from 'lucide-react';
+import { Download, Mail, X, MessageSquare, Clock, CheckCircle, FileText } from 'lucide-react';
 import { useSMS } from '@/hooks/useSMS';
 import { useToast } from '@/hooks/use-toast';
 
@@ -94,21 +94,29 @@ export function QuoteView({ quote, isOpen, onClose, onDownloadPDF, onSendEmail, 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+        <DialogHeader className="border-b pb-4">
           <div className="flex items-center justify-between">
-            <DialogTitle className="text-xl">Devis {quote.quote_number}</DialogTitle>
+            <div className="flex items-center gap-3">
+              <div className="h-8 w-8 rounded-full bg-gradient-to-r from-primary to-primary/80 flex items-center justify-center">
+                <FileText className="h-4 w-4 text-primary-foreground" />
+              </div>
+              <div>
+                <DialogTitle className="text-xl font-semibold">Devis {quote.quote_number}</DialogTitle>
+                <p className="text-sm text-muted-foreground">Créé le {new Date(quote.created_at).toLocaleDateString()}</p>
+              </div>
+            </div>
             <div className="flex items-center gap-2">
               {isQuoteExpired(quote.created_at) ? (
-                <Badge variant="destructive">
+                <Badge variant="destructive" className="shadow-sm">
                   Devis expiré
                 </Badge>
               ) : (
-                <Badge variant={getStatusColor(quote.status)}>
+                <Badge variant={getStatusColor(quote.status)} className="shadow-sm">
                   {getStatusText(quote.status)}
                 </Badge>
               )}
               {quote.status === 'sent' && !isQuoteExpired(quote.created_at) && (
-                <div className="flex items-center gap-1 text-green-600 text-xs">
+                <div className="flex items-center gap-1 text-green-600 text-xs bg-green-50 px-2 py-1 rounded-full">
                   <CheckCircle className="h-3 w-3" />
                   <span>PDF envoyé par SMS</span>
                 </div>
