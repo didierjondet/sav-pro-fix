@@ -669,6 +669,15 @@ export default function Quotes() {
                                          SAV en cours...
                                        </div>
                                      )}
+                                    <Button 
+                                      variant="outline" 
+                                      size="sm"
+                                      className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                      onClick={() => deleteQuote(quote.id)}
+                                    >
+                                      <Trash2 className="h-4 w-4 mr-1" />
+                                      Supprimer
+                                    </Button>
                                   </div>
                                 </div>
                               </CardContent>
