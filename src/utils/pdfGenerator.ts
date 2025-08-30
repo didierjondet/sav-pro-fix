@@ -141,28 +141,45 @@ export const generateQuotePDF = (quote: Quote, shop?: Shop) => {
       <table class="items-table">
         <thead>
           <tr>
-            <th style="width: 50%;">Article</th>
-            <th style="width: 15%;" class="text-center">Quantité</th>
-            <th style="width: 20%;" class="text-right">Prix unitaire</th>
+            <th style="width: 40%;">Article</th>
+            <th style="width: 10%;" class="text-center">Qté</th>
+            <th style="width: 18%;" class="text-right">Prix unitaire</th>
+            <th style="width: 17%;" class="text-right">Remise</th>
             <th style="width: 15%;" class="text-right">Total</th>
           </tr>
         </thead>
         <tbody>
           ${quote.items.map(item => {
-            const lineTotal = item.quantity * (item as any).unit_public_price;
-            const discountInfo = (item as any).discount ? JSON.parse(JSON.stringify((item as any).discount)) : null;
-            const discountAmount = discountInfo?.amount || 0;
+            const originalPrice = (item as any).unit_public_price;
+            const finalPrice = item.total_price / item.quantity;
+            const hasDiscount = (item as any).discount && ((item as any).discount.type === 'percentage' || (item as any).discount.type === 'fixed');
+            const discountAmount = hasDiscount ? originalPrice - finalPrice : 0;
+            const discountInfo = (item as any).discount;
             
             return `
               <tr>
                 <td>
                   <strong>${item.part_name}</strong>
-                  ${item.part_reference ? `<br><small>Réf: ${item.part_reference}</small>` : ''}
-                  ${discountInfo ? `<br><small style="color: #0066cc;">Remise ${discountInfo.type === 'percentage' ? `${discountInfo.value}%` : `${discountInfo.value}€`}: -${discountAmount.toFixed(2)}€</small>` : ''}
+                  ${item.part_reference ? `<br><small style="color: #666;">Réf: ${item.part_reference}</small>` : ''}
                 </td>
                 <td class="text-center">${item.quantity}</td>
-                <td class="text-right">${(item as any).unit_public_price.toFixed(2)}€</td>
-                <td class="text-right">${Math.max(0, lineTotal - discountAmount).toFixed(2)}€</td>
+                <td class="text-right">
+                  ${hasDiscount ? `
+                    <div style="text-decoration: line-through; color: #999; font-size: 11px;">${originalPrice.toFixed(2)}€</div>
+                    <div style="font-weight: bold;">${finalPrice.toFixed(2)}€</div>
+                  ` : `${originalPrice.toFixed(2)}€`}
+                </td>
+                <td class="text-right">
+                  ${hasDiscount ? `
+                    <div style="color: #dc2626; font-weight: bold;">
+                      ${discountInfo?.type === 'percentage' 
+                        ? `-${discountInfo.value}%`
+                        : `-${discountAmount.toFixed(2)}€`
+                      }
+                    </div>
+                  ` : '<span style="color: #999;">-</span>'}
+                </td>
+                <td class="text-right" style="font-weight: bold;">${item.total_price.toFixed(2)}€</td>
               </tr>
             `;
           }).join('')}
