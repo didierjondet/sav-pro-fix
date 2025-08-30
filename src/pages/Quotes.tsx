@@ -660,7 +660,7 @@ export default function Quotes() {
                                       }}
                                     >
                                       <CheckCircle className="h-4 w-4 mr-1" />
-                                      Produit reçu
+                                      Démarrer le SAV
                                     </Button>
                                   </div>
                                 </div>
