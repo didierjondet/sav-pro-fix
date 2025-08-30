@@ -91,7 +91,7 @@ export default function QuotePublic() {
     }
   };
 
-  const handleStatusUpdate = async (newStatus: 'accepted' | 'rejected') => {
+  const handleStatusUpdate = async (newStatus: 'accepted' | 'rejected' | 'sms_accepted') => {
     if (!id || !data) return;
 
     setUpdating(true);
@@ -117,7 +117,7 @@ export default function QuotePublic() {
       } : null);
 
       // Message de confirmation
-      const statusText = newStatus === 'accepted' ? 'accepté' : 'refusé';
+      const statusText = newStatus === 'accepted' ? 'accepté' : newStatus === 'sms_accepted' ? 'accepté par SMS' : 'refusé';
       alert(`Devis ${statusText} avec succès !`);
     } catch (error) {
       console.error('Erreur:', error);
@@ -133,6 +133,7 @@ export default function QuotePublic() {
       case 'pending_review': return 'En révision';
       case 'sent': return 'Envoyé';
       case 'under_negotiation': return 'En négociation';
+      case 'sms_accepted': return 'Accepté par SMS';
       case 'accepted': return 'Accepté';
       case 'rejected': return 'Refusé';
       case 'expired': return 'Expiré';
@@ -331,16 +332,16 @@ export default function QuotePublic() {
                     Télécharger le PDF
                   </Button>
                   
-                  {quote.status !== 'accepted' && quote.status !== 'rejected' && (
+                  {quote.status !== 'accepted' && quote.status !== 'rejected' && quote.status !== 'sms_accepted' && (
                     <>
-                      <Button 
-                        onClick={() => handleStatusUpdate('accepted')}
-                        disabled={updating}
-                        className="bg-green-600 hover:bg-green-700"
-                      >
-                        <Check className="h-4 w-4 mr-2" />
-                        {updating ? 'Mise à jour...' : 'Valider'}
-                      </Button>
+                       <Button 
+                         onClick={() => handleStatusUpdate('sms_accepted')}
+                         disabled={updating}
+                         className="bg-green-600 hover:bg-green-700"
+                       >
+                         <Check className="h-4 w-4 mr-2" />
+                         {updating ? 'Mise à jour...' : 'Valider'}
+                       </Button>
                       
                       <Button 
                         onClick={() => handleStatusUpdate('rejected')}

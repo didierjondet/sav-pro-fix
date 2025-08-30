@@ -29,7 +29,7 @@ export interface Quote {
   repair_notes?: string | null;
   items: QuoteItem[];
   total_amount: number;
-  status: 'draft' | 'pending_review' | 'sent' | 'under_negotiation' | 'accepted' | 'rejected' | 'expired';
+  status: 'draft' | 'pending_review' | 'sent' | 'under_negotiation' | 'sms_accepted' | 'accepted' | 'rejected' | 'expired';
   shop_id: string;
   created_at: string;
   updated_at: string;

@@ -651,17 +651,24 @@ export default function Quotes() {
                                       <Download className="h-4 w-4 mr-1" />
                                       PDF
                                     </Button>
-                                    <Button 
-                                      variant="default"
-                                      size="sm"
-                                      className="bg-green-600 hover:bg-green-700"
-                                      onClick={() => {
-                                        setQuoteToConvert(quote);
-                                      }}
-                                    >
-                                      <CheckCircle className="h-4 w-4 mr-1" />
-                                      Démarrer le SAV
-                                    </Button>
+                                     {quote.status === 'sms_accepted' ? (
+                                       <Button 
+                                         variant="default"
+                                         size="sm"
+                                         className="bg-green-600 hover:bg-green-700"
+                                         onClick={async () => {
+                                           await updateQuote(quote.id, { status: 'accepted' });
+                                           setQuoteToConvert(quote);
+                                         }}
+                                       >
+                                         <CheckCircle className="h-4 w-4 mr-1" />
+                                         Démarrer le SAV
+                                       </Button>
+                                     ) : (
+                                       <div className="text-sm text-muted-foreground px-3 py-1 rounded bg-muted">
+                                         SAV en cours...
+                                       </div>
+                                     )}
                                   </div>
                                 </div>
                               </CardContent>
