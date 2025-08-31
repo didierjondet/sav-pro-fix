@@ -394,6 +394,7 @@ export type Database = {
           selling_price: number | null
           shop_id: string | null
           sku: string | null
+          supplier: string | null
           time_minutes: number
           updated_at: string
         }
@@ -412,6 +413,7 @@ export type Database = {
           selling_price?: number | null
           shop_id?: string | null
           sku?: string | null
+          supplier?: string | null
           time_minutes?: number
           updated_at?: string
         }
@@ -430,6 +432,7 @@ export type Database = {
           selling_price?: number | null
           shop_id?: string | null
           sku?: string | null
+          supplier?: string | null
           time_minutes?: number
           updated_at?: string
         }
