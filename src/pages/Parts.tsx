@@ -273,46 +273,53 @@ export default function Parts() {
                                     )}
                                   </div>
                                   
-                                  <div className="grid grid-cols-1 md:grid-cols-6 gap-4 text-sm text-muted-foreground">
-                                    <div>
-                                      <span className="font-medium">Stock total: </span>
-                                      <span className={part.quantity <= part.min_stock ? 'text-red-600 font-medium' : ''}>
-                                        {part.quantity}
-                                      </span>
-                                    </div>
-                                    
-                                    <div>
-                                      <span className="font-medium">Disponible: </span>
-                                      <span className="text-green-600 font-medium">
-                                        {Math.max(0, part.quantity - (part.reserved_quantity || 0))}
-                                      </span>
-                                      {(part.reserved_quantity || 0) > 0 && (
-                                        <div className="text-xs text-orange-600">
-                                          ({part.reserved_quantity} réservé)
-                                        </div>
-                                      )}
-                                    </div>
-                                    
-                                    <div>
-                                      <span className="font-medium">Prix d'achat HT: </span>
-                                      <span>{(part.purchase_price || 0).toFixed(2)}€</span>
-                                    </div>
-                                    
-                                    <div>
-                                      <span className="font-medium">Prix public TTC: </span>
-                                      <span className="text-black text-lg font-bold">{(part.selling_price || 0).toFixed(2)}€</span>
-                                    </div>
-                                    
-                                    <div>
-                                      <span className="font-medium">Stock min: </span>
-                                      <span>{part.min_stock}</span>
-                                    </div>
+                                   <div className="grid grid-cols-1 md:grid-cols-6 gap-4 text-sm text-muted-foreground">
+                                     <div>
+                                       <span className="font-medium">Stock total: </span>
+                                       <span className={part.quantity <= part.min_stock ? 'text-red-600 font-medium' : ''}>
+                                         {part.quantity}
+                                       </span>
+                                     </div>
+                                     
+                                     <div>
+                                       <span className="font-medium">Disponible: </span>
+                                       <span className="text-green-600 font-medium">
+                                         {Math.max(0, part.quantity - (part.reserved_quantity || 0))}
+                                       </span>
+                                       {(part.reserved_quantity || 0) > 0 && (
+                                         <div className="text-xs text-orange-600">
+                                           ({part.reserved_quantity} réservé)
+                                         </div>
+                                       )}
+                                     </div>
+                                     
+                                     <div>
+                                       <span className="font-medium">Prix d'achat HT: </span>
+                                       <span>{(part.purchase_price || 0).toFixed(2)}€</span>
+                                     </div>
+                                     
+                                     <div>
+                                       <span className="font-medium">Prix public TTC: </span>
+                                       <span className="text-black text-lg font-bold">{(part.selling_price || 0).toFixed(2)}€</span>
+                                     </div>
+                                     
+                                     <div>
+                                       <span className="font-medium">Stock min: </span>
+                                       <span>{part.min_stock}</span>
+                                     </div>
 
-                                    <div>
-                                      <span className="font-medium">Valeur: </span>
-                                      <span>{((part.purchase_price || 0) * part.quantity).toFixed(2)}€</span>
-                                    </div>
-                                  </div>
+                                     <div>
+                                       <span className="font-medium">Valeur: </span>
+                                       <span>{((part.purchase_price || 0) * part.quantity).toFixed(2)}€</span>
+                                     </div>
+                                   </div>
+                                   
+                                   {part.supplier && (
+                                     <div className="mt-2 text-sm text-muted-foreground">
+                                       <span className="font-medium">Fournisseur: </span>
+                                       <span>{part.supplier}</span>
+                                     </div>
+                                   )}
                                 </div>
                               </div>
                               

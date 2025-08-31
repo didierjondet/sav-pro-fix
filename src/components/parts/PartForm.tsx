@@ -36,6 +36,7 @@ export function PartForm({ initialData, onSubmit, onCancel, isEdit = false, find
       name: initialData?.name || '',
       reference: initialData?.reference || '',
       sku: initialData?.sku || '',
+      supplier: initialData?.supplier || '',
       purchase_price: initialData?.purchase_price || 0,
       selling_price: initialData?.selling_price || 0,
       quantity: initialData?.quantity || 0,
@@ -170,6 +171,15 @@ export function PartForm({ initialData, onSubmit, onCancel, isEdit = false, find
                 id="sku"
                 {...register('sku')}
                 placeholder="Ex: SKU-001"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="supplier">Fournisseur</Label>
+              <Input
+                id="supplier"
+                {...register('supplier')}
+                placeholder="Ex: Fournisseur ABC"
               />
             </div>
           </div>

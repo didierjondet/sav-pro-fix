@@ -7,6 +7,7 @@ export interface Part {
   name: string;
   reference?: string;
   sku?: string;
+  supplier?: string;
   purchase_price?: number;
   selling_price?: number;
   quantity: number;
