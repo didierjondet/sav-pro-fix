@@ -51,10 +51,18 @@ export function LandingCarousel() {
                         ) : (
                           <div className="relative h-full min-h-[300px]">
                             <img 
-                              src={item.media_url} 
+                              src={item.media_url.includes('drive.google.com') 
+                                ? item.media_url.replace('/view?usp=sharing', '').replace('file/d/', 'uc?id=').replace('/view', '')
+                                : item.media_url
+                              }
                               alt={item.title}
                               className="w-full h-full object-cover"
                               loading="lazy"
+                              onError={(e) => {
+                                console.error('Error loading image:', item.media_url);
+                                const target = e.target as HTMLImageElement;
+                                target.src = '/placeholder.svg';
+                              }}
                             />
                           </div>
                         )}
