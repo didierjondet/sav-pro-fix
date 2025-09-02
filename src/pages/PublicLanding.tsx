@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import LegalDocumentDialog from '@/components/legal/LegalDocumentDialog';
+import { LandingCarousel } from '@/components/landing/LandingCarousel';
 
 interface SubscriptionPlan {
   id: string;
@@ -133,6 +134,9 @@ export default function PublicLanding() {
           </div>
         </div>
       </section>
+
+      {/* Carousel Section */}
+      <LandingCarousel />
 
       {/* Features */}
       <section className="py-20 bg-white">

@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Save, Globe, Users, Award, DollarSign, FileText } from 'lucide-react';
+import { CarouselManager } from '@/components/admin/CarouselManager';
 
 interface LandingContent {
   id?: string;
@@ -191,6 +192,9 @@ export function LandingPageManager() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Section Carrousel */}
+      <CarouselManager />
 
       {/* Section Fonctionnalités */}
       <Card>
