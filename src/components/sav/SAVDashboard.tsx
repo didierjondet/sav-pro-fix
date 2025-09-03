@@ -244,6 +244,65 @@ export function SAVDashboard() {
         </Card>
       </div>
 
+      <div className="grid gap-6 md:grid-cols-2 mb-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Répartition des SAV</CardTitle>
+            <CardDescription>Distribution des types de SAV en cours</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {loading ? <div className="h-80 flex items-center justify-center">
+                <div className="text-sm text-muted-foreground">Chargement...</div>
+              </div> : <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie data={savDistributionData} cx="50%" cy="50%" labelLine={false} label={({
+                name,
+                value,
+                percent
+              }) => `${name}: ${value} (${(percent * 100).toFixed(0)}%)`} outerRadius={80} fill="#8884d8" dataKey="value">
+                    {savDistributionData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
+                  </Pie>
+                  <Tooltip />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Rentabilité</CardTitle>
+            <CardDescription>
+              Chiffre d'affaires, coûts et marge de l'année {selectedYear}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {costsLoading ? <div className="h-80 flex items-center justify-center">
+                <div className="text-sm text-muted-foreground">Chargement...</div>
+              </div> : <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={profitabilityData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" />
+                  <YAxis label={{
+                value: 'Euros (€)',
+                angle: -90,
+                position: 'insideLeft'
+              }} />
+                  <Tooltip formatter={(value, name) => [`${Number(value).toFixed(2)}€`, name]} contentStyle={{
+                backgroundColor: 'hsl(var(--background))',
+                border: '1px solid hsl(var(--border))',
+                borderRadius: '6px'
+              }} />
+                  <Legend />
+                  <Bar dataKey="Chiffre d'affaires" fill="#10b981" />
+                  <Bar dataKey="Coûts" fill="#ef4444" />
+                  <Bar dataKey="Marge" fill="#3b82f6" />
+                </BarChart>
+              </ResponsiveContainer>}
+          </CardContent>
+        </Card>
+      </div>
+
       {/* Statistiques annuelles */}
       <Card className="mb-6">
         <CardHeader>
@@ -365,65 +424,6 @@ export function SAVDashboard() {
           </div>
         </CardContent>
       </Card>
-
-      <div className="grid gap-6 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Répartition des SAV</CardTitle>
-            <CardDescription>Distribution des types de SAV en cours</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {loading ? <div className="h-80 flex items-center justify-center">
-                <div className="text-sm text-muted-foreground">Chargement...</div>
-              </div> : <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie data={savDistributionData} cx="50%" cy="50%" labelLine={false} label={({
-                name,
-                value,
-                percent
-              }) => `${name}: ${value} (${(percent * 100).toFixed(0)}%)`} outerRadius={80} fill="#8884d8" dataKey="value">
-                    {savDistributionData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
-                  </Pie>
-                  <Tooltip />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Rentabilité</CardTitle>
-            <CardDescription>
-              Chiffre d'affaires, coûts et marge du mois
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {costsLoading ? <div className="h-80 flex items-center justify-center">
-                <div className="text-sm text-muted-foreground">Chargement...</div>
-              </div> : <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={profitabilityData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" />
-                  <YAxis label={{
-                value: 'Euros (€)',
-                angle: -90,
-                position: 'insideLeft'
-              }} />
-                  <Tooltip formatter={(value, name) => [`${Number(value).toFixed(2)}€`, name]} contentStyle={{
-                backgroundColor: 'hsl(var(--background))',
-                border: '1px solid hsl(var(--border))',
-                borderRadius: '6px'
-              }} />
-                  <Legend />
-                  <Bar dataKey="Chiffre d'affaires" fill="#10b981" />
-                  <Bar dataKey="Coûts" fill="#ef4444" />
-                  <Bar dataKey="Marge" fill="#3b82f6" />
-                </BarChart>
-              </ResponsiveContainer>}
-          </CardContent>
-        </Card>
-      </div>
 
       {/* Graphique d'occupation du stockage */}
       <Card className="mt-6">
