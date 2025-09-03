@@ -19,6 +19,9 @@ export interface SAVCase {
   technician_comments?: string;
   total_time_minutes: number;
   total_cost: number;
+  taken_over: boolean;
+  partial_takeover?: boolean;
+  takeover_amount?: number;
   created_at: string;
   updated_at: string;
   customer_id?: string;
