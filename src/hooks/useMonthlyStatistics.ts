@@ -115,14 +115,19 @@ export function useMonthlyStatistics(year: number) {
             caseRevenue = caseCost;
           }
 
-          // Ajouter aux données mensuelles (exclure SAV internes)
+          // Ajouter aux données mensuelles
           if (savCase.sav_type !== 'internal') {
+            // SAV externes et clients : comptabiliser revenu ET coûts
             monthlyData[monthIndex].revenue += caseRevenue;
             monthlyData[monthIndex].costs += caseCost;
             monthlyData[monthIndex].savCount += 1;
             monthlyData[monthIndex].takeover_cost += takeover_cost;
             monthlyData[monthIndex].client_cost += client_cost;
             monthlyData[monthIndex].external_cost += external_cost;
+          } else {
+            // SAV internes : SEULEMENT les coûts (prix d'achat), PAS de revenu
+            monthlyData[monthIndex].costs += caseCost;
+            // Note: ne pas incrémenter savCount pour les SAV internes
           }
         });
 
