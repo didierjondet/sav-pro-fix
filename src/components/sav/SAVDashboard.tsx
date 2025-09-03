@@ -73,15 +73,24 @@ export function SAVDashboard() {
 
   // Calculs pour les statistiques annuelles
   const yearlyStats = useMemo(() => {
-    if (monthlyLoading) return { totalRevenue: 0, totalCosts: 0, totalProfit: 0, totalSavs: 0, avgMonthlySavs: 0 };
-    
+    if (monthlyLoading) return {
+      totalRevenue: 0,
+      totalCosts: 0,
+      totalProfit: 0,
+      totalSavs: 0,
+      avgMonthlySavs: 0
+    };
     const totals = monthlyData.reduce((acc, month) => ({
       totalRevenue: acc.totalRevenue + month.revenue,
       totalCosts: acc.totalCosts + month.costs,
       totalProfit: acc.totalProfit + month.profit,
       totalSavs: acc.totalSavs + month.savCount
-    }), { totalRevenue: 0, totalCosts: 0, totalProfit: 0, totalSavs: 0 });
-
+    }), {
+      totalRevenue: 0,
+      totalCosts: 0,
+      totalProfit: 0,
+      totalSavs: 0
+    });
     return {
       ...totals,
       avgMonthlySavs: Math.round(totals.totalSavs / 12)
@@ -101,18 +110,21 @@ export function SAVDashboard() {
   // Calculs pour le stockage
   const storageUsagePercent = useMemo(() => {
     if (storageLoading) return 0;
-    return Math.min((storageGB / STORAGE_LIMIT_GB) * 100, 100);
+    return Math.min(storageGB / STORAGE_LIMIT_GB * 100, 100);
   }, [storageGB, storageLoading]);
-
   const storageChartData = useMemo(() => {
     if (storageLoading) return [];
     const usedGB = Math.min(storageGB, STORAGE_LIMIT_GB);
     const freeGB = Math.max(STORAGE_LIMIT_GB - storageGB, 0);
-    
-    return [
-      { name: 'Espace utilisé', value: usedGB, color: storageUsagePercent > 80 ? '#ef4444' : '#3b82f6' },
-      { name: 'Espace libre', value: freeGB, color: '#e5e7eb' }
-    ];
+    return [{
+      name: 'Espace utilisé',
+      value: usedGB,
+      color: storageUsagePercent > 80 ? '#ef4444' : '#3b82f6'
+    }, {
+      name: 'Espace libre',
+      value: freeGB,
+      color: '#e5e7eb'
+    }];
   }, [storageGB, storageLoading, storageUsagePercent]);
 
   // Données pour le graphique de répartition des SAV
@@ -120,40 +132,43 @@ export function SAVDashboard() {
     const clientCount = cases.filter(c => c.sav_type === 'client').length;
     const internalCount = cases.filter(c => c.sav_type === 'internal').length;
     const externalCount = cases.filter(c => c.sav_type === 'external').length;
-    
-    return [
-      { name: 'SAV Client', value: clientCount, color: '#ef4444' },
-      { name: 'SAV Magasin', value: internalCount, color: '#3b82f6' },
-      { name: 'SAV Externe', value: externalCount, color: '#10b981' }
-    ];
+    return [{
+      name: 'SAV Client',
+      value: clientCount,
+      color: '#ef4444'
+    }, {
+      name: 'SAV Magasin',
+      value: internalCount,
+      color: '#3b82f6'
+    }, {
+      name: 'SAV Externe',
+      value: externalCount,
+      color: '#10b981'
+    }];
   }, [cases]);
 
   // Données pour le graphique de rentabilité
   const profitabilityData = useMemo(() => {
     if (costsLoading) return [];
-    
     const totalCosts = costs.takeover_cost + costs.client_cost + costs.external_cost + costs.internal_cost;
     const profit = costs.monthly_revenue - totalCosts;
-    
-    return [
-      {
-        name: 'Rentabilité',
-        'Chiffre d\'affaires': costs.monthly_revenue,
-        'Coûts': totalCosts,
-        'Marge': profit
-      }
-    ];
+    return [{
+      name: 'Rentabilité',
+      'Chiffre d\'affaires': costs.monthly_revenue,
+      'Coûts': totalCosts,
+      'Marge': profit
+    }];
   }, [costs, costsLoading]);
   return <div className="space-y-6">
       <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
         <h2 className="text-2xl font-bold">
-          Tableau de bord SAV - {new Date().toLocaleDateString('fr-FR', { 
-            month: 'long', 
-            year: 'numeric' 
-          }).charAt(0).toUpperCase() + new Date().toLocaleDateString('fr-FR', { 
-            month: 'long', 
-            year: 'numeric' 
-          }).slice(1)}
+          Tableau de bord SAV - {new Date().toLocaleDateString('fr-FR', {
+          month: 'long',
+          year: 'numeric'
+        }).charAt(0).toUpperCase() + new Date().toLocaleDateString('fr-FR', {
+          month: 'long',
+          year: 'numeric'
+        }).slice(1)}
         </h2>
         <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
           <DialogTrigger asChild>
@@ -221,7 +236,7 @@ export function SAVDashboard() {
             <CardTitle className="text-sm font-medium">Marge</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className={`text-2xl font-bold ${!costsLoading && (costs.monthly_revenue - costs.takeover_cost - costs.client_cost - costs.external_cost) < 0 ? 'text-destructive' : 'text-primary'}`}>
+            <div className={`text-2xl font-bold ${!costsLoading && costs.monthly_revenue - costs.takeover_cost - costs.client_cost - costs.external_cost < 0 ? 'text-destructive' : 'text-primary'}`}>
               {costsLoading ? '...' : (costs.monthly_revenue - costs.takeover_cost - costs.client_cost - costs.external_cost).toFixed(2)}€
             </div>
             <p className="text-xs text-muted-foreground">CA - Coûts (hors interne)</p>
@@ -242,16 +257,14 @@ export function SAVDashboard() {
                 Vue d'ensemble des performances pour l'année {selectedYear}
               </CardDescription>
             </div>
-            <Select value={selectedYear.toString()} onValueChange={(value) => setSelectedYear(parseInt(value))}>
+            <Select value={selectedYear.toString()} onValueChange={value => setSelectedYear(parseInt(value))}>
               <SelectTrigger className="w-32">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {availableYears.map((year) => (
-                  <SelectItem key={year} value={year.toString()}>
+                {availableYears.map(year => <SelectItem key={year} value={year.toString()}>
                     {year}
-                  </SelectItem>
-                ))}
+                  </SelectItem>)}
               </SelectContent>
             </Select>
           </div>
@@ -300,74 +313,54 @@ export function SAVDashboard() {
           <div className="grid gap-6 md:grid-cols-2">
             <div>
               <h4 className="text-lg font-semibold mb-4">Évolution mensuelle - Chiffres d'affaires et coûts</h4>
-              {monthlyLoading ? (
-                <div className="h-80 flex items-center justify-center">
+              {monthlyLoading ? <div className="h-80 flex items-center justify-center">
                   <div className="text-sm text-muted-foreground">Chargement...</div>
-                </div>
-              ) : (
-                <ResponsiveContainer width="100%" height={300}>
+                </div> : <ResponsiveContainer width="100%" height={300}>
                   <BarChart data={monthlyData}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="month" />
-                    <YAxis 
-                      label={{ value: 'Euros (€)', angle: -90, position: 'insideLeft' }}
-                    />
-                    <Tooltip 
-                      formatter={(value, name) => [
-                        `${Number(value).toFixed(2)}€`,
-                        name === 'revenue' ? 'Chiffre d\'affaires' : 
-                        name === 'costs' ? 'Coûts' : 
-                        name === 'profit' ? 'Profit' : name
-                      ]}
-                      contentStyle={{
-                        backgroundColor: 'hsl(var(--background))',
-                        border: '1px solid hsl(var(--border))',
-                        borderRadius: '6px'
-                      }}
-                    />
+                    <YAxis label={{
+                  value: 'Euros (€)',
+                  angle: -90,
+                  position: 'insideLeft'
+                }} />
+                    <Tooltip formatter={(value, name) => [`${Number(value).toFixed(2)}€`, name === 'revenue' ? 'Chiffre d\'affaires' : name === 'costs' ? 'Coûts' : name === 'profit' ? 'Profit' : name]} contentStyle={{
+                  backgroundColor: 'hsl(var(--background))',
+                  border: '1px solid hsl(var(--border))',
+                  borderRadius: '6px'
+                }} />
                     <Legend />
                     <Bar dataKey="revenue" fill="#10b981" name="Chiffre d'affaires" />
                     <Bar dataKey="costs" fill="#ef4444" name="Coûts" />
                     <Bar dataKey="profit" fill="#3b82f6" name="Profit" />
                   </BarChart>
-                </ResponsiveContainer>
-              )}
+                </ResponsiveContainer>}
             </div>
 
             <div>
               <h4 className="text-lg font-semibold mb-4">SAV clôturés en retard par mois</h4>
-              {monthlyLoading ? (
-                <div className="h-80 flex items-center justify-center">
+              {monthlyLoading ? <div className="h-80 flex items-center justify-center">
                   <div className="text-sm text-muted-foreground">Chargement...</div>
-                </div>
-              ) : (
-                <ResponsiveContainer width="100%" height={300}>
+                </div> : <ResponsiveContainer width="100%" height={300}>
                   <BarChart data={monthlyData}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="month" />
-                    <YAxis 
-                      label={{ value: 'Nombre de SAV', angle: -90, position: 'insideLeft' }}
-                    />
-                    <Tooltip 
-                      formatter={(value, name) => [
-                        value,
-                        name === 'overdue_client' ? 'SAV Client en retard' : 
-                        name === 'overdue_external' ? 'SAV Externe en retard' : 
-                        name === 'overdue_internal' ? 'SAV Interne en retard' : name
-                      ]}
-                      contentStyle={{
-                        backgroundColor: 'hsl(var(--background))',
-                        border: '1px solid hsl(var(--border))',
-                        borderRadius: '6px'
-                      }}
-                    />
+                    <YAxis label={{
+                  value: 'Nombre de SAV',
+                  angle: -90,
+                  position: 'insideLeft'
+                }} />
+                    <Tooltip formatter={(value, name) => [value, name === 'overdue_client' ? 'SAV Client en retard' : name === 'overdue_external' ? 'SAV Externe en retard' : name === 'overdue_internal' ? 'SAV Interne en retard' : name]} contentStyle={{
+                  backgroundColor: 'hsl(var(--background))',
+                  border: '1px solid hsl(var(--border))',
+                  borderRadius: '6px'
+                }} />
                     <Legend />
                     <Bar dataKey="overdue_client" fill="#ef4444" name="SAV Client en retard" />
                     <Bar dataKey="overdue_external" fill="#10b981" name="SAV Externe en retard" />
                     <Bar dataKey="overdue_internal" fill="#3b82f6" name="SAV Interne en retard" />
                   </BarChart>
-                </ResponsiveContainer>
-              )}
+                </ResponsiveContainer>}
             </div>
           </div>
         </CardContent>
@@ -377,37 +370,24 @@ export function SAVDashboard() {
         <Card>
           <CardHeader>
             <CardTitle>Répartition des SAV</CardTitle>
-            <CardDescription>
-              Distribution des types de SAV
-            </CardDescription>
+            <CardDescription>Distribution des types de SAV en cours</CardDescription>
           </CardHeader>
           <CardContent>
-            {loading ? (
-              <div className="h-80 flex items-center justify-center">
+            {loading ? <div className="h-80 flex items-center justify-center">
                 <div className="text-sm text-muted-foreground">Chargement...</div>
-              </div>
-            ) : (
-              <ResponsiveContainer width="100%" height={300}>
+              </div> : <ResponsiveContainer width="100%" height={300}>
                 <PieChart>
-                  <Pie
-                    data={savDistributionData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({ name, value, percent }) => `${name}: ${value} (${(percent * 100).toFixed(0)}%)`}
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="value"
-                  >
-                    {savDistributionData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
+                  <Pie data={savDistributionData} cx="50%" cy="50%" labelLine={false} label={({
+                name,
+                value,
+                percent
+              }) => `${name}: ${value} (${(percent * 100).toFixed(0)}%)`} outerRadius={80} fill="#8884d8" dataKey="value">
+                    {savDistributionData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
                   </Pie>
                   <Tooltip />
                   <Legend />
                 </PieChart>
-              </ResponsiveContainer>
-            )}
+              </ResponsiveContainer>}
           </CardContent>
         </Card>
 
@@ -419,36 +399,28 @@ export function SAVDashboard() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {costsLoading ? (
-              <div className="h-80 flex items-center justify-center">
+            {costsLoading ? <div className="h-80 flex items-center justify-center">
                 <div className="text-sm text-muted-foreground">Chargement...</div>
-              </div>
-            ) : (
-              <ResponsiveContainer width="100%" height={300}>
+              </div> : <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={profitabilityData}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="name" />
-                  <YAxis 
-                    label={{ value: 'Euros (€)', angle: -90, position: 'insideLeft' }}
-                  />
-                  <Tooltip 
-                    formatter={(value, name) => [
-                      `${Number(value).toFixed(2)}€`,
-                      name
-                    ]}
-                    contentStyle={{
-                      backgroundColor: 'hsl(var(--background))',
-                      border: '1px solid hsl(var(--border))',
-                      borderRadius: '6px'
-                    }}
-                  />
+                  <YAxis label={{
+                value: 'Euros (€)',
+                angle: -90,
+                position: 'insideLeft'
+              }} />
+                  <Tooltip formatter={(value, name) => [`${Number(value).toFixed(2)}€`, name]} contentStyle={{
+                backgroundColor: 'hsl(var(--background))',
+                border: '1px solid hsl(var(--border))',
+                borderRadius: '6px'
+              }} />
                   <Legend />
                   <Bar dataKey="Chiffre d'affaires" fill="#10b981" />
                   <Bar dataKey="Coûts" fill="#ef4444" />
                   <Bar dataKey="Marge" fill="#3b82f6" />
                 </BarChart>
-              </ResponsiveContainer>
-            )}
+              </ResponsiveContainer>}
           </CardContent>
         </Card>
       </div>
@@ -462,37 +434,24 @@ export function SAVDashboard() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {storageLoading ? (
-            <div className="h-80 flex items-center justify-center">
+          {storageLoading ? <div className="h-80 flex items-center justify-center">
               <div className="text-sm text-muted-foreground">Chargement...</div>
-            </div>
-          ) : (
-            <div className="flex flex-col md:flex-row items-center gap-8">
+            </div> : <div className="flex flex-col md:flex-row items-center gap-8">
               <div className="w-full md:w-1/2">
                 <ResponsiveContainer width="100%" height={300}>
                   <PieChart>
-                    <Pie
-                      data={storageChartData}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={({ name, value, percent }) => `${name}: ${value.toFixed(3)} GB (${(percent * 100).toFixed(1)}%)`}
-                      outerRadius={100}
-                      fill="#8884d8"
-                      dataKey="value"
-                    >
-                      {storageChartData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
+                    <Pie data={storageChartData} cx="50%" cy="50%" labelLine={false} label={({
+                  name,
+                  value,
+                  percent
+                }) => `${name}: ${value.toFixed(3)} GB (${(percent * 100).toFixed(1)}%)`} outerRadius={100} fill="#8884d8" dataKey="value">
+                      {storageChartData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
                     </Pie>
-                    <Tooltip 
-                      formatter={(value) => [`${Number(value).toFixed(3)} GB`, '']}
-                      contentStyle={{
-                        backgroundColor: 'hsl(var(--background))',
-                        border: '1px solid hsl(var(--border))',
-                        borderRadius: '6px'
-                      }}
-                    />
+                    <Tooltip formatter={value => [`${Number(value).toFixed(3)} GB`, '']} contentStyle={{
+                  backgroundColor: 'hsl(var(--background))',
+                  border: '1px solid hsl(var(--border))',
+                  borderRadius: '6px'
+                }} />
                   </PieChart>
                 </ResponsiveContainer>
               </div>
@@ -517,20 +476,17 @@ export function SAVDashboard() {
                       <span>{Math.max(STORAGE_LIMIT_GB - storageGB, 0).toFixed(3)} GB</span>
                     </div>
                   </div>
-                  {storageUsagePercent > 90 && (
-                    <div className="mt-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+                  {storageUsagePercent > 90 && <div className="mt-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
                       <p className="text-sm text-destructive font-medium">
                         ⚠️ Attention : Vous approchez de votre limite de stockage !
                       </p>
                       <p className="text-xs text-muted-foreground mt-1">
                         Contactez le support pour augmenter votre espace de stockage.
                       </p>
-                    </div>
-                  )}
+                    </div>}
                 </div>
               </div>
-            </div>
-          )}
+            </div>}
         </CardContent>
       </Card>
     </div>;
