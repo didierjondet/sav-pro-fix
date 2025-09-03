@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Smartphone, Clock, MessageSquare, BarChart3, Users, Settings, CheckCircle, ArrowRight, Star, Shield, Zap } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import LegalDocumentDialog from '@/components/legal/LegalDocumentDialog';
+import { LandingCarousel } from '@/components/landing/LandingCarousel';
 interface SubscriptionPlan {
   id: string;
   name: string;
@@ -103,6 +104,9 @@ export default function Landing() {
           </div>
         </div>
       </section>
+
+      {/* Carousel Section */}
+      <LandingCarousel />
 
       {/* Features */}
       <section className="py-20 bg-white">
