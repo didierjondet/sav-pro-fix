@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useShop } from './useShop';
-import { startOfDay, endOfDay, subDays } from 'date-fns';
+import { startOfDay, endOfDay, subDays, startOfMonth, endOfMonth } from 'date-fns';
 
 export interface SAVPartsCost {
   takeover_cost: number;     // Coût prise en charge (SAV client taken_over = true)
@@ -32,8 +32,8 @@ export function useSAVPartsCosts() {
         return;
       }
       const now = new Date();
-      const start = startOfDay(subDays(now, 30));
-      const end = endOfDay(now);
+      const start = startOfMonth(now);
+      const end = endOfMonth(now);
 
       // Récupérer les coûts des pièces pour les SAV prêts de la période (et du shop)
       const { data: partsData, error: partsError } = await supabase

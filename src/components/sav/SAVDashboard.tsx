@@ -146,7 +146,15 @@ export function SAVDashboard() {
   }, [costs, costsLoading]);
   return <div className="space-y-6">
       <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
-        <h2 className="text-2xl font-bold">Tableau de bord SAV</h2>
+        <h2 className="text-2xl font-bold">
+          Tableau de bord SAV - {new Date().toLocaleDateString('fr-FR', { 
+            month: 'long', 
+            year: 'numeric' 
+          }).charAt(0).toUpperCase() + new Date().toLocaleDateString('fr-FR', { 
+            month: 'long', 
+            year: 'numeric' 
+          }).slice(1)}
+        </h2>
         <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
           <DialogTrigger asChild>
             <Button>
