@@ -75,47 +75,55 @@ export function SAVDashboard() {
   // Fonctions pour naviguer vers les SAV filtrés
   const navigateToFilteredSAV = (filterType: string) => {
     const params = new URLSearchParams();
+    const currentMonth = new Date().getMonth() + 1;
+    const currentYear = new Date().getFullYear();
     
     switch (filterType) {
       case 'revenue':
         params.append('status', 'ready');
-        params.append('year', selectedYear.toString());
+        params.append('month', currentMonth.toString());
+        params.append('year', currentYear.toString());
         break;
       case 'takeover':
         params.append('sav_type', 'client');
         params.append('taken_over', 'true');
-        params.append('year', selectedYear.toString());
+        params.append('month', currentMonth.toString());
+        params.append('year', currentYear.toString());
         break;
       case 'internal':
         params.append('sav_type', 'internal');
-        params.append('year', selectedYear.toString());
+        params.append('month', currentMonth.toString());
+        params.append('year', currentYear.toString());
         break;
       case 'client':
         params.append('sav_type', 'client');
         params.append('taken_over', 'false');
-        params.append('year', selectedYear.toString());
+        params.append('month', currentMonth.toString());
+        params.append('year', currentYear.toString());
         break;
     }
     
     navigate(`/sav?${params.toString()}`);
   };
 
-  // Calculer les SAV concernés pour les tooltips
+  // Calculer les SAV concernés pour les tooltips (mois en cours)
   const getSAVTooltipInfo = (filterType: string) => {
-    const currentYear = selectedYear;
-    const yearStart = new Date(currentYear, 0, 1);
-    const yearEnd = new Date(currentYear, 11, 31);
+    const currentDate = new Date();
+    const currentMonth = currentDate.getMonth();
+    const currentYear = currentDate.getFullYear();
+    const monthStart = new Date(currentYear, currentMonth, 1);
+    const monthEnd = new Date(currentYear, currentMonth + 1, 0);
 
     switch (filterType) {
       case 'revenue':
         const readySAVs = cases.filter(c => 
           c.status === 'ready' && 
-          new Date(c.created_at) >= yearStart && 
-          new Date(c.created_at) <= yearEnd
+          new Date(c.created_at) >= monthStart && 
+          new Date(c.created_at) <= monthEnd
         );
         return {
           count: readySAVs.length,
-          description: `SAV avec statut "Prêt" en ${currentYear}`,
+          description: `SAV avec statut "Prêt" ce mois`,
           details: readySAVs.slice(0, 5).map(c => c.case_number).join(', ') + (readySAVs.length > 5 ? '...' : '')
         };
       
@@ -123,24 +131,24 @@ export function SAVDashboard() {
         const takeoverSAVs = cases.filter(c => 
           c.sav_type === 'client' && 
           c.taken_over && 
-          new Date(c.created_at) >= yearStart && 
-          new Date(c.created_at) <= yearEnd
+          new Date(c.created_at) >= monthStart && 
+          new Date(c.created_at) <= monthEnd
         );
         return {
           count: takeoverSAVs.length,
-          description: `SAV client pris en charge en ${currentYear}`,
+          description: `SAV client pris en charge ce mois`,
           details: takeoverSAVs.slice(0, 5).map(c => c.case_number).join(', ') + (takeoverSAVs.length > 5 ? '...' : '')
         };
       
       case 'internal':
         const internalSAVs = cases.filter(c => 
           c.sav_type === 'internal' && 
-          new Date(c.created_at) >= yearStart && 
-          new Date(c.created_at) <= yearEnd
+          new Date(c.created_at) >= monthStart && 
+          new Date(c.created_at) <= monthEnd
         );
         return {
           count: internalSAVs.length,
-          description: `SAV magasin en ${currentYear}`,
+          description: `SAV magasin ce mois`,
           details: internalSAVs.slice(0, 5).map(c => c.case_number).join(', ') + (internalSAVs.length > 5 ? '...' : '')
         };
       
@@ -148,12 +156,12 @@ export function SAVDashboard() {
         const clientSAVs = cases.filter(c => 
           c.sav_type === 'client' && 
           !c.taken_over && 
-          new Date(c.created_at) >= yearStart && 
-          new Date(c.created_at) <= yearEnd
+          new Date(c.created_at) >= monthStart && 
+          new Date(c.created_at) <= monthEnd
         );
         return {
           count: clientSAVs.length,
-          description: `SAV client non pris en charge en ${currentYear}`,
+          description: `SAV client non pris en charge ce mois`,
           details: clientSAVs.slice(0, 5).map(c => c.case_number).join(', ') + (clientSAVs.length > 5 ? '...' : '')
         };
       
@@ -281,7 +289,7 @@ export function SAVDashboard() {
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5 mb-6">
           <Card className="relative">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">CA de l'année</CardTitle>
+              <CardTitle className="text-sm font-medium">CA du mois</CardTitle>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <button 
@@ -307,9 +315,9 @@ export function SAVDashboard() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {monthlyLoading ? '...' : yearlyStats.totalRevenue.toFixed(2)}€
+                {costsLoading ? '...' : costs.monthly_revenue.toFixed(2)}€
               </div>
-              <p className="text-xs text-muted-foreground">SAV prêts en {selectedYear}</p>
+              <p className="text-xs text-muted-foreground">SAV prêts ce mois</p>
             </CardContent>
           </Card>
           
@@ -341,7 +349,7 @@ export function SAVDashboard() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {monthlyLoading ? '...' : monthlyData.reduce((sum, month) => sum + month.takeover_cost, 0).toFixed(2)}€
+                {costsLoading ? '...' : costs.takeover_cost.toFixed(2)}€
               </div>
               <p className="text-xs text-muted-foreground">SAV client pris en charge</p>
             </CardContent>
@@ -375,7 +383,7 @@ export function SAVDashboard() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {monthlyLoading ? '...' : yearlyStats.totalCosts.toFixed(2)}€
+                {costsLoading ? '...' : costs.internal_cost.toFixed(2)}€
               </div>
               <p className="text-xs text-muted-foreground">Coûts SAV interne</p>
             </CardContent>
@@ -409,7 +417,7 @@ export function SAVDashboard() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {monthlyLoading ? '...' : monthlyData.reduce((sum, month) => sum + month.client_cost, 0).toFixed(2)}€
+                {costsLoading ? '...' : costs.client_cost.toFixed(2)}€
               </div>
               <p className="text-xs text-muted-foreground">SAV client non pris en charge</p>
             </CardContent>
@@ -420,10 +428,10 @@ export function SAVDashboard() {
               <CardTitle className="text-sm font-medium">Marge</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className={`text-2xl font-bold ${yearlyStats.totalProfit < 0 ? 'text-destructive' : 'text-primary'}`}>
-                {monthlyLoading ? '...' : yearlyStats.totalProfit.toFixed(2)}€
+              <div className={`text-2xl font-bold ${!costsLoading && (costs.monthly_revenue - costs.takeover_cost - costs.client_cost - costs.external_cost - costs.internal_cost) < 0 ? 'text-destructive' : 'text-primary'}`}>
+                {costsLoading ? '...' : (costs.monthly_revenue - costs.takeover_cost - costs.client_cost - costs.external_cost - costs.internal_cost).toFixed(2)}€
               </div>
-              <p className="text-xs text-muted-foreground">CA - Coûts {selectedYear}</p>
+              <p className="text-xs text-muted-foreground">CA - Coûts du mois</p>
             </CardContent>
           </Card>
         </div>
