@@ -184,6 +184,7 @@ export default function Quotes() {
         // Mettre à jour le statut du devis à "sent" avec l'heure d'envoi
         await updateQuote(quote.id, { 
           status: 'sent',
+          sms_sent_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         });
         
@@ -502,10 +503,15 @@ export default function Quotes() {
                 <span>{new Date(quote.created_at).toLocaleDateString()}</span>
               </div>
               
-              {quote.status === 'sent' && (
+              {quote.status === 'sent' && quote.sms_sent_at && (
                 <div className="flex items-center gap-1 text-green-600">
                   <CheckCircle className="h-3 w-3" />
-                  <span className="font-medium text-xs">PDF envoyé par SMS</span>
+                  <div className="flex flex-col">
+                    <span className="font-medium text-xs">PDF envoyé par SMS</span>
+                    <span className="text-xs">
+                      {new Date(quote.sms_sent_at).toLocaleDateString('fr-FR')} à {new Date(quote.sms_sent_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                  </div>
                 </div>
               )}
             </div>

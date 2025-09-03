@@ -545,6 +545,7 @@ export type Database = {
           repair_notes: string | null
           shop_id: string
           sku: string | null
+          sms_sent_at: string | null
           status: string
           total_amount: number
           updated_at: string
@@ -567,6 +568,7 @@ export type Database = {
           repair_notes?: string | null
           shop_id: string
           sku?: string | null
+          sms_sent_at?: string | null
           status?: string
           total_amount?: number
           updated_at?: string
@@ -589,6 +591,7 @@ export type Database = {
           repair_notes?: string | null
           shop_id?: string
           sku?: string | null
+          sms_sent_at?: string | null
           status?: string
           total_amount?: number
           updated_at?: string

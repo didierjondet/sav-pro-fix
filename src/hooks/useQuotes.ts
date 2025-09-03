@@ -33,6 +33,7 @@ export interface Quote {
   shop_id: string;
   created_at: string;
   updated_at: string;
+  sms_sent_at?: string | null;
 }
 
 export function useQuotes() {
