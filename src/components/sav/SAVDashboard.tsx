@@ -106,7 +106,7 @@ export function SAVDashboard() {
     navigate(`/sav?${params.toString()}`);
   };
 
-  // Calculer les SAV concernés pour les tooltips (mois en cours)
+  // Calculer les SAV concernés pour les tooltips (mois en cours) - données réelles
   const getSAVTooltipInfo = (filterType: string) => {
     const currentDate = new Date();
     const currentMonth = currentDate.getMonth();
@@ -116,57 +116,70 @@ export function SAVDashboard() {
 
     switch (filterType) {
       case 'revenue':
+        // SAV prêts non internes du mois
         const readySAVs = cases.filter(c => 
           c.status === 'ready' && 
+          c.sav_type !== 'internal' &&
           new Date(c.created_at) >= monthStart && 
           new Date(c.created_at) <= monthEnd
         );
         return {
           count: readySAVs.length,
-          description: `SAV avec statut "Prêt" ce mois`,
-          details: readySAVs.slice(0, 5).map(c => c.case_number).join(', ') + (readySAVs.length > 5 ? '...' : '')
+          description: `SAV prêts (hors internes) + devis acceptés ce mois`,
+          cases: readySAVs,
+          amount: costs.monthly_revenue
         };
       
       case 'takeover':
+        // SAV client avec prise en charge totale ou partielle
         const takeoverSAVs = cases.filter(c => 
           c.sav_type === 'client' && 
-          c.taken_over && 
+          c.status === 'ready' &&
+          (c.taken_over || c.partial_takeover) &&
           new Date(c.created_at) >= monthStart && 
           new Date(c.created_at) <= monthEnd
         );
         return {
           count: takeoverSAVs.length,
-          description: `SAV client pris en charge ce mois`,
-          details: takeoverSAVs.slice(0, 5).map(c => c.case_number).join(', ') + (takeoverSAVs.length > 5 ? '...' : '')
+          description: `SAV client pris en charge (total ou partiel) ce mois`,
+          cases: takeoverSAVs,
+          amount: costs.takeover_cost
         };
       
       case 'internal':
+        // SAV internes prêts
         const internalSAVs = cases.filter(c => 
           c.sav_type === 'internal' && 
+          c.status === 'ready' &&
           new Date(c.created_at) >= monthStart && 
           new Date(c.created_at) <= monthEnd
         );
         return {
           count: internalSAVs.length,
-          description: `SAV magasin ce mois`,
-          details: internalSAVs.slice(0, 5).map(c => c.case_number).join(', ') + (internalSAVs.length > 5 ? '...' : '')
+          description: `SAV magasin (internes) prêts ce mois`,
+          cases: internalSAVs,
+          amount: costs.internal_cost
         };
       
       case 'client':
+        // SAV client sans prise en charge
         const clientSAVs = cases.filter(c => 
           c.sav_type === 'client' && 
+          c.status === 'ready' &&
           !c.taken_over && 
+          !c.partial_takeover &&
           new Date(c.created_at) >= monthStart && 
           new Date(c.created_at) <= monthEnd
         );
         return {
           count: clientSAVs.length,
           description: `SAV client non pris en charge ce mois`,
-          details: clientSAVs.slice(0, 5).map(c => c.case_number).join(', ') + (clientSAVs.length > 5 ? '...' : '')
+          cases: clientSAVs,
+          amount: costs.client_cost
         };
       
       default:
-        return { count: 0, description: '', details: '' };
+        return { count: 0, description: '', cases: [], amount: 0 };
     }
   };
 
@@ -302,13 +315,33 @@ export function SAVDashboard() {
                 <TooltipContent side="bottom" className="max-w-sm">
                   <div className="space-y-2">
                     <p className="font-medium">{getSAVTooltipInfo('revenue').description}</p>
+                    <p className="text-sm">
+                      Montant: {getSAVTooltipInfo('revenue').amount.toFixed(2)}€
+                    </p>
                     <p className="text-sm">Nombre de SAV: {getSAVTooltipInfo('revenue').count}</p>
-                    {getSAVTooltipInfo('revenue').details && (
-                      <p className="text-xs text-muted-foreground">
-                        Exemples: {getSAVTooltipInfo('revenue').details}
-                      </p>
+                    {getSAVTooltipInfo('revenue').cases.length > 0 && (
+                      <div className="text-xs space-y-1">
+                        <p className="font-medium">SAV concernés:</p>
+                        {getSAVTooltipInfo('revenue').cases.slice(0, 8).map((savCase) => (
+                          <button
+                            key={savCase.id}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(`/sav/${savCase.id}`);
+                            }}
+                            className="block text-primary hover:underline text-left"
+                          >
+                            {savCase.case_number} ({savCase.sav_type})
+                          </button>
+                        ))}
+                        {getSAVTooltipInfo('revenue').cases.length > 8 && (
+                          <p className="text-muted-foreground">
+                            +{getSAVTooltipInfo('revenue').cases.length - 8} autres...
+                          </p>
+                        )}
+                      </div>
                     )}
-                    <p className="text-xs italic">Cliquer pour voir la liste complète</p>
+                    <p className="text-xs italic">Cliquer sur un SAV pour le voir</p>
                   </div>
                 </TooltipContent>
               </Tooltip>
@@ -336,13 +369,33 @@ export function SAVDashboard() {
                 <TooltipContent side="bottom" className="max-w-sm">
                   <div className="space-y-2">
                     <p className="font-medium">{getSAVTooltipInfo('takeover').description}</p>
+                    <p className="text-sm">
+                      Montant: {getSAVTooltipInfo('takeover').amount.toFixed(2)}€
+                    </p>
                     <p className="text-sm">Nombre de SAV: {getSAVTooltipInfo('takeover').count}</p>
-                    {getSAVTooltipInfo('takeover').details && (
-                      <p className="text-xs text-muted-foreground">
-                        Exemples: {getSAVTooltipInfo('takeover').details}
-                      </p>
+                    {getSAVTooltipInfo('takeover').cases.length > 0 && (
+                      <div className="text-xs space-y-1">
+                        <p className="font-medium">SAV concernés:</p>
+                        {getSAVTooltipInfo('takeover').cases.slice(0, 8).map((savCase) => (
+                          <button
+                            key={savCase.id}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(`/sav/${savCase.id}`);
+                            }}
+                            className="block text-primary hover:underline text-left"
+                          >
+                            {savCase.case_number} (prise en charge: {savCase.taken_over ? 'totale' : 'partielle'})
+                          </button>
+                        ))}
+                        {getSAVTooltipInfo('takeover').cases.length > 8 && (
+                          <p className="text-muted-foreground">
+                            +{getSAVTooltipInfo('takeover').cases.length - 8} autres...
+                          </p>
+                        )}
+                      </div>
                     )}
-                    <p className="text-xs italic">Cliquer pour voir la liste complète</p>
+                    <p className="text-xs italic">Cliquer sur un SAV pour le voir</p>
                   </div>
                 </TooltipContent>
               </Tooltip>
@@ -370,13 +423,33 @@ export function SAVDashboard() {
                 <TooltipContent side="bottom" className="max-w-sm">
                   <div className="space-y-2">
                     <p className="font-medium">{getSAVTooltipInfo('internal').description}</p>
+                    <p className="text-sm">
+                      Montant: {getSAVTooltipInfo('internal').amount.toFixed(2)}€
+                    </p>
                     <p className="text-sm">Nombre de SAV: {getSAVTooltipInfo('internal').count}</p>
-                    {getSAVTooltipInfo('internal').details && (
-                      <p className="text-xs text-muted-foreground">
-                        Exemples: {getSAVTooltipInfo('internal').details}
-                      </p>
+                    {getSAVTooltipInfo('internal').cases.length > 0 && (
+                      <div className="text-xs space-y-1">
+                        <p className="font-medium">SAV concernés:</p>
+                        {getSAVTooltipInfo('internal').cases.slice(0, 8).map((savCase) => (
+                          <button
+                            key={savCase.id}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(`/sav/${savCase.id}`);
+                            }}
+                            className="block text-primary hover:underline text-left"
+                          >
+                            {savCase.case_number} (interne)
+                          </button>
+                        ))}
+                        {getSAVTooltipInfo('internal').cases.length > 8 && (
+                          <p className="text-muted-foreground">
+                            +{getSAVTooltipInfo('internal').cases.length - 8} autres...
+                          </p>
+                        )}
+                      </div>
                     )}
-                    <p className="text-xs italic">Cliquer pour voir la liste complète</p>
+                    <p className="text-xs italic">Cliquer sur un SAV pour le voir</p>
                   </div>
                 </TooltipContent>
               </Tooltip>
@@ -404,13 +477,33 @@ export function SAVDashboard() {
                 <TooltipContent side="bottom" className="max-w-sm">
                   <div className="space-y-2">
                     <p className="font-medium">{getSAVTooltipInfo('client').description}</p>
+                    <p className="text-sm">
+                      Montant: {getSAVTooltipInfo('client').amount.toFixed(2)}€
+                    </p>
                     <p className="text-sm">Nombre de SAV: {getSAVTooltipInfo('client').count}</p>
-                    {getSAVTooltipInfo('client').details && (
-                      <p className="text-xs text-muted-foreground">
-                        Exemples: {getSAVTooltipInfo('client').details}
-                      </p>
+                    {getSAVTooltipInfo('client').cases.length > 0 && (
+                      <div className="text-xs space-y-1">
+                        <p className="font-medium">SAV concernés:</p>
+                        {getSAVTooltipInfo('client').cases.slice(0, 8).map((savCase) => (
+                          <button
+                            key={savCase.id}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(`/sav/${savCase.id}`);
+                            }}
+                            className="block text-primary hover:underline text-left"
+                          >
+                            {savCase.case_number} (client non pris en charge)
+                          </button>
+                        ))}
+                        {getSAVTooltipInfo('client').cases.length > 8 && (
+                          <p className="text-muted-foreground">
+                            +{getSAVTooltipInfo('client').cases.length - 8} autres...
+                          </p>
+                        )}
+                      </div>
                     )}
-                    <p className="text-xs italic">Cliquer pour voir la liste complète</p>
+                    <p className="text-xs italic">Cliquer sur un SAV pour le voir</p>
                   </div>
                 </TooltipContent>
               </Tooltip>
