@@ -1,6 +1,7 @@
-import React, { createContext, useContext, useCallback, useState } from 'react';
+import React, { createContext, useContext, useCallback, useState, useEffect } from 'react';
 import { useSubscription } from '@/hooks/useSubscription';
 import { LimitReachedDialog } from '@/components/dialogs/LimitReachedDialog';
+import { useProactiveLimits } from '@/hooks/useProactiveLimits';
 
 interface LimitDialogContextType {
   checkAndShowLimitDialog: (type?: 'sav' | 'sms') => boolean;
@@ -27,6 +28,7 @@ interface LimitDialogProviderProps {
 
 export function LimitDialogProvider({ children }: LimitDialogProviderProps) {
   const { checkLimits, refetch } = useSubscription();
+  const { checkProactiveLimits } = useProactiveLimits();
   const [dialogState, setDialogState] = useState<{
     isOpen: boolean;
     action: 'upgrade_plan' | 'buy_sms_package';
@@ -36,6 +38,11 @@ export function LimitDialogProvider({ children }: LimitDialogProviderProps) {
     action: 'upgrade_plan',
     reason: ''
   });
+
+  // Vérifier les limites proactivement au démarrage
+  useEffect(() => {
+    checkProactiveLimits();
+  }, [checkProactiveLimits]);
 
   const checkAndShowLimitDialog = useCallback((type: 'sav' | 'sms' = 'sav') => {
     const limits = checkLimits(type);

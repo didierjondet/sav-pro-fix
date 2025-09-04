@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Menu, Settings, User, Bell, LogOut, HardDrive } from 'lucide-react';
+import { Menu, Settings, User, Bell, LogOut, HardDrive, AlertTriangle, MessageSquare, FileCheck } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { useShop } from '@/hooks/useShop';
 import { useShopStorageUsage } from '@/hooks/useStorageUsage';
+import { useSubscription } from '@/hooks/useSubscription';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useNavigate } from 'react-router-dom';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 interface HeaderProps {
   onMenuClick: () => void;
   isMobileMenuOpen: boolean;
@@ -25,8 +27,66 @@ export function Header({
   const {
     storageGB
   } = useShopStorageUsage(shop?.id);
+  const { subscription, checkLimits } = useSubscription();
   const navigate = useNavigate();
+
+  // Calculer les limites et warnings
+  const getSAVLimits = () => {
+    if (!subscription) return { remaining: 0, total: 0, isWarning: false, isCritical: false };
+    
+    let savLimit = subscription.custom_sav_limit;
+    if (!savLimit) {
+      if (subscription.subscription_tier === 'free') savLimit = 5;
+      else if (subscription.subscription_tier === 'premium') savLimit = 50;
+      else if (subscription.subscription_tier === 'enterprise') savLimit = 100;
+      else savLimit = 5;
+    }
+    
+    const remaining = Math.max(0, savLimit - subscription.active_sav_count);
+    const usagePercent = (subscription.active_sav_count / savLimit) * 100;
+    
+    return {
+      remaining,
+      total: savLimit,
+      isWarning: usagePercent >= 80 && usagePercent < 95,
+      isCritical: usagePercent >= 95
+    };
+  };
+
+  const getSMSLimits = () => {
+    if (!subscription) return { remaining: 0, total: 0, isWarning: false, isCritical: false };
+    
+    const smsTotal = subscription.custom_sms_limit || subscription.sms_credits_allocated || 0;
+    const remaining = Math.max(0, smsTotal - subscription.sms_credits_used);
+    const usagePercent = (subscription.sms_credits_used / smsTotal) * 100;
+    
+    return {
+      remaining,
+      total: smsTotal,
+      isWarning: usagePercent >= 80 && usagePercent < 95,
+      isCritical: usagePercent >= 95
+    };
+  };
+
+  const savLimits = getSAVLimits();
+  const smsLimits = getSMSLimits();
+  const hasWarning = savLimits.isWarning || smsLimits.isWarning || savLimits.isCritical || smsLimits.isCritical;
   return <header className="bg-card border-b border-border shadow-sm">
+      {hasWarning && (
+        <Alert className="rounded-none border-x-0 border-t-0 bg-orange-50 border-orange-200">
+          <AlertTriangle className="h-4 w-4 text-orange-600" />
+          <AlertDescription className="text-orange-800">
+            {savLimits.isCritical && `Limite SAV critique atteinte (${subscription?.active_sav_count}/${savLimits.total})`}
+            {savLimits.isWarning && !savLimits.isCritical && `Attention: limite SAV bientôt atteinte (${subscription?.active_sav_count}/${savLimits.total})`}
+            {(savLimits.isCritical || savLimits.isWarning) && (smsLimits.isCritical || smsLimits.isWarning) && ' - '}
+            {smsLimits.isCritical && `Crédits SMS épuisés (${subscription?.sms_credits_used}/${smsLimits.total})`}
+            {smsLimits.isWarning && !smsLimits.isCritical && `Attention: crédits SMS bientôt épuisés (${subscription?.sms_credits_used}/${smsLimits.total})`}
+            {' '}<Button variant="link" className="h-auto p-0 text-orange-800 underline" onClick={() => navigate('/subscription')}>
+              Mettre à niveau
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
       <div className="flex items-center justify-between h-16 px-4">
         <div className="flex items-center space-x-4">
           <Button variant="ghost" size="icon" onClick={onMenuClick} className="md:hidden">
@@ -55,7 +115,19 @@ export function Header({
         </div>
 
 
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-4">
+          {/* Affichage des limites en permanence */}
+          <div className="hidden md:flex items-center space-x-4 text-sm text-muted-foreground">
+            <div className="flex items-center space-x-1">
+              <FileCheck className="h-4 w-4" />
+              <span>{savLimits.remaining} SAV restants</span>
+            </div>
+            <div className="flex items-center space-x-1">
+              <MessageSquare className="h-4 w-4" />
+              <span>{smsLimits.remaining} SMS restants</span>
+            </div>
+          </div>
+          
           <NotificationBell />
           
           <DropdownMenu>
