@@ -1086,11 +1086,15 @@ export type Database = {
           email: string | null
           id: string
           invite_code: string | null
+          last_monthly_reset: string | null
           logo_url: string | null
           max_sav_processing_days_client: number | null
           max_sav_processing_days_internal: number | null
+          monthly_sav_count: number | null
+          monthly_sms_used: number | null
           name: string
           phone: string | null
+          purchased_sms_credits: number | null
           review_link: string | null
           sav_warning_enabled: boolean | null
           slug: string | null
@@ -1116,11 +1120,15 @@ export type Database = {
           email?: string | null
           id?: string
           invite_code?: string | null
+          last_monthly_reset?: string | null
           logo_url?: string | null
           max_sav_processing_days_client?: number | null
           max_sav_processing_days_internal?: number | null
+          monthly_sav_count?: number | null
+          monthly_sms_used?: number | null
           name: string
           phone?: string | null
+          purchased_sms_credits?: number | null
           review_link?: string | null
           sav_warning_enabled?: boolean | null
           slug?: string | null
@@ -1146,11 +1154,15 @@ export type Database = {
           email?: string | null
           id?: string
           invite_code?: string | null
+          last_monthly_reset?: string | null
           logo_url?: string | null
           max_sav_processing_days_client?: number | null
           max_sav_processing_days_internal?: number | null
+          monthly_sav_count?: number | null
+          monthly_sms_used?: number | null
           name?: string
           phone?: string | null
+          purchased_sms_credits?: number | null
           review_link?: string | null
           sav_warning_enabled?: boolean | null
           slug?: string | null
@@ -1500,6 +1512,10 @@ export type Database = {
         Args: { p_action?: string; p_shop_id: string }
         Returns: Json
       }
+      check_subscription_limits_v3: {
+        Args: { p_action?: string; p_shop_id: string }
+        Returns: Json
+      }
       create_profile_only: {
         Args: {
           p_email: string
@@ -1600,6 +1616,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      get_total_sms_credits: {
+        Args: { p_shop_id: string }
+        Returns: number
+      }
       get_tracking_info: {
         Args: { p_tracking_slug: string }
         Returns: {
@@ -1654,6 +1674,10 @@ export type Database = {
       mask_phone_number: {
         Args: { phone_number: string }
         Returns: string
+      }
+      reset_monthly_counters: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
       }
       reset_monthly_sms_credits: {
         Args: Record<PropertyKey, never>
