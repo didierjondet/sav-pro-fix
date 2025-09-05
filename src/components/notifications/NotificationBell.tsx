@@ -143,11 +143,13 @@ export function NotificationBell() {
     setTimeout(() => setIsAnimating(false), 1500);
   };
 
-  const handleNotificationClick = (notificationId: string) => {
-    markAsRead(notificationId);
+  const handleNotificationClick = async (notificationId: string) => {
+    await markAsRead(notificationId);
     if (hasNewActivity) {
       setHasNewActivity(false);
     }
+    // Forcer le re-fetch pour mettre à jour l'affichage
+    setTimeout(() => window.location.reload(), 100);
   };
 
   const handleSAVClick = async (savCaseId: string) => {
@@ -218,12 +220,12 @@ export function NotificationBell() {
   };
 
   const getDisplayName = (sav: any) => {
-    if (sav.sav_type === 'internal') {
-      return `${sav.device_brand} ${sav.device_model} - ${sav.case_number}`;
-    } else if (sav.customer) {
-      return `${sav.customer.first_name} ${sav.customer.last_name}`;
+    if (sav.customer) {
+      return `${sav.customer.first_name} ${sav.customer.last_name} - Message SAV`;
+    } else if (sav.sav_type === 'internal') {
+      return `${sav.device_brand} ${sav.device_model} - SAV ${sav.case_number}`;
     } else {
-      return `SAV ${sav.case_number}`;
+      return `SAV ${sav.case_number} - Nouveau message`;
     }
   };
 
@@ -398,7 +400,7 @@ export function NotificationBell() {
               size="sm" 
               className="w-full"
               onClick={() => {
-                navigate('/support');
+                navigate('/notifications');
                 setIsOpen(false);
               }}
             >

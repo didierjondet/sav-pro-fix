@@ -34,6 +34,7 @@ import Contact from "./pages/Contact";
 import Home from "./pages/Home";
 import TestLanding from "./pages/TestLanding";
 import SubscriptionSuccess from "./pages/SubscriptionSuccess";
+import Notifications from "./pages/Notifications";
 import QuotePublic from "./pages/QuotePublic";
 
 const queryClient = new QueryClient({
@@ -79,6 +80,7 @@ const App = () => (
               <Route path="/stats/revenue/*" element={<RevenueDetails />} />
               <Route path="/stats/expenses" element={<ExpensesDetails />} />
               <Route path="/stats/expenses/*" element={<ExpensesDetails />} />
+              <Route path="/notifications" element={<Notifications />} />
               <Route path="/support" element={<Support />} />
               <Route path="/test" element={<TestLanding />} />
               <Route path="/subscription-success" element={<SubscriptionSuccess />} />
