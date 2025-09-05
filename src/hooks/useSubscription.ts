@@ -8,8 +8,11 @@ export interface SubscriptionInfo {
   subscription_tier: 'free' | 'premium' | 'enterprise';
   subscription_end?: string;
   sms_credits_allocated: number;
-  sms_credits_used: number;
-  active_sav_count: number;
+  sms_credits_used: number; // Total SMS utilisés (gardé pour compatibilité)
+  monthly_sms_used: number; // SMS du plan utilisés ce mois-ci
+  purchased_sms_credits?: number; // SMS achetés déjà utilisés
+  active_sav_count: number; // Total SAV actifs (gardé pour compatibilité)  
+  monthly_sav_count: number; // SAV créés ce mois-ci
   forced?: boolean;
   custom_sav_limit?: number;
   custom_sms_limit?: number;
@@ -43,10 +46,10 @@ export function useSubscription() {
       const profileData: any = profileRes.data;
 
       if (profileData?.shop_id) {
-        // Charger les infos du shop avec les limites personnalisées
+        // Charger les infos du shop avec les nouvelles colonnes mensuelles
         const shopRes = await (supabase as any)
           .from('shops')
-          .select('subscription_tier, sms_credits_allocated, sms_credits_used, active_sav_count, subscription_plan_id, subscription_forced, custom_sav_limit, custom_sms_limit')
+          .select('subscription_tier, sms_credits_allocated, sms_credits_used, monthly_sms_used, purchased_sms_credits, active_sav_count, monthly_sav_count, subscription_plan_id, subscription_forced, custom_sav_limit, custom_sms_limit')
           .eq('id', profileData.shop_id)
           .single();
         const shopData: any = shopRes.data;
@@ -70,7 +73,10 @@ export function useSubscription() {
             subscription_end: null,
             sms_credits_allocated: shopData?.custom_sms_limit ?? plan?.sms_limit ?? shopData?.sms_credits_allocated ?? 15,
             sms_credits_used: shopData?.sms_credits_used ?? 0,
+            monthly_sms_used: shopData?.monthly_sms_used ?? 0,
+            purchased_sms_credits: shopData?.purchased_sms_credits ?? 0,
             active_sav_count: shopData?.active_sav_count ?? 0,
+            monthly_sav_count: shopData?.monthly_sav_count ?? 0,
             forced: !!shopData?.subscription_forced,
             custom_sav_limit: shopData?.custom_sav_limit,
             custom_sms_limit: shopData?.custom_sms_limit
@@ -98,7 +104,10 @@ export function useSubscription() {
             subscription_end: data?.subscription_end ?? null,
             sms_credits_allocated: shopData?.custom_sms_limit ?? plan?.sms_limit ?? shopData?.sms_credits_allocated ?? 15,
             sms_credits_used: shopData?.sms_credits_used ?? 0,
+            monthly_sms_used: shopData?.monthly_sms_used ?? 0,
+            purchased_sms_credits: shopData?.purchased_sms_credits ?? 0,
             active_sav_count: shopData?.active_sav_count ?? 0,
+            monthly_sav_count: shopData?.monthly_sav_count ?? 0,
             forced: false,
             custom_sav_limit: shopData?.custom_sav_limit,
             custom_sms_limit: shopData?.custom_sms_limit
@@ -172,14 +181,15 @@ export function useSubscription() {
       return { allowed: true, reason: 'Abonnement forcé - vérifications désactivées', action: null };
     }
 
-    const { subscription_tier, sms_credits_used, sms_credits_allocated, active_sav_count, custom_sav_limit, custom_sms_limit } = subscription;
+    const { subscription_tier, monthly_sms_used, sms_credits_allocated, monthly_sav_count, custom_sav_limit, custom_sms_limit, purchased_sms_credits } = subscription;
 
-    // Vérification des limites SAV
+    // Calculer les SMS achetés disponibles
+    const purchasedSmsAvailable = Math.max(0, (purchased_sms_credits || 0));
+
+    // Vérification des limites SAV mensuelles
     if (action === 'sav' || !action) {
-      // Utiliser les limites personnalisées en priorité
       let savLimit = custom_sav_limit;
       
-      // Si pas de limite personnalisée, utiliser les limites par défaut du plan
       if (!savLimit) {
         if (subscription_tier === 'free') {
           savLimit = 5;
@@ -188,14 +198,14 @@ export function useSubscription() {
         } else if (subscription_tier === 'enterprise') {
           savLimit = 100;
         } else {
-          savLimit = 5; // Défaut
+          savLimit = 5;
         }
       }
 
-      if (active_sav_count >= savLimit) {
+      if (monthly_sav_count >= savLimit) {
         const message = custom_sav_limit 
-          ? `Limite SAV personnalisée atteinte (${active_sav_count}/${savLimit}). Contactez le support pour augmenter votre limite.`
-          : `Plan ${subscription_tier} limité à ${savLimit} SAV actifs (${active_sav_count}/${savLimit}). Passez au plan supérieur.`;
+          ? `Limite SAV mensuelle personnalisée atteinte (${monthly_sav_count}/${savLimit}). Contactez le support.`
+          : `Plan ${subscription_tier} limité à ${savLimit} SAV par mois (${monthly_sav_count}/${savLimit}). Renouvellement le 1er du mois prochain.`;
         
         return { 
           allowed: false, 
@@ -205,15 +215,15 @@ export function useSubscription() {
       }
     }
 
-    // Vérification des limites SMS
+    // Vérification des limites SMS mensuelles
     if (action === 'sms' || !action) {
-      const smsUsed = sms_credits_used || 0;
-      const smsAllocated = custom_sms_limit || sms_credits_allocated || 0;
+      const monthlyLimit = custom_sms_limit || sms_credits_allocated || 0;
       
-      if (smsUsed >= smsAllocated) {
+      // Vérifier d'abord les SMS du plan mensuel, puis les SMS achetés
+      if (monthly_sms_used >= monthlyLimit && purchasedSmsAvailable <= 0) {
         const message = custom_sms_limit
-          ? `Limite SMS personnalisée atteinte (${smsUsed}/${smsAllocated}). Contactez le support.`
-          : `Vous avez utilisé tous vos crédits SMS du mois (${smsUsed}/${smsAllocated})`;
+          ? `Limite SMS mensuelle personnalisée atteinte (${monthly_sms_used}/${monthlyLimit}). Contactez le support.`
+          : `Crédits SMS mensuels épuisés (${monthly_sms_used}/${monthlyLimit}). SMS achetés : ${purchasedSmsAvailable} disponibles.`;
           
         return { 
           allowed: false, 

@@ -21,8 +21,8 @@ export function useProactiveLimits() {
       else savLimit = 5;
     }
     
-    const remaining = Math.max(0, savLimit - subscription.active_sav_count);
-    const usagePercent = (subscription.active_sav_count / savLimit) * 100;
+    const remaining = Math.max(0, savLimit - subscription.monthly_sav_count);
+    const usagePercent = (subscription.monthly_sav_count / savLimit) * 100;
     
     return { remaining, total: savLimit, usagePercent };
   }, [subscription]);
@@ -31,10 +31,16 @@ export function useProactiveLimits() {
     if (!subscription) return { remaining: 0, total: 0, usagePercent: 0 };
     
     const smsTotal = subscription.custom_sms_limit || subscription.sms_credits_allocated || 0;
-    const remaining = Math.max(0, smsTotal - subscription.sms_credits_used);
-    const usagePercent = (subscription.sms_credits_used / smsTotal) * 100;
+    const purchasedSmsAvailable = Math.max(0, (subscription.purchased_sms_credits || 0));
     
-    return { remaining, total: smsTotal, usagePercent };
+    // Calculer les SMS restants du plan mensuel + SMS achetés
+    const monthlyRemaining = Math.max(0, smsTotal - subscription.monthly_sms_used);
+    const totalRemaining = monthlyRemaining + purchasedSmsAvailable;
+    
+    const usagePercent = subscription.monthly_sms_used >= smsTotal && purchasedSmsAvailable <= 0 ? 100 :
+                         (subscription.monthly_sms_used / smsTotal) * 100;
+    
+    return { remaining: totalRemaining, total: smsTotal, usagePercent };
   }, [subscription]);
 
   const checkProactiveLimits = useCallback(() => {
