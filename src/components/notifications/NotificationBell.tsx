@@ -21,7 +21,7 @@ export function NotificationBell() {
   const [hasNewActivity, setHasNewActivity] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
   const { notifications, unreadCount, markAsRead, markAllAsRead, createSAVMessageNotification, createSupportMessageNotification } = useNotifications();
-  const { savWithUnreadMessages } = useSAVUnreadMessages();
+  const { savWithUnreadMessages, refetch: refetchSAVMessages } = useSAVUnreadMessages();
   const { user } = useAuth();
   const { profile } = useProfile();
   const navigate = useNavigate();
@@ -160,6 +160,9 @@ export function NotificationBell() {
         .eq('sender_type', 'client')
         .eq('read_by_shop', false);
       
+      // Forcer le refetch des messages SAV
+      refetchSAVMessages();
+      
       // Naviguer vers le SAV
       navigate(`/sav/${savCaseId}`);
       setIsOpen(false);
@@ -196,15 +199,21 @@ export function NotificationBell() {
       if (hasNewActivity) {
         setHasNewActivity(false);
       }
+      
+      // Forcer le refetch des messages SAV
+      refetchSAVMessages();
     } catch (error) {
       console.error('Error marking all as read:', error);
     }
   };
 
-  const handleBellClick = () => {
+  const handleBellClick = async () => {
     setIsOpen(!isOpen);
-    if (hasNewActivity) {
-      setHasNewActivity(false);
+    
+    // Si on ouvre la popup et qu'il y a des notifications non lues, on les marque comme lues
+    if (!isOpen && (hasNewActivity || totalUnreadCount > 0)) {
+      await handleMarkAllAsRead();
+      refetchSAVMessages();
     }
   };
 
@@ -384,7 +393,15 @@ export function NotificationBell() {
         
         {notifications.length > 10 && (
           <div className="p-3 border-t">
-            <Button variant="ghost" size="sm" className="w-full">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="w-full"
+              onClick={() => {
+                navigate('/support');
+                setIsOpen(false);
+              }}
+            >
               Voir toutes les notifications
             </Button>
           </div>
