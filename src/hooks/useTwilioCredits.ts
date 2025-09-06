@@ -116,6 +116,39 @@ export function useTwilioCredits() {
     fetchTwilioBalance();
   }, []);
 
+  const testTwilioAuth = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('test-twilio-auth', {
+        body: {}
+      });
+
+      if (error) throw error;
+
+      if (data.success) {
+        toast({
+          title: 'Test réussi',
+          description: `Authentification Twilio OK - Compte: ${data.accountInfo?.friendlyName || 'N/A'}`,
+        });
+      } else {
+        toast({
+          title: 'Test échoué',
+          description: data.error || 'Erreur inconnue',
+          variant: 'destructive',
+        });
+      }
+    } catch (error: any) {
+      console.error('Erreur test Twilio:', error);
+      toast({
+        title: 'Erreur test',
+        description: error.message || 'Impossible de tester l\'authentification',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return {
     balance,
     loading,
@@ -123,5 +156,6 @@ export function useTwilioCredits() {
     fetchTwilioBalance,
     purchaseCredits,
     syncCreditsWithShops,
+    testTwilioAuth,
   };
 }

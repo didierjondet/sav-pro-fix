@@ -12,7 +12,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 
 
 export function TwilioCreditsManager() {
-  const { balance, loading, purchasing, fetchTwilioBalance, purchaseCredits, syncCreditsWithShops } = useTwilioCredits();
+  const { balance, loading, purchasing, fetchTwilioBalance, purchaseCredits, syncCreditsWithShops, testTwilioAuth } = useTwilioCredits();
   const { globalCredits, fetchGlobalCredits } = useGlobalSMSCredits();
   const [purchaseAmount, setPurchaseAmount] = useState<string>('100');
 
@@ -211,6 +211,33 @@ export function TwilioCreditsManager() {
               </div>
             </div>
           )}
+
+          <div className="flex items-center justify-between p-4 bg-red-50 border border-red-200 rounded-lg mb-4">
+            <div>
+              <p className="font-medium text-red-900">🔧 Test Authentification Twilio</p>
+              <p className="text-sm text-red-600">
+                Vérifier si les secrets Twilio sont corrects
+              </p>
+            </div>
+            <Button
+              onClick={testTwilioAuth}
+              disabled={loading}
+              variant="destructive"
+              size="sm"
+            >
+              {loading ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  Test...
+                </>
+              ) : (
+                <>
+                  <AlertCircle className="h-4 w-4 mr-2" />
+                  Tester Auth
+                </>
+              )}
+            </Button>
+          </div>
 
           <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
             <div>

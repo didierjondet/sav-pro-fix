@@ -24,6 +24,7 @@ import { SAVDocuments } from '@/components/sav/SAVDocuments';
 import { PatternLock } from '@/components/sav/PatternLock';
 import { generateFullTrackingUrl } from '@/utils/trackingUtils';
 import { generateSAVRestitutionPDF } from '@/utils/pdfGenerator';
+import { TwilioTestButton } from '@/components/debug/TwilioTestButton';
 
 export default function SAVDetail() {
   const { id } = useParams<{ id: string }>();
@@ -296,6 +297,9 @@ export default function SAVDetail() {
                       Imprimer restitution
                     </Button>
                   )}
+                  {/* Debug - Test Twilio Auth */}
+                  <TwilioTestButton />
+                  
                   {/* SMS Button - for all SAV types except internal */}
                   {savCase.sav_type !== 'internal' && (
                     <SMSButton
