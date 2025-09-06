@@ -23,6 +23,7 @@ import {
   Zap,
   HelpCircle,
   TrendingUp,
+  Bell,
 } from "lucide-react";
 
 interface SuperAdminSidebarProps {
@@ -60,6 +61,7 @@ const menuItems = [
       { id: "branding", title: "Charte graphique", icon: Palette },
       { id: "landing", title: "Landing Page", icon: FileText },
       { id: "sms-packages", title: "Packs SMS", icon: Zap },
+      { id: "alerts", title: "Alertes", icon: Bell },
     ]
   },
   {

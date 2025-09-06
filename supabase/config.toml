@@ -53,3 +53,9 @@ verify_jwt = false
 
 [functions.send-sms]
 verify_jwt = true
+
+[functions.check-sms-credits]
+verify_jwt = false
+
+[functions.setup-sms-alert-cron]
+verify_jwt = true

@@ -24,6 +24,7 @@ import { SEOConfigTab } from '@/components/seo/SEOConfigTab';
 import { BrandingManager } from '@/components/admin/BrandingManager';
 import { LandingPageManager } from '@/components/admin/LandingPageManager';
 import { SMSPackagesManager } from '@/components/admin/SMSPackagesManager';
+import { SystemAlertsManager } from '@/components/admin/SystemAlertsManager';
 import { useStorageUsage } from '@/hooks/useStorageUsage';
 
 interface Shop {
@@ -300,6 +301,8 @@ export default function SuperAdmin() {
         return <LandingPageManager />;
       case 'sms-packages':
         return <SMSPackagesManager />;
+      case 'alerts':
+        return <SystemAlertsManager />;
       default:
         return <DashboardOverview shops={shops} profiles={profiles} activeSupportCount={activeSupportCount} />;
     }

@@ -14,6 +14,44 @@ export type Database = {
   }
   public: {
     Tables: {
+      alert_history: {
+        Row: {
+          alert_id: string
+          current_value: number | null
+          id: string
+          message_sent: string
+          phone_number: string
+          sent_at: string
+          threshold_value: number | null
+        }
+        Insert: {
+          alert_id: string
+          current_value?: number | null
+          id?: string
+          message_sent: string
+          phone_number: string
+          sent_at?: string
+          threshold_value?: number | null
+        }
+        Update: {
+          alert_id?: string
+          current_value?: number | null
+          id?: string
+          message_sent?: string
+          phone_number?: string
+          sent_at?: string
+          threshold_value?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "alert_history_alert_id_fkey"
+            columns: ["alert_id"]
+            isOneToOne: false
+            referencedRelation: "system_alerts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       carousel_items: {
         Row: {
           created_at: string | null
@@ -1494,6 +1532,54 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      system_alerts: {
+        Row: {
+          alert_type: string
+          check_frequency_hours: number | null
+          created_at: string
+          id: string
+          is_enabled: boolean
+          last_alert_sent_at: string | null
+          last_check_at: string | null
+          name: string
+          sms_message_1: string | null
+          sms_message_2: string | null
+          sms_message_3: string | null
+          threshold_value: number | null
+          updated_at: string
+        }
+        Insert: {
+          alert_type: string
+          check_frequency_hours?: number | null
+          created_at?: string
+          id?: string
+          is_enabled?: boolean
+          last_alert_sent_at?: string | null
+          last_check_at?: string | null
+          name: string
+          sms_message_1?: string | null
+          sms_message_2?: string | null
+          sms_message_3?: string | null
+          threshold_value?: number | null
+          updated_at?: string
+        }
+        Update: {
+          alert_type?: string
+          check_frequency_hours?: number | null
+          created_at?: string
+          id?: string
+          is_enabled?: boolean
+          last_alert_sent_at?: string | null
+          last_check_at?: string | null
+          name?: string
+          sms_message_1?: string | null
+          sms_message_2?: string | null
+          sms_message_3?: string | null
+          threshold_value?: number | null
+          updated_at?: string
+        }
+        Relationships: []
       }
     }
     Views: {
