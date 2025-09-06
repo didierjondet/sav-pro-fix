@@ -1271,6 +1271,54 @@ export type Database = {
         }
         Relationships: []
       }
+      sms_invoices: {
+        Row: {
+          amount_cents: number
+          created_at: string
+          currency: string
+          id: string
+          invoice_number: string
+          package_id: string
+          paid_at: string | null
+          pdf_url: string | null
+          shop_id: string
+          sms_count: number
+          status: string
+          stripe_payment_intent_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount_cents: number
+          created_at?: string
+          currency?: string
+          id?: string
+          invoice_number: string
+          package_id: string
+          paid_at?: string | null
+          pdf_url?: string | null
+          shop_id: string
+          sms_count: number
+          status?: string
+          stripe_payment_intent_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount_cents?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          invoice_number?: string
+          package_id?: string
+          paid_at?: string | null
+          pdf_url?: string | null
+          shop_id?: string
+          sms_count?: number
+          status?: string
+          stripe_payment_intent_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       sms_package_purchases: {
         Row: {
           created_at: string
@@ -1400,6 +1448,57 @@ export type Database = {
           subscription_tier?: string | null
           updated_at?: string
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      subscription_invoices: {
+        Row: {
+          amount_cents: number
+          created_at: string
+          currency: string
+          due_date: string | null
+          id: string
+          invoice_number: string
+          paid_at: string | null
+          pdf_url: string | null
+          period_end: string
+          period_start: string
+          shop_id: string
+          status: string
+          stripe_invoice_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount_cents: number
+          created_at?: string
+          currency?: string
+          due_date?: string | null
+          id?: string
+          invoice_number: string
+          paid_at?: string | null
+          pdf_url?: string | null
+          period_end: string
+          period_start: string
+          shop_id: string
+          status?: string
+          stripe_invoice_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount_cents?: number
+          created_at?: string
+          currency?: string
+          due_date?: string | null
+          id?: string
+          invoice_number?: string
+          paid_at?: string | null
+          pdf_url?: string | null
+          period_end?: string
+          period_start?: string
+          shop_id?: string
+          status?: string
+          stripe_invoice_id?: string | null
+          updated_at?: string
         }
         Relationships: []
       }

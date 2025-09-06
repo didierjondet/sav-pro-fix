@@ -23,7 +23,8 @@ import { useSearchParams } from 'react-router-dom';
 import { ImportStock } from '@/components/parts/ImportStock';
 import { ImportQuotes } from '@/components/import/ImportQuotes';
 import { ImportSAVs } from '@/components/import/ImportSAVs';
-import { Store, Users, Mail, Phone, MapPin, UserPlus, Trash2, Crown, Settings as SettingsIcon, Copy, Key, Upload, Image as ImageIcon, Moon, Sun, Monitor, Star, Search, CreditCard, MessageSquare } from 'lucide-react';
+import { BillingInvoices } from '@/components/billing/BillingInvoices';
+import { Store, Users, Mail, Phone, MapPin, UserPlus, Trash2, Crown, Settings as SettingsIcon, Copy, Key, Upload, Image as ImageIcon, Moon, Sun, Monitor, Star, Search, CreditCard, MessageSquare, FileText } from 'lucide-react';
 import { useTheme } from "next-themes";
 import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -504,7 +505,7 @@ export default function Settings() {
                 return p;
               });
             }} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-9">
+            <TabsList className="grid w-full grid-cols-10">
               <TabsTrigger value="shop" className="flex items-center gap-2">
                 <Store className="h-4 w-4" />
                 Magasin
@@ -536,6 +537,10 @@ export default function Settings() {
               <TabsTrigger value="subscription" className="flex items-center gap-2">
                 <CreditCard className="h-4 w-4" />
                 Abonnement
+              </TabsTrigger>
+              <TabsTrigger value="billing" className="flex items-center gap-2">
+                <FileText className="h-4 w-4" />
+                Facturation
               </TabsTrigger>
               {isAdmin && <TabsTrigger value="users" className="flex items-center gap-2">
                   <Users className="h-4 w-4" />
@@ -1257,6 +1262,10 @@ export default function Settings() {
               </Card>
               
               <SMSPackagesDisplay />
+            </TabsContent>
+
+            <TabsContent value="billing" className="space-y-6">
+              <BillingInvoices />
             </TabsContent>
 
           </Tabs>
