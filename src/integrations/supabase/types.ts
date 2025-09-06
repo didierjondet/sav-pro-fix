@@ -625,7 +625,7 @@ export type Database = {
           sav_type: Database["public"]["Enums"]["sav_type"]
           shop_id: string | null
           sku: string | null
-          status: Database["public"]["Enums"]["sav_status"]
+          status: string
           taken_over: boolean
           taken_over_at: string | null
           takeover_amount: number | null
@@ -655,7 +655,7 @@ export type Database = {
           sav_type: Database["public"]["Enums"]["sav_type"]
           shop_id?: string | null
           sku?: string | null
-          status?: Database["public"]["Enums"]["sav_status"]
+          status?: string
           taken_over?: boolean
           taken_over_at?: string | null
           takeover_amount?: number | null
@@ -685,7 +685,7 @@ export type Database = {
           sav_type?: Database["public"]["Enums"]["sav_type"]
           shop_id?: string | null
           sku?: string | null
-          status?: Database["public"]["Enums"]["sav_status"]
+          status?: string
           taken_over?: boolean
           taken_over_at?: string | null
           takeover_amount?: number | null
@@ -821,7 +821,7 @@ export type Database = {
           id: string
           notes: string | null
           sav_case_id: string | null
-          status: Database["public"]["Enums"]["sav_status"]
+          status: string
         }
         Insert: {
           changed_by?: string | null
@@ -829,7 +829,7 @@ export type Database = {
           id?: string
           notes?: string | null
           sav_case_id?: string | null
-          status: Database["public"]["Enums"]["sav_status"]
+          status: string
         }
         Update: {
           changed_by?: string | null
@@ -837,7 +837,7 @@ export type Database = {
           id?: string
           notes?: string | null
           sav_case_id?: string | null
-          status?: Database["public"]["Enums"]["sav_status"]
+          status?: string
         }
         Relationships: [
           {
