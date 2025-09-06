@@ -47,9 +47,9 @@ Deno.serve(async (req) => {
       const body = await req.json();
       const { status } = body;
 
-      if (!status || !['accepted', 'rejected'].includes(status)) {
+      if (!status || !['accepted', 'rejected', 'sms_accepted'].includes(status)) {
         return new Response(
-          JSON.stringify({ error: 'Invalid status. Must be "accepted" or "rejected"' }),
+          JSON.stringify({ error: 'Invalid status. Must be "accepted", "rejected", or "sms_accepted"' }),
           { 
             status: 400, 
             headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
