@@ -17,7 +17,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Settings, Save, MessageSquare, AlertTriangle, CreditCard, Euro } from 'lucide-react';
 import { SMSButton } from '@/components/sav/SMSButton';
-import { SAVCloseDialog } from './SAVCloseDialog';
+import { SAVCloseUnifiedDialog } from './SAVCloseUnifiedDialog';
 import { useShop } from '@/hooks/useShop';
 
 interface SAVStatusManagerProps {
@@ -45,35 +45,20 @@ export function SAVStatusManager({ savCase, onStatusUpdated }: SAVStatusManagerP
   const [selectedStatus, setSelectedStatus] = useState(savCase.status);
   const [notes, setNotes] = useState('');
   const [updating, setUpdating] = useState(false);
-  const [showSMSDialog, setShowSMSDialog] = useState(false);
-  const [pendingStatusData, setPendingStatusData] = useState<{status: string, notes: string} | null>(null);
   
   // États pour la prise en charge
   const [partialTakeover, setPartialTakeover] = useState(savCase.partial_takeover || false);
   const [takeoverAmount, setTakeoverAmount] = useState(savCase.takeover_amount || 0);
   const [updatingTakeover, setUpdatingTakeover] = useState(false);
   
-  // Alerte lorsque l'on passe en "Prêt" sans pièces / prix d'achat
-  const [showReadyWarning, setShowReadyWarning] = useState(false);
-  const [readyWarningInfo, setReadyWarningInfo] = useState<{ noParts: boolean; noPurchase: boolean }>({ noParts: false, noPurchase: false });
-  
-  // État pour les limites SMS
-  const [limits, setLimits] = useState<{ allowed: boolean; reason: string; action: string | null }>({ allowed: true, reason: '', action: null });
-  
-  // État pour le dialog de clôture SAV
+  // État pour le dialog de clôture SAV unifié
   const [showCloseDialog, setShowCloseDialog] = useState(false);
   
   const { updateCaseStatus } = useSAVCases();
-  const { subscription, checkLimits } = useSubscription();
+  const { subscription } = useSubscription();
   const { shop } = useShop();
   const { toast } = useToast();
   const { getStatusInfo, getAllStatuses } = useShopSAVStatuses();
-
-  // Charger les limites SMS au montage
-  useEffect(() => {
-    const smsLimits = checkLimits('sms');
-    setLimits(smsLimits);
-  }, [checkLimits]);
 
   const generateTrackingUrl = () => {
     if (!savCase.tracking_slug) return '';
@@ -81,13 +66,7 @@ export function SAVStatusManager({ savCase, onStatusUpdated }: SAVStatusManagerP
   };
 
   const handleUpdateStatus = async (sendSMS = false) => {
-    // Si on passe au statut "ready", montrer le dialog de clôture
-    if (selectedStatus === 'ready' && savCase.status !== 'ready') {
-      setShowCloseDialog(true);
-      return;
-    }
-    
-    // Logique normale pour les autres statuts
+    // Logique normale pour les changements de statut (sauf passage à "ready")
     if (selectedStatus === savCase.status && !notes.trim()) return;
     
     setUpdating(true);
@@ -95,46 +74,13 @@ export function SAVStatusManager({ savCase, onStatusUpdated }: SAVStatusManagerP
     try {
       await updateCaseStatus(savCase.id, selectedStatus as any, notes.trim() || undefined);
       
-      // Si on doit envoyer un SMS
-      if (sendSMS && savCase.customer?.phone && savCase.tracking_slug) {
-        const customerName = `${savCase.customer.first_name} ${savCase.customer.last_name}`;
-        const shortTrackingUrl = generateShortTrackingUrl(savCase.tracking_slug);
-        const statusInfo = getStatusInfo(selectedStatus);
-        const statusLabel = statusInfo.label;
-        
-        const message = `Bonjour ${customerName}, votre dossier de réparation ${savCase.case_number} a été mis à jour : ${statusLabel}. Suivez l'évolution : ${shortTrackingUrl}`;
-        
-        await supabase.functions.invoke('send-sms', {
-          body: {
-            shopId: savCase.shop_id,
-            toNumber: savCase.customer.phone,
-            message: message,
-            type: 'status_change',
-            recordId: savCase.id
-          }
-        });
-        
-        toast({
-          title: "Statut mis à jour et SMS envoyé",
-          description: `SMS de notification envoyé à ${savCase.customer.phone}`,
-        });
-      } else {
-        toast({
-          title: "Statut mis à jour",
-          description: "Le statut du dossier a été mis à jour avec succès",
-        });
-      }
+      toast({
+        title: "Statut mis à jour",
+        description: "Le statut du dossier a été mis à jour avec succès",
+      });
 
       // Envoi automatique de demande d'avis si le statut passe à "ready" et que c'est activé
-      console.log('Vérification envoi automatique d\'avis:', {
-        selectedStatus,
-        currentStatus: savCase.status,
-        savType: savCase.sav_type,
-        shouldSend: selectedStatus === 'ready' && savCase.status !== 'ready' && (savCase.sav_type === 'client' || savCase.sav_type === 'external')
-      });
-      
       if (selectedStatus === 'ready' && savCase.status !== 'ready' && (savCase.sav_type === 'client' || savCase.sav_type === 'external')) {
-        console.log('Envoi de la demande d\'avis automatique...');
         await sendAutomaticReviewRequest();
       }
       
@@ -148,8 +94,6 @@ export function SAVStatusManager({ savCase, onStatusUpdated }: SAVStatusManagerP
       });
     } finally {
       setUpdating(false);
-      setShowSMSDialog(false);
-      setPendingStatusData(null);
     }
   };
 
@@ -266,38 +210,17 @@ L'équipe ${shopData.name || 'de réparation'}`;
     }
   };
 
-  // Procéder à la demande de changement de statut (avec logique SMS)
-  const proceedWithStatusChange = async () => {
-    if (savCase.customer?.phone && selectedStatus !== savCase.status) {
-      setPendingStatusData({ status: selectedStatus, notes: notes.trim() });
-      setShowSMSDialog(true);
-    } else {
-      await handleUpdateStatus(false);
-    }
-  };
-
   const handleStatusChangeRequest = async () => {
     if (selectedStatus === savCase.status && !notes.trim()) return;
     
-    // Si on passe en "Prêt", vérifier la présence de pièces et de prix d'achat
-    if (selectedStatus === 'ready' && selectedStatus !== savCase.status) {
-      const { ok, noParts, noPurchase } = await validateReadyConstraints();
-      if (!ok) {
-        setReadyWarningInfo({ noParts, noPurchase });
-        setShowReadyWarning(true);
-        return;
-      }
+    // Si on passe au statut "ready", montrer le dialog de clôture unifié
+    if (selectedStatus === 'ready' && savCase.status !== 'ready') {
+      setShowCloseDialog(true);
+      return;
     }
     
-    await proceedWithStatusChange();
-  };
-
-  const handleSMSChoice = async (sendSMS: boolean) => {
-    if (pendingStatusData) {
-      setSelectedStatus(pendingStatusData.status);
-      setNotes(pendingStatusData.notes);
-      await handleUpdateStatus(sendSMS);
-    }
+    // Pour les autres statuts, mise à jour directe
+    await handleUpdateStatus(false);
   };
 
   // Fonction pour mettre à jour la prise en charge
@@ -394,7 +317,6 @@ L'équipe ${shopData.name || 'de réparation'}`;
   const hasChanges = selectedStatus !== savCase.status || notes.trim();
   const hasTakeoverChanges = partialTakeover !== (savCase.partial_takeover || false) || 
                             takeoverAmount !== (savCase.takeover_amount || 0);
-  const canSendSMS = limits.allowed && savCase.customer?.phone && savCase.tracking_slug;
 
   // Calculer le montant à payer par le client
   const clientAmount = partialTakeover ? 
@@ -554,125 +476,15 @@ L'équipe ${shopData.name || 'de réparation'}`;
           </>
         )}
 
-        {/* Dialog de confirmation SMS */}
-        <Dialog open={showSMSDialog} onOpenChange={setShowSMSDialog}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle className="flex items-center justify-between">
-                <span>Notifier le client ?</span>
-                <SMSButton
-                  customerPhone={savCase.customer?.phone}
-                  customerName={`${savCase.customer?.first_name || ''} ${savCase.customer?.last_name || ''}`.trim()}
-                  caseNumber={savCase.case_number}
-                  caseId={savCase.id}
-                  size="sm"
-                  variant="ghost"
-                />
-              </DialogTitle>
-            </DialogHeader>
-            
-            <div className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                Le statut du dossier va passer de "{getStatusInfo(savCase.status).label}" 
-                à "{getStatusInfo(selectedStatus).label}".
-              </p>
-              
-              {savCase.customer?.phone ? (
-                <div>
-                  <p className="text-sm">
-                    Voulez-vous envoyer un SMS de notification automatique au client ?
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Destinataire : {savCase.customer.phone}
-                  </p>
-                  
-                  {!canSendSMS && (
-                    <Alert className="mt-2 border-orange-200 bg-orange-50">
-                      <AlertTriangle className="h-4 w-4" />
-                      <AlertDescription className="text-orange-700">
-                        {limits.reason}
-                      </AlertDescription>
-                    </Alert>
-                  )}
-                  
-                  {subscription && (
-                    <p className="text-xs text-muted-foreground mt-2">
-                      SMS restants : {subscription.sms_credits_allocated - subscription.sms_credits_used}
-                    </p>
-                  )}
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  Aucun numéro de téléphone renseigné pour ce client.
-                </p>
-              )}
-            </div>
-
-            <DialogFooter className="gap-2">
-              <Button variant="outline" onClick={() => handleSMSChoice(false)}>
-                Non, juste mettre à jour
-              </Button>
-              {canSendSMS ? (
-                <Button onClick={() => handleSMSChoice(true)}>
-                  <MessageSquare className="h-4 w-4 mr-2" />
-                  Oui, envoyer SMS
-                </Button>
-              ) : savCase.customer?.phone ? (
-                <Button 
-                  variant="outline"
-                  onClick={() => window.location.href = '/settings?tab=sms'}
-                >
-                  <CreditCard className="h-4 w-4 mr-2" />
-                  Acheter des SMS
-                </Button>
-              ) : (
-                <Button disabled>
-                  Pas de téléphone
-                </Button>
-              )}
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* Alerte: pas de pièces / pas de prix d'achat */}
-        <Dialog open={showReadyWarning} onOpenChange={setShowReadyWarning}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>Vérification avant passage en "Prêt"</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-3">
-              <Alert className="border-orange-200 bg-orange-50">
-                <AlertTriangle className="h-4 w-4" />
-                <AlertDescription className="text-orange-700">
-                  Ce dossier semble incomplet.
-                </AlertDescription>
-              </Alert>
-              <ul className="list-disc pl-5 text-sm">
-                {readyWarningInfo.noParts && <li>Ce SAV n'a aucune pièce liée.</li>}
-                {readyWarningInfo.noPurchase && <li>Aucun prix d'achat n'est renseigné pour les pièces.</li>}
-              </ul>
-              <p className="text-sm text-muted-foreground">
-                Vous pouvez revenir pour ajouter des pièces ou forcer le statut en "Prêt".
-              </p>
-            </div>
-            <DialogFooter className="gap-2">
-              <Button variant="outline" onClick={() => setShowReadyWarning(false)}>
-                Revenir pour ajouter une pièce
-              </Button>
-              <Button onClick={async () => { setShowReadyWarning(false); await proceedWithStatusChange(); }}>
-                Forcer le statut "Prêt"
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* Dialog de clôture SAV avec génération de document */}
-        <SAVCloseDialog
+        {/* Dialog de clôture SAV unifié */}
+        <SAVCloseUnifiedDialog
           isOpen={showCloseDialog}
           onClose={() => setShowCloseDialog(false)}
           onConfirm={handleCloseConfirm}
           savCase={savCase as any}
           shop={shop}
+          subscription={subscription}
+          notes={notes}
         />
       </CardContent>
     </Card>
