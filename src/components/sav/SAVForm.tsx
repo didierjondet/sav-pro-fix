@@ -27,6 +27,8 @@ import { PatternLock } from '@/components/sav/PatternLock';
 import { Checkbox } from '@/components/ui/checkbox';
 import { PartDiscountManager, PartDiscountInfo } from '@/components/ui/part-discount-manager';
 import { supabase } from '@/integrations/supabase/client';
+import { useShopSAVStatuses } from '@/hooks/useShopSAVStatuses';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface CustomerInfo {
   firstName: string;
@@ -71,6 +73,7 @@ interface SAVFormProps {
 export function SAVForm({ onSuccess }: SAVFormProps) {
   const [savType, setSavType] = useState<'client' | 'internal' | 'external'>('client');
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
+  const [selectedStatus, setSelectedStatus] = useState('pending');
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({
     firstName: '',
     lastName: '',
@@ -108,6 +111,7 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
   const { checkLimits } = useSubscription();
   const { checkAndShowLimitDialog } = useLimitDialogContext();
   const { toast } = useToast();
+  const { getAllStatuses, getStatusInfo } = useShopSAVStatuses();
 
   // Charger les limites SAV au montage et quand l'utilisateur change
   useEffect(() => {
@@ -245,7 +249,7 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
         problem_description: deviceInfo.problemDescription,
         total_time_minutes: totalTimeMinutes,
         total_cost: totalCost,
-        status: 'pending',
+        status: selectedStatus as any,
         shop_id: profile?.shop_id,
         attachments: deviceInfo.attachments || [], // Ajouter les attachments ici
         accessories,
@@ -345,6 +349,7 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
       
       // Reset form
       setSavType('client');
+      setSelectedStatus('pending');
       setCustomerInfo({
         firstName: '',
         lastName: '',
@@ -409,20 +414,47 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
           <CardTitle>Type de SAV</CardTitle>
         </CardHeader>
         <CardContent>
-          <RadioGroup value={savType} onValueChange={(value) => setSavType(value as 'client' | 'internal' | 'external')}>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="client" id="client" />
-              <Label htmlFor="client">SAV Client</Label>
+          <div className="space-y-4">
+            <div>
+              <Label className="text-sm font-medium">Type de SAV</Label>
+              <RadioGroup value={savType} onValueChange={(value) => setSavType(value as 'client' | 'internal' | 'external')}>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="client" id="client" />
+                  <Label htmlFor="client">SAV Client</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="external" id="external" />
+                  <Label htmlFor="external">SAV Externe</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="internal" id="internal" />
+                  <Label htmlFor="internal">SAV Interne Magasin</Label>
+                </div>
+              </RadioGroup>
             </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="external" id="external" />
-              <Label htmlFor="external">SAV Externe</Label>
+            
+            <div>
+              <Label htmlFor="status" className="text-sm font-medium">Statut initial</Label>
+              <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+                <SelectTrigger className="mt-1">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {getAllStatuses().map((status) => (
+                    <SelectItem key={status.value} value={status.value}>
+                      <div className="flex items-center gap-2">
+                        <div 
+                          className="w-3 h-3 rounded-full" 
+                          style={{ backgroundColor: status.color }}
+                        />
+                        {status.label}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="internal" id="internal" />
-              <Label htmlFor="internal">SAV Interne Magasin</Label>
-            </div>
-          </RadioGroup>
+          </div>
         </CardContent>
       </Card>
 
