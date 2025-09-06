@@ -24,21 +24,30 @@ import { SAVDocuments } from '@/components/sav/SAVDocuments';
 import { PatternLock } from '@/components/sav/PatternLock';
 import { generateFullTrackingUrl } from '@/utils/trackingUtils';
 import { generateSAVRestitutionPDF } from '@/utils/pdfGenerator';
-
-
 export default function SAVDetail() {
-  const { id } = useParams<{ id: string }>();
+  const {
+    id
+  } = useParams<{
+    id: string;
+  }>();
   const navigate = useNavigate();
-  const { toast } = useToast();
+  const {
+    toast
+  } = useToast();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [privateComments, setPrivateComments] = useState('');
   const [savingComments, setSavingComments] = useState(false);
-  const { cases, loading, updateTechnicianComments } = useSAVCases();
-  const { shop } = useShop();
+  const {
+    cases,
+    loading,
+    updateTechnicianComments
+  } = useSAVCases();
+  const {
+    shop
+  } = useShop();
   const [savCase, setSavCase] = useState<any>(null);
   const [technicianComments, setTechnicianComments] = useState('');
   const [savingTechnicianComments, setSavingTechnicianComments] = useState(false);
-
   useEffect(() => {
     if (cases && id) {
       const foundCase = cases.find(c => c.id === id);
@@ -57,147 +66,130 @@ export default function SAVDetail() {
   // Mise à jour en temps réel du SAV case et des pièces
   useEffect(() => {
     if (!id) return;
-
-    const channel = supabase
-      .channel('sav-case-realtime')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'sav_cases',
-          filter: `id=eq.${id}`
-        },
-        (payload) => {
-          console.log('SAV case updated:', payload);
-          if (payload.eventType === 'UPDATE' && payload.new) {
-            setSavCase((prevCase: any) => ({ 
-              ...prevCase, 
-              ...payload.new,
-              // Conserver les données de relation customer si elles existent
-              customer: prevCase?.customer 
-            }));
-            // Mettre à jour les commentaires privés si ils ont changé
-            if (payload.new.private_comments !== undefined) {
-              setPrivateComments(payload.new.private_comments || '');
-            }
-            // Mettre à jour les commentaires technicien si ils ont changé
-            if (payload.new.technician_comments !== undefined) {
-              setTechnicianComments(payload.new.technician_comments || '');
-            }
-          }
+    const channel = supabase.channel('sav-case-realtime').on('postgres_changes', {
+      event: '*',
+      schema: 'public',
+      table: 'sav_cases',
+      filter: `id=eq.${id}`
+    }, payload => {
+      console.log('SAV case updated:', payload);
+      if (payload.eventType === 'UPDATE' && payload.new) {
+        setSavCase((prevCase: any) => ({
+          ...prevCase,
+          ...payload.new,
+          // Conserver les données de relation customer si elles existent
+          customer: prevCase?.customer
+        }));
+        // Mettre à jour les commentaires privés si ils ont changé
+        if (payload.new.private_comments !== undefined) {
+          setPrivateComments(payload.new.private_comments || '');
         }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'sav_parts',
-          filter: `sav_case_id=eq.${id}`
-        },
-        (payload) => {
-          console.log('SAV parts updated:', payload);
-          // Recalculer le prix total automatiquement
-          // Le trigger de la base de données se charge déjà de mettre à jour le total_cost dans sav_cases
-          // La mise à jour sera captée par l'écoute sur sav_cases ci-dessus
+        // Mettre à jour les commentaires technicien si ils ont changé
+        if (payload.new.technician_comments !== undefined) {
+          setTechnicianComments(payload.new.technician_comments || '');
         }
-      )
-      .subscribe();
-
+      }
+    }).on('postgres_changes', {
+      event: '*',
+      schema: 'public',
+      table: 'sav_parts',
+      filter: `sav_case_id=eq.${id}`
+    }, payload => {
+      console.log('SAV parts updated:', payload);
+      // Recalculer le prix total automatiquement
+      // Le trigger de la base de données se charge déjà de mettre à jour le total_cost dans sav_cases
+      // La mise à jour sera captée par l'écoute sur sav_cases ci-dessus
+    }).subscribe();
     return () => {
       supabase.removeChannel(channel);
     };
   }, [id]);
-
   const generateTrackingUrl = () => {
     if (!savCase?.tracking_slug) return '';
     return generateFullTrackingUrl(savCase.tracking_slug);
   };
-
   const generateQRCode = async () => {
     const url = generateTrackingUrl();
     // Open QR code generator
     window.open(`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(url)}`, '_blank');
     toast({
       title: "QR Code généré",
-      description: "Le QR Code s'ouvre dans un nouvel onglet",
+      description: "Le QR Code s'ouvre dans un nouvel onglet"
     });
   };
-
   const copyTrackingUrl = async () => {
     try {
       await navigator.clipboard.writeText(generateTrackingUrl());
       toast({
         title: "Lien copié",
-        description: "Le lien de suivi a été copié dans le presse-papier",
+        description: "Le lien de suivi a été copié dans le presse-papier"
       });
     } catch (error) {
       toast({
         title: "Erreur",
         description: "Impossible de copier le lien",
-        variant: "destructive",
+        variant: "destructive"
       });
     }
   };
-
   const handleStatusUpdated = () => {
     // Plus besoin de refetch, le realtime se charge de la mise à jour
   };
-
   const saveTechnicianComments = async () => {
     if (!savCase?.id) return;
-    
     setSavingTechnicianComments(true);
     try {
       await updateTechnicianComments(savCase.id, technicianComments);
-      
+
       // Mettre à jour l'état local
-      setSavCase({ ...savCase, technician_comments: technicianComments });
+      setSavCase({
+        ...savCase,
+        technician_comments: technicianComments
+      });
     } catch (error) {
       // L'erreur est déjà gérée dans le hook
     } finally {
       setSavingTechnicianComments(false);
     }
   };
-
   const savePrivateComments = async () => {
     if (!savCase?.id) return;
-    
     setSavingComments(true);
     try {
-      const { error } = await supabase
-        .from('sav_cases')
-        .update({ private_comments: privateComments })
-        .eq('id', savCase.id);
-
+      const {
+        error
+      } = await supabase.from('sav_cases').update({
+        private_comments: privateComments
+      }).eq('id', savCase.id);
       if (error) throw error;
-
       toast({
         title: "Succès",
-        description: "Commentaires privés sauvegardés",
+        description: "Commentaires privés sauvegardés"
       });
 
       // Mettre à jour l'état local
-      setSavCase({ ...savCase, private_comments: privateComments });
+      setSavCase({
+        ...savCase,
+        private_comments: privateComments
+      });
     } catch (error: any) {
       toast({
         title: "Erreur",
         description: "Impossible de sauvegarder les commentaires",
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setSavingComments(false);
     }
   };
-
   const handleAttachmentsUpdate = (newAttachments: any[]) => {
-    setSavCase({ ...savCase, attachments: newAttachments });
+    setSavCase({
+      ...savCase,
+      attachments: newAttachments
+    });
   };
-
   if (loading) {
-    return (
-      <div className="min-h-screen bg-background">
+    return <div className="min-h-screen bg-background">
         <div className="flex h-screen">
           <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
           <div className="flex-1 flex flex-col overflow-hidden">
@@ -207,13 +199,10 @@ export default function SAVDetail() {
             </main>
           </div>
         </div>
-      </div>
-    );
+      </div>;
   }
-
   if (!savCase) {
-    return (
-      <div className="min-h-screen bg-background">
+    return <div className="min-h-screen bg-background">
         <div className="flex h-screen">
           <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
           <div className="flex-1 flex flex-col overflow-hidden">
@@ -229,21 +218,35 @@ export default function SAVDetail() {
             </main>
           </div>
         </div>
-      </div>
-    );
+      </div>;
   }
-
   const statusConfig = {
-    pending: { label: 'En attente', variant: 'secondary' as const },
-    in_progress: { label: 'En cours', variant: 'default' as const },
-    testing: { label: 'Tests', variant: 'default' as const },
-    ready: { label: 'Prêt', variant: 'default' as const },
-    delivered: { label: 'Livré', variant: 'default' as const },
-    cancelled: { label: 'Annulé', variant: 'destructive' as const },
+    pending: {
+      label: 'En attente',
+      variant: 'secondary' as const
+    },
+    in_progress: {
+      label: 'En cours',
+      variant: 'default' as const
+    },
+    testing: {
+      label: 'Tests',
+      variant: 'default' as const
+    },
+    ready: {
+      label: 'Prêt',
+      variant: 'default' as const
+    },
+    delivered: {
+      label: 'Livré',
+      variant: 'default' as const
+    },
+    cancelled: {
+      label: 'Annulé',
+      variant: 'destructive' as const
+    }
   };
-
-  return (
-    <div className="min-h-screen bg-background">
+  return <div className="min-h-screen bg-background">
       <div className="flex h-screen">
         <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
         <div className="flex-1 flex flex-col overflow-hidden">
@@ -252,11 +255,7 @@ export default function SAVDetail() {
             <div className="max-w-6xl mx-auto space-y-6">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => navigate('/sav')}
-                  >
+                  <Button variant="outline" size="sm" onClick={() => navigate('/sav')}>
                     <ArrowLeft className="h-4 w-4 mr-2" />
                     Retour
                   </Button>
@@ -272,58 +271,34 @@ export default function SAVDetail() {
                     {statusConfig[savCase.status as keyof typeof statusConfig]?.label || savCase.status}
                   </Badge>
                   {/* Bouton Imprimer restitution - uniquement pour les SAV prêts */}
-                  {savCase.status === 'ready' && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                       onClick={async () => {
-                         try {
-                           await generateSAVRestitutionPDF(savCase, shop);
-                           toast({
-                             title: "Document de restitution",
-                             description: "Le document de restitution est en cours d'impression.",
-                           });
-                         } catch (error) {
-                           console.error('Erreur lors de la génération du PDF:', error);
-                           toast({
-                             title: "Erreur",
-                             description: "Impossible de générer le document de restitution.",
-                             variant: "destructive",
-                           });
-                         }
-                       }}
-                      className="bg-primary/10 hover:bg-primary/20"
-                    >
+                  {savCase.status === 'ready' && <Button variant="outline" size="sm" onClick={async () => {
+                  try {
+                    await generateSAVRestitutionPDF(savCase, shop);
+                    toast({
+                      title: "Document de restitution",
+                      description: "Le document de restitution est en cours d'impression."
+                    });
+                  } catch (error) {
+                    console.error('Erreur lors de la génération du PDF:', error);
+                    toast({
+                      title: "Erreur",
+                      description: "Impossible de générer le document de restitution.",
+                      variant: "destructive"
+                    });
+                  }
+                }} className="bg-primary/10 hover:bg-primary/20">
                       Imprimer restitution
-                    </Button>
-                  )}
+                    </Button>}
                   
                   {/* SMS Button - for all SAV types except internal */}
-                  {savCase.sav_type !== 'internal' && (
-                    <SMSButton
-                      customerPhone={savCase.customer?.phone || savCase.external_contact_phone || ''}
-                      customerName={
-                        savCase.sav_type === 'client' 
-                          ? `${savCase.customer?.first_name || ''} ${savCase.customer?.last_name || ''}`.trim()
-                          : savCase.external_contact_name || 'Contact externe'
-                      }
-                      caseNumber={savCase.case_number}
-                      caseId={savCase.id}
-                      size="sm"
-                      variant="outline"
-                    />
-                  )}
+                  {savCase.sav_type !== 'internal' && <SMSButton customerPhone={savCase.customer?.phone || savCase.external_contact_phone || ''} customerName={savCase.sav_type === 'client' ? `${savCase.customer?.first_name || ''} ${savCase.customer?.last_name || ''}`.trim() : savCase.external_contact_name || 'Contact externe'} caseNumber={savCase.case_number} caseId={savCase.id} size="sm" variant="outline" />}
                   <SAVPrintButton savCase={savCase} />
-                  <SAVPartsEditor 
-                    savCaseId={savCase.id} 
-                    onPartsUpdated={() => {}}
-                  />
+                  <SAVPartsEditor savCaseId={savCase.id} onPartsUpdated={() => {}} />
                 </div>
               </div>
 
               {/* Contact Information - For all SAV types except internal */}
-              {savCase.sav_type !== 'internal' && (
-                <Card>
+              {savCase.sav_type !== 'internal' && <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <User className="h-5 w-5" />
@@ -341,8 +316,7 @@ export default function SAVDetail() {
                       </div>
                     </div>
                     
-                    {savCase.customer?.email && (
-                      <div className="flex items-center gap-2">
+                    {savCase.customer?.email && <div className="flex items-center gap-2">
                         <Mail className="h-4 w-4 text-muted-foreground" />
                         <div>
                           <p className="text-sm text-muted-foreground">Email</p>
@@ -350,11 +324,9 @@ export default function SAVDetail() {
                             {savCase.customer?.email}
                           </p>
                         </div>
-                      </div>
-                    )}
+                      </div>}
                     
-                    {savCase.customer?.phone && (
-                      <div className="flex items-center gap-2">
+                    {savCase.customer?.phone && <div className="flex items-center gap-2">
                         <Phone className="h-4 w-4 text-muted-foreground" />
                         <div>
                           <p className="text-sm text-muted-foreground">Téléphone</p>
@@ -362,11 +334,9 @@ export default function SAVDetail() {
                             {savCase.customer?.phone}
                           </p>
                         </div>
-                      </div>
-                    )}
+                      </div>}
                     
-                    {savCase.customer?.address && (
-                      <div className="flex items-center gap-2">
+                    {savCase.customer?.address && <div className="flex items-center gap-2">
                         <MapPin className="h-4 w-4 text-muted-foreground" />
                         <div>
                           <p className="text-sm text-muted-foreground">Adresse</p>
@@ -374,11 +344,9 @@ export default function SAVDetail() {
                             {savCase.customer?.address}
                           </p>
                         </div>
-                      </div>
-                    )}
+                      </div>}
                   </CardContent>
-                </Card>
-              )}
+                </Card>}
 
               {/* Case Details */}
               <Card>
@@ -392,16 +360,12 @@ export default function SAVDetail() {
                   <div>
                     <strong>Appareil:</strong> {savCase.device_brand} {savCase.device_model}
                   </div>
-                  {savCase.device_imei && (
-                    <div>
+                  {savCase.device_imei && <div>
                       <strong>IMEI:</strong> {savCase.device_imei}
-                    </div>
-                  )}
-                  {savCase.sku && (
-                    <div>
+                    </div>}
+                  {savCase.sku && <div>
                       <strong>SKU:</strong> {savCase.sku}
-                    </div>
-                  )}
+                    </div>}
                   <div>
                     <strong>Coût total:</strong> {savCase.total_cost}€
                   </div>
@@ -409,18 +373,15 @@ export default function SAVDetail() {
                     <strong>Description du problème:</strong>
                     <p className="mt-1 text-muted-foreground">{savCase.problem_description}</p>
                   </div>
-                  {savCase.repair_notes && (
-                    <div className="md:col-span-2">
+                  {savCase.repair_notes && <div className="md:col-span-2">
                       <strong>Notes de réparation:</strong>
                       <p className="mt-1 text-muted-foreground">{savCase.repair_notes}</p>
-                    </div>
-                  )}
+                    </div>}
                 </CardContent>
               </Card>
 
               {/* Accessoires présents */}
-              {(savCase.accessories?.charger || savCase.accessories?.case || savCase.accessories?.screen_protector) && (
-                <Card>
+              {(savCase.accessories?.charger || savCase.accessories?.case || savCase.accessories?.screen_protector) && <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       Accessoires présents
@@ -429,49 +390,31 @@ export default function SAVDetail() {
                   <CardContent>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div className="flex items-center gap-2">
-                        {savCase.accessories?.charger ? (
-                          <CheckCircle className="h-4 w-4 text-green-500" />
-                        ) : (
-                          <X className="h-4 w-4 text-muted-foreground" />
-                        )}
+                        {savCase.accessories?.charger ? <CheckCircle className="h-4 w-4 text-green-500" /> : <X className="h-4 w-4 text-muted-foreground" />}
                         <span className={savCase.accessories?.charger ? 'text-green-600' : 'text-muted-foreground'}>
                           Chargeur
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
-                        {savCase.accessories?.case ? (
-                          <CheckCircle className="h-4 w-4 text-green-500" />
-                        ) : (
-                          <X className="h-4 w-4 text-muted-foreground" />
-                        )}
+                        {savCase.accessories?.case ? <CheckCircle className="h-4 w-4 text-green-500" /> : <X className="h-4 w-4 text-muted-foreground" />}
                         <span className={savCase.accessories?.case ? 'text-green-600' : 'text-muted-foreground'}>
                           Coque
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
-                        {savCase.accessories?.screen_protector ? (
-                          <CheckCircle className="h-4 w-4 text-green-500" />
-                        ) : (
-                          <X className="h-4 w-4 text-muted-foreground" />
-                        )}
+                        {savCase.accessories?.screen_protector ? <CheckCircle className="h-4 w-4 text-green-500" /> : <X className="h-4 w-4 text-muted-foreground" />}
                         <span className={savCase.accessories?.screen_protector ? 'text-green-600' : 'text-muted-foreground'}>
                           Protection d'écran
                         </span>
                       </div>
                     </div>
                   </CardContent>
-                </Card>
-              )}
+                </Card>}
 
               {/* Schéma de verrouillage */}
-              {savCase.unlock_pattern && savCase.unlock_pattern.length > 0 && (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <PatternLock
-                    pattern={savCase.unlock_pattern}
-                    onChange={() => {}} // Read-only in view mode
-                    disabled={true}
-                    showPattern={true}
-                  />
+              {savCase.unlock_pattern && savCase.unlock_pattern.length > 0 && <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <PatternLock pattern={savCase.unlock_pattern} onChange={() => {}} // Read-only in view mode
+              disabled={true} showPattern={true} />
                   <Card>
                     <CardHeader>
                       <CardTitle>Schéma de verrouillage enregistré</CardTitle>
@@ -486,8 +429,7 @@ export default function SAVDetail() {
                       </div>
                     </CardContent>
                   </Card>
-                </div>
-              )}
+                </div>}
 
               {/* Technician Comments - Visible to all */}
               <Card>
@@ -503,20 +445,9 @@ export default function SAVDetail() {
                 <CardContent className="space-y-4">
                   <div>
                     <Label htmlFor="technician-comments">Commentaire pour le client</Label>
-                    <Textarea
-                      id="technician-comments"
-                      placeholder="Décrivez l'intervention réalisée, les problèmes rencontrés ou les recommandations pour le client..."
-                      value={technicianComments}
-                      onChange={(e) => setTechnicianComments(e.target.value)}
-                      rows={4}
-                      className="mt-2"
-                    />
+                    <Textarea id="technician-comments" placeholder="Décrivez l'intervention réalisée, les problèmes rencontrés ou les recommandations pour le client..." value={technicianComments} onChange={e => setTechnicianComments(e.target.value)} rows={4} className="mt-2" />
                   </div>
-                  <Button 
-                    onClick={saveTechnicianComments}
-                    disabled={savingTechnicianComments}
-                    size="sm"
-                  >
+                  <Button onClick={saveTechnicianComments} disabled={savingTechnicianComments} size="sm">
                     <Save className="h-4 w-4 mr-2" />
                     {savingTechnicianComments ? 'Sauvegarde...' : 'Sauvegarder le commentaire'}
                   </Button>
@@ -537,20 +468,9 @@ export default function SAVDetail() {
                 <CardContent className="space-y-4">
                   <div>
                     <Label htmlFor="private-comments">Commentaires internes</Label>
-                    <Textarea
-                      id="private-comments"
-                      placeholder="Ajoutez vos notes et commentaires privés ici..."
-                      value={privateComments}
-                      onChange={(e) => setPrivateComments(e.target.value)}
-                      rows={4}
-                      className="mt-2"
-                    />
+                    <Textarea id="private-comments" placeholder="Ajoutez vos notes et commentaires privés ici..." value={privateComments} onChange={e => setPrivateComments(e.target.value)} rows={4} className="mt-2" />
                   </div>
-                  <Button 
-                    onClick={savePrivateComments}
-                    disabled={savingComments}
-                    size="sm"
-                  >
+                  <Button onClick={savePrivateComments} disabled={savingComments} size="sm">
                     <Save className="h-4 w-4 mr-2" />
                     {savingComments ? 'Sauvegarde...' : 'Sauvegarder les commentaires'}
                   </Button>
@@ -558,8 +478,7 @@ export default function SAVDetail() {
               </Card>
 
               {/* Client/Contact Tracking */}
-              {savCase.sav_type !== 'internal' && (
-                <Card>
+              {savCase.sav_type !== 'internal' && <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <Share className="h-5 w-5" />
@@ -579,84 +498,34 @@ export default function SAVDetail() {
                       </p>
                     </div>
                     <div className="flex gap-2 flex-wrap">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={copyTrackingUrl}
-                        className="flex-1 sm:flex-initial"
-                      >
+                      <Button variant="outline" size="sm" onClick={copyTrackingUrl} className="flex-1 sm:flex-initial">
                         <Copy className="h-4 w-4 mr-2" />
                         Copier le lien
                       </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={generateQRCode}
-                        className="flex-1 sm:flex-initial"
-                      >
-                        <QrCode className="h-4 w-4 mr-2" />
-                        Générer QR Code
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => window.open(generateTrackingUrl(), '_blank')}
-                        className="flex-1 sm:flex-initial"
-                      >
+                      
+                      <Button variant="outline" size="sm" onClick={() => window.open(generateTrackingUrl(), '_blank')} className="flex-1 sm:flex-initial">
                         <ExternalLink className="h-4 w-4 mr-2" />
                         Prévisualiser
                       </Button>
-                      {savCase.status === 'ready' && (
-                        <ReviewRequestButton
-                          savCaseId={savCase.id}
-                          shopId={savCase.shop_id}
-                          customerName={
-                            savCase.sav_type === 'client' 
-                              ? `${savCase.customer?.first_name || ''} ${savCase.customer?.last_name || ''}`.trim()
-                              : savCase.external_contact_name || 'Contact externe'
-                          }
-                          caseNumber={savCase.case_number}
-                        />
-                      )}
+                      {savCase.status === 'ready' && <ReviewRequestButton savCaseId={savCase.id} shopId={savCase.shop_id} customerName={savCase.sav_type === 'client' ? `${savCase.customer?.first_name || ''} ${savCase.customer?.last_name || ''}`.trim() : savCase.external_contact_name || 'Contact externe'} caseNumber={savCase.case_number} />}
                     </div>
                   </CardContent>
-                </Card>
-              )}
+                </Card>}
 
               {/* Documents and Photos */}
-              <SAVDocuments
-                savCaseId={savCase.id}
-                attachments={savCase.attachments || []}
-                onAttachmentsUpdate={handleAttachmentsUpdate}
-              />
+              <SAVDocuments savCaseId={savCase.id} attachments={savCase.attachments || []} onAttachmentsUpdate={handleAttachmentsUpdate} />
 
               {/* Parts Requirements */}
-              <SAVPartsRequirements 
-                savCaseId={savCase.id} 
-                onPartsUpdated={() => {}}
-              />
+              <SAVPartsRequirements savCaseId={savCase.id} onPartsUpdated={() => {}} />
 
               {/* Status Management and Messaging */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <SAVStatusManager 
-                  savCase={savCase} 
-                  onStatusUpdated={handleStatusUpdated}
-                />
-                <SAVMessaging 
-                  savCaseId={savCase.id} 
-                  savCaseNumber={savCase.case_number}
-                  customerPhone={savCase.customer?.phone || savCase.external_contact_phone}
-                  customerName={
-                    savCase.sav_type === 'client' 
-                      ? `${savCase.customer?.first_name || ''} ${savCase.customer?.last_name || ''}`.trim()
-                      : savCase.external_contact_name || 'Contact externe'
-                  }
-                />
+                <SAVStatusManager savCase={savCase} onStatusUpdated={handleStatusUpdated} />
+                <SAVMessaging savCaseId={savCase.id} savCaseNumber={savCase.case_number} customerPhone={savCase.customer?.phone || savCase.external_contact_phone} customerName={savCase.sav_type === 'client' ? `${savCase.customer?.first_name || ''} ${savCase.customer?.last_name || ''}`.trim() : savCase.external_contact_name || 'Contact externe'} />
               </div>
             </div>
           </main>
         </div>
       </div>
-    </div>
-  );
+    </div>;
 }
