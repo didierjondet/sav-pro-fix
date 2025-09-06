@@ -175,7 +175,20 @@ export function SAVCloseUnifiedDialog({
         const shortTrackingUrl = generateShortTrackingUrl(savCase.tracking_slug);
         const statusInfo = getStatusInfo('ready');
         
-        const message = `Bonjour ${customerName}, votre dossier de réparation ${savCase.case_number} a été mis à jour : ${statusInfo.label}. Suivez l'évolution : ${shortTrackingUrl}`;
+        // Utiliser le message personnalisé si configuré, sinon utiliser le message par défaut
+        let message = '';
+        if (shop?.custom_review_sms_message && shop?.review_link) {
+          // Remplacer les variables dans le message personnalisé
+          message = shop.custom_review_sms_message
+            .replace('{customer_name}', customerName)
+            .replace('{case_number}', savCase.case_number)
+            .replace('{status}', statusInfo.label)
+            .replace('{review_link}', shop.review_link)
+            .replace('{shop_name}', shop.name || 'notre équipe');
+        } else {
+          // Message par défaut
+          message = `Bonjour ${customerName}, votre dossier de réparation ${savCase.case_number} a été mis à jour : ${statusInfo.label}. Suivez l'évolution : ${shortTrackingUrl}`;
+        }
         
         await supabase.functions.invoke('send-sms', {
           body: {

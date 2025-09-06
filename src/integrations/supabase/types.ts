@@ -1122,6 +1122,8 @@ export type Database = {
           address: string | null
           auto_review_enabled: boolean
           created_at: string
+          custom_review_chat_message: string | null
+          custom_review_sms_message: string | null
           custom_sav_limit: number | null
           custom_sms_limit: number | null
           email: string | null
@@ -1156,6 +1158,8 @@ export type Database = {
           address?: string | null
           auto_review_enabled?: boolean
           created_at?: string
+          custom_review_chat_message?: string | null
+          custom_review_sms_message?: string | null
           custom_sav_limit?: number | null
           custom_sms_limit?: number | null
           email?: string | null
@@ -1190,6 +1194,8 @@ export type Database = {
           address?: string | null
           auto_review_enabled?: boolean
           created_at?: string
+          custom_review_chat_message?: string | null
+          custom_review_sms_message?: string | null
           custom_sav_limit?: number | null
           custom_sms_limit?: number | null
           email?: string | null

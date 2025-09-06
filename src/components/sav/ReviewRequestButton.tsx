@@ -32,8 +32,19 @@ export function ReviewRequestButton({ savCaseId, shopId, customerName, caseNumbe
     setSending(true);
     
     try {
-      // Message d'accompagnement pour demander un avis
-      const reviewMessage = `Bonjour ${customerName || ''} ! 👋
+      // Utiliser le message personnalisé si configuré, sinon utiliser le message par défaut
+      let reviewMessage = '';
+      
+      if (shopWithReview.custom_review_chat_message) {
+        // Remplacer les variables dans le message personnalisé
+        reviewMessage = shopWithReview.custom_review_chat_message
+          .replace('{customer_name}', customerName || '')
+          .replace('{review_link}', shopWithReview.review_link)
+          .replace('{shop_name}', shop?.name || 'de réparation')
+          .replace(/\\n/g, '\n'); // Remplacer \\n par de vrais retours à la ligne
+      } else {
+        // Message par défaut
+        reviewMessage = `Bonjour ${customerName || ''} ! 👋
 
 Votre réparation est maintenant terminée ! Si vous avez été satisfait(e) de notre service, nous vous serions reconnaissants de prendre un moment pour nous laisser un avis.
 
@@ -44,6 +55,7 @@ Votre retour nous aide à continuer d'améliorer nos services.
 Merci pour votre confiance ! 😊
 
 L'équipe ${shop?.name || 'de réparation'}`;
+      }
 
       // Envoyer le message dans le chat SAV
       const { error } = await supabase

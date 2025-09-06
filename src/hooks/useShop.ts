@@ -26,6 +26,10 @@ export interface Shop {
   active_sav_count?: number;
   subscription_end?: string;
   sav_warning_enabled?: boolean;
+  review_link?: string;
+  auto_review_enabled?: boolean;
+  custom_review_sms_message?: string;
+  custom_review_chat_message?: string;
 }
 
 export function useShop() {

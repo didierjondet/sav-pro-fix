@@ -23,7 +23,7 @@ import { useSearchParams } from 'react-router-dom';
 import { ImportStock } from '@/components/parts/ImportStock';
 import { ImportQuotes } from '@/components/import/ImportQuotes';
 import { ImportSAVs } from '@/components/import/ImportSAVs';
-import { Store, Users, Mail, Phone, MapPin, UserPlus, Trash2, Crown, Settings as SettingsIcon, Copy, Key, Upload, Image as ImageIcon, Moon, Sun, Monitor, Star, Search, CreditCard } from 'lucide-react';
+import { Store, Users, Mail, Phone, MapPin, UserPlus, Trash2, Crown, Settings as SettingsIcon, Copy, Key, Upload, Image as ImageIcon, Moon, Sun, Monitor, Star, Search, CreditCard, MessageSquare } from 'lucide-react';
 import { useTheme } from "next-themes";
 import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -88,7 +88,9 @@ export default function Settings() {
     auto_review_enabled: true,
     sav_warning_enabled: true,
     max_sav_processing_days_client: 7,
-    max_sav_processing_days_internal: 5
+    max_sav_processing_days_internal: 5,
+    custom_review_sms_message: '',
+    custom_review_chat_message: ''
   });
   const [profileForm, setProfileForm] = useState({
     first_name: '',
@@ -113,7 +115,9 @@ export default function Settings() {
         auto_review_enabled: (shop as any).auto_review_enabled ?? true,
         sav_warning_enabled: (shop as any).sav_warning_enabled ?? true,
         max_sav_processing_days_client: shop.max_sav_processing_days_client || 7,
-        max_sav_processing_days_internal: shop.max_sav_processing_days_internal || 5
+        max_sav_processing_days_internal: shop.max_sav_processing_days_internal || 5,
+        custom_review_sms_message: shop.custom_review_sms_message || 'Bonjour {customer_name}, votre dossier de réparation {case_number} a été mis à jour : {status}. Si vous avez été satisfait(e) de notre service, nous vous serions reconnaissants de prendre un moment pour nous laisser un avis : {review_link}. Merci pour votre confiance ! {shop_name}',
+        custom_review_chat_message: shop.custom_review_chat_message || 'Bonjour {customer_name} ! 👋\\n\\nVotre réparation est maintenant terminée ! Si vous avez été satisfait(e) de notre service, nous vous serions reconnaissants de prendre un moment pour nous laisser un avis.\\n\\n⭐ Laisser un avis : {review_link}\\n\\nVotre retour nous aide à continuer d\'améliorer nos services.\\n\\nMerci pour votre confiance ! 😊\\n\\nL\'équipe {shop_name}'
       });
     }
   }, [shop]);
@@ -658,6 +662,50 @@ export default function Settings() {
                             ...shopForm,
                             sav_warning_enabled: checked
                           })} disabled={!isAdmin} />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-4 border rounded-lg">
+                    <h4 className="font-medium mb-4 flex items-center gap-2">
+                      <MessageSquare className="h-4 w-4" />
+                      Messages d'avis personnalisés
+                    </h4>
+                    <div className="space-y-4">
+                      <div>
+                        <Label htmlFor="custom-sms-message">Message SMS lors de la clôture SAV</Label>
+                        <Textarea 
+                          id="custom-sms-message" 
+                          value={shopForm.custom_review_sms_message} 
+                          onChange={e => setShopForm({
+                            ...shopForm,
+                            custom_review_sms_message: e.target.value
+                          })} 
+                          disabled={!isAdmin} 
+                          rows={3}
+                          placeholder="Message personnalisé pour SMS..."
+                        />
+                        <p className="text-sm text-muted-foreground mt-2">
+                          Variables disponibles : {"{customer_name}"}, {"{case_number}"}, {"{status}"}, {"{review_link}"}, {"{shop_name}"}
+                        </p>
+                      </div>
+                      
+                      <div>
+                        <Label htmlFor="custom-chat-message">Message chat pour demande d'avis</Label>
+                        <Textarea 
+                          id="custom-chat-message" 
+                          value={shopForm.custom_review_chat_message} 
+                          onChange={e => setShopForm({
+                            ...shopForm,
+                            custom_review_chat_message: e.target.value
+                          })} 
+                          disabled={!isAdmin} 
+                          rows={6}
+                          placeholder="Message personnalisé pour chat..."
+                        />
+                        <p className="text-sm text-muted-foreground mt-2">
+                          Variables disponibles : {"{customer_name}"}, {"{review_link}"}, {"{shop_name}"}. Utilisez \\n pour les retours à la ligne.
+                        </p>
                       </div>
                     </div>
                   </div>
