@@ -743,7 +743,7 @@ export default function Settings() {
                     <div className="space-y-4">
                       <div className="flex items-center justify-between">
                         <div>
-                          <div className="font-medium">Avertissement code SAV</div>
+                          <div className="font-medium">Avertissement nouveau SAV</div>
                           <p className="text-sm text-muted-foreground">Afficher un avertissement pour vérifier les comptes et codes de déverrouillage d'un téléphone ou autre avant impression/SMS</p>
                         </div>
                         <Switch checked={shopForm.sav_warning_enabled} onCheckedChange={checked => setShopForm({
