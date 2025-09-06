@@ -508,10 +508,14 @@ export default function Settings() {
                 return p;
               });
             }} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-8">
+            <TabsList className="grid w-full grid-cols-9">
               <TabsTrigger value="shop" className="flex items-center gap-2">
                 <Store className="h-4 w-4" />
                 Magasin
+              </TabsTrigger>
+              <TabsTrigger value="notifications" className="flex items-center gap-2">
+                <MessageSquare className="h-4 w-4" />
+                Notifications
               </TabsTrigger>
               <TabsTrigger value="profile" className="flex items-center gap-2">
                 <Users className="h-4 w-4" />
