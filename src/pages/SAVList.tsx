@@ -52,7 +52,7 @@ export default function SAVList() {
   const { shop } = useShop();
   const { savWithUnreadMessages } = useSAVUnreadMessages();
   const { checkAndShowLimitDialog } = useLimitDialogContext();
-  const { getStatusInfo } = useShopSAVStatuses();
+  const { getStatusInfo, statuses } = useShopSAVStatuses();
   const navigate = useNavigate();
 
   // Mise à jour en temps réel des statuts SAV
@@ -97,7 +97,7 @@ export default function SAVList() {
         filterType,
         statusFilter,
         sortOrder
-      });
+      }, statuses);
       if (result) {
         toast.success("Ouverture de la boîte de dialogue d'impression...");
       }
@@ -253,18 +253,20 @@ export default function SAVList() {
                       <SelectTrigger className="w-48">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">Tous les statuts</SelectItem>
-                        <SelectItem value="all-except-ready">Masquer les prêts</SelectItem>
-                        <SelectItem value="overdue">En retard</SelectItem>
-                        <SelectItem value="pending">En attente</SelectItem>
-                        <SelectItem value="in_progress">En cours</SelectItem>
-                        <SelectItem value="testing">En test</SelectItem>
-                        <SelectItem value="parts_ordered">Pièces commandées</SelectItem>
-                        <SelectItem value="parts_received">Pièces réceptionnées</SelectItem>
-                        <SelectItem value="ready">Prêt</SelectItem>
-                        <SelectItem value="cancelled">Annulé</SelectItem>
-                      </SelectContent>
+                       <SelectContent>
+                         <SelectItem value="all">Tous les statuts</SelectItem>
+                         <SelectItem value="all-except-ready">Masquer les prêts</SelectItem>
+                         <SelectItem value="overdue">En retard</SelectItem>
+                         {statuses
+                           .filter(status => status.is_active)
+                           .sort((a, b) => a.display_order - b.display_order)
+                           .map(status => (
+                             <SelectItem key={status.status_key} value={status.status_key}>
+                               {status.status_label}
+                             </SelectItem>
+                           ))
+                         }
+                       </SelectContent>
                     </Select>
                   </div>
                   

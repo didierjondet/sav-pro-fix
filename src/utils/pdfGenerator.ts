@@ -809,7 +809,7 @@ export const generateSAVListPDF = (savCases: SAVCase[], shop?: Shop, filterInfo?
   filterType: string;
   statusFilter: string;
   sortOrder: string;
-}) => {
+}, statuses?: any[]) => {
   // Utiliser directement les cases filtrées passées en paramètre
   const filteredCases = savCases;
   
@@ -860,13 +860,11 @@ export const generateSAVListPDF = (savCases: SAVCase[], shop?: Shop, filterInfo?
       case 'all': return 'Tous les statuts';
       case 'all-except-ready': return 'Masquer les prêts';
       case 'overdue': return 'En retard';
-      case 'pending': return 'En attente';
-      case 'in_progress': return 'En cours';
-      case 'testing': return 'En test';
-      case 'parts_ordered': return 'Pièces commandées';
-      case 'ready': return 'Prêt';
-      case 'cancelled': return 'Annulé';
-      default: return statusFilter;
+      default: {
+        // Chercher dans les statuts personnalisés
+        const customStatus = statuses?.find(s => s.status_key === statusFilter);
+        return customStatus ? customStatus.status_label : statusFilter;
+      }
     }
   };
 
