@@ -75,22 +75,36 @@ function formatPhoneNumber(phoneNumber: string): string {
 async function sendTwilioSMS(to: string, body: string): Promise<any> {
   const url = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`;
   
+  console.log('🔐 Tentative d\'envoi SMS avec:', {
+    url: url,
+    accountSid: accountSid ? `${accountSid.substring(0, 8)}...` : 'MANQUANT',
+    authToken: authToken ? `${authToken.substring(0, 8)}...` : 'MANQUANT',
+    from: twilioPhoneNumber,
+    to: to
+  });
+  
   const params = new URLSearchParams();
   params.append('To', to);
   params.append('From', twilioPhoneNumber!);
   params.append('Body', body);
 
+  const authHeader = `Basic ${btoa(`${accountSid}:${authToken}`)}`;
+  console.log('🔐 En-tête d\'autorisation généré:', authHeader.substring(0, 20) + '...');
+
   const response = await fetch(url, {
     method: 'POST',
     headers: {
-      'Authorization': `Basic ${btoa(`${accountSid}:${authToken}`)}`,
+      'Authorization': authHeader,
       'Content-Type': 'application/x-www-form-urlencoded',
     },
     body: params,
   });
 
+  console.log('📡 Réponse Twilio - Status:', response.status, 'OK:', response.ok);
+
   if (!response.ok) {
     const errorText = await response.text();
+    console.error('❌ Réponse d\'erreur Twilio complète:', errorText);
     throw new Error(`Twilio API error: ${response.status} - ${errorText}`);
   }
 
@@ -232,6 +246,12 @@ serve(async (req) => {
 
   try {
     console.log('1. Vérification configuration Twilio...');
+    console.log('Variables d\'environnement Twilio:', {
+      accountSid: accountSid ? `${accountSid.substring(0, 8)}...` : 'MANQUANT',
+      authToken: authToken ? `${authToken.substring(0, 8)}...` : 'MANQUANT',
+      twilioPhoneNumber: twilioPhoneNumber || 'MANQUANT'
+    });
+    
     if (!accountSid || !authToken || !twilioPhoneNumber) {
       console.error('❌ Configuration Twilio manquante:', { 
         accountSid: !!accountSid, 
