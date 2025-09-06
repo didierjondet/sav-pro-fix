@@ -57,6 +57,7 @@ export type Database = {
           created_at: string | null
           description: string | null
           display_order: number
+          file_url: string | null
           id: string
           is_active: boolean
           media_type: string
@@ -68,6 +69,7 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           display_order?: number
+          file_url?: string | null
           id?: string
           is_active?: boolean
           media_type?: string
@@ -79,6 +81,7 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           display_order?: number
+          file_url?: string | null
           id?: string
           is_active?: boolean
           media_type?: string

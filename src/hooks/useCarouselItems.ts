@@ -7,12 +7,18 @@ export interface CarouselItem {
   title: string;
   description?: string;
   media_url: string;
+  file_url?: string;
   media_type: 'image' | 'video';
   display_order: number;
   is_active: boolean;
   created_at: string;
   updated_at: string;
 }
+
+// Helper function to get the effective media URL (file_url takes priority)
+export const getEffectiveMediaUrl = (item: CarouselItem): string => {
+  return item.file_url || item.media_url;
+};
 
 export function useCarouselItems() {
   const { toast } = useToast();

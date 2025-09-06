@@ -8,8 +8,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { useCarouselItems, type CarouselItem } from '@/hooks/useCarouselItems';
-import { Images, Video, Plus, Edit, Trash2, MoveUp, MoveDown } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useCarouselItems, type CarouselItem, getEffectiveMediaUrl } from '@/hooks/useCarouselItems';
+import { CarouselFileUpload } from './CarouselFileUpload';
+import { Images, Video, Plus, Edit, Trash2, MoveUp, MoveDown, Link, Upload } from 'lucide-react';
 
 export function CarouselManager() {
   const { items, loading, createItem, updateItem, deleteItem, fetchAllItems } = useCarouselItems();
@@ -19,10 +21,12 @@ export function CarouselManager() {
     title: '',
     description: '',
     media_url: '',
+    file_url: '',
     media_type: 'image' as 'image' | 'video',
     display_order: 0,
     is_active: true
   });
+  const [uploadMethod, setUploadMethod] = useState<'url' | 'file'>('file');
 
   useEffect(() => {
     fetchAllItems();
@@ -33,11 +37,13 @@ export function CarouselManager() {
       title: '',
       description: '',
       media_url: '',
+      file_url: '',
       media_type: 'image',
       display_order: items.length,
       is_active: true
     });
     setEditingItem(null);
+    setUploadMethod('file');
   };
 
   const openDialog = (item?: CarouselItem) => {
@@ -47,10 +53,12 @@ export function CarouselManager() {
         title: item.title,
         description: item.description || '',
         media_url: item.media_url,
+        file_url: item.file_url || '',
         media_type: item.media_type,
         display_order: item.display_order,
         is_active: item.is_active
       });
+      setUploadMethod(item.file_url ? 'file' : 'url');
     } else {
       resetForm();
     }
@@ -59,6 +67,11 @@ export function CarouselManager() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validation : au moins une URL (file_url ou media_url) doit être fournie
+    if (!formData.file_url && !formData.media_url) {
+      return; // L'interface empêche déjà cela
+    }
     
     try {
       if (editingItem) {
@@ -113,14 +126,14 @@ export function CarouselManager() {
               Ajouter un élément
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
                 {editingItem ? 'Modifier l\'élément' : 'Ajouter un élément'}
               </DialogTitle>
             </DialogHeader>
             
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-2">
                 <Label htmlFor="title">Titre *</Label>
                 <Input
@@ -161,36 +174,70 @@ export function CarouselManager() {
                 </Select>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="media_url">URL du média *</Label>
-                <Input
-                  id="media_url"
-                  type="url"
-                  value={formData.media_url}
-                  onChange={(e) => setFormData(prev => ({ ...prev, media_url: e.target.value }))}
-                  placeholder={formData.media_type === 'video' ? 'https://example.com/video.mp4' : 'https://example.com/image.jpg'}
-                  required
-                />
+              <div className="space-y-4">
+                <Label>Média *</Label>
+                <Tabs value={uploadMethod} onValueChange={(value) => setUploadMethod(value as 'url' | 'file')}>
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="file" className="flex items-center gap-2">
+                      <Upload className="h-4 w-4" />
+                      Télécharger un fichier
+                    </TabsTrigger>
+                    <TabsTrigger value="url" className="flex items-center gap-2">
+                      <Link className="h-4 w-4" />
+                      URL externe
+                    </TabsTrigger>
+                  </TabsList>
+                  
+                  <TabsContent value="file" className="space-y-2">
+                    <CarouselFileUpload
+                      fileUrl={formData.file_url}
+                      onFileChange={(url) => setFormData(prev => ({ 
+                        ...prev, 
+                        file_url: url || '',
+                        media_url: url ? '' : prev.media_url // Clear media_url if file is uploaded
+                      }))}
+                      mediaType={formData.media_type}
+                    />
+                  </TabsContent>
+                  
+                  <TabsContent value="url" className="space-y-2">
+                    <Input
+                      type="url"
+                      value={formData.media_url}
+                      onChange={(e) => setFormData(prev => ({ 
+                        ...prev, 
+                        media_url: e.target.value,
+                        file_url: e.target.value ? '' : prev.file_url // Clear file_url if URL is provided
+                      }))}
+                      placeholder={formData.media_type === 'video' ? 'https://example.com/video.mp4' : 'https://example.com/image.jpg'}
+                    />
+                    <p className="text-xs text-gray-500">
+                      Entrez l'URL complète vers votre {formData.media_type === 'video' ? 'vidéo' : 'image'}
+                    </p>
+                  </TabsContent>
+                </Tabs>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="display_order">Ordre d'affichage</Label>
-                <Input
-                  id="display_order"
-                  type="number"
-                  value={formData.display_order}
-                  onChange={(e) => setFormData(prev => ({ ...prev, display_order: parseInt(e.target.value) || 0 }))}
-                  min="0"
-                />
-              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="display_order">Ordre d'affichage</Label>
+                  <Input
+                    id="display_order"
+                    type="number"
+                    value={formData.display_order}
+                    onChange={(e) => setFormData(prev => ({ ...prev, display_order: parseInt(e.target.value) || 0 }))}
+                    min="0"
+                  />
+                </div>
 
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="is_active"
-                  checked={formData.is_active}
-                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, is_active: checked }))}
-                />
-                <Label htmlFor="is_active">Actif</Label>
+                <div className="flex items-center space-x-2 pt-6">
+                  <Switch
+                    id="is_active"
+                    checked={formData.is_active}
+                    onCheckedChange={(checked) => setFormData(prev => ({ ...prev, is_active: checked }))}
+                  />
+                  <Label htmlFor="is_active">Actif</Label>
+                </div>
               </div>
 
               <div className="flex justify-end space-x-2 pt-4">
@@ -201,7 +248,10 @@ export function CarouselManager() {
                 >
                   Annuler
                 </Button>
-                <Button type="submit">
+                <Button 
+                  type="submit"
+                  disabled={!formData.file_url && !formData.media_url}
+                >
                   {editingItem ? 'Modifier' : 'Ajouter'}
                 </Button>
               </div>
@@ -241,6 +291,9 @@ export function CarouselManager() {
                           <Badge variant={item.is_active ? "default" : "secondary"}>
                             {item.is_active ? 'Actif' : 'Inactif'}
                           </Badge>
+                          <Badge variant="outline" className="text-xs">
+                            {item.file_url ? 'Fichier' : 'URL'}
+                          </Badge>
                         </div>
                         {item.description && (
                           <p className="text-sm text-gray-500 truncate">
@@ -248,7 +301,7 @@ export function CarouselManager() {
                           </p>
                         )}
                         <p className="text-xs text-gray-400 mt-1">
-                          Ordre: {item.display_order}
+                          Ordre: {item.display_order} • URL: {getEffectiveMediaUrl(item).substring(0, 50)}...
                         </p>
                       </div>
                     </div>
