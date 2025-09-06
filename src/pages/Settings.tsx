@@ -151,17 +151,13 @@ export default function Settings() {
       setLoading(false);
     }
   };
-
   const fetchPlans = async () => {
     try {
-      const { data: dbPlans, error } = await supabase
-        .from('subscription_plans')
-        .select('id, name, monthly_price, sms_limit, sav_limit, features, billing_interval, stripe_price_id, contact_only, is_active')
-        .eq('is_active', true)
-        .order('monthly_price');
-
+      const {
+        data: dbPlans,
+        error
+      } = await supabase.from('subscription_plans').select('id, name, monthly_price, sms_limit, sav_limit, features, billing_interval, stripe_price_id, contact_only, is_active').eq('is_active', true).order('monthly_price');
       if (error) throw error;
-
       if (dbPlans && dbPlans.length > 0) {
         setPlans(dbPlans);
       }
@@ -706,17 +702,10 @@ export default function Settings() {
                     <div className="space-y-4">
                       <div>
                         <Label htmlFor="custom-sms-message">Message SMS lors de la clôture SAV</Label>
-                        <Textarea 
-                          id="custom-sms-message" 
-                          value={shopForm.custom_review_sms_message} 
-                          onChange={e => setShopForm({
+                        <Textarea id="custom-sms-message" value={shopForm.custom_review_sms_message} onChange={e => setShopForm({
                             ...shopForm,
                             custom_review_sms_message: e.target.value
-                          })} 
-                          disabled={!isAdmin} 
-                          rows={3}
-                          placeholder="Message personnalisé pour SMS..."
-                        />
+                          })} disabled={!isAdmin} rows={3} placeholder="Message personnalisé pour SMS..." />
                         <p className="text-sm text-muted-foreground mt-2">
                           Variables disponibles : {"{customer_name}"}, {"{case_number}"}, {"{status}"}, {"{review_link}"}, {"{shop_name}"}
                         </p>
@@ -724,17 +713,10 @@ export default function Settings() {
                       
                       <div>
                         <Label htmlFor="custom-chat-message">Message chat pour demande d'avis</Label>
-                        <Textarea 
-                          id="custom-chat-message" 
-                          value={shopForm.custom_review_chat_message} 
-                          onChange={e => setShopForm({
+                        <Textarea id="custom-chat-message" value={shopForm.custom_review_chat_message} onChange={e => setShopForm({
                             ...shopForm,
                             custom_review_chat_message: e.target.value
-                          })} 
-                          disabled={!isAdmin} 
-                          rows={6}
-                          placeholder="Message personnalisé pour chat..."
-                        />
+                          })} disabled={!isAdmin} rows={6} placeholder="Message personnalisé pour chat..." />
                         <p className="text-sm text-muted-foreground mt-2">
                           Variables disponibles : {"{customer_name}"}, {"{review_link}"}, {"{shop_name}"}. Utilisez \\n pour les retours à la ligne.
                         </p>
@@ -762,9 +744,7 @@ export default function Settings() {
                       <div className="flex items-center justify-between">
                         <div>
                           <div className="font-medium">Avertissement code SAV</div>
-                          <p className="text-sm text-muted-foreground">
-                            Afficher un avertissement pour vérifier les comptes et codes de déverrouillage avant impression/SMS
-                          </p>
+                          <p className="text-sm text-muted-foreground">Afficher un avertissement pour vérifier les comptes et codes de déverrouillage d'un téléphone ou autre avant impression/SMS</p>
                         </div>
                         <Switch checked={shopForm.sav_warning_enabled} onCheckedChange={checked => setShopForm({
                             ...shopForm,
@@ -1218,25 +1198,20 @@ export default function Settings() {
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {plans.map(plan => {
-                      const isCurrentPlan = subscription?.subscription_tier === plan.name.toLowerCase() || 
-                                           (plan.monthly_price === 0 && (!subscription?.subscribed || subscription?.subscription_tier === 'free'));
-                      
-                      // Déterminer l'icône basée sur le nom du plan  
-                      let PlanIcon = Star;
-                      const planNameLower = plan.name.toLowerCase();
-                      if (planNameLower.includes('premium')) {
-                        PlanIcon = Crown;
-                      } else if (planNameLower.includes('enterprise') || planNameLower.includes('sur mesure')) {
-                        PlanIcon = SettingsIcon;
-                      }
+                        const isCurrentPlan = subscription?.subscription_tier === plan.name.toLowerCase() || plan.monthly_price === 0 && (!subscription?.subscribed || subscription?.subscription_tier === 'free');
 
-                      return (
-                        <Card key={plan.id} className={`relative ${isCurrentPlan ? 'border-primary bg-primary/5' : ''}`}>
-                          {isCurrentPlan && (
-                            <Badge className="absolute -top-2 left-4 bg-primary">
+                        // Déterminer l'icône basée sur le nom du plan  
+                        let PlanIcon = Star;
+                        const planNameLower = plan.name.toLowerCase();
+                        if (planNameLower.includes('premium')) {
+                          PlanIcon = Crown;
+                        } else if (planNameLower.includes('enterprise') || planNameLower.includes('sur mesure')) {
+                          PlanIcon = SettingsIcon;
+                        }
+                        return <Card key={plan.id} className={`relative ${isCurrentPlan ? 'border-primary bg-primary/5' : ''}`}>
+                          {isCurrentPlan && <Badge className="absolute -top-2 left-4 bg-primary">
                               Plan Actuel
-                            </Badge>
-                          )}
+                            </Badge>}
                           <CardHeader>
                             <CardTitle className="flex items-center gap-2">
                               <PlanIcon className="h-5 w-5" />
@@ -1245,7 +1220,7 @@ export default function Settings() {
                             <div className="text-3xl font-bold">
                               {plan.monthly_price === 0 ? 'Gratuit' : `${Number(plan.monthly_price).toFixed(0)}€`}
                               <span className="text-sm font-normal text-muted-foreground">
-                                {plan.monthly_price > 0 ? (plan.billing_interval === 'year' ? '/an' : '/mois') : ''}
+                                {plan.monthly_price > 0 ? plan.billing_interval === 'year' ? '/an' : '/mois' : ''}
                               </span>
                             </div>
                           </CardHeader>
@@ -1259,38 +1234,24 @@ export default function Settings() {
                                 <span className="w-2 h-2 bg-green-500 rounded-full"></span>
                                 {plan.sms_limit} SMS par mois
                               </div>
-                              {Array.isArray(plan.features) && plan.features.map((feature, index) => (
-                                <div key={index} className="flex items-center gap-2 text-sm">
+                              {Array.isArray(plan.features) && plan.features.map((feature, index) => <div key={index} className="flex items-center gap-2 text-sm">
                                   <span className="w-2 h-2 bg-green-500 rounded-full"></span>
                                   {feature}
-                                </div>
-                              ))}
+                                </div>)}
                             </div>
                             
-                            {plan.monthly_price === 0 ? (
-                              <Button variant="outline" disabled className="w-full">
+                            {plan.monthly_price === 0 ? <Button variant="outline" disabled className="w-full">
                                 Plan Gratuit
-                              </Button>
-                            ) : isCurrentPlan ? (
-                              <Button variant="outline" disabled className="w-full">
+                              </Button> : isCurrentPlan ? <Button variant="outline" disabled className="w-full">
                                 Plan Actuel
-                              </Button>
-                            ) : plan.contact_only ? (
-                              <Button 
-                                onClick={() => window.location.href = `mailto:contact@fixway.fr?subject=Demande de contact pour le plan ${plan.name}&body=Bonjour,%0D%0A%0D%0AJe souhaite obtenir plus d'informations sur le plan ${plan.name}.%0D%0A%0D%0ACordialement`}
-                                className="w-full"
-                              >
+                              </Button> : plan.contact_only ? <Button onClick={() => window.location.href = `mailto:contact@fixway.fr?subject=Demande de contact pour le plan ${plan.name}&body=Bonjour,%0D%0A%0D%0AJe souhaite obtenir plus d'informations sur le plan ${plan.name}.%0D%0A%0D%0ACordialement`} className="w-full">
                                 Nous contacter
-                              </Button>
-                            ) : (
-                              <Button onClick={() => createCheckout(plan.name.toLowerCase() as 'premium' | 'enterprise')} className="w-full">
+                              </Button> : <Button onClick={() => createCheckout(plan.name.toLowerCase() as 'premium' | 'enterprise')} className="w-full">
                                 Passer à {plan.name}
-                              </Button>
-                            )}
+                              </Button>}
                           </CardContent>
-                        </Card>
-                      );
-                    })}
+                        </Card>;
+                      })}
                   </div>
                 </CardContent>
               </Card>
