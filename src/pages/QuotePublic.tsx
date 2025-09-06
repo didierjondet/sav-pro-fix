@@ -3,7 +3,8 @@ import { useParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Download, AlertCircle, Check, X } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Download, AlertCircle, Check, X, CheckCircle, XCircle } from 'lucide-react';
 import { generateQuotePDF } from '@/utils/pdfGenerator';
 
 interface QuoteData {
@@ -40,6 +41,11 @@ export default function QuotePublic() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [updating, setUpdating] = useState(false);
+  const [showConfirmation, setShowConfirmation] = useState<{
+    type: 'success' | 'error';
+    title: string;
+    message: string;
+  } | null>(null);
 
   useEffect(() => {
     const fetchQuote = async () => {
@@ -117,11 +123,19 @@ export default function QuotePublic() {
       } : null);
 
       // Message de confirmation
-      const statusText = newStatus === 'accepted' ? 'accepté' : newStatus === 'sms_accepted' ? 'accepté par SMS' : 'refusé';
-      alert(`Devis ${statusText} avec succès !`);
+      const statusText = newStatus === 'accepted' ? 'accepté' : newStatus === 'sms_accepted' ? 'accepté' : 'refusé';
+      setShowConfirmation({
+        type: 'success',
+        title: 'Devis mis à jour',
+        message: `Votre devis a été ${statusText} avec succès. Nous vous contacterons prochainement pour la suite.`
+      });
     } catch (error) {
       console.error('Erreur:', error);
-      alert('Erreur lors de la mise à jour du statut');
+      setShowConfirmation({
+        type: 'error',
+        title: 'Erreur de mise à jour',
+        message: 'Une erreur est survenue lors de la mise à jour du statut. Veuillez réessayer ou contacter le magasin.'
+      });
     } finally {
       setUpdating(false);
     }
@@ -370,6 +384,35 @@ export default function QuotePublic() {
             )}
           </CardContent>
         </Card>
+
+        {/* Dialog de confirmation */}
+        <Dialog open={!!showConfirmation} onOpenChange={() => setShowConfirmation(null)}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader className="text-center">
+              <div className="mx-auto mb-4">
+                {showConfirmation?.type === 'success' ? (
+                  <CheckCircle className="h-16 w-16 text-green-500" />
+                ) : (
+                  <XCircle className="h-16 w-16 text-red-500" />
+                )}
+              </div>
+              <DialogTitle className={`text-xl ${showConfirmation?.type === 'success' ? 'text-green-600' : 'text-red-600'}`}>
+                {showConfirmation?.title}
+              </DialogTitle>
+              <DialogDescription className="text-center text-base mt-4">
+                {showConfirmation?.message}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex justify-center mt-6">
+              <Button 
+                onClick={() => setShowConfirmation(null)}
+                className={showConfirmation?.type === 'success' ? 'bg-green-600 hover:bg-green-700' : ''}
+              >
+                {showConfirmation?.type === 'success' ? 'Parfait !' : 'Fermer'}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
