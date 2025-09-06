@@ -58,7 +58,7 @@ export default function Quotes() {
   const [showQuoteActionDialog, setShowQuoteActionDialog] = useState<Quote | null>(null);
   const { quotes, loading, createQuote, deleteQuote, updateQuote } = useQuotes();
   const { createCase } = useSAVCases();
-  const { sendQuoteNotification } = useSMS();
+  const { sendQuoteNotification, sendSMS } = useSMS();
   const { shop } = useShop();
   const { toast } = useToast();
 
@@ -420,13 +420,42 @@ export default function Quotes() {
         }
       }
 
-      // 5) Supprimer le devis après conversion
+      // 5) Envoyer un SMS au client avec le lien de suivi du SAV créé
+      if (cleanQuote.customer_phone) {
+        try {
+          // Récupérer les informations du SAV créé avec le tracking_slug
+          const { data: createdSAV, error: savFetchError } = await supabase
+            .from('sav_cases')
+            .select('case_number, tracking_slug')
+            .eq('id', savCaseId)
+            .single();
+
+          if (!savFetchError && createdSAV?.tracking_slug) {
+            const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+            const trackingUrl = `${baseUrl}/track/${createdSAV.tracking_slug}`;
+            
+            const message = `Bonjour ${cleanQuote.customer_name}, votre devis ${cleanQuote.quote_number} a été accepté ! Un dossier SAV ${createdSAV.case_number} a été créé. Suivez l'avancement ici: ${trackingUrl}\n\n⚠️ Ne répondez pas à ce SMS. Pour échanger, utilisez le chat de suivi.`;
+            
+            await sendSMS({
+              toNumber: cleanQuote.customer_phone,
+              message,
+              type: 'sav_notification',
+              recordId: savCaseId,
+            });
+          }
+        } catch (smsError) {
+          console.error('Erreur envoi SMS de suivi SAV:', smsError);
+          // Ne pas échouer la conversion pour un problème de SMS
+        }
+      }
+
+      // 6) Supprimer le devis après conversion
       const { error: deleteErr } = await deleteQuote(quoteToConvert.id);
       if (deleteErr) throw deleteErr;
 
       toast({
         title: 'Conversion réussie',
-        description: `Devis ${quoteToConvert.quote_number} converti en SAV ${type} avec informations client.`,
+        description: `Devis ${quoteToConvert.quote_number} converti en SAV ${type} avec informations client.${cleanQuote.customer_phone ? ' SMS de suivi envoyé.' : ''}`,
       });
       setQuoteToConvert(null);
     } catch (error: any) {
