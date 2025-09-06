@@ -620,11 +620,52 @@ export default function Settings() {
                     </p>
                   </div>
 
+                  {isAdmin && <Button onClick={handleSaveShop} disabled={saving}>
+                      {saving ? 'Sauvegarde...' : 'Sauvegarder'}
+                    </Button>}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Key className="h-5 w-5" />
+                    Code d'Invitation
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="p-4 bg-muted rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="font-medium">Code magasin</h3>
+                        <p className="text-sm text-muted-foreground">
+                          Partagez ce code pour permettre à d'autres utilisateurs de rejoindre votre magasin
+                        </p>
+                      </div>
+                      <Button variant="outline" size="sm" onClick={copyShopCode} className="flex items-center gap-2">
+                        <Copy className="h-4 w-4" />
+                        Copier
+                      </Button>
+                    </div>
+                    <div className="mt-3 p-3 bg-background border rounded font-mono text-sm text-center text-xl font-bold tracking-wider">
+                      {shop?.invite_code || 'Chargement...'}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="notifications" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Star className="h-5 w-5" />
+                    Avis Google
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
                   <div className="p-4 border rounded-lg">
-                    <h4 className="font-medium mb-4 flex items-center gap-2">
-                      <Star className="h-4 w-4" />
-                      Avis Google
-                    </h4>
+                    <h4 className="font-medium mb-4">Configuration des avis</h4>
                     <div className="space-y-4">
                       <div>
                         <Label htmlFor="review-link">Lien vers votre page d'avis Google</Label>
@@ -648,19 +689,6 @@ export default function Settings() {
                         <Switch checked={shopForm.auto_review_enabled} onCheckedChange={checked => setShopForm({
                             ...shopForm,
                             auto_review_enabled: checked
-                          })} disabled={!isAdmin} />
-                      </div>
-
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <div className="font-medium">Avertissement code SAV</div>
-                          <p className="text-sm text-muted-foreground">
-                            Afficher un avertissement pour vérifier les comptes et codes de déverrouillage avant impression/SMS
-                          </p>
-                        </div>
-                        <Switch checked={shopForm.sav_warning_enabled} onCheckedChange={checked => setShopForm({
-                            ...shopForm,
-                            sav_warning_enabled: checked
                           })} disabled={!isAdmin} />
                       </div>
                     </div>
@@ -719,28 +747,32 @@ export default function Settings() {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <Key className="h-5 w-5" />
-                    Code d'Invitation
+                    <SettingsIcon className="h-5 w-5" />
+                    Notifications diverses
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="p-4 bg-muted rounded-lg">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="font-medium">Code magasin</h3>
-                        <p className="text-sm text-muted-foreground">
-                          Partagez ce code pour permettre à d'autres utilisateurs de rejoindre votre magasin
-                        </p>
+                <CardContent className="space-y-6">
+                  <div className="p-4 border rounded-lg">
+                    <h4 className="font-medium mb-4">Paramètres généraux</h4>
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="font-medium">Avertissement code SAV</div>
+                          <p className="text-sm text-muted-foreground">
+                            Afficher un avertissement pour vérifier les comptes et codes de déverrouillage avant impression/SMS
+                          </p>
+                        </div>
+                        <Switch checked={shopForm.sav_warning_enabled} onCheckedChange={checked => setShopForm({
+                            ...shopForm,
+                            sav_warning_enabled: checked
+                          })} disabled={!isAdmin} />
                       </div>
-                      <Button variant="outline" size="sm" onClick={copyShopCode} className="flex items-center gap-2">
-                        <Copy className="h-4 w-4" />
-                        Copier
-                      </Button>
-                    </div>
-                    <div className="mt-3 p-3 bg-background border rounded font-mono text-sm text-center text-xl font-bold tracking-wider">
-                      {shop?.invite_code || 'Chargement...'}
                     </div>
                   </div>
+
+                  {isAdmin && <Button onClick={handleSaveShop} disabled={saving}>
+                      {saving ? 'Sauvegarde...' : 'Sauvegarder'}
+                    </Button>}
                 </CardContent>
               </Card>
             </TabsContent>
