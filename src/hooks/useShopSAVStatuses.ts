@@ -42,24 +42,10 @@ export function useShopSAVStatuses() {
 
   const fetchStatuses = async () => {
     try {
-      // Récupérer le shop_id de l'utilisateur connecté
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('shop_id')
-        .eq('user_id', user.id)
-        .single();
-
-      if (profileError || !profileData?.shop_id) {
-        console.log('No shop_id found for user, using default statuses');
-        setStatuses([]);
-        setLoading(false);
-        return;
-      }
-
+      // Les politiques RLS se chargent automatiquement de filtrer par shop_id
       const { data, error } = await supabase
         .from('shop_sav_statuses')
         .select('*')
-        .eq('shop_id', profileData.shop_id)
         .eq('is_active', true)
         .order('display_order', { ascending: true });
 
