@@ -1,17 +1,49 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 import { useCarouselItems, getEffectiveMediaUrl } from '@/hooks/useCarouselItems';
-import { Play } from 'lucide-react';
+import { Play, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import Autoplay from "embla-carousel-autoplay";
 
 export function LandingCarousel() {
   const { items, loading } = useCarouselItems();
+  const [selectedImage, setSelectedImage] = useState<number | null>(null);
+  const [autoSlide, setAutoSlide] = useState(true);
   
   const plugin = React.useRef(
     Autoplay({ delay: 5000, stopOnInteraction: true })
   );
+
+  // Auto slide in popup
+  React.useEffect(() => {
+    if (selectedImage !== null && autoSlide && items.length > 1) {
+      const interval = setInterval(() => {
+        setSelectedImage((prev) => prev !== null ? (prev + 1) % items.length : null);
+      }, 3000);
+      return () => clearInterval(interval);
+    }
+  }, [selectedImage, autoSlide, items.length]);
+
+  const openImagePopup = (index: number) => {
+    setSelectedImage(index);
+    setAutoSlide(true);
+  };
+
+  const closeImagePopup = () => {
+    setSelectedImage(null);
+    setAutoSlide(false);
+  };
+
+  const nextImage = () => {
+    setSelectedImage((prev) => prev !== null ? (prev + 1) % items.length : null);
+  };
+
+  const prevImage = () => {
+    setSelectedImage((prev) => prev !== null ? (prev - 1 + items.length) % items.length : null);
+  };
 
   if (loading) {
     return (
@@ -41,9 +73,9 @@ export function LandingCarousel() {
               <CarouselItem key={item.id}>
                 <Card className="overflow-hidden border-0 shadow-xl hover:shadow-2xl transition-all duration-500 bg-gradient-to-br from-card to-card/95">
                   <CardContent className="p-0">
-                    <div className="grid md:grid-cols-2 gap-0 min-h-[450px]">
-                      {/* Media Section */}
-                      <div className="relative overflow-hidden group">
+                     <div className="grid md:grid-cols-3 gap-0 min-h-[450px]">
+                       {/* Media Section - Takes 2/3 of the width */}
+                       <div className="md:col-span-2 relative overflow-hidden group cursor-pointer" onClick={() => openImagePopup(items.findIndex(i => i.id === item.id))}>
                         {item.media_type === 'video' ? (
                           <div className="relative h-full min-h-[300px] bg-black flex items-center justify-center">
                             <video 
@@ -87,9 +119,9 @@ export function LandingCarousel() {
                         {/* Decorative overlay gradient */}
                         <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                       </div>
-                      
-                      {/* Enhanced Content Section */}
-                      <div className="flex flex-col justify-center p-8 lg:p-12 bg-gradient-to-br from-background to-muted/20 relative">
+                       
+                       {/* Enhanced Content Section - Takes 1/3 of the width */}
+                       <div className="md:col-span-1 flex flex-col justify-center p-6 lg:p-8 bg-gradient-to-br from-background to-muted/20 relative">
                         <div className="space-y-6 relative z-10">
                           <div className="space-y-3">
                             <h3 className="text-3xl lg:text-4xl font-bold text-foreground leading-tight tracking-tight">
@@ -136,6 +168,94 @@ export function LandingCarousel() {
           )}
         </Carousel>
       </div>
+
+      {/* Image Popup */}
+      <Dialog open={selectedImage !== null} onOpenChange={closeImagePopup}>
+        <DialogContent className="max-w-4xl w-full h-[80vh] p-0 bg-black/95 border-0">
+          {selectedImage !== null && (
+            <div className="relative w-full h-full flex items-center justify-center">
+              {/* Close Button */}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute top-4 right-4 z-50 text-white hover:bg-white/20"
+                onClick={closeImagePopup}
+              >
+                <X className="h-6 w-6" />
+              </Button>
+
+              {/* Auto-slide toggle */}
+              <Button
+                variant="ghost"
+                size="sm"
+                className="absolute top-4 left-4 z-50 text-white hover:bg-white/20"
+                onClick={() => setAutoSlide(!autoSlide)}
+              >
+                {autoSlide ? "⏸️ Pause" : "▶️ Play"}
+              </Button>
+
+              {/* Navigation Buttons */}
+              {items.length > 1 && (
+                <>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute left-4 top-1/2 -translate-y-1/2 z-50 text-white hover:bg-white/20 bg-black/30"
+                    onClick={prevImage}
+                  >
+                    <ChevronLeft className="h-8 w-8" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-4 top-1/2 -translate-y-1/2 z-50 text-white hover:bg-white/20 bg-black/30"
+                    onClick={nextImage}
+                  >
+                    <ChevronRight className="h-8 w-8" />
+                  </Button>
+                </>
+              )}
+
+              {/* Image Display */}
+              <div className="w-full h-full flex items-center justify-center p-8">
+                {items[selectedImage]?.media_type === 'video' ? (
+                  <video 
+                    src={getEffectiveMediaUrl(items[selectedImage])}
+                    className="max-w-full max-h-full object-contain"
+                    controls
+                    autoPlay
+                  />
+                ) : (
+                  <img 
+                    src={getEffectiveMediaUrl(items[selectedImage])}
+                    alt={items[selectedImage]?.title}
+                    className="max-w-full max-h-full object-contain"
+                  />
+                )}
+              </div>
+
+              {/* Image Info */}
+              <div className="absolute bottom-4 left-4 right-4 bg-black/50 backdrop-blur-sm rounded-lg p-4 text-white">
+                <h3 className="text-xl font-bold mb-2">{items[selectedImage]?.title}</h3>
+                {items[selectedImage]?.description && (
+                  <p className="text-sm opacity-90">{items[selectedImage]?.description}</p>
+                )}
+                <div className="mt-2 flex justify-center space-x-2">
+                  {items.map((_, index) => (
+                    <div
+                      key={index}
+                      className={`w-2 h-2 rounded-full transition-all cursor-pointer ${
+                        index === selectedImage ? 'bg-white' : 'bg-white/30'
+                      }`}
+                      onClick={() => setSelectedImage(index)}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </section>
   );
 }
