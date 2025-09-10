@@ -115,7 +115,7 @@ async function checkSMSCredits(shopId: string): Promise<boolean> {
   // Vérifier les crédits SMS de la boutique avec plan + packages SMS
   const { data: shop, error } = await supabase
     .from('shops')
-    .select('sms_credits_used, sms_credits_allocated, subscription_forced, subscription_tier')
+    .select('sms_credits_used, sms_credits_allocated, subscription_forced, subscription_tier, purchased_sms_credits, monthly_sms_used, custom_sms_limit')
     .eq('id', shopId)
     .single();
 
@@ -126,10 +126,11 @@ async function checkSMSCredits(shopId: string): Promise<boolean> {
 
   // Si l'abonnement est forcé, autoriser l'envoi
   if (shop.subscription_forced) {
+    console.log('✅ Abonnement forcé - envoi autorisé');
     return true;
   }
 
-  // Calculer le total des SMS achetés via packages
+  // Calculer le total des SMS achetés via packages non encore utilisés
   const { data: packages, error: packagesError } = await supabase
     .from('sms_package_purchases')
     .select('sms_count')
@@ -140,30 +141,56 @@ async function checkSMSCredits(shopId: string): Promise<boolean> {
     console.error('Erreur lors de la récupération des packages SMS:', packagesError);
   }
 
-  const packagedSMS = packages?.reduce((total, pkg) => total + pkg.sms_count, 0) || 0;
+  const totalPackagesSMS = packages?.reduce((total, pkg) => total + pkg.sms_count, 0) || 0;
+  const usedPackagesSMS = shop.purchased_sms_credits || 0;
+  const availablePackagesSMS = Math.max(0, totalPackagesSMS - usedPackagesSMS);
   
-  // Total disponible = limite du plan + SMS achetés via packages
-  const totalSMSAvailable = shop.sms_credits_allocated + packagedSMS;
+  // SMS du plan mensuel
+  const monthlyLimit = shop.custom_sms_limit || shop.sms_credits_allocated || 0;
+  const monthlyUsed = shop.monthly_sms_used || 0;
+  const monthlyAvailable = Math.max(0, monthlyLimit - monthlyUsed);
   
-  console.log(`Vérification SMS: ${shop.sms_credits_used}/${totalSMSAvailable} (plan: ${shop.sms_credits_allocated}, packages: ${packagedSMS})`);
+  // Total disponible = SMS mensuel restants + SMS packages restants
+  const totalAvailable = monthlyAvailable + availablePackagesSMS;
   
-  return shop.sms_credits_used < totalSMSAvailable;
+  console.log(`Vérification SMS détaillée:
+    - Plan mensuel: ${monthlyUsed}/${monthlyLimit} (disponible: ${monthlyAvailable})
+    - Packages: ${usedPackagesSMS}/${totalPackagesSMS} (disponible: ${availablePackagesSMS})
+    - Total disponible: ${totalAvailable}`);
+  
+  return totalAvailable > 0;
 }
 
 async function updateSMSCredits(shopId: string): Promise<void> {
-  // Récupérer les crédits actuels
+  // Récupérer les données actuelles du shop
   const { data: shop } = await supabase
     .from('shops')
-    .select('sms_credits_used')
+    .select('monthly_sms_used, sms_credits_allocated, purchased_sms_credits, custom_sms_limit')
     .eq('id', shopId)
     .single();
 
-  if (shop) {
-    // Incrémenter les crédits utilisés
+  if (!shop) return;
+
+  // Limite mensuelle
+  const monthlyLimit = shop.custom_sms_limit || shop.sms_credits_allocated || 0;
+  const monthlyUsed = shop.monthly_sms_used || 0;
+
+  // Si on peut utiliser les SMS mensuels
+  if (monthlyUsed < monthlyLimit) {
+    console.log('📱 Incrémentation des SMS mensuels');
     await supabase
       .from('shops')
       .update({ 
-        sms_credits_used: shop.sms_credits_used + 1
+        monthly_sms_used: monthlyUsed + 1
+      })
+      .eq('id', shopId);
+  } else {
+    // Sinon, utiliser les SMS des packages
+    console.log('📦 Incrémentation des SMS packages');
+    await supabase
+      .from('shops')
+      .update({ 
+        purchased_sms_credits: (shop.purchased_sms_credits || 0) + 1
       })
       .eq('id', shopId);
   }
