@@ -35,16 +35,15 @@ export function useSAVPartsCosts() {
       const start = startOfMonth(now);
       const end = endOfMonth(now);
 
-      // Récupérer les coûts des pièces pour les SAV prêts de la période (et du shop)
+      // Récupérer les coûts des pièces pour TOUS les SAV de la période (pas seulement les prêts)
       const { data: partsData, error: partsError } = await supabase
         .from('sav_parts')
         .select(`
           quantity,
           unit_price,
-          parts!inner(purchase_price, selling_price),
+          purchase_price,
           sav_cases!inner(id, sav_type, status, taken_over, partial_takeover, takeover_amount, total_cost, shop_id, created_at)
         `)
-        .eq('sav_cases.status', 'ready')
         .eq('sav_cases.shop_id', shop.id)
         .gte('sav_cases.created_at', start.toISOString())
         .lte('sav_cases.created_at', end.toISOString());
@@ -61,16 +60,15 @@ export function useSAVPartsCosts() {
       if (partsData) {
         partsData.forEach((item: any) => {
           const qty = Number(item.quantity) || 0;
-          const purchase = Number(item.parts?.purchase_price) || 0;
-          const selling = Number(item.parts?.selling_price) || 0;
-          const unit = Number(item.unit_price ?? selling) || 0;
+          const purchase = Number(item.purchase_price) || 0;
+          const selling = Number(item.unit_price) || 0;
 
           const partCost = purchase * qty;
-          const partRevenue = unit * qty;
+          const partRevenue = selling * qty;
           const savCase = item.sav_cases;
 
-          // CORRECTION: Coût prise en charge uniquement pour SAV prêts avec prise en charge magasin
-          if (savCase.status === 'ready' && savCase.sav_type === 'client') {
+          // Calculer les coûts selon le type de SAV et la prise en charge
+          if (savCase.sav_type === 'client') {
             if (savCase.taken_over) {
               takeover_cost += partCost; // totalement pris en charge
             } else if (savCase.partial_takeover && savCase.takeover_amount) {
@@ -88,8 +86,8 @@ export function useSAVPartsCosts() {
             external_cost += partCost;
           }
 
-          // Calcul du CA (exclure l'interne)
-          if (savCase.sav_type !== 'internal') {
+          // Calcul du CA uniquement pour les SAV prêts et non internes
+          if (savCase.status === 'ready' && savCase.sav_type !== 'internal') {
             let revenuePart = partRevenue;
             if (savCase.partial_takeover && savCase.takeover_amount) {
               const denom = Number(savCase.total_cost) || 1;
