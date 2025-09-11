@@ -1132,6 +1132,7 @@ export type Database = {
           last_monthly_reset: string | null
           logo_url: string | null
           max_sav_processing_days_client: number | null
+          max_sav_processing_days_external: number | null
           max_sav_processing_days_internal: number | null
           monthly_sav_count: number | null
           monthly_sms_used: number | null
@@ -1168,6 +1169,7 @@ export type Database = {
           last_monthly_reset?: string | null
           logo_url?: string | null
           max_sav_processing_days_client?: number | null
+          max_sav_processing_days_external?: number | null
           max_sav_processing_days_internal?: number | null
           monthly_sav_count?: number | null
           monthly_sms_used?: number | null
@@ -1204,6 +1206,7 @@ export type Database = {
           last_monthly_reset?: string | null
           logo_url?: string | null
           max_sav_processing_days_client?: number | null
+          max_sav_processing_days_external?: number | null
           max_sav_processing_days_internal?: number | null
           monthly_sav_count?: number | null
           monthly_sms_used?: number | null

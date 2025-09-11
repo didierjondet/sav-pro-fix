@@ -90,6 +90,7 @@ export default function Settings() {
     sav_warning_enabled: true,
     max_sav_processing_days_client: 7,
     max_sav_processing_days_internal: 5,
+    max_sav_processing_days_external: 9,
     custom_review_sms_message: '',
     custom_review_chat_message: ''
   });
@@ -117,6 +118,7 @@ export default function Settings() {
         sav_warning_enabled: (shop as any).sav_warning_enabled ?? true,
         max_sav_processing_days_client: shop.max_sav_processing_days_client || 7,
         max_sav_processing_days_internal: shop.max_sav_processing_days_internal || 5,
+        max_sav_processing_days_external: shop.max_sav_processing_days_external || 9,
         custom_review_sms_message: shop.custom_review_sms_message || 'Bonjour {customer_name}, votre dossier de réparation {case_number} a été mis à jour : {status}. Si vous avez été satisfait(e) de notre service, nous vous serions reconnaissants de prendre un moment pour nous laisser un avis : {review_link}. Merci pour votre confiance ! {shop_name}',
         custom_review_chat_message: shop.custom_review_chat_message || 'Bonjour {customer_name} ! 👋\\n\\nVotre réparation est maintenant terminée ! Si vous avez été satisfait(e) de notre service, nous vous serions reconnaissants de prendre un moment pour nous laisser un avis.\\n\\n⭐ Laisser un avis : {review_link}\\n\\nVotre retour nous aide à continuer d\'améliorer nos services.\\n\\nMerci pour votre confiance ! 😊\\n\\nL\'équipe {shop_name}'
       });
@@ -604,12 +606,19 @@ export default function Settings() {
 
                   <div className="p-4 border rounded-lg">
                     <h4 className="font-medium mb-4">Délais de traitement SAV</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
                         <Label htmlFor="sav-client-delay">SAV Client (jours)</Label>
                         <Input id="sav-client-delay" type="number" min="1" max="30" value={shopForm.max_sav_processing_days_client} onChange={e => setShopForm({
                             ...shopForm,
                             max_sav_processing_days_client: parseInt(e.target.value) || 7
+                          })} disabled={!isAdmin} />
+                      </div>
+                      <div>
+                        <Label htmlFor="sav-external-delay">SAV Externe (jours)</Label>
+                        <Input id="sav-external-delay" type="number" min="1" max="30" value={shopForm.max_sav_processing_days_external} onChange={e => setShopForm({
+                            ...shopForm,
+                            max_sav_processing_days_external: parseInt(e.target.value) || 9
                           })} disabled={!isAdmin} />
                       </div>
                       <div>

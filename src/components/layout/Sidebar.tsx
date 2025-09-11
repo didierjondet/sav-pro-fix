@@ -115,9 +115,14 @@ export function Sidebar({
     const daysDiff = Math.floor((today.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24));
 
     // Use appropriate delay based on SAV type
-    const maxDays = savCase.sav_type === 'client' 
-      ? (shop?.max_sav_processing_days_client || 7)
-      : (shop?.max_sav_processing_days_internal || 7);
+    let maxDays: number;
+    if (savCase.sav_type === 'client') {
+      maxDays = shop?.max_sav_processing_days_client || 7;
+    } else if (savCase.sav_type === 'external') {
+      maxDays = shop?.max_sav_processing_days_external || 9;
+    } else {
+      maxDays = shop?.max_sav_processing_days_internal || 5;
+    }
 
     return daysDiff > maxDays;
   }).length;

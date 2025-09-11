@@ -12,6 +12,7 @@ interface TimelineProps {
   shop: {
     max_sav_processing_days_client?: number;
     max_sav_processing_days_internal?: number;
+    max_sav_processing_days_external?: number;
   } | null;
 }
 
@@ -41,6 +42,8 @@ export function SAVTimeline({ savCase, shop }: TimelineProps) {
 
   const maxDays = savCase.sav_type === 'client' 
     ? (shop.max_sav_processing_days_client ?? 7) 
+    : savCase.sav_type === 'external'
+    ? (shop.max_sav_processing_days_external ?? 9)
     : (shop.max_sav_processing_days_internal ?? 5);
 
   const delayInfo = calculateSAVDelay(savCase as any, shop as any);
