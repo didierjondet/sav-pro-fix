@@ -105,8 +105,8 @@ export function Sidebar({
 
   // Calculate late SAV cases count
   const lateSAVCount = (cases || []).filter(savCase => {
-    // Only count non-completed SAV cases
-    if (['delivered', 'cancelled'].includes(savCase.status)) {
+    // Only count non-completed SAV cases (exclude delivered, cancelled, and ready)
+    if (['delivered', 'cancelled', 'ready'].includes(savCase.status)) {
       return false;
     }
 
