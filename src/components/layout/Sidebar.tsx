@@ -77,8 +77,9 @@ export function Sidebar({
   // Créer la navigation dynamique selon les paramètres du magasin
   const navigation = [...baseNavigation];
 
-  // Calculate status counts with distinction between client, external and shop pending
+  // Calculate status counts with proper filtering logic to match the SAV list filters
   const statusCounts = (cases || []).reduce((acc, savCase) => {
+    // Count all "pending" status SAVs regardless of type
     if (savCase.status === 'pending') {
       if (savCase.sav_type === 'client') {
         acc.pendingClient++;
@@ -93,30 +94,13 @@ export function Sidebar({
       acc.completed++;
     }
 
-    // Count client SAV cases that are not "ready" for "en attente client"
-    if (savCase.sav_type === 'client' && savCase.status !== 'ready') {
-      acc.clientWaiting++;
-    }
-
-    // Count internal SAV cases that are not "ready" for "en attente magasin"
-    if (savCase.sav_type === 'internal' && savCase.status !== 'ready') {
-      acc.shopWaiting++;
-    }
-
-    // Count external SAV cases that are not "ready" for "en attente externe"
-    if (savCase.sav_type === 'external' && savCase.status !== 'ready') {
-      acc.externalWaiting++;
-    }
     return acc;
   }, {
     pendingClient: 0,
     pendingExternal: 0,
     pendingShop: 0,
     inProgress: 0,
-    completed: 0,
-    clientWaiting: 0,
-    shopWaiting: 0,
-    externalWaiting: 0
+    completed: 0
   });
   return <>
       {/* Mobile overlay */}
@@ -165,19 +149,19 @@ export function Sidebar({
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span>En attente client</span>
-                  <span className="font-medium">{statusCounts.clientWaiting}</span>
+                  <span className="font-medium">{statusCounts.pendingClient}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span>En attente Externe</span>
-                  <span className="font-medium">{statusCounts.externalWaiting}</span>
+                  <span className="font-medium">{statusCounts.pendingExternal}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span>En attente magasin</span>
-                  <span className="font-medium">{statusCounts.shopWaiting}</span>
+                  <span className="font-medium">{statusCounts.pendingShop}</span>
                 </div>
                 <div className="flex justify-between text-sm border-t pt-2 mt-2">
-                  <span className="text-destructive font-bold">TOTAL SAV</span>
-                  <span className="font-bold text-destructive">{statusCounts.clientWaiting + statusCounts.externalWaiting + statusCounts.shopWaiting}</span>
+                  <span className="text-destructive font-bold">TOTAL EN ATTENTE</span>
+                  <span className="font-bold text-destructive">{statusCounts.pendingClient + statusCounts.pendingExternal + statusCounts.pendingShop}</span>
                 </div>
               </div>
             </div>
