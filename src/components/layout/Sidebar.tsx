@@ -7,7 +7,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useSAVCases } from '@/hooks/useSAVCases';
 import { useProfile } from '@/hooks/useProfile';
 import { useSAVUnreadMessages } from '@/hooks/useSAVUnreadMessages';
-import { useShopSettings } from '@/hooks/useShopSettings';
+import { useShop } from '@/hooks/useShop';
 import { MessageSquare, Package, Users, BarChart3, FileText, Settings, X, Plus, Shield, CreditCard, HelpCircle } from 'lucide-react';
 import { useQuotes } from '@/hooks/useQuotes';
 interface SidebarProps {
@@ -56,8 +56,8 @@ export function Sidebar({
     profile
   } = useProfile();
   const {
-    settings
-  } = useShopSettings();
+    shop
+  } = useShop();
   const {
     savWithUnreadMessages
   } = useSAVUnreadMessages();
@@ -102,6 +102,25 @@ export function Sidebar({
     inProgress: 0,
     completed: 0
   });
+
+  // Calculate late SAV cases count
+  const lateSAVCount = (cases || []).filter(savCase => {
+    // Only count non-completed SAV cases
+    if (['delivered', 'cancelled'].includes(savCase.status)) {
+      return false;
+    }
+
+    const createdDate = new Date(savCase.created_at);
+    const today = new Date();
+    const daysDiff = Math.floor((today.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24));
+
+    // Use appropriate delay based on SAV type
+    const maxDays = savCase.sav_type === 'client' 
+      ? (shop?.max_sav_processing_days_client || 7)
+      : (shop?.max_sav_processing_days_internal || 7);
+
+    return daysDiff > maxDays;
+  }).length;
   return <>
       {/* Mobile overlay */}
       {isOpen && <div className="fixed inset-0 z-20 bg-black bg-opacity-50 md:hidden" onClick={onClose} />}
@@ -163,6 +182,16 @@ export function Sidebar({
                   <span className="text-destructive font-bold">TOTAL EN ATTENTE</span>
                   <span className="font-bold text-destructive">{statusCounts.pendingClient + statusCounts.pendingExternal + statusCounts.pendingShop}</span>
                 </div>
+              </div>
+            </div>
+
+            <div className="mt-4 p-4 bg-destructive/10 rounded-lg border border-destructive/20">
+              <h3 className="text-sm font-medium text-destructive mb-2">
+                SAV en retard
+              </h3>
+              <div className="flex justify-between text-sm">
+                <span className="text-destructive font-medium">Non terminés en retard</span>
+                <span className="font-bold text-destructive">{lateSAVCount}</span>
               </div>
             </div>
 
