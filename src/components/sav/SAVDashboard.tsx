@@ -18,36 +18,6 @@ import { format, differenceInHours } from 'date-fns';
 
 // Limite de stockage par magasin (500 MB = 0.5 GB)
 const STORAGE_LIMIT_GB = 0.5;
-const statusConfig = {
-  pending: {
-    label: 'En attente',
-    variant: 'secondary' as const
-  },
-  in_progress: {
-    label: 'En cours',
-    variant: 'default' as const
-  },
-  testing: {
-    label: 'En test',
-    variant: 'default' as const
-  },
-  parts_ordered: {
-    label: 'Pièces commandées',
-    variant: 'default' as const
-  },
-  ready: {
-    label: 'Prêt',
-    variant: 'default' as const
-  },
-  delivered: {
-    label: 'Livré',
-    variant: 'default' as const
-  },
-  cancelled: {
-    label: 'Annulé',
-    variant: 'destructive' as const
-  }
-};
 export function SAVDashboard() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());

@@ -2,6 +2,7 @@ import { useState } from "react";
 import React, { useImperativeHandle } from "react";
 import { Button } from "@/components/ui/button";
 import { useShop } from "@/hooks/useShop";
+import { useShopSAVStatuses } from "@/hooks/useShopSAVStatuses";
 import { supabase } from "@/integrations/supabase/client";
 import type { SAVCase } from "@/hooks/useSAVCases";
 import { Printer, Scissors } from "lucide-react";
@@ -22,6 +23,7 @@ interface SAVPrintButtonProps {
 
 export const SAVPrintButton = React.forwardRef<SAVPrintButtonRef, SAVPrintButtonProps>(({ savCase, className, size = "sm", variant = "outline" }, ref) => {
   const { shop } = useShop();
+  const { getStatusInfo } = useShopSAVStatuses();
   const [printing, setPrinting] = useState(false);
 
   // Exposer la méthode print via useImperativeHandle
@@ -70,13 +72,10 @@ export const SAVPrintButton = React.forwardRef<SAVPrintButtonRef, SAVPrintButton
         ? `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(trackingUrl)}`
         : "";
 
-      const statusLabels: Record<string, string> = {
-        pending: "En attente",
-        in_progress: "En cours",
-        testing: "En test",
-        parts_ordered: "Pièce commandée",
-        ready: "Prêt",
-        cancelled: "Annulé",
+      // Utiliser les libellés personnalisés du magasin
+      const getStatusLabel = (status: string) => {
+        const statusInfo = getStatusInfo(status);
+        return statusInfo?.label || status;
       };
 
       const shopHeader = shop
@@ -121,7 +120,7 @@ export const SAVPrintButton = React.forwardRef<SAVPrintButtonRef, SAVPrintButton
             ${savCase.device_imei ? `<div><span class="label">IMEI:</span> <span class="highlight-red">${savCase.device_imei}</span></div>` : ""}
             ${savCase.sku ? `<div><span class="label">SKU:</span> <span class="highlight-red">${savCase.sku}</span></div>` : ""}
             
-            <div><span class="label">Statut:</span> ${statusLabels[savCase.status] || savCase.status}</div>
+            <div><span class="label">Statut:</span> ${getStatusLabel(savCase.status)}</div>
           </div>
         </div>`;
 
@@ -242,7 +241,7 @@ export const SAVPrintButton = React.forwardRef<SAVPrintButtonRef, SAVPrintButton
       <div class="header-left">
         <div class="title">Dossier SAV N° ${savCase.case_number}</div>
         <div class="sav-type">${savCase.sav_type === "client" ? "SAV Client" : savCase.sav_type === "external" ? "SAV Externe" : "SAV Interne"}</div>
-        <div class="meta">Créé le ${(savCase.created_at ? new Date(savCase.created_at).toLocaleDateString() : "")} · Statut: ${statusLabels[savCase.status] || savCase.status}</div>
+        <div class="meta">Créé le ${(savCase.created_at ? new Date(savCase.created_at).toLocaleDateString() : "")} · Statut: ${getStatusLabel(savCase.status)}</div>
       </div>
     </div>
     ${customerBlock}
@@ -261,7 +260,7 @@ export const SAVPrintButton = React.forwardRef<SAVPrintButtonRef, SAVPrintButton
       <div class="header-left">
         <div class="title">Dossier SAV N° ${savCase.case_number}</div>
         <div class="sav-type">${savCase.sav_type === "client" ? "SAV Client" : savCase.sav_type === "external" ? "SAV Externe" : "SAV Interne"}</div>
-        <div class="meta">Créé le ${(savCase.created_at ? new Date(savCase.created_at).toLocaleDateString() : "")} · Statut: ${statusLabels[savCase.status] || savCase.status}</div>
+        <div class="meta">Créé le ${(savCase.created_at ? new Date(savCase.created_at).toLocaleDateString() : "")} · Statut: ${getStatusLabel(savCase.status)}</div>
       </div>
     </div>
     ${customerBlock}

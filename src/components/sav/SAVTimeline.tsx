@@ -1,6 +1,7 @@
 import React from 'react';
 import { CheckCircle, Clock, AlertCircle, Flag } from 'lucide-react';
 import { calculateSAVDelay } from '@/hooks/useSAVDelay';
+import { useShopSAVStatuses } from '@/hooks/useShopSAVStatuses';
 
 interface TimelineProps {
   savCase: {
@@ -17,6 +18,8 @@ interface TimelineProps {
 export function SAVTimeline({ savCase, shop }: TimelineProps) {
   console.log('🕐 SAVTimeline render:', { savCase, shop });
   
+  const { getStatusInfo } = useShopSAVStatuses();
+  
   if (!shop || !savCase) {
     console.log('❌ Timeline: Missing data', { shop: !!shop, savCase: !!savCase });
     return (
@@ -29,6 +32,12 @@ export function SAVTimeline({ savCase, shop }: TimelineProps) {
   }
 
   console.log('✅ Timeline: Data available, rendering timeline');
+
+  // Fonction pour obtenir le libellé personnalisé du statut
+  const getStatusLabel = (status: string) => {
+    const statusInfo = getStatusInfo(status);
+    return statusInfo?.label || status;
+  };
 
   const maxDays = savCase.sav_type === 'client' 
     ? (shop.max_sav_processing_days_client ?? 7) 
@@ -139,7 +148,7 @@ export function SAVTimeline({ savCase, shop }: TimelineProps) {
           <div className="text-xs text-muted-foreground">
             {isClosed ? (
               <span className="text-success font-medium">
-                {savCase.status === 'ready' ? 'Dossier prêt' : 'Dossier annulé'}
+                {getStatusLabel(savCase.status)}
               </span>
             ) : delayInfo.isOverdue ? (
               <span className="text-destructive font-medium">En retard</span>

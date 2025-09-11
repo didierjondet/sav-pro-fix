@@ -11,6 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { useSAVCases } from '@/hooks/useSAVCases';
 import { useShop } from '@/hooks/useShop';
+import { useShopSAVStatuses } from '@/hooks/useShopSAVStatuses';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { QrCode, ExternalLink, ArrowLeft, Copy, Share, Save, Lock, User, Mail, Phone, MapPin, CheckCircle, X, MessageSquare } from 'lucide-react';
@@ -45,6 +46,7 @@ export default function SAVDetail() {
   const {
     shop
   } = useShop();
+  const { getStatusInfo } = useShopSAVStatuses();
   const [savCase, setSavCase] = useState<any>(null);
   const [technicianComments, setTechnicianComments] = useState('');
   const [savingTechnicianComments, setSavingTechnicianComments] = useState(false);
@@ -267,8 +269,8 @@ export default function SAVDetail() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Badge variant={statusConfig[savCase.status as keyof typeof statusConfig]?.variant || 'secondary'}>
-                    {statusConfig[savCase.status as keyof typeof statusConfig]?.label || savCase.status}
+                  <Badge variant={getStatusInfo(savCase.status)?.variant || 'secondary'}>
+                    {getStatusInfo(savCase.status)?.label || savCase.status}
                   </Badge>
                   {/* Bouton Imprimer restitution - uniquement pour les SAV prêts */}
                   {savCase.status === 'ready' && <Button variant="outline" size="sm" onClick={async () => {
