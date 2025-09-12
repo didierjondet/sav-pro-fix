@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { useSAVStatuses, SAVStatus } from '@/hooks/useSAVStatuses';
 import { useProfile } from '@/hooks/useProfile';
@@ -41,7 +42,8 @@ export function SAVStatusesManager() {
     status_key: '',
     status_label: '',
     status_color: '#6b7280',
-    pause_timer: false
+    pause_timer: false,
+    show_in_sidebar: false
   });
 
   const resetForm = () => {
@@ -49,7 +51,8 @@ export function SAVStatusesManager() {
       status_key: '',
       status_label: '',
       status_color: '#6b7280',
-      pause_timer: false
+      pause_timer: false,
+      show_in_sidebar: false
     });
   };
 
@@ -67,7 +70,8 @@ export function SAVStatusesManager() {
         display_order: nextOrder,
         is_default: false,
         is_active: true,
-        pause_timer: formData.pause_timer
+        pause_timer: formData.pause_timer,
+        show_in_sidebar: formData.show_in_sidebar
       });
       
       setIsCreateDialogOpen(false);
@@ -84,7 +88,8 @@ export function SAVStatusesManager() {
       await updateStatus(editingStatus.id, {
         status_label: formData.status_label,
         status_color: formData.status_color,
-        pause_timer: formData.pause_timer
+        pause_timer: formData.pause_timer,
+        show_in_sidebar: formData.show_in_sidebar
       });
       
       setEditingStatus(null);
@@ -117,7 +122,8 @@ export function SAVStatusesManager() {
       status_key: status.status_key,
       status_label: status.status_label,
       status_color: status.status_color,
-      pause_timer: status.pause_timer
+      pause_timer: status.pause_timer,
+      show_in_sidebar: status.show_in_sidebar
     });
   };
 
@@ -203,6 +209,18 @@ export function SAVStatusesManager() {
                     Mettre en pause le compteur de temps (ne compte pas dans les retards)
                   </Label>
                 </div>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="show_in_sidebar" className="text-sm">
+                    Afficher dans la barre latérale
+                  </Label>
+                  <Switch
+                    id="show_in_sidebar"
+                    checked={formData.show_in_sidebar}
+                    onCheckedChange={(checked) => 
+                      setFormData(prev => ({ ...prev, show_in_sidebar: checked }))
+                    }
+                  />
+                </div>
               </div>
               <DialogFooter>
                 <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
@@ -245,6 +263,11 @@ export function SAVStatusesManager() {
                 {status.pause_timer && (
                   <Badge variant="outline" className="text-xs border-orange-500 text-orange-700">
                     ⏸️ Timer en pause
+                  </Badge>
+                )}
+                {status.show_in_sidebar && (
+                  <Badge variant="outline" className="text-xs border-blue-500 text-blue-700">
+                    👁️ Sidebar
                   </Badge>
                 )}
               </div>
@@ -310,6 +333,18 @@ export function SAVStatusesManager() {
                           Mettre en pause le compteur de temps (ne compte pas dans les retards)
                         </Label>
                       </div>
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="edit_show_in_sidebar" className="text-sm">
+                          Afficher dans la barre latérale
+                        </Label>
+                        <Switch
+                          id="edit_show_in_sidebar"
+                          checked={formData.show_in_sidebar}
+                          onCheckedChange={(checked) => 
+                            setFormData(prev => ({ ...prev, show_in_sidebar: checked }))
+                          }
+                        />
+                      </div>
                     </div>
                     <DialogFooter>
                       <Button variant="outline" onClick={() => setEditingStatus(null)}>
@@ -373,6 +408,9 @@ export function SAVStatusesManager() {
           </p>
           <p className="text-sm text-muted-foreground">
             • Les statuts avec timer en pause ne comptent pas dans le calcul des retards
+          </p>
+          <p className="text-sm text-muted-foreground">
+            • Seuls les statuts avec "Sidebar" activé apparaissent dans la barre latérale
           </p>
         </div>
       </CardContent>

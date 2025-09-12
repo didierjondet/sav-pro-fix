@@ -59,7 +59,7 @@ export function Sidebar({
   const {
     shop
   } = useShop();
-  const { getStatusInfo } = useShopSAVStatuses();
+  const { getStatusInfo, statuses } = useShopSAVStatuses();
   const {
     savWithUnreadMessages
   } = useSAVUnreadMessages();
@@ -79,31 +79,18 @@ export function Sidebar({
   // Créer la navigation dynamique selon les paramètres du magasin
   const navigation = [...baseNavigation];
 
-  // Calculate status counts with proper filtering logic to match the SAV list filters
-  const statusCounts = (cases || []).reduce((acc, savCase) => {
-    // Count all "pending" status SAVs regardless of type
-    if (savCase.status === 'pending') {
-      if (savCase.sav_type === 'client') {
-        acc.pendingClient++;
-      } else if (savCase.sav_type === 'external') {
-        acc.pendingExternal++;
-      } else {
-        acc.pendingShop++;
-      }
-    } else if (savCase.status === 'in_progress') {
-      acc.inProgress++;
-    } else if (['delivered', 'ready'].includes(savCase.status)) {
-      acc.completed++;
-    }
-
-    return acc;
-  }, {
-    pendingClient: 0,
-    pendingExternal: 0,
-    pendingShop: 0,
-    inProgress: 0,
-    completed: 0
-  });
+  // Calculate counts for statuses that should be shown in sidebar
+  const sidebarStatusCounts = statuses
+    .filter(status => status.show_in_sidebar)
+    .map(status => {
+      const count = (cases || []).filter(savCase => savCase.status === status.status_key).length;
+      return {
+        label: status.status_label,
+        count,
+        color: status.status_color,
+        key: status.status_key
+      };
+    });
 
   // Calculate late SAV cases count
   const lateSAVCount = (cases || []).filter(savCase => {
@@ -176,25 +163,26 @@ export function Sidebar({
 
             <div className="mt-8 p-4 bg-muted rounded-lg">
               <h3 className="text-sm font-medium text-muted-foreground mb-2">
-                Statut SAV
+                Statuts SAV
               </h3>
               <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span>En attente client</span>
-                  <span className="font-medium">{statusCounts.pendingClient}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span>En attente Externe</span>
-                  <span className="font-medium">{statusCounts.pendingExternal}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span>En attente magasin</span>
-                  <span className="font-medium">{statusCounts.pendingShop}</span>
-                </div>
-                <div className="flex justify-between text-sm border-t pt-2 mt-2">
-                  <span className="text-destructive font-bold">TOTAL EN ATTENTE</span>
-                  <span className="font-bold text-destructive">{statusCounts.pendingClient + statusCounts.pendingExternal + statusCounts.pendingShop}</span>
-                </div>
+                {sidebarStatusCounts.map(statusCount => (
+                  <div key={statusCount.key} className="flex justify-between text-sm">
+                    <span className="flex items-center">
+                      <div 
+                        className="w-2 h-2 rounded-full mr-2" 
+                        style={{ backgroundColor: statusCount.color }}
+                      />
+                      {statusCount.label}
+                    </span>
+                    <span className="font-medium">{statusCount.count}</span>
+                  </div>
+                ))}
+                {sidebarStatusCounts.length === 0 && (
+                  <div className="text-sm text-muted-foreground text-center py-2">
+                    Aucun statut configuré pour la sidebar
+                  </div>
+                )}
               </div>
             </div>
 

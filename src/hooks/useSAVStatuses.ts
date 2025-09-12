@@ -13,6 +13,7 @@ export interface SAVStatus {
   is_default: boolean;
   is_active: boolean;
   pause_timer: boolean;
+  show_in_sidebar: boolean;
   created_at: string;
   updated_at: string;
 }
