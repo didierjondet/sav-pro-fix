@@ -356,8 +356,8 @@ export default function SAVList() {
                 // Vérifier s'il y a des messages non lus pour ce SAV
                 const hasUnreadMessages = savWithUnreadMessages.some(sav => sav.id === savCase.id);
                 
-                // Couleurs uniformes pour toutes les cartes - suppression des différenciations
-                const cardClassName = `hover:shadow-md transition-shadow ${
+                // Fond bleu clair uniforme pour toutes les cartes SAV
+                const cardClassName = `hover:shadow-md transition-shadow bg-sky-50 ${
                   isUrgent ? 'border-l-4 border-l-red-500' : 
                   isHighPriority ? 'border-l-4 border-l-orange-500' : ''
                 }`;
