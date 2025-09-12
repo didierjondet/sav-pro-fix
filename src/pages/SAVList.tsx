@@ -345,8 +345,8 @@ export default function SAVList() {
                               savCaseId={savCase.id} 
                               savStatus={savCase.status} 
                             />
-                            <h3 className="font-semibold text-lg">
-                              #{savCase.case_number}
+                            <h3 className="font-bold text-xl">
+                              {savCase.customer ? `${savCase.customer.last_name} ${savCase.customer.first_name}` : 'Client non défini'}
                             </h3>
                             {/* Affichage du nombre de visites */}
                             {!visitsLoading && (
@@ -398,12 +398,9 @@ export default function SAVList() {
                             </div>
                           )}
                           
-                          {savCase.customer && (
-                            <div className="flex items-center gap-2">
-                              <User className="h-4 w-4" />
-                              <span>{savCase.customer.last_name} {savCase.customer.first_name}</span>
-                            </div>
-                          )}
+                           <div className="flex items-center gap-2">
+                             <span className="text-xs text-muted-foreground">N° {savCase.case_number}</span>
+                           </div>
                           
                           <div className="flex items-center gap-2">
                             <Clock className="h-4 w-4" />
