@@ -254,7 +254,7 @@ export function Sidebar({
                                 }}
                                 className="block text-primary hover:underline text-left w-full"
                               >
-                                {savCase.case_number} - {savCase.device_brand} {savCase.device_model}
+                                {savCase.case_number} - {savCase.device_brand} {savCase.device_model} - <span className="text-muted-foreground">({getStatusInfo(savCase.status).label})</span>
                               </button>
                             ))}
                             {getLateSAVInfo().cases.length > 8 && (
