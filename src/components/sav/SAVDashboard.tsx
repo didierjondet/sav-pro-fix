@@ -54,13 +54,12 @@ export function SAVDashboard() {
         params.append('year', currentYear.toString());
         break;
       default:
-        // Pour les autres cas, utiliser le type tel quel
+        // Pour les types de SAV, exclure les SAV "prêts"
         const selectedType = getAllTypes().find(t => t.value === filterType);
         if (selectedType) {
           params.append('sav_type', selectedType.value);
         }
-        params.append('month', currentMonth.toString());
-        params.append('year', currentYear.toString());
+        params.append('exclude_ready', 'true'); // Nouveau paramètre pour exclure les SAV prêts
         break;
     }
     
@@ -142,6 +141,24 @@ export function SAVDashboard() {
       default:
         return { count: 0, description: '', cases: [], amount: 0 };
     }
+  };
+
+  // Calculer les SAV par type (hors SAV "prêts") pour les tooltips
+  const getSAVTypeTooltipInfo = (savType: string) => {
+    // SAV actifs (hors "prêts") du type donné
+    const activeSAVs = cases.filter(c => 
+      c.sav_type === savType && 
+      c.status !== 'ready'
+    );
+    
+    const typeInfo = getTypeInfo(savType);
+    
+    return {
+      count: activeSAVs.length,
+      description: `SAV ${typeInfo.label} actifs (hors "prêts")`,
+      cases: activeSAVs,
+      amount: 0
+    };
   };
 
   // Calculs pour les statistiques annuelles
@@ -258,14 +275,15 @@ export function SAVDashboard() {
       {/* Types de SAV avec navigation */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-lg font-semibold text-primary">Types de SAV - Répartition</CardTitle>
-          <CardDescription>Cliquez sur un type pour voir la liste des SAV correspondants</CardDescription>
+          <CardTitle className="text-lg font-semibold text-primary pl-4">Types de SAV - Répartition</CardTitle>
+          <CardDescription className="pl-4">Cliquez sur un type pour voir la liste des SAV correspondants</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
             {getAllTypes().map((type) => {
-              const count = cases.filter(c => c.sav_type === type.value).length;
-              const tooltipInfo = getSAVTooltipInfo(type.value);
+              // Exclure les SAV "prêts" du comptage
+              const count = cases.filter(c => c.sav_type === type.value && c.status !== 'ready').length;
+              const tooltipInfo = getSAVTypeTooltipInfo(type.value);
               
               return (
                 <TooltipProvider key={type.value}>
@@ -290,16 +308,39 @@ export function SAVDashboard() {
                         </CardContent>
                       </Card>
                     </TooltipTrigger>
-                    <TooltipContent side="bottom" className="max-w-xs">
-                      <div className="space-y-1">
+                    <TooltipContent side="bottom" className="max-w-sm p-3">
+                      <div className="space-y-2">
                         <p className="font-medium">{tooltipInfo.description}</p>
                         <p className="text-sm text-muted-foreground">
-                          {tooltipInfo.count} SAV ce mois
+                          {tooltipInfo.count} SAV actifs (hors "prêts")
                         </p>
-                        {tooltipInfo.amount > 0 && (
-                          <p className="text-sm font-medium text-green-600">
-                            {tooltipInfo.amount.toFixed(2)} € de CA mensuel
-                          </p>
+                        {tooltipInfo.cases && tooltipInfo.cases.length > 0 && (
+                          <div className="space-y-1 max-h-32 overflow-y-auto">
+                            <p className="text-xs font-medium text-muted-foreground">SAV concernés :</p>
+                            {tooltipInfo.cases.slice(0, 5).map((savCase) => (
+                              <button
+                                key={savCase.id}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  navigate(`/sav/${savCase.id}`);
+                                }}
+                                className="block w-full text-left text-xs p-1 rounded hover:bg-muted/50 transition-colors"
+                              >
+                                <span className="font-medium">#{savCase.case_number}</span>
+                                {savCase.customer && (
+                                  <span className="ml-2">{savCase.customer.last_name} {savCase.customer.first_name}</span>
+                                )}
+                                <div className="text-muted-foreground">
+                                  {savCase.device_brand} {savCase.device_model}
+                                </div>
+                              </button>
+                            ))}
+                            {tooltipInfo.cases.length > 5 && (
+                              <p className="text-xs text-muted-foreground">
+                                +{tooltipInfo.cases.length - 5} autre(s)...
+                              </p>
+                            )}
+                          </div>
                         )}
                       </div>
                     </TooltipContent>

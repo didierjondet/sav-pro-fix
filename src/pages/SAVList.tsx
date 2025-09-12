@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { multiWordSearch } from '@/utils/searchUtils';
 import { Header } from '@/components/layout/Header';
 import { Sidebar } from '@/components/layout/Sidebar';
@@ -57,6 +57,31 @@ export default function SAVList() {
   const { getStatusInfo, statuses } = useShopSAVStatuses();
   const { getAllTypes, getTypeInfo } = useShopSAVTypes();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  // Initialiser les filtres à partir des paramètres URL
+  useEffect(() => {
+    const savType = searchParams.get('sav_type');
+    const status = searchParams.get('status');
+    const excludeReady = searchParams.get('exclude_ready');
+    const takenOver = searchParams.get('taken_over');
+
+    if (savType) {
+      setFilterType(savType);
+    }
+    
+    if (status) {
+      setStatusFilter(status);
+    } else if (excludeReady === 'true') {
+      // Si exclude_ready est true, utiliser le filtre par défaut qui exclut les "prêts"
+      setStatusFilter('all-except-ready');
+    }
+    
+    if (takenOver === 'true') {
+      // Pour les prises en charge, on peut ajouter une logique spécifique si nécessaire
+      setStatusFilter('ready'); // Les prises en charge sont normalement des SAV prêts
+    }
+  }, [searchParams]);
 
   // Hook pour récupérer les visites des SAV
   const savCaseIds = useMemo(() => cases?.map(c => c.id) || [], [cases]);
