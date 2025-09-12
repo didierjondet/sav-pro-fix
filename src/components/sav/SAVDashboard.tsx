@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { SAVForm } from './SAVForm';
 import { useSAVCases } from '@/hooks/useSAVCases';
@@ -15,6 +16,7 @@ import { useShopStorageUsage } from '@/hooks/useStorageUsage';
 import { useMonthlyStatistics } from '@/hooks/useMonthlyStatistics';
 import { calculateSAVDelay } from '@/hooks/useSAVDelay';
 import { useShopSAVTypes } from '@/hooks/useShopSAVTypes';
+import { useShopSAVStatuses } from '@/hooks/useShopSAVStatuses';
 import { format, differenceInHours } from 'date-fns';
 
 // Limite de stockage par magasin (500 MB = 0.5 GB)
@@ -66,6 +68,15 @@ export function SAVDashboard() {
     navigate(`/sav?${params.toString()}`);
   };
 
+  // Détection générique du statut "prêt" selon la config du magasin
+  const { getStatusInfo } = useShopSAVStatuses();
+  const isReadyStatus = (statusKey: string) => {
+    const key = (statusKey || '').toLowerCase();
+    const info = getStatusInfo(statusKey);
+    const label = (info?.label || '').toLowerCase();
+    return key === 'ready' || key === 'pret' || label.includes('prêt') || label.includes('pret') || label.includes('ready');
+  };
+
   // Calculer les SAV concernés pour les tooltips (mois en cours) - données réelles
   const getSAVTooltipInfo = (filterType: string) => {
     const currentDate = new Date();
@@ -78,7 +89,7 @@ export function SAVDashboard() {
       case 'revenue':
         // SAV prêts non internes du mois
         const readySAVs = cases.filter(c => 
-          c.status === 'ready' && 
+          isReadyStatus(c.status) && 
           c.sav_type !== 'internal' &&
           new Date(c.created_at) >= monthStart && 
           new Date(c.created_at) <= monthEnd
@@ -94,7 +105,7 @@ export function SAVDashboard() {
         // SAV client avec prise en charge totale ou partielle
         const takeoverSAVs = cases.filter(c => 
           c.sav_type === 'client' && 
-          c.status === 'ready' &&
+          isReadyStatus(c.status) &&
           (c.taken_over || c.partial_takeover) &&
           new Date(c.created_at) >= monthStart && 
           new Date(c.created_at) <= monthEnd
@@ -110,7 +121,7 @@ export function SAVDashboard() {
         // SAV internes prêts
         const internalSAVs = cases.filter(c => 
           c.sav_type === 'internal' && 
-          c.status === 'ready' &&
+          isReadyStatus(c.status) &&
           new Date(c.created_at) >= monthStart && 
           new Date(c.created_at) <= monthEnd
         );
@@ -125,7 +136,7 @@ export function SAVDashboard() {
         // SAV client sans prise en charge
         const clientSAVs = cases.filter(c => 
           c.sav_type === 'client' && 
-          c.status === 'ready' &&
+          isReadyStatus(c.status) &&
           !c.taken_over && 
           !c.partial_takeover &&
           new Date(c.created_at) >= monthStart && 
@@ -148,7 +159,7 @@ export function SAVDashboard() {
     // SAV actifs (hors "prêts") du type donné
     const activeSAVs = cases.filter(c => 
       c.sav_type === savType && 
-      c.status !== 'ready'
+      !isReadyStatus(c.status)
     );
     
     const typeInfo = getTypeInfo(savType);
@@ -282,64 +293,62 @@ export function SAVDashboard() {
           <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
             {getAllTypes().map((type) => {
               // Exclure les SAV "prêts" du comptage
-              const count = cases.filter(c => c.sav_type === type.value && c.status !== 'ready').length;
+              const count = cases.filter(c => c.sav_type === type.value && !isReadyStatus(c.status)).length;
               const tooltipInfo = getSAVTypeTooltipInfo(type.value);
               
               return (
-                <TooltipProvider key={type.value}>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Card 
-                        className="cursor-pointer transition-all duration-200 hover:scale-105 hover:shadow-md border-l-4"
-                        style={{ borderLeftColor: type.color }}
-                        onClick={() => navigateToFilteredSAV(type.value)}
-                      >
-                        <CardContent className="p-4">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <div 
-                                className="w-3 h-3 rounded-full" 
-                                style={{ backgroundColor: type.color }}
-                              />
-                              <span className="text-sm font-medium">{type.label}</span>
-                            </div>
-                            <span className="text-lg font-bold text-primary">{count}</span>
+                <HoverCard>
+                  <HoverCardTrigger asChild>
+                    <Card 
+                      className="cursor-pointer transition-all duration-200 hover:scale-105 hover:shadow-md border-l-4"
+                      style={{ borderLeftColor: type.color }}
+                      onClick={() => navigateToFilteredSAV(type.value)}
+                    >
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <div 
+                              className="w-3 h-3 rounded-full" 
+                              style={{ backgroundColor: type.color }}
+                            />
+                            <span className="text-sm font-medium">{type.label}</span>
                           </div>
-                        </CardContent>
-                      </Card>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom" className="max-w-sm p-3">
-                      <div className="space-y-2">
-                        <p className="font-medium">{tooltipInfo.description}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {tooltipInfo.count} SAV actifs (hors "prêts")
-                        </p>
-                        {tooltipInfo.cases && tooltipInfo.cases.length > 0 && (
-                          <div className="space-y-1 max-h-32 overflow-y-auto">
-                            <p className="text-xs font-medium text-muted-foreground">SAV concernés :</p>
-                            {tooltipInfo.cases.map((savCase) => (
-                              <button
-                                key={savCase.id}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  navigate(`/sav/${savCase.id}`);
-                                }}
-                                className="block w-full text-left text-xs p-1 rounded hover:bg-muted/50 transition-colors"
-                              >
-                                <span className="font-medium">
-                                  {savCase.customer ? `${savCase.customer.last_name} ${savCase.customer.first_name}` : `#${savCase.case_number}`}
-                                </span>
-                                <div className="text-muted-foreground">
-                                  {savCase.device_brand} {savCase.device_model}
-                                </div>
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
+                          <span className="text-lg font-bold text-primary">{count}</span>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </HoverCardTrigger>
+                  <HoverCardContent side="bottom" className="max-w-sm p-3">
+                    <div className="space-y-2">
+                      <p className="font-medium">{tooltipInfo.description}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {tooltipInfo.count} SAV actifs (hors "prêts")
+                      </p>
+                      {tooltipInfo.cases && tooltipInfo.cases.length > 0 && (
+                        <div className="space-y-1 max-h-48 overflow-y-auto">
+                          <p className="text-xs font-medium text-muted-foreground">SAV concernés :</p>
+                          {tooltipInfo.cases.map((savCase) => (
+                            <button
+                              key={savCase.id}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigate(`/sav/${savCase.id}`);
+                              }}
+                              className="block w-full text-left text-xs p-1 rounded hover:bg-muted/50 transition-colors"
+                            >
+                              <span className="font-medium">
+                                {savCase.customer ? `${savCase.customer.last_name} ${savCase.customer.first_name}` : `#${savCase.case_number}`}
+                              </span>
+                              <div className="text-muted-foreground">
+                                {savCase.device_brand} {savCase.device_model}
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </HoverCardContent>
+                </HoverCard>
               );
             })}
           </div>

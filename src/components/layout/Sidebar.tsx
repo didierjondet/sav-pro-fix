@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useSAVCases } from '@/hooks/useSAVCases';
 import { useProfile } from '@/hooks/useProfile';
@@ -71,11 +72,19 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
   // Créer la navigation dynamique selon les paramètres du magasin
   const navigation = [...baseNavigation];
 
+  // Détection générique du statut "prêt" selon la config du magasin
+  const isReadyStatus = (statusKey: string) => {
+    const key = (statusKey || '').toLowerCase();
+    const info = getStatusInfo(statusKey);
+    const label = (info?.label || '').toLowerCase();
+    return key === 'ready' || key === 'pret' || label.includes('prêt') || label.includes('pret') || label.includes('ready');
+  };
+
   // Compter les SAV par type
   const savTypeCounts = useMemo(() => {
     const counts: Record<string, { count: number; cases: any[] }> = {};
     savTypes.forEach(type => {
-      const casesForType = cases.filter(savCase => savCase.sav_type === type.type_key);
+      const casesForType = cases.filter(savCase => savCase.sav_type === type.type_key && !isReadyStatus(savCase.status));
       counts[type.type_key] = {
         count: casesForType.length,
         cases: casesForType
@@ -217,7 +226,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 
               {/* Types de SAV */}
               <div className="mt-8 p-4 bg-muted rounded-lg">
-                <h3 className="text-sm font-medium text-muted-foreground mb-2">
+                <h3 className="text-sm font-medium text-muted-foreground mb-2 pl-2">
                   Types de SAV
                 </h3>
                 <div className="space-y-2">

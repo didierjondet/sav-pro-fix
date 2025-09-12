@@ -59,6 +59,14 @@ export default function SAVList() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
+  // Détection générique du statut "prêt" selon la config du magasin
+  const isReadyStatus = (statusKey: string) => {
+    const info = getStatusInfo(statusKey);
+    const key = (statusKey || '').toLowerCase();
+    const label = (info?.label || '').toLowerCase();
+    return key === 'ready' || key === 'pret' || label.includes('prêt') || label.includes('pret') || label.includes('ready');
+  };
+
   // Initialiser les filtres à partir des paramètres URL
   useEffect(() => {
     const savType = searchParams.get('sav_type');
@@ -164,9 +172,9 @@ export default function SAVList() {
     // 3. Filtrer par statut
     let filteredByStatus = filteredByType;
     if (statusFilter === 'all-except-ready') {
-      filteredByStatus = filteredByType.filter(case_ => case_.status !== 'ready');
+      filteredByStatus = filteredByType.filter(case_ => !isReadyStatus(case_.status));
     } else if (statusFilter === 'overdue') {
-      filteredByStatus = filteredByType.filter(case_ => case_.delayInfo.isOverdue && case_.status !== 'cancelled' && case_.status !== 'ready');
+      filteredByStatus = filteredByType.filter(case_ => case_.delayInfo.isOverdue && case_.status !== 'cancelled' && !isReadyStatus(case_.status));
     } else if (statusFilter !== 'all') {
       filteredByStatus = filteredByType.filter(case_ => case_.status === statusFilter);
     }
