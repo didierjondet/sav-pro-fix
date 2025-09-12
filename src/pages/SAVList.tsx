@@ -343,6 +343,13 @@ export default function SAVList() {
                             <h3 className="font-semibold text-lg">
                               #{savCase.case_number}
                             </h3>
+                            {/* Affichage du nombre de visites */}
+                            {!visitsLoading && getVisitCount(savCase.id) > 0 && (
+                              <Badge variant="secondary" className="text-xs">
+                                <Eye className="h-3 w-3 mr-1" />
+                                {getVisitCount(savCase.id)} visite{getVisitCount(savCase.id) > 1 ? 's' : ''}
+                              </Badge>
+                            )}
                           </div>
                           <Badge style={getStatusInfo(savCase.status).color ? {
                             backgroundColor: `${getStatusInfo(savCase.status).color}20`,
