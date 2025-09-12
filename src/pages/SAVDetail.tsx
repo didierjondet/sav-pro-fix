@@ -12,9 +12,11 @@ import { Label } from '@/components/ui/label';
 import { useSAVCases } from '@/hooks/useSAVCases';
 import { useShop } from '@/hooks/useShop';
 import { useShopSAVStatuses } from '@/hooks/useShopSAVStatuses';
+import { useShopSAVTypes } from '@/hooks/useShopSAVTypes';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { QrCode, ExternalLink, ArrowLeft, Copy, Share, Save, Lock, User, Mail, Phone, MapPin, CheckCircle, X, MessageSquare } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { QrCode, ExternalLink, ArrowLeft, Copy, Share, Save, Lock, User, Mail, Phone, MapPin, CheckCircle, X, MessageSquare, Edit } from 'lucide-react';
 import { SMSButton } from '@/components/sav/SMSButton';
 import { useNavigate } from 'react-router-dom';
 import { SAVPartsEditor } from '@/components/sav/SAVPartsEditor';
@@ -47,8 +49,11 @@ export default function SAVDetail() {
     shop
   } = useShop();
   const { getStatusInfo } = useShopSAVStatuses();
+  const { getAllTypes, getTypeInfo } = useShopSAVTypes();
   const [savCase, setSavCase] = useState<any>(null);
   const [technicianComments, setTechnicianComments] = useState('');
+  const [editingSavType, setEditingSavType] = useState(false);
+  const [tempSavType, setTempSavType] = useState('');
   const [savingTechnicianComments, setSavingTechnicianComments] = useState(false);
   useEffect(() => {
     if (cases && id) {
@@ -184,6 +189,42 @@ export default function SAVDetail() {
       setSavingComments(false);
     }
   };
+
+  const updateSavType = async () => {
+    if (!savCase?.id || !tempSavType) return;
+    
+    try {
+      const { error } = await supabase
+        .from('sav_cases')
+        .update({ sav_type: tempSavType as 'client' | 'internal' | 'external' })
+        .eq('id', savCase.id);
+      
+      if (error) throw error;
+      
+      setSavCase({
+        ...savCase,
+        sav_type: tempSavType
+      });
+      
+      setEditingSavType(false);
+      toast({
+        title: "Succès",
+        description: "Type de SAV mis à jour"
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de modifier le type de SAV",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const cancelEditSavType = () => {
+    setEditingSavType(false);
+    setTempSavType('');
+  };
+
   const handleAttachmentsUpdate = (newAttachments: any[]) => {
     setSavCase({
       ...savCase,
@@ -356,8 +397,60 @@ export default function SAVDetail() {
                   <CardTitle>Détails du dossier</CardTitle>
                 </CardHeader>
                 <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <strong>Type:</strong> {savCase.sav_type === 'client' ? 'Client' : savCase.sav_type === 'external' ? 'Externe' : 'Interne'}
+                  <div className="flex items-center gap-2">
+                    <strong>Type:</strong> 
+                    {editingSavType ? (
+                      <div className="flex items-center gap-2">
+                        <Select value={tempSavType} onValueChange={setTempSavType}>
+                          <SelectTrigger className="w-40">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {getAllTypes().map((type) => (
+                              <SelectItem key={type.value} value={type.value}>
+                                <div className="flex items-center gap-2">
+                                  <div 
+                                    className="w-3 h-3 rounded-full" 
+                                    style={{ backgroundColor: type.color }}
+                                  />
+                                  {type.label}
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Button size="sm" onClick={updateSavType} disabled={!tempSavType}>
+                          <Save className="h-4 w-4" />
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={cancelEditSavType}>
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <Badge 
+                          variant="outline" 
+                          className="px-2 py-1"
+                          style={{ 
+                            backgroundColor: `${getTypeInfo(savCase.sav_type).color}20`,
+                            color: getTypeInfo(savCase.sav_type).color,
+                            borderColor: getTypeInfo(savCase.sav_type).color
+                          }}
+                        >
+                          {getTypeInfo(savCase.sav_type).label}
+                        </Badge>
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          onClick={() => {
+                            setEditingSavType(true);
+                            setTempSavType(savCase.sav_type);
+                          }}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    )}
                   </div>
                   <div>
                     <strong>Appareil:</strong> {savCase.device_brand} {savCase.device_model}

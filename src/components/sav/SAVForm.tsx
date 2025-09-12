@@ -113,6 +113,7 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
   const { checkAndShowLimitDialog } = useLimitDialogContext();
   const { toast } = useToast();
   const { getAllStatuses, getStatusInfo } = useShopSAVStatuses();
+  const { getAllTypes } = useShopSAVTypes();
 
 
   // Charger les limites SAV au montage et quand l'utilisateur change
@@ -419,20 +420,24 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
           <div className="space-y-4">
             <div>
               <Label className="text-sm font-medium">Type de SAV</Label>
-              <RadioGroup value={savType} onValueChange={(value) => setSavType(value as 'client' | 'internal' | 'external')}>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="client" id="client" />
-                  <Label htmlFor="client">SAV Client</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="external" id="external" />
-                  <Label htmlFor="external">SAV Externe</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="internal" id="internal" />
-                  <Label htmlFor="internal">SAV Interne Magasin</Label>
-                </div>
-              </RadioGroup>
+              <Select value={savType} onValueChange={setSavType}>
+                <SelectTrigger className="mt-1">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {getAllTypes().map((type) => (
+                    <SelectItem key={type.value} value={type.value}>
+                      <div className="flex items-center gap-2">
+                        <div 
+                          className="w-3 h-3 rounded-full" 
+                          style={{ backgroundColor: type.color }}
+                        />
+                        {type.label}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             
             <div>
