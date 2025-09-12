@@ -291,57 +291,55 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 
               {/* Statuts SAV */}
               <div className="mt-4 p-4 bg-muted rounded-lg">
-                <h3 className="text-sm font-medium text-muted-foreground mb-2">
+                <h3 className="text-sm font-medium text-muted-foreground mb-2 pl-2">
                   Statuts SAV
                 </h3>
                 <div className="space-y-2">
                   {sidebarStatusCounts.map((statusCount) => (
-                    <div key={statusCount.key} className="flex justify-between text-sm items-center">
-                      <span className="flex items-center">
-                        <div className="w-2 h-2 rounded-full mr-2" style={{backgroundColor: statusCount.color}} />
-                        {statusCount.label}
-                      </span>
-                      <div className="flex items-center gap-1">
-                        <span className="font-medium">{statusCount.count}</span>
-                        {statusCount.count > 0 && (
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <button className="hover:bg-accent p-1 rounded-sm">
-                                <Info className="h-3 w-3 text-muted-foreground hover:text-foreground" />
-                              </button>
-                            </TooltipTrigger>
-                            <TooltipContent side="bottom" className="max-w-sm">
-                              <div className="space-y-2">
-                                <p className="font-medium">SAV avec le statut "{statusCount.label}"</p>
-                                <p className="text-sm">Nombre: {statusCount.count}</p>
-                                <div className="text-xs space-y-1">
-                                  <p className="font-medium">Dossiers:</p>
-                                  {(cases || []).filter(savCase => savCase.status === statusCount.key).slice(0, 8).map((savCase) => (
-                                    <button 
-                                      key={savCase.id} 
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        navigate(`/sav/${savCase.id}`);
-                                        onClose();
-                                      }} 
-                                      className="block text-primary hover:underline text-left w-full"
-                                    >
-                                      {savCase.case_number} - {savCase.device_brand} {savCase.device_model}
-                                    </button>
-                                  ))}
-                                  {(cases || []).filter(savCase => savCase.status === statusCount.key).length > 8 && (
-                                    <p className="text-muted-foreground">
-                                      +{(cases || []).filter(savCase => savCase.status === statusCount.key).length - 8} autres...
-                                    </p>
-                                  )}
-                                </div>
-                                <p className="text-xs italic">Cliquer sur un SAV pour le voir</p>
-                              </div>
-                            </TooltipContent>
-                          </Tooltip>
-                        )}
-                      </div>
-                    </div>
+                    <Tooltip key={statusCount.key}>
+                      <TooltipTrigger asChild>
+                        <Link
+                          to={`/sav?status=${statusCount.key}`}
+                          className="flex items-center justify-between p-2 text-sm hover:bg-accent hover:text-accent-foreground rounded-md transition-colors"
+                        >
+                          <span className="text-muted-foreground">
+                            {statusCount.label}
+                          </span>
+                          <Badge 
+                            variant="secondary" 
+                            className="ml-2"
+                            style={{
+                              backgroundColor: `${statusCount.color}20`,
+                              color: statusCount.color,
+                              borderColor: statusCount.color
+                            }}
+                          >
+                            {statusCount.count}
+                          </Badge>
+                        </Link>
+                      </TooltipTrigger>
+                      <TooltipContent side="right" className="max-w-xs">
+                        <div className="space-y-2">
+                          <p className="font-medium">{statusCount.label}</p>
+                          <p className="text-sm">Nombre de SAV: {statusCount.count}</p>
+                          {statusCount.count > 0 && (
+                            <div className="space-y-1">
+                              <p className="text-xs font-medium">Derniers SAV:</p>
+                              {(cases || []).filter(savCase => savCase.status === statusCount.key).slice(0, 5).map((savCase) => (
+                                <p key={savCase.id} className="text-xs">
+                                  {savCase.case_number} - {savCase.device_brand} {savCase.device_model}
+                                </p>
+                              ))}
+                              {(cases || []).filter(savCase => savCase.status === statusCount.key).length > 5 && (
+                                <p className="text-xs text-muted-foreground">
+                                  +{(cases || []).filter(savCase => savCase.status === statusCount.key).length - 5} autres...
+                                </p>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </TooltipContent>
+                    </Tooltip>
                   ))}
                   {sidebarStatusCounts.length === 0 && (
                     <div className="text-sm text-muted-foreground text-center py-2">
