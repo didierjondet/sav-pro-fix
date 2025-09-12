@@ -802,51 +802,63 @@ export default function Quotes() {
                                     </div>
                                   </div>
                                   
-                                  <div className="flex items-center gap-2 ml-4">
-                                    <Button 
-                                      variant="outline" 
-                                      size="sm"
-                                      onClick={() => handleViewQuote(quote)}
-                                    >
-                                      <Eye className="h-4 w-4 mr-1" />
-                                      Voir
-                                    </Button>
-                                    <Button 
-                                      variant="outline" 
-                                      size="sm"
-                                      onClick={() => handleDownloadPDF(quote)}
-                                    >
-                                      <Download className="h-4 w-4 mr-1" />
-                                      PDF
-                                    </Button>
-                                     {quote.status === 'sms_accepted' ? (
-                                       <Button 
-                                         variant="default"
-                                         size="sm"
-                                         className="bg-green-600 hover:bg-green-700"
-                                         onClick={async () => {
-                                           await updateQuote(quote.id, { status: 'accepted' });
-                                           setQuoteToConvert(quote);
-                                         }}
-                                       >
-                                         <CheckCircle className="h-4 w-4 mr-1" />
-                                         Démarrer le SAV
-                                       </Button>
-                                     ) : (
-                                       <div className="text-sm text-muted-foreground px-3 py-1 rounded bg-muted">
-                                         SAV en cours...
-                                       </div>
-                                     )}
-                                    <Button 
-                                      variant="outline" 
-                                      size="sm"
-                                      className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                                      onClick={() => deleteQuote(quote.id)}
-                                    >
-                                      <Trash2 className="h-4 w-4 mr-1" />
-                                      Supprimer
-                                    </Button>
-                                  </div>
+                                   <div className="flex items-center gap-2 ml-4">
+                                     <Button 
+                                       variant="outline" 
+                                       size="sm"
+                                       onClick={() => handleViewQuote(quote)}
+                                     >
+                                       <Eye className="h-4 w-4 mr-1" />
+                                       Voir
+                                     </Button>
+                                     <Button 
+                                       variant="outline" 
+                                       size="sm"
+                                       onClick={() => handleDownloadPDF(quote)}
+                                     >
+                                       <Download className="h-4 w-4 mr-1" />
+                                       PDF
+                                     </Button>
+                                     
+                                     {/* Bouton pour convertir en SAV */}
+                                     <Button 
+                                       variant="default" 
+                                       size="sm"
+                                       onClick={() => setQuoteToConvert(quote)}
+                                       className="bg-green-600 hover:bg-green-700"
+                                     >
+                                       <Plus className="h-4 w-4 mr-1" />
+                                       Convertir en SAV
+                                     </Button>
+                                     
+                                      {quote.status === 'sms_accepted' ? (
+                                        <Button 
+                                          variant="default"
+                                          size="sm"
+                                          className="bg-blue-600 hover:bg-blue-700"
+                                          onClick={async () => {
+                                            await updateQuote(quote.id, { status: 'accepted' });
+                                            setQuoteToConvert(quote);
+                                          }}
+                                        >
+                                          <CheckCircle className="h-4 w-4 mr-1" />
+                                          Démarrer le SAV
+                                        </Button>
+                                      ) : (
+                                        <div className="text-sm text-muted-foreground px-3 py-1 rounded bg-muted">
+                                          SAV en cours...
+                                        </div>
+                                      )}
+                                     <Button 
+                                       variant="outline" 
+                                       size="sm"
+                                       className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                       onClick={() => deleteQuote(quote.id)}
+                                     >
+                                       <Trash2 className="h-4 w-4 mr-1" />
+                                       Supprimer
+                                     </Button>
+                                   </div>
                                 </div>
                               </CardContent>
                             </Card>
