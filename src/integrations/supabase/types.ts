@@ -897,6 +897,36 @@ export type Database = {
           },
         ]
       }
+      sav_tracking_visits: {
+        Row: {
+          created_at: string
+          id: string
+          sav_case_id: string
+          tracking_slug: string
+          visited_at: string
+          visitor_ip: string | null
+          visitor_user_agent: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          sav_case_id: string
+          tracking_slug: string
+          visited_at?: string
+          visitor_ip?: string | null
+          visitor_user_agent?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          sav_case_id?: string
+          tracking_slug?: string
+          visited_at?: string
+          visitor_ip?: string | null
+          visitor_user_agent?: string | null
+        }
+        Relationships: []
+      }
       shop_sav_statuses: {
         Row: {
           created_at: string
@@ -1877,6 +1907,14 @@ export type Database = {
       mask_phone_number: {
         Args: { phone_number: string }
         Returns: string
+      }
+      record_sav_visit: {
+        Args: {
+          p_tracking_slug: string
+          p_visitor_ip?: string
+          p_visitor_user_agent?: string
+        }
+        Returns: undefined
       }
       reset_monthly_counters: {
         Args: Record<PropertyKey, never>

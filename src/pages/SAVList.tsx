@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useSAVCases } from '@/hooks/useSAVCases';
 import { useShop } from '@/hooks/useShop';
+import { useSAVVisits } from '@/hooks/useSAVVisits';
 import { generateSAVListPDF } from '@/utils/pdfGenerator';
 import { toast } from 'sonner';
 import { formatDelayText, calculateSAVDelay } from '@/hooks/useSAVDelay';
@@ -54,6 +55,10 @@ export default function SAVList() {
   const { checkAndShowLimitDialog } = useLimitDialogContext();
   const { getStatusInfo, statuses } = useShopSAVStatuses();
   const navigate = useNavigate();
+
+  // Hook pour récupérer les visites des SAV
+  const savCaseIds = useMemo(() => cases?.map(c => c.id) || [], [cases]);
+  const { getVisitCount, loading: visitsLoading } = useSAVVisits(savCaseIds);
 
   // Mise à jour en temps réel des statuts SAV
   useEffect(() => {

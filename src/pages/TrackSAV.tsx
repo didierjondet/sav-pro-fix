@@ -58,6 +58,8 @@ export default function TrackSAV() {
   useEffect(() => {
     if (slug) {
       fetchSAVCase();
+      // Enregistrer la visite lors du chargement de la page
+      recordVisit();
     }
   }, [slug]);
 
@@ -159,6 +161,31 @@ export default function TrackSAV() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Fonction pour enregistrer la visite
+  const recordVisit = async () => {
+    if (!slug) return;
+    
+    try {
+      // Obtenir l'IP et User-Agent du client
+      const userAgent = navigator.userAgent;
+      
+      // Appeler la fonction pour enregistrer la visite
+      const { error } = await supabase.rpc('record_sav_visit', {
+        p_tracking_slug: slug,
+        p_visitor_ip: null, // L'IP sera automatiquement récupérée côté serveur si possible
+        p_visitor_user_agent: userAgent
+      });
+
+      if (error) {
+        console.log('Info: Could not record visit:', error.message);
+        // On ne fait pas d'erreur fatale, c'est juste du tracking
+      }
+    } catch (error) {
+      console.log('Info: Could not record visit:', error);
+      // On ne fait pas d'erreur fatale, c'est juste du tracking
     }
   };
 
