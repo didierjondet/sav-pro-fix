@@ -60,8 +60,13 @@ export function Sidebar({
   const {
     shop
   } = useShop();
-  const { getStatusInfo, statuses } = useShopSAVStatuses();
-  const { savWithUnreadMessages } = useSAVUnreadMessages();
+  const {
+    getStatusInfo,
+    statuses
+  } = useShopSAVStatuses();
+  const {
+    savWithUnreadMessages
+  } = useSAVUnreadMessages();
   const totalUnread = (savWithUnreadMessages || []).reduce((sum, s) => sum + s.unread_count, 0);
   const awaitingCount = (savWithUnreadMessages || []).filter((s: any) => s.awaiting_reply).length;
   const {
@@ -80,17 +85,15 @@ export function Sidebar({
   const navigation = [...baseNavigation];
 
   // Calculate counts for statuses that should be shown in sidebar
-  const sidebarStatusCounts = statuses
-    .filter(status => status.show_in_sidebar)
-    .map(status => {
-      const count = (cases || []).filter(savCase => savCase.status === status.status_key).length;
-      return {
-        label: status.status_label,
-        count,
-        color: status.status_color,
-        key: status.status_key
-      };
-    });
+  const sidebarStatusCounts = statuses.filter(status => status.show_in_sidebar).map(status => {
+    const count = (cases || []).filter(savCase => savCase.status === status.status_key).length;
+    return {
+      label: status.status_label,
+      count,
+      color: status.status_color,
+      key: status.status_key
+    };
+  });
 
   // Calculate late SAV cases count
   const lateSAVCount = (cases || []).filter(savCase => {
@@ -104,7 +107,6 @@ export function Sidebar({
     if (statusInfo.pause_timer) {
       return false; // Don't count as late if timer is paused
     }
-
     const createdDate = new Date(savCase.created_at);
     const today = new Date();
     const daysDiff = Math.floor((today.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24));
@@ -118,7 +120,6 @@ export function Sidebar({
     } else {
       maxDays = shop?.max_sav_processing_days_internal || 5;
     }
-
     return daysDiff > maxDays;
   }).length;
 
@@ -135,7 +136,6 @@ export function Sidebar({
       if (statusInfo.pause_timer) {
         return false; // Don't count as late if timer is paused
       }
-
       const createdDate = new Date(savCase.created_at);
       const today = new Date();
       const daysDiff = Math.floor((today.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24));
@@ -149,10 +149,8 @@ export function Sidebar({
       } else {
         maxDays = shop?.max_sav_processing_days_internal || 5;
       }
-
       return daysDiff > maxDays;
     });
-
     return {
       count: lateSAVs.length,
       description: 'SAV non terminés en retard sur les délais',
@@ -186,9 +184,7 @@ export function Sidebar({
                 }}>
                       <Icon className="mr-3 h-5 w-5" />
                       <span>{item.name}</span>
-                      {item.href === '/client-chats' && awaitingCount > 0 && (
-                        <Badge variant="destructive" className="ml-auto text-xs">{awaitingCount}</Badge>
-                      )}
+                      {item.href === '/client-chats' && awaitingCount > 0 && <Badge variant="destructive" className="ml-auto text-xs">{awaitingCount}</Badge>}
                     </Button>;
               })}
                 
@@ -207,19 +203,16 @@ export function Sidebar({
                   Statuts SAV
                 </h3>
                 <div className="space-y-2">
-                  {sidebarStatusCounts.map(statusCount => (
-                    <div key={statusCount.key} className="flex justify-between text-sm items-center">
+                  {sidebarStatusCounts.map(statusCount => <div key={statusCount.key} className="flex justify-between text-sm items-center">
                       <span className="flex items-center">
-                        <div 
-                          className="w-2 h-2 rounded-full mr-2" 
-                          style={{ backgroundColor: statusCount.color }}
-                        />
+                        <div className="w-2 h-2 rounded-full mr-2" style={{
+                      backgroundColor: statusCount.color
+                    }} />
                         {statusCount.label}
                       </span>
                       <div className="flex items-center gap-1">
                         <span className="font-medium">{statusCount.count}</span>
-                        {statusCount.count > 0 && (
-                          <Tooltip>
+                        {statusCount.count > 0 && <Tooltip>
                             <TooltipTrigger asChild>
                               <button className="hover:bg-accent p-1 rounded-sm">
                                 <Info className="h-3 w-3 text-muted-foreground hover:text-foreground" />
@@ -231,41 +224,26 @@ export function Sidebar({
                                 <p className="text-sm">Nombre: {statusCount.count}</p>
                                 <div className="text-xs space-y-1">
                                   <p className="font-medium">Dossiers:</p>
-                                  {(cases || [])
-                                    .filter(savCase => savCase.status === statusCount.key)
-                                    .slice(0, 8)
-                                    .map((savCase) => (
-                                      <button
-                                        key={savCase.id}
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          navigate(`/sav/${savCase.id}`);
-                                          onClose();
-                                        }}
-                                        className="block text-primary hover:underline text-left w-full"
-                                      >
+                                  {(cases || []).filter(savCase => savCase.status === statusCount.key).slice(0, 8).map(savCase => <button key={savCase.id} onClick={e => {
+                              e.stopPropagation();
+                              navigate(`/sav/${savCase.id}`);
+                              onClose();
+                            }} className="block text-primary hover:underline text-left w-full">
                                         {savCase.case_number} - {savCase.device_brand} {savCase.device_model}
-                                      </button>
-                                    ))}
-                                  {(cases || []).filter(savCase => savCase.status === statusCount.key).length > 8 && (
-                                    <p className="text-muted-foreground">
+                                      </button>)}
+                                  {(cases || []).filter(savCase => savCase.status === statusCount.key).length > 8 && <p className="text-muted-foreground">
                                       +{(cases || []).filter(savCase => savCase.status === statusCount.key).length - 8} autres...
-                                    </p>
-                                  )}
+                                    </p>}
                                 </div>
                                 <p className="text-xs italic">Cliquer sur un SAV pour le voir</p>
                               </div>
                             </TooltipContent>
-                          </Tooltip>
-                        )}
+                          </Tooltip>}
                       </div>
-                    </div>
-                  ))}
-                  {sidebarStatusCounts.length === 0 && (
-                    <div className="text-sm text-muted-foreground text-center py-2">
+                    </div>)}
+                  {sidebarStatusCounts.length === 0 && <div className="text-sm text-muted-foreground text-center py-2">
                       Aucun statut configuré pour la sidebar
-                    </div>
-                  )}
+                    </div>}
                 </div>
               </div>
 
@@ -284,32 +262,20 @@ export function Sidebar({
                       <div className="space-y-2">
                         <p className="font-medium">{getLateSAVInfo().description}</p>
                         <p className="text-sm">Nombre de SAV: {getLateSAVInfo().count}</p>
-                        {getLateSAVInfo().cases.length > 0 && (
-                          <div className="text-xs space-y-1">
+                        {getLateSAVInfo().cases.length > 0 && <div className="text-xs space-y-1">
                             <p className="font-medium">SAV concernés:</p>
-                            {getLateSAVInfo().cases.slice(0, 8).map((savCase) => (
-                              <button
-                                key={savCase.id}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  navigate(`/sav/${savCase.id}`);
-                                  onClose();
-                                }}
-                                className="block text-primary hover:underline text-left w-full"
-                              >
+                            {getLateSAVInfo().cases.slice(0, 8).map(savCase => <button key={savCase.id} onClick={e => {
+                          e.stopPropagation();
+                          navigate(`/sav/${savCase.id}`);
+                          onClose();
+                        }} className="block text-primary hover:underline text-left w-full">
                                 {savCase.case_number} - {savCase.device_brand} {savCase.device_model} - <span className="text-muted-foreground">({getStatusInfo(savCase.status).label})</span>
-                              </button>
-                            ))}
-                            {getLateSAVInfo().cases.length > 8 && (
-                              <p className="text-muted-foreground">
+                              </button>)}
+                            {getLateSAVInfo().cases.length > 8 && <p className="text-muted-foreground">
                                 +{getLateSAVInfo().cases.length - 8} autres...
-                              </p>
-                            )}
-                          </div>
-                        )}
-                        {getLateSAVInfo().cases.length === 0 && (
-                          <p className="text-sm text-muted-foreground">Aucun SAV en retard actuellement</p>
-                        )}
+                              </p>}
+                          </div>}
+                        {getLateSAVInfo().cases.length === 0 && <p className="text-sm text-muted-foreground">Aucun SAV en retard actuellement</p>}
                         <p className="text-xs italic">Cliquer sur un SAV pour le voir</p>
                       </div>
                     </TooltipContent>
@@ -321,30 +287,8 @@ export function Sidebar({
                 </div>
               </div>
 
-            <div className="mt-4 p-4 bg-muted rounded-lg">
-              <h3 className="text-sm font-medium text-muted-foreground mb-2">
-                Statut devis
-              </h3>
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span>En cours</span>
-                  <span className="font-medium">{quoteCounts.inProgress}</span>
-                </div>
-                
-                
-              </div>
-            </div>
-              <div className="mt-4 p-4 bg-muted rounded-lg">
-                <h3 className="text-sm font-medium text-muted-foreground mb-2">
-                  Statut devis
-                </h3>
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span>En cours</span>
-                    <span className="font-medium">{quoteCounts.inProgress}</span>
-                  </div>
-                </div>
-              </div>
+            
+              
             </TooltipProvider>
           </ScrollArea>
 
