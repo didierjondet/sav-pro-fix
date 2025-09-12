@@ -28,6 +28,25 @@ export default function ClientChats() {
   const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
   const navigate = useNavigate();
 
+  // Écouter l'événement de fermeture automatique des chats
+  useEffect(() => {
+    const handleSAVReadyCloseChat = (event: CustomEvent) => {
+      const { savCaseId } = event.detail;
+      
+      // Fermer la discussion si elle est actuellement sélectionnée
+      if (selected?.id === savCaseId) {
+        console.log('🔒 Closing chat for SAV ready:', savCaseId);
+        setSelected(null);
+      }
+    };
+
+    window.addEventListener('sav-ready-close-chat', handleSAVReadyCloseChat as EventListener);
+    
+    return () => {
+      window.removeEventListener('sav-ready-close-chat', handleSAVReadyCloseChat as EventListener);
+    };
+  }, [selected]);
+
   // SEO: title and meta
   useEffect(() => {
     document.title = 'Chat clients | Gestion SAV';

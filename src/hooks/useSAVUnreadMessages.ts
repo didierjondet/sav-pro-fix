@@ -135,13 +135,44 @@ export function useSAVUnreadMessages() {
     }
   };
 
+  const handleSAVReady = async (savCaseId: string) => {
+    if (!savCaseId) return;
+    
+    try {
+      console.log('🧹 Cleaning notifications for SAV:', savCaseId);
+      
+      // Marquer tous les messages comme lus par le magasin
+      const { error } = await supabase
+        .from('sav_messages')
+        .update({ read_by_shop: true })
+        .eq('sav_case_id', savCaseId)
+        .eq('read_by_shop', false);
+      
+      if (error) {
+        console.error('Error marking messages as read:', error);
+      } else {
+        console.log('✅ All messages marked as read for SAV:', savCaseId);
+        
+        // Déclencher un événement personnalisé pour fermer la discussion ouverte
+        window.dispatchEvent(new CustomEvent('sav-ready-close-chat', { 
+          detail: { savCaseId } 
+        }));
+        
+        // Rafraîchir la liste des messages non lus
+        fetchUnreadMessages();
+      }
+    } catch (error) {
+      console.error('Error handling SAV ready:', error);
+    }
+  };
+
   useEffect(() => {
     fetchUnreadMessages();
 
     if (!user) return;
 
     // Set up realtime listener for SAV messages
-    const channel = supabase
+    const messagesChannel = supabase
       .channel('sav-unread-messages')
       .on(
         'postgres_changes',
@@ -151,13 +182,40 @@ export function useSAVUnreadMessages() {
           table: 'sav_messages'
         },
         () => {
+          console.log('🔄 Message change detected, refreshing unread messages');
+          fetchUnreadMessages();
+        }
+      )
+      .subscribe();
+
+    // Set up realtime listener for SAV status changes
+    const statusChannel = supabase
+      .channel('sav-status-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'sav_cases'
+        },
+        (payload) => {
+          const newStatus = payload.new?.status;
+          const oldStatus = payload.old?.status;
+          
+          // Si le statut passe à "ready", nettoyer les notifications et fermer les discussions
+          if (newStatus === 'ready' && oldStatus !== 'ready') {
+            console.log('🔒 SAV passed to ready status, cleaning notifications');
+            handleSAVReady(payload.new?.id);
+          }
+          
           fetchUnreadMessages();
         }
       )
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(messagesChannel);
+      supabase.removeChannel(statusChannel);
     };
   }, [user]);
 
@@ -165,5 +223,6 @@ export function useSAVUnreadMessages() {
     savWithUnreadMessages,
     loading,
     refetch: fetchUnreadMessages,
+    handleSAVReady,
   };
 }
