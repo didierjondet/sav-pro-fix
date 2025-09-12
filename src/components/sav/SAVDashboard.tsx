@@ -22,6 +22,7 @@ import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, us
 import { SortableContext, sortableKeyboardCoordinates, rectSortingStrategy, arrayMove } from '@dnd-kit/sortable';
 import { DraggableStatisticsWidget } from '@/components/statistics/DraggableStatisticsWidget';
 import { useStatisticsConfig, StatisticModule } from '@/hooks/useStatisticsConfig';
+import { SortableBlock } from '@/components/statistics/SortableBlock';
 
 // Limite de stockage par magasin (500 MB = 0.5 GB)
 const STORAGE_LIMIT_GB = 0.5;
@@ -330,9 +331,18 @@ export function SAVDashboard() {
 
       {/* Types de SAV avec navigation */}
       <Card>
-        <CardHeader className="pb-3 px-4">
-          <CardTitle className="text-lg font-semibold text-primary">Types de SAV - Répartition</CardTitle>
-          <CardDescription>Cliquez sur un type pour voir la liste des SAV correspondants</CardDescription>
+        <CardHeader className="pb-3 px-4 flex items-center justify-between">
+          <div>
+            <CardTitle className="text-lg font-semibold text-primary">Types de SAV - Répartition</CardTitle>
+            <CardDescription>Cliquez sur un type pour voir la liste des SAV correspondants</CardDescription>
+          </div>
+          <button
+            className="rounded p-1 border hover:bg-accent bg-background/80"
+            title="Glisser pour réorganiser"
+            aria-label="Poignée de déplacement"
+          >
+            <GripVertical className="w-4 h-4 text-muted-foreground" />
+          </button>
         </CardHeader>
         <CardContent>
           <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">

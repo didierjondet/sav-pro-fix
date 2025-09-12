@@ -1032,6 +1032,9 @@ export default function Settings() {
                 </CardContent>
               </Card>
 
+              {/* Section Statistiques */}
+              <StatisticsConfiguration />
+
             </TabsContent>
 
             {isAdmin && <TabsContent value="users" className="space-y-6">
