@@ -515,7 +515,7 @@ export default function Settings() {
                 return p;
               });
             }} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-10">
+            <TabsList className="grid w-full grid-cols-9">
               <TabsTrigger value="shop" className="flex items-center gap-2">
                 <Store className="h-4 w-4" />
                 Magasin
@@ -523,10 +523,6 @@ export default function Settings() {
               <TabsTrigger value="notifications" className="flex items-center gap-2">
                 <MessageSquare className="h-4 w-4" />
                 Notifications
-              </TabsTrigger>
-              <TabsTrigger value="profile" className="flex items-center gap-2">
-                <Users className="h-4 w-4" />
-                Mon Profil
               </TabsTrigger>
               <TabsTrigger value="appearance" className="flex items-center gap-2">
                 <Monitor className="h-4 w-4" />
@@ -899,42 +895,6 @@ export default function Settings() {
               <SMSPackagesDisplay />
             </TabsContent>
 
-            <TabsContent value="profile">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Mon Profil</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="first-name">Prénom</Label>
-                      <Input id="first-name" value={profileForm.first_name} onChange={e => setProfileForm({
-                          ...profileForm,
-                          first_name: e.target.value
-                        })} />
-                    </div>
-                    <div>
-                      <Label htmlFor="last-name">Nom</Label>
-                      <Input id="last-name" value={profileForm.last_name} onChange={e => setProfileForm({
-                          ...profileForm,
-                          last_name: e.target.value
-                        })} />
-                    </div>
-                  </div>
-                  <div>
-                    <Label htmlFor="phone">Téléphone</Label>
-                    <Input id="phone" value={profileForm.phone} onChange={e => setProfileForm({
-                        ...profileForm,
-                        phone: e.target.value
-                      })} />
-                  </div>
-                  <Button onClick={handleSaveProfile} disabled={saving}>
-                    {saving ? 'Sauvegarde...' : 'Sauvegarder'}
-                  </Button>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
             <TabsContent value="appearance" className="space-y-6">
               <Card>
                 <CardHeader>
@@ -1062,7 +1022,44 @@ export default function Settings() {
               </Card>
             </TabsContent>
 
-            {isAdmin && <TabsContent value="users">
+            {isAdmin && <TabsContent value="users" className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Users className="h-5 w-5" />
+                      Mon Profil
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="first-name">Prénom</Label>
+                        <Input id="first-name" value={profileForm.first_name} onChange={e => setProfileForm({
+                            ...profileForm,
+                            first_name: e.target.value
+                          })} />
+                      </div>
+                      <div>
+                        <Label htmlFor="last-name">Nom</Label>
+                        <Input id="last-name" value={profileForm.last_name} onChange={e => setProfileForm({
+                            ...profileForm,
+                            last_name: e.target.value
+                          })} />
+                      </div>
+                    </div>
+                    <div>
+                      <Label htmlFor="phone">Téléphone</Label>
+                      <Input id="phone" value={profileForm.phone} onChange={e => setProfileForm({
+                          ...profileForm,
+                          phone: e.target.value
+                        })} />
+                    </div>
+                    <Button onClick={handleSaveProfile} disabled={saving}>
+                      {saving ? 'Sauvegarde...' : 'Sauvegarder'}
+                    </Button>
+                  </CardContent>
+                </Card>
+
                 <Card>
                   <CardHeader>
                     <div className="flex justify-between items-center">
