@@ -43,7 +43,7 @@ import {
 export default function SAVList() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterType, setFilterType] = useState('all'); // 'all', 'client', 'internal'
+  const [filterType, setFilterType] = useState('all'); // 'all', 'client', 'internal', etc.
   const [statusFilter, setStatusFilter] = useState('all-except-ready'); // Par défaut, masquer les SAV prêts
   const [sortOrder, setSortOrder] = useState('priority'); // 'priority', 'oldest', 'newest'
   const [currentPage, setCurrentPage] = useState(1);
@@ -54,6 +54,7 @@ export default function SAVList() {
   const { savWithUnreadMessages } = useSAVUnreadMessages();
   const { checkAndShowLimitDialog } = useLimitDialogContext();
   const { getStatusInfo, statuses } = useShopSAVStatuses();
+  const { getAllTypes } = useShopSAVTypes();
   const navigate = useNavigate();
 
   // Hook pour récupérer les visites des SAV
@@ -120,17 +121,18 @@ export default function SAVList() {
       delayInfo: calculateSAVDelay(case_, shop)
     }));
 
-    // 2. Filtrer par type de SAV
+    // 2. Filtrer par type de SAV avec types dynamiques
     let filteredByType = casesWithDelay;
-    if (filterType === 'client') {
-      filteredByType = casesWithDelay.filter(case_ => case_.sav_type === 'client');
-    } else if (filterType === 'internal') {
-      filteredByType = casesWithDelay.filter(case_ => case_.sav_type === 'internal');
-    } else if (filterType === 'external') {
-      filteredByType = casesWithDelay.filter(case_ => case_.sav_type === 'external');
-    } else if (filterType === 'shop') {
-      // Regrouper SAV client et externes sous "SAV CLIENTS (INTERNE+EXTERNE)"
-      filteredByType = casesWithDelay.filter(case_ => case_.sav_type === 'client' || case_.sav_type === 'external');
+    const availableTypes = getAllTypes();
+    
+    if (filterType !== 'all') {
+      if (filterType === 'shop') {
+        // Regrouper SAV client et externes sous "SAV CLIENTS (INTERNE+EXTERNE)"
+        filteredByType = casesWithDelay.filter(case_ => case_.sav_type === 'client' || case_.sav_type === 'external');
+      } else {
+        // Filtrer par type spécifique
+        filteredByType = casesWithDelay.filter(case_ => case_.sav_type === filterType);
+      }
     }
 
     // 3. Filtrer par statut
@@ -244,10 +246,12 @@ export default function SAVList() {
                       </SelectTrigger>
                         <SelectContent>
                          <SelectItem value="all">Tous les SAV</SelectItem>
-                         <SelectItem value="client">SAV Client</SelectItem>
-                         <SelectItem value="internal">SAV MAGASIN</SelectItem>
+                         {getAllTypes().map(type => (
+                           <SelectItem key={type.value} value={type.value}>
+                             {type.label}
+                           </SelectItem>
+                         ))}
                          <SelectItem value="shop">SAV CLIENTS (INTERNE+EXTERNE)</SelectItem>
-                         <SelectItem value="external">SAV Externe seulement</SelectItem>
                        </SelectContent>
                     </Select>
                   </div>
@@ -361,7 +365,7 @@ export default function SAVList() {
                            <Badge variant="outline" className={
                              savCase.sav_type === 'client' ? 'border-red-200 text-red-700' : 'border-blue-200 text-blue-700'
                            }>
-                             {savCase.sav_type === 'client' ? 'Client' : savCase.sav_type === 'external' ? 'Externe' : 'Interne'}
+                             {getTypeInfo(savCase.sav_type).label}
                            </Badge>
                         </div>
                         

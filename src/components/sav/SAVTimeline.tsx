@@ -2,11 +2,12 @@ import React from 'react';
 import { CheckCircle, Clock, AlertCircle, Flag } from 'lucide-react';
 import { calculateSAVDelay } from '@/hooks/useSAVDelay';
 import { useShopSAVStatuses } from '@/hooks/useShopSAVStatuses';
+import { useShopSAVTypes } from '@/hooks/useShopSAVTypes';
 
 interface TimelineProps {
   savCase: {
     created_at: string;
-    sav_type: 'client' | 'internal' | 'external';
+    sav_type: string; // Utiliser string au lieu du type hardcodé
     status: string;
   };
   shop: {
@@ -40,11 +41,20 @@ export function SAVTimeline({ savCase, shop }: TimelineProps) {
     return statusInfo?.label || status;
   };
 
-  const maxDays = savCase.sav_type === 'client' 
-    ? (shop.max_sav_processing_days_client ?? 7) 
-    : savCase.sav_type === 'external'
-    ? (shop.max_sav_processing_days_external ?? 9)
-    : (shop.max_sav_processing_days_internal ?? 5);
+  // Utiliser les types dynamiques pour déterminer les jours de traitement
+  let maxDays = 7; // Valeur par défaut
+  
+  // Mapping des types vers les propriétés du shop
+  if (savCase.sav_type === 'client') {
+    maxDays = shop.max_sav_processing_days_client ?? 7;
+  } else if (savCase.sav_type === 'external') {
+    maxDays = shop.max_sav_processing_days_external ?? 9;
+  } else if (savCase.sav_type === 'internal') {
+    maxDays = shop.max_sav_processing_days_internal ?? 5;
+  } else {
+    // Pour les types personnalisés, utiliser la valeur par défaut client
+    maxDays = shop.max_sav_processing_days_client ?? 7;
+  }
 
   const delayInfo = calculateSAVDelay(savCase as any, shop as any);
   const createdAt = new Date(savCase.created_at);

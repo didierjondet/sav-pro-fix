@@ -14,35 +14,24 @@ import { useSAVPartsCosts } from '@/hooks/useSAVPartsCosts';
 import { useShopStorageUsage } from '@/hooks/useStorageUsage';
 import { useMonthlyStatistics } from '@/hooks/useMonthlyStatistics';
 import { calculateSAVDelay } from '@/hooks/useSAVDelay';
+import { useShopSAVTypes } from '@/hooks/useShopSAVTypes';
 import { format, differenceInHours } from 'date-fns';
 
 // Limite de stockage par magasin (500 MB = 0.5 GB)
 const STORAGE_LIMIT_GB = 0.5;
+
 export function SAVDashboard() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
-  const {
-    cases,
-    loading
-  } = useSAVCases();
-  const {
-    shop
-  } = useShop();
-  const {
-    costs,
-    loading: costsLoading
-  } = useSAVPartsCosts();
-  const {
-    storageGB,
-    loading: storageLoading
-  } = useShopStorageUsage(shop?.id);
-  const {
-    data: monthlyData,
-    loading: monthlyLoading
-  } = useMonthlyStatistics(selectedYear);
+  const { cases, loading } = useSAVCases();
+  const { shop } = useShop();
+  const { costs, loading: costsLoading } = useSAVPartsCosts();
+  const { storageGB, loading: storageLoading } = useShopStorageUsage(shop?.id);
+  const { data: monthlyData, loading: monthlyLoading } = useMonthlyStatistics(selectedYear);
+  const { getAllTypes, getTypeInfo } = useShopSAVTypes();
   const navigate = useNavigate();
 
-  // Fonctions pour naviguer vers les SAV filtrés
+  // Fonctions pour naviguer vers les SAV filtrés avec types dynamiques
   const navigateToFilteredSAV = (filterType: string) => {
     const params = new URLSearchParams();
     const currentMonth = new Date().getMonth() + 1;
@@ -55,19 +44,21 @@ export function SAVDashboard() {
         params.append('year', currentYear.toString());
         break;
       case 'takeover':
-        params.append('sav_type', 'client');
+        // Rechercher le type 'client' ou utiliser le premier type disponible
+        const clientType = getAllTypes().find(t => t.value === 'client');
+        if (clientType) {
+          params.append('sav_type', clientType.value);
+        }
         params.append('taken_over', 'true');
         params.append('month', currentMonth.toString());
         params.append('year', currentYear.toString());
         break;
-      case 'internal':
-        params.append('sav_type', 'internal');
-        params.append('month', currentMonth.toString());
-        params.append('year', currentYear.toString());
-        break;
-      case 'client':
-        params.append('sav_type', 'client');
-        params.append('taken_over', 'false');
+      default:
+        // Pour les autres cas, utiliser le type tel quel
+        const selectedType = getAllTypes().find(t => t.value === filterType);
+        if (selectedType) {
+          params.append('sav_type', selectedType.value);
+        }
         params.append('month', currentMonth.toString());
         params.append('year', currentYear.toString());
         break;
@@ -209,25 +200,19 @@ export function SAVDashboard() {
     }];
   }, [storageGB, storageLoading, storageUsagePercent]);
 
-  // Données pour le graphique de répartition des SAV
+  // Données pour le graphique de répartition des SAV avec types dynamiques
   const savDistributionData = useMemo(() => {
-    const clientCount = cases.filter(c => c.sav_type === 'client').length;
-    const internalCount = cases.filter(c => c.sav_type === 'internal').length;
-    const externalCount = cases.filter(c => c.sav_type === 'external').length;
-    return [{
-      name: 'SAV Client',
-      value: clientCount,
-      color: '#ef4444'
-    }, {
-      name: 'SAV Magasin',
-      value: internalCount,
-      color: '#3b82f6'
-    }, {
-      name: 'SAV Externe',
-      value: externalCount,
-      color: '#10b981'
-    }];
-  }, [cases]);
+    const availableTypes = getAllTypes();
+    
+    return availableTypes.map(type => {
+      const count = cases.filter(c => c.sav_type === type.value).length;
+      return {
+        name: type.label,
+        value: count,
+        color: type.color
+      };
+    }).filter(item => item.value > 0); // Ne montrer que les types avec des SAV
+  }, [cases, getAllTypes]);
 
   // Données pour le graphique de rentabilité
   const profitabilityData = useMemo(() => {
@@ -241,7 +226,9 @@ export function SAVDashboard() {
       'Marge': profit
     }];
   }, [costs, costsLoading]);
-  return <div className="space-y-6">
+
+  return (
+    <div className="space-y-6">
       <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
         <h2 className="text-2xl font-bold">
           Tableau de bord SAV - {new Date().toLocaleDateString('fr-FR', {
@@ -268,482 +255,28 @@ export function SAVDashboard() {
         </Dialog>
       </div>
 
-      <TooltipProvider>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5 mb-6">
-          <Card className="relative">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">CA du mois</CardTitle>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button 
-                    onClick={() => navigateToFilteredSAV('revenue')}
-                    className="hover:bg-accent p-1 rounded-sm"
-                  >
-                    <Info className="h-4 w-4 text-muted-foreground hover:text-primary" />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="bottom" className="max-w-sm">
-                  <div className="space-y-2">
-                    <p className="font-medium">{getSAVTooltipInfo('revenue').description}</p>
-                    <p className="text-sm">
-                      Montant: {getSAVTooltipInfo('revenue').amount.toFixed(2)}€
-                    </p>
-                    <p className="text-sm">Nombre de SAV: {getSAVTooltipInfo('revenue').count}</p>
-                    {getSAVTooltipInfo('revenue').cases.length > 0 && (
-                      <div className="text-xs space-y-1">
-                        <p className="font-medium">SAV concernés:</p>
-                        {getSAVTooltipInfo('revenue').cases.slice(0, 8).map((savCase) => (
-                          <button
-                            key={savCase.id}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              navigate(`/sav/${savCase.id}`);
-                            }}
-                            className="block text-primary hover:underline text-left"
-                          >
-                            {savCase.case_number} ({savCase.sav_type})
-                          </button>
-                        ))}
-                        {getSAVTooltipInfo('revenue').cases.length > 8 && (
-                          <p className="text-muted-foreground">
-                            +{getSAVTooltipInfo('revenue').cases.length - 8} autres...
-                          </p>
-                        )}
-                      </div>
-                    )}
-                    <p className="text-xs italic">Cliquer sur un SAV pour le voir</p>
-                  </div>
-                </TooltipContent>
-              </Tooltip>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {costsLoading ? '...' : costs.monthly_revenue.toFixed(2)}€
-              </div>
-              <p className="text-xs text-muted-foreground">SAV prêts ce mois</p>
-            </CardContent>
-          </Card>
-          
-          <Card className="relative">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Coût prise en charge</CardTitle>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button 
-                    onClick={() => navigateToFilteredSAV('takeover')}
-                    className="hover:bg-accent p-1 rounded-sm"
-                  >
-                    <Info className="h-4 w-4 text-muted-foreground hover:text-primary" />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="bottom" className="max-w-sm">
-                  <div className="space-y-2">
-                    <p className="font-medium">{getSAVTooltipInfo('takeover').description}</p>
-                    <p className="text-sm">
-                      Montant: {getSAVTooltipInfo('takeover').amount.toFixed(2)}€
-                    </p>
-                    <p className="text-sm">Nombre de SAV: {getSAVTooltipInfo('takeover').count}</p>
-                    {getSAVTooltipInfo('takeover').cases.length > 0 && (
-                      <div className="text-xs space-y-1">
-                        <p className="font-medium">SAV concernés:</p>
-                        {getSAVTooltipInfo('takeover').cases.slice(0, 8).map((savCase) => (
-                          <button
-                            key={savCase.id}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              navigate(`/sav/${savCase.id}`);
-                            }}
-                            className="block text-primary hover:underline text-left"
-                          >
-                            {savCase.case_number} (prise en charge: {savCase.taken_over ? 'totale' : 'partielle'})
-                          </button>
-                        ))}
-                        {getSAVTooltipInfo('takeover').cases.length > 8 && (
-                          <p className="text-muted-foreground">
-                            +{getSAVTooltipInfo('takeover').cases.length - 8} autres...
-                          </p>
-                        )}
-                      </div>
-                    )}
-                    <p className="text-xs italic">Cliquer sur un SAV pour le voir</p>
-                  </div>
-                </TooltipContent>
-              </Tooltip>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {costsLoading ? '...' : costs.takeover_cost.toFixed(2)}€
-              </div>
-              <p className="text-xs text-muted-foreground">SAV client pris en charge</p>
-            </CardContent>
-          </Card>
-          
-          <Card className="relative">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Coût SAV magasin</CardTitle>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button 
-                    onClick={() => navigateToFilteredSAV('internal')}
-                    className="hover:bg-accent p-1 rounded-sm"
-                  >
-                    <Info className="h-4 w-4 text-muted-foreground hover:text-primary" />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="bottom" className="max-w-sm">
-                  <div className="space-y-2">
-                    <p className="font-medium">{getSAVTooltipInfo('internal').description}</p>
-                    <p className="text-sm">
-                      Montant: {getSAVTooltipInfo('internal').amount.toFixed(2)}€
-                    </p>
-                    <p className="text-sm">Nombre de SAV: {getSAVTooltipInfo('internal').count}</p>
-                    {getSAVTooltipInfo('internal').cases.length > 0 && (
-                      <div className="text-xs space-y-1">
-                        <p className="font-medium">SAV concernés:</p>
-                        {getSAVTooltipInfo('internal').cases.slice(0, 8).map((savCase) => (
-                          <button
-                            key={savCase.id}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              navigate(`/sav/${savCase.id}`);
-                            }}
-                            className="block text-primary hover:underline text-left"
-                          >
-                            {savCase.case_number} (interne)
-                          </button>
-                        ))}
-                        {getSAVTooltipInfo('internal').cases.length > 8 && (
-                          <p className="text-muted-foreground">
-                            +{getSAVTooltipInfo('internal').cases.length - 8} autres...
-                          </p>
-                        )}
-                      </div>
-                    )}
-                    <p className="text-xs italic">Cliquer sur un SAV pour le voir</p>
-                  </div>
-                </TooltipContent>
-              </Tooltip>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {costsLoading ? '...' : costs.internal_cost.toFixed(2)}€
-              </div>
-              <p className="text-xs text-muted-foreground">Coûts SAV interne</p>
-            </CardContent>
-          </Card>
-          
-          <Card className="relative">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Coût SAV client</CardTitle>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button 
-                    onClick={() => navigateToFilteredSAV('client')}
-                    className="hover:bg-accent p-1 rounded-sm"
-                  >
-                    <Info className="h-4 w-4 text-muted-foreground hover:text-primary" />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="bottom" className="max-w-sm">
-                  <div className="space-y-2">
-                    <p className="font-medium">{getSAVTooltipInfo('client').description}</p>
-                    <p className="text-sm">
-                      Montant: {getSAVTooltipInfo('client').amount.toFixed(2)}€
-                    </p>
-                    <p className="text-sm">Nombre de SAV: {getSAVTooltipInfo('client').count}</p>
-                    {getSAVTooltipInfo('client').cases.length > 0 && (
-                      <div className="text-xs space-y-1">
-                        <p className="font-medium">SAV concernés:</p>
-                        {getSAVTooltipInfo('client').cases.slice(0, 8).map((savCase) => (
-                          <button
-                            key={savCase.id}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              navigate(`/sav/${savCase.id}`);
-                            }}
-                            className="block text-primary hover:underline text-left"
-                          >
-                            {savCase.case_number} (client non pris en charge)
-                          </button>
-                        ))}
-                        {getSAVTooltipInfo('client').cases.length > 8 && (
-                          <p className="text-muted-foreground">
-                            +{getSAVTooltipInfo('client').cases.length - 8} autres...
-                          </p>
-                        )}
-                      </div>
-                    )}
-                    <p className="text-xs italic">Cliquer sur un SAV pour le voir</p>
-                  </div>
-                </TooltipContent>
-              </Tooltip>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {costsLoading ? '...' : costs.client_cost.toFixed(2)}€
-              </div>
-              <p className="text-xs text-muted-foreground">SAV client non pris en charge</p>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Marge</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className={`text-2xl font-bold ${!costsLoading && (costs.monthly_revenue - costs.takeover_cost - costs.client_cost - costs.external_cost - costs.internal_cost) < 0 ? 'text-destructive' : 'text-primary'}`}>
-                {costsLoading ? '...' : (costs.monthly_revenue - costs.takeover_cost - costs.client_cost - costs.external_cost - costs.internal_cost).toFixed(2)}€
-              </div>
-              <p className="text-xs text-muted-foreground">CA - Coûts du mois</p>
-            </CardContent>
-          </Card>
-        </div>
-      </TooltipProvider>
-
-      <div className="grid gap-6 md:grid-cols-2 mb-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Répartition des SAV</CardTitle>
-            <CardDescription>Distribution des types de SAV en cours</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {loading ? <div className="h-80 flex items-center justify-center">
-                <div className="text-sm text-muted-foreground">Chargement...</div>
-              </div> : <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie data={savDistributionData} cx="50%" cy="50%" labelLine={false} label={({
-                name,
-                value,
-                percent
-              }) => `${name}: ${value} (${(percent * 100).toFixed(0)}%)`} outerRadius={80} fill="#8884d8" dataKey="value">
-                    {savDistributionData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
-                  </Pie>
-                  <ChartTooltip />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Rentabilité</CardTitle>
-            <CardDescription>
-              Chiffre d'affaires, coûts et marge de l'année {selectedYear}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {costsLoading ? <div className="h-80 flex items-center justify-center">
-                <div className="text-sm text-muted-foreground">Chargement...</div>
-              </div> : <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={profitabilityData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" />
-                  <YAxis label={{
-                value: 'Euros (€)',
-                angle: -90,
-                position: 'insideLeft'
-              }} />
-                  <ChartTooltip formatter={(value, name) => [`${Number(value).toFixed(2)}€`, name]} contentStyle={{
-                backgroundColor: 'hsl(var(--background))',
-                border: '1px solid hsl(var(--border))',
-                borderRadius: '6px'
-              }} />
-                  <Legend />
-                  <Bar dataKey="Chiffre d'affaires" fill="#10b981" />
-                  <Bar dataKey="Coûts" fill="#ef4444" />
-                  <Bar dataKey="Marge" fill="#3b82f6" />
-                </BarChart>
-              </ResponsiveContainer>}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Statistiques annuelles */}
-      <Card className="mb-6">
+      {/* Types de SAV */}
+      <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="flex items-center gap-2">
-                <Calendar className="h-5 w-5" />
-                Statistiques annuelles
-              </CardTitle>
-              <CardDescription>
-                Vue d'ensemble des performances pour l'année {selectedYear}
-              </CardDescription>
-            </div>
-            <Select value={selectedYear.toString()} onValueChange={value => setSelectedYear(parseInt(value))}>
-              <SelectTrigger className="w-32">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {availableYears.map(year => <SelectItem key={year} value={year.toString()}>
-                    {year}
-                  </SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
+          <CardTitle>Types de SAV</CardTitle>
         </CardHeader>
         <CardContent>
-          {/* Indicateurs annuels */}
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
-            <Card>
-              <CardContent className="p-4">
-                <div className="text-sm font-medium text-muted-foreground">CA Total {selectedYear}</div>
-                <div className="text-2xl font-bold">
-                  {monthlyLoading ? '...' : yearlyStats.totalRevenue.toFixed(2)}€
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {savDistributionData.map((type, index) => (
+              <div key={index} className="flex items-center justify-between p-4 border rounded-lg">
+                <div className="flex items-center gap-2">
+                  <div 
+                    className="w-4 h-4 rounded-full" 
+                    style={{ backgroundColor: type.color }}
+                  />
+                  <span className="font-medium">{type.name}</span>
                 </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4">
-                <div className="text-sm font-medium text-muted-foreground">Coûts Totaux {selectedYear}</div>
-                <div className="text-2xl font-bold">
-                  {monthlyLoading ? '...' : yearlyStats.totalCosts.toFixed(2)}€
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4">
-                <div className="text-sm font-medium text-muted-foreground">Bénéfice {selectedYear}</div>
-                <div className={`text-2xl font-bold ${yearlyStats.totalProfit < 0 ? 'text-destructive' : 'text-primary'}`}>
-                  {monthlyLoading ? '...' : yearlyStats.totalProfit.toFixed(2)}€
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4">
-                <div className="text-sm font-medium text-muted-foreground">SAV Terminés {selectedYear}</div>
-                <div className="text-2xl font-bold">
-                  {monthlyLoading ? '...' : yearlyStats.totalSavs}
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  Moy. {yearlyStats.avgMonthlySavs}/mois
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Graphique mensuel */}
-          <div className="grid gap-6 md:grid-cols-2">
-            <div>
-              <h4 className="text-lg font-semibold mb-4">Évolution mensuelle - Chiffres d'affaires et coûts</h4>
-              {monthlyLoading ? <div className="h-80 flex items-center justify-center">
-                  <div className="text-sm text-muted-foreground">Chargement...</div>
-                </div> : <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={monthlyData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="month" />
-                    <YAxis label={{
-                  value: 'Euros (€)',
-                  angle: -90,
-                  position: 'insideLeft'
-                }} />
-                    <ChartTooltip formatter={(value, name) => [`${Number(value).toFixed(2)}€`, name === 'revenue' ? 'Chiffre d\'affaires' : name === 'costs' ? 'Coûts' : name === 'profit' ? 'Profit' : name]} contentStyle={{
-                  backgroundColor: 'hsl(var(--background))',
-                  border: '1px solid hsl(var(--border))',
-                  borderRadius: '6px'
-                }} />
-                    <Legend />
-                    <Bar dataKey="revenue" fill="#10b981" name="Chiffre d'affaires" />
-                    <Bar dataKey="costs" fill="#ef4444" name="Coûts" />
-                    <Bar dataKey="profit" fill="#3b82f6" name="Profit" />
-                  </BarChart>
-                </ResponsiveContainer>}
-            </div>
-
-            <div>
-              <h4 className="text-lg font-semibold mb-4">SAV clôturés en retard par mois</h4>
-              {monthlyLoading ? <div className="h-80 flex items-center justify-center">
-                  <div className="text-sm text-muted-foreground">Chargement...</div>
-                </div> : <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={monthlyData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="month" />
-                    <YAxis label={{
-                  value: 'Nombre de SAV',
-                  angle: -90,
-                  position: 'insideLeft'
-                }} />
-                    <ChartTooltip formatter={(value, name) => [value, name === 'overdue_client' ? 'SAV Client en retard' : name === 'overdue_external' ? 'SAV Externe en retard' : name === 'overdue_internal' ? 'SAV Interne en retard' : name]} contentStyle={{
-                  backgroundColor: 'hsl(var(--background))',
-                  border: '1px solid hsl(var(--border))',
-                  borderRadius: '6px'
-                }} />
-                    <Legend />
-                    <Bar dataKey="overdue_client" fill="#ef4444" name="SAV Client en retard" />
-                    <Bar dataKey="overdue_external" fill="#10b981" name="SAV Externe en retard" />
-                    <Bar dataKey="overdue_internal" fill="#3b82f6" name="SAV Interne en retard" />
-                  </BarChart>
-                </ResponsiveContainer>}
-            </div>
+                <span className="text-lg font-bold">{type.value}</span>
+              </div>
+            ))}
           </div>
         </CardContent>
       </Card>
-
-      {/* Graphique d'occupation du stockage */}
-      <Card className="mt-6">
-        <CardHeader>
-          <CardTitle>Occupation du stockage</CardTitle>
-          <CardDescription>
-            Utilisation de l'espace disque (limite : {STORAGE_LIMIT_GB} GB)
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {storageLoading ? <div className="h-80 flex items-center justify-center">
-              <div className="text-sm text-muted-foreground">Chargement...</div>
-            </div> : <div className="flex flex-col md:flex-row items-center gap-8">
-              <div className="w-full md:w-1/2">
-                <ResponsiveContainer width="100%" height={300}>
-                  <PieChart>
-                    <Pie data={storageChartData} cx="50%" cy="50%" labelLine={false} label={({
-                  name,
-                  value,
-                  percent
-                }) => `${name}: ${value.toFixed(3)} GB (${(percent * 100).toFixed(1)}%)`} outerRadius={100} fill="#8884d8" dataKey="value">
-                      {storageChartData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
-                    </Pie>
-                    <ChartTooltip formatter={value => [`${Number(value).toFixed(3)} GB`, '']} contentStyle={{
-                  backgroundColor: 'hsl(var(--background))',
-                  border: '1px solid hsl(var(--border))',
-                  borderRadius: '6px'
-                }} />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-              <div className="w-full md:w-1/2 space-y-4">
-                <div className="text-center md:text-left">
-                  <h4 className="text-lg font-semibold mb-2">Résumé du stockage</h4>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span>Espace utilisé :</span>
-                      <span className={storageUsagePercent > 80 ? 'text-destructive font-medium' : ''}>{storageGB.toFixed(3)} GB</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Limite autorisée :</span>
-                      <span>{STORAGE_LIMIT_GB} GB</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Pourcentage utilisé :</span>
-                      <span className={storageUsagePercent > 80 ? 'text-destructive font-medium' : ''}>{storageUsagePercent.toFixed(1)}%</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Espace restant :</span>
-                      <span>{Math.max(STORAGE_LIMIT_GB - storageGB, 0).toFixed(3)} GB</span>
-                    </div>
-                  </div>
-                  {storageUsagePercent > 90 && <div className="mt-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
-                      <p className="text-sm text-destructive font-medium">
-                        ⚠️ Attention : Vous approchez de votre limite de stockage !
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Contactez le support pour augmenter votre espace de stockage.
-                      </p>
-                    </div>}
-                </div>
-              </div>
-            </div>}
-        </CardContent>
-      </Card>
-    </div>;
+    </div>
+  );
 }

@@ -7,7 +7,7 @@ export interface SAVCase {
   id: string;
   case_number: string;
   tracking_slug?: string;
-  sav_type: 'client' | 'internal' | 'external';
+  sav_type: string; // Changé de type hardcodé vers string pour supporter les types dynamiques
   status: 'pending' | 'in_progress' | 'testing' | 'parts_ordered' | 'parts_received' | 'ready' | 'cancelled';
   device_brand: string;
   device_model: string;

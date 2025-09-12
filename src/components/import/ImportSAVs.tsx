@@ -8,6 +8,7 @@ import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useShop } from '@/hooks/useShop';
+import { useShopSAVTypes } from '@/hooks/useShopSAVTypes';
 import * as XLSX from 'xlsx';
 import { Upload, AlertTriangle, ArrowLeft, Trash2 } from 'lucide-react';
 
@@ -21,7 +22,7 @@ interface ImportedSAV {
   case_number: string;
   created_at?: string;
   updated_at?: string;
-  sav_type: 'client' | 'internal' | 'external';
+  sav_type: string; // Changé vers string pour supporter les types dynamiques
   status: 'pending' | 'in_progress' | 'testing' | 'ready' | 'delivered' | 'cancelled' | 'parts_ordered' | 'parts_received';
   total_cost: number;
   total_time_minutes: number;
@@ -134,6 +135,7 @@ export function ImportSAVs({ onBack, onSuccess }: ImportSAVsProps) {
   const validateAndTransformSAVs = async (data: any[]): Promise<ImportedSAV[]> => {
     const savs: ImportedSAV[] = [];
     const newErrors: string[] = [];
+    const availableTypes = getAllTypes();
 
     for (let i = 0; i < data.length; i++) {
       const row = data[i];
@@ -150,10 +152,22 @@ export function ImportSAVs({ onBack, onSuccess }: ImportSAVsProps) {
           continue;
         }
 
+        // Valider le type SAV avec les types disponibles
+        let savType = 'client'; // valeur par défaut
+        if (row['Type']) {
+          const foundType = availableTypes.find(t => 
+            t.value === row['Type'] || 
+            t.label.toLowerCase() === row['Type'].toLowerCase()
+          );
+          if (foundType) {
+            savType = foundType.value;
+          }
+        }
+
         const sav: ImportedSAV = {
           id: row['ID'] || undefined,
           case_number: row['Dossier'],
-          sav_type: (['client', 'internal', 'external'].includes(row['Type']) ? row['Type'] : 'client') as 'client' | 'internal' | 'external',
+          sav_type: savType,
           status: (['pending', 'in_progress', 'testing', 'ready', 'delivered', 'cancelled', 'parts_ordered', 'parts_received'].includes(row['Statut']) ? row['Statut'] : 'pending') as 'pending' | 'in_progress' | 'testing' | 'ready' | 'delivered' | 'cancelled' | 'parts_ordered' | 'parts_received',
           total_cost: parseFloat(row['Coût (€)'] || '0'),
           total_time_minutes: parseInt(row['Temps (min)'] || '0'),
