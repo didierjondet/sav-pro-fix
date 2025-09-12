@@ -356,11 +356,8 @@ export default function SAVList() {
                 // Vérifier s'il y a des messages non lus pour ce SAV
                 const hasUnreadMessages = savWithUnreadMessages.some(sav => sav.id === savCase.id);
                 
-                // Couleurs de fond selon le type de SAV
-                // SAV clients : fond rouge, SAV magasin et externes : fond bleu (même présentation)
-                const backgroundClass = savCase.sav_type === 'client' ? 'bg-red-50' : 'bg-sky-50';
-                
-                const cardClassName = `hover:shadow-md transition-shadow ${backgroundClass} ${
+                // Couleurs uniformes pour toutes les cartes - suppression des différenciations
+                const cardClassName = `hover:shadow-md transition-shadow ${
                   isUrgent ? 'border-l-4 border-l-red-500' : 
                   isHighPriority ? 'border-l-4 border-l-orange-500' : ''
                 }`;
