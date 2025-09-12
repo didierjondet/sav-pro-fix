@@ -46,6 +46,7 @@ interface ImportedSAV {
 
 export function ImportSAVs({ onBack, onSuccess }: ImportSAVsProps) {
   const { shop } = useShop();
+  const { getAllTypes } = useShopSAVTypes();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   
@@ -243,7 +244,7 @@ export function ImportSAVs({ onBack, onSuccess }: ImportSAVsProps) {
 
         const { error: insertError } = await supabase
           .from('sav_cases')
-          .insert(batch);
+          .insert(batch as any);
 
         if (insertError) throw insertError;
 

@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useSAVCases } from '@/hooks/useSAVCases';
 import { useShop } from '@/hooks/useShop';
+import { useShopSAVTypes } from '@/hooks/useShopSAVTypes';
 import { useSAVVisits } from '@/hooks/useSAVVisits';
 import { generateSAVListPDF } from '@/utils/pdfGenerator';
 import { toast } from 'sonner';
@@ -54,7 +55,7 @@ export default function SAVList() {
   const { savWithUnreadMessages } = useSAVUnreadMessages();
   const { checkAndShowLimitDialog } = useLimitDialogContext();
   const { getStatusInfo, statuses } = useShopSAVStatuses();
-  const { getAllTypes } = useShopSAVTypes();
+  const { getAllTypes, getTypeInfo } = useShopSAVTypes();
   const navigate = useNavigate();
 
   // Hook pour récupérer les visites des SAV
