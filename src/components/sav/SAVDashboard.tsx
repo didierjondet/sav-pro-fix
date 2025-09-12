@@ -1,6 +1,6 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, HardDrive, Calendar, Info } from 'lucide-react';
+import { Plus, HardDrive, Calendar, Info, GripVertical } from 'lucide-react';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as ChartTooltip, ResponsiveContainer, Legend, LineChart, Line } from 'recharts';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -18,6 +18,10 @@ import { calculateSAVDelay } from '@/hooks/useSAVDelay';
 import { useShopSAVTypes } from '@/hooks/useShopSAVTypes';
 import { useShopSAVStatuses } from '@/hooks/useShopSAVStatuses';
 import { format, differenceInHours } from 'date-fns';
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
+import { SortableContext, sortableKeyboardCoordinates, rectSortingStrategy, arrayMove } from '@dnd-kit/sortable';
+import { DraggableStatisticsWidget } from '@/components/statistics/DraggableStatisticsWidget';
+import { useStatisticsConfig, StatisticModule } from '@/hooks/useStatisticsConfig';
 
 // Limite de stockage par magasin (500 MB = 0.5 GB)
 const STORAGE_LIMIT_GB = 0.5;
@@ -32,6 +36,47 @@ export function SAVDashboard() {
   const { data: monthlyData, loading: monthlyLoading } = useMonthlyStatistics(selectedYear);
   const { getAllTypes, getTypeInfo } = useShopSAVTypes();
   const navigate = useNavigate();
+
+  // Drag & Drop config shared
+  const { modules, reorderModules } = useStatisticsConfig();
+  const dashboardModuleIds = [
+    'sav-types-grid',
+    'finance-kpis',
+    'storage-usage',
+    'sav-type-distribution',
+    'monthly-profitability',
+    'annual-stats'
+  ];
+  const [sortedModules, setSortedModules] = useState<StatisticModule[]>([]);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
+  useEffect(() => {
+    const enabled = modules
+      .filter(m => m.enabled && dashboardModuleIds.includes(m.id))
+      .sort((a, b) => a.order - b.order);
+    setSortedModules(enabled);
+  }, [modules]);
+  // Déplacement et sauvegarde de l'ordre
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = sortedModules.findIndex(m => m.id === active.id);
+    const newIndex = sortedModules.findIndex(m => m.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    const newOrder = arrayMove(sortedModules, oldIndex, newIndex);
+    setSortedModules(newOrder);
+
+    // Conserver l'ordre global des autres modules et mettre à jour seulement ceux du dashboard
+    const others = modules.filter(m => !dashboardModuleIds.includes(m.id)).sort((a,b) => a.order - b.order);
+    const merged = [...others, ...newOrder];
+    reorderModules(merged);
+  };
 
   // Fonctions pour naviguer vers les SAV filtrés avec types dynamiques
   const navigateToFilteredSAV = (filterType: string) => {

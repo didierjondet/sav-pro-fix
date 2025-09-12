@@ -10,17 +10,26 @@ export interface StatisticModule {
 }
 
 const DEFAULT_MODULES: StatisticModule[] = [
-  { id: 'kpi-revenue', name: 'Chiffre d\'affaires', description: 'Revenus totaux', enabled: true, order: 0 },
-  { id: 'kpi-expenses', name: 'Dépenses', description: 'Coût des pièces', enabled: true, order: 1 },
-  { id: 'kpi-profit', name: 'Profit', description: 'Bénéfices nets', enabled: true, order: 2 },
-  { id: 'kpi-takeover', name: 'Prises en charge', description: 'Montant et nombre', enabled: true, order: 3 },
-  { id: 'sav-stats', name: 'SAV & Durée', description: 'Total SAV et temps moyen', enabled: true, order: 4 },
-  { id: 'late-rate', name: 'Taux de retard', description: 'SAV en retard', enabled: true, order: 5 },
-  { id: 'profitability-chart', name: 'Graphique Rentabilité', description: 'Évolution revenus/dépenses', enabled: true, order: 6 },
-  { id: 'completed-sav-chart', name: 'SAV terminés', description: 'Graphique SAV complétés', enabled: true, order: 7 },
-  { id: 'top-parts-chart', name: 'Top pièces', description: 'Pièces les plus utilisées', enabled: true, order: 8 },
-  { id: 'late-rate-chart', name: 'Évolution retards', description: 'Évolution du taux de retard', enabled: true, order: 9 },
-  { id: 'top-devices', name: 'Podium téléphones', description: 'Téléphones les plus réparés', enabled: true, order: 10 }
+  // Modules du tableau de bord SAV (/dashboard)
+  { id: 'sav-types-grid', name: 'Types de SAV', description: 'Répartition et accès rapides', enabled: true, order: 0 },
+  { id: 'finance-kpis', name: 'Indicateurs financiers (mois)', description: 'CA, coûts, marge, prises en charge', enabled: true, order: 1 },
+  { id: 'storage-usage', name: 'Espace de stockage', description: 'Utilisation du stockage', enabled: true, order: 2 },
+  { id: 'sav-type-distribution', name: 'Répartition des SAV', description: 'Par type de service', enabled: true, order: 3 },
+  { id: 'monthly-profitability', name: 'Rentabilité mensuelle', description: 'CA vs Coûts vs Marge', enabled: true, order: 4 },
+  { id: 'annual-stats', name: 'Statistiques annuelles', description: 'Évolution mensuelle (année)', enabled: true, order: 5 },
+
+  // Modules de la page Statistiques (/statistics)
+  { id: 'kpi-revenue', name: 'Chiffre d\'affaires', description: 'Revenus totaux', enabled: true, order: 6 },
+  { id: 'kpi-expenses', name: 'Dépenses', description: 'Coût des pièces', enabled: true, order: 7 },
+  { id: 'kpi-profit', name: 'Profit', description: 'Bénéfices nets', enabled: true, order: 8 },
+  { id: 'kpi-takeover', name: 'Prises en charge', description: 'Montant et nombre', enabled: true, order: 9 },
+  { id: 'sav-stats', name: 'SAV & Durée', description: 'Total SAV et temps moyen', enabled: true, order: 10 },
+  { id: 'late-rate', name: 'Taux de retard', description: 'SAV en retard', enabled: true, order: 11 },
+  { id: 'profitability-chart', name: 'Graphique Rentabilité', description: 'Évolution revenus/dépenses', enabled: true, order: 12 },
+  { id: 'completed-sav-chart', name: 'SAV terminés', description: 'Graphique SAV complétés', enabled: true, order: 13 },
+  { id: 'top-parts-chart', name: 'Top pièces', description: 'Pièces les plus utilisées', enabled: true, order: 14 },
+  { id: 'late-rate-chart', name: 'Évolution retards', description: 'Évolution du taux de retard', enabled: true, order: 15 },
+  { id: 'top-devices', name: 'Podium téléphones', description: 'Téléphones les plus réparés', enabled: true, order: 16 }
 ];
 
 export const useStatisticsConfig = () => {
