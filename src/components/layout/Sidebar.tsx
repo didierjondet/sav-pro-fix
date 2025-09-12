@@ -3,13 +3,14 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useSAVCases } from '@/hooks/useSAVCases';
 import { useProfile } from '@/hooks/useProfile';
 import { useSAVUnreadMessages } from '@/hooks/useSAVUnreadMessages';
 import { useShop } from '@/hooks/useShop';
 import { useShopSAVStatuses } from '@/hooks/useShopSAVStatuses';
-import { MessageSquare, Package, Users, BarChart3, FileText, Settings, X, Plus, Shield, CreditCard, HelpCircle } from 'lucide-react';
+import { MessageSquare, Package, Users, BarChart3, FileText, Settings, X, Plus, Shield, CreditCard, HelpCircle, Info } from 'lucide-react';
 import { useQuotes } from '@/hooks/useQuotes';
 interface SidebarProps {
   isOpen: boolean;
@@ -121,6 +122,44 @@ export function Sidebar({
 
     return daysDiff > maxDays;
   }).length;
+
+  // Get detailed info about late SAV cases for tooltip
+  const getLateSAVInfo = () => {
+    const lateSAVs = (cases || []).filter(savCase => {
+      // Only count non-completed SAV cases (exclude delivered, cancelled, and ready)
+      if (['delivered', 'cancelled', 'ready'].includes(savCase.status)) {
+        return false;
+      }
+
+      // Check if current status pauses the timer
+      const statusInfo = getStatusInfo(savCase.status);
+      if (statusInfo.pause_timer) {
+        return false; // Don't count as late if timer is paused
+      }
+
+      const createdDate = new Date(savCase.created_at);
+      const today = new Date();
+      const daysDiff = Math.floor((today.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24));
+
+      // Use appropriate delay based on SAV type
+      let maxDays: number;
+      if (savCase.sav_type === 'client') {
+        maxDays = shop?.max_sav_processing_days_client || 7;
+      } else if (savCase.sav_type === 'external') {
+        maxDays = shop?.max_sav_processing_days_external || 9;
+      } else {
+        maxDays = shop?.max_sav_processing_days_internal || 5;
+      }
+
+      return daysDiff > maxDays;
+    });
+
+    return {
+      count: lateSAVs.length,
+      description: 'SAV non terminés en retard sur les délais',
+      cases: lateSAVs
+    };
+  };
   return <>
       {/* Mobile overlay */}
       {isOpen && <div className="fixed inset-0 z-20 bg-black bg-opacity-50 md:hidden" onClick={onClose} />}
@@ -137,64 +176,107 @@ export function Sidebar({
           </div>
 
           <ScrollArea className="flex-1 p-4">
-            <nav className="space-y-2">
-              {navigation.map(item => {
-              const Icon = item.icon;
-              const isActive = location.pathname === item.href;
-              return <Button key={item.name} variant={isActive ? 'default' : 'ghost'} className={cn('w-full justify-start', isActive && 'bg-primary text-primary-foreground')} onClick={() => {
-                navigate(item.href);
+            <TooltipProvider>
+              <nav className="space-y-2">
+                {navigation.map(item => {
+                const Icon = item.icon;
+                const isActive = location.pathname === item.href;
+                return <Button key={item.name} variant={isActive ? 'default' : 'ghost'} className={cn('w-full justify-start', isActive && 'bg-primary text-primary-foreground')} onClick={() => {
+                  navigate(item.href);
+                  onClose();
+                }}>
+                      <Icon className="mr-3 h-5 w-5" />
+                      <span>{item.name}</span>
+                      {item.href === '/client-chats' && totalUnread > 0 && <Badge variant="destructive" className="ml-auto">{totalUnread}</Badge>}
+                    </Button>;
+              })}
+                
+                {/* Super Admin Link */}
+                {profile?.role === 'super_admin' && <Button variant={location.pathname === '/super-admin' ? 'default' : 'ghost'} className={cn('w-full justify-start', location.pathname === '/super-admin' && 'bg-primary text-primary-foreground')} onClick={() => {
+                navigate('/super-admin');
                 onClose();
               }}>
-                    <Icon className="mr-3 h-5 w-5" />
-                    <span>{item.name}</span>
-                    {item.href === '/client-chats' && totalUnread > 0 && <Badge variant="destructive" className="ml-auto">{totalUnread}</Badge>}
-                  </Button>;
-            })}
-              
-              {/* Super Admin Link */}
-              {profile?.role === 'super_admin' && <Button variant={location.pathname === '/super-admin' ? 'default' : 'ghost'} className={cn('w-full justify-start', location.pathname === '/super-admin' && 'bg-primary text-primary-foreground')} onClick={() => {
-              navigate('/super-admin');
-              onClose();
-            }}>
-                  <Shield className="mr-3 h-5 w-5" />
-                  Super Admin
-                </Button>}
-            </nav>
+                    <Shield className="mr-3 h-5 w-5" />
+                    Super Admin
+                  </Button>}
+              </nav>
 
-            <div className="mt-8 p-4 bg-muted rounded-lg">
-              <h3 className="text-sm font-medium text-muted-foreground mb-2">
-                Statuts SAV
-              </h3>
-              <div className="space-y-2">
-                {sidebarStatusCounts.map(statusCount => (
-                  <div key={statusCount.key} className="flex justify-between text-sm">
-                    <span className="flex items-center">
-                      <div 
-                        className="w-2 h-2 rounded-full mr-2" 
-                        style={{ backgroundColor: statusCount.color }}
-                      />
-                      {statusCount.label}
-                    </span>
-                    <span className="font-medium">{statusCount.count}</span>
-                  </div>
-                ))}
-                {sidebarStatusCounts.length === 0 && (
-                  <div className="text-sm text-muted-foreground text-center py-2">
-                    Aucun statut configuré pour la sidebar
-                  </div>
-                )}
+              <div className="mt-8 p-4 bg-muted rounded-lg">
+                <h3 className="text-sm font-medium text-muted-foreground mb-2">
+                  Statuts SAV
+                </h3>
+                <div className="space-y-2">
+                  {sidebarStatusCounts.map(statusCount => (
+                    <div key={statusCount.key} className="flex justify-between text-sm">
+                      <span className="flex items-center">
+                        <div 
+                          className="w-2 h-2 rounded-full mr-2" 
+                          style={{ backgroundColor: statusCount.color }}
+                        />
+                        {statusCount.label}
+                      </span>
+                      <span className="font-medium">{statusCount.count}</span>
+                    </div>
+                  ))}
+                  {sidebarStatusCounts.length === 0 && (
+                    <div className="text-sm text-muted-foreground text-center py-2">
+                      Aucun statut configuré pour la sidebar
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
 
-            <div className="mt-4 p-4 bg-destructive/10 rounded-lg border border-destructive/20">
-              <h3 className="text-sm font-medium text-destructive mb-2">
-                SAV en retard
-              </h3>
-              <div className="flex justify-between text-sm">
-                <span className="text-destructive font-medium">Non terminés en retard</span>
-                <span className="font-bold text-destructive">{lateSAVCount}</span>
+              <div className="mt-4 p-4 bg-destructive/10 rounded-lg border border-destructive/20">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-sm font-medium text-destructive">
+                    SAV en retard
+                  </h3>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button className="hover:bg-accent p-1 rounded-sm">
+                        <Info className="h-4 w-4 text-destructive hover:text-destructive/80" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" className="max-w-sm">
+                      <div className="space-y-2">
+                        <p className="font-medium">{getLateSAVInfo().description}</p>
+                        <p className="text-sm">Nombre de SAV: {getLateSAVInfo().count}</p>
+                        {getLateSAVInfo().cases.length > 0 && (
+                          <div className="text-xs space-y-1">
+                            <p className="font-medium">SAV concernés:</p>
+                            {getLateSAVInfo().cases.slice(0, 8).map((savCase) => (
+                              <button
+                                key={savCase.id}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  navigate(`/sav/${savCase.id}`);
+                                  onClose();
+                                }}
+                                className="block text-primary hover:underline text-left w-full"
+                              >
+                                {savCase.case_number} - {savCase.device_brand} {savCase.device_model}
+                              </button>
+                            ))}
+                            {getLateSAVInfo().cases.length > 8 && (
+                              <p className="text-muted-foreground">
+                                +{getLateSAVInfo().cases.length - 8} autres...
+                              </p>
+                            )}
+                          </div>
+                        )}
+                        {getLateSAVInfo().cases.length === 0 && (
+                          <p className="text-sm text-muted-foreground">Aucun SAV en retard actuellement</p>
+                        )}
+                        <p className="text-xs italic">Cliquer sur un SAV pour le voir</p>
+                      </div>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-destructive font-medium">Non terminés en retard</span>
+                  <span className="font-bold text-destructive">{lateSAVCount}</span>
+                </div>
               </div>
-            </div>
 
             <div className="mt-4 p-4 bg-muted rounded-lg">
               <h3 className="text-sm font-medium text-muted-foreground mb-2">
@@ -209,6 +291,18 @@ export function Sidebar({
                 
               </div>
             </div>
+              <div className="mt-4 p-4 bg-muted rounded-lg">
+                <h3 className="text-sm font-medium text-muted-foreground mb-2">
+                  Statut devis
+                </h3>
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span>En cours</span>
+                    <span className="font-medium">{quoteCounts.inProgress}</span>
+                  </div>
+                </div>
+              </div>
+            </TooltipProvider>
           </ScrollArea>
 
           <div className="p-4 border-t border-border">
