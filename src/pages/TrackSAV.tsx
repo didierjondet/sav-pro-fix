@@ -166,26 +166,33 @@ export default function TrackSAV() {
 
   // Fonction pour enregistrer la visite
   const recordVisit = async () => {
-    if (!slug) return;
+    if (!slug) {
+      console.log('❌ No slug provided for visit recording');
+      return;
+    }
+    
+    console.log('🔍 Recording visit for slug:', slug);
     
     try {
       // Obtenir l'IP et User-Agent du client
       const userAgent = navigator.userAgent;
+      console.log('📱 User Agent:', userAgent);
       
       // Appeler la fonction pour enregistrer la visite
-      const { error } = await supabase.rpc('record_sav_visit', {
+      const { data, error } = await supabase.rpc('record_sav_visit', {
         p_tracking_slug: slug,
         p_visitor_ip: null, // L'IP sera automatiquement récupérée côté serveur si possible
         p_visitor_user_agent: userAgent
       });
 
       if (error) {
-        console.log('Info: Could not record visit:', error.message);
-        // On ne fait pas d'erreur fatale, c'est juste du tracking
+        console.error('❌ Error recording visit:', error);
+        console.error('Error details:', JSON.stringify(error, null, 2));
+      } else {
+        console.log('✅ Visit recorded successfully!', data);
       }
     } catch (error) {
-      console.log('Info: Could not record visit:', error);
-      // On ne fait pas d'erreur fatale, c'est juste du tracking
+      console.error('❌ Exception recording visit:', error);
     }
   };
 
