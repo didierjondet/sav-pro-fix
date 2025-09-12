@@ -859,6 +859,21 @@ export default function Settings() {
                     </div>
                   </div>
 
+                  <div className="p-4 border rounded-lg">
+                    <h4 className="font-medium mb-4">Notifications sonores</h4>
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="font-medium">Son des nouveaux messages clients</div>
+                          <p className="text-sm text-muted-foreground">Jouer un son lorsqu'un client envoie un message.</p>
+                        </div>
+                        <Switch checked={typeof window !== 'undefined' ? localStorage.getItem('chatSoundEnabled') !== 'false' : true} onCheckedChange={val => {
+                            localStorage.setItem('chatSoundEnabled', val ? 'true' : 'false');
+                          }} />
+                      </div>
+                    </div>
+                  </div>
+
                   {isAdmin && <Button onClick={handleSaveShop} disabled={saving}>
                       {saving ? 'Sauvegarde...' : 'Sauvegarder'}
                     </Button>}
@@ -1004,22 +1019,6 @@ export default function Settings() {
                 </CardContent>
               </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>Notifications</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="font-medium">Son des nouveaux messages clients</div>
-                      <p className="text-sm text-muted-foreground">Jouer un son lorsqu’un client envoie un message.</p>
-                    </div>
-                    <Switch checked={typeof window !== 'undefined' ? localStorage.getItem('chatSoundEnabled') !== 'false' : true} onCheckedChange={val => {
-                        localStorage.setItem('chatSoundEnabled', val ? 'true' : 'false');
-                      }} />
-                  </div>
-                </CardContent>
-              </Card>
             </TabsContent>
 
             {isAdmin && <TabsContent value="users" className="space-y-6">
