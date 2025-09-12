@@ -1192,6 +1192,10 @@ export type Database = {
           phone: string | null
           purchased_sms_credits: number | null
           review_link: string | null
+          sav_client_alert_days: number | null
+          sav_delay_alerts_enabled: boolean | null
+          sav_external_alert_days: number | null
+          sav_internal_alert_days: number | null
           sav_warning_enabled: boolean | null
           slug: string | null
           sms_credits_allocated: number | null
@@ -1229,6 +1233,10 @@ export type Database = {
           phone?: string | null
           purchased_sms_credits?: number | null
           review_link?: string | null
+          sav_client_alert_days?: number | null
+          sav_delay_alerts_enabled?: boolean | null
+          sav_external_alert_days?: number | null
+          sav_internal_alert_days?: number | null
           sav_warning_enabled?: boolean | null
           slug?: string | null
           sms_credits_allocated?: number | null
@@ -1266,6 +1274,10 @@ export type Database = {
           phone?: string | null
           purchased_sms_credits?: number | null
           review_link?: string | null
+          sav_client_alert_days?: number | null
+          sav_delay_alerts_enabled?: boolean | null
+          sav_external_alert_days?: number | null
+          sav_internal_alert_days?: number | null
           sav_warning_enabled?: boolean | null
           slug?: string | null
           sms_credits_allocated?: number | null

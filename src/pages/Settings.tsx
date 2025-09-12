@@ -24,7 +24,7 @@ import { ImportStock } from '@/components/parts/ImportStock';
 import { ImportQuotes } from '@/components/import/ImportQuotes';
 import { ImportSAVs } from '@/components/import/ImportSAVs';
 import { BillingInvoices } from '@/components/billing/BillingInvoices';
-import { Store, Users, Mail, Phone, MapPin, UserPlus, Trash2, Crown, Settings as SettingsIcon, Copy, Key, Upload, Image as ImageIcon, Moon, Sun, Monitor, Star, Search, CreditCard, MessageSquare, FileText } from 'lucide-react';
+import { Store, Users, Mail, Phone, MapPin, UserPlus, Trash2, Crown, Settings as SettingsIcon, Copy, Key, Upload, Image as ImageIcon, Moon, Sun, Monitor, Star, Search, CreditCard, MessageSquare, FileText, Bell } from 'lucide-react';
 import { useTheme } from "next-themes";
 import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -92,7 +92,11 @@ export default function Settings() {
     max_sav_processing_days_internal: 5,
     max_sav_processing_days_external: 9,
     custom_review_sms_message: '',
-    custom_review_chat_message: ''
+    custom_review_chat_message: '',
+    sav_delay_alerts_enabled: false,
+    sav_client_alert_days: 2,
+    sav_external_alert_days: 2,
+    sav_internal_alert_days: 2
   });
   const [profileForm, setProfileForm] = useState({
     first_name: '',
@@ -120,7 +124,11 @@ export default function Settings() {
         max_sav_processing_days_internal: shop.max_sav_processing_days_internal || 5,
         max_sav_processing_days_external: shop.max_sav_processing_days_external || 9,
         custom_review_sms_message: shop.custom_review_sms_message || 'Bonjour {customer_name}, votre dossier de réparation {case_number} a été mis à jour : {status}. Si vous avez été satisfait(e) de notre service, nous vous serions reconnaissants de prendre un moment pour nous laisser un avis : {review_link}. Merci pour votre confiance ! {shop_name}',
-        custom_review_chat_message: shop.custom_review_chat_message || 'Bonjour {customer_name} ! 👋\\n\\nVotre réparation est maintenant terminée ! Si vous avez été satisfait(e) de notre service, nous vous serions reconnaissants de prendre un moment pour nous laisser un avis.\\n\\n⭐ Laisser un avis : {review_link}\\n\\nVotre retour nous aide à continuer d\'améliorer nos services.\\n\\nMerci pour votre confiance ! 😊\\n\\nL\'équipe {shop_name}'
+        custom_review_chat_message: shop.custom_review_chat_message || 'Bonjour {customer_name} ! 👋\\n\\nVotre réparation est maintenant terminée ! Si vous avez été satisfait(e) de notre service, nous vous serions reconnaissants de prendre un moment pour nous laisser un avis.\\n\\n⭐ Laisser un avis : {review_link}\\n\\nVotre retour nous aide à continuer d\'améliorer nos services.\\n\\nMerci pour votre confiance ! 😊\\n\\nL\'équipe {shop_name}',
+        sav_delay_alerts_enabled: (shop as any).sav_delay_alerts_enabled ?? false,
+        sav_client_alert_days: (shop as any).sav_client_alert_days || 2,
+        sav_external_alert_days: (shop as any).sav_external_alert_days || 2,
+        sav_internal_alert_days: (shop as any).sav_internal_alert_days || 2
       });
     }
   }, [shop]);
@@ -765,6 +773,93 @@ export default function Settings() {
                             sav_warning_enabled: checked
                           })} disabled={!isAdmin} />
                       </div>
+                    </div>
+                  </div>
+
+                  <div className="p-4 border rounded-lg">
+                    <h4 className="font-medium mb-4 flex items-center gap-2">
+                      <Bell className="h-4 w-4" />
+                      Alertes de retard SAV
+                    </h4>
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="font-medium">Activer les alertes de retard</div>
+                          <p className="text-sm text-muted-foreground">Recevoir des notifications avant qu'un SAV soit en retard</p>
+                        </div>
+                        <Switch checked={shopForm.sav_delay_alerts_enabled || false} onCheckedChange={checked => setShopForm({
+                            ...shopForm,
+                            sav_delay_alerts_enabled: checked
+                          })} disabled={!isAdmin} />
+                      </div>
+                      
+                      {shopForm.sav_delay_alerts_enabled && (
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4 pt-4 border-t">
+                          <div>
+                            <Label htmlFor="sav-client-alert-days">
+                              Alerte SAV Client (jours avant)
+                            </Label>
+                            <Input 
+                              id="sav-client-alert-days" 
+                              type="number" 
+                              min="1" 
+                              max="10" 
+                              value={shopForm.sav_client_alert_days || 2} 
+                              onChange={e => setShopForm({
+                                ...shopForm,
+                                sav_client_alert_days: parseInt(e.target.value) || 2
+                              })} 
+                              disabled={!isAdmin} 
+                            />
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Délai configuré: {shopForm.max_sav_processing_days_client || 7} jours
+                            </p>
+                          </div>
+                          <div>
+                            <Label htmlFor="sav-external-alert-days">
+                              Alerte SAV Externe (jours avant)
+                            </Label>
+                            <Input 
+                              id="sav-external-alert-days" 
+                              type="number" 
+                              min="1" 
+                              max="10" 
+                              value={shopForm.sav_external_alert_days || 2} 
+                              onChange={e => setShopForm({
+                                ...shopForm,
+                                sav_external_alert_days: parseInt(e.target.value) || 2
+                              })} 
+                              disabled={!isAdmin} 
+                            />
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Délai configuré: {shopForm.max_sav_processing_days_external || 9} jours
+                            </p>
+                          </div>
+                          <div>
+                            <Label htmlFor="sav-internal-alert-days">
+                              Alerte SAV Magasin (jours avant)
+                            </Label>
+                            <Input 
+                              id="sav-internal-alert-days" 
+                              type="number" 
+                              min="1" 
+                              max="10" 
+                              value={shopForm.sav_internal_alert_days || 2} 
+                              onChange={e => setShopForm({
+                                ...shopForm,
+                                sav_internal_alert_days: parseInt(e.target.value) || 2
+                              })} 
+                              disabled={!isAdmin} 
+                            />
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Délai configuré: {shopForm.max_sav_processing_days_internal || 5} jours
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                      <p className="text-sm text-muted-foreground">
+                        Les notifications apparaîtront dans la cloche de notification lorsque les SAV approchent de leur délai maximum.
+                      </p>
                     </div>
                   </div>
 
