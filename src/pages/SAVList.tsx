@@ -344,7 +344,7 @@ export default function SAVList() {
                               #{savCase.case_number}
                             </h3>
                             {/* Affichage du nombre de visites */}
-                            {!visitsLoading && getVisitCount(savCase.id) > 0 && (
+                            {!visitsLoading && (
                               <Badge variant="secondary" className="text-xs">
                                 <Eye className="h-3 w-3 mr-1" />
                                 {getVisitCount(savCase.id)} visite{getVisitCount(savCase.id) > 1 ? 's' : ''}
