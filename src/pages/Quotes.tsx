@@ -284,8 +284,14 @@ export default function Quotes() {
         }))
       };
 
-      // 1) Mettre le devis à "accepté" pour refléter l'état et nourrir les stats
-      const updateRes = await updateQuote(quoteToConvert.id, { status: 'accepted' });
+      // 1) Mettre le devis à "accepté" pour refléter l'état et nourrir les stats (avec infos d'acceptation si manquantes)
+      const updateData: any = { status: 'accepted' };
+      if (!quoteToConvert.accepted_by || !quoteToConvert.accepted_at) {
+        updateData.accepted_by = 'shop';
+        updateData.accepted_at = new Date().toISOString();
+      }
+      
+      const updateRes = await updateQuote(quoteToConvert.id, updateData);
       if (updateRes.error) throw updateRes.error;
 
       // 2) Récupérer ou créer le client pour lier le SAV
@@ -550,6 +556,21 @@ export default function Quotes() {
                 <span className="font-medium">Créé le: </span>
                 <span>{new Date(quote.created_at).toLocaleDateString()}</span>
               </div>
+
+              {/* Affichage de qui a accepté le devis */}
+              {(quote.status === 'accepted' || quote.status === 'sms_accepted') && quote.accepted_by && quote.accepted_at && (
+                <div className="flex items-center gap-1 text-green-600">
+                  <CheckCircle className="h-3 w-3" />
+                  <div className="flex flex-col">
+                    <span className="font-medium text-xs">
+                      Accepté par {quote.accepted_by === 'shop' ? 'le magasin' : 'le client'}
+                    </span>
+                    <span className="text-xs">
+                      {new Date(quote.accepted_at).toLocaleDateString('fr-FR')} à {new Date(quote.accepted_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                  </div>
+                </div>
+              )}
               
               {quote.status === 'sent' && quote.sms_sent_at && (
                 <div className="flex items-center gap-1 text-green-600">
@@ -566,6 +587,19 @@ export default function Quotes() {
           </div>
           
           <div className="flex items-center gap-2 ml-4">
+            {/* Bouton de conversion en SAV pour les devis acceptés */}
+            {(quote.status === 'accepted' || quote.status === 'sms_accepted') && (
+              <Button 
+                variant="default" 
+                size="sm"
+                onClick={() => setQuoteToConvert(quote)}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                <Plus className="h-4 w-4 mr-1" />
+                Valider le devis
+              </Button>
+            )}
+            
             {quote.status !== 'rejected' && (
               <Button 
                 variant="outline" 
