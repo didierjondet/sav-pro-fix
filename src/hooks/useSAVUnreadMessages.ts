@@ -9,6 +9,7 @@ export interface SAVWithUnreadMessages {
   device_brand: string;
   device_model: string;
   unread_count: number;
+  awaiting_reply?: boolean;
   customer?: {
     first_name: string;
     last_name: string;
@@ -72,8 +73,7 @@ export function useSAVUnreadMessages() {
         return;
       }
 
-      // Get SAV case details with customer info for ALL cases that have unread messages
-      // Show notifications for ALL SAV cases with unread messages, regardless of status
+      // Get SAV case details with customer info for ALL cases that have messages
       const { data: savCases, error: savError } = await supabase
         .from('sav_cases')
         .select(`
@@ -91,34 +91,42 @@ export function useSAVUnreadMessages() {
 
       if (savError) throw savError;
 
-      // Group by SAV case and count only unread messages
-      const grouped = (data || []).reduce((acc: Record<string, SAVWithUnreadMessages>, message) => {
-        const savCase = savCases?.find(sc => sc.id === message.sav_case_id);
-        if (savCase) {
-          if (!acc[savCase.id]) {
-            acc[savCase.id] = {
-              id: savCase.id,
-              case_number: savCase.case_number,
-              sav_type: savCase.sav_type,
-              device_brand: savCase.device_brand,
-              device_model: savCase.device_model,
-              customer: savCase.customer,
-              unread_count: 0
-            };
-          }
-          // Only count unread messages
-          if (!message.read_by_shop) {
-            acc[savCase.id].unread_count++;
-          }
+      // Fetch last message per SAV (any sender) to know if awaiting reply
+      const { data: lastMsgs, error: lastErr } = await supabase
+        .from('sav_messages')
+        .select('sav_case_id, sender_type, created_at')
+        .in('sav_case_id', savCaseIds)
+        .order('created_at', { ascending: false });
+
+      if (lastErr) throw lastErr;
+
+      const lastByCase = new Map<string, { sender_type: string; created_at: string }>();
+      (lastMsgs || []).forEach((m: any) => {
+        if (!lastByCase.has(m.sav_case_id)) {
+          lastByCase.set(m.sav_case_id, { sender_type: m.sender_type, created_at: m.created_at });
         }
-        return acc;
-      }, {});
+      });
 
-      // Filter out SAV cases with no unread messages
-      const filteredGrouped = Object.values(grouped).filter(sav => sav.unread_count > 0);
+      // Build combined list: include if unread OR awaiting reply (last msg from client)
+      const combined: SAVWithUnreadMessages[] = (savCases || []).map((savCase: any) => {
+        const msgsForCase = (data || []).filter((msg: any) => msg.sav_case_id === savCase.id);
+        const unreadCount = msgsForCase.filter((msg: any) => !msg.read_by_shop).length;
+        const last = lastByCase.get(savCase.id);
+        const awaitingReply = last ? last.sender_type === 'client' : false;
+        return {
+          id: savCase.id,
+          case_number: savCase.case_number,
+          sav_type: savCase.sav_type,
+          device_brand: savCase.device_brand,
+          device_model: savCase.device_model,
+          customer: savCase.customer,
+          unread_count: unreadCount,
+          awaiting_reply: awaitingReply,
+        } as SAVWithUnreadMessages;
+      }).filter((item) => item.unread_count > 0 || item.awaiting_reply);
 
-      console.log('📊 Final grouped result:', filteredGrouped);
-      setSavWithUnreadMessages(filteredGrouped);
+      console.log('📊 Final combined chat list (unread or awaiting reply):', combined);
+      setSavWithUnreadMessages(combined);
     } catch (error: any) {
       console.error('❌ Error fetching unread SAV messages:', error);
       setSavWithUnreadMessages([]);

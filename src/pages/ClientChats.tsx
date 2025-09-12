@@ -177,7 +177,7 @@ export default function ClientChats() {
                     <div className="space-y-2">
                       {filtered.length === 0 ? (
                         <div className="text-sm text-muted-foreground py-8 text-center">
-                          Aucun chat non lu pour l'instant
+                          Aucun chat en attente pour l'instant
                         </div>
                       ) : (
                         filtered.map((s) => (
