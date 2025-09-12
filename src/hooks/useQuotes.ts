@@ -29,13 +29,14 @@ export interface Quote {
   repair_notes?: string | null;
   items: QuoteItem[];
   total_amount: number;
-  status: 'draft' | 'pending_review' | 'sent' | 'under_negotiation' | 'sms_accepted' | 'accepted' | 'rejected' | 'expired';
+  status: 'draft' | 'pending_review' | 'sent' | 'under_negotiation' | 'sms_accepted' | 'accepted' | 'rejected' | 'expired' | 'completed';
   shop_id: string;
   created_at: string;
   updated_at: string;
   sms_sent_at?: string | null;
   accepted_by?: 'shop' | 'client' | null;
   accepted_at?: string | null;
+  sav_case_id?: string | null;
 }
 
 export function useQuotes() {

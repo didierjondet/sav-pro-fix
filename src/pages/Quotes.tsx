@@ -85,11 +85,15 @@ export default function Quotes() {
      quote.quote_number.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
-  const acceptedQuotes = quotes.filter(quote => 
-    (quote.status === 'accepted' || quote.status === 'sms_accepted') &&
-    (quote.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-     quote.quote_number.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  const acceptedQuotes = quotes.filter(quote => {
+    // Inclure seulement les devis acceptés mais pas encore terminés
+    const isAccepted = quote.status === 'accepted' || quote.status === 'sms_accepted';
+    const isNotCompleted = quote.status !== 'completed';
+    const matchesSearch = quote.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         quote.quote_number.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    return isAccepted && isNotCompleted && matchesSearch;
+  });
 
   const rejectedQuotes = quotes.filter(quote => 
     quote.status === 'rejected' &&
@@ -361,6 +365,11 @@ export default function Quotes() {
 
       const savCaseId = savResult.data.id;
 
+      // 4) Lier le SAV créé au devis original
+      await updateQuote(quoteToConvert.id, { 
+        sav_case_id: savCaseId 
+      });
+
       // 4) Traitement intelligent des pièces avec gestion du stock
       const partsWithValidIds = cleanQuote.items.filter((it) => it.part_id !== null);
       
@@ -445,7 +454,7 @@ export default function Quotes() {
         }
       }
 
-      // 5) Envoyer un SMS au client avec le lien de suivi du SAV créé
+      // 6) Envoyer un SMS au client avec le lien de suivi du SAV créé
       if (cleanQuote.customer_phone) {
         try {
           // Récupérer les informations du SAV créé avec le tracking_slug
@@ -474,7 +483,7 @@ export default function Quotes() {
         }
       }
 
-      // 6) Supprimer le devis après conversion
+      // 7) Supprimer le devis après conversion
       const { error: deleteErr } = await deleteQuote(quoteToConvert.id);
       if (deleteErr) throw deleteErr;
 

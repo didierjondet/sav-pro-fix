@@ -586,6 +586,7 @@ export type Database = {
           quote_date: string | null
           quote_number: string
           repair_notes: string | null
+          sav_case_id: string | null
           shop_id: string
           sku: string | null
           sms_sent_at: string | null
@@ -611,6 +612,7 @@ export type Database = {
           quote_date?: string | null
           quote_number: string
           repair_notes?: string | null
+          sav_case_id?: string | null
           shop_id: string
           sku?: string | null
           sms_sent_at?: string | null
@@ -636,6 +638,7 @@ export type Database = {
           quote_date?: string | null
           quote_number?: string
           repair_notes?: string | null
+          sav_case_id?: string | null
           shop_id?: string
           sku?: string | null
           sms_sent_at?: string | null
@@ -649,6 +652,13 @@ export type Database = {
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quotes_sav_case_id_fkey"
+            columns: ["sav_case_id"]
+            isOneToOne: false
+            referencedRelation: "sav_cases"
             referencedColumns: ["id"]
           },
         ]
