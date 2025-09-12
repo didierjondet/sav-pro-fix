@@ -27,6 +27,28 @@ export function useSAVStatuses() {
   useEffect(() => {
     if (user) {
       fetchStatuses();
+      
+      // Set up real-time subscription for SAV statuses
+      const channel = supabase
+        .channel('sav-statuses-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'shop_sav_statuses'
+          },
+          (payload) => {
+            console.log('SAV Status change detected:', payload);
+            // Refetch statuses when any change occurs
+            fetchStatuses();
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
   }, [user]);
 
@@ -61,7 +83,7 @@ export function useSAVStatuses() {
 
       if (error) throw error;
       
-      await fetchStatuses();
+      // Don't need to refetch here as real-time will handle it
       toast({
         title: 'Succès',
         description: 'Statut créé avec succès'
@@ -93,7 +115,7 @@ export function useSAVStatuses() {
       
       console.log('✅ Status updated successfully:', data);
       
-      await fetchStatuses();
+      // Don't need to refetch here as real-time will handle it
       toast({
         title: 'Succès',
         description: 'Statut mis à jour avec succès'
@@ -118,7 +140,7 @@ export function useSAVStatuses() {
 
       if (error) throw error;
       
-      await fetchStatuses();
+      // Don't need to refetch here as real-time will handle it
       toast({
         title: 'Succès',
         description: 'Statut supprimé avec succès'
@@ -143,7 +165,7 @@ export function useSAVStatuses() {
 
       if (error) throw error;
       
-      await fetchStatuses();
+      // Don't need to refetch here as real-time will handle it
     } catch (error: any) {
       console.error('Error updating status order:', error);
       toast({

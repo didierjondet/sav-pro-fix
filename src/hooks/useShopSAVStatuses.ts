@@ -36,6 +36,28 @@ export function useShopSAVStatuses() {
   useEffect(() => {
     if (user) {
       fetchStatuses();
+      
+      // Set up real-time subscription for SAV statuses
+      const channel = supabase
+        .channel('shop-sav-statuses-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'shop_sav_statuses'
+          },
+          (payload) => {
+            console.log('Shop SAV Status change detected:', payload);
+            // Refetch statuses when any change occurs
+            fetchStatuses();
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
     } else {
       // Pour les utilisateurs non connectés (page publique), utiliser les statuts par défaut
       setLoading(false);
