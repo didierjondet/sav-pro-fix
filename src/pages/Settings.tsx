@@ -17,6 +17,9 @@ import { useProfile } from '@/hooks/useProfile';
 import { useSubscription } from '@/hooks/useSubscription';
 import { supabase } from '@/integrations/supabase/client';
 import { SAVStatusesManager } from '@/components/sav/SAVStatusesManager';
+import SAVTypesManager from '@/components/sav/SAVTypesManager';
+import { useShopSAVStatuses } from '@/hooks/useShopSAVStatuses';
+import { useShopSAVTypes } from '@/hooks/useShopSAVTypes';
 import { SMSPackagesDisplay } from '@/components/subscription/SMSPackagesDisplay';
 import * as XLSX from 'xlsx';
 import { useSearchParams } from 'react-router-dom';
@@ -24,7 +27,7 @@ import { ImportStock } from '@/components/parts/ImportStock';
 import { ImportQuotes } from '@/components/import/ImportQuotes';
 import { ImportSAVs } from '@/components/import/ImportSAVs';
 import { BillingInvoices } from '@/components/billing/BillingInvoices';
-import { Store, Users, Mail, Phone, MapPin, UserPlus, Trash2, Crown, Settings as SettingsIcon, Copy, Key, Upload, Image as ImageIcon, Moon, Sun, Monitor, Star, Search, CreditCard, MessageSquare, FileText, Bell } from 'lucide-react';
+import { Store, Users, Mail, Phone, MapPin, UserPlus, Trash2, Crown, Settings as SettingsIcon, Copy, Key, Upload, Image as ImageIcon, Moon, Sun, Monitor, Star, Search, CreditCard, MessageSquare, FileText, Bell, Tag, Package } from 'lucide-react';
 import { useTheme } from "next-themes";
 import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -77,6 +80,8 @@ export default function Settings() {
   const [showQuotesImport, setShowQuotesImport] = useState(false);
   const [showSAVsImport, setShowSAVsImport] = useState(false);
   const [plans, setPlans] = useState<any[]>([]);
+  const { statuses, loading: statusesLoading, refetch: refetchStatuses } = useShopSAVStatuses();
+  const { types: savTypes, loading: savTypesLoading, refetch: refetchSavTypes } = useShopSAVTypes();
 
   // Local state for form data
   const [shopForm, setShopForm] = useState({
@@ -537,8 +542,12 @@ export default function Settings() {
                 Import/Export
               </TabsTrigger>
               <TabsTrigger value="sav-statuses" className="flex items-center gap-2">
-                <SettingsIcon className="h-4 w-4" />
+                <Tag className="h-4 w-4" />
                 Statuts SAV
+              </TabsTrigger>
+              <TabsTrigger value="sav-types" className="flex items-center gap-2">
+                <Package className="h-4 w-4" />
+                Types de SAV
               </TabsTrigger>
               <TabsTrigger value="subscription" className="flex items-center gap-2">
                 <CreditCard className="h-4 w-4" />
@@ -1249,6 +1258,14 @@ export default function Settings() {
 
             <TabsContent value="sav-statuses" className="space-y-6">
               <SAVStatusesManager />
+            </TabsContent>
+
+            <TabsContent value="sav-types" className="space-y-6">
+              <SAVTypesManager
+                types={savTypes}
+                loading={savTypesLoading}
+                onRefresh={refetchSavTypes}
+              />
             </TabsContent>
 
             <TabsContent value="subscription" className="space-y-6">

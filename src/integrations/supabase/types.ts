@@ -996,6 +996,45 @@ export type Database = {
           },
         ]
       }
+      shop_sav_types: {
+        Row: {
+          created_at: string
+          display_order: number
+          id: string
+          is_active: boolean
+          is_default: boolean
+          shop_id: string
+          type_color: string | null
+          type_key: string
+          type_label: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          shop_id: string
+          type_color?: string | null
+          type_key: string
+          type_label: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          shop_id?: string
+          type_color?: string | null
+          type_key?: string
+          type_label?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       shop_seo_config: {
         Row: {
           accepts_reservations: boolean | null

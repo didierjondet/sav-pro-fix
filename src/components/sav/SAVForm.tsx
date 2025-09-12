@@ -28,6 +28,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { PartDiscountManager, PartDiscountInfo } from '@/components/ui/part-discount-manager';
 import { supabase } from '@/integrations/supabase/client';
 import { useShopSAVStatuses } from '@/hooks/useShopSAVStatuses';
+import { useShopSAVTypes } from '@/hooks/useShopSAVTypes';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface CustomerInfo {
@@ -71,7 +72,7 @@ interface SAVFormProps {
 }
 
 export function SAVForm({ onSuccess }: SAVFormProps) {
-  const [savType, setSavType] = useState<'client' | 'internal' | 'external'>('client');
+  const [savType, setSavType] = useState<string>('internal');
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
   const [selectedStatus, setSelectedStatus] = useState('pending');
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({
