@@ -73,7 +73,7 @@ export function useSAVUnreadMessages() {
       }
 
       // Get SAV case details with customer info for ALL cases that have unread messages
-      // Even closed cases should show notifications until responded to
+      // Show notifications for ALL SAV cases with unread messages, regardless of status
       const { data: savCases, error: savError } = await supabase
         .from('sav_cases')
         .select(`
