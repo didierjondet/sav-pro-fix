@@ -322,7 +322,10 @@ export function SAVDashboard() {
                       <HoverCardTrigger asChild>
                         <Card 
                           className="cursor-pointer transition-all duration-200 hover:scale-105 hover:shadow-md border-l-4"
-                          style={{ borderLeftColor: type.color }}
+                          style={{ 
+                            borderLeftColor: type.color,
+                            backgroundColor: `${type.color}15` // 15 = environ 8% d'opacité
+                          }}
                           onClick={() => navigateToFilteredSAV(type.value)}
                         >
                           <CardContent className="p-4">
