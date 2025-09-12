@@ -34,6 +34,8 @@ export interface Quote {
   created_at: string;
   updated_at: string;
   sms_sent_at?: string | null;
+  accepted_by?: 'shop' | 'client' | null;
+  accepted_at?: string | null;
 }
 
 export function useQuotes() {

@@ -206,11 +206,30 @@ export default function Quotes() {
 
   const handleStatusChange = async (quote: Quote, newStatus: Quote['status']) => {
     if (newStatus === 'accepted') {
-      // Mettre à jour le statut d'abord
-      const result = await updateQuote(quote.id, { status: newStatus });
+      // Mettre à jour le statut d'abord avec les infos d'acceptation par le magasin
+      const result = await updateQuote(quote.id, { 
+        status: newStatus,
+        accepted_by: 'shop',
+        accepted_at: new Date().toISOString()
+      });
       if (!result.error) {
         // Afficher le dialog d'action
         setShowQuoteActionDialog(quote);
+      }
+      return;
+    }
+    if (newStatus === 'sms_accepted') {
+      // Acceptation par SMS = acceptation client
+      const result = await updateQuote(quote.id, { 
+        status: newStatus,
+        accepted_by: 'client',
+        accepted_at: new Date().toISOString()
+      });
+      if (!result.error) {
+        toast({
+          title: "Statut mis à jour",
+          description: `Le devis ${quote.quote_number} est maintenant ${getStatusText(newStatus)}`,
+        });
       }
       return;
     }
