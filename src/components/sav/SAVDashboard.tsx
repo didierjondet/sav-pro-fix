@@ -568,12 +568,28 @@ export function SAVDashboard() {
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis 
                   dataKey="month" 
-                  tickFormatter={(value) => format(new Date(selectedYear, value - 1), 'MMM')}
+                  tickFormatter={(value) => {
+                    const monthNum = Number(value);
+                    if (!monthNum || monthNum < 1 || monthNum > 12) return '';
+                    try {
+                      return format(new Date(selectedYear, monthNum - 1), 'MMM');
+                    } catch (error) {
+                      return '';
+                    }
+                  }}
                 />
                 <YAxis yAxisId="left" />
                 <YAxis yAxisId="right" orientation="right" />
                 <ChartTooltip 
-                  labelFormatter={(value) => format(new Date(selectedYear, Number(value) - 1), 'MMMM yyyy')}
+                  labelFormatter={(value) => {
+                    const monthNum = Number(value);
+                    if (!monthNum || monthNum < 1 || monthNum > 12) return '';
+                    try {
+                      return format(new Date(selectedYear, monthNum - 1), 'MMMM yyyy');
+                    } catch (error) {
+                      return '';
+                    }
+                  }}
                   formatter={(value: any, name: string) => {
                     if (name === 'Nombre de SAV') {
                       return [value, name];
