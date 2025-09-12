@@ -1207,6 +1207,30 @@ export type Database = {
           },
         ]
       }
+      shop_statistics_config: {
+        Row: {
+          created_at: string
+          id: string
+          modules_config: Json
+          shop_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          modules_config?: Json
+          shop_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          modules_config?: Json
+          shop_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       shops: {
         Row: {
           active_sav_count: number | null

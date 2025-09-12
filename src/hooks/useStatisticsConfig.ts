@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
 export interface StatisticModule {
@@ -35,26 +34,10 @@ export const useStatisticsConfig = () => {
 
   const loadConfig = async () => {
     try {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('shop_id')
-        .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
-        .single();
-
-      if (!profile?.shop_id) {
-        setModules(DEFAULT_MODULES);
-        setLoading(false);
-        return;
-      }
-
-      const { data: config } = await supabase
-        .from('shop_statistics_config')
-        .select('modules_config')
-        .eq('shop_id', profile.shop_id)
-        .single();
-
-      if (config?.modules_config) {
-        const savedModules = config.modules_config as StatisticModule[];
+      // Utilisation temporaire du localStorage jusqu'à ce que les types Supabase soient mis à jour
+      const saved = localStorage.getItem('statisticsConfig');
+      if (saved) {
+        const savedModules = JSON.parse(saved) as StatisticModule[];
         // Merger avec les modules par défaut pour ajouter les nouveaux modules
         const mergedModules = DEFAULT_MODULES.map(defaultModule => {
           const savedModule = savedModules.find(sm => sm.id === defaultModule.id);
@@ -82,25 +65,8 @@ export const useStatisticsConfig = () => {
 
   const saveConfig = async (newModules: StatisticModule[]) => {
     try {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('shop_id')
-        .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
-        .single();
-
-      if (!profile?.shop_id) {
-        throw new Error('Shop ID non trouvé');
-      }
-
-      const { error } = await supabase
-        .from('shop_statistics_config')
-        .upsert({
-          shop_id: profile.shop_id,
-          modules_config: newModules
-        });
-
-      if (error) throw error;
-
+      // Utilisation temporaire du localStorage jusqu'à ce que les types Supabase soient mis à jour
+      localStorage.setItem('statisticsConfig', JSON.stringify(newModules));
       setModules(newModules);
       
       toast({

@@ -27,11 +27,12 @@ import { ImportStock } from '@/components/parts/ImportStock';
 import { ImportQuotes } from '@/components/import/ImportQuotes';
 import { ImportSAVs } from '@/components/import/ImportSAVs';
 import { BillingInvoices } from '@/components/billing/BillingInvoices';
-import { Store, Users, Mail, Phone, MapPin, UserPlus, Trash2, Crown, Settings as SettingsIcon, Copy, Key, Upload, Image as ImageIcon, Moon, Sun, Monitor, Star, Search, CreditCard, MessageSquare, FileText, Bell, Tag, Package } from 'lucide-react';
+import { Store, Users, Mail, Phone, MapPin, UserPlus, Trash2, Crown, Settings as SettingsIcon, Copy, Key, Upload, Image as ImageIcon, Moon, Sun, Monitor, Star, Search, CreditCard, MessageSquare, FileText, Bell, Tag, Package, BarChart3 } from 'lucide-react';
 import { useTheme } from "next-themes";
 import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { StatisticsConfiguration } from '@/components/settings/StatisticsConfiguration';
 interface Profile {
   id: string;
   user_id: string;
@@ -680,6 +681,9 @@ export default function Settings() {
                   </div>
                 </CardContent>
               </Card>
+
+              {/* Section Statistiques */}
+              <StatisticsConfiguration />
             </TabsContent>
 
             <TabsContent value="notifications" className="space-y-6">
