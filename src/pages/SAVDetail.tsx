@@ -191,7 +191,16 @@ export default function SAVDetail() {
   };
 
   const updateSavType = async () => {
-    if (!savCase?.id || !tempSavType) return;
+    if (!savCase?.id || !tempSavType) {
+      console.log('updateSavType: Missing data', { savCaseId: savCase?.id, tempSavType });
+      return;
+    }
+    
+    console.log('updateSavType: Starting update', { 
+      savCaseId: savCase.id, 
+      currentType: savCase.sav_type, 
+      newType: tempSavType 
+    });
     
     try {
       const { error } = await supabase
@@ -199,7 +208,12 @@ export default function SAVDetail() {
         .update({ sav_type: tempSavType as 'client' | 'internal' | 'external' })
         .eq('id', savCase.id);
       
-      if (error) throw error;
+      if (error) {
+        console.error('updateSavType: Supabase error', error);
+        throw error;
+      }
+      
+      console.log('updateSavType: Success');
       
       setSavCase({
         ...savCase,
@@ -212,9 +226,10 @@ export default function SAVDetail() {
         description: "Type de SAV mis à jour"
       });
     } catch (error: any) {
+      console.error('updateSavType: Full error', error);
       toast({
         title: "Erreur",
-        description: "Impossible de modifier le type de SAV",
+        description: `Impossible de modifier le type de SAV: ${error.message || error}`,
         variant: "destructive"
       });
     }
@@ -439,16 +454,19 @@ export default function SAVDetail() {
                         >
                           {getTypeInfo(savCase.sav_type).label}
                         </Badge>
-                        <Button 
-                          size="sm" 
-                          variant="outline" 
-                          onClick={() => {
-                            setEditingSavType(true);
-                            setTempSavType(savCase.sav_type);
-                          }}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
+                        {/* Ne montrer le bouton d'édition que si le type est modifiable */}
+                        {['client', 'internal', 'external'].includes(savCase.sav_type) && (
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            onClick={() => {
+                              setEditingSavType(true);
+                              setTempSavType(savCase.sav_type);
+                            }}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        )}
                       </div>
                     )}
                   </div>

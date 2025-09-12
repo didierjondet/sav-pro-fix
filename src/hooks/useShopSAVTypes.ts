@@ -99,13 +99,20 @@ export function useShopSAVTypes() {
 
   // Fonction pour obtenir tous les types disponibles (personnalisés + par défaut)
   const getAllTypes = () => {
+    // Types autorisés dans l'ENUM de la base de données
+    const allowedTypes = ['client', 'internal', 'external'];
+    
     if (types.length > 0) {
-      // Utiliser les types personnalisés du magasin
-      return types.map(type => ({
-        value: type.type_key,
-        label: type.type_label,
-        color: type.type_color
-      }));
+      // Filtrer les types personnalisés pour ne garder que ceux autorisés dans l'ENUM
+      const validTypes = types.filter(type => allowedTypes.includes(type.type_key));
+      
+      if (validTypes.length > 0) {
+        return validTypes.map(type => ({
+          value: type.type_key,
+          label: type.type_label,
+          color: type.type_color
+        }));
+      }
     }
 
     // Fallback vers les types par défaut
