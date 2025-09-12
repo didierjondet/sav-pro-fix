@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { SAVCase } from './useSAVCases';
 import { Shop } from './useShop';
+import { useShopSAVStatuses } from './useShopSAVStatuses';
 
 export interface DelayInfo {
   isOverdue: boolean;
@@ -8,9 +9,12 @@ export interface DelayInfo {
   remainingHours: number;
   totalRemainingHours: number;
   progress: number; // Pourcentage du temps écoulé
+  isPaused: boolean; // Si le statut actuel met le timer en pause
 }
 
 export function useSAVDelay(savCase: SAVCase, shop: Shop | null): DelayInfo {
+  const { getStatusInfo } = useShopSAVStatuses();
+  
   return useMemo(() => {
     if (!shop) {
       return {
@@ -18,9 +22,15 @@ export function useSAVDelay(savCase: SAVCase, shop: Shop | null): DelayInfo {
         remainingDays: 0,
         remainingHours: 0,
         totalRemainingHours: 0,
-        progress: 0
+        progress: 0,
+        isPaused: false
       };
     }
+
+    // Vérifier si le statut actuel met le timer en pause
+    const currentStatusInfo = getStatusInfo(savCase.status);
+    const currentStatusData = currentStatusInfo as any;
+    const isCurrentStatusPaused = currentStatusData?.pause_timer || false;
 
     const maxDays = savCase.sav_type === 'client' 
       ? (shop.max_sav_processing_days_client ?? 7)
@@ -35,7 +45,8 @@ export function useSAVDelay(savCase: SAVCase, shop: Shop | null): DelayInfo {
     const remainingMs = maxDate.getTime() - now.getTime();
     const totalRemainingHours = Math.floor(remainingMs / (1000 * 60 * 60));
     
-    const isOverdue = remainingMs <= 0;
+    // Si le statut actuel met le timer en pause, considérer comme non en retard
+    const isOverdue = !isCurrentStatusPaused && remainingMs <= 0;
     const remainingDays = Math.floor(totalRemainingHours / 24);
     const remainingHours = totalRemainingHours % 24;
     
@@ -49,9 +60,10 @@ export function useSAVDelay(savCase: SAVCase, shop: Shop | null): DelayInfo {
       remainingDays: Math.max(0, remainingDays),
       remainingHours: Math.max(0, remainingHours),
       totalRemainingHours: Math.max(0, totalRemainingHours),
-      progress
+      progress: isCurrentStatusPaused ? progress : progress, // On garde le même pour l'instant
+      isPaused: isCurrentStatusPaused
     };
-  }, [savCase.created_at, savCase.sav_type, shop?.max_sav_processing_days_client, shop?.max_sav_processing_days_internal, shop?.max_sav_processing_days_external]);
+  }, [savCase.created_at, savCase.sav_type, savCase.status, shop?.max_sav_processing_days_client, shop?.max_sav_processing_days_internal, shop?.max_sav_processing_days_external, getStatusInfo]);
 }
 
 export function calculateSAVDelay(savCase: SAVCase, shop: Shop | null): DelayInfo {
@@ -61,7 +73,8 @@ export function calculateSAVDelay(savCase: SAVCase, shop: Shop | null): DelayInf
       remainingDays: 0,
       remainingHours: 0,
       totalRemainingHours: 0,
-      progress: 0
+      progress: 0,
+      isPaused: false
     };
   }
 
@@ -92,11 +105,16 @@ export function calculateSAVDelay(savCase: SAVCase, shop: Shop | null): DelayInf
     remainingDays: Math.max(0, remainingDays),
     remainingHours: Math.max(0, remainingHours),
     totalRemainingHours: Math.max(0, totalRemainingHours),
-    progress
+    progress,
+    isPaused: false
   };
 }
 
 export function formatDelayText(delayInfo: DelayInfo): string {
+  if (delayInfo.isPaused) {
+    return 'Timer en pause';
+  }
+  
   if (delayInfo.isOverdue) {
     return 'En retard';
   }

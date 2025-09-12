@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { useSAVStatuses, SAVStatus } from '@/hooks/useSAVStatuses';
 import { useProfile } from '@/hooks/useProfile';
@@ -39,14 +40,16 @@ export function SAVStatusesManager() {
   const [formData, setFormData] = useState({
     status_key: '',
     status_label: '',
-    status_color: '#6b7280'
+    status_color: '#6b7280',
+    pause_timer: false
   });
 
   const resetForm = () => {
     setFormData({
       status_key: '',
       status_label: '',
-      status_color: '#6b7280'
+      status_color: '#6b7280',
+      pause_timer: false
     });
   };
 
@@ -63,7 +66,8 @@ export function SAVStatusesManager() {
         status_color: formData.status_color,
         display_order: nextOrder,
         is_default: false,
-        is_active: true
+        is_active: true,
+        pause_timer: formData.pause_timer
       });
       
       setIsCreateDialogOpen(false);
@@ -79,7 +83,8 @@ export function SAVStatusesManager() {
     try {
       await updateStatus(editingStatus.id, {
         status_label: formData.status_label,
-        status_color: formData.status_color
+        status_color: formData.status_color,
+        pause_timer: formData.pause_timer
       });
       
       setEditingStatus(null);
@@ -111,7 +116,8 @@ export function SAVStatusesManager() {
     setFormData({
       status_key: status.status_key,
       status_label: status.status_label,
-      status_color: status.status_color
+      status_color: status.status_color,
+      pause_timer: status.pause_timer
     });
   };
 
@@ -185,6 +191,18 @@ export function SAVStatusesManager() {
                     />
                   </div>
                 </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="pause_timer"
+                    checked={formData.pause_timer}
+                    onCheckedChange={(checked) => 
+                      setFormData(prev => ({ ...prev, pause_timer: !!checked }))
+                    }
+                  />
+                  <Label htmlFor="pause_timer" className="text-sm">
+                    Mettre en pause le compteur de temps (ne compte pas dans les retards)
+                  </Label>
+                </div>
               </div>
               <DialogFooter>
                 <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
@@ -222,6 +240,11 @@ export function SAVStatusesManager() {
                 {status.is_default && (
                   <Badge variant="secondary" className="text-xs">
                     Par défaut
+                  </Badge>
+                )}
+                {status.pause_timer && (
+                  <Badge variant="outline" className="text-xs border-orange-500 text-orange-700">
+                    ⏸️ Timer en pause
                   </Badge>
                 )}
               </div>
@@ -274,6 +297,18 @@ export function SAVStatusesManager() {
                             placeholder="#6b7280"
                           />
                         </div>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id="edit_pause_timer"
+                          checked={formData.pause_timer}
+                          onCheckedChange={(checked) => 
+                            setFormData(prev => ({ ...prev, pause_timer: !!checked }))
+                          }
+                        />
+                        <Label htmlFor="edit_pause_timer" className="text-sm">
+                          Mettre en pause le compteur de temps (ne compte pas dans les retards)
+                        </Label>
                       </div>
                     </div>
                     <DialogFooter>
@@ -335,6 +370,9 @@ export function SAVStatusesManager() {
           </p>
           <p className="text-sm text-muted-foreground">
             • L'ordre des statuts peut être réorganisé en glissant-déposant
+          </p>
+          <p className="text-sm text-muted-foreground">
+            • Les statuts avec timer en pause ne comptent pas dans le calcul des retards
           </p>
         </div>
       </CardContent>

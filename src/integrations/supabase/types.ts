@@ -904,6 +904,7 @@ export type Database = {
           id: string
           is_active: boolean
           is_default: boolean
+          pause_timer: boolean
           shop_id: string
           status_color: string | null
           status_key: string
@@ -916,6 +917,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           is_default?: boolean
+          pause_timer?: boolean
           shop_id: string
           status_color?: string | null
           status_key: string
@@ -928,6 +930,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           is_default?: boolean
+          pause_timer?: boolean
           shop_id?: string
           status_color?: string | null
           status_key?: string

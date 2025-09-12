@@ -8,6 +8,7 @@ import { useSAVCases } from '@/hooks/useSAVCases';
 import { useProfile } from '@/hooks/useProfile';
 import { useSAVUnreadMessages } from '@/hooks/useSAVUnreadMessages';
 import { useShop } from '@/hooks/useShop';
+import { useShopSAVStatuses } from '@/hooks/useShopSAVStatuses';
 import { MessageSquare, Package, Users, BarChart3, FileText, Settings, X, Plus, Shield, CreditCard, HelpCircle } from 'lucide-react';
 import { useQuotes } from '@/hooks/useQuotes';
 interface SidebarProps {
@@ -58,6 +59,7 @@ export function Sidebar({
   const {
     shop
   } = useShop();
+  const { getStatusInfo } = useShopSAVStatuses();
   const {
     savWithUnreadMessages
   } = useSAVUnreadMessages();
@@ -108,6 +110,12 @@ export function Sidebar({
     // Only count non-completed SAV cases (exclude delivered, cancelled, and ready)
     if (['delivered', 'cancelled', 'ready'].includes(savCase.status)) {
       return false;
+    }
+
+    // Check if current status pauses the timer
+    const statusInfo = getStatusInfo(savCase.status);
+    if (statusInfo.pause_timer) {
+      return false; // Don't count as late if timer is paused
     }
 
     const createdDate = new Date(savCase.created_at);

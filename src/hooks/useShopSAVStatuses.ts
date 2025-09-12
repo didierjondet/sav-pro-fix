@@ -11,6 +11,7 @@ export interface ShopSAVStatus {
   display_order: number;
   is_default: boolean;
   is_active: boolean;
+  pause_timer: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -68,15 +69,18 @@ export function useShopSAVStatuses() {
       return {
         label: customStatus.status_label,
         color: customStatus.status_color,
-        variant: 'default' as const
+        variant: 'default' as const,
+        pause_timer: customStatus.pause_timer
       };
     }
 
     // Fallback vers la configuration par défaut
-    return defaultStatusConfig[statusKey as keyof typeof defaultStatusConfig] || {
-      label: statusKey,
-      color: '#6b7280',
-      variant: 'secondary' as const
+    const defaultConfig = defaultStatusConfig[statusKey as keyof typeof defaultStatusConfig];
+    return {
+      label: defaultConfig?.label || statusKey,
+      color: defaultConfig?.color || '#6b7280',
+      variant: defaultConfig?.variant || 'secondary' as const,
+      pause_timer: false // Les statuts par défaut n'ont pas pause_timer
     };
   };
 
