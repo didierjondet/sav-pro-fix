@@ -85,14 +85,14 @@ export default function SAVList() {
     }
   };
 
-  const printSAVList = () => {
+  const printSAVList = async () => {
     if (filteredAndSortedCases.length === 0) {
       toast.error("Aucun dossier SAV à imprimer selon les filtres appliqués");
       return;
     }
 
     try {
-      const result = generateSAVListPDF(filteredAndSortedCases, shop, {
+      const result = await generateSAVListPDF(filteredAndSortedCases, shop, {
         searchTerm,
         filterType,
         statusFilter,

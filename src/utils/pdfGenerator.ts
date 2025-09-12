@@ -804,7 +804,7 @@ export const generateSAVRestitutionPDF = async (savCase: SAVCase, shop?: Shop) =
   }
 };
 
-export const generateSAVListPDF = (savCases: SAVCase[], shop?: Shop, filterInfo?: {
+export const generateSAVListPDF = async (savCases: SAVCase[], shop?: Shop, filterInfo?: {
   searchTerm: string;
   filterType: string;
   statusFilter: string;
@@ -817,18 +817,37 @@ export const generateSAVListPDF = (savCases: SAVCase[], shop?: Shop, filterInfo?
     return null; // Pas de SAV à imprimer
   }
 
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case 'received': return 'Reçu';
-      case 'diagnostic': return 'Diagnostic';
-      case 'waiting_parts': return 'Attente pièces';
-      case 'in_repair': return 'En réparation';
-      case 'waiting_customer': return 'Attente client';
-      case 'ready': return 'Prêt';
-      case 'delivered': return 'Livré';
-      case 'cancelled': return 'Annulé';
-      default: return status;
+  // Fonction pour calculer le coût réel (prix d'achat des pièces)
+  const calculateRealCost = async (savCaseId: string): Promise<number> => {
+    try {
+      // Import Supabase client dynamically to avoid circular imports
+      const { supabase } = await import('@/integrations/supabase/client');
+      
+      const { data: parts, error } = await supabase
+        .from('sav_parts')
+        .select('quantity, purchase_price')
+        .eq('sav_case_id', savCaseId);
+
+      if (error) {
+        console.error('Error fetching SAV parts:', error);
+        return 0;
+      }
+
+      return parts?.reduce((total, part) => {
+        const qty = Number(part.quantity) || 0;
+        const purchasePrice = Number(part.purchase_price) || 0;
+        return total + (qty * purchasePrice);
+      }, 0) || 0;
+    } catch (error) {
+      console.error('Error calculating real cost:', error);
+      return 0;
     }
+  };
+
+  // Fonction pour obtenir le libellé du statut depuis les statuts personnalisés
+  const getStatusText = (status: string) => {
+    const customStatus = statuses?.find(s => s.status_key === status);
+    return customStatus ? customStatus.status_label : status;
   };
 
   const getStatusClass = (status: string) => {
@@ -1053,37 +1072,40 @@ export const generateSAVListPDF = (savCases: SAVCase[], shop?: Shop, filterInfo?
           </tr>
         </thead>
         <tbody>
-          ${filteredCases.map(savCase => `
-            <tr>
-              <td class="case-number">${savCase.case_number}</td>
-              <td class="text-center">${new Date(savCase.created_at).toLocaleDateString('fr-FR')}</td>
-              <td class="customer-info">
-                ${savCase.customer ? 
-                  `<strong>${savCase.customer.first_name} ${savCase.customer.last_name}</strong><br>
-                   ${savCase.customer.phone ? `${savCase.customer.phone}` : ''}` : 
-                  'Non renseigné'}
-              </td>
-              <td class="device-info">
-                <strong>${savCase.device_brand}</strong><br>
-                ${savCase.device_model}
-                ${savCase.device_imei ? `<br><small>IMEI: ${savCase.device_imei.substring(0, 8)}...</small>` : ''}
-              </td>
-              <td class="problem-desc" title="${savCase.problem_description || ''}">
-                ${savCase.problem_description || 'Non renseigné'}
-              </td>
-              <td class="text-center">
-                <span class="status-badge ${getStatusClass(savCase.status)}">
-                  ${getStatusText(savCase.status)}
-                </span>
-              </td>
-              <td class="text-center">
-                ${savCase.total_cost ? `${savCase.total_cost.toFixed(2)}€` : '-'}
-              </td>
-              <td class="text-center">
-                ${new Date(savCase.updated_at).toLocaleDateString('fr-FR')}
-              </td>
-            </tr>
-          `).join('')}
+          ${await Promise.all(filteredCases.map(async (savCase) => {
+            const realCost = await calculateRealCost(savCase.id);
+            return `
+              <tr>
+                <td class="case-number">${savCase.case_number}</td>
+                <td class="text-center">${new Date(savCase.created_at).toLocaleDateString('fr-FR')}</td>
+                <td class="customer-info">
+                  ${savCase.customer ? 
+                    `<strong>${savCase.customer.first_name} ${savCase.customer.last_name}</strong><br>
+                     ${savCase.customer.phone ? `${savCase.customer.phone}` : ''}` : 
+                    'Non renseigné'}
+                </td>
+                <td class="device-info">
+                  <strong>${savCase.device_brand}</strong><br>
+                  ${savCase.device_model}
+                  ${savCase.device_imei ? `<br><small>IMEI: ${savCase.device_imei.substring(0, 8)}...</small>` : ''}
+                </td>
+                <td class="problem-desc" title="${savCase.problem_description || ''}">
+                  ${savCase.problem_description || 'Non renseigné'}
+                </td>
+                <td class="text-center">
+                  <span class="status-badge ${getStatusClass(savCase.status)}">
+                    ${getStatusText(savCase.status)}
+                  </span>
+                </td>
+                <td class="text-center">
+                  ${realCost > 0 ? `${realCost.toFixed(2)}€` : '-'}
+                </td>
+                <td class="text-center">
+                  ${new Date(savCase.updated_at).toLocaleDateString('fr-FR')}
+                </td>
+              </tr>
+            `;
+          })).then(rows => rows.join(''))}
         </tbody>
       </table>
 
