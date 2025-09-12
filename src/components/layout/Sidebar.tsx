@@ -187,7 +187,7 @@ export function Sidebar({
                 }}>
                       <Icon className="mr-3 h-5 w-5" />
                       <span>{item.name}</span>
-                      {item.href === '/client-chats' && totalUnread > 0 && <Badge variant="destructive" className="ml-auto">{totalUnread}</Badge>}
+                      {item.href === '/client-chats' && totalUnread > 0 && <Badge variant="destructive" className="ml-auto text-xs">{totalUnread}</Badge>}
                     </Button>;
               })}
                 

@@ -72,7 +72,8 @@ export function useSAVUnreadMessages() {
         return;
       }
 
-      // Get SAV case details with customer info, but only for non-closed SAV cases
+      // Get SAV case details with customer info for ALL cases that have unread messages
+      // Even closed cases should show notifications until responded to
       const { data: savCases, error: savError } = await supabase
         .from('sav_cases')
         .select(`
@@ -84,8 +85,7 @@ export function useSAVUnreadMessages() {
           status,
           customer:customers(first_name, last_name)
         `)
-        .in('id', savCaseIds)
-        .not('status', 'in', '(cancelled,delivered,ready)');
+        .in('id', savCaseIds);
 
       console.log('🏪 SAV cases query result:', { savCases, savError });
 
@@ -114,8 +114,11 @@ export function useSAVUnreadMessages() {
         return acc;
       }, {});
 
-      console.log('📊 Final grouped result:', Object.values(grouped));
-      setSavWithUnreadMessages(Object.values(grouped));
+      // Filter out SAV cases with no unread messages
+      const filteredGrouped = Object.values(grouped).filter(sav => sav.unread_count > 0);
+
+      console.log('📊 Final grouped result:', filteredGrouped);
+      setSavWithUnreadMessages(filteredGrouped);
     } catch (error: any) {
       console.error('❌ Error fetching unread SAV messages:', error);
       setSavWithUnreadMessages([]);
