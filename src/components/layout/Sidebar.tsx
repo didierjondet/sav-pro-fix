@@ -262,13 +262,24 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                             <p className="font-medium">{typeInfo.label}</p>
                             <p className="text-sm">Nombre de SAV: {count}</p>
                             {savTypeCounts[type.type_key]?.cases && savTypeCounts[type.type_key].cases.length > 0 && (
-                              <div className="space-y-1">
-                                <p className="text-xs font-medium">Derniers SAV:</p>
-                                {savTypeCounts[type.type_key].cases.slice(0, 5).map((savCase) => (
-                                  <p key={savCase.id} className="text-xs">
-                                    {savCase.case_number} - {savCase.device_brand} {savCase.device_model}
-                                  </p>
-                                ))}
+                            <div className="space-y-1">
+                              <p className="text-xs font-medium">SAV concernés:</p>
+                              {savTypeCounts[type.type_key].cases.slice(0, 5).map((savCase) => (
+                                <button 
+                                  key={savCase.id} 
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    navigate(`/sav/${savCase.id}`);
+                                    onClose();
+                                  }} 
+                                  className="block text-primary hover:underline text-left w-full text-xs"
+                                >
+                                  {savCase.customer ? 
+                                    `${savCase.customer.last_name} ${savCase.customer.first_name}` : 
+                                    (savCase.sav_type === 'internal' ? `#${savCase.case_number}` : 'Client non défini')
+                                  } - {savCase.device_brand} {savCase.device_model}
+                                </button>
+                              ))}
                                 {savTypeCounts[type.type_key].cases.length > 5 && (
                                   <p className="text-xs text-muted-foreground">
                                     +{savTypeCounts[type.type_key].cases.length - 5} autres...
