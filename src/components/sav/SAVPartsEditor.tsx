@@ -7,10 +7,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Trash2, Search, Edit, Save, X } from 'lucide-react';
+import { Plus, Trash2, Search, Edit, Save, X, Package } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useParts } from '@/hooks/useParts';
 import { useToast } from '@/hooks/use-toast';
+import { PartForm } from '@/components/parts/PartForm';
 
 interface SAVPart {
   id: string;
@@ -36,8 +37,9 @@ export function SAVPartsEditor({ savCaseId, onPartsUpdated, trigger }: SAVPartsE
   const [savParts, setSavParts] = useState<SAVPart[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showSupplierPartForm, setShowSupplierPartForm] = useState(false);
   
-  const { parts } = useParts();
+  const { parts, createPart, findSimilarParts, refetch } = useParts();
   const { toast } = useToast();
 
   // Filtrer les pièces en fonction de la recherche
@@ -151,6 +153,53 @@ export function SAVPartsEditor({ savCaseId, onPartsUpdated, trigger }: SAVPartsE
       isCustom: true,
     };
     setSavParts([...savParts, newPart]);
+  };
+
+  const handleSupplierPartSubmit = async (partData: any) => {
+    try {
+      const { error } = await createPart(partData);
+      if (error) {
+        toast({
+          title: "Erreur",
+          description: "Impossible de créer la pièce fournisseur",
+          variant: "destructive",
+        });
+        return { error };
+      }
+
+      // Rafraîchir la liste des pièces
+      await refetch();
+      
+      // Récupérer la pièce nouvellement créée pour l'ajouter au SAV
+      const { data: newPartData } = await supabase
+        .from('parts')
+        .select('*')
+        .eq('name', partData.name)
+        .eq('shop_id', (await supabase
+          .from('sav_cases')
+          .select('shop_id')
+          .eq('id', savCaseId)
+          .single()).data?.shop_id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (newPartData) {
+        // Ajouter automatiquement la pièce au SAV
+        addPartFromStock(newPartData);
+      }
+
+      setShowSupplierPartForm(false);
+      
+      toast({
+        title: "Succès",
+        description: "Pièce fournisseur créée et ajoutée au SAV",
+      });
+
+      return { error: null };
+    } catch (error: any) {
+      return { error };
+    }
   };
 
   const removePart = (id: string) => {
@@ -372,10 +421,14 @@ const partsToInsert = savParts.map(part => ({
             )}
           </div>
 
-          <div className="flex justify-between items-center">
+          <div className="flex justify-between items-center gap-2">
             <Button type="button" onClick={addCustomPart} variant="outline">
               <Plus className="mr-2 h-4 w-4" />
               Ajouter pièce personnalisée
+            </Button>
+            <Button type="button" onClick={() => setShowSupplierPartForm(true)} variant="outline">
+              <Package className="mr-2 h-4 w-4" />
+              Ajouter une pièce fournisseur
             </Button>
           </div>
 
@@ -540,6 +593,20 @@ const partsToInsert = savParts.map(part => ({
           </div>
         </div>
       </DialogContent>
+
+      {/* Dialog pour ajouter une pièce fournisseur */}
+      <Dialog open={showSupplierPartForm} onOpenChange={setShowSupplierPartForm}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Ajouter une pièce fournisseur au catalogue</DialogTitle>
+          </DialogHeader>
+          <PartForm
+            onSubmit={handleSupplierPartSubmit}
+            onCancel={() => setShowSupplierPartForm(false)}
+            findSimilarParts={findSimilarParts}
+          />
+        </DialogContent>
+      </Dialog>
     </Dialog>
   );
 }
