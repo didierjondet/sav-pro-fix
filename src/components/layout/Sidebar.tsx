@@ -298,10 +298,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                   {sidebarStatusCounts.map((statusCount) => (
                     <Tooltip key={statusCount.key}>
                       <TooltipTrigger asChild>
-                        <Link
-                          to={`/sav?status=${statusCount.key}`}
-                          className="flex items-center justify-between p-1 text-sm hover:bg-accent hover:text-accent-foreground rounded-md transition-colors"
-                        >
+                        <div className="flex items-center justify-between p-1 text-sm hover:bg-accent hover:text-accent-foreground rounded-md transition-colors cursor-default">
                           <span className="text-muted-foreground">
                             {statusCount.label}
                           </span>
@@ -316,7 +313,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                           >
                             {statusCount.count}
                           </Badge>
-                        </Link>
+                        </div>
                       </TooltipTrigger>
                       <TooltipContent side="right" className="max-w-xs">
                         <div className="space-y-2">
@@ -324,11 +321,22 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                           <p className="text-sm">Nombre de SAV: {statusCount.count}</p>
                           {statusCount.count > 0 && (
                             <div className="space-y-1">
-                              <p className="text-xs font-medium">Derniers SAV:</p>
+                              <p className="text-xs font-medium">SAV concernés:</p>
                               {(cases || []).filter(savCase => savCase.status === statusCount.key).slice(0, 5).map((savCase) => (
-                                <p key={savCase.id} className="text-xs">
-                                  {savCase.case_number} - {savCase.device_brand} {savCase.device_model}
-                                </p>
+                                <button 
+                                  key={savCase.id} 
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    navigate(`/sav/${savCase.id}`);
+                                    onClose();
+                                  }} 
+                                  className="block text-primary hover:underline text-left w-full text-xs"
+                                >
+                                  {savCase.customer ? 
+                                    `${savCase.customer.last_name} ${savCase.customer.first_name}` : 
+                                    (savCase.sav_type === 'internal' ? `#${savCase.case_number}` : 'Client non défini')
+                                  } - {savCase.device_brand} {savCase.device_model}
+                                </button>
                               ))}
                               {(cases || []).filter(savCase => savCase.status === statusCount.key).length > 5 && (
                                 <p className="text-xs text-muted-foreground">
