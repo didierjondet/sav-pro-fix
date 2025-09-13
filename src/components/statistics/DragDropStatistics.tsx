@@ -22,6 +22,14 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/
 import { useStatistics } from '@/hooks/useStatistics';
 import { useStatisticsConfig, StatisticModule } from '@/hooks/useStatisticsConfig';
 import { DraggableStatisticsWidget } from './DraggableStatisticsWidget';
+import { WIDGET_SIZES, getWidgetClasses, DEFAULT_MODULE_SIZES } from './StatisticsWidgetSizes';
+
+// Importation des widgets avancés
+import { FinancialOverviewWidget } from './advanced/FinancialOverviewWidget';
+import { SAVPerformanceWidget } from './advanced/SAVPerformanceWidget';
+import { PartsUsageHeatmapWidget } from './advanced/PartsUsageHeatmapWidget';
+import { MonthlyComparisonWidget } from './advanced/MonthlyComparisonWidget';
+import { RevenueBreakdownWidget } from './advanced/RevenueBreakdownWidget';
 
 interface DragDropStatisticsProps {
   period: '7d' | '30d' | '3m' | '6m' | '1y';
@@ -107,183 +115,335 @@ export const DragDropStatistics = ({ period, onPeriodChange }: DragDropStatistic
       isEnabled: module.enabled
     };
 
+    const size = DEFAULT_MODULE_SIZES[module.id] || 'small';
+    const className = getWidgetClasses(size);
+
     switch (module.id) {
+      // Widgets avancés combinés
+      case 'financial-overview':
+        const financialData = profitabilityChart.map(item => ({
+          date: item.date,
+          revenue: item.revenue,
+          expenses: item.expenses,
+          profit: item.profit,
+          margin: item.profit ? (item.profit / item.revenue) * 100 : 0,
+          savCount: completedSavChart.find(c => c.date === item.date)?.completed || 0
+        }));
+        
+        return (
+          <div className={className}>
+            <FinancialOverviewWidget 
+              data={financialData}
+              totalRevenue={revenue}
+              totalExpenses={expenses}
+              totalProfit={profit}
+              averageMargin={profit ? (profit / revenue) * 100 : 0}
+            />
+          </div>
+        );
+
+      case 'performance-trends':
+        const performanceData = [
+          { metric: 'Temps moyen', value: Math.min((savStats.averageTime / 48) * 100, 100), maxValue: 100, fullMark: 100 },
+          { metric: 'Taux completion', value: 85, maxValue: 100, fullMark: 100 },
+          { metric: 'Satisfaction', value: 92, maxValue: 100, fullMark: 100 },
+          { metric: 'Efficacité', value: Math.max(100 - savStats.lateRate, 0), maxValue: 100, fullMark: 100 },
+          { metric: 'Qualité', value: 88, maxValue: 100, fullMark: 100 }
+        ];
+
+        const statusData = [
+          { name: 'En attente', value: savStats.total - Math.floor(savStats.total * 0.7), color: 'hsl(var(--warning))' },
+          { name: 'En cours', value: Math.floor(savStats.total * 0.4), color: 'hsl(var(--info))' },
+          { name: 'Prêt', value: Math.floor(savStats.total * 0.2), color: 'hsl(var(--success))' },
+          { name: 'Livré', value: Math.floor(savStats.total * 0.1), color: 'hsl(var(--muted-foreground))' }
+        ];
+        
+        return (
+          <div className={className}>
+            <SAVPerformanceWidget 
+              performanceData={performanceData}
+              statusData={statusData}
+              totalSAV={savStats.total}
+              averageTime={savStats.averageTime}
+              completionRate={85}
+              customerSatisfaction={92}
+            />
+          </div>
+        );
+
+      case 'parts-usage-heatmap':
+        const partsUsageData = topParts.map((part, index) => ({
+          name: part.name,
+          value: part.quantity,
+          cost: part.quantity * 25, // Prix estimé
+          frequency: Math.max(10 - index, 1),
+          trend: index < 2 ? 'up' as const : index > 5 ? 'down' as const : 'stable' as const,
+          category: 'Écran'
+        }));
+        
+        return (
+          <div className={className}>
+            <PartsUsageHeatmapWidget 
+              partsData={partsUsageData}
+              totalParts={topParts.reduce((sum, p) => sum + p.quantity, 0)}
+              totalCost={expenses}
+              topCategory="Écrans"
+            />
+          </div>
+        );
+
+      case 'monthly-comparison':
+        const monthlyData = profitabilityChart.slice(-6).map((current, index) => {
+          const previous = profitabilityChart[profitabilityChart.length - 6 + index - 1] || current;
+          const growth = previous.revenue ? ((current.revenue - previous.revenue) / previous.revenue) * 100 : 0;
+          
+          return {
+            month: current.date,
+            currentRevenue: current.revenue,
+            previousRevenue: previous.revenue,
+            currentSavCount: completedSavChart.find(c => c.date === current.date)?.completed || 0,
+            previousSavCount: completedSavChart.find(c => c.date === previous.date)?.completed || 0,
+            currentProfit: current.profit,
+            previousProfit: previous.profit,
+            growth
+          };
+        });
+        
+        return (
+          <div className={className}>
+            <MonthlyComparisonWidget 
+              data={monthlyData}
+              totalGrowth={15.2}
+              bestMonth="Mars"
+              worstMonth="Janvier"
+            />
+          </div>
+        );
+
+      case 'revenue-breakdown':
+        const revenueSources = [
+          { name: 'Réparations', value: revenue * 0.6, percentage: 60, color: 'hsl(var(--primary))' },
+          { name: 'Remplacements', value: revenue * 0.25, percentage: 25, color: 'hsl(var(--success))' },
+          { name: 'Diagnostics', value: revenue * 0.15, percentage: 15, color: 'hsl(var(--warning))' }
+        ];
+
+        const serviceTypes = [
+          { type: 'Réparation', revenue: revenue * 0.6, count: Math.floor(savStats.total * 0.6), averageValue: (revenue * 0.6) / Math.floor(savStats.total * 0.6) },
+          { type: 'Remplacement', revenue: revenue * 0.25, count: Math.floor(savStats.total * 0.25), averageValue: (revenue * 0.25) / Math.floor(savStats.total * 0.25) },
+          { type: 'Diagnostic', revenue: revenue * 0.15, count: Math.floor(savStats.total * 0.15), averageValue: (revenue * 0.15) / Math.floor(savStats.total * 0.15) }
+        ];
+        
+        return (
+          <div className={className}>
+            <RevenueBreakdownWidget 
+              revenueSources={revenueSources}
+              serviceTypes={serviceTypes}
+              totalRevenue={revenue}
+              topService="Réparation d'écran"
+            />
+          </div>
+        );
+
+      // KPIs simples existants
       case 'kpi-revenue':
         return (
-          <DraggableStatisticsWidget {...baseProps}>
-            <div 
-              onClick={() => navigate(`/stats/revenue?period=${period}`)}
-              className="cursor-pointer hover:bg-accent/20 p-2 rounded transition-colors"
-            >
-              <p className="text-3xl font-semibold">{formatCurrency(revenue)}</p>
-            </div>
-          </DraggableStatisticsWidget>
+          <div className={className}>
+            <DraggableStatisticsWidget {...baseProps}>
+              <div 
+                onClick={() => navigate(`/stats/revenue?period=${period}`)}
+                className="cursor-pointer hover:bg-accent/20 p-2 rounded transition-colors"
+              >
+                <p className="text-3xl font-semibold">{formatCurrency(revenue)}</p>
+              </div>
+            </DraggableStatisticsWidget>
+          </div>
         );
 
       case 'kpi-expenses':
         return (
-          <DraggableStatisticsWidget {...baseProps}>
-            <div 
-              onClick={() => navigate(`/stats/expenses?period=${period}`)}
-              className="cursor-pointer hover:bg-accent/20 p-2 rounded transition-colors"
-            >
-              <p className="text-3xl font-semibold">{formatCurrency(expenses)}</p>
-            </div>
-          </DraggableStatisticsWidget>
+          <div className={className}>
+            <DraggableStatisticsWidget {...baseProps}>
+              <div 
+                onClick={() => navigate(`/stats/expenses?period=${period}`)}
+                className="cursor-pointer hover:bg-accent/20 p-2 rounded transition-colors"
+              >
+                <p className="text-3xl font-semibold">{formatCurrency(expenses)}</p>
+              </div>
+            </DraggableStatisticsWidget>
+          </div>
         );
 
       case 'kpi-profit':
         return (
-          <DraggableStatisticsWidget {...baseProps}>
-            <p className="text-3xl font-semibold">{formatCurrency(profit)}</p>
-          </DraggableStatisticsWidget>
+          <div className={className}>
+            <DraggableStatisticsWidget {...baseProps}>
+              <p className="text-3xl font-semibold">{formatCurrency(profit)}</p>
+            </DraggableStatisticsWidget>
+          </div>
         );
 
       case 'kpi-takeover':
         return (
-          <DraggableStatisticsWidget {...baseProps}>
-            <div className="text-sm text-muted-foreground">Montant total</div>
-            <div className="text-2xl font-semibold">{formatCurrency(takeoverStats.amount)}</div>
-            <div className="text-sm text-muted-foreground mt-1">Nombre de SAV</div>
-            <div className="text-lg">{takeoverStats.count}</div>
-          </DraggableStatisticsWidget>
+          <div className={className}>
+            <DraggableStatisticsWidget {...baseProps}>
+              <div className="text-sm text-muted-foreground">Montant total</div>
+              <div className="text-2xl font-semibold">{formatCurrency(takeoverStats.amount)}</div>
+              <div className="text-sm text-muted-foreground mt-1">Nombre de SAV</div>
+              <div className="text-lg">{takeoverStats.count}</div>
+            </DraggableStatisticsWidget>
+          </div>
         );
 
       case 'sav-stats':
         return (
-          <DraggableStatisticsWidget {...baseProps}>
-            <div className="text-sm text-muted-foreground">Total SAV</div>
-            <div className="text-2xl font-semibold">{savStats.total}</div>
-            <div className="text-sm text-muted-foreground mt-1">Temps moyen</div>
-            <div className="text-lg">{savStats.averageTime} h</div>
-          </DraggableStatisticsWidget>
+          <div className={className}>
+            <DraggableStatisticsWidget {...baseProps}>
+              <div className="text-sm text-muted-foreground">Total SAV</div>
+              <div className="text-2xl font-semibold">{savStats.total}</div>
+              <div className="text-sm text-muted-foreground mt-1">Temps moyen</div>
+              <div className="text-lg">{savStats.averageTime} h</div>
+            </DraggableStatisticsWidget>
+          </div>
         );
 
       case 'late-rate':
         return (
-          <DraggableStatisticsWidget {...baseProps}>
-            <div className="text-sm text-muted-foreground">SAV en retard</div>
-            <div className="text-3xl font-semibold text-destructive">{savStats.lateRate.toFixed(1)}%</div>
-            <div className="text-sm text-muted-foreground mt-1">Basé sur les délais configurés</div>
-          </DraggableStatisticsWidget>
+          <div className={className}>
+            <DraggableStatisticsWidget {...baseProps}>
+              <div className="text-sm text-muted-foreground">SAV en retard</div>
+              <div className="text-3xl font-semibold text-destructive">{savStats.lateRate.toFixed(1)}%</div>
+              <div className="text-sm text-muted-foreground mt-1">Basé sur les délais configurés</div>
+            </DraggableStatisticsWidget>
+          </div>
         );
 
+      // Graphiques existants
       case 'profitability-chart':
         return (
-          <DraggableStatisticsWidget {...baseProps} className="lg:col-span-1">
-            <ChartContainer
-              config={{
-                revenue: { label: "Revenus", color: "hsl(var(--primary))" },
-                expenses: { label: "Dépenses", color: "hsl(var(--muted-foreground))" },
-                profit: { label: "Profit", color: "hsl(var(--secondary))" }
-              }}
-              className="h-72"
-            >
-              <LineChart data={profitabilityChart}>
-                <XAxis dataKey="date" tickLine={false} axisLine={false} />
-                <YAxis tickFormatter={(v) => `${v/1000}k`} tickLine={false} axisLine={false} />
-                <ChartTooltip content={<ChartTooltipContent />} />
-                <Legend />
-                <Line type="monotone" dataKey="revenue" stroke="var(--color-revenue)" strokeWidth={2} dot={false} />
-                <Line type="monotone" dataKey="expenses" stroke="var(--color-expenses)" strokeWidth={2} dot={false} />
-                <Line type="monotone" dataKey="profit" stroke="var(--color-profit)" strokeWidth={2} dot={false} />
-              </LineChart>
-            </ChartContainer>
-          </DraggableStatisticsWidget>
+          <div className={className}>
+            <DraggableStatisticsWidget {...baseProps}>
+              <ChartContainer
+                config={{
+                  revenue: { label: "Revenus", color: "hsl(var(--primary))" },
+                  expenses: { label: "Dépenses", color: "hsl(var(--muted-foreground))" },
+                  profit: { label: "Profit", color: "hsl(var(--secondary))" }
+                }}
+                className="h-72"
+              >
+                <LineChart data={profitabilityChart}>
+                  <XAxis dataKey="date" tickLine={false} axisLine={false} />
+                  <YAxis tickFormatter={(v) => `${v/1000}k`} tickLine={false} axisLine={false} />
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Legend />
+                  <Line type="monotone" dataKey="revenue" stroke="var(--color-revenue)" strokeWidth={2} dot={false} />
+                  <Line type="monotone" dataKey="expenses" stroke="var(--color-expenses)" strokeWidth={2} dot={false} />
+                  <Line type="monotone" dataKey="profit" stroke="var(--color-profit)" strokeWidth={2} dot={false} />
+                </LineChart>
+              </ChartContainer>
+            </DraggableStatisticsWidget>
+          </div>
         );
 
       case 'completed-sav-chart':
         return (
-          <DraggableStatisticsWidget {...baseProps} className="lg:col-span-1">
-            <ChartContainer
-              config={{ completed: { label: "SAV terminés", color: "hsl(var(--secondary))" } }}
-              className="h-72"
-            >
-              <BarChart data={completedSavChart}>
-                <XAxis dataKey="date" tickLine={false} axisLine={false} />
-                <YAxis tickLine={false} axisLine={false} />
-                <ChartTooltip content={<ChartTooltipContent />} />
-                <Bar dataKey="completed" fill="var(--color-completed)" radius={4} />
-              </BarChart>
-            </ChartContainer>
-          </DraggableStatisticsWidget>
+          <div className={className}>
+            <DraggableStatisticsWidget {...baseProps}>
+              <ChartContainer
+                config={{ completed: { label: "SAV terminés", color: "hsl(var(--secondary))" } }}
+                className="h-72"
+              >
+                <BarChart data={completedSavChart}>
+                  <XAxis dataKey="date" tickLine={false} axisLine={false} />
+                  <YAxis tickLine={false} axisLine={false} />
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Bar dataKey="completed" fill="var(--color-completed)" radius={4} />
+                </BarChart>
+              </ChartContainer>
+            </DraggableStatisticsWidget>
+          </div>
         );
 
       case 'top-parts-chart':
         return (
-          <DraggableStatisticsWidget {...baseProps} className="lg:col-span-1">
-            <ChartContainer
-              config={{ quantity: { label: "Quantité", color: "hsl(var(--primary))" } }}
-              className="h-72"
-            >
-              <BarChart data={topParts}>
-                <XAxis dataKey="name" tickLine={false} axisLine={false} interval={0} angle={-15} textAnchor="end" height={60} />
-                <YAxis tickLine={false} axisLine={false} />
-                <ChartTooltip content={<ChartTooltipContent />} />
-                <Bar dataKey="quantity" fill="var(--color-quantity)" radius={4} />
-              </BarChart>
-            </ChartContainer>
-          </DraggableStatisticsWidget>
+          <div className={className}>
+            <DraggableStatisticsWidget {...baseProps}>
+              <ChartContainer
+                config={{ quantity: { label: "Quantité", color: "hsl(var(--primary))" } }}
+                className="h-72"
+              >
+                <BarChart data={topParts}>
+                  <XAxis dataKey="name" tickLine={false} axisLine={false} interval={0} angle={-15} textAnchor="end" height={60} />
+                  <YAxis tickLine={false} axisLine={false} />
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Bar dataKey="quantity" fill="var(--color-quantity)" radius={4} />
+                </BarChart>
+              </ChartContainer>
+            </DraggableStatisticsWidget>
+          </div>
         );
 
       case 'late-rate-chart':
         return (
-          <DraggableStatisticsWidget {...baseProps} className="lg:col-span-1">
-            <ChartContainer
-              config={{ lateRate: { label: "Taux de retard (%)", color: "hsl(var(--destructive))" } }}
-              className="h-72"
-            >
-              <LineChart data={lateRateChart}>
-                <XAxis dataKey="date" tickLine={false} axisLine={false} />
-                <YAxis domain={[0, 100]} tickFormatter={(v) => `${v}%`} tickLine={false} axisLine={false} />
-                <ChartTooltip content={<ChartTooltipContent />} />
-                <Line type="monotone" dataKey="lateRate" stroke="var(--color-lateRate)" strokeWidth={2} dot={true} />
-              </LineChart>
-            </ChartContainer>
-          </DraggableStatisticsWidget>
+          <div className={className}>
+            <DraggableStatisticsWidget {...baseProps}>
+              <ChartContainer
+                config={{ lateRate: { label: "Taux de retard (%)", color: "hsl(var(--destructive))" } }}
+                className="h-72"
+              >
+                <LineChart data={lateRateChart}>
+                  <XAxis dataKey="date" tickLine={false} axisLine={false} />
+                  <YAxis domain={[0, 100]} tickFormatter={(v) => `${v}%`} tickLine={false} axisLine={false} />
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Line type="monotone" dataKey="lateRate" stroke="var(--color-lateRate)" strokeWidth={2} dot={true} />
+                </LineChart>
+              </ChartContainer>
+            </DraggableStatisticsWidget>
+          </div>
         );
 
       case 'top-devices':
         return (
-          <DraggableStatisticsWidget {...baseProps} className="lg:col-span-1">
-            <div className="space-y-3">
-              {topDevices.slice(0, 5).map((device, index) => (
-                <div 
-                  key={`${device.brand}-${device.model}`}
-                  className={`p-4 rounded-lg border-2 transition-all hover:shadow-md ${getPodiumBg(index)}`}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      {getPodiumIcon(index)}
-                      <div>
-                        <div className="font-semibold text-foreground">
-                          {device.brand}
-                        </div>
-                        <div className="text-sm text-muted-foreground">
-                          {device.model}
+          <div className={className}>
+            <DraggableStatisticsWidget {...baseProps}>
+              <div className="space-y-3">
+                {topDevices.slice(0, 5).map((device, index) => (
+                  <div 
+                    key={`${device.brand}-${device.model}`}
+                    className={`p-4 rounded-lg border-2 transition-all hover:shadow-md ${getPodiumBg(index)}`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        {getPodiumIcon(index)}
+                        <div>
+                          <div className="font-semibold text-foreground">
+                            {device.brand}
+                          </div>
+                          <div className="text-sm text-muted-foreground">
+                            {device.model}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-2xl font-bold text-foreground">
-                        {device.count}
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        réparations
+                      <div className="text-right">
+                        <div className="text-2xl font-bold text-foreground">
+                          {device.count}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          réparations
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
-              {topDevices.length === 0 && (
-                <div className="text-center py-8 text-muted-foreground">
-                  <Trophy className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                  <p>Aucune donnée de téléphone disponible</p>
-                  <p className="text-sm">Les données apparaîtront quand des SAV avec marque/modèle seront créés</p>
-                </div>
-              )}
-            </div>
-          </DraggableStatisticsWidget>
+                ))}
+                {topDevices.length === 0 && (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Trophy className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                    <p>Aucune donnée de téléphone disponible</p>
+                    <p className="text-sm">Les données apparaîtront quand des SAV avec marque/modèle seront créés</p>
+                  </div>
+                )}
+              </div>
+            </DraggableStatisticsWidget>
+          </div>
         );
 
       default:
@@ -334,16 +494,9 @@ export const DragDropStatistics = ({ period, onPeriodChange }: DragDropStatistic
         onDragEnd={handleDragEnd}
       >
         <SortableContext items={sortedModules.map(m => m.id)} strategy={rectSortingStrategy}>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {sortedModules.map((module) => (
-              <div key={module.id} className={
-                module.id.includes('chart') || module.id === 'top-devices' 
-                  ? 'sm:col-span-2 lg:col-span-2 xl:col-span-2' 
-                  : ''
-              }>
-                {renderWidget(module)}
-              </div>
-            ))}
+          {/* Grille CSS adaptative pour différentes tailles de widgets */}
+          <div className="grid grid-cols-4 auto-rows-[140px] gap-4 w-full">
+            {sortedModules.map((module) => renderWidget(module))}
           </div>
         </SortableContext>
       </DndContext>

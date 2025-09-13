@@ -18,18 +18,30 @@ const DEFAULT_MODULES: StatisticModule[] = [
   { id: 'monthly-profitability', name: 'Rentabilité mensuelle', description: 'CA vs Coûts vs Marge', enabled: true, order: 4 },
   { id: 'annual-stats', name: 'Statistiques annuelles', description: 'Évolution mensuelle (année)', enabled: true, order: 5 },
 
-  // Modules de la page Statistiques (/statistics)
-  { id: 'kpi-revenue', name: 'Chiffre d\'affaires', description: 'Revenus totaux', enabled: true, order: 6 },
-  { id: 'kpi-expenses', name: 'Dépenses', description: 'Coût des pièces', enabled: true, order: 7 },
-  { id: 'kpi-profit', name: 'Profit', description: 'Bénéfices nets', enabled: true, order: 8 },
-  { id: 'kpi-takeover', name: 'Prises en charge', description: 'Montant et nombre', enabled: true, order: 9 },
-  { id: 'sav-stats', name: 'SAV & Durée', description: 'Total SAV et temps moyen', enabled: true, order: 10 },
-  { id: 'late-rate', name: 'Taux de retard', description: 'SAV en retard', enabled: true, order: 11 },
-  { id: 'profitability-chart', name: 'Graphique Rentabilité', description: 'Évolution revenus/dépenses', enabled: true, order: 12 },
-  { id: 'completed-sav-chart', name: 'SAV terminés', description: 'Graphique SAV complétés', enabled: true, order: 13 },
-  { id: 'top-parts-chart', name: 'Top pièces', description: 'Pièces les plus utilisées', enabled: true, order: 14 },
-  { id: 'late-rate-chart', name: 'Évolution retards', description: 'Évolution du taux de retard', enabled: true, order: 15 },
-  { id: 'top-devices', name: 'Podium téléphones', description: 'Téléphones les plus réparés', enabled: true, order: 16 }
+  // Widgets avancés combinés - Page Statistiques
+  { id: 'financial-overview', name: 'Vue d\'ensemble financière', description: 'Graphique combiné des finances avec KPIs', enabled: true, order: 6 },
+  { id: 'performance-trends', name: 'Tendances de performance', description: 'Analyse combinée des performances SAV', enabled: true, order: 7 },
+  { id: 'parts-usage-heatmap', name: 'Utilisation des pièces', description: 'Heatmap et analyse d\'usage des pièces', enabled: true, order: 8 },
+
+  // KPIs individuels - Plus petits pour compléter
+  { id: 'kpi-revenue', name: 'Chiffre d\'affaires', description: 'Revenus totaux', enabled: true, order: 9 },
+  { id: 'kpi-expenses', name: 'Dépenses', description: 'Coût des pièces', enabled: true, order: 10 },
+  { id: 'kpi-profit', name: 'Profit', description: 'Bénéfices nets', enabled: true, order: 11 },
+  { id: 'kpi-takeover', name: 'Prises en charge', description: 'Montant et nombre', enabled: true, order: 12 },
+  { id: 'sav-stats', name: 'SAV & Durée', description: 'Total SAV et temps moyen', enabled: true, order: 13 },
+  { id: 'late-rate', name: 'Taux de retard', description: 'SAV en retard', enabled: true, order: 14 },
+  
+  // Graphiques spécialisés
+  { id: 'profitability-chart', name: 'Évolution rentabilité', description: 'Graphique revenus/dépenses/profit', enabled: true, order: 15 },
+  { id: 'completed-sav-chart', name: 'SAV terminés', description: 'Évolution des SAV complétés', enabled: true, order: 16 },
+  { id: 'top-parts-chart', name: 'Top pièces utilisées', description: 'Classement des pièces', enabled: true, order: 17 },
+  { id: 'late-rate-chart', name: 'Évolution retards', description: 'Tendance du taux de retard', enabled: true, order: 18 },
+  { id: 'top-devices', name: 'Podium téléphones', description: 'Téléphones les plus réparés', enabled: true, order: 19 },
+  
+  // Widgets de comparaison
+  { id: 'monthly-comparison', name: 'Comparaison mensuelle', description: 'Comparatif mois par mois', enabled: true, order: 20 },
+  { id: 'revenue-breakdown', name: 'Répartition du CA', description: 'Analyse détaillée des revenus', enabled: true, order: 21 },
+  { id: 'customer-satisfaction', name: 'Satisfaction client', description: 'Indicateurs de satisfaction', enabled: true, order: 22 }
 ];
 
 export const useStatisticsConfig = () => {
