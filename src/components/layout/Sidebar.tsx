@@ -238,7 +238,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                       <Tooltip key={type.id}>
                         <TooltipTrigger asChild>
                           <Link
-                            to={`/sav?sav_type=${type.type_key}`}
+                            to={`/sav?sav_type=${type.type_key}&exclude_ready=true`}
                             className="flex items-center justify-between p-1 text-sm hover:bg-accent hover:text-accent-foreground rounded-md transition-colors"
                           >
                             <span className="text-muted-foreground">
