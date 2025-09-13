@@ -225,11 +225,11 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
               </nav>
 
               {/* Types de SAV */}
-              <div className="mt-8 p-4 bg-muted rounded-lg">
-                <h3 className="text-sm font-medium text-muted-foreground mb-2 pl-2">
+              <div className="mt-8 p-3 bg-muted rounded-lg">
+                <h3 className="text-base font-semibold text-foreground mb-1 pl-1">
                   Types de SAV
                 </h3>
-                <div className="space-y-2">
+                <div className="space-y-1">
                   {savTypes.map((type) => {
                     const count = savTypeCounts[type.type_key]?.count || 0;
                     const typeInfo = getTypeInfo(type.type_key);
@@ -239,7 +239,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                         <TooltipTrigger asChild>
                           <Link
                             to={`/sav?sav_type=${type.type_key}`}
-                            className="flex items-center justify-between p-2 text-sm hover:bg-accent hover:text-accent-foreground rounded-md transition-colors"
+                            className="flex items-center justify-between p-1 text-sm hover:bg-accent hover:text-accent-foreground rounded-md transition-colors"
                           >
                             <span className="text-muted-foreground">
                               {typeInfo.label}
@@ -290,17 +290,17 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
               </div>
 
               {/* Statuts SAV */}
-              <div className="mt-4 p-4 bg-muted rounded-lg">
-                <h3 className="text-sm font-medium text-muted-foreground mb-2 pl-2">
+              <div className="mt-4 p-3 bg-muted rounded-lg">
+                <h3 className="text-base font-semibold text-foreground mb-1 pl-1">
                   Statuts SAV
                 </h3>
-                <div className="space-y-2">
+                <div className="space-y-1">
                   {sidebarStatusCounts.map((statusCount) => (
                     <Tooltip key={statusCount.key}>
                       <TooltipTrigger asChild>
                         <Link
                           to={`/sav?status=${statusCount.key}`}
-                          className="flex items-center justify-between p-2 text-sm hover:bg-accent hover:text-accent-foreground rounded-md transition-colors"
+                          className="flex items-center justify-between p-1 text-sm hover:bg-accent hover:text-accent-foreground rounded-md transition-colors"
                         >
                           <span className="text-muted-foreground">
                             {statusCount.label}
