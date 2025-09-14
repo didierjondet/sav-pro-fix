@@ -136,12 +136,56 @@ export function useShopSAVStatuses() {
     };
   };
 
+  // Fonction utilitaire pour détecter les statuts "prêt"
+  const isReadyStatus = (statusKey: string) => {
+    // Vérifier d'abord dans les statuts personnalisés
+    const customStatus = statuses.find(s => s.status_key === statusKey);
+    if (customStatus) {
+      // Utiliser le label pour détecter si c'est un statut "prêt"
+      const label = customStatus.status_label.toLowerCase();
+      return label.includes('prêt') || label.includes('pret') || label.includes('ready') || label.includes('terminé') || label.includes('termine');
+    }
+    
+    // Fallback sur les statuts par défaut
+    const key = (statusKey || '').toLowerCase();
+    return key === 'ready' || key === 'pret' || key === 'terminé' || key === 'termine';
+  };
+
+  // Fonction utilitaire pour détecter les statuts "annulé"
+  const isCancelledStatus = (statusKey: string) => {
+    // Vérifier d'abord dans les statuts personnalisés
+    const customStatus = statuses.find(s => s.status_key === statusKey);
+    if (customStatus) {
+      const label = customStatus.status_label.toLowerCase();
+      return label.includes('annulé') || label.includes('annule') || label.includes('cancelled') || label.includes('abandon');
+    }
+    
+    // Fallback sur les statuts par défaut
+    const key = (statusKey || '').toLowerCase();
+    return key === 'cancelled' || key === 'annule' || key === 'annulé' || key === 'abandon';
+  };
+
+  // Fonction utilitaire pour détecter les statuts qui pausent le timer
+  const isPauseTimerStatus = (statusKey: string) => {
+    const customStatus = statuses.find(s => s.status_key === statusKey);
+    return customStatus ? customStatus.pause_timer : false;
+  };
+
+  // Fonction utilitaire pour détecter les statuts actifs (ni prêt, ni annulé)
+  const isActiveStatus = (statusKey: string) => {
+    return !isReadyStatus(statusKey) && !isCancelledStatus(statusKey);
+  };
+
   return {
     statuses,
     loading,
     getStatusInfo,
     getAllStatuses,
     getStatusStyle,
+    isReadyStatus,
+    isCancelledStatus,
+    isPauseTimerStatus,
+    isActiveStatus,
     refetch: fetchStatuses
   };
 }

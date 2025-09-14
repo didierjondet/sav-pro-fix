@@ -114,14 +114,8 @@ export function SAVDashboard() {
     navigate(`/sav?${params.toString()}`);
   };
 
-  // Détection générique du statut "prêt" selon la config du magasin
-  const { getStatusInfo } = useShopSAVStatuses();
-  const isReadyStatus = (statusKey: string) => {
-    const key = (statusKey || '').toLowerCase();
-    const info = getStatusInfo(statusKey);
-    const label = (info?.label || '').toLowerCase();
-    return key === 'ready' || key === 'pret' || label.includes('prêt') || label.includes('pret') || label.includes('ready');
-  };
+  // Utiliser les fonctions utilitaires des statuts personnalisés
+  const { getStatusInfo, isReadyStatus, isCancelledStatus, isActiveStatus } = useShopSAVStatuses();
 
   // Calculer les SAV concernés pour les tooltips (mois en cours) - données réelles
   const getSAVTooltipInfo = (filterType: string) => {

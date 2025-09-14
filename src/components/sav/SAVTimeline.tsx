@@ -20,7 +20,7 @@ interface TimelineProps {
 export function SAVTimeline({ savCase, shop }: TimelineProps) {
   console.log('🕐 SAVTimeline render:', { savCase, shop });
   
-  const { getStatusInfo } = useShopSAVStatuses();
+  const { isReadyStatus, isCancelledStatus, isPauseTimerStatus, getStatusInfo } = useShopSAVStatuses();
   
   if (!shop || !savCase) {
     console.log('❌ Timeline: Missing data', { shop: !!shop, savCase: !!savCase });
@@ -82,7 +82,7 @@ export function SAVTimeline({ savCase, shop }: TimelineProps) {
   });
 
   // Ajouter un point final de jonction si le SAV est terminé
-  const isClosed = savCase.status === 'ready' || savCase.status === 'cancelled';
+  const isClosed = isReadyStatus(savCase.status) || isCancelledStatus(savCase.status);
   const shouldShowFinalPoint = isClosed;
 
   return (

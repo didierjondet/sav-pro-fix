@@ -34,7 +34,7 @@ import { Shop } from '@/hooks/useShop';
 interface SAVCloseUnifiedDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: () => void;
+  onConfirm: (finalStatus: string) => void;
   savCase: SAVCase & {
     customer?: {
       first_name: string;
@@ -48,7 +48,7 @@ interface SAVCloseUnifiedDialogProps {
     sms_credits_allocated: number;
     sms_credits_used: number;
   };
-  notes?: string;
+  selectedStatus: string;
 }
 
 interface WarningInfo {
@@ -63,11 +63,11 @@ export function SAVCloseUnifiedDialog({
   savCase, 
   shop, 
   subscription,
-  notes = ''
+  selectedStatus
 }: SAVCloseUnifiedDialogProps) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [technicianComments, setTechnicianComments] = useState(savCase.technician_comments || '');
-  const [statusNotes, setStatusNotes] = useState(notes);
+  const [statusNotes, setStatusNotes] = useState('');
   const [sendSMS, setSendSMS] = useState(false);
   const [warnings, setWarnings] = useState<WarningInfo>({ noParts: false, noPurchase: false });
   const [forceClose, setForceClose] = useState(false);
@@ -173,7 +173,7 @@ export function SAVCloseUnifiedDialog({
       if (sendSMS && canSendSMS && savCase.customer?.phone && savCase.tracking_slug) {
         const customerName = `${savCase.customer.first_name} ${savCase.customer.last_name}`;
         const shortTrackingUrl = generateShortTrackingUrl(savCase.tracking_slug);
-        const statusInfo = getStatusInfo('ready');
+        const statusInfo = getStatusInfo(selectedStatus);
         
         // Utiliser le message personnalisé si configuré, sinon utiliser le message par défaut
         let message = '';
@@ -202,7 +202,7 @@ export function SAVCloseUnifiedDialog({
       }
 
       // Confirmer la clôture
-      onConfirm();
+      onConfirm(selectedStatus);
       
       toast({
         title: "Dossier clôturé",

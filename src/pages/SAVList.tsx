@@ -54,18 +54,12 @@ export default function SAVList() {
   const { shop } = useShop();
   const { savWithUnreadMessages } = useSAVUnreadMessages();
   const { checkAndShowLimitDialog } = useLimitDialogContext();
-  const { getStatusInfo, statuses } = useShopSAVStatuses();
+  const { getStatusInfo, statuses, isReadyStatus, isCancelledStatus, isActiveStatus } = useShopSAVStatuses();
   const { getAllTypes, getTypeInfo } = useShopSAVTypes();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
-  // Détection générique du statut "prêt" selon la config du magasin
-  const isReadyStatus = (statusKey: string) => {
-    const info = getStatusInfo(statusKey);
-    const key = (statusKey || '').toLowerCase();
-    const label = (info?.label || '').toLowerCase();
-    return key === 'ready' || key === 'pret' || label.includes('prêt') || label.includes('pret') || label.includes('ready');
-  };
+  // Les fonctions utilitaires sont maintenant disponibles via le hook useShopSAVStatuses
 
   // Initialiser les filtres à partir des paramètres URL
   useEffect(() => {

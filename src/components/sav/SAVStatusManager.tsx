@@ -80,7 +80,8 @@ export function SAVStatusManager({ savCase, onStatusUpdated }: SAVStatusManagerP
       });
 
       // Envoi automatique de demande d'avis si le statut passe à "ready" et que c'est activé
-      if (selectedStatus === 'ready' && savCase.status !== 'ready' && (savCase.sav_type === 'client' || savCase.sav_type === 'external')) {
+      const { isReadyStatus } = useShopSAVStatuses();
+      if (isReadyStatus(selectedStatus) && !isReadyStatus(savCase.status) && (savCase.sav_type === 'client' || savCase.sav_type === 'external')) {
         await sendAutomaticReviewRequest();
       }
       
@@ -97,20 +98,21 @@ export function SAVStatusManager({ savCase, onStatusUpdated }: SAVStatusManagerP
     }
   };
 
-  const handleCloseConfirm = async () => {
+  const handleCloseConfirm = async (finalStatus: string) => {
     setShowCloseDialog(false);
     setUpdating(true);
     
     try {
-      await updateCaseStatus(savCase.id, 'ready', notes.trim() || undefined);
+      await updateCaseStatus(savCase.id, finalStatus as any, notes.trim() || undefined);
       
-      // Envoi automatique de demande d'avis si c'est activé
-      if (savCase.sav_type === 'client' || savCase.sav_type === 'external') {
+      // Envoi automatique de demande d'avis si c'est activé et que c'est un statut "prêt"
+      const { isReadyStatus } = useShopSAVStatuses();
+      if (isReadyStatus(finalStatus) && (savCase.sav_type === 'client' || savCase.sav_type === 'external')) {
         await sendAutomaticReviewRequest();
       }
       
       setNotes('');
-      setSelectedStatus('ready');
+      setSelectedStatus(finalStatus);
       onStatusUpdated?.();
     } catch (error: any) {
       toast({
@@ -213,8 +215,9 @@ L'équipe ${shopData.name || 'de réparation'}`;
   const handleStatusChangeRequest = async () => {
     if (selectedStatus === savCase.status && !notes.trim()) return;
     
-    // Si on passe au statut "ready", montrer le dialog de clôture unifié
-    if (selectedStatus === 'ready' && savCase.status !== 'ready') {
+    // Vérifier si c'est un statut "prêt" avec les statuts personnalisés
+    const { isReadyStatus } = useShopSAVStatuses();
+    if (isReadyStatus(selectedStatus) && !isReadyStatus(savCase.status)) {
       setShowCloseDialog(true);
       return;
     }
@@ -484,7 +487,7 @@ L'équipe ${shopData.name || 'de réparation'}`;
           savCase={savCase as any}
           shop={shop}
           subscription={subscription}
-          notes={notes}
+          selectedStatus={selectedStatus}
         />
       </CardContent>
     </Card>

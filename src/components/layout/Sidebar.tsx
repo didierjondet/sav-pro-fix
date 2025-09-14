@@ -56,7 +56,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const { cases } = useSAVCases();
   const { profile } = useProfile();
   const { shop } = useShop();
-  const { statuses, getStatusInfo } = useShopSAVStatuses();
+  const { statuses, getStatusInfo, isReadyStatus, isCancelledStatus, isActiveStatus } = useShopSAVStatuses();
   const { types: savTypes, getTypeInfo } = useShopSAVTypes();
   const { savWithUnreadMessages } = useSAVUnreadMessages();
   const totalUnread = (savWithUnreadMessages || []).reduce((sum, s) => sum + s.unread_count, 0);
@@ -71,14 +71,6 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 
   // Créer la navigation dynamique selon les paramètres du magasin
   const navigation = [...baseNavigation];
-
-  // Détection générique du statut "prêt" selon la config du magasin
-  const isReadyStatus = (statusKey: string) => {
-    const key = (statusKey || '').toLowerCase();
-    const info = getStatusInfo(statusKey);
-    const label = (info?.label || '').toLowerCase();
-    return key === 'ready' || key === 'pret' || label.includes('prêt') || label.includes('pret') || label.includes('ready');
-  };
 
   // Compter les SAV par type
   const savTypeCounts = useMemo(() => {
@@ -106,8 +98,8 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 
   // Calculate late SAV cases count
   const lateSAVCount = (cases || []).filter(savCase => {
-    // Only count non-completed SAV cases (exclude delivered, cancelled, and ready)
-    if (['delivered', 'cancelled', 'ready'].includes(savCase.status)) {
+    // Only count active SAV cases (exclude ready and cancelled)
+    if (!isActiveStatus(savCase.status)) {
       return false;
     }
 
