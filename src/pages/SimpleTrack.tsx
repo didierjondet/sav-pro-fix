@@ -11,6 +11,7 @@ import { fr } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
 import { calculateSAVDelay, formatDelayText } from '@/hooks/useSAVDelay';
 import { SAVTimeline } from '@/components/sav/SAVTimeline';
+import { useShopSAVStatuses } from '@/hooks/useShopSAVStatuses';
 
 interface SAVCaseData {
   id: string;
@@ -94,6 +95,7 @@ export default function SimpleTrack() {
   const [isRealTimeConnected, setIsRealTimeConnected] = useState(false);
   
   const { toast } = useToast();
+  const { getStatusInfo, isReadyStatus, isCancelledStatus } = useShopSAVStatuses();
 
   useEffect(() => {
     if (slug) {
@@ -318,7 +320,7 @@ export default function SimpleTrack() {
         </div>
 
         {/* Indicateur de délai */}
-        {savCase.status !== 'ready' && savCase.status !== 'cancelled' && (
+        {!isReadyStatus(savCase.status) && !isCancelledStatus(savCase.status) && (
           <Card className={`mb-6 border-2 ${delayInfo.isOverdue ? 'border-red-500 bg-red-50' : 'border-orange-500 bg-orange-50'}`}>
             <CardContent className="p-4">
               <div className="text-center">
@@ -451,7 +453,7 @@ export default function SimpleTrack() {
               userType="client"
               caseNumber={savCase.case_number}
               senderName={savCase.customer?.first_name || "Client"}
-              isCaseClosed={savCase.status === 'ready' || savCase.status === 'cancelled'}
+              isCaseClosed={isReadyStatus(savCase.status) || isCancelledStatus(savCase.status)}
               shopPhone={savCase.shop?.phone}
             />
           )}

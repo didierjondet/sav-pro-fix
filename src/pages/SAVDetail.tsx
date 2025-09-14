@@ -48,7 +48,7 @@ export default function SAVDetail() {
   const {
     shop
   } = useShop();
-  const { getStatusInfo } = useShopSAVStatuses();
+  const { getStatusInfo, isReadyStatus } = useShopSAVStatuses();
   const { getAllTypes, getTypeInfo } = useShopSAVTypes();
   const [savCase, setSavCase] = useState<any>(null);
   const [technicianComments, setTechnicianComments] = useState('');
@@ -329,7 +329,7 @@ export default function SAVDetail() {
                     {getStatusInfo(savCase.status)?.label || savCase.status}
                   </Badge>
                   {/* Bouton Imprimer restitution - uniquement pour les SAV prêts */}
-                  {savCase.status === 'ready' && <Button variant="outline" size="sm" onClick={async () => {
+                  {isReadyStatus(savCase.status) && <Button variant="outline" size="sm" onClick={async () => {
                   try {
                     await generateSAVRestitutionPDF(savCase, shop);
                     toast({
@@ -620,7 +620,7 @@ export default function SAVDetail() {
                         <ExternalLink className="h-4 w-4 mr-2" />
                         Prévisualiser
                       </Button>
-                      {savCase.status === 'ready' && <ReviewRequestButton savCaseId={savCase.id} shopId={savCase.shop_id} customerName={savCase.sav_type === 'client' ? `${savCase.customer?.first_name || ''} ${savCase.customer?.last_name || ''}`.trim() : savCase.external_contact_name || 'Contact externe'} caseNumber={savCase.case_number} />}
+                      {isReadyStatus(savCase.status) && <ReviewRequestButton savCaseId={savCase.id} shopId={savCase.shop_id} customerName={savCase.sav_type === 'client' ? `${savCase.customer?.first_name || ''} ${savCase.customer?.last_name || ''}`.trim() : savCase.external_contact_name || 'Contact externe'} caseNumber={savCase.case_number} />}
                     </div>
                   </CardContent>
                 </Card>}

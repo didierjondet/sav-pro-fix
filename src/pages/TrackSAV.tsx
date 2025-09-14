@@ -53,7 +53,7 @@ export default function TrackSAV() {
   const [loading, setLoading] = useState(true);
   const [isRealTimeConnected, setIsRealTimeConnected] = useState(false);
   const { toast } = useToast();
-  const { getStatusInfo } = useShopSAVStatuses();
+  const { getStatusInfo, isReadyStatus, isCancelledStatus } = useShopSAVStatuses();
 
   useEffect(() => {
     if (slug) {
@@ -332,7 +332,7 @@ export default function TrackSAV() {
         )}
 
         {/* Indicateur de délai */}
-        {savCase && savCase.status !== 'ready' && savCase.status !== 'cancelled' && delayInfo && (
+        {savCase && !isReadyStatus(savCase.status) && !isCancelledStatus(savCase.status) && delayInfo && (
           <Card className={`mb-6 border-2 ${delayInfo.isOverdue ? 'border-red-500 bg-red-50' : 'border-orange-500 bg-orange-50'}`}>
             <CardContent className="p-4">
               <div className="text-center">
@@ -454,7 +454,7 @@ export default function TrackSAV() {
             userType="client"
             caseNumber={savCase.case_number}
             senderName={savCase.customer?.first_name || "Client"}
-            isCaseClosed={savCase.status === 'ready' || savCase.status === 'cancelled'}
+            isCaseClosed={isReadyStatus(savCase.status) || isCancelledStatus(savCase.status)}
             shopPhone={savCase.shop?.phone}
           />
         )}

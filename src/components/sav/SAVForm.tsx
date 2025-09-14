@@ -74,7 +74,12 @@ interface SAVFormProps {
 export function SAVForm({ onSuccess }: SAVFormProps) {
   const [savType, setSavType] = useState<string>('internal');
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
-  const [selectedStatus, setSelectedStatus] = useState('pending');
+  
+  // Utiliser le premier statut disponible comme défaut
+  const { getAllStatuses, getStatusInfo } = useShopSAVStatuses();
+  const { getAllTypes } = useShopSAVTypes();
+  const defaultStatus = getAllStatuses()[0]?.value || 'pending';
+  const [selectedStatus, setSelectedStatus] = useState(defaultStatus);
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({
     firstName: '',
     lastName: '',
@@ -112,8 +117,7 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
   const { checkLimits } = useSubscription();
   const { checkAndShowLimitDialog } = useLimitDialogContext();
   const { toast } = useToast();
-  const { getAllStatuses, getStatusInfo } = useShopSAVStatuses();
-  const { getAllTypes } = useShopSAVTypes();
+  // Les hooks sont déjà importés plus haut
 
 
   // Charger les limites SAV au montage et quand l'utilisateur change
@@ -352,7 +356,7 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
       
       // Reset form
       setSavType('client');
-      setSelectedStatus('pending');
+      setSelectedStatus(defaultStatus);
       setCustomerInfo({
         firstName: '',
         lastName: '',

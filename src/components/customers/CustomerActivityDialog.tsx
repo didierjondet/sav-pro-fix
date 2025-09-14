@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { useCustomerActivity } from '@/hooks/useCustomerActivity';
 import { Customer } from '@/hooks/useCustomers';
+import { useShopSAVStatuses } from '@/hooks/useShopSAVStatuses';
 import { 
   FileText, 
   Wrench, 
@@ -28,18 +29,26 @@ interface CustomerActivityDialogProps {
 
 export function CustomerActivityDialog({ customer, open, onOpenChange }: CustomerActivityDialogProps) {
   const { activities, stats, loading } = useCustomerActivity(customer?.id || '');
+  const { getStatusInfo } = useShopSAVStatuses();
 
-  const statusConfig = {
-    pending: { label: 'En attente', variant: 'secondary' as const },
-    in_progress: { label: 'En cours', variant: 'default' as const },
-    testing: { label: 'Tests', variant: 'default' as const },
-    parts_ordered: { label: 'Pièces commandées', variant: 'outline' as const },
-    ready: { label: 'Prêt', variant: 'default' as const },
-    cancelled: { label: 'Annulé', variant: 'destructive' as const },
+  // Configuration de fallback pour les statuts non-SAV (devis)
+  const quoteStatusConfig = {
     draft: { label: 'Brouillon', variant: 'outline' as const },
     sent: { label: 'Envoyé', variant: 'default' as const },
     accepted: { label: 'Accepté', variant: 'default' as const },
     rejected: { label: 'Refusé', variant: 'destructive' as const },
+  };
+
+  const getStatusDisplay = (status: string, type: 'sav' | 'quote') => {
+    if (type === 'sav') {
+      const statusInfo = getStatusInfo(status);
+      return {
+        label: statusInfo.label,
+        variant: 'default' as const
+      };
+    } else {
+      return quoteStatusConfig[status as keyof typeof quoteStatusConfig] || { label: status, variant: 'secondary' as const };
+    }
   };
 
   if (!customer) return null;
@@ -158,11 +167,14 @@ export function CustomerActivityDialog({ customer, open, onOpenChange }: Custome
                             </div>
                           </div>
                           <div className="text-right">
-                            <Badge 
-                              variant={statusConfig[activity.status as keyof typeof statusConfig]?.variant || 'secondary'}
-                            >
-                              {statusConfig[activity.status as keyof typeof statusConfig]?.label || activity.status}
-                            </Badge>
+                            {(() => {
+                              const statusDisplay = getStatusDisplay(activity.status, activity.type);
+                              return (
+                                <Badge variant={statusDisplay.variant}>
+                                  {statusDisplay.label}
+                                </Badge>
+                              );
+                            })()}
                           </div>
                         </div>
 
