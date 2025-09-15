@@ -58,7 +58,7 @@ export function SAVStatusManager({ savCase, onStatusUpdated }: SAVStatusManagerP
   const { subscription } = useSubscription();
   const { shop } = useShop();
   const { toast } = useToast();
-  const { getStatusInfo, getAllStatuses } = useShopSAVStatuses();
+  const { getStatusInfo, getAllStatuses, isReadyStatus } = useShopSAVStatuses();
 
   const generateTrackingUrl = () => {
     if (!savCase.tracking_slug) return '';
@@ -80,7 +80,6 @@ export function SAVStatusManager({ savCase, onStatusUpdated }: SAVStatusManagerP
       });
 
       // Envoi automatique de demande d'avis si le statut passe à "ready" et que c'est activé
-      const { isReadyStatus } = useShopSAVStatuses();
       if (isReadyStatus(selectedStatus) && !isReadyStatus(savCase.status) && (savCase.sav_type === 'client' || savCase.sav_type === 'external')) {
         await sendAutomaticReviewRequest();
       }
@@ -216,7 +215,6 @@ L'équipe ${shopData.name || 'de réparation'}`;
     if (selectedStatus === savCase.status && !notes.trim()) return;
     
     // Vérifier si c'est un statut "prêt" avec les statuts personnalisés
-    const { isReadyStatus } = useShopSAVStatuses();
     if (isReadyStatus(selectedStatus) && !isReadyStatus(savCase.status)) {
       setShowCloseDialog(true);
       return;
