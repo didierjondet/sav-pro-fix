@@ -4,7 +4,7 @@ import { useToast } from '@/hooks/use-toast';
 
 export interface Notification {
   id: string;
-  type: 'stock_alert' | 'order_needed' | 'general' | 'support_message';
+  type: 'stock_alert' | 'order_needed' | 'general' | 'support_message' | 'sav_delay_alert';
   title: string;
   message: string;
   sav_case_id?: string;
@@ -40,6 +40,7 @@ export function useNotifications() {
         .from('notifications')
         .select('*')
         .eq('shop_id', profile.shop_id)
+        .eq('read', false) // Ne récupérer que les notifications non lues
         .order('created_at', { ascending: false })
         .limit(50);
 
@@ -47,7 +48,7 @@ export function useNotifications() {
       
       const notifs = (data as Notification[]) || [];
       setNotifications(notifs);
-      setUnreadCount(notifs.filter(n => !n.read).length);
+      setUnreadCount(notifs.length);
     } catch (error: any) {
       console.error('Error fetching notifications:', error);
     } finally {
@@ -193,6 +194,32 @@ export function useNotifications() {
     });
   };
 
+  const createSAVDelayAlert = async (savCaseId: string, caseNumber: string, daysLeft: number, savType: string) => {
+    const title = 'SAV proche de la limite';
+    const message = `Le SAV ${caseNumber} (${savType}) sera en retard dans ${daysLeft} jour${daysLeft > 1 ? 's' : ''}`;
+    
+    // Vérifier qu'une alerte similaire n'existe pas déjà pour ce SAV aujourd'hui
+    const today = new Date().toISOString().split('T')[0];
+    const { data: existingAlert } = await supabase
+      .from('notifications')
+      .select('id')
+      .eq('sav_case_id', savCaseId)
+      .eq('type', 'sav_delay_alert')
+      .gte('created_at', today + 'T00:00:00.000Z')
+      .single();
+    
+    if (existingAlert) {
+      return { data: null, error: null }; // Alerte déjà envoyée aujourd'hui
+    }
+    
+    return await createNotification({
+      type: 'sav_delay_alert',
+      title,
+      message,
+      sav_case_id: savCaseId
+    });
+  };
+
   return {
     notifications,
     loading,
@@ -201,6 +228,7 @@ export function useNotifications() {
     createStockAlert,
     createSupportMessageNotification,
     createSAVMessageNotification,
+    createSAVDelayAlert,
     markAsRead,
     markAllAsRead,
     refetch: fetchNotifications,

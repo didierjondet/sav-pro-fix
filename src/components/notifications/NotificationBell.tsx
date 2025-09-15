@@ -235,6 +235,7 @@ export function NotificationBell() {
       case 'order_needed': return '🛒';  
       case 'support_message': return '💬';
       case 'sav_message': return '🔧';
+      case 'sav_delay_alert': return '⏰';
       default: return '🔔';
     }
   };

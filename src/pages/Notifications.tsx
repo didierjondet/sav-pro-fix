@@ -21,6 +21,7 @@ export default function Notifications() {
       case 'order_needed': return '🛒';  
       case 'support_message': return '💬';
       case 'sav_message': return '🔧';
+      case 'sav_delay_alert': return '⏰';
       default: return '🔔';
     }
   };
