@@ -99,35 +99,13 @@ export function useShopSAVTypes() {
 
   // Fonction pour obtenir tous les types disponibles (personnalisés + par défaut)
   const getAllTypes = () => {
-    // Types autorisés dans l'ENUM de la base de données
-    const allowedTypes = ['client', 'internal', 'external'];
-    
     if (types.length > 0) {
-      // Utiliser les types personnalisés pour les clés autorisées, fallback pour les autres
-      const customTypeMap = types.reduce((acc, type) => {
-        if (allowedTypes.includes(type.type_key)) {
-          acc[type.type_key] = {
-            value: type.type_key,
-            label: type.type_label,
-            color: type.type_color
-          };
-        }
-        return acc;
-      }, {} as Record<string, any>);
-      
-      // Créer la liste complète avec les types personnalisés où disponibles
-      return allowedTypes.map(key => {
-        if (customTypeMap[key]) {
-          return customTypeMap[key];
-        }
-        // Fallback vers la configuration par défaut
-        const defaultConfig = defaultTypeConfig[key as keyof typeof defaultTypeConfig];
-        return {
-          value: key,
-          label: defaultConfig?.label || key,
-          color: defaultConfig?.color || '#6b7280'
-        };
-      });
+      // Retourner tous les types personnalisés du magasin
+      return types.map(type => ({
+        value: type.type_key,
+        label: type.type_label,
+        color: type.type_color
+      }));
     }
 
     // Fallback vers les types par défaut si aucun type personnalisé

@@ -2034,7 +2034,16 @@ export type Database = {
         | "cancelled"
         | "parts_ordered"
         | "parts_received"
-      sav_type: "client" | "internal" | "external"
+      sav_type:
+        | "client"
+        | "internal"
+        | "external"
+        | "SAVPC"
+        | "SAVPARTENAIRE"
+        | "WARRANTY"
+        | "DEPOT_VENTE"
+        | "FORMATION"
+        | "MAINTENANCE"
       user_role: "super_admin" | "shop_admin" | "technician" | "admin"
     }
     CompositeTypes: {
@@ -2173,7 +2182,17 @@ export const Constants = {
         "parts_ordered",
         "parts_received",
       ],
-      sav_type: ["client", "internal", "external"],
+      sav_type: [
+        "client",
+        "internal",
+        "external",
+        "SAVPC",
+        "SAVPARTENAIRE",
+        "WARRANTY",
+        "DEPOT_VENTE",
+        "FORMATION",
+        "MAINTENANCE",
+      ],
       user_role: ["super_admin", "shop_admin", "technician", "admin"],
     },
   },
