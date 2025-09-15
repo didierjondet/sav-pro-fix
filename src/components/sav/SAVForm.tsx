@@ -72,13 +72,14 @@ interface SAVFormProps {
 }
 
 export function SAVForm({ onSuccess }: SAVFormProps) {
-  const [savType, setSavType] = useState<string>('internal');
-  const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
-  
-  // Utiliser le premier statut disponible comme défaut
+  // Utiliser le premier type et statut disponible comme défaut
   const { getAllStatuses, getStatusInfo } = useShopSAVStatuses();
   const { getAllTypes } = useShopSAVTypes();
+  const defaultType = getAllTypes()[0]?.value || 'internal';
   const defaultStatus = getAllStatuses()[0]?.value || 'pending';
+  
+  const [savType, setSavType] = useState<string>(defaultType);
+  const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
   const [selectedStatus, setSelectedStatus] = useState(defaultStatus);
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({
     firstName: '',
@@ -355,7 +356,7 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
       setShowPrintDialog(true);
       
       // Reset form
-      setSavType('client');
+      setSavType(defaultType);
       setSelectedStatus(defaultStatus);
       setCustomerInfo({
         firstName: '',

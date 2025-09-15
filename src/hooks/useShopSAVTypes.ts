@@ -103,19 +103,34 @@ export function useShopSAVTypes() {
     const allowedTypes = ['client', 'internal', 'external'];
     
     if (types.length > 0) {
-      // Filtrer les types personnalisés pour ne garder que ceux autorisés dans l'ENUM
-      const validTypes = types.filter(type => allowedTypes.includes(type.type_key));
+      // Utiliser les types personnalisés pour les clés autorisées, fallback pour les autres
+      const customTypeMap = types.reduce((acc, type) => {
+        if (allowedTypes.includes(type.type_key)) {
+          acc[type.type_key] = {
+            value: type.type_key,
+            label: type.type_label,
+            color: type.type_color
+          };
+        }
+        return acc;
+      }, {} as Record<string, any>);
       
-      if (validTypes.length > 0) {
-        return validTypes.map(type => ({
-          value: type.type_key,
-          label: type.type_label,
-          color: type.type_color
-        }));
-      }
+      // Créer la liste complète avec les types personnalisés où disponibles
+      return allowedTypes.map(key => {
+        if (customTypeMap[key]) {
+          return customTypeMap[key];
+        }
+        // Fallback vers la configuration par défaut
+        const defaultConfig = defaultTypeConfig[key as keyof typeof defaultTypeConfig];
+        return {
+          value: key,
+          label: defaultConfig?.label || key,
+          color: defaultConfig?.color || '#6b7280'
+        };
+      });
     }
 
-    // Fallback vers les types par défaut
+    // Fallback vers les types par défaut si aucun type personnalisé
     return Object.entries(defaultTypeConfig).map(([key, config]) => ({
       value: key,
       label: config.label,
