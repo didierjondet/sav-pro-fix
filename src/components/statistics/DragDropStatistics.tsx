@@ -30,6 +30,7 @@ import { SAVPerformanceWidget } from './advanced/SAVPerformanceWidget';
 import { PartsUsageHeatmapWidget } from './advanced/PartsUsageHeatmapWidget';
 import { MonthlyComparisonWidget } from './advanced/MonthlyComparisonWidget';
 import { RevenueBreakdownWidget } from './advanced/RevenueBreakdownWidget';
+import { CustomerSatisfactionWidget } from './advanced/CustomerSatisfactionWidget';
 
 interface DragDropStatisticsProps {
   period: '7d' | '30d' | '3m' | '6m' | '1y';
@@ -443,6 +444,33 @@ export const DragDropStatistics = ({ period, onPeriodChange }: DragDropStatistic
                 )}
               </div>
             </DraggableStatisticsWidget>
+          </div>
+        );
+
+      case 'customer-satisfaction':
+        return (
+          <div className={className}>
+            <CustomerSatisfactionWidget 
+              satisfactionData={[
+                { period: 'Jan', rating: 4.2, reviews: 45, response_rate: 92 },
+                { period: 'Fév', rating: 4.4, reviews: 52, response_rate: 94 },
+                { period: 'Mar', rating: 4.3, reviews: 38, response_rate: 88 },
+                { period: 'Avr', rating: 4.6, reviews: 61, response_rate: 96 },
+                { period: 'Mai', rating: 4.5, reviews: 47, response_rate: 91 },
+                { period: 'Juin', rating: 4.7, reviews: 55, response_rate: 98 }
+              ]}
+              satisfactionBreakdown={[
+                { stars: 5, count: 156, percentage: 65, color: '#10b981' },
+                { stars: 4, count: 72, percentage: 30, color: '#3b82f6' },
+                { stars: 3, count: 8, percentage: 3, color: '#f59e0b' },
+                { stars: 2, count: 3, percentage: 1, color: '#ef4444' },
+                { stars: 1, count: 1, percentage: 1, color: '#dc2626' }
+              ]}
+              averageRating={4.5}
+              totalReviews={240}
+              responseRate={94}
+              trend="up"
+            />
           </div>
         );
 

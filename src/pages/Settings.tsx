@@ -681,9 +681,6 @@ export default function Settings() {
                   </div>
                 </CardContent>
               </Card>
-
-              {/* Section Statistiques */}
-              <StatisticsConfiguration />
             </TabsContent>
 
             <TabsContent value="notifications" className="space-y-6">
