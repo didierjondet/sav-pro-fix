@@ -88,5 +88,13 @@ export const DEFAULT_MODULE_SIZES: ModuleSizeConfig = {
   // Nouveaux widgets combinés
   'financial-overview': 'full',
   'sav-metrics-combined': 'wide',
-  'performance-trends': 'large'
+  'performance-trends': 'large',
+  
+  // Nouveaux widgets spécialisés
+  'sav-types-grid': 'medium',
+  'finance-kpis': 'tall',
+  'storage-usage': 'medium',
+  'sav-type-distribution': 'large',
+  'monthly-profitability': 'large',
+  'annual-stats': 'wide'
 };

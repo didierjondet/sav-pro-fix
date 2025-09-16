@@ -32,6 +32,14 @@ import { MonthlyComparisonWidget } from './advanced/MonthlyComparisonWidget';
 import { RevenueBreakdownWidget } from './advanced/RevenueBreakdownWidget';
 import { CustomerSatisfactionWidget } from './advanced/CustomerSatisfactionWidget';
 
+// Importation des widgets spécialisés
+import { SAVTypesGridWidget } from './widgets/SAVTypesGridWidget';
+import { FinanceKPIsWidget } from './widgets/FinanceKPIsWidget';
+import { StorageUsageWidget } from './widgets/StorageUsageWidget';
+import { SAVTypeDistributionWidget } from './widgets/SAVTypeDistributionWidget';
+import { MonthlyProfitabilityWidget } from './widgets/MonthlyProfitabilityWidget';
+import { AnnualStatsWidget } from './widgets/AnnualStatsWidget';
+
 interface DragDropStatisticsProps {
   period: '7d' | '30d' | '3m' | '6m' | '1y';
   onPeriodChange: (period: '7d' | '30d' | '3m' | '6m' | '1y') => void;
@@ -470,6 +478,151 @@ export const DragDropStatistics = ({ period, onPeriodChange }: DragDropStatistic
               totalReviews={240}
               responseRate={94}
               trend="up"
+            />
+          </div>
+        );
+
+      // Nouveaux widgets spécialisés
+      case 'sav-types-grid':
+        const savTypesData = [
+          { id: 'smartphone', name: 'Smartphone', count: Math.floor(savStats.total * 0.4), averageTime: 24, trend: 'up' as const, color: 'hsl(var(--primary))', icon: 'smartphone' },
+          { id: 'tablet', name: 'Tablette', count: Math.floor(savStats.total * 0.2), averageTime: 48, trend: 'stable' as const, color: 'hsl(var(--secondary))', icon: 'tablet' },
+          { id: 'laptop', name: 'Ordinateur', count: Math.floor(savStats.total * 0.15), averageTime: 72, trend: 'down' as const, color: 'hsl(var(--success))', icon: 'laptop' },
+          { id: 'watch', name: 'Montre', count: Math.floor(savStats.total * 0.1), averageTime: 12, trend: 'up' as const, color: 'hsl(var(--warning))', icon: 'watch' },
+          { id: 'headphones', name: 'Écouteurs', count: Math.floor(savStats.total * 0.1), averageTime: 6, trend: 'stable' as const, color: 'hsl(var(--accent))', icon: 'headphones' },
+          { id: 'camera', name: 'Appareil photo', count: Math.floor(savStats.total * 0.05), averageTime: 96, trend: 'down' as const, color: 'hsl(var(--muted-foreground))', icon: 'camera' }
+        ];
+        
+        return (
+          <div className={className}>
+            <SAVTypesGridWidget 
+              savTypes={savTypesData}
+              totalSAV={savStats.total}
+              onCreateNewSAV={(typeId) => navigate('/sav/new')}
+            />
+          </div>
+        );
+
+      case 'finance-kpis':
+        const currentMonthFinance = {
+          revenue,
+          expenses,
+          profit,
+          margin: profit ? (profit / revenue) * 100 : 0,
+          takeoverAmount: takeoverStats.amount,
+          takeoverCount: takeoverStats.count,
+          growth: 15.2,
+          target: revenue * 1.2
+        };
+        
+        const previousMonthFinance = {
+          revenue: revenue * 0.85,
+          expenses: expenses * 0.9,
+          profit: profit * 0.8,
+          margin: 42,
+          takeoverAmount: takeoverStats.amount * 0.7,
+          takeoverCount: takeoverStats.count - 5,
+          growth: -5.3,
+          target: revenue * 1.15
+        };
+        
+        return (
+          <div className={className}>
+            <FinanceKPIsWidget 
+              currentMonth={currentMonthFinance}
+              previousMonth={previousMonthFinance}
+              yearTarget={revenue * 12}
+              monthProgress={75}
+            />
+          </div>
+        );
+
+      case 'storage-usage':
+        const storageCategories = [
+          { name: 'Photos SAV', size: 2.1 * 1024 * 1024 * 1024, count: 1205, color: 'hsl(var(--primary))', icon: 'image', percentage: 42 },
+          { name: 'Documents', size: 890 * 1024 * 1024, count: 340, color: 'hsl(var(--secondary))', icon: 'document', percentage: 18 },
+          { name: 'Sauvegardes', size: 1.5 * 1024 * 1024 * 1024, count: 12, color: 'hsl(var(--success))', icon: 'archive', percentage: 30 },
+          { name: 'Téléchargements', size: 450 * 1024 * 1024, count: 89, color: 'hsl(var(--warning))', icon: 'download', percentage: 10 }
+        ];
+        
+        return (
+          <div className={className}>
+            <StorageUsageWidget 
+              totalUsed={4.94 * 1024 * 1024 * 1024}
+              totalLimit={10 * 1024 * 1024 * 1024}
+              categories={storageCategories}
+              onManageStorage={() => navigate('/settings?tab=storage')}
+              onCleanup={() => console.log('Nettoyage du stockage')}
+            />
+          </div>
+        );
+
+      case 'sav-type-distribution':
+        const serviceTypesDistribution = [
+          { type: 'Réparation d\'écran', count: Math.floor(savStats.total * 0.35), percentage: 35, averageRevenue: 120, averageTime: 24, color: 'hsl(var(--primary))', trend: 'up' as const },
+          { type: 'Remplacement batterie', count: Math.floor(savStats.total * 0.25), percentage: 25, averageRevenue: 80, averageTime: 12, color: 'hsl(var(--secondary))', trend: 'stable' as const },
+          { type: 'Réparation connecteur', count: Math.floor(savStats.total * 0.15), percentage: 15, averageRevenue: 60, averageTime: 18, color: 'hsl(var(--success))', trend: 'up' as const },
+          { type: 'Diagnostic', count: Math.floor(savStats.total * 0.15), percentage: 15, averageRevenue: 35, averageTime: 6, color: 'hsl(var(--warning))', trend: 'stable' as const },
+          { type: 'Réparation carte mère', count: Math.floor(savStats.total * 0.1), percentage: 10, averageRevenue: 200, averageTime: 48, color: 'hsl(var(--destructive))', trend: 'down' as const }
+        ];
+        
+        return (
+          <div className={className}>
+            <SAVTypeDistributionWidget 
+              serviceTypes={serviceTypesDistribution}
+              totalSAV={savStats.total}
+              totalRevenue={revenue}
+              dominantType="Écrans"
+            />
+          </div>
+        );
+
+      case 'monthly-profitability':
+        const profitabilityMonthlyData = profitabilityChart.slice(-6).map((item, index) => ({
+          month: item.date,
+          revenue: item.revenue,
+          expenses: item.expenses,
+          profit: item.profit,
+          margin: item.profit ? (item.profit / item.revenue) * 100 : 0,
+          target: item.revenue * 1.1,
+          marginTarget: 50
+        }));
+        
+        return (
+          <div className={className}>
+            <MonthlyProfitabilityWidget 
+              data={profitabilityMonthlyData}
+              averageMargin={profit ? (profit / revenue) * 100 : 0}
+              bestMonth="Avril"
+              worstMonth="Janvier"
+              targetAchieved={profit > revenue * 0.5}
+              monthsAboveTarget={4}
+            />
+          </div>
+        );
+
+      case 'annual-stats':
+        const annualMonthlyData = profitabilityChart.map((item, index) => ({
+          month: item.date,
+          revenue: item.revenue,
+          savCount: completedSavChart.find(c => c.date === item.date)?.completed || 0,
+          averageTime: savStats.averageTime + (Math.random() - 0.5) * 10,
+          customerSatisfaction: 85 + Math.random() * 15,
+          partsUsed: Math.floor(Math.random() * 50) + 20,
+          efficiency: Math.max(60, Math.min(95, 80 + (Math.random() - 0.5) * 20))
+        }));
+        
+        return (
+          <div className={className}>
+            <AnnualStatsWidget 
+              monthlyData={annualMonthlyData}
+              currentYear={2024}
+              totalRevenue={revenue * 12}
+              totalSAV={savStats.total * 12}
+              averageEfficiency={82}
+              yearOverYearGrowth={15.3}
+              bestPerformanceMonth="Juin"
+              worstPerformanceMonth="Février"
             />
           </div>
         );
