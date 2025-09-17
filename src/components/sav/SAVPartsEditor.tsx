@@ -467,11 +467,11 @@ const partsToInsert = savParts.map(part => ({
                               {part.isCustom ? (
                                 <Badge variant="outline">Pièce personnalisée</Badge>
                               ) : (
-                                <Badge variant="secondary">En stock</Badge>
+                                <Badge variant="secondary">Pièce du stock (modifiable)</Badge>
                               )}
                               {!part.isCustom && part.available_stock !== undefined && (
                                 <Badge variant={part.available_stock === 0 ? 'destructive' : part.available_stock <= 5 ? 'default' : 'secondary'}>
-                                  Stock: {part.available_stock}
+                                  Stock original: {part.available_stock}
                                 </Badge>
                               )}
                             </div>
@@ -485,6 +485,8 @@ const partsToInsert = savParts.map(part => ({
                           variant="outline"
                           size="icon"
                           onClick={() => removePart(part.id)}
+                          className="text-destructive hover:bg-destructive/10"
+                          title="Supprimer cette pièce du SAV"
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -498,8 +500,12 @@ const partsToInsert = savParts.map(part => ({
       value={part.part_name}
       onChange={(e) => updatePart(part.id, 'part_name', e.target.value)}
       placeholder="Ex: Écran LCD"
-      disabled={!part.isCustom}
     />
+    {!part.isCustom && (
+      <div className="text-xs text-muted-foreground mt-1">
+        Pièce du stock - modifications spécifiques à ce SAV
+      </div>
+    )}
   </div>
   <div>
     <Label htmlFor={`part-qty-${part.id}`}>Quantité</Label>
