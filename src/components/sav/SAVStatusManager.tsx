@@ -105,7 +105,6 @@ export function SAVStatusManager({ savCase, onStatusUpdated }: SAVStatusManagerP
       await updateCaseStatus(savCase.id, finalStatus as any, notes.trim() || undefined);
       
       // Envoi automatique de demande d'avis si c'est activé et que c'est un statut "prêt"
-      const { isReadyStatus } = useShopSAVStatuses();
       if (isReadyStatus(finalStatus) && (savCase.sav_type === 'client' || savCase.sav_type === 'external')) {
         await sendAutomaticReviewRequest();
       }
