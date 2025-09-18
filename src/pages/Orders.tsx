@@ -33,12 +33,8 @@ export default function Orders() {
   
   const { orderItems, loading, markAsOrdered, removeFromOrder, receiveOrderItem, cancelOrder, getOrdersByFilter } = useOrders();
 
-  // Récupérer les items selon le filtre
+  // Récupérer les items selon le filtre - déléguer entièrement à getOrdersByFilter
   const getFilteredItems = () => {
-    if (activeFilter === 'reception') {
-      // Pour l'onglet réception, afficher seulement les items commandés (ordered: true)
-      return orderItems.filter(item => item.ordered);
-    }
     return getOrdersByFilter(activeFilter);
   };
 

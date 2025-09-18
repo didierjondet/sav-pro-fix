@@ -500,14 +500,29 @@ export function useOrders() {
     }
   };
 
-  const getOrdersByFilter = (filter: 'all' | 'sav' | 'quotes') => {
+  const getOrdersByFilter = (filter: 'all' | 'sav' | 'quotes' | 'reception') => {
     switch (filter) {
       case 'sav':
-        return partsNeededForSAV;
+        // Combiner les vraies commandes SAV avec les items générés dynamiquement
+        const savOrderItems = orderItems.filter(item => 
+          item.reason === 'sav_stock_zero' && !item.ordered
+        );
+        return [...savOrderItems, ...partsNeededForSAV];
       case 'quotes':
-        return partsNeededForQuotes;
+        // Combiner les vraies commandes devis avec les items générés dynamiquement
+        const quoteOrderItems = orderItems.filter(item => 
+          item.reason === 'quote_needed' && !item.ordered
+        );
+        return [...quoteOrderItems, ...partsNeededForQuotes];
       case 'all':
-        return partsNeedingRestock;
+        // Combiner les vraies commandes stock minimum avec les items générés dynamiquement
+        const stockOrderItems = orderItems.filter(item => 
+          item.reason === 'manual' && !item.ordered
+        );
+        return [...stockOrderItems, ...partsNeedingRestock];
+      case 'reception':
+        // Seulement les vraies commandes qui sont marquées comme commandées
+        return orderItems.filter(item => item.ordered);
       default:
         return [];
     }
