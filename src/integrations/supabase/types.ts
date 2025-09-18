@@ -1003,7 +1003,11 @@ export type Database = {
           id: string
           is_active: boolean
           is_default: boolean
+          max_processing_days: number | null
+          pause_timer: boolean
           shop_id: string
+          show_customer_info: boolean
+          show_in_sidebar: boolean
           type_color: string | null
           type_key: string
           type_label: string
@@ -1015,7 +1019,11 @@ export type Database = {
           id?: string
           is_active?: boolean
           is_default?: boolean
+          max_processing_days?: number | null
+          pause_timer?: boolean
           shop_id: string
+          show_customer_info?: boolean
+          show_in_sidebar?: boolean
           type_color?: string | null
           type_key: string
           type_label: string
@@ -1027,7 +1035,11 @@ export type Database = {
           id?: string
           is_active?: boolean
           is_default?: boolean
+          max_processing_days?: number | null
+          pause_timer?: boolean
           shop_id?: string
+          show_customer_info?: boolean
+          show_in_sidebar?: boolean
           type_color?: string | null
           type_key?: string
           type_label?: string

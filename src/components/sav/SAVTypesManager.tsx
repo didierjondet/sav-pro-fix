@@ -6,7 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Edit, Trash2, Plus, Info } from 'lucide-react';
+import { Edit, Trash2, Plus, Info, Clock, Users, Sidebar } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useProfile } from '@/hooks/useProfile';
@@ -20,6 +21,10 @@ export interface SAVType {
   display_order: number;
   is_default: boolean;
   is_active: boolean;
+  show_customer_info: boolean;
+  max_processing_days?: number;
+  pause_timer: boolean;
+  show_in_sidebar: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -39,6 +44,10 @@ export default function SAVTypesManager({ types, loading, onRefresh }: SAVTypesM
     type_key: '',
     type_label: '',
     type_color: '#6b7280',
+    show_customer_info: true,
+    max_processing_days: 7,
+    pause_timer: false,
+    show_in_sidebar: true,
   });
 
   const resetForm = () => {
@@ -46,6 +55,10 @@ export default function SAVTypesManager({ types, loading, onRefresh }: SAVTypesM
       type_key: '',
       type_label: '',
       type_color: '#6b7280',
+      show_customer_info: true,
+      max_processing_days: 7,
+      pause_timer: false,
+      show_in_sidebar: true,
     });
     setEditingType(null);
   };
@@ -56,15 +69,19 @@ export default function SAVTypesManager({ types, loading, onRefresh }: SAVTypesM
     try {
       const maxOrder = Math.max(...types.map(t => t.display_order), 0);
       
-      const { error } = await supabase
-        .from('shop_sav_types')
-        .insert({
-          shop_id: profile.shop_id,
-          type_key: formData.type_key,
-          type_label: formData.type_label,
-          type_color: formData.type_color,
-          display_order: maxOrder + 1,
-        });
+        const { error } = await supabase
+          .from('shop_sav_types')
+          .insert({
+            shop_id: profile.shop_id,
+            type_key: formData.type_key,
+            type_label: formData.type_label,
+            type_color: formData.type_color,
+            display_order: maxOrder + 1,
+            show_customer_info: formData.show_customer_info,
+            max_processing_days: formData.max_processing_days,
+            pause_timer: formData.pause_timer,
+            show_in_sidebar: formData.show_in_sidebar,
+          });
 
       if (error) throw error;
 
@@ -96,6 +113,10 @@ export default function SAVTypesManager({ types, loading, onRefresh }: SAVTypesM
           type_key: formData.type_key,
           type_label: formData.type_label,
           type_color: formData.type_color,
+          show_customer_info: formData.show_customer_info,
+          max_processing_days: formData.max_processing_days,
+          pause_timer: formData.pause_timer,
+          show_in_sidebar: formData.show_in_sidebar,
         })
         .eq('id', editingType.id);
 
@@ -159,6 +180,10 @@ export default function SAVTypesManager({ types, loading, onRefresh }: SAVTypesM
       type_key: type.type_key,
       type_label: type.type_label,
       type_color: type.type_color,
+      show_customer_info: type.show_customer_info,
+      max_processing_days: type.max_processing_days || 7,
+      pause_timer: type.pause_timer,
+      show_in_sidebar: type.show_in_sidebar,
     });
     setDialogOpen(true);
   };
@@ -241,6 +266,87 @@ export default function SAVTypesManager({ types, loading, onRefresh }: SAVTypesM
                     />
                   </div>
                 </div>
+
+                <div className="space-y-4">
+                  <h4 className="text-sm font-medium">Options avancées</h4>
+                  
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label className="text-sm font-normal flex items-center gap-2">
+                        <Users className="w-4 h-4" />
+                        Afficher les informations client
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        Permet de lier le SAV à un client existant ou d'en créer un nouveau
+                      </p>
+                    </div>
+                    <Switch
+                      checked={formData.show_customer_info}
+                      onCheckedChange={(checked) => 
+                        setFormData({ ...formData, show_customer_info: checked })
+                      }
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="max_processing_days" className="text-sm font-normal flex items-center gap-2">
+                      <Clock className="w-4 h-4" />
+                      Délai maximum de traitement (jours)
+                    </Label>
+                    <Input
+                      id="max_processing_days"
+                      type="number"
+                      min="1"
+                      max="365"
+                      value={formData.max_processing_days}
+                      onChange={(e) => setFormData({ 
+                        ...formData, 
+                        max_processing_days: parseInt(e.target.value) || undefined 
+                      })}
+                      placeholder="7"
+                      className="mt-1"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Nombre de jours maximum pour traiter ce type de SAV
+                    </p>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label className="text-sm font-normal flex items-center gap-2">
+                        <Clock className="w-4 h-4" />
+                        Mettre en pause le timer de délai
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        Le timer de délai est suspendu quand le SAV est dans ce type
+                      </p>
+                    </div>
+                    <Switch
+                      checked={formData.pause_timer}
+                      onCheckedChange={(checked) => 
+                        setFormData({ ...formData, pause_timer: checked })
+                      }
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label className="text-sm font-normal flex items-center gap-2">
+                        <Sidebar className="w-4 h-4" />
+                        Afficher dans la barre latérale
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        Ce type apparaît dans les filtres de la barre latérale
+                      </p>
+                    </div>
+                    <Switch
+                      checked={formData.show_in_sidebar}
+                      onCheckedChange={(checked) => 
+                        setFormData({ ...formData, show_in_sidebar: checked })
+                      }
+                    />
+                  </div>
+                </div>
               </div>
               
               <DialogFooter>
@@ -271,12 +377,12 @@ export default function SAVTypesManager({ types, loading, onRefresh }: SAVTypesM
                 key={type.id}
                 className="flex items-center justify-between p-4 border rounded-lg"
               >
-                <div className="flex items-center space-x-3">
+                <div className="flex items-center space-x-3 flex-1">
                   <div
                     className="w-4 h-4 rounded-full border"
                     style={{ backgroundColor: type.type_color }}
                   />
-                  <div>
+                  <div className="flex-1">
                     <div className="flex items-center space-x-2">
                       <span className="font-medium">{type.type_label}</span>
                       {type.is_default && (
@@ -288,6 +394,32 @@ export default function SAVTypesManager({ types, loading, onRefresh }: SAVTypesM
                     <p className="text-sm text-muted-foreground">
                       Clé: {type.type_key}
                     </p>
+                    <div className="flex items-center space-x-3 mt-2">
+                      <div className="flex items-center space-x-1 text-xs">
+                        <Users className="w-3 h-3" />
+                        <span className={type.show_customer_info ? "text-green-600" : "text-red-600"}>
+                          {type.show_customer_info ? "Client obligatoire" : "Sans client"}
+                        </span>
+                      </div>
+                      {type.max_processing_days && (
+                        <div className="flex items-center space-x-1 text-xs text-muted-foreground">
+                          <Clock className="w-3 h-3" />
+                          <span>{type.max_processing_days}j max</span>
+                        </div>
+                      )}
+                      <div className="flex items-center space-x-1 text-xs">
+                        <Clock className="w-3 h-3" />
+                        <span className={type.pause_timer ? "text-orange-600" : "text-green-600"}>
+                          {type.pause_timer ? "Timer suspendu" : "Timer actif"}
+                        </span>
+                      </div>
+                      <div className="flex items-center space-x-1 text-xs">
+                        <Sidebar className="w-3 h-3" />
+                        <span className={type.show_in_sidebar ? "text-green-600" : "text-muted-foreground"}>
+                          {type.show_in_sidebar ? "Visible sidebar" : "Masqué sidebar"}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </div>
                 

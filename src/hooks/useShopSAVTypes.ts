@@ -11,6 +11,10 @@ export interface ShopSAVType {
   display_order: number;
   is_default: boolean;
   is_active: boolean;
+  show_customer_info: boolean;
+  max_processing_days?: number;
+  pause_timer: boolean;
+  show_in_sidebar: boolean;
   created_at: string;
   updated_at: string;
 }
