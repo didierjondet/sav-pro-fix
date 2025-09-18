@@ -277,10 +277,27 @@ export function useOrders() {
   };
 
   useEffect(() => {
-    fetchOrderItems();
-    fetchPartsNeededForSAV();
-    fetchPartsNeededForQuotes();
-    fetchPartsNeedingRestock();
+    console.log('🚀 useOrders useEffect starting...');
+    const loadData = async () => {
+      setLoading(true);
+      try {
+        console.log('📥 Starting fetchOrderItems...');
+        await fetchOrderItems();
+        console.log('📥 Starting fetchPartsNeededForSAV...');
+        await fetchPartsNeededForSAV();
+        console.log('📥 Starting fetchPartsNeededForQuotes...');
+        await fetchPartsNeededForQuotes();
+        console.log('📥 Starting fetchPartsNeedingRestock...');
+        await fetchPartsNeedingRestock();
+        console.log('✅ All data fetched successfully');
+      } catch (error) {
+        console.error('❌ Error loading order data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadData();
   }, []);
 
   const addToOrder = async (orderData: Omit<OrderItem, 'id' | 'created_at' | 'updated_at' | 'shop_id' | 'ordered'>) => {
@@ -501,29 +518,32 @@ export function useOrders() {
   };
 
   const getOrdersByFilter = (filter: 'all' | 'sav' | 'quotes' | 'reception') => {
+    console.log(`🔍 getOrdersByFilter called with filter: ${filter}`);
+    console.log(`📊 orderItems length: ${orderItems.length}`);
+    console.log(`📊 partsNeededForSAV length: ${partsNeededForSAV.length}`);
+    console.log(`📊 partsNeededForQuotes length: ${partsNeededForQuotes.length}`);
+    console.log(`📊 partsNeedingRestock length: ${partsNeedingRestock.length}`);
+    
     switch (filter) {
       case 'sav':
-        // Combiner les vraies commandes SAV avec les items générés dynamiquement
-        const savOrderItems = orderItems.filter(item => 
-          item.reason === 'sav_stock_zero' && !item.ordered
-        );
-        return [...savOrderItems, ...partsNeededForSAV];
+        // Ne retourner QUE les items générés dynamiquement pour SAV
+        console.log(`🎯 SAV filter - returning partsNeededForSAV:`, partsNeededForSAV.map(p => p.part_name));
+        return partsNeededForSAV;
       case 'quotes':
-        // Combiner les vraies commandes devis avec les items générés dynamiquement
-        const quoteOrderItems = orderItems.filter(item => 
-          item.reason === 'quote_needed' && !item.ordered
-        );
-        return [...quoteOrderItems, ...partsNeededForQuotes];
+        // Ne retourner QUE les items générés dynamiquement pour devis
+        console.log(`🎯 QUOTES filter - returning partsNeededForQuotes:`, partsNeededForQuotes.map(p => p.part_name));
+        return partsNeededForQuotes;
       case 'all':
-        // Combiner les vraies commandes stock minimum avec les items générés dynamiquement
-        const stockOrderItems = orderItems.filter(item => 
-          item.reason === 'manual' && !item.ordered
-        );
-        return [...stockOrderItems, ...partsNeedingRestock];
+        // Ne retourner QUE les items générés dynamiquement pour stock minimum
+        console.log(`🎯 ALL filter - returning partsNeedingRestock:`, partsNeedingRestock.map(p => p.part_name));
+        return partsNeedingRestock;
       case 'reception':
         // Seulement les vraies commandes qui sont marquées comme commandées
-        return orderItems.filter(item => item.ordered);
+        const receptionItems = orderItems.filter(item => item.ordered);
+        console.log(`🎯 RECEPTION filter - returning ordered items:`, receptionItems.map(p => p.part_name));
+        return receptionItems;
       default:
+        console.log(`🎯 DEFAULT filter - returning empty array`);
         return [];
     }
   };

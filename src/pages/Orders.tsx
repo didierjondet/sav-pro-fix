@@ -35,7 +35,10 @@ export default function Orders() {
 
   // Récupérer les items selon le filtre - déléguer entièrement à getOrdersByFilter
   const getFilteredItems = () => {
-    return getOrdersByFilter(activeFilter);
+    const items = getOrdersByFilter(activeFilter);
+    console.log(`🔎 getFilteredItems for ${activeFilter}:`, items.length, 'items');
+    console.log(`🔎 Items details:`, items.map(item => ({ id: item.id, name: item.part_name, reason: item.reason })));
+    return items;
   };
 
   const filteredItems = getFilteredItems().filter(item =>
@@ -236,8 +239,8 @@ export default function Orders() {
                   </Card>
                 ) : (
                   <div className="grid gap-4">
-                    {filteredItems.map((item) => (
-                      <Card key={item.id} className="hover:shadow-md transition-shadow">
+                    {filteredItems.map((item, index) => (
+                      <Card key={`${activeFilter}-${item.id}-${index}`} className="hover:shadow-md transition-shadow">
                         <CardContent className="p-6">
                           <div className="flex items-center justify-between">
                             <div className="flex-1">
