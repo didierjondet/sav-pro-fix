@@ -49,7 +49,6 @@ export default function SAVDetail() {
     shop
   } = useShop();
   const { getStatusInfo, isReadyStatus } = useShopSAVStatuses();
-  const { getTypeInfo } = useShopSAVTypes();
   const { getAllTypes, getTypeInfo } = useShopSAVTypes();
   const [savCase, setSavCase] = useState<any>(null);
   const [technicianComments, setTechnicianComments] = useState('');
