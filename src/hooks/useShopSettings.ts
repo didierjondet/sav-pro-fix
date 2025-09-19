@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useUnifiedSMSCredits } from '@/hooks/useUnifiedSMSCredits';
 
 export interface ShopSettings {
   subscription_menu_visible: boolean;
@@ -18,6 +19,7 @@ export function useShopSettings() {
   const { user } = useAuth();
   const [settings, setSettings] = useState<ShopSettings | null>(null);
   const [loading, setLoading] = useState(true);
+  const { credits: smsCredits } = useUnifiedSMSCredits();
 
   useEffect(() => {
     if (user) {
@@ -61,8 +63,8 @@ export function useShopSettings() {
           console.log('✅ Setting shop settings:', shopData);
           setSettings({
             subscription_menu_visible: shopData.subscription_menu_visible ?? true,
-            sms_credits_allocated: shopData.sms_credits_allocated || 0,
-            sms_credits_used: shopData.sms_credits_used || 0,
+            sms_credits_allocated: smsCredits?.total_available || shopData.sms_credits_allocated || 0,
+            sms_credits_used: smsCredits?.total_available - smsCredits?.total_remaining || shopData.sms_credits_used || 0,
             subscription_tier: shopData.subscription_tier || 'free',
             sav_warning_enabled: shopData.sav_warning_enabled ?? true,
             sav_delay_alerts_enabled: shopData.sav_delay_alerts_enabled ?? false,
@@ -77,8 +79,8 @@ export function useShopSettings() {
       // Définir des valeurs par défaut en cas d'erreur
       setSettings({
         subscription_menu_visible: true,
-        sms_credits_allocated: 0,
-        sms_credits_used: 0,
+        sms_credits_allocated: smsCredits?.total_available || 0,
+        sms_credits_used: smsCredits?.total_available - smsCredits?.total_remaining || 0,
         subscription_tier: 'free',
         sav_warning_enabled: true,
         sav_delay_alerts_enabled: false,

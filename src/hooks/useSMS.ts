@@ -3,6 +3,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { generateShortTrackingUrl } from '@/utils/trackingUtils';
 import { useProfile } from '@/hooks/useProfile';
+import { useSubscription } from '@/hooks/useSubscription';
+import { useNavigate } from 'react-router-dom';
 
 interface SendSMSRequest {
   toNumber: string;
@@ -13,8 +15,12 @@ interface SendSMSRequest {
 
 export function useSMS() {
   const [loading, setLoading] = useState(false);
+  const [limitDialogOpen, setLimitDialogOpen] = useState(false);
+  const [limitDialogData, setLimitDialogData] = useState<{ action: 'upgrade_plan' | 'buy_sms_package'; reason: string } | null>(null);
   const { toast } = useToast();
   const { profile } = useProfile();
+  const { checkLimits } = useSubscription();
+  const navigate = useNavigate();
 
   const sendSMS = async (request: SendSMSRequest): Promise<boolean> => {
     if (!profile?.shop_id) {
@@ -26,15 +32,29 @@ export function useSMS() {
       return false;
     }
 
+    // Vérifier les limites avant d'envoyer
+    const limitsCheck = checkLimits('sms');
+    if (!limitsCheck.allowed) {
+      if (limitsCheck.action === 'buy_sms_package' || limitsCheck.action === 'upgrade_plan') {
+        setLimitDialogData({
+          action: limitsCheck.action,
+          reason: limitsCheck.reason
+        });
+        setLimitDialogOpen(true);
+        navigate('/subscription');
+      } else {
+        toast({
+          title: "Limite atteinte",
+          description: limitsCheck.reason,
+          variant: "destructive",
+        });
+      }
+      return false;
+    }
+
     setLoading(true);
 
     try {
-      console.log('Envoi SMS - Données:', {
-        shopId: profile.shop_id,
-        toNumber: request.toNumber,
-        type: request.type
-      });
-
       const { data, error } = await supabase.functions.invoke('send-sms', {
         body: {
           shopId: profile.shop_id,
@@ -45,20 +65,13 @@ export function useSMS() {
         },
       });
 
-      console.log('Réponse fonction SMS:', { data, error });
-
       if (error) {
-        console.error('Erreur fonction SMS:', error);
         throw new Error(`Erreur technique: ${error.message}`);
       }
 
       if (!data?.success) {
-        console.error('Échec SMS:', data);
         throw new Error(data?.error || 'Erreur lors de l\'envoi du SMS');
       }
-
-      // L'archivage SMS est géré directement par l'edge function send-sms
-      // pour éviter les doublons dans la discussion
 
       toast({
         title: "SMS envoyé",
@@ -67,20 +80,21 @@ export function useSMS() {
 
       return true;
     } catch (error: any) {
-      console.error('Erreur lors de l\'envoi du SMS:', error);
-      
-      let errorMessage = 'Erreur lors de l\'envoi du SMS';
-      if (error.message.includes('Crédits SMS insuffisants')) {
-        errorMessage = 'Crédits SMS insuffisants. Contactez votre administrateur.';
-      } else if (error.message.includes('Configuration Twilio manquante')) {
-        errorMessage = 'Configuration SMS non disponible. Contactez le support.';
+      // Gérer les erreurs liées aux crédits
+      if (error.message.includes('Crédits SMS insuffisants') || error.message.includes('épuisés')) {
+        navigate('/subscription');
+        toast({
+          title: "Crédits SMS épuisés",
+          description: "Achetez des crédits supplémentaires pour continuer à envoyer des SMS.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Erreur",
+          description: error.message || 'Erreur lors de l\'envoi du SMS',
+          variant: "destructive",
+        });
       }
-
-      toast({
-        title: "Erreur",
-        description: errorMessage,
-        variant: "destructive",
-      });
 
       return false;
     } finally {
@@ -95,8 +109,7 @@ export function useSMS() {
     status: string,
     savCaseId: string
   ): Promise<boolean> => {
-    // Récupérer le tracking_slug du SAV pour générer l'URL courte
-    const { data: savCase, error } = await supabase
+    const { data: savCase } = await supabase
       .from('sav_cases')
       .select('tracking_slug')
       .eq('id', savCaseId)
@@ -111,14 +124,8 @@ export function useSMS() {
       case 'in_progress':
         message = `Bonjour ${customerName}, votre dossier SAV ${caseNumber} est maintenant en cours de réparation.${smsWarning}`;
         break;
-      case 'waiting_parts':
-        message = `Bonjour ${customerName}, votre dossier SAV ${caseNumber} est en attente de pièces.${smsWarning}`;
-        break;
       case 'ready_for_pickup':
         message = `Bonjour ${customerName}, votre appareil (dossier ${caseNumber}) est prêt ! Vous pouvez venir le récupérer.${smsWarning}`;
-        break;
-      case 'delivered':
-        message = `Bonjour ${customerName}, merci d'avoir fait confiance à nos services pour votre dossier SAV ${caseNumber}.${smsWarning}`;
         break;
       default:
         message = `Bonjour ${customerName}, le statut de votre dossier SAV ${caseNumber} a été mis à jour.${smsWarning}`;
@@ -138,7 +145,6 @@ export function useSMS() {
     quoteNumber: string,
     quoteId: string
   ): Promise<boolean> => {
-    // Générer l'URL publique du devis
     const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
     const quoteUrl = `${baseUrl}/quote/${quoteId}`;
     

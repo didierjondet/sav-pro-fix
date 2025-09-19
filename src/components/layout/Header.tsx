@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { useShop } from '@/hooks/useShop';
 import { useShopStorageUsage } from '@/hooks/useStorageUsage';
+import { useUnifiedSMSCredits } from '@/hooks/useUnifiedSMSCredits';
 import { useSubscription } from '@/hooks/useSubscription';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useNavigate } from 'react-router-dom';
@@ -28,6 +29,7 @@ export function Header({
     storageGB
   } = useShopStorageUsage(shop?.id);
   const { subscription, checkLimits } = useSubscription();
+  const { credits: smsCredits } = useUnifiedSMSCredits();
   const navigate = useNavigate();
 
   const getSAVLimits = () => {
@@ -53,23 +55,13 @@ export function Header({
   };
 
   const getSMSLimits = () => {
-    if (!subscription) return { remaining: 0, total: 0, isWarning: false, isCritical: false };
-    
-    const smsTotal = subscription.custom_sms_limit || subscription.sms_credits_allocated || 0;
-    const purchasedSmsAvailable = Math.max(0, (subscription.purchased_sms_credits || 0));
-    
-    // Calculer les SMS restants du plan mensuel + SMS achetés
-    const monthlyRemaining = Math.max(0, smsTotal - subscription.monthly_sms_used);
-    const totalRemaining = monthlyRemaining + purchasedSmsAvailable;
-    
-    const usagePercent = subscription.monthly_sms_used >= smsTotal && purchasedSmsAvailable <= 0 ? 100 :
-                         (subscription.monthly_sms_used / smsTotal) * 100;
+    if (!smsCredits) return { remaining: 0, total: 0, isWarning: false, isCritical: false };
     
     return {
-      remaining: totalRemaining,
-      total: smsTotal,
-      isWarning: usagePercent >= 80 && usagePercent < 95,
-      isCritical: usagePercent >= 95 && purchasedSmsAvailable <= 0
+      remaining: smsCredits.total_remaining,
+      total: smsCredits.total_available,
+      isWarning: smsCredits.is_warning,
+      isCritical: smsCredits.is_critical || smsCredits.is_exhausted
     };
   };
 
@@ -84,8 +76,8 @@ export function Header({
             {savLimits.isCritical && `Limite SAV mensuelle critique atteinte (${subscription?.monthly_sav_count}/${savLimits.total})`}
             {savLimits.isWarning && !savLimits.isCritical && `Attention: limite SAV mensuelle bientôt atteinte (${subscription?.monthly_sav_count}/${savLimits.total})`}
             {(savLimits.isCritical || savLimits.isWarning) && (smsLimits.isCritical || smsLimits.isWarning) && ' - '}
-            {smsLimits.isCritical && `Crédits SMS mensuels épuisés (${subscription?.monthly_sms_used}/${smsLimits.total})`}
-            {smsLimits.isWarning && !smsLimits.isCritical && `Attention: crédits SMS mensuels bientôt épuisés (${subscription?.monthly_sms_used}/${smsLimits.total})`}
+            {smsLimits.isCritical && `Crédits SMS épuisés (${smsCredits?.monthly_sms_used + smsCredits?.purchased_sms_used || 0}/${smsLimits.total})`}
+            {smsLimits.isWarning && !smsLimits.isCritical && `Attention: crédits SMS bientôt épuisés (${smsCredits?.monthly_sms_used + smsCredits?.purchased_sms_used || 0}/${smsLimits.total})`}
             {' '}<Button variant="link" className="h-auto p-0 text-orange-800 underline" onClick={() => navigate('/subscription')}>
               Mettre à niveau
             </Button>

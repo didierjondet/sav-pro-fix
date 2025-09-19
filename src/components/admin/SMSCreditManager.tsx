@@ -42,7 +42,7 @@ export function SMSCreditManager({ shops, onUpdate }: SMSCreditManagerProps) {
     setLoading(prev => ({ ...prev, [shopId]: true }));
 
     try {
-      // D'abord récupérer les crédits actuels
+      // Récupérer les crédits actuels
       const { data: currentShop, error: fetchError } = await supabase
         .from('shops')
         .select('sms_credits_allocated')
@@ -51,19 +51,7 @@ export function SMSCreditManager({ shops, onUpdate }: SMSCreditManagerProps) {
 
       if (fetchError) throw fetchError;
 
-      // Ajouter à la table des achats SMS pour refléter l'allocation manuelle
-      const { error: purchaseError } = await supabase
-        .from('sms_package_purchases')
-        .insert({
-          shop_id: shopId,
-          package_id: '00000000-0000-0000-0000-000000000000', // ID spécial pour allocations manuelles
-          sms_count: credits,
-          price_paid_cents: 0,
-          status: 'completed'
-        });
-
-      if (purchaseError) throw purchaseError;
-
+      // Ajouter directement aux crédits alloués du shop sans créer d'entrée dans sms_package_purchases
       const { error } = await supabase
         .from('shops')
         .update({
@@ -98,7 +86,11 @@ export function SMSCreditManager({ shops, onUpdate }: SMSCreditManagerProps) {
     try {
       const { error } = await supabase
         .from('shops')
-        .update({ sms_credits_used: 0 })
+        .update({ 
+          sms_credits_used: 0,
+          monthly_sms_used: 0,
+          purchased_sms_credits: 0
+        })
         .eq('id', shopId);
 
       if (error) throw error;
