@@ -49,6 +49,7 @@ export default function SAVDetail() {
     shop
   } = useShop();
   const { getStatusInfo, isReadyStatus } = useShopSAVStatuses();
+  const { getTypeInfo } = useShopSAVTypes();
   const { getAllTypes, getTypeInfo } = useShopSAVTypes();
   const [savCase, setSavCase] = useState<any>(null);
   const [technicianComments, setTechnicianComments] = useState('');
@@ -348,15 +349,15 @@ export default function SAVDetail() {
                       Imprimer restitution
                     </Button>}
                   
-                  {/* SMS Button - for all SAV types except internal */}
-                  {savCase.sav_type !== 'internal' && <SMSButton customerPhone={savCase.customer?.phone || savCase.external_contact_phone || ''} customerName={savCase.sav_type === 'client' ? `${savCase.customer?.first_name || ''} ${savCase.customer?.last_name || ''}`.trim() : savCase.external_contact_name || 'Contact externe'} caseNumber={savCase.case_number} caseId={savCase.id} size="sm" variant="outline" />}
+                  {/* SMS Button - for types that require customer info */}
+                  {getTypeInfo(savCase.sav_type).show_customer_info && <SMSButton customerPhone={savCase.customer?.phone || savCase.external_contact_phone || ''} customerName={`${savCase.customer?.first_name || ''} ${savCase.customer?.last_name || ''}`.trim() || savCase.external_contact_name || 'Contact'} caseNumber={savCase.case_number} caseId={savCase.id} size="sm" variant="outline" />}
                   <SAVPrintButton savCase={savCase} />
                   <SAVPartsEditor savCaseId={savCase.id} onPartsUpdated={() => {}} />
                 </div>
               </div>
 
-              {/* Contact Information - For all SAV types except internal */}
-              {savCase.sav_type !== 'internal' && <Card>
+              {/* Contact Information - For types that require customer info */}
+              {getTypeInfo(savCase.sav_type).show_customer_info && <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <User className="h-5 w-5" />

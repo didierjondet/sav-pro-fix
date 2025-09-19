@@ -74,11 +74,14 @@ interface SAVFormProps {
 export function SAVForm({ onSuccess }: SAVFormProps) {
   // Utiliser le premier type et statut disponible comme défaut
   const { getAllStatuses, getStatusInfo } = useShopSAVStatuses();
-  const { getAllTypes } = useShopSAVTypes();
+  const { getAllTypes, getTypeInfo } = useShopSAVTypes();
   const defaultType = getAllTypes()[0]?.value || 'internal';
   const defaultStatus = getAllStatuses()[0]?.value || 'pending';
   
   const [savType, setSavType] = useState<string>(defaultType);
+  
+  // Obtenir les paramètres du type SAV sélectionné
+  const currentTypeInfo = getTypeInfo(savType);
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
   const [selectedStatus, setSelectedStatus] = useState(defaultStatus);
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({
@@ -192,8 +195,8 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
     e.preventDefault();
     if (!user) return;
     
-    // Validation des coordonnées client pour les SAV client et externe
-    if ((savType === 'client' || savType === 'external')) {
+    // Validation des coordonnées client basée sur les paramètres du type SAV
+    if (currentTypeInfo.show_customer_info) {
       if (!selectedCustomer && (!customerInfo.firstName.trim() || !customerInfo.lastName.trim())) {
         toast({
           title: "Informations manquantes",
@@ -223,8 +226,8 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
     try {
       let customerId = selectedCustomer?.id || null;
       
-      // Create customer if SAV client or external and no customer selected
-      if ((savType === 'client' || savType === 'external') && !selectedCustomer) {
+      // Create customer if type requires customer info and no customer selected
+      if (currentTypeInfo.show_customer_info && !selectedCustomer) {
         const { data: customer, error: customerError } = await createCustomer({
           first_name: customerInfo.firstName,
           last_name: customerInfo.lastName,
@@ -470,11 +473,11 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
         </CardContent>
       </Card>
 
-      {(savType === 'client' || savType === 'external') && (
+      {currentTypeInfo.show_customer_info && (
         <Card>
           <CardHeader>
             <CardTitle>
-              Informations Client {savType === 'external' ? '(Externe)' : ''}
+              Informations Client
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">

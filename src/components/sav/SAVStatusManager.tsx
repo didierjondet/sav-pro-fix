@@ -13,6 +13,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useSAVCases } from '@/hooks/useSAVCases';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useShopSAVStatuses } from '@/hooks/useShopSAVStatuses';
+import { useShopSAVTypes } from '@/hooks/useShopSAVTypes';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Settings, Save, MessageSquare, AlertTriangle, CreditCard, Euro } from 'lucide-react';
@@ -59,6 +60,7 @@ export function SAVStatusManager({ savCase, onStatusUpdated }: SAVStatusManagerP
   const { shop } = useShop();
   const { toast } = useToast();
   const { getStatusInfo, getAllStatuses, isReadyStatus } = useShopSAVStatuses();
+  const { getTypeInfo } = useShopSAVTypes();
 
   const generateTrackingUrl = () => {
     if (!savCase.tracking_slug) return '';
@@ -79,8 +81,9 @@ export function SAVStatusManager({ savCase, onStatusUpdated }: SAVStatusManagerP
         description: "Le statut du dossier a été mis à jour avec succès",
       });
 
-      // Envoi automatique de demande d'avis si le statut passe à "ready" et que c'est activé
-      if (isReadyStatus(selectedStatus) && !isReadyStatus(savCase.status) && (savCase.sav_type === 'client' || savCase.sav_type === 'external')) {
+      // Envoi automatique de demande d'avis si le statut passe à "ready" et que le type nécessite des infos client
+      const typeInfo = getTypeInfo(savCase.sav_type);
+      if (isReadyStatus(selectedStatus) && !isReadyStatus(savCase.status) && typeInfo.show_customer_info) {
         await sendAutomaticReviewRequest();
       }
       
@@ -104,8 +107,9 @@ export function SAVStatusManager({ savCase, onStatusUpdated }: SAVStatusManagerP
     try {
       await updateCaseStatus(savCase.id, finalStatus as any, notes.trim() || undefined);
       
-      // Envoi automatique de demande d'avis si c'est activé et que c'est un statut "prêt"
-      if (isReadyStatus(finalStatus) && (savCase.sav_type === 'client' || savCase.sav_type === 'external')) {
+      // Envoi automatique de demande d'avis si c'est activé et que le type nécessite des infos client
+      const typeInfo = getTypeInfo(savCase.sav_type);
+      if (isReadyStatus(finalStatus) && typeInfo.show_customer_info) {
         await sendAutomaticReviewRequest();
       }
       

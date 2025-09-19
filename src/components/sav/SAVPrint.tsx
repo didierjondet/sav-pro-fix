@@ -3,6 +3,7 @@ import React, { useImperativeHandle } from "react";
 import { Button } from "@/components/ui/button";
 import { useShop } from "@/hooks/useShop";
 import { useShopSAVStatuses } from "@/hooks/useShopSAVStatuses";
+import { useShopSAVTypes } from "@/hooks/useShopSAVTypes";
 import { supabase } from "@/integrations/supabase/client";
 import type { SAVCase } from "@/hooks/useSAVCases";
 import { Printer, Scissors } from "lucide-react";
@@ -24,6 +25,7 @@ interface SAVPrintButtonProps {
 export const SAVPrintButton = React.forwardRef<SAVPrintButtonRef, SAVPrintButtonProps>(({ savCase, className, size = "sm", variant = "outline" }, ref) => {
   const { shop } = useShop();
   const { getStatusInfo } = useShopSAVStatuses();
+  const { getTypeInfo } = useShopSAVTypes();
   const [printing, setPrinting] = useState(false);
 
   // Exposer la méthode print via useImperativeHandle
@@ -240,7 +242,7 @@ export const SAVPrintButton = React.forwardRef<SAVPrintButtonRef, SAVPrintButton
     <div class="header">
       <div class="header-left">
         <div class="title">Dossier SAV N° ${savCase.case_number}</div>
-        <div class="sav-type">${savCase.sav_type === "client" ? "SAV Client" : savCase.sav_type === "external" ? "SAV Externe" : "SAV Interne"}</div>
+        <div class="sav-type">${getTypeInfo(savCase.sav_type).label}</div>
         <div class="meta">Créé le ${(savCase.created_at ? new Date(savCase.created_at).toLocaleDateString() : "")} · Statut: ${getStatusLabel(savCase.status)}</div>
       </div>
     </div>
@@ -259,7 +261,7 @@ export const SAVPrintButton = React.forwardRef<SAVPrintButtonRef, SAVPrintButton
     <div class="header">
       <div class="header-left">
         <div class="title">Dossier SAV N° ${savCase.case_number}</div>
-        <div class="sav-type">${savCase.sav_type === "client" ? "SAV Client" : savCase.sav_type === "external" ? "SAV Externe" : "SAV Interne"}</div>
+        <div class="sav-type">${getTypeInfo(savCase.sav_type).label}</div>
         <div class="meta">Créé le ${(savCase.created_at ? new Date(savCase.created_at).toLocaleDateString() : "")} · Statut: ${getStatusLabel(savCase.status)}</div>
       </div>
     </div>

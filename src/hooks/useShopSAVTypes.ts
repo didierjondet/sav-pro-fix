@@ -90,6 +90,10 @@ export function useShopSAVTypes() {
       return {
         label: customType.type_label,
         color: customType.type_color,
+        show_customer_info: customType.show_customer_info,
+        max_processing_days: customType.max_processing_days,
+        pause_timer: customType.pause_timer,
+        show_in_sidebar: customType.show_in_sidebar,
       };
     }
 
@@ -98,6 +102,10 @@ export function useShopSAVTypes() {
     return {
       label: defaultConfig?.label || typeKey,
       color: defaultConfig?.color || '#6b7280',
+      show_customer_info: true, // Par défaut, tous les types ont besoin d'infos client
+      max_processing_days: 7,
+      pause_timer: false,
+      show_in_sidebar: true,
     };
   };
 
