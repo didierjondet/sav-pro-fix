@@ -470,18 +470,94 @@ export function useOrders() {
     try {
       // Vérifier si c'est un item généré dynamiquement
       if (itemId.startsWith('sav-needed-') || itemId.startsWith('quote-needed-') || itemId.startsWith('restock-')) {
-        // Pour les items virtuels, on les retire simplement de l'affichage
-        // (ils se régénéreront au prochain fetch si nécessaire)
         
         if (itemId.startsWith('sav-needed-')) {
-          // Pour SAV, on peut potentiellement marquer la pièce comme non nécessaire
-          // mais pour l'instant on fait juste un refresh
+          // Pour SAV - retirer la pièce du SAV et gérer les réservations
+          const partId = itemId.replace('sav-needed-', '');
+          const savItem = partsNeededForSAV.find(item => item.id === itemId);
+          
+          if (savItem && savItem.sav_case_id) {
+            // Supprimer la pièce des sav_parts
+            const { error: removePartError } = await supabase
+              .from('sav_parts')
+              .delete()
+              .eq('sav_case_id', savItem.sav_case_id)
+              .eq('part_id', partId);
+
+            if (removePartError) console.error('Erreur suppression sav_parts:', removePartError);
+
+            // Libérer la quantité réservée si elle existe
+            if (savItem.part) {
+              const newReservedQuantity = Math.max(0, (savItem.part.reserved_quantity || 0) - savItem.quantity_needed);
+              const { error: updateStockError } = await supabase
+                .from('parts')
+                .update({ reserved_quantity: newReservedQuantity })
+                .eq('id', partId);
+
+              if (updateStockError) console.error('Erreur libération stock réservé:', updateStockError);
+            }
+
+            // Vérifier s'il reste des pièces dans le SAV pour ajuster le statut
+            const { data: remainingParts } = await supabase
+              .from('sav_parts')
+              .select('id')
+              .eq('sav_case_id', savItem.sav_case_id)
+              .limit(1);
+
+            // Si plus aucune pièce, remettre le SAV en "pending"
+            if (!remainingParts || remainingParts.length === 0) {
+              const { error: statusError } = await supabase
+                .from('sav_cases')
+                .update({ 
+                  status: 'pending',
+                  total_cost: 0,
+                  total_time_minutes: 0
+                })
+                .eq('id', savItem.sav_case_id);
+
+              if (statusError) console.error('Erreur mise à jour statut SAV:', statusError);
+            } else {
+              // Recalculer les totaux du SAV
+              const { data: allParts } = await supabase
+                .from('sav_parts')
+                .select('quantity, unit_price, time_minutes')
+                .eq('sav_case_id', savItem.sav_case_id);
+
+              if (allParts) {
+                const totalCost = allParts.reduce((sum, p) => sum + (p.quantity * (p.unit_price || 0)), 0);
+                const totalTime = allParts.reduce((sum, p) => sum + (p.time_minutes || 0), 0);
+
+                const { error: totalsError } = await supabase
+                  .from('sav_cases')
+                  .update({ 
+                    total_cost: totalCost,
+                    total_time_minutes: totalTime
+                  })
+                  .eq('id', savItem.sav_case_id);
+
+                if (totalsError) console.error('Erreur mise à jour totaux SAV:', totalsError);
+              }
+            }
+          }
         } else if (itemId.startsWith('quote-needed-')) {
-          // Pour les devis, idem
-        } else if (itemId.startsWith('restock-')) {
-          // Pour le stock minimum, on pourrait ajuster le stock minimum
-          // mais pour l'instant on fait juste un refresh
+          // Pour les devis - libérer les quantités réservées si nécessaire
+          const quoteItem = partsNeededForQuotes.find(item => item.id === itemId);
+          
+          if (quoteItem && quoteItem.part) {
+            // Extraire le part_id de l'ID complexe quote-needed-{partId}-{quoteId}
+            const partId = quoteItem.part_id;
+            
+            // Libérer la quantité réservée
+            const newReservedQuantity = Math.max(0, (quoteItem.part.reserved_quantity || 0) - quoteItem.quantity_needed);
+            const { error: updateStockError } = await supabase
+              .from('parts')
+              .update({ reserved_quantity: newReservedQuantity })
+              .eq('id', partId);
+
+            if (updateStockError) console.error('Erreur libération stock réservé devis:', updateStockError);
+          }
         }
+        // Pour le stock minimum (restock-), rien de spécial à faire
 
         toast({
           title: "Succès",
@@ -494,6 +570,29 @@ export function useOrders() {
         fetchPartsNeedingRestock();
       } else {
         // Pour les vrais items de order_items
+        const { data: orderItem } = await supabase
+          .from('order_items')
+          .select('sav_case_id, part_id, quantity_needed')
+          .eq('id', itemId)
+          .single();
+
+        // Si c'est lié à un SAV et pas encore commandé, libérer les réservations
+        if (orderItem && orderItem.sav_case_id && orderItem.part_id) {
+          const { data: part } = await supabase
+            .from('parts')
+            .select('reserved_quantity')
+            .eq('id', orderItem.part_id)
+            .single();
+
+          if (part) {
+            const newReservedQuantity = Math.max(0, (part.reserved_quantity || 0) - orderItem.quantity_needed);
+            await supabase
+              .from('parts')
+              .update({ reserved_quantity: newReservedQuantity })
+              .eq('id', orderItem.part_id);
+          }
+        }
+
         const { error } = await supabase
           .from('order_items')
           .delete()
