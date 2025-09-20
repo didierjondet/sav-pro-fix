@@ -8,12 +8,14 @@ import { Separator } from '@/components/ui/separator';
 import { RefreshCw, CreditCard, Zap, RotateCcw, AlertCircle } from 'lucide-react';
 import { useTwilioCredits } from '@/hooks/useTwilioCredits';
 import { useGlobalSMSCredits } from '@/hooks/useGlobalSMSCredits';
+import { useUnifiedSMSCredits } from '@/hooks/useUnifiedSMSCredits';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
 
 export function TwilioCreditsManager() {
   const { balance, loading, purchasing, fetchTwilioBalance, purchaseCredits, syncCreditsWithShops, testTwilioAuth } = useTwilioCredits();
   const { globalCredits, fetchGlobalCredits } = useGlobalSMSCredits();
+  const { credits: unifiedCredits } = useUnifiedSMSCredits();
   const [purchaseAmount, setPurchaseAmount] = useState<string>('100');
 
   const handlePurchase = async () => {
@@ -33,6 +35,8 @@ export function TwilioCreditsManager() {
       await syncCreditsWithShops();
       await fetchTwilioBalance();
       await fetchGlobalCredits();
+      // Forcer le rafraîchissement des crédits unifiés après sync
+      window.location.reload();
     } catch (error) {
       // Erreur déjà gérée dans le hook
     }
