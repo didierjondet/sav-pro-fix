@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { MessageSquare, CreditCard } from 'lucide-react';
 import { useSMSPackages } from '@/hooks/useSMSPackages';
-import { useSubscription } from '@/hooks/useSubscription';
+import { useUnifiedSMSCredits } from '@/hooks/useUnifiedSMSCredits';
 
 interface SMSPackagesDisplayProps {
   onPurchaseSuccess?: () => void;
@@ -11,7 +11,7 @@ interface SMSPackagesDisplayProps {
 
 export function SMSPackagesDisplay({ onPurchaseSuccess }: SMSPackagesDisplayProps) {
   const { packages, loading, purchasing, purchasePackage } = useSMSPackages();
-  const { subscription } = useSubscription();
+  const { credits } = useUnifiedSMSCredits();
 
   const handlePurchase = async (packageId: string) => {
     const result = await purchasePackage(packageId);
@@ -50,9 +50,22 @@ export function SMSPackagesDisplay({ onPurchaseSuccess }: SMSPackagesDisplayProp
         <MessageSquare className="h-5 w-5" />
         <h3 className="text-lg font-semibold">Packs SMS Supplémentaires</h3>
         <Badge variant="outline" className="ml-auto">
-          Plan {subscription?.subscription_tier}
+          Plan {credits?.subscription_tier || 'free'}
         </Badge>
       </div>
+
+      {credits && (
+        <div className="bg-muted/50 p-3 rounded-lg mb-4">
+          <div className="flex justify-between items-center text-sm">
+            <span>Crédits actuels :</span>
+            <span className="font-medium">{credits.total_remaining}/{credits.total_available}</span>
+          </div>
+          <div className="grid grid-cols-2 gap-4 mt-2 text-xs text-muted-foreground">
+            <div>Plan mensuel: {credits.monthly_remaining}</div>
+            <div>SMS achetés: {credits.purchased_remaining}</div>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {packages.map((pkg) => (

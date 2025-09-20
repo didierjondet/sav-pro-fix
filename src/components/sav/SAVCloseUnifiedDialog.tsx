@@ -13,6 +13,7 @@ import { generateShortTrackingUrl } from '@/utils/trackingUtils';
 import { useSAVMessages } from '@/hooks/useSAVMessages';
 import { useSAVCases } from '@/hooks/useSAVCases';
 import { useProfile } from '@/hooks/useProfile';
+import { useUnifiedSMSCredits } from '@/hooks/useUnifiedSMSCredits';
 import { useShopSAVStatuses } from '@/hooks/useShopSAVStatuses';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -76,6 +77,7 @@ export function SAVCloseUnifiedDialog({
   const { sendMessage } = useSAVMessages(savCase.id);
   const { updateTechnicianComments } = useSAVCases();
   const { profile } = useProfile();
+  const { credits } = useUnifiedSMSCredits();
   const { getStatusInfo } = useShopSAVStatuses();
   const { toast } = useToast();
 
@@ -107,10 +109,8 @@ export function SAVCloseUnifiedDialog({
   };
 
   const hasWarnings = warnings.noParts || warnings.noPurchase;
-  const canSendSMS = savCase.customer?.phone && subscription && 
-    (subscription.sms_credits_used < subscription.sms_credits_allocated);
-  const smsCreditsRemaining = subscription ? 
-    (subscription.sms_credits_allocated - subscription.sms_credits_used) : 0;
+  const canSendSMS = savCase.customer?.phone && credits && !credits.is_exhausted;
+  const smsCreditsRemaining = credits?.total_remaining || 0;
 
   const handleGenerateDocument = async () => {
     try {

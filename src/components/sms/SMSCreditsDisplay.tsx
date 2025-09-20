@@ -1,28 +1,25 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { MessageSquare, AlertTriangle, CheckCircle } from 'lucide-react';
-import { useShopSettings } from '@/hooks/useShopSettings';
+import { MessageSquare, AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useUnifiedSMSCredits } from '@/hooks/useUnifiedSMSCredits';
 
 export function SMSCreditsDisplay() {
-  const { settings } = useShopSettings();
+  const { credits, loading } = useUnifiedSMSCredits();
 
-  if (!settings) return null;
-
-  const remainingCredits = settings.sms_credits_allocated - settings.sms_credits_used;
-  const usagePercentage = settings.sms_credits_allocated > 0 
-    ? Math.round((settings.sms_credits_used / settings.sms_credits_allocated) * 100)
-    : 0;
+  if (loading || !credits) return null;
 
   const getStatusIcon = () => {
-    if (usagePercentage >= 90) return <AlertTriangle className="h-4 w-4 text-destructive" />;
-    if (usagePercentage >= 70) return <AlertTriangle className="h-4 w-4 text-yellow-500" />;
+    if (credits.is_exhausted) return <XCircle className="h-4 w-4 text-destructive" />;
+    if (credits.is_critical) return <AlertTriangle className="h-4 w-4 text-destructive" />;
+    if (credits.is_warning) return <AlertTriangle className="h-4 w-4 text-yellow-500" />;
     return <CheckCircle className="h-4 w-4 text-green-500" />;
   };
 
   const getStatusColor = () => {
-    if (usagePercentage >= 90) return 'destructive';
-    if (usagePercentage >= 70) return 'secondary';
+    if (credits.is_exhausted || credits.is_critical) return 'destructive';
+    if (credits.is_warning) return 'secondary';
     return 'default';
   };
 
@@ -39,43 +36,55 @@ export function SMSCreditsDisplay() {
           <div className="space-y-1">
             <p className="text-sm text-muted-foreground">Crédits restants</p>
             <div className="flex items-center gap-2">
-              <span className="text-2xl font-bold">{remainingCredits}</span>
+              <span className="text-2xl font-bold">{credits.total_remaining}</span>
               <span className="text-sm text-muted-foreground">
-                / {settings.sms_credits_allocated}
+                / {credits.total_available}
               </span>
             </div>
           </div>
           <div className="flex items-center gap-2">
             {getStatusIcon()}
             <Badge variant={getStatusColor()}>
-              {usagePercentage}% utilisé
+              {credits.overall_usage_percent}% utilisé
             </Badge>
           </div>
         </div>
 
-        <div className="space-y-2">
-          <div className="flex justify-between text-sm">
-            <span>Progression mensuelle</span>
-            <span>{settings.sms_credits_used} utilisés</span>
+        <div className="space-y-3">
+          <div className="space-y-2">
+            <div className="flex justify-between text-sm">
+              <span>Utilisation globale</span>
+              <span>{credits.overall_usage_percent}%</span>
+            </div>
+            <Progress value={credits.overall_usage_percent} className="h-2" />
           </div>
-          <Progress value={usagePercentage} className="h-2" />
+
+          <div className="grid grid-cols-2 gap-4 text-sm">
+            <div>
+              <p className="text-muted-foreground">Plan mensuel</p>
+              <p className="font-medium">{credits.monthly_remaining}/{credits.monthly_sms_allocated}</p>
+            </div>
+            <div>
+              <p className="text-muted-foreground">SMS achetés</p>
+              <p className="font-medium">{credits.purchased_remaining}/{credits.purchased_sms_total}</p>
+            </div>
+          </div>
         </div>
 
-        {usagePercentage >= 90 && (
-          <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
-            <div className="flex items-center gap-2 text-sm">
-              <AlertTriangle className="h-4 w-4 text-destructive" />
-              <span className="font-medium text-destructive">Limite presque atteinte</span>
-            </div>
-            <p className="text-sm text-muted-foreground mt-1">
-              Contactez votre administrateur pour ajouter des crédits SMS.
-            </p>
-          </div>
+        {(credits.is_warning || credits.is_critical || credits.is_exhausted) && (
+          <Alert variant={credits.is_exhausted || credits.is_critical ? "destructive" : "default"}>
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription>
+              {credits.is_exhausted && "Tous vos crédits SMS sont épuisés ! Achetez des crédits pour continuer."}
+              {credits.is_critical && !credits.is_exhausted && "Crédits SMS critiques ! Plus de crédits achetés disponibles."}
+              {credits.is_warning && !credits.is_critical && "Attention ! Plus de 80% de vos crédits SMS sont utilisés."}
+            </AlertDescription>
+          </Alert>
         )}
 
         <div className="text-xs text-muted-foreground">
-          <p>Plan actuel: <span className="font-medium capitalize">{settings.subscription_tier}</span></p>
-          <p>Les crédits se renouvellent chaque mois</p>
+          <p>Plan actuel: <span className="font-medium capitalize">{credits.subscription_tier}</span></p>
+          <p>Les crédits mensuels se renouvellent le 1er de chaque mois</p>
         </div>
       </CardContent>
     </Card>
