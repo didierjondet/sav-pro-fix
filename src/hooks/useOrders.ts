@@ -467,16 +467,26 @@ export function useOrders() {
   };
 
   const removeFromOrder = async (itemId: string) => {
+    console.log('🗑️ removeFromOrder appelé avec itemId:', itemId);
+    
     try {
       // Vérifier si c'est un item généré dynamiquement
       if (itemId.startsWith('sav-needed-') || itemId.startsWith('quote-needed-') || itemId.startsWith('restock-')) {
+        console.log('🔄 Item virtuel détecté:', itemId);
         
         if (itemId.startsWith('sav-needed-')) {
+          console.log('📋 Traitement SAV item:', itemId);
           // Pour SAV - retirer la pièce du SAV et gérer les réservations
-          const partId = itemId.replace('sav-needed-', '');
-          const savItem = partsNeededForSAV.find(item => item.id === itemId);
+          const partIdMatch = itemId.match(/sav-needed-(.+?)-(.+)/);
+          const partId = partIdMatch ? partIdMatch[1] : null;
+          const savCaseId = partIdMatch ? partIdMatch[2] : null;
           
-          if (savItem && savItem.sav_case_id) {
+          console.log('🔍 Parsing ID - partId:', partId, 'savCaseId:', savCaseId);
+          
+          const savItem = partsNeededForSAV.find(item => item.id === itemId);
+          console.log('📦 SAV item trouvé:', savItem);
+          
+          if (savItem && savItem.sav_case_id && partId) {
             // Supprimer la pièce des sav_parts
             const { error: removePartError } = await supabase
               .from('sav_parts')
@@ -556,18 +566,17 @@ export function useOrders() {
 
             if (updateStockError) console.error('Erreur libération stock réservé devis:', updateStockError);
           }
-        }
+         }
         // Pour le stock minimum (restock-), rien de spécial à faire
 
+        // Rafraîchir toutes les données après suppression
+        await refreshAllData();
+        
         toast({
           title: "Succès",
-          description: "Article retiré des commandes",
+          description: "Article retiré de la liste",
         });
-
-        // Refetch toutes les données pour mettre à jour l'affichage
-        fetchPartsNeededForSAV();
-        fetchPartsNeededForQuotes();
-        fetchPartsNeedingRestock();
+        
       } else {
         // Pour les vrais items de order_items
         const { data: orderItem } = await supabase
@@ -605,7 +614,8 @@ export function useOrders() {
           description: "Article retiré des commandes",
         });
 
-        fetchOrderItems();
+        // Rafraîchir toutes les données
+        await refreshAllData();
       }
     } catch (error: any) {
       toast({
