@@ -62,7 +62,7 @@ export function SMSPackagesDisplay({ onPurchaseSuccess }: SMSPackagesDisplayProp
           </div>
           <div className="grid grid-cols-2 gap-4 mt-2 text-xs text-muted-foreground">
             <div>Plan mensuel: {credits.monthly_remaining}</div>
-            <div>SMS achetés: {credits.purchased_remaining}</div>
+            <div>SMS achetés: {credits.purchasable_remaining}</div>
           </div>
         </div>
       )}

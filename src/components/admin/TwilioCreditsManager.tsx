@@ -1,276 +1,324 @@
-import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { RefreshCw, CreditCard, Zap, RotateCcw, AlertCircle } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { MessageSquare, DollarSign, RotateCcw, TestTube, Plus } from 'lucide-react';
 import { useTwilioCredits } from '@/hooks/useTwilioCredits';
 import { useGlobalSMSCredits } from '@/hooks/useGlobalSMSCredits';
-import { useUnifiedSMSCredits } from '@/hooks/useUnifiedSMSCredits';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useState, useEffect } from 'react';
+import { DetailedSMSCreditsView } from './DetailedSMSCreditsView';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 
 export function TwilioCreditsManager() {
-  const { balance, loading, purchasing, fetchTwilioBalance, purchaseCredits, syncCreditsWithShops, testTwilioAuth } = useTwilioCredits();
-  const { globalCredits, fetchGlobalCredits } = useGlobalSMSCredits();
-  const { credits: unifiedCredits } = useUnifiedSMSCredits();
-  const [purchaseAmount, setPurchaseAmount] = useState<string>('100');
+  const { balance, loading: twilioLoading, fetchTwilioBalance, purchaseCredits, syncCreditsWithShops, testTwilioAuth, purchasing } = useTwilioCredits();
+  const { globalCredits, loading: globalLoading, fetchGlobalCredits } = useGlobalSMSCredits();
+  const [purchaseAmount, setPurchaseAmount] = useState(10);
+  const [shopCredits, setShopCredits] = useState<any[]>([]);
+  const [loadingShops, setLoadingShops] = useState(false);
+  const { toast } = useToast();
+
+  // Récupérer les données détaillées des boutiques
+  const fetchShopsCreditsDetails = async () => {
+    setLoadingShops(true);
+    try {
+      const { data: shops, error } = await supabase
+        .from('shops')
+        .select(`
+          id,
+          name,
+          subscription_tier,
+          sms_credits_allocated,
+          monthly_sms_used,
+          admin_added_sms_credits,
+          purchased_sms_credits
+        `)
+        .order('name');
+
+      if (error) throw error;
+
+      // Pour chaque shop, récupérer les détails des crédits
+      const shopsWithCredits = await Promise.all(
+        shops.map(async (shop) => {
+          // Récupérer les SMS achetés
+          const { data: packages } = await supabase
+            .from('sms_package_purchases')
+            .select('sms_count')
+            .eq('shop_id', shop.id)
+            .eq('status', 'completed');
+
+          const purchased_total = packages?.reduce((sum, pkg) => sum + pkg.sms_count, 0) || 0;
+          const admin_added = shop.admin_added_sms_credits || 0;
+          const monthly_allocated = shop.sms_credits_allocated || 0;
+          const monthly_used = shop.monthly_sms_used || 0;
+          const purchasable_used = shop.purchased_sms_credits || 0;
+
+          const monthly_remaining = Math.max(0, monthly_allocated - monthly_used);
+          const purchasable_total = purchased_total + admin_added;
+          const purchasable_remaining = Math.max(0, purchasable_total - purchasable_used);
+          
+          const total_available = monthly_allocated + purchasable_total;
+          const total_remaining = monthly_remaining + purchasable_remaining;
+          const total_used = monthly_used + purchasable_used;
+
+          const monthly_usage_percent = monthly_allocated > 0 
+            ? Math.round((monthly_used / monthly_allocated) * 100)
+            : 0;
+          
+          const overall_usage_percent = total_available > 0 
+            ? Math.round((total_used / total_available) * 100)
+            : 0;
+
+          return {
+            shop_id: shop.id,
+            shop_name: shop.name,
+            subscription_tier: shop.subscription_tier,
+            monthly_allocated,
+            monthly_used,
+            monthly_remaining,
+            monthly_usage_percent,
+            purchased_total,
+            admin_added,
+            purchasable_used,
+            purchasable_remaining,
+            total_available,
+            total_remaining,
+            overall_usage_percent
+          };
+        })
+      );
+
+      setShopCredits(shopsWithCredits);
+    } catch (error) {
+      console.error('Erreur lors de la récupération des détails:', error);
+      toast({
+        title: 'Erreur',
+        description: 'Impossible de charger les détails des crédits',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoadingShops(false);
+    }
+  };
+
+  // Charger les données au montage
+  useEffect(() => {
+    fetchShopsCreditsDetails();
+  }, []);
+
+  const refreshAllData = async () => {
+    await Promise.all([
+      fetchTwilioBalance(),
+      fetchGlobalCredits(),
+      fetchShopsCreditsDetails()
+    ]);
+  };
 
   const handlePurchase = async () => {
-    const amount = parseInt(purchaseAmount);
-    if (amount <= 0) return;
-    
     try {
-      await purchaseCredits(amount);
-      setPurchaseAmount('100');
+      await purchaseCredits(purchaseAmount);
+      await refreshAllData();
     } catch (error) {
-      // Erreur déjà gérée dans le hook
+      // Error is handled by the hook
     }
   };
 
   const handleSync = async () => {
     try {
       await syncCreditsWithShops();
-      await fetchTwilioBalance();
-      await fetchGlobalCredits();
-      // Forcer le rafraîchissement des crédits unifiés après sync
-      window.location.reload();
+      await refreshAllData();
     } catch (error) {
-      // Erreur déjà gérée dans le hook
+      // Error is handled by the hook
     }
   };
 
   return (
     <div className="space-y-6">
-      
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Zap className="h-5 w-5 text-blue-600" />
-            Gestion Réseau Twilio
-          </CardTitle>
-        </CardHeader>
-      <CardContent className="space-y-6">
-        <Alert>
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            Cette section gère les crédits SMS de votre compte Twilio principal (Réseau). 
-            Les crédits alloués aux magasins doivent être synchronisés avec ce solde.
-          </AlertDescription>
-        </Alert>
+      <Tabs defaultValue="overview" className="w-full">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="overview">Vue d'ensemble</TabsTrigger>
+          <TabsTrigger value="details">Détails par boutique</TabsTrigger>
+          <TabsTrigger value="twilio">Gestion Twilio</TabsTrigger>
+        </TabsList>
 
-        {/* Solde Twilio */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="font-medium text-blue-900">Solde Twilio</h3>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={fetchTwilioBalance}
-                disabled={loading}
-                className="h-8 w-8 p-0"
-              >
-                <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-              </Button>
-            </div>
-            {balance ? (
-              <div>
-                <div className="text-2xl font-bold text-blue-900">
-                  {balance.balance.toFixed(2)} {balance.currency}
+        <TabsContent value="overview" className="space-y-6">
+          {/* Solde Twilio */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <DollarSign className="h-5 w-5" />
+                Solde Twilio Global
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <p className="text-sm text-muted-foreground">Solde actuel</p>
+                  <p className="text-2xl font-bold">
+                    ${balance?.balance?.toFixed(2) || '0.00'}
+                  </p>
                 </div>
-                <p className="text-sm text-blue-600">
-                  Mis à jour: {new Date(balance.lastUpdated).toLocaleString('fr-FR')}
-                </p>
+                <div>
+                  <p className="text-sm text-muted-foreground">Équivalent SMS</p>
+                  <p className="text-xl font-semibold">
+                    ≈ {balance ? Math.floor(balance.balance * 100) : 0} SMS
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Statut</p>
+                  <Badge variant={balance ? "default" : "destructive"}>
+                    {balance ? "Connecté" : "Déconnecté"}
+                  </Badge>
+                </div>
               </div>
-            ) : (
-              <div className="text-gray-500">
-                {loading ? 'Chargement...' : 'Non disponible'}
-              </div>
-            )}
-          </div>
+            </CardContent>
+          </Card>
 
-          <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-            <h3 className="font-medium text-green-900 mb-2">Équivalent SMS</h3>
-            <div className="text-2xl font-bold text-green-900">
-              {balance ? Math.floor(balance.balance * 100) : 0}
-            </div>
-            <p className="text-sm text-green-600">SMS disponibles (approx.)</p>
-          </div>
-
-          <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-            <h3 className="font-medium text-yellow-900 mb-2">Statut</h3>
-            <Badge variant={balance && balance.balance > 5 ? "default" : "destructive"}>
-              {balance && balance.balance > 5 ? "Suffisant" : "Critique"}
-            </Badge>
-            <p className="text-sm text-yellow-600 mt-1">
-              État du compte
-            </p>
-          </div>
-        </div>
-
-        <Separator />
-
-        {/* Achat de crédits */}
-        <div className="space-y-4">
-          <h3 className="text-lg font-semibold flex items-center gap-2">
-            <CreditCard className="h-5 w-5" />
-            Acheter des Crédits
-          </h3>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="purchase-amount">Montant en USD</Label>
-              <Input
-                id="purchase-amount"
-                type="number"
-                value={purchaseAmount}
-                onChange={(e) => setPurchaseAmount(e.target.value)}
-                placeholder="100"
-                min="1"
-                max="1000"
-              />
-              <p className="text-sm text-muted-foreground">
-                ≈ {parseInt(purchaseAmount) * 100} SMS
-              </p>
-            </div>
-
-            <div className="flex flex-col justify-end">
-              <Button
-                onClick={handlePurchase}
-                disabled={purchasing || !purchaseAmount || parseInt(purchaseAmount) <= 0}
-                className="bg-blue-600 hover:bg-blue-700"
-              >
-                {purchasing ? (
-                  <>
-                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                    Traitement...
-                  </>
-                ) : (
-                  <>
-                    <CreditCard className="h-4 w-4 mr-2" />
-                    Acheter ${purchaseAmount}
-                  </>
-                )}
-              </Button>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-            {[10, 25, 50, 100].map((amount) => (
-              <Button
-                key={amount}
-                variant="outline"
-                size="sm"
-                onClick={() => setPurchaseAmount(amount.toString())}
-                className="text-xs"
-              >
-                ${amount}
-              </Button>
-            ))}
-          </div>
-        </div>
-
-        <Separator />
-
-        {/* Synchronisation */}
-        <div className="space-y-4">
-          <h3 className="text-lg font-semibold flex items-center gap-2">
-            <RotateCcw className="h-5 w-5" />
-            Synchronisation
-          </h3>
-          
-          {/* Statistiques de répartition */}
+          {/* Crédits globaux */}
           {globalCredits && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-              <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
-                <h3 className="font-medium text-purple-900 mb-2">Total Alloué</h3>
-                <div className="text-2xl font-bold text-purple-900">
-                  {globalCredits.used_credits}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <MessageSquare className="h-5 w-5" />
+                  Distribution Globale SMS
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Total alloué</p>
+                    <p className="text-xl font-bold">{globalCredits.total_credits}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Utilisés</p>
+                    <p className="text-xl font-bold">{globalCredits.used_credits}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Restants</p>
+                    <p className="text-xl font-bold">{globalCredits.remaining_credits}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Dernière sync</p>
+                    <p className="text-sm">
+                      {globalCredits.last_sync_at 
+                        ? new Date(globalCredits.last_sync_at).toLocaleString()
+                        : 'Jamais'
+                      }
+                    </p>
+                    <Badge variant={globalCredits.sync_status === 'completed' ? "default" : "secondary"}>
+                      {globalCredits.sync_status}
+                    </Badge>
+                  </div>
                 </div>
-                <p className="text-sm text-purple-600">SMS distribués aux magasins</p>
-              </div>
-
-              <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg">
-                <h3 className="font-medium text-orange-900 mb-2">Disponible Réseau</h3>
-                <div className="text-2xl font-bold text-orange-900">
-                  {globalCredits.remaining_credits}
-                </div>
-                <p className="text-sm text-orange-600">SMS non alloués</p>
-              </div>
-
-              <div className="p-4 bg-indigo-50 border border-indigo-200 rounded-lg">
-                <h3 className="font-medium text-indigo-900 mb-2">Dernière Sync</h3>
-                <div className="text-sm font-bold text-indigo-900">
-                  {new Date(globalCredits.last_sync_at).toLocaleString('fr-FR')}
-                </div>
-                <Badge 
-                  variant={globalCredits.sync_status === 'success' ? 'default' : 'destructive'}
-                  className="mt-1"
-                >
-                  {globalCredits.sync_status}
-                </Badge>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
           )}
+        </TabsContent>
 
-          <div className="flex items-center justify-between p-4 bg-red-50 border border-red-200 rounded-lg mb-4">
-            <div>
-              <p className="font-medium text-red-900">🔧 Test Authentification Twilio</p>
-              <p className="text-sm text-red-600">
-                Vérifier si les secrets Twilio sont corrects
-              </p>
-            </div>
-            <Button
-              onClick={testTwilioAuth}
-              disabled={loading}
-              variant="destructive"
-              size="sm"
-            >
-              {loading ? (
-                <>
-                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                  Test...
-                </>
-              ) : (
-                <>
-                  <AlertCircle className="h-4 w-4 mr-2" />
-                  Tester Auth
-                </>
-              )}
-            </Button>
-          </div>
+        <TabsContent value="details" className="space-y-6">
+          <DetailedSMSCreditsView 
+            shopCredits={shopCredits} 
+            loading={loadingShops}
+          />
+        </TabsContent>
 
-          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-            <div>
-              <p className="font-medium">Synchroniser avec les magasins</p>
-              <p className="text-sm text-muted-foreground">
-                Met à jour les crédits alloués en fonction du solde Twilio
-              </p>
-            </div>
-            <Button
-              onClick={handleSync}
-              disabled={loading}
-              variant="outline"
-            >
-              {loading ? (
-                <>
-                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                  Sync...
-                </>
-              ) : (
-                <>
+        <TabsContent value="twilio" className="space-y-6">
+          {/* Achats de crédits */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Plus className="h-5 w-5" />
+                Acheter des Crédits Twilio
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-end space-x-4">
+                <div className="flex-1">
+                  <label htmlFor="purchase-amount" className="block text-sm font-medium mb-2">
+                    Montant en USD
+                  </label>
+                  <Input
+                    id="purchase-amount"
+                    type="number"
+                    value={purchaseAmount}
+                    onChange={(e) => setPurchaseAmount(Number(e.target.value))}
+                    placeholder="Montant en USD"
+                    min="1"
+                    step="1"
+                  />
+                </div>
+                <Button 
+                  onClick={handlePurchase}
+                  disabled={purchasing || twilioLoading || purchaseAmount <= 0}
+                  className="whitespace-nowrap"
+                >
+                  <DollarSign className="h-4 w-4 mr-2" />
+                  {purchasing ? 'Achat...' : `Acheter $${purchaseAmount}`}
+                </Button>
+              </div>
+              
+              <div className="flex flex-wrap gap-2">
+                {[5, 10, 25, 50, 100].map(amount => (
+                  <Button
+                    key={amount}
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPurchaseAmount(amount)}
+                    disabled={purchasing || twilioLoading}
+                  >
+                    ${amount}
+                  </Button>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Actions */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Synchronisation</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  Synchroniser les crédits Twilio avec toutes les boutiques du réseau.
+                </p>
+                <Button 
+                  onClick={handleSync}
+                  disabled={twilioLoading || globalLoading}
+                  className="w-full"
+                  variant="outline"
+                >
                   <RotateCcw className="h-4 w-4 mr-2" />
-                  Synchroniser
-                </>
-              )}
-            </Button>
+                  Synchroniser les crédits
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Test de connexion</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  Tester la connexion avec l'API Twilio.
+                </p>
+                <Button 
+                  onClick={testTwilioAuth}
+                  disabled={twilioLoading}
+                  className="w-full"
+                  variant="outline"
+                >
+                  <TestTube className="h-4 w-4 mr-2" />
+                  Tester la connexion
+                </Button>
+              </CardContent>
+            </Card>
           </div>
-        </div>
-      </CardContent>
-      </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

@@ -59,15 +59,38 @@ export function SMSCreditsDisplay() {
             <Progress value={credits.overall_usage_percent} className="h-2" />
           </div>
 
-          <div className="grid grid-cols-2 gap-4 text-sm">
-            <div>
-              <p className="text-muted-foreground">Plan mensuel</p>
-              <p className="font-medium">{credits.monthly_remaining}/{credits.monthly_sms_allocated}</p>
+          {/* Détail des sources de crédits */}
+          <div className="space-y-3">
+            {/* Crédits mensuels (plan) */}
+            <div className="p-3 rounded-lg bg-muted/50">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-sm font-medium">Plan mensuel</span>
+                <Badge variant="outline">{credits.monthly_usage_percent}% utilisé</Badge>
+              </div>
+              <div className="text-sm text-muted-foreground">
+                {credits.monthly_remaining} / {credits.monthly_allocated} restants
+              </div>
+              <Progress value={credits.monthly_usage_percent} className="h-1 mt-1" />
             </div>
-            <div>
-              <p className="text-muted-foreground">SMS achetés</p>
-              <p className="font-medium">{credits.purchased_remaining}/{credits.purchased_sms_total}</p>
-            </div>
+
+            {/* Crédits épuisables (achetés + admin) */}
+            {credits.has_purchased_credits && (
+              <div className="p-3 rounded-lg bg-primary/5">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm font-medium">Crédits épuisables</span>
+                  <Badge variant="secondary">
+                    {credits.purchasable_remaining} restants
+                  </Badge>
+                </div>
+                <div className="text-xs text-muted-foreground space-y-1">
+                  <div>• Achetés: {credits.purchased_total}</div>
+                  {credits.admin_added > 0 && (
+                    <div>• Ajoutés: {credits.admin_added}</div>
+                  )}
+                  <div>• Utilisés: {credits.purchasable_used}</div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

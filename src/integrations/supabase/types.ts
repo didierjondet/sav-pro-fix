@@ -1247,6 +1247,7 @@ export type Database = {
         Row: {
           active_sav_count: number | null
           address: string | null
+          admin_added_sms_credits: number | null
           auto_review_enabled: boolean
           created_at: string
           custom_review_chat_message: string | null
@@ -1288,6 +1289,7 @@ export type Database = {
         Insert: {
           active_sav_count?: number | null
           address?: string | null
+          admin_added_sms_credits?: number | null
           auto_review_enabled?: boolean
           created_at?: string
           custom_review_chat_message?: string | null
@@ -1329,6 +1331,7 @@ export type Database = {
         Update: {
           active_sav_count?: number | null
           address?: string | null
+          admin_added_sms_credits?: number | null
           auto_review_enabled?: boolean
           created_at?: string
           custom_review_chat_message?: string | null
@@ -1951,6 +1954,20 @@ export type Database = {
       get_current_user_shop_id: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      get_sms_credits_breakdown: {
+        Args: { p_shop_id: string }
+        Returns: {
+          admin_added: number
+          monthly_allocated: number
+          monthly_remaining: number
+          monthly_used: number
+          purchased_and_admin_remaining: number
+          purchased_and_admin_used: number
+          purchased_total: number
+          total_available: number
+          total_remaining: number
+        }[]
       }
       get_total_sms_credits: {
         Args: { p_shop_id: string }

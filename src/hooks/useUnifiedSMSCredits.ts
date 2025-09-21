@@ -7,28 +7,31 @@ export interface UnifiedSMSCredits {
   shop_id: string | null;
   subscription_tier: string;
   
-  // Crédits mensuels du plan
-  monthly_sms_allocated: number;
-  monthly_sms_used: number;
+  // 1. Crédits mensuels du plan (remis à zéro chaque mois)
+  monthly_allocated: number;
+  monthly_used: number;
   monthly_remaining: number;
-  
-  // Crédits achetés via packages
-  purchased_sms_total: number;
-  purchased_sms_used: number;
-  purchased_remaining: number;
-  
-  // Total général
-  total_available: number;
-  total_remaining: number;
-  
-  // Pourcentages d'utilisation
   monthly_usage_percent: number;
+  
+  // 2. Crédits achetés + ajoutés par admin (épuisables sans limite de temps)
+  purchased_total: number;        // SMS achetés via packages
+  admin_added: number;           // SMS ajoutés par super admin
+  purchasable_total: number;     // purchased + admin_added
+  purchasable_used: number;      // consommés des crédits épuisables
+  purchasable_remaining: number; // restants des crédits épuisables
+  
+  // 3. Totaux généraux
+  total_available: number;    // monthly + purchasable
+  total_remaining: number;    // monthly_remaining + purchasable_remaining
   overall_usage_percent: number;
   
-  // Statuts d'alerte
-  is_warning: boolean; // >80%
-  is_critical: boolean; // >95% et plus de crédits achetés
-  is_exhausted: boolean; // 0 crédit restant
+  // 4. Statuts d'alerte
+  is_warning: boolean;    // >80% global
+  is_critical: boolean;   // >95% global et plus de crédits épuisables
+  is_exhausted: boolean;  // 0 crédit restant
+  
+  // 5. Flags d'affichage
+  has_purchased_credits: boolean; // Si le magasin a acheté/reçu des crédits épuisables
 }
 
 export function useUnifiedSMSCredits() {
@@ -61,73 +64,74 @@ export function useUnifiedSMSCredits() {
         return;
       }
 
-      // Récupérer les données du shop
+      // Utiliser la nouvelle fonction pour récupérer la répartition des crédits
+      const { data: breakdown, error: breakdownError } = await supabase
+        .rpc('get_sms_credits_breakdown', { p_shop_id: profile.shop_id });
+
+      if (breakdownError) throw breakdownError;
+
+      if (!breakdown || breakdown.length === 0) {
+        setCredits(null);
+        return;
+      }
+
+      const credits = breakdown[0];
+      
+      // Récupérer le tier d'abonnement
       const { data: shop, error: shopError } = await supabase
         .from('shops')
-        .select(`
-          subscription_tier,
-          sms_credits_allocated,
-          monthly_sms_used,
-          purchased_sms_credits,
-          custom_sms_limit
-        `)
+        .select('subscription_tier')
         .eq('id', profile.shop_id)
         .single();
 
       if (shopError) throw shopError;
 
-      // Calculer les crédits achetés via packages
-      const { data: packages, error: packagesError } = await supabase
-        .from('sms_package_purchases')
-        .select('sms_count')
-        .eq('shop_id', profile.shop_id)
-        .eq('status', 'completed');
-
-      if (packagesError) throw packagesError;
-
-      const purchased_sms_total = packages?.reduce((sum, pkg) => sum + pkg.sms_count, 0) || 0;
-      const purchased_sms_used = shop?.purchased_sms_credits || 0;
-      const purchased_remaining = Math.max(0, purchased_sms_total - purchased_sms_used);
-
-      // Crédits mensuels du plan
-      const monthly_sms_allocated = shop?.custom_sms_limit || shop?.sms_credits_allocated || 0;
-      const monthly_sms_used = shop?.monthly_sms_used || 0;
-      const monthly_remaining = Math.max(0, monthly_sms_allocated - monthly_sms_used);
-
-      // Totaux
-      const total_available = monthly_sms_allocated + purchased_sms_total;
-      const total_remaining = monthly_remaining + purchased_remaining;
-
-      // Pourcentages
-      const monthly_usage_percent = monthly_sms_allocated > 0 
-        ? Math.round((monthly_sms_used / monthly_sms_allocated) * 100)
+      // Calculer les pourcentages
+      const monthly_usage_percent = credits.monthly_allocated > 0 
+        ? Math.round((credits.monthly_used / credits.monthly_allocated) * 100)
         : 0;
       
-      const overall_usage_percent = total_available > 0 
-        ? Math.round(((monthly_sms_used + purchased_sms_used) / total_available) * 100)
+      const overall_usage_percent = credits.total_available > 0 
+        ? Math.round(((credits.monthly_used + credits.purchased_and_admin_used) / credits.total_available) * 100)
         : 0;
 
       // Statuts d'alerte
       const is_warning = overall_usage_percent >= 80 && overall_usage_percent < 95;
-      const is_critical = overall_usage_percent >= 95 && purchased_remaining <= 0;
-      const is_exhausted = total_remaining <= 0;
+      const is_critical = overall_usage_percent >= 95 && credits.purchased_and_admin_remaining <= 0;
+      const is_exhausted = credits.total_remaining <= 0;
+
+      // Flag pour savoir si le magasin a des crédits épuisables
+      const has_purchased_credits = (credits.purchased_total + credits.admin_added) > 0;
 
       setCredits({
         shop_id: profile.shop_id,
         subscription_tier: shop?.subscription_tier || 'free',
-        monthly_sms_allocated,
-        monthly_sms_used,
-        monthly_remaining,
-        purchased_sms_total,
-        purchased_sms_used,
-        purchased_remaining,
-        total_available,
-        total_remaining,
+        
+        // Crédits mensuels (plan)
+        monthly_allocated: credits.monthly_allocated,
+        monthly_used: credits.monthly_used,
+        monthly_remaining: credits.monthly_remaining,
         monthly_usage_percent,
+        
+        // Crédits épuisables (achetés + admin)
+        purchased_total: credits.purchased_total,
+        admin_added: credits.admin_added,
+        purchasable_total: credits.purchased_total + credits.admin_added,
+        purchasable_used: credits.purchased_and_admin_used,
+        purchasable_remaining: credits.purchased_and_admin_remaining,
+        
+        // Totaux
+        total_available: credits.total_available,
+        total_remaining: credits.total_remaining,
         overall_usage_percent,
+        
+        // Alertes
         is_warning,
         is_critical,
-        is_exhausted
+        is_exhausted,
+        
+        // Flags d'affichage
+        has_purchased_credits
       });
 
     } catch (error) {

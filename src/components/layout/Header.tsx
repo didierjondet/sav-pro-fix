@@ -76,8 +76,8 @@ export function Header({
             {savLimits.isCritical && `Limite SAV mensuelle critique atteinte (${subscription?.monthly_sav_count}/${savLimits.total})`}
             {savLimits.isWarning && !savLimits.isCritical && `Attention: limite SAV mensuelle bientôt atteinte (${subscription?.monthly_sav_count}/${savLimits.total})`}
             {(savLimits.isCritical || savLimits.isWarning) && (smsLimits.isCritical || smsLimits.isWarning) && ' - '}
-            {smsLimits.isCritical && `Crédits SMS épuisés (${smsCredits?.monthly_sms_used + smsCredits?.purchased_sms_used || 0}/${smsLimits.total})`}
-            {smsLimits.isWarning && !smsLimits.isCritical && `Attention: crédits SMS bientôt épuisés (${smsCredits?.monthly_sms_used + smsCredits?.purchased_sms_used || 0}/${smsLimits.total})`}
+            {smsLimits.isCritical && `Crédits SMS épuisés (${(smsCredits?.monthly_used || 0) + (smsCredits?.purchasable_used || 0)}/${smsLimits.total})`}
+            {smsLimits.isWarning && !smsLimits.isCritical && `Attention: crédits SMS bientôt épuisés (${(smsCredits?.monthly_used || 0) + (smsCredits?.purchasable_used || 0)}/${smsLimits.total})`}
             {' '}<Button variant="link" className="h-auto p-0 text-orange-800 underline" onClick={() => navigate('/subscription')}>
               Mettre à niveau
             </Button>
@@ -119,10 +119,26 @@ export function Header({
               <FileCheck className="h-4 w-4" />
               <span>{savLimits.remaining} SAV restants</span>
             </div>
-            <div className="flex items-center space-x-1">
-              <MessageSquare className="h-4 w-4" />
-              <span>{smsLimits.remaining} SMS restants</span>
-            </div>
+            
+            {/* SMS - Affichage détaillé si crédits achetés */}
+            {smsCredits?.has_purchased_credits ? (
+              <div className="flex items-center space-x-2">
+                <MessageSquare className="h-4 w-4" />
+                <div className="flex items-center space-x-1">
+                  <span className="bg-green-100 text-green-800 px-1.5 py-0.5 rounded text-xs">
+                    Plan: {smsCredits.monthly_remaining}
+                  </span>
+                  <span className="bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded text-xs">
+                    Achetés: {smsCredits.purchasable_remaining}
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center space-x-1">
+                <MessageSquare className="h-4 w-4" />
+                <span>{smsLimits.remaining} SMS restants</span>
+              </div>
+            )}
           </div>
           
           <NotificationBell />

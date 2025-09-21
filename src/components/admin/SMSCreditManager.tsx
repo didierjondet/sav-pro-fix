@@ -45,17 +45,17 @@ export function SMSCreditManager({ shops, onUpdate }: SMSCreditManagerProps) {
       // Récupérer les crédits actuels
       const { data: currentShop, error: fetchError } = await supabase
         .from('shops')
-        .select('sms_credits_allocated')
+        .select('admin_added_sms_credits')
         .eq('id', shopId)
         .single();
 
       if (fetchError) throw fetchError;
 
-      // Ajouter directement aux crédits alloués du shop sans créer d'entrée dans sms_package_purchases
+      // Ajouter aux crédits ajoutés par admin (épuisables)
       const { error } = await supabase
         .from('shops')
         .update({
-          sms_credits_allocated: (currentShop.sms_credits_allocated || 0) + credits
+          admin_added_sms_credits: (currentShop.admin_added_sms_credits || 0) + credits
         })
         .eq('id', shopId);
 
@@ -63,7 +63,7 @@ export function SMSCreditManager({ shops, onUpdate }: SMSCreditManagerProps) {
 
       toast({
         title: "Crédits ajoutés",
-        description: `${credits} crédits SMS ajoutés avec succès`,
+        description: `${credits} crédits SMS épuisables ajoutés avec succès`,
       });
 
       setCreditsToAdd(prev => ({ ...prev, [shopId]: 0 }));
