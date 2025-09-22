@@ -273,7 +273,7 @@ export default function SuperAdmin() {
         return (
           <div className="space-y-6">
             <TwilioCreditsManager />
-            <SMSCreditManager shops={shops || []} onUpdate={fetchData} />
+            <SMSCreditManager onUpdate={fetchData} />
           </div>
         );
       case 'support':

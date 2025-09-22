@@ -103,10 +103,10 @@ export function TwilioCreditsManager() {
     }
   };
 
-  // Charger les données au montage
+  // Charger les données au montage du composant uniquement
   useEffect(() => {
     fetchShopsCreditsDetails();
-  }, []);
+  }, []); // Pas de dépendances pour éviter les re-renders
 
   const refreshAllData = async () => {
     await Promise.all([
