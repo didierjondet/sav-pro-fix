@@ -23,6 +23,8 @@ export interface OrderItemWithPart extends OrderItem {
   part?: Part;
   sav_customer_name?: string;
   sav_type?: string;
+  sav_type_color?: string;
+  sav_type_label?: string;
 }
 
 export function useOrders() {
@@ -96,11 +98,21 @@ export function useOrders() {
           sav_cases!inner(
             customer_id,
             sav_type,
+            shop_id,
             customers(first_name, last_name)
           )
         `)
         .eq('parts.quantity', 0)
         .eq('parts.shop_id', profile.shop_id); // Filtrer par shop_id
+
+      if (savError) throw savError;
+
+      // Récupérer les types SAV du shop pour les couleurs
+      const { data: savTypes } = await supabase
+        .from('shop_sav_types')
+        .select('type_key, type_color, type_label')
+        .eq('shop_id', profile.shop_id)
+        .eq('is_active', true);
 
       if (savError) throw savError;
 
@@ -120,25 +132,32 @@ export function useOrders() {
           order.ordered === true
         );
         return !alreadyOrdered;
-      }).map(item => ({
-        id: `sav-needed-${item.part_id}`,
-        part_id: item.part_id,
-        part_name: item.parts.name,
-        part_reference: item.parts.reference,
-        quantity_needed: item.quantity,
-        sav_case_id: item.sav_case_id,
-        reason: 'sav_stock_zero' as const,
-        priority: 'high' as const,
-        ordered: false,
-        shop_id: item.parts.shop_id || '',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        part: item.parts as Part,
-        sav_customer_name: item.sav_cases?.customers ? 
-          `${item.sav_cases.customers.first_name} ${item.sav_cases.customers.last_name}`.trim() : 
-          'Client inconnu',
-        sav_type: item.sav_cases?.sav_type || 'internal'
-      })) || [];
+      }).map(item => {
+        // Trouver les informations du type SAV
+        const savType = savTypes?.find(t => t.type_key === item.sav_cases?.sav_type);
+        
+        return {
+          id: `sav-needed-${item.part_id}`,
+          part_id: item.part_id,
+          part_name: item.parts.name,
+          part_reference: item.parts.reference,
+          quantity_needed: item.quantity,
+          sav_case_id: item.sav_case_id,
+          reason: 'sav_stock_zero' as const,
+          priority: 'high' as const,
+          ordered: false,
+          shop_id: item.parts.shop_id || '',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          part: item.parts as Part,
+          sav_customer_name: item.sav_cases?.customers ? 
+            `${item.sav_cases.customers.first_name} ${item.sav_cases.customers.last_name}`.trim() : 
+            'Client inconnu',
+          sav_type: item.sav_cases?.sav_type || 'internal',
+          sav_type_color: savType?.type_color || '#6b7280',
+          sav_type_label: savType?.type_label || 'SAV'
+        };
+      }) || [];
 
       setPartsNeededForSAV(formattedSavParts);
     } catch (error: any) {

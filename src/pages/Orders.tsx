@@ -286,11 +286,17 @@ export default function Orders() {
                                       {item.sav_customer_name || 'Non défini'}
                                     </span>
                                   </div>
-                                  {item.sav_type && (
-                                    <Badge className={getSAVTypeColor(item.sav_type)}>
-                                      SAV {getSAVTypeLabel(item.sav_type)}
-                                    </Badge>
-                                  )}
+                                   {item.sav_type && (
+                                     <Badge 
+                                       className="text-white font-medium"
+                                       style={{ 
+                                         backgroundColor: item.sav_type_color || '#6b7280',
+                                         borderColor: item.sav_type_color || '#6b7280'
+                                       }}
+                                     >
+                                       {item.sav_type_label || 'SAV'}
+                                     </Badge>
+                                   )}
                                 </div>
                               )}
                               
