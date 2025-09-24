@@ -111,26 +111,36 @@ async function sendTwilioSMS(to: string, body: string): Promise<any> {
   return await response.json();
 }
 
-async function checkSMSCredits(shopId: string): Promise<boolean> {
+async function checkSMSCredits(shopId: string): Promise<{allowed: boolean, reason?: string, action?: string}> {
   // Vérifier les crédits SMS de la boutique avec plan + packages SMS
   const { data: shop, error } = await supabase
     .from('shops')
-    .select('sms_credits_used, sms_credits_allocated, subscription_forced, subscription_tier, purchased_sms_credits, monthly_sms_used, custom_sms_limit')
+    .select('sms_credits_allocated, subscription_forced, monthly_sms_used, custom_sms_limit, purchased_sms_credits, admin_added_sms_credits')
     .eq('id', shopId)
     .single();
 
   if (error) {
     console.error('Erreur lors de la vérification des crédits:', error);
-    return false;
+    return { allowed: false, reason: 'Erreur technique' };
   }
 
   // Si l'abonnement est forcé, autoriser l'envoi
   if (shop.subscription_forced) {
     console.log('✅ Abonnement forcé - envoi autorisé');
-    return true;
+    return { allowed: true };
   }
 
-  // Calculer le total des SMS achetés via packages non encore utilisés
+  // 1. Vérifier d'abord les crédits du plan mensuel
+  const monthlyLimit = shop.custom_sms_limit || shop.sms_credits_allocated || 0;
+  const monthlyUsed = shop.monthly_sms_used || 0;
+  const monthlyAvailable = Math.max(0, monthlyLimit - monthlyUsed);
+  
+  if (monthlyAvailable > 0) {
+    console.log(`✅ Crédits plan disponibles: ${monthlyAvailable} (${monthlyUsed}/${monthlyLimit})`);
+    return { allowed: true };
+  }
+  
+  // 2. Si plus de crédits du plan, vérifier les SMS achetés + admin
   const { data: packages, error: packagesError } = await supabase
     .from('sms_package_purchases')
     .select('sms_count')
@@ -142,30 +152,37 @@ async function checkSMSCredits(shopId: string): Promise<boolean> {
   }
 
   const totalPackagesSMS = packages?.reduce((total, pkg) => total + pkg.sms_count, 0) || 0;
-  const usedPackagesSMS = shop.purchased_sms_credits || 0;
-  const availablePackagesSMS = Math.max(0, totalPackagesSMS - usedPackagesSMS);
-  
-  // SMS du plan mensuel
-  const monthlyLimit = shop.custom_sms_limit || shop.sms_credits_allocated || 0;
-  const monthlyUsed = shop.monthly_sms_used || 0;
-  const monthlyAvailable = Math.max(0, monthlyLimit - monthlyUsed);
-  
-  // Total disponible = SMS mensuel restants + SMS packages restants
-  const totalAvailable = monthlyAvailable + availablePackagesSMS;
+  const adminAddedSMS = shop.admin_added_sms_credits || 0;
+  const totalPurchasedAndAdmin = totalPackagesSMS + adminAddedSMS;
+  const usedPurchasedSMS = shop.purchased_sms_credits || 0;
+  const availablePurchasedSMS = Math.max(0, totalPurchasedAndAdmin - usedPurchasedSMS);
   
   console.log(`Vérification SMS détaillée:
     - Plan mensuel: ${monthlyUsed}/${monthlyLimit} (disponible: ${monthlyAvailable})
-    - Packages: ${usedPackagesSMS}/${totalPackagesSMS} (disponible: ${availablePackagesSMS})
-    - Total disponible: ${totalAvailable}`);
+    - Packages achetés: ${totalPackagesSMS}
+    - Admin ajoutés: ${adminAddedSMS}  
+    - Total acheté+admin: ${totalPurchasedAndAdmin}
+    - Utilisés acheté+admin: ${usedPurchasedSMS}
+    - Disponible acheté+admin: ${availablePurchasedSMS}`);
   
-  return totalAvailable > 0;
+  if (availablePurchasedSMS > 0) {
+    console.log(`✅ Crédits achetés/admin disponibles: ${availablePurchasedSMS}`);
+    return { allowed: true };
+  }
+  
+  // Aucun crédit disponible - proposer d'acheter un pack
+  return { 
+    allowed: false, 
+    reason: 'Crédits SMS épuisés', 
+    action: 'buy_sms_package' 
+  };
 }
 
 async function updateSMSCredits(shopId: string): Promise<void> {
   // Récupérer les données actuelles du shop
   const { data: shop } = await supabase
     .from('shops')
-    .select('monthly_sms_used, sms_credits_allocated, purchased_sms_credits, custom_sms_limit')
+    .select('monthly_sms_used, sms_credits_allocated, purchased_sms_credits, custom_sms_limit, admin_added_sms_credits')
     .eq('id', shopId)
     .single();
 
@@ -175,25 +192,26 @@ async function updateSMSCredits(shopId: string): Promise<void> {
   const monthlyLimit = shop.custom_sms_limit || shop.sms_credits_allocated || 0;
   const monthlyUsed = shop.monthly_sms_used || 0;
 
-  // Si on peut utiliser les SMS mensuels
+  // PRIORITÉ 1: Utiliser d'abord les SMS mensuels
   if (monthlyUsed < monthlyLimit) {
-    console.log('📱 Incrémentation des SMS mensuels');
+    console.log('📱 Débit des crédits du plan mensuel');
     await supabase
       .from('shops')
       .update({ 
         monthly_sms_used: monthlyUsed + 1
       })
       .eq('id', shopId);
-  } else {
-    // Sinon, utiliser les SMS des packages
-    console.log('📦 Incrémentation des SMS packages');
-    await supabase
-      .from('shops')
-      .update({ 
-        purchased_sms_credits: (shop.purchased_sms_credits || 0) + 1
-      })
-      .eq('id', shopId);
+    return;
   }
+
+  // PRIORITÉ 2: Si plus de crédits du plan, utiliser les SMS achetés/admin
+  console.log('📦 Débit des crédits achetés/admin (plan épuisé)');
+  await supabase
+    .from('shops')
+    .update({ 
+      purchased_sms_credits: (shop.purchased_sms_credits || 0) + 1
+    })
+    .eq('id', shopId);
 }
 
 async function logSMSHistory(request: SMSRequest, status: string): Promise<void> {
@@ -294,14 +312,15 @@ serve(async (req) => {
     console.log('✅ Requête parsée:', smsRequest);
     
     console.log('3. Vérification des crédits SMS...');
-    const hasCredits = await checkSMSCredits(smsRequest.shopId);
-    if (!hasCredits) {
-      console.error('❌ Crédits SMS insuffisants');
+    const creditsCheck = await checkSMSCredits(smsRequest.shopId);
+    if (!creditsCheck.allowed) {
+      console.error('❌ Crédits SMS insuffisants:', creditsCheck.reason);
       await logSMSHistory(smsRequest, 'failed_no_credits');
       return new Response(
         JSON.stringify({ 
           success: false, 
-          error: 'Crédits SMS insuffisants' 
+          error: creditsCheck.reason || 'Crédits SMS insuffisants',
+          action: creditsCheck.action
         }),
         {
           status: 400,

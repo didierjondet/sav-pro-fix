@@ -15,8 +15,6 @@ interface SendSMSRequest {
 
 export function useSMS() {
   const [loading, setLoading] = useState(false);
-  const [limitDialogOpen, setLimitDialogOpen] = useState(false);
-  const [limitDialogData, setLimitDialogData] = useState<{ action: 'upgrade_plan' | 'buy_sms_package'; reason: string } | null>(null);
   const { toast } = useToast();
   const { profile } = useProfile();
   const { checkLimits } = useSubscription();
@@ -29,26 +27,6 @@ export function useSMS() {
         description: "Boutique non trouvée",
         variant: "destructive",
       });
-      return false;
-    }
-
-    // Vérifier les limites avant d'envoyer
-    const limitsCheck = checkLimits('sms');
-    if (!limitsCheck.allowed) {
-      if (limitsCheck.action === 'buy_sms_package' || limitsCheck.action === 'upgrade_plan') {
-        setLimitDialogData({
-          action: limitsCheck.action,
-          reason: limitsCheck.reason
-        });
-        setLimitDialogOpen(true);
-        navigate('/subscription');
-      } else {
-        toast({
-          title: "Limite atteinte",
-          description: limitsCheck.reason,
-          variant: "destructive",
-        });
-      }
       return false;
     }
 
@@ -70,6 +48,17 @@ export function useSMS() {
       }
 
       if (!data?.success) {
+        // Gérer les erreurs avec popup pour achat de SMS
+        if (data?.action === 'buy_sms_package') {
+          navigate('/subscription');
+          toast({
+            title: "Crédits SMS épuisés",
+            description: "Vos crédits du plan sont épuisés. Achetez un pack SMS pour continuer.",
+            variant: "destructive",
+          });
+          return false;
+        }
+        
         throw new Error(data?.error || 'Erreur lors de l\'envoi du SMS');
       }
 
