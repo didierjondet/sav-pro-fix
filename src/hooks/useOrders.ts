@@ -477,11 +477,9 @@ export function useOrders() {
         if (itemId.startsWith('sav-needed-')) {
           console.log('📋 Traitement SAV item:', itemId);
           // Pour SAV - retirer la pièce du SAV et gérer les réservations
-          const partIdMatch = itemId.match(/sav-needed-(.+?)-(.+)/);
-          const partId = partIdMatch ? partIdMatch[1] : null;
-          const savCaseId = partIdMatch ? partIdMatch[2] : null;
+          const partId = itemId.replace('sav-needed-', '');
           
-          console.log('🔍 Parsing ID - partId:', partId, 'savCaseId:', savCaseId);
+          console.log('🔍 Parsing ID - partId:', partId);
           
           const savItem = partsNeededForSAV.find(item => item.id === itemId);
           console.log('📦 SAV item trouvé:', savItem);
