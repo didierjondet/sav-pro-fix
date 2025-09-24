@@ -25,6 +25,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useShopSAVStatuses } from '@/hooks/useShopSAVStatuses';
 import { SAVPrintButton } from '@/components/sav/SAVPrint';
 import { PartStatusIcon } from '@/components/sav/PartStatusIcon';
+import { SAVStatusDropdown } from '@/components/sav/SAVStatusDropdown';
 import { 
   Eye,
   Clock,
@@ -50,7 +51,7 @@ export default function SAVList() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(20);
   const [qrCodeCase, setQrCodeCase] = useState(null);
-  const { cases, loading, deleteCase, refetch } = useSAVCases();
+  const { cases, loading, deleteCase, refetch, updateCaseStatus } = useSAVCases();
   const { shop } = useShop();
   const { savWithUnreadMessages } = useSAVUnreadMessages();
   const { checkAndShowLimitDialog } = useLimitDialogContext();
@@ -116,6 +117,14 @@ export default function SAVList() {
   const handleNewSAV = () => {
     if (checkAndShowLimitDialog('sav')) {
       navigate('/sav/new');
+    }
+  };
+
+  const handleStatusChange = async (caseId: string, newStatus: string) => {
+    try {
+      await updateCaseStatus(caseId, newStatus as any);
+    } catch (error) {
+      console.error('Erreur lors du changement de statut:', error);
     }
   };
 
@@ -383,13 +392,10 @@ export default function SAVList() {
                               </Badge>
                             )}
                           </div>
-                          <Badge style={getStatusInfo(savCase.status).color ? {
-                            backgroundColor: `${getStatusInfo(savCase.status).color}20`,
-                            color: getStatusInfo(savCase.status).color,
-                            borderColor: getStatusInfo(savCase.status).color
-                          } : undefined}>
-                            {getStatusInfo(savCase.status).label}
-                          </Badge>
+                          <SAVStatusDropdown
+                            currentStatus={savCase.status}
+                            onStatusChange={(newStatus) => handleStatusChange(savCase.id, newStatus)}
+                          />
                            <Badge variant="outline" className={
                              savCase.sav_type === 'client' ? 'border-red-200 text-red-700' : 'border-blue-200 text-blue-700'
                            }>
