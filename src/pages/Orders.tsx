@@ -72,6 +72,22 @@ export default function Orders() {
     }
   };
 
+  const getSAVTypeColor = (savType: string) => {
+    switch (savType) {
+      case 'internal': return 'bg-blue-100 text-blue-800';
+      case 'external': return 'bg-green-100 text-green-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getSAVTypeLabel = (savType: string) => {
+    switch (savType) {
+      case 'internal': return 'Interne';
+      case 'external': return 'Externe';
+      default: return savType;
+    }
+  };
+
   const getEmptyMessage = () => {
     switch (activeFilter) {
       case 'sav': return 'Aucune pièce manquante pour les SAV';
@@ -260,6 +276,23 @@ export default function Orders() {
                                   </Badge>
                                 )}
                               </div>
+                              
+                              {/* Informations SAV - Client et Type */}
+                              {item.sav_case_id && (
+                                <div className="flex items-center gap-3 mb-2">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-sm font-medium text-muted-foreground">Client:</span>
+                                    <span className="text-sm font-semibold text-foreground">
+                                      {item.sav_customer_name || 'Non défini'}
+                                    </span>
+                                  </div>
+                                  {item.sav_type && (
+                                    <Badge className={getSAVTypeColor(item.sav_type)}>
+                                      SAV {getSAVTypeLabel(item.sav_type)}
+                                    </Badge>
+                                  )}
+                                </div>
+                              )}
                               
                               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-muted-foreground">
                                 {item.part && (

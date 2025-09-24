@@ -21,6 +21,8 @@ export interface OrderItem {
 
 export interface OrderItemWithPart extends OrderItem {
   part?: Part;
+  sav_customer_name?: string;
+  sav_type?: string;
 }
 
 export function useOrders() {
@@ -90,7 +92,12 @@ export function useOrders() {
           part_id,
           quantity,
           sav_case_id,
-          parts!inner(*)
+          parts!inner(*),
+          sav_cases!inner(
+            customer_id,
+            sav_type,
+            customers(first_name, last_name)
+          )
         `)
         .eq('parts.quantity', 0)
         .eq('parts.shop_id', profile.shop_id); // Filtrer par shop_id
@@ -126,7 +133,11 @@ export function useOrders() {
         shop_id: item.parts.shop_id || '',
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
-        part: item.parts as Part
+        part: item.parts as Part,
+        sav_customer_name: item.sav_cases?.customers ? 
+          `${item.sav_cases.customers.first_name} ${item.sav_cases.customers.last_name}`.trim() : 
+          'Client inconnu',
+        sav_type: item.sav_cases?.sav_type || 'internal'
       })) || [];
 
       setPartsNeededForSAV(formattedSavParts);
