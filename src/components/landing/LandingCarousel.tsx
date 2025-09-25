@@ -14,7 +14,7 @@ export function LandingCarousel() {
   const [autoSlide, setAutoSlide] = useState(true);
   
   const plugin = React.useRef(
-    Autoplay({ delay: 5000, stopOnInteraction: true })
+    Autoplay({ delay: 5000, stopOnInteraction: true }) as any
   );
 
   // Auto slide in popup
