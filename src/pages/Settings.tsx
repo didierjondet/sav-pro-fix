@@ -891,46 +891,80 @@ export default function Settings() {
                       </div>
                       
                       {shopForm.sav_delay_alerts_enabled && (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4 pt-4 border-t">
-                          {savTypes.map(type => {
-                            const typeInfo = type;
-                            const defaultMaxDays = type.max_processing_days || 
-                              (type.type_key === 'client' ? shopForm.max_sav_processing_days_client : 
-                               type.type_key === 'external' ? shopForm.max_sav_processing_days_external :
-                               type.type_key === 'internal' ? shopForm.max_sav_processing_days_internal : 7);
-                            
-                            return (
-                              <div key={type.id} className="space-y-2">
-                                <Label htmlFor={`sav-${type.type_key}-alert-days`} className="flex items-center gap-2">
-                                  <div 
-                                    className="w-3 h-3 rounded-full" 
-                                    style={{ backgroundColor: type.type_color }}
+                        <div className="space-y-4 mt-4 pt-4 border-t">
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {savTypes.filter(type => !type.pause_timer).map(type => {
+                              const defaultMaxDays = type.max_processing_days || 
+                                (type.type_key === 'client' ? shopForm.max_sav_processing_days_client : 
+                                 type.type_key === 'external' ? shopForm.max_sav_processing_days_external :
+                                 type.type_key === 'internal' ? shopForm.max_sav_processing_days_internal : 7);
+                              
+                              return (
+                                <div key={type.id} className="space-y-2">
+                                  <Label htmlFor={`sav-${type.type_key}-alert-days`} className="flex items-center gap-2">
+                                    <div 
+                                      className="w-3 h-3 rounded-full" 
+                                      style={{ backgroundColor: type.type_color }}
+                                    />
+                                    Alerte {type.type_label}
+                                  </Label>
+                                  <Input 
+                                    id={`sav-${type.type_key}-alert-days`} 
+                                    type="number" 
+                                    min="1" 
+                                    max="10" 
+                                    value={shopForm.sav_alert_days[type.type_key] || 2} 
+                                    onChange={e => setShopForm({
+                                      ...shopForm,
+                                      sav_alert_days: {
+                                        ...shopForm.sav_alert_days,
+                                        [type.type_key]: parseInt(e.target.value) || 2
+                                      }
+                                    })} 
+                                    disabled={!isAdmin} 
+                                    placeholder="Nombre de jours"
                                   />
-                                  Alerte {type.type_label}
-                                </Label>
-                                <Input 
-                                  id={`sav-${type.type_key}-alert-days`} 
-                                  type="number" 
-                                  min="1" 
-                                  max="10" 
-                                  value={shopForm.sav_alert_days[type.type_key] || 2} 
-                                  onChange={e => setShopForm({
-                                    ...shopForm,
-                                    sav_alert_days: {
-                                      ...shopForm.sav_alert_days,
-                                      [type.type_key]: parseInt(e.target.value) || 2
-                                    }
-                                  })} 
-                                  disabled={!isAdmin} 
-                                  placeholder="Nombre de jours"
-                                />
-                                <div className="text-xs text-muted-foreground">
-                                  <div>Alerter {shopForm.sav_alert_days[type.type_key] || 2} jours avant</div>
-                                  <div>Délai max: {defaultMaxDays} jours</div>
+                                  <div className="text-xs text-muted-foreground">
+                                    <div>Alerter {shopForm.sav_alert_days[type.type_key] || 2} jours avant</div>
+                                    <div>Délai max: {defaultMaxDays} jours</div>
+                                  </div>
                                 </div>
+                              );
+                            })}
+                          </div>
+                          
+                          {savTypes.filter(type => type.pause_timer).length > 0 && (
+                            <div className="bg-muted/50 p-3 rounded-lg">
+                              <p className="text-sm text-muted-foreground mb-2">
+                                <strong>Types avec timer désactivé :</strong>
+                              </p>
+                              <div className="flex flex-wrap gap-2">
+                                {savTypes.filter(type => type.pause_timer).map(type => (
+                                  <div key={type.id} className="flex items-center gap-2 text-sm">
+                                    <div 
+                                      className="w-2 h-2 rounded-full" 
+                                      style={{ backgroundColor: type.type_color }}
+                                    />
+                                    <span className="text-muted-foreground">{type.type_label}</span>
+                                  </div>
+                                ))}
                               </div>
-                            );
-                          })}
+                              <p className="text-xs text-muted-foreground mt-2">
+                                Les alertes de retard ne s'appliquent pas aux types avec timer en pause.
+                              </p>
+                            </div>
+                          )}
+                          
+                          {savTypes.filter(type => !type.pause_timer).length === 0 && (
+                            <div className="bg-yellow-50 dark:bg-yellow-950/20 p-3 rounded-lg border border-yellow-200 dark:border-yellow-800">
+                              <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                                Aucun type de SAV n'a de timer actif. Les alertes de retard ne peuvent pas être configurées.
+                              </p>
+                              <p className="text-xs text-yellow-700 dark:text-yellow-300 mt-1">
+                                Activez le timer dans au moins un type de SAV pour configurer les alertes.
+                              </p>
+                            </div>
+                          )}
                         </div>
                       )}
                       <p className="text-sm text-muted-foreground">
