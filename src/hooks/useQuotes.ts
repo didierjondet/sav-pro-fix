@@ -94,6 +94,28 @@ const parsedData = (data as any[])?.map(quote => {
 
   useEffect(() => {
     fetchQuotes();
+
+    // Set up real-time listener for quotes
+    const channel = supabase
+      .channel('quotes-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'quotes'
+        },
+        (payload) => {
+          console.log('📋 Quote change detected:', payload);
+          // Refetch quotes when any change occurs
+          fetchQuotes();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const createQuote = async (quoteData: Omit<Quote, 'id' | 'created_at' | 'updated_at' | 'shop_id' | 'quote_number'>) => {
