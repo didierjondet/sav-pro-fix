@@ -4,7 +4,6 @@ import { useToast } from '@/hooks/use-toast';
 import { generateShortTrackingUrl } from '@/utils/trackingUtils';
 import { useProfile } from '@/hooks/useProfile';
 import { useSubscription } from '@/hooks/useSubscription';
-import { useNavigate } from 'react-router-dom';
 
 interface SendSMSRequest {
   toNumber: string;
@@ -18,7 +17,6 @@ export function useSMS() {
   const { toast } = useToast();
   const { profile } = useProfile();
   const { checkLimits } = useSubscription();
-  const navigate = useNavigate();
 
   const sendSMS = async (request: SendSMSRequest): Promise<boolean> => {
     if (!profile?.shop_id) {
@@ -50,7 +48,7 @@ export function useSMS() {
       if (!data?.success) {
         // Gérer les erreurs avec popup pour achat de SMS
         if (data?.action === 'buy_sms_package') {
-          navigate('/subscription');
+          window.location.href = '/subscription';
           toast({
             title: "Crédits SMS épuisés",
             description: "Vos crédits du plan sont épuisés. Achetez un pack SMS pour continuer.",
@@ -74,7 +72,7 @@ export function useSMS() {
     } catch (error: any) {
       // Gérer les erreurs liées aux crédits
       if (error.message.includes('Crédits SMS insuffisants') || error.message.includes('épuisés')) {
-        navigate('/subscription');
+        window.location.href = '/subscription';
         toast({
           title: "Crédits SMS épuisés",
           description: "Achetez des crédits supplémentaires pour continuer à envoyer des SMS.",
