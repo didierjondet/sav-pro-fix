@@ -197,7 +197,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                         <Badge variant="destructive" className="ml-auto text-xs">{openConversationsCount}</Badge>
                       )}
                       {item.href === '/quotes' && quoteCounts.inProgress > 0 && (
-                        <Badge variant="secondary" className="ml-auto text-xs">{quoteCounts.inProgress}</Badge>
+                        <Badge variant="destructive" className="ml-auto text-xs">{quoteCounts.inProgress}</Badge>
                       )}
                     </Button>
                   );
