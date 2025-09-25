@@ -1,0 +1,13 @@
+{
+  "nodeModulesDir": "auto",
+  "imports": {
+    "@/": "./src/"
+  },
+  "tasks": {
+    "dev": "deno run --allow-all --watch main.ts"
+  },
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "jsxImportSource": "react"
+  }
+}
