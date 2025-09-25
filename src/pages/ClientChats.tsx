@@ -28,22 +28,22 @@ export default function ClientChats() {
   const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
   const navigate = useNavigate();
 
-  // Écouter l'événement de fermeture automatique des chats
+  // Écouter l'événement de fermeture automatique des conversations
   useEffect(() => {
-    const handleSAVReadyCloseChat = (event: CustomEvent) => {
+    const handleConversationClose = (event: CustomEvent) => {
       const { savCaseId } = event.detail;
       
       // Fermer la discussion si elle est actuellement sélectionnée
       if (selected?.id === savCaseId) {
-        console.log('🔒 Closing chat for SAV ready:', savCaseId);
+        console.log('🔒 Closing conversation for closed/deleted SAV:', savCaseId);
         setSelected(null);
       }
     };
 
-    window.addEventListener('sav-ready-close-chat', handleSAVReadyCloseChat as EventListener);
+    window.addEventListener('sav-conversation-close', handleConversationClose as EventListener);
     
     return () => {
-      window.removeEventListener('sav-ready-close-chat', handleSAVReadyCloseChat as EventListener);
+      window.removeEventListener('sav-conversation-close', handleConversationClose as EventListener);
     };
   }, [selected]);
 
