@@ -63,9 +63,16 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const openConversationsCount = (savWithUnreadMessages || []).length;
   const { quotes } = useQuotes();
   const quoteCounts = (quotes || []).reduce((acc, q) => {
-    if (q.status === 'accepted') acc.accepted++;
-    else if (q.status === 'rejected') acc.rejected++;
-    else acc.inProgress++;
+    const activeStatuses = ['draft', 'pending_review', 'sent', 'under_negotiation', 'sms_accepted'];
+    
+    if (q.status === 'accepted') {
+      acc.accepted++;
+    } else if (q.status === 'rejected') {
+      acc.rejected++;
+    } else if (activeStatuses.includes(q.status)) {
+      acc.inProgress++;
+    }
+    // archived, completed, expired quotes are not counted
     return acc;
   }, { inProgress: 0, accepted: 0, rejected: 0 });
 
