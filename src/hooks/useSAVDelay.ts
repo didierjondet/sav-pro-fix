@@ -38,16 +38,18 @@ export function useSAVDelay(savCase: SAVCase, shop: Shop | null): DelayInfo {
     const typeInfo = getTypeInfo(savCase.sav_type);
     let maxDays = 7; // Valeur par défaut
     
-    // Mapping des types vers les propriétés du shop
-    if (savCase.sav_type === 'client') {
-      maxDays = shop.max_sav_processing_days_client ?? 7;
-    } else if (savCase.sav_type === 'external') {
-      maxDays = shop.max_sav_processing_days_external ?? 9;
-    } else if (savCase.sav_type === 'internal') {
-      maxDays = shop.max_sav_processing_days_internal ?? 5;
+    // Utiliser la valeur max_processing_days du type SAV
+    if (typeInfo && typeof typeInfo === 'object' && 'max_processing_days' in typeInfo) {
+      maxDays = typeInfo.max_processing_days || 7;
     } else {
-      // Pour les types personnalisés, utiliser la valeur par défaut client
-      maxDays = shop.max_sav_processing_days_client ?? 7;
+      // Valeurs par défaut selon le type si pas de configuration spécifique
+      if (savCase.sav_type === 'external') {
+        maxDays = 9;
+      } else if (savCase.sav_type === 'internal') {
+        maxDays = 5;
+      } else {
+        maxDays = 7; // client ou autres types
+      }
     }
 
     const createdAt = new Date(savCase.created_at);
@@ -75,7 +77,7 @@ export function useSAVDelay(savCase: SAVCase, shop: Shop | null): DelayInfo {
       progress: isCurrentStatusPaused ? progress : progress, // On garde le même pour l'instant
       isPaused: isCurrentStatusPaused
     };
-  }, [savCase.created_at, savCase.sav_type, savCase.status, shop?.max_sav_processing_days_client, shop?.max_sav_processing_days_internal, shop?.max_sav_processing_days_external, getStatusInfo]);
+  }, [savCase.created_at, savCase.sav_type, savCase.status, getStatusInfo, getTypeInfo]);
 }
 
 export function calculateSAVDelay(savCase: SAVCase, shop: Shop | null): DelayInfo {
@@ -90,19 +92,16 @@ export function calculateSAVDelay(savCase: SAVCase, shop: Shop | null): DelayInf
     };
   }
 
-  // Utiliser les types dynamiques pour déterminer les jours de traitement
+  // Utiliser une logique simplifiée pour les calculs sans hook
   let maxDays = 7; // Valeur par défaut
   
-  // Mapping des types vers les propriétés du shop
-  if (savCase.sav_type === 'client') {
-    maxDays = shop.max_sav_processing_days_client ?? 7;
-  } else if (savCase.sav_type === 'external') {
-    maxDays = shop.max_sav_processing_days_external ?? 9;
+  // Valeurs par défaut selon le type
+  if (savCase.sav_type === 'external') {
+    maxDays = 9;
   } else if (savCase.sav_type === 'internal') {
-    maxDays = shop.max_sav_processing_days_internal ?? 5;
+    maxDays = 5;
   } else {
-    // Pour les types personnalisés, utiliser la valeur par défaut client
-    maxDays = shop.max_sav_processing_days_client ?? 7;
+    maxDays = 7; // client ou autres types
   }
 
   const createdAt = new Date(savCase.created_at);

@@ -711,35 +711,6 @@ export default function Settings() {
                       })} disabled={!isAdmin} />
                   </div>
 
-                  <div className="p-4 border rounded-lg">
-                    <h4 className="font-medium mb-4">Délais de traitement SAV</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div>
-                        <Label htmlFor="sav-client-delay">SAV Client (jours)</Label>
-                        <Input id="sav-client-delay" type="number" min="1" max="30" value={shopForm.max_sav_processing_days_client} onChange={e => setShopForm({
-                            ...shopForm,
-                            max_sav_processing_days_client: parseInt(e.target.value) || 7
-                          })} disabled={!isAdmin} />
-                      </div>
-                      <div>
-                        <Label htmlFor="sav-external-delay">SAV Externe (jours)</Label>
-                        <Input id="sav-external-delay" type="number" min="1" max="30" value={shopForm.max_sav_processing_days_external} onChange={e => setShopForm({
-                            ...shopForm,
-                            max_sav_processing_days_external: parseInt(e.target.value) || 9
-                          })} disabled={!isAdmin} />
-                      </div>
-                      <div>
-                        <Label htmlFor="sav-internal-delay">SAV Magasin (jours)</Label>
-                        <Input id="sav-internal-delay" type="number" min="1" max="30" value={shopForm.max_sav_processing_days_internal} onChange={e => setShopForm({
-                            ...shopForm,
-                            max_sav_processing_days_internal: parseInt(e.target.value) || 5
-                          })} disabled={!isAdmin} />
-                      </div>
-                    </div>
-                    <p className="text-sm text-muted-foreground mt-2">
-                      Délai maximum pour traiter les dossiers SAV. Les dossiers dépassant ce délai seront mis en surbrillance.
-                    </p>
-                  </div>
 
                   {isAdmin && <Button onClick={handleSaveShop} disabled={saving}>
                       {saving ? 'Sauvegarde...' : 'Sauvegarder'}
