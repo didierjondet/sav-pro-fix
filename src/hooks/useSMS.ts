@@ -13,7 +13,7 @@ interface SendSMSRequest {
   recordId?: string;
 }
 
-export function useSMS(onSMSSent?: () => void) {
+export function useSMS() {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const { profile } = useProfile();
@@ -67,10 +67,8 @@ export function useSMS(onSMSSent?: () => void) {
         description: "Le SMS a été envoyé avec succès",
       });
 
-      // Call the callback to refresh SMS credits if provided
-      if (onSMSSent) {
-        onSMSSent();
-      }
+      // Trigger a page reload to refresh all SMS counters
+      window.location.reload();
 
       return true;
     } catch (error: any) {

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { MessageSquare } from 'lucide-react';
-import { useSMSContext } from '@/contexts/SMSContext';
+import { useSMS } from '@/hooks/useSMS';
 import { useLimitDialogContext } from '@/contexts/LimitDialogContext';
 import { generateShortTrackingUrl } from '@/utils/trackingUtils';
 import { supabase } from '@/integrations/supabase/client';
@@ -47,7 +47,7 @@ export function SMSButton({
   const [useCustomMessage, setUseCustomMessage] = useState(false);
   const [trackingSlug, setTrackingSlug] = useState<string>('');
   const [sending, setSending] = useState(false);
-  const { sendSMS, sendSAVNotification, sendQuoteNotification, loading } = useSMSContext();
+  const { sendSMS, sendSAVNotification, sendQuoteNotification, loading } = useSMS();
   const { checkAndShowLimitDialog } = useLimitDialogContext();
 
   // Récupérer le tracking_slug si c'est un SAV

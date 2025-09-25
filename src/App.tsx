@@ -5,7 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { LimitDialogProvider } from "@/contexts/LimitDialogContext";
-import { SMSProvider } from "@/contexts/SMSContext";
+
 import { DelayNotificationProvider } from "@/components/layout/DelayNotificationProvider";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
@@ -51,10 +51,9 @@ const queryClient = new QueryClient({
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
-      <SMSProvider>
-        <DelayNotificationProvider>
-          <LimitDialogProvider>
-            <TooltipProvider>
+      <DelayNotificationProvider>
+        <LimitDialogProvider>
+          <TooltipProvider>
               <Toaster />
               <Sonner />
               <BrowserRouter>
@@ -101,7 +100,6 @@ const App = () => (
             </TooltipProvider>
           </LimitDialogProvider>
         </DelayNotificationProvider>
-      </SMSProvider>
     </AuthProvider>
   </QueryClientProvider>
 );
