@@ -11,9 +11,6 @@ export interface Shop {
   address: string;
   invite_code: string;
   logo_url: string;
-  max_sav_processing_days_client: number;
-  max_sav_processing_days_internal: number;
-  max_sav_processing_days_external: number;
   website_enabled: boolean;
   website_title: string;
   website_description: string;

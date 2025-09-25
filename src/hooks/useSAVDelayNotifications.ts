@@ -3,11 +3,13 @@ import { useSAVCases } from './useSAVCases';
 import { useShopSettings } from './useShopSettings';
 import { useNotifications } from './useNotifications';
 import { calculateSAVDelay } from './useSAVDelay';
+import { useShopSAVTypes } from './useShopSAVTypes';
 
 export function useSAVDelayNotifications() {
   const { cases } = useSAVCases();
   const { settings } = useShopSettings();
   const { createSAVDelayAlert } = useNotifications();
+  const { types } = useShopSAVTypes();
 
   useEffect(() => {
     const checkSAVDelays = async () => {
@@ -30,13 +32,9 @@ export function useSAVDelayNotifications() {
         }
 
         // Calculer le délai en créant un objet shop temporaire
-        const tempShop = {
-          max_sav_processing_days_client: 7,
-          max_sav_processing_days_external: 9,
-          max_sav_processing_days_internal: 7
-        };
+        const tempShop = {};
         
-        const delayInfo = calculateSAVDelay(savCase, tempShop as any);
+        const delayInfo = calculateSAVDelay(savCase, tempShop as any, types);
         
         // Si le SAV est en pause, ne pas envoyer d'alerte
         if (delayInfo.isPaused) {
@@ -84,7 +82,7 @@ export function useSAVDelayNotifications() {
     const interval = setInterval(checkSAVDelays, 60 * 60 * 1000); // Toutes les heures
 
     return () => clearInterval(interval);
-  }, [cases, settings, createSAVDelayAlert]);
+  }, [cases, settings, createSAVDelayAlert, types]);
 
   return null; // Ce hook ne retourne rien, il fait juste les vérifications
 }

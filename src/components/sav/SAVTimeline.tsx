@@ -10,17 +10,14 @@ interface TimelineProps {
     sav_type: string; // Utiliser string au lieu du type hardcodé
     status: string;
   };
-  shop: {
-    max_sav_processing_days_client?: number;
-    max_sav_processing_days_internal?: number;
-    max_sav_processing_days_external?: number;
-  } | null;
+  shop: any | null; // Simplifié car on n'utilise plus les propriétés de délai du shop
 }
 
 export function SAVTimeline({ savCase, shop }: TimelineProps) {
   console.log('🕐 SAVTimeline render:', { savCase, shop });
   
   const { isReadyStatus, isCancelledStatus, isPauseTimerStatus, getStatusInfo } = useShopSAVStatuses();
+  const { getTypeInfo, types } = useShopSAVTypes();
   
   if (!shop || !savCase) {
     console.log('❌ Timeline: Missing data', { shop: !!shop, savCase: !!savCase });
@@ -41,22 +38,25 @@ export function SAVTimeline({ savCase, shop }: TimelineProps) {
     return statusInfo?.label || status;
   };
 
-  // Utiliser les types dynamiques pour déterminer les jours de traitement
+  // Utiliser les types SAV pour déterminer les jours de traitement
+  const typeInfo = getTypeInfo(savCase.sav_type);
   let maxDays = 7; // Valeur par défaut
   
-  // Mapping des types vers les propriétés du shop
-  if (savCase.sav_type === 'client') {
-    maxDays = shop.max_sav_processing_days_client ?? 7;
-  } else if (savCase.sav_type === 'external') {
-    maxDays = shop.max_sav_processing_days_external ?? 9;
-  } else if (savCase.sav_type === 'internal') {
-    maxDays = shop.max_sav_processing_days_internal ?? 5;
+  // Utiliser la valeur max_processing_days du type SAV
+  if (typeInfo && typeof typeInfo === 'object' && 'max_processing_days' in typeInfo) {
+    maxDays = typeInfo.max_processing_days || 7;
   } else {
-    // Pour les types personnalisés, utiliser la valeur par défaut client
-    maxDays = shop.max_sav_processing_days_client ?? 7;
+    // Valeurs par défaut selon le type si pas de configuration spécifique
+    if (savCase.sav_type === 'external') {
+      maxDays = 9;
+    } else if (savCase.sav_type === 'internal') {
+      maxDays = 5;
+    } else {
+      maxDays = 7; // client ou autres types
+    }
   }
 
-  const delayInfo = calculateSAVDelay(savCase as any, shop as any);
+  const delayInfo = calculateSAVDelay(savCase as any, shop as any, types);
   const createdAt = new Date(savCase.created_at);
   const now = new Date();
   

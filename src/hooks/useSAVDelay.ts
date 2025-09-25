@@ -80,7 +80,7 @@ export function useSAVDelay(savCase: SAVCase, shop: Shop | null): DelayInfo {
   }, [savCase.created_at, savCase.sav_type, savCase.status, getStatusInfo, getTypeInfo]);
 }
 
-export function calculateSAVDelay(savCase: SAVCase, shop: Shop | null): DelayInfo {
+export function calculateSAVDelay(savCase: SAVCase, shop: Shop | null, savTypes?: any[]): DelayInfo {
   if (!shop) {
     return {
       isOverdue: false,
@@ -92,16 +92,33 @@ export function calculateSAVDelay(savCase: SAVCase, shop: Shop | null): DelayInf
     };
   }
 
-  // Utiliser une logique simplifiée pour les calculs sans hook
+  // Utiliser les types SAV pour déterminer les jours de traitement
   let maxDays = 7; // Valeur par défaut
   
-  // Valeurs par défaut selon le type
-  if (savCase.sav_type === 'external') {
-    maxDays = 9;
-  } else if (savCase.sav_type === 'internal') {
-    maxDays = 5;
+  // Si les types SAV sont fournis, les utiliser
+  if (savTypes && savTypes.length > 0) {
+    const typeInfo = savTypes.find(type => type.type_key === savCase.sav_type);
+    if (typeInfo && typeInfo.max_processing_days) {
+      maxDays = typeInfo.max_processing_days;
+    } else {
+      // Valeurs par défaut selon le type si pas de configuration spécifique
+      if (savCase.sav_type === 'external') {
+        maxDays = 9;
+      } else if (savCase.sav_type === 'internal') {
+        maxDays = 5;
+      } else {
+        maxDays = 7; // client ou autres types
+      }
+    }
   } else {
-    maxDays = 7; // client ou autres types
+    // Fallback aux valeurs par défaut selon le type
+    if (savCase.sav_type === 'external') {
+      maxDays = 9;
+    } else if (savCase.sav_type === 'internal') {
+      maxDays = 5;
+    } else {
+      maxDays = 7; // client ou autres types
+    }
   }
 
   const createdAt = new Date(savCase.created_at);

@@ -135,7 +135,7 @@ export function useStatistics(period: '7d' | '30d' | '3m' | '6m' | '1y'): Statis
         console.log('🔍 Debug retard - Total SAV récupérés:', savCases?.length || 0);
         console.log('🔍 Debug retard - SAV actifs:', activeSavCases.length);
         console.log('🔍 Debug retard - SAV ready:', readySavCases.length);
-        console.log('🔍 Debug retard - Délai max client:', shop.max_sav_processing_days_client);
+        console.log('🔍 Debug retard - Délai max calculé via types SAV');
 
         // Calculer les revenus et dépenses
         let totalRevenue = 0;
@@ -191,7 +191,7 @@ export function useStatistics(period: '7d' | '30d' | '3m' | '6m' | '1y'): Statis
         activeSavCases.forEach((savCase: any) => {
           // Utiliser created_at comme date de référence
           const startDate = new Date(savCase.created_at);
-          const processingDays = shop.max_sav_processing_days_client || 7;
+          const processingDays = 7; // Valeur par défaut, sera remplacée par la configuration SAV types
           const theoreticalEndDate = new Date(startDate);
           theoreticalEndDate.setDate(theoreticalEndDate.getDate() + processingDays);
           

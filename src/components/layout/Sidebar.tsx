@@ -12,6 +12,7 @@ import { useSAVUnreadMessages } from '@/hooks/useSAVUnreadMessages';
 import { useShop } from '@/hooks/useShop';
 import { useShopSAVStatuses } from '@/hooks/useShopSAVStatuses';
 import { useShopSAVTypes } from '@/hooks/useShopSAVTypes';
+import { calculateSAVDelay } from '@/hooks/useSAVDelay';
 import { useMenuPermissions } from '@/hooks/useMenuPermissions';
 import { MessageSquare, Package, Users, BarChart3, FileText, Settings, X, Plus, Shield, CreditCard, HelpCircle, Info } from 'lucide-react';
 import { useQuotes } from '@/hooks/useQuotes';
@@ -132,16 +133,9 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     const today = new Date();
     const daysDiff = Math.floor((today.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24));
 
-    // Use appropriate delay based on SAV type
-    let maxDays: number;
-    if (savCase.sav_type === 'client') {
-      maxDays = shop?.max_sav_processing_days_client || 7;
-    } else if (savCase.sav_type === 'external') {
-      maxDays = shop?.max_sav_processing_days_external || 9;
-    } else {
-      maxDays = shop?.max_sav_processing_days_internal || 5;
-    }
-    return daysDiff > maxDays;
+      // Calculate delay using types configuration
+      const delayInfo = calculateSAVDelay(savCase, shop, savTypes);
+      return delayInfo.isOverdue;
   }).length;
 
   // Get detailed info about late SAV cases for tooltip
@@ -157,20 +151,10 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       if (statusInfo.pause_timer) {
         return false; // Don't count as late if timer is paused
       }
-      const createdDate = new Date(savCase.created_at);
-      const today = new Date();
-      const daysDiff = Math.floor((today.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24));
-
-      // Use appropriate delay based on SAV type
-      let maxDays: number;
-      if (savCase.sav_type === 'client') {
-        maxDays = shop?.max_sav_processing_days_client || 7;
-      } else if (savCase.sav_type === 'external') {
-        maxDays = shop?.max_sav_processing_days_external || 9;
-      } else {
-        maxDays = shop?.max_sav_processing_days_internal || 5;
-      }
-      return daysDiff > maxDays;
+      
+      // Calculate delay using types configuration
+      const delayInfo = calculateSAVDelay(savCase, shop, savTypes);
+      return delayInfo.isOverdue;
     });
     return {
       count: lateSAVs.length,

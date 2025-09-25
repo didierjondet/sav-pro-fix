@@ -56,7 +56,7 @@ export default function SAVList() {
   const { savWithUnreadMessages } = useSAVUnreadMessages();
   const { checkAndShowLimitDialog } = useLimitDialogContext();
   const { getStatusInfo, statuses, isReadyStatus, isCancelledStatus, isActiveStatus } = useShopSAVStatuses();
-  const { getAllTypes, getTypeInfo } = useShopSAVTypes();
+  const { getAllTypes, getTypeInfo, types } = useShopSAVTypes();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
@@ -155,7 +155,7 @@ export default function SAVList() {
     // 1. Ajouter les informations de délai
     const casesWithDelay = cases.map((case_) => ({
       ...case_,
-      delayInfo: calculateSAVDelay(case_, shop)
+      delayInfo: calculateSAVDelay(case_, shop, types)
     }));
 
     // 2. Filtrer par type de SAV avec types dynamiques

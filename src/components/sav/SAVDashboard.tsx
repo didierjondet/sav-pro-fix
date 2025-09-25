@@ -35,7 +35,7 @@ export function SAVDashboard() {
   const { costs, loading: costsLoading } = useSAVPartsCosts();
   const { storageGB, loading: storageLoading } = useShopStorageUsage(shop?.id);
   const { data: monthlyData, loading: monthlyLoading } = useMonthlyStatistics(selectedYear);
-  const { getAllTypes, getTypeInfo } = useShopSAVTypes();
+  const { getAllTypes, getTypeInfo, types } = useShopSAVTypes();
   const navigate = useNavigate();
 
   // Drag & Drop config shared

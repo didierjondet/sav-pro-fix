@@ -206,9 +206,7 @@ export default function SimpleTrack() {
           phone: undefined
         },
         shop: {
-          ...shopData?.shops,
-          max_sav_processing_days_client: shopData?.shops?.max_sav_processing_days_client ?? 7,
-          max_sav_processing_days_internal: shopData?.shops?.max_sav_processing_days_internal ?? 5
+          name: shopData?.shops?.name || 'Magasin'
         }
       };
 
@@ -267,7 +265,7 @@ export default function SimpleTrack() {
   const StatusIcon = statusInfo?.icon || AlertCircle;
   
   // Calculer les informations de délai
-  const delayInfo = calculateSAVDelay(savCase as any, savCase.shop as any);
+  const delayInfo = calculateSAVDelay(savCase as any, savCase.shop as any, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
