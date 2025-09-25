@@ -130,9 +130,7 @@ export default function Settings() {
     custom_review_sms_message: '',
     custom_review_chat_message: '',
     sav_delay_alerts_enabled: false,
-    sav_client_alert_days: 2,
-    sav_external_alert_days: 2,
-    sav_internal_alert_days: 2,
+    sav_alert_days: {} as { [key: string]: number },
     sidebar_nav_visible: true,
     sidebar_sav_types_visible: true,
     sidebar_sav_statuses_visible: true,
@@ -150,7 +148,22 @@ export default function Settings() {
     }
   }, [user]);
   useEffect(() => {
-    if (shop) {
+    if (shop && savTypes.length > 0) {
+      // Construire l'objet des alertes de retard pour chaque type SAV
+      const savAlertDays: { [key: string]: number } = {};
+      
+      // Migrer les anciennes valeurs si elles existent
+      const defaultValues = {
+        client: (shop as any).sav_client_alert_days || 2,
+        external: (shop as any).sav_external_alert_days || 2,
+        internal: (shop as any).sav_internal_alert_days || 2,
+      };
+      
+      // Pour chaque type SAV, initialiser sa valeur d'alerte
+      savTypes.forEach(type => {
+        savAlertDays[type.type_key] = defaultValues[type.type_key as keyof typeof defaultValues] || 2;
+      });
+      
       setShopForm({
         name: shop.name || '',
         email: shop.email || '',
@@ -166,16 +179,14 @@ export default function Settings() {
         custom_review_sms_message: shop.custom_review_sms_message || 'Bonjour {customer_name}, votre dossier de réparation {case_number} a été mis à jour : {status}. Si vous avez été satisfait(e) de notre service, nous vous serions reconnaissants de prendre un moment pour nous laisser un avis : {review_link}. Merci pour votre confiance ! {shop_name}',
         custom_review_chat_message: shop.custom_review_chat_message || 'Bonjour {customer_name} ! 👋\\n\\nVotre réparation est maintenant terminée ! Si vous avez été satisfait(e) de notre service, nous vous serions reconnaissants de prendre un moment pour nous laisser un avis.\\n\\n⭐ Laisser un avis : {review_link}\\n\\nVotre retour nous aide à continuer d\'améliorer nos services.\\n\\nMerci pour votre confiance ! 😊\\n\\nL\'équipe {shop_name}',
         sav_delay_alerts_enabled: (shop as any).sav_delay_alerts_enabled ?? false,
-        sav_client_alert_days: (shop as any).sav_client_alert_days || 2,
-        sav_external_alert_days: (shop as any).sav_external_alert_days || 2,
-        sav_internal_alert_days: (shop as any).sav_internal_alert_days || 2,
+        sav_alert_days: savAlertDays,
         sidebar_nav_visible: (shop as any).sidebar_nav_visible ?? true,
         sidebar_sav_types_visible: (shop as any).sidebar_sav_types_visible ?? true,
         sidebar_sav_statuses_visible: (shop as any).sidebar_sav_statuses_visible ?? true,
         sidebar_late_sav_visible: (shop as any).sidebar_late_sav_visible ?? true
       });
     }
-  }, [shop]);
+  }, [shop, savTypes]);
   useEffect(() => {
     if (profile) {
       setProfileForm({
@@ -223,7 +234,14 @@ export default function Settings() {
   const handleSaveShop = async () => {
     setSaving(true);
     try {
-      await updateShopData(shopForm);
+      // Migrer les nouvelles alertes vers les anciens champs pour la compatibilité
+      const shopDataWithCompatibility = {
+        ...shopForm,
+        sav_client_alert_days: shopForm.sav_alert_days['client'] || 2,
+        sav_external_alert_days: shopForm.sav_alert_days['external'] || 2,
+        sav_internal_alert_days: shopForm.sav_alert_days['internal'] || 2,
+      };
+      await updateShopData(shopDataWithCompatibility);
     } finally {
       setSaving(false);
     }
@@ -873,67 +891,46 @@ export default function Settings() {
                       </div>
                       
                       {shopForm.sav_delay_alerts_enabled && (
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4 pt-4 border-t">
-                          <div>
-                            <Label htmlFor="sav-client-alert-days">
-                              Alerte SAV Client (jours avant)
-                            </Label>
-                            <Input 
-                              id="sav-client-alert-days" 
-                              type="number" 
-                              min="1" 
-                              max="10" 
-                              value={shopForm.sav_client_alert_days || 2} 
-                              onChange={e => setShopForm({
-                                ...shopForm,
-                                sav_client_alert_days: parseInt(e.target.value) || 2
-                              })} 
-                              disabled={!isAdmin} 
-                            />
-                            <p className="text-xs text-muted-foreground mt-1">
-                              Délai configuré: {shopForm.max_sav_processing_days_client || 7} jours
-                            </p>
-                          </div>
-                          <div>
-                            <Label htmlFor="sav-external-alert-days">
-                              Alerte SAV Externe (jours avant)
-                            </Label>
-                            <Input 
-                              id="sav-external-alert-days" 
-                              type="number" 
-                              min="1" 
-                              max="10" 
-                              value={shopForm.sav_external_alert_days || 2} 
-                              onChange={e => setShopForm({
-                                ...shopForm,
-                                sav_external_alert_days: parseInt(e.target.value) || 2
-                              })} 
-                              disabled={!isAdmin} 
-                            />
-                            <p className="text-xs text-muted-foreground mt-1">
-                              Délai configuré: {shopForm.max_sav_processing_days_external || 9} jours
-                            </p>
-                          </div>
-                          <div>
-                            <Label htmlFor="sav-internal-alert-days">
-                              Alerte SAV Magasin (jours avant)
-                            </Label>
-                            <Input 
-                              id="sav-internal-alert-days" 
-                              type="number" 
-                              min="1" 
-                              max="10" 
-                              value={shopForm.sav_internal_alert_days || 2} 
-                              onChange={e => setShopForm({
-                                ...shopForm,
-                                sav_internal_alert_days: parseInt(e.target.value) || 2
-                              })} 
-                              disabled={!isAdmin} 
-                            />
-                            <p className="text-xs text-muted-foreground mt-1">
-                              Délai configuré: {shopForm.max_sav_processing_days_internal || 5} jours
-                            </p>
-                          </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4 pt-4 border-t">
+                          {savTypes.map(type => {
+                            const typeInfo = type;
+                            const defaultMaxDays = type.max_processing_days || 
+                              (type.type_key === 'client' ? shopForm.max_sav_processing_days_client : 
+                               type.type_key === 'external' ? shopForm.max_sav_processing_days_external :
+                               type.type_key === 'internal' ? shopForm.max_sav_processing_days_internal : 7);
+                            
+                            return (
+                              <div key={type.id} className="space-y-2">
+                                <Label htmlFor={`sav-${type.type_key}-alert-days`} className="flex items-center gap-2">
+                                  <div 
+                                    className="w-3 h-3 rounded-full" 
+                                    style={{ backgroundColor: type.type_color }}
+                                  />
+                                  Alerte {type.type_label}
+                                </Label>
+                                <Input 
+                                  id={`sav-${type.type_key}-alert-days`} 
+                                  type="number" 
+                                  min="1" 
+                                  max="10" 
+                                  value={shopForm.sav_alert_days[type.type_key] || 2} 
+                                  onChange={e => setShopForm({
+                                    ...shopForm,
+                                    sav_alert_days: {
+                                      ...shopForm.sav_alert_days,
+                                      [type.type_key]: parseInt(e.target.value) || 2
+                                    }
+                                  })} 
+                                  disabled={!isAdmin} 
+                                  placeholder="Nombre de jours"
+                                />
+                                <div className="text-xs text-muted-foreground">
+                                  <div>Alerter {shopForm.sav_alert_days[type.type_key] || 2} jours avant</div>
+                                  <div>Délai max: {defaultMaxDays} jours</div>
+                                </div>
+                              </div>
+                            );
+                          })}
                         </div>
                       )}
                       <p className="text-sm text-muted-foreground">
