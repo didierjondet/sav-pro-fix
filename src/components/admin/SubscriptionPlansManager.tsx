@@ -17,6 +17,14 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet';
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -795,17 +803,17 @@ export default function SubscriptionPlansManager() {
         ))}
       </div>
 
-      {/* Dialog d'édition */}
-      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Modifier le plan d'abonnement</DialogTitle>
-            <DialogDescription>
+      {/* Sheet d'édition */}
+      <Sheet open={isEditOpen} onOpenChange={setIsEditOpen}>
+        <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>Modifier le plan d'abonnement</SheetTitle>
+            <SheetDescription>
               Modifiez les caractéristiques de votre plan
-            </DialogDescription>
-          </DialogHeader>
+            </SheetDescription>
+          </SheetHeader>
           
-          <div className="space-y-4">
+          <div className="space-y-4 py-6">
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label>Nom du plan</Label>
@@ -1041,16 +1049,16 @@ export default function SubscriptionPlansManager() {
             </div>
           </div>
           
-          <DialogFooter>
+          <SheetFooter className="gap-2">
             <Button variant="outline" onClick={() => setIsEditOpen(false)}>
               Annuler
             </Button>
             <Button onClick={handleUpdatePlan}>
               Mettre à jour
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
