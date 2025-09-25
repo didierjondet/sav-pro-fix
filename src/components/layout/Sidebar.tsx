@@ -289,12 +289,12 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
               {/* Types de SAV */}
               {(shop as any)?.sidebar_sav_types_visible !== false && (
                 <div className="mt-4 p-3 bg-muted rounded-lg">
-                  <div className="flex items-center justify-between mb-1 pl-1">
-                    <h3 className="text-base font-semibold text-foreground">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-sm font-medium text-foreground">
                       Types de SAV
                     </h3>
-                    <Badge variant="secondary" className="text-xs px-2 py-0.5">
-                      {savTypes.length}
+                    <Badge variant="secondary" className="text-xs">
+                      {Object.values(savTypeCounts).reduce((total, typeData) => total + typeData.count, 0)}
                     </Badge>
                   </div>
                   <div className="space-y-1">
