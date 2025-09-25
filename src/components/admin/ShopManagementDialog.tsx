@@ -565,6 +565,44 @@ export default function ShopManagementDialog({ shop, isOpen, onClose, onUpdate }
     }
   };
 
+  const handleToggleForcedFeature = async (feature: string, enabled: boolean) => {
+    if (!shop) return;
+    
+    setLoading(true);
+    try {
+      const currentForced = (shop as any).forced_features || {};
+      const newForced = { ...currentForced };
+      
+      if (enabled) {
+        newForced[feature] = true;
+      } else {
+        delete newForced[feature];
+      }
+      
+      const { error } = await supabase
+        .from('shops')
+        .update({ forced_features: newForced })
+        .eq('id', shop.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Succès",
+        description: `Fonctionnalité ${feature} ${enabled ? 'forcée' : 'retirée'}`,
+      });
+      
+      onUpdate();
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSyncWithPlan = async () => {
     if (!shop || !currentTier) return;
     
@@ -613,13 +651,14 @@ export default function ShopManagementDialog({ shop, isOpen, onClose, onUpdate }
         </DialogHeader>
 
         <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="overview">Vue d'ensemble</TabsTrigger>
-            <TabsTrigger value="subscription">Abonnement</TabsTrigger>
-            <TabsTrigger value="sms">Crédits SMS</TabsTrigger>
-            <TabsTrigger value="users">Utilisateurs</TabsTrigger>
-            <TabsTrigger value="restrictions">Restrictions</TabsTrigger>
-          </TabsList>
+        <TabsList className="grid w-full grid-cols-6">
+          <TabsTrigger value="overview">Vue d'ensemble</TabsTrigger>
+          <TabsTrigger value="subscription">Abonnement</TabsTrigger>
+          <TabsTrigger value="sms">Crédits SMS</TabsTrigger>
+          <TabsTrigger value="users">Utilisateurs</TabsTrigger>
+          <TabsTrigger value="restrictions">Restrictions</TabsTrigger>
+          <TabsTrigger value="overrides">Forcer l'accès</TabsTrigger>
+        </TabsList>
 
           <TabsContent value="overview" className="space-y-4">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -1044,14 +1083,97 @@ export default function ShopManagementDialog({ shop, isOpen, onClose, onUpdate }
                   </Button>
                 </div>
 
-                <div className="text-sm text-muted-foreground bg-blue-50 p-3 rounded">
-                  <AlertTriangle className="h-4 w-4 inline mr-1" />
-                  Vous pouvez modifier manuellement les limites pour ce magasin ou les synchroniser avec le plan par défaut.
+          </div>
+        </TabsContent>
+        
+        <TabsContent value="overrides" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Unlock className="h-5 w-5" />
+                Forcer l'activation de fonctionnalités
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Permettre à ce magasin d'accéder à des fonctionnalités même si son plan ne l'autorise pas
+              </p>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-3">
+                  <Label className="text-sm font-medium">Menus principaux</Label>
+                  
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      checked={(shop as any).forced_features?.quotes === true}
+                      onCheckedChange={(checked) => handleToggleForcedFeature('quotes', checked)}
+                      disabled={loading}
+                    />
+                    <Label className="text-sm">Forcer Devis</Label>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      checked={(shop as any).forced_features?.orders === true}
+                      onCheckedChange={(checked) => handleToggleForcedFeature('orders', checked)}
+                      disabled={loading}
+                    />
+                    <Label className="text-sm">Forcer Commandes</Label>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      checked={(shop as any).forced_features?.chats === true}
+                      onCheckedChange={(checked) => handleToggleForcedFeature('chats', checked)}
+                      disabled={loading}
+                    />
+                    <Label className="text-sm">Forcer Chat clients</Label>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      checked={(shop as any).forced_features?.statistics === true}
+                      onCheckedChange={(checked) => handleToggleForcedFeature('statistics', checked)}
+                      disabled={loading}
+                    />
+                    <Label className="text-sm">Forcer Statistiques</Label>
+                  </div>
                 </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+                
+                <div className="space-y-3">
+                  <Label className="text-sm font-medium">Zones sidebar</Label>
+                  
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      checked={(shop as any).forced_features?.sidebar_late_sav === true}
+                      onCheckedChange={(checked) => handleToggleForcedFeature('sidebar_late_sav', checked)}
+                      disabled={loading}
+                    />
+                    <Label className="text-sm">Forcer SAV en retard</Label>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      checked={(shop as any).forced_features?.sidebar_sav_types === true}
+                      onCheckedChange={(checked) => handleToggleForcedFeature('sidebar_sav_types', checked)}
+                      disabled={loading}
+                    />
+                    <Label className="text-sm">Forcer Types de SAV</Label>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      checked={(shop as any).forced_features?.sidebar_sav_statuses === true}
+                      onCheckedChange={(checked) => handleToggleForcedFeature('sidebar_sav_statuses', checked)}
+                      disabled={loading}
+                    />
+                    <Label className="text-sm">Forcer Statuts SAV</Label>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
       </DialogContent>
     </Dialog>
   );

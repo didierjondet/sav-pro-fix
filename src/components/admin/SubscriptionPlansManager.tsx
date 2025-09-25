@@ -37,7 +37,9 @@ import {
   DollarSign,
   MessageSquare,
   Activity,
-  ExternalLink
+  ExternalLink,
+  Menu,
+  Sidebar
 } from 'lucide-react';
 
 interface SubscriptionPlan {
@@ -52,6 +54,7 @@ interface SubscriptionPlan {
   stripe_price_id: string | null;
   contact_only: boolean;
   is_active: boolean;
+  menu_config: any;
   created_at: string;
   updated_at: string;
 }
@@ -74,7 +77,20 @@ export default function SubscriptionPlansManager() {
     features: '',
     stripe_price_id: '',
     contact_only: false,
-    is_active: true
+    is_active: true,
+    menu_config: {
+      dashboard: true,
+      sav: true,
+      parts: true,
+      quotes: false,
+      orders: false,
+      customers: true,
+      chats: false,
+      sidebar_sav_types: true,
+      sidebar_sav_statuses: true,
+      sidebar_late_sav: true,
+      statistics: false
+    }
   });
 
   useEffect(() => {
@@ -97,7 +113,20 @@ export default function SubscriptionPlansManager() {
         billing_interval: plan.billing_interval as 'month' | 'year',
         features: Array.isArray(plan.features) ? plan.features.map(f => String(f)) : [],
         stripe_price_id: plan.stripe_price_id || null,
-        contact_only: plan.contact_only || false
+        contact_only: plan.contact_only || false,
+        menu_config: plan.menu_config || {
+          dashboard: true,
+          sav: true,
+          parts: true,
+          quotes: false,
+          orders: false,
+          customers: true,
+          chats: false,
+          sidebar_sav_types: true,
+          sidebar_sav_statuses: true,
+          sidebar_late_sav: true,
+          statistics: false
+        }
       }));
       
       setPlans(transformedPlans);
@@ -123,7 +152,20 @@ export default function SubscriptionPlansManager() {
       features: '',
       stripe_price_id: '',
       contact_only: false,
-      is_active: true
+      is_active: true,
+      menu_config: {
+        dashboard: true,
+        sav: true,
+        parts: true,
+        quotes: false,
+        orders: false,
+        customers: true,
+        chats: false,
+        sidebar_sav_types: true,
+        sidebar_sav_statuses: true,
+        sidebar_late_sav: true,
+        statistics: false
+      }
     });
   };
 
@@ -143,7 +185,8 @@ export default function SubscriptionPlansManager() {
           features: formData.features.split('\n').filter(f => f.trim()),
           stripe_price_id: formData.stripe_price_id || null,
           contact_only: formData.contact_only,
-          is_active: formData.is_active
+          is_active: formData.is_active,
+          menu_config: formData.menu_config
         })
         .select()
         .single();
@@ -161,7 +204,8 @@ export default function SubscriptionPlansManager() {
         billing_interval: data.billing_interval as 'month' | 'year',
         features: Array.isArray(data.features) ? data.features.map(f => String(f)) : [],
         stripe_price_id: data.stripe_price_id || null,
-        contact_only: data.contact_only || false
+        contact_only: data.contact_only || false,
+        menu_config: data.menu_config || formData.menu_config
       }]);
       setIsCreateOpen(false);
       resetForm();
@@ -184,7 +228,20 @@ export default function SubscriptionPlansManager() {
     setEditingPlan(plan);
     setFormData({
       ...plan,
-      features: plan.features.join('\n')
+      features: plan.features.join('\n'),
+      menu_config: plan.menu_config || {
+        dashboard: true,
+        sav: true,
+        parts: true,
+        quotes: false,
+        orders: false,
+        customers: true,
+        chats: false,
+        sidebar_sav_types: true,
+        sidebar_sav_statuses: true,
+        sidebar_late_sav: true,
+        statistics: false
+      }
     });
     setIsEditOpen(true);
   };
@@ -207,7 +264,8 @@ export default function SubscriptionPlansManager() {
         features: formData.features.split('\n').filter(f => f.trim()),
         stripe_price_id: formData.stripe_price_id || null,
         contact_only: formData.contact_only,
-        is_active: formData.is_active
+        is_active: formData.is_active,
+        menu_config: formData.menu_config
       };
       
       console.log('🚀 Update payload:', updateData);
@@ -241,7 +299,8 @@ export default function SubscriptionPlansManager() {
           billing_interval: data.billing_interval as 'month' | 'year',
           features: Array.isArray(data.features) ? data.features.map(f => String(f)) : [],
           stripe_price_id: data.stripe_price_id || null,
-          contact_only: data.contact_only || false
+          contact_only: data.contact_only || false,
+          menu_config: data.menu_config || formData.menu_config
         } : plan));
         setIsEditOpen(false);
         setEditingPlan(null);
@@ -451,6 +510,152 @@ export default function SubscriptionPlansManager() {
                   placeholder="Support prioritaire&#10;Rapports avancés&#10;API personnalisée"
                   rows={4}
                 />
+              </div>
+
+              <Separator />
+
+              <div>
+                <Label className="text-base font-semibold flex items-center gap-2">
+                  <Menu className="h-4 w-4" />
+                  Configuration des menus
+                </Label>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Définissez quels menus sont disponibles pour ce plan
+                </p>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-3">
+                    <Label className="text-sm font-medium">Menus principaux</Label>
+                    
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        checked={formData.menu_config.dashboard}
+                        onCheckedChange={(checked) => setFormData({
+                          ...formData,
+                          menu_config: { ...formData.menu_config, dashboard: checked }
+                        })}
+                      />
+                      <Label className="text-sm">Tableau de bord</Label>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        checked={formData.menu_config.sav}
+                        onCheckedChange={(checked) => setFormData({
+                          ...formData,
+                          menu_config: { ...formData.menu_config, sav: checked }
+                        })}
+                      />
+                      <Label className="text-sm">Dossiers SAV</Label>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        checked={formData.menu_config.parts}
+                        onCheckedChange={(checked) => setFormData({
+                          ...formData,
+                          menu_config: { ...formData.menu_config, parts: checked }
+                        })}
+                      />
+                      <Label className="text-sm">Stock pièces</Label>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        checked={formData.menu_config.quotes}
+                        onCheckedChange={(checked) => setFormData({
+                          ...formData,
+                          menu_config: { ...formData.menu_config, quotes: checked }
+                        })}
+                      />
+                      <Label className="text-sm">Devis</Label>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        checked={formData.menu_config.orders}
+                        onCheckedChange={(checked) => setFormData({
+                          ...formData,
+                          menu_config: { ...formData.menu_config, orders: checked }
+                        })}
+                      />
+                      <Label className="text-sm">Commandes</Label>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        checked={formData.menu_config.customers}
+                        onCheckedChange={(checked) => setFormData({
+                          ...formData,
+                          menu_config: { ...formData.menu_config, customers: checked }
+                        })}
+                      />
+                      <Label className="text-sm">Clients</Label>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        checked={formData.menu_config.chats}
+                        onCheckedChange={(checked) => setFormData({
+                          ...formData,
+                          menu_config: { ...formData.menu_config, chats: checked }
+                        })}
+                      />
+                      <Label className="text-sm">Chat clients</Label>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        checked={formData.menu_config.statistics}
+                        onCheckedChange={(checked) => setFormData({
+                          ...formData,
+                          menu_config: { ...formData.menu_config, statistics: checked }
+                        })}
+                      />
+                      <Label className="text-sm">Statistiques</Label>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    <Label className="text-sm font-medium flex items-center gap-2">
+                      <Sidebar className="h-4 w-4" />
+                      Zones sidebar
+                    </Label>
+                    
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        checked={formData.menu_config.sidebar_late_sav}
+                        onCheckedChange={(checked) => setFormData({
+                          ...formData,
+                          menu_config: { ...formData.menu_config, sidebar_late_sav: checked }
+                        })}
+                      />
+                      <Label className="text-sm">SAV en retard</Label>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        checked={formData.menu_config.sidebar_sav_types}
+                        onCheckedChange={(checked) => setFormData({
+                          ...formData,
+                          menu_config: { ...formData.menu_config, sidebar_sav_types: checked }
+                        })}
+                      />
+                      <Label className="text-sm">Types de SAV</Label>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        checked={formData.menu_config.sidebar_sav_statuses}
+                        onCheckedChange={(checked) => setFormData({
+                          ...formData,
+                          menu_config: { ...formData.menu_config, sidebar_sav_statuses: checked }
+                        })}
+                      />
+                      <Label className="text-sm">Statuts SAV</Label>
+                    </div>
+                  </div>
+                </div>
               </div>
               
               <div>

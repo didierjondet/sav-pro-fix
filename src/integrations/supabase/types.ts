@@ -1255,6 +1255,7 @@ export type Database = {
           custom_sav_limit: number | null
           custom_sms_limit: number | null
           email: string | null
+          forced_features: Json | null
           id: string
           invite_code: string | null
           last_monthly_reset: string | null
@@ -1262,6 +1263,14 @@ export type Database = {
           max_sav_processing_days_client: number | null
           max_sav_processing_days_external: number | null
           max_sav_processing_days_internal: number | null
+          menu_chats_visible: boolean | null
+          menu_customers_visible: boolean | null
+          menu_dashboard_visible: boolean | null
+          menu_orders_visible: boolean | null
+          menu_parts_visible: boolean | null
+          menu_quotes_visible: boolean | null
+          menu_sav_visible: boolean | null
+          menu_statistics_visible: boolean | null
           monthly_sav_count: number | null
           monthly_sms_used: number | null
           name: string
@@ -1301,6 +1310,7 @@ export type Database = {
           custom_sav_limit?: number | null
           custom_sms_limit?: number | null
           email?: string | null
+          forced_features?: Json | null
           id?: string
           invite_code?: string | null
           last_monthly_reset?: string | null
@@ -1308,6 +1318,14 @@ export type Database = {
           max_sav_processing_days_client?: number | null
           max_sav_processing_days_external?: number | null
           max_sav_processing_days_internal?: number | null
+          menu_chats_visible?: boolean | null
+          menu_customers_visible?: boolean | null
+          menu_dashboard_visible?: boolean | null
+          menu_orders_visible?: boolean | null
+          menu_parts_visible?: boolean | null
+          menu_quotes_visible?: boolean | null
+          menu_sav_visible?: boolean | null
+          menu_statistics_visible?: boolean | null
           monthly_sav_count?: number | null
           monthly_sms_used?: number | null
           name: string
@@ -1347,6 +1365,7 @@ export type Database = {
           custom_sav_limit?: number | null
           custom_sms_limit?: number | null
           email?: string | null
+          forced_features?: Json | null
           id?: string
           invite_code?: string | null
           last_monthly_reset?: string | null
@@ -1354,6 +1373,14 @@ export type Database = {
           max_sav_processing_days_client?: number | null
           max_sav_processing_days_external?: number | null
           max_sav_processing_days_internal?: number | null
+          menu_chats_visible?: boolean | null
+          menu_customers_visible?: boolean | null
+          menu_dashboard_visible?: boolean | null
+          menu_orders_visible?: boolean | null
+          menu_parts_visible?: boolean | null
+          menu_quotes_visible?: boolean | null
+          menu_sav_visible?: boolean | null
+          menu_statistics_visible?: boolean | null
           monthly_sav_count?: number | null
           monthly_sms_used?: number | null
           name?: string
@@ -1668,6 +1695,7 @@ export type Database = {
           features: Json | null
           id: string
           is_active: boolean
+          menu_config: Json | null
           monthly_price: number
           name: string
           sav_limit: number | null
@@ -1683,6 +1711,7 @@ export type Database = {
           features?: Json | null
           id?: string
           is_active?: boolean
+          menu_config?: Json | null
           monthly_price?: number
           name: string
           sav_limit?: number | null
@@ -1698,6 +1727,7 @@ export type Database = {
           features?: Json | null
           id?: string
           is_active?: boolean
+          menu_config?: Json | null
           monthly_price?: number
           name?: string
           sav_limit?: number | null
