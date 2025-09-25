@@ -12,6 +12,7 @@ import { useSAVUnreadMessages } from '@/hooks/useSAVUnreadMessages';
 import { useShop } from '@/hooks/useShop';
 import { useShopSAVStatuses } from '@/hooks/useShopSAVStatuses';
 import { useShopSAVTypes } from '@/hooks/useShopSAVTypes';
+import { useMenuPermissions } from '@/hooks/useMenuPermissions';
 import { MessageSquare, Package, Users, BarChart3, FileText, Settings, X, Plus, Shield, CreditCard, HelpCircle, Info } from 'lucide-react';
 import { useQuotes } from '@/hooks/useQuotes';
 
@@ -59,6 +60,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const { statuses, getStatusInfo, isReadyStatus, isCancelledStatus, isActiveStatus } = useShopSAVStatuses();
   const { types: savTypes, getTypeInfo } = useShopSAVTypes();
   const { savWithUnreadMessages } = useSAVUnreadMessages();
+  const { permissions } = useMenuPermissions();
   const totalUnread = (savWithUnreadMessages || []).reduce((sum, s) => sum + s.unread_count, 0);
   const openConversationsCount = (savWithUnreadMessages || []).length;
   const { quotes } = useQuotes();
@@ -76,8 +78,19 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     return acc;
   }, { inProgress: 0, accepted: 0, rejected: 0 });
 
-  // Créer la navigation dynamique selon les paramètres du magasin
-  const navigation = [...baseNavigation];
+  // Filter navigation based on permissions
+  const navigation = baseNavigation.filter(item => {
+    switch(item.href) {
+      case '/dashboard': return permissions.dashboard;
+      case '/sav': return permissions.sav;
+      case '/parts': return permissions.parts;
+      case '/quotes': return permissions.quotes;
+      case '/orders': return permissions.orders;
+      case '/customers': return permissions.customers;
+      case '/client-chats': return permissions.chats;
+      default: return true;
+    }
+  });
 
   // Compter les SAV par type
   const savTypeCounts = useMemo(() => {
@@ -225,7 +238,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                 )}
               </nav>
 
-              {(shop as any)?.sidebar_late_sav_visible !== false && (
+              {permissions.sidebar_late_sav && (
                 <div className="mt-8 p-4 bg-destructive/10 rounded-lg border border-destructive/20">
                   <div className="flex items-center justify-between mb-2">
                     <h3 className="text-sm font-medium text-destructive">
@@ -294,7 +307,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
               )}
 
               {/* Types de SAV */}
-              {(shop as any)?.sidebar_sav_types_visible !== false && (
+              {permissions.sidebar_sav_types && (
                 <div className="mt-4 p-3 bg-muted rounded-lg">
                   <div className="flex items-center justify-between mb-2 pl-1">
                     <h3 className="text-sm font-medium text-foreground">
@@ -377,7 +390,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
               )}
 
               {/* Statuts SAV */}
-              {(shop as any)?.sidebar_sav_statuses_visible !== false && (
+              {permissions.sidebar_sav_statuses && (
                 <div className="mt-4 p-3 bg-muted rounded-lg">
                   <h3 className="text-base font-semibold text-foreground mb-1 pl-1">
                     Statuts SAV
