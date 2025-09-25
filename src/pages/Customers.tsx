@@ -7,10 +7,12 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { CustomerForm } from '@/components/customers/CustomerForm';
 import { CustomerActivityDialog } from '@/components/customers/CustomerActivityDialog';
+import { DuplicateManager } from '@/components/customers/DuplicateManager';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useCustomers, Customer } from '@/hooks/useCustomers';
 import { useCustomerActivity } from '@/hooks/useCustomerActivity';
+import { useCustomerSAVs } from '@/hooks/useCustomerSAVs';
 import { useShop } from '@/hooks/useShop';
 import { multiWordSearch } from '@/utils/searchUtils';
 import { 
@@ -24,7 +26,9 @@ import {
   Eye,
   Euro,
   TrendingUp,
-  Search
+  Search,
+  Users,
+  AlertTriangle
 } from 'lucide-react';
 
 export default function Customers() {
@@ -34,8 +38,9 @@ export default function Customers() {
   const [deletingCustomer, setDeletingCustomer] = useState<Customer | null>(null);
   const [viewingCustomer, setViewingCustomer] = useState<Customer | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [showDuplicateManager, setShowDuplicateManager] = useState(false);
   
-  const { customers, loading, createCustomer, updateCustomer, deleteCustomer } = useCustomers();
+  const { customers, loading, createCustomer, updateCustomer, deleteCustomer, refetch } = useCustomers();
   const { shop } = useShop();
 
   // Filtrer les clients en fonction de la recherche
@@ -112,10 +117,16 @@ export default function Customers() {
             <div className="max-w-7xl mx-auto">
               <div className="flex justify-between items-center mb-6">
                 <h1 className="text-2xl font-bold">Gestion des clients</h1>
-                <Button onClick={() => setShowForm(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Ajouter un client
-                </Button>
+                <div className="flex gap-2">
+                  <Button variant="outline" onClick={() => setShowDuplicateManager(true)}>
+                    <Users className="h-4 w-4 mr-2" />
+                    Gérer les doublons
+                  </Button>
+                  <Button onClick={() => setShowForm(true)}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Ajouter un client
+                  </Button>
+                </div>
               </div>
 
               {/* Champ de recherche */}
@@ -194,6 +205,14 @@ export default function Customers() {
         open={!!viewingCustomer}
         onOpenChange={() => setViewingCustomer(null)}
       />
+
+      {/* Gestionnaire de doublons */}
+      <DuplicateManager
+        customers={customers}
+        open={showDuplicateManager}
+        onOpenChange={setShowDuplicateManager}
+        onMergeComplete={refetch}
+      />
     </div>
   );
 }
@@ -206,6 +225,7 @@ function CustomerCard({ customer, onEdit, onDelete, onView }: {
   onView: (customer: Customer) => void;
 }) {
   const { stats } = useCustomerActivity(customer.id);
+  const { activeSAVCount } = useCustomerSAVs(customer.id);
 
   return (
     <Card className="hover:shadow-md transition-shadow">
@@ -216,10 +236,18 @@ function CustomerCard({ customer, onEdit, onDelete, onView }: {
               <h3 className="font-semibold text-lg">
                 {customer.last_name?.toUpperCase()} {customer.first_name}
               </h3>
-              <Badge variant="outline" className="text-green-600">
-                <Euro className="h-3 w-3 mr-1" />
-                CA: {stats.total_revenue.toFixed(2)}€
-              </Badge>
+              <div className="flex gap-2">
+                <Badge variant="outline" className="text-green-600">
+                  <Euro className="h-3 w-3 mr-1" />
+                  CA: {stats.total_revenue.toFixed(2)}€
+                </Badge>
+                {activeSAVCount > 0 && (
+                  <Badge variant="destructive" className="text-xs">
+                    <AlertTriangle className="h-3 w-3 mr-1" />
+                    {activeSAVCount} SAV en cours
+                  </Badge>
+                )}
+              </div>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-muted-foreground">
@@ -256,8 +284,10 @@ function CustomerCard({ customer, onEdit, onDelete, onView }: {
             <Button 
               variant="outline" 
               size="sm" 
-              className="text-destructive hover:text-destructive"
-              onClick={() => onDelete(customer)}
+              className={activeSAVCount > 0 ? "text-muted-foreground cursor-not-allowed" : "text-destructive hover:text-destructive"}
+              onClick={() => activeSAVCount === 0 && onDelete(customer)}
+              disabled={activeSAVCount > 0}
+              title={activeSAVCount > 0 ? "Impossible de supprimer : SAV en cours" : "Supprimer le client"}
             >
               <Trash2 className="h-4 w-4 mr-1" />
               Supprimer
