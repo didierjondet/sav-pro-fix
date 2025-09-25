@@ -483,6 +483,41 @@ export default function Settings() {
       });
     }
   };
+
+  const handleExportCustomers = async (format: 'csv' | 'xlsx' | 'pdf') => {
+    try {
+      const query = supabase.from('customers' as any).select('*').order('created_at', {
+        ascending: false
+      });
+      const {
+        data,
+        error
+      } = shop?.id ? await query.eq('shop_id', shop.id) : await query;
+      if (error) throw error;
+      const customers = (data || []) as any[];
+      const headers = ['ID', 'Créé le', 'Mis à jour le', 'Prénom', 'Nom', 'Email', 'Téléphone', 'Adresse', 'Shop ID'];
+      const rows = customers.map(c => [c.id, new Date(c.created_at).toLocaleString('fr-FR'), new Date(c.updated_at).toLocaleString('fr-FR'), c.first_name || '', c.last_name || '', c.email || '', c.phone || '', c.address || '', c.shop_id || '']);
+      if (format === 'csv') return buildAndDownloadCSV('clients_complet', headers, rows);
+      if (format === 'xlsx') return exportToExcel('clients_complet', customers.map(c => ({
+        'ID': c.id,
+        'Créé le': new Date(c.created_at).toLocaleString('fr-FR'),
+        'Mis à jour le': new Date(c.updated_at).toLocaleString('fr-FR'),
+        'Prénom': c.first_name || '',
+        'Nom': c.last_name || '',
+        'Email': c.email || '',
+        'Téléphone': c.phone || '',
+        'Adresse': c.address || '',
+        'Shop ID': c.shop_id || ''
+      })));
+      return printTablePDF('Export - Tous les clients (complet)', headers, rows);
+    } catch (e: any) {
+      toast({
+        title: 'Erreur',
+        description: e.message || 'Export clients impossible',
+        variant: 'destructive'
+      });
+    }
+  };
   const isAdmin = profile?.role === 'admin';
   if (loading) {
     return <div className="min-h-screen bg-background">
@@ -1247,6 +1282,20 @@ export default function Settings() {
                   <Card>
                     <CardHeader>
                       <CardTitle className="flex items-center gap-2">
+                        <Users className="h-5 w-5" />
+                        Exporter les Clients
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="flex flex-wrap gap-2">
+                      <Button variant="outline" onClick={() => handleExportCustomers('csv')}>Exporter CSV</Button>
+                      <Button variant="outline" onClick={() => handleExportCustomers('xlsx')}>Exporter Excel</Button>
+                      <Button variant="outline" onClick={() => handleExportCustomers('pdf')}>Exporter PDF</Button>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
                         <Upload className="h-5 w-5" />
                         Stock (Pièces)
                       </CardTitle>
@@ -1254,7 +1303,10 @@ export default function Settings() {
                     <CardContent className="flex flex-wrap gap-2">
                       <Button variant="outline" onClick={() => handleExportParts('csv')}>Exporter CSV</Button>
                       <Button variant="outline" onClick={() => handleExportParts('xlsx')}>Exporter Excel</Button>
-                      <Button onClick={() => setShowStockImport(true)} className="bg-red-600 hover:bg-red-500">Importer le stock</Button>
+                      <Button onClick={() => setShowStockImport(true)} variant="destructive" className="ml-4">
+                        <Upload className="h-4 w-4 mr-2" />
+                        Importer le stock
+                      </Button>
                     </CardContent>
                   </Card>
                 </>}
