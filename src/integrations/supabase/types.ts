@@ -1260,9 +1260,6 @@ export type Database = {
           invite_code: string | null
           last_monthly_reset: string | null
           logo_url: string | null
-          max_sav_processing_days_client: number | null
-          max_sav_processing_days_external: number | null
-          max_sav_processing_days_internal: number | null
           menu_chats_visible: boolean | null
           menu_customers_visible: boolean | null
           menu_dashboard_visible: boolean | null
@@ -1315,9 +1312,6 @@ export type Database = {
           invite_code?: string | null
           last_monthly_reset?: string | null
           logo_url?: string | null
-          max_sav_processing_days_client?: number | null
-          max_sav_processing_days_external?: number | null
-          max_sav_processing_days_internal?: number | null
           menu_chats_visible?: boolean | null
           menu_customers_visible?: boolean | null
           menu_dashboard_visible?: boolean | null
@@ -1370,9 +1364,6 @@ export type Database = {
           invite_code?: string | null
           last_monthly_reset?: string | null
           logo_url?: string | null
-          max_sav_processing_days_client?: number | null
-          max_sav_processing_days_external?: number | null
-          max_sav_processing_days_internal?: number | null
           menu_chats_visible?: boolean | null
           menu_customers_visible?: boolean | null
           menu_dashboard_visible?: boolean | null
