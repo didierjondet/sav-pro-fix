@@ -869,6 +869,152 @@ export default function SubscriptionPlansManager() {
                 rows={4}
               />
             </div>
+
+            <Separator />
+
+            <div>
+              <Label className="text-base font-semibold flex items-center gap-2">
+                <Menu className="h-4 w-4" />
+                Configuration des menus
+              </Label>
+              <p className="text-sm text-muted-foreground mb-4">
+                Définissez quels menus sont disponibles pour ce plan
+              </p>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-3">
+                  <Label className="text-sm font-medium">Menus principaux</Label>
+                  
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      checked={formData.menu_config.dashboard}
+                      onCheckedChange={(checked) => setFormData({
+                        ...formData,
+                        menu_config: { ...formData.menu_config, dashboard: checked }
+                      })}
+                    />
+                    <Label className="text-sm">Tableau de bord</Label>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      checked={formData.menu_config.sav}
+                      onCheckedChange={(checked) => setFormData({
+                        ...formData,
+                        menu_config: { ...formData.menu_config, sav: checked }
+                      })}
+                    />
+                    <Label className="text-sm">Dossiers SAV</Label>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      checked={formData.menu_config.parts}
+                      onCheckedChange={(checked) => setFormData({
+                        ...formData,
+                        menu_config: { ...formData.menu_config, parts: checked }
+                      })}
+                    />
+                    <Label className="text-sm">Stock pièces</Label>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      checked={formData.menu_config.quotes}
+                      onCheckedChange={(checked) => setFormData({
+                        ...formData,
+                        menu_config: { ...formData.menu_config, quotes: checked }
+                      })}
+                    />
+                    <Label className="text-sm">Devis</Label>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      checked={formData.menu_config.orders}
+                      onCheckedChange={(checked) => setFormData({
+                        ...formData,
+                        menu_config: { ...formData.menu_config, orders: checked }
+                      })}
+                    />
+                    <Label className="text-sm">Commandes</Label>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      checked={formData.menu_config.customers}
+                      onCheckedChange={(checked) => setFormData({
+                        ...formData,
+                        menu_config: { ...formData.menu_config, customers: checked }
+                      })}
+                    />
+                    <Label className="text-sm">Clients</Label>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      checked={formData.menu_config.chats}
+                      onCheckedChange={(checked) => setFormData({
+                        ...formData,
+                        menu_config: { ...formData.menu_config, chats: checked }
+                      })}
+                    />
+                    <Label className="text-sm">Chat clients</Label>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      checked={formData.menu_config.statistics}
+                      onCheckedChange={(checked) => setFormData({
+                        ...formData,
+                        menu_config: { ...formData.menu_config, statistics: checked }
+                      })}
+                    />
+                    <Label className="text-sm">Statistiques</Label>
+                  </div>
+                </div>
+                
+                <div className="space-y-3">
+                  <Label className="text-sm font-medium flex items-center gap-2">
+                    <Sidebar className="h-4 w-4" />
+                    Zones sidebar
+                  </Label>
+                  
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      checked={formData.menu_config.sidebar_late_sav}
+                      onCheckedChange={(checked) => setFormData({
+                        ...formData,
+                        menu_config: { ...formData.menu_config, sidebar_late_sav: checked }
+                      })}
+                    />
+                    <Label className="text-sm">SAV en retard</Label>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      checked={formData.menu_config.sidebar_sav_types}
+                      onCheckedChange={(checked) => setFormData({
+                        ...formData,
+                        menu_config: { ...formData.menu_config, sidebar_sav_types: checked }
+                      })}
+                    />
+                    <Label className="text-sm">Types de SAV</Label>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      checked={formData.menu_config.sidebar_sav_statuses}
+                      onCheckedChange={(checked) => setFormData({
+                        ...formData,
+                        menu_config: { ...formData.menu_config, sidebar_sav_statuses: checked }
+                      })}
+                    />
+                    <Label className="text-sm">Statuts SAV</Label>
+                  </div>
+                </div>
+              </div>
+            </div>
             
             <div>
               <Label>ID Prix Stripe</Label>
