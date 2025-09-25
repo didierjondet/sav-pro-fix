@@ -102,7 +102,11 @@ export default function Settings() {
     sav_delay_alerts_enabled: false,
     sav_client_alert_days: 2,
     sav_external_alert_days: 2,
-    sav_internal_alert_days: 2
+    sav_internal_alert_days: 2,
+    sidebar_nav_visible: true,
+    sidebar_sav_types_visible: true,
+    sidebar_sav_statuses_visible: true,
+    sidebar_late_sav_visible: true
   });
   const [profileForm, setProfileForm] = useState({
     first_name: '',
@@ -134,7 +138,11 @@ export default function Settings() {
         sav_delay_alerts_enabled: (shop as any).sav_delay_alerts_enabled ?? false,
         sav_client_alert_days: (shop as any).sav_client_alert_days || 2,
         sav_external_alert_days: (shop as any).sav_external_alert_days || 2,
-        sav_internal_alert_days: (shop as any).sav_internal_alert_days || 2
+        sav_internal_alert_days: (shop as any).sav_internal_alert_days || 2,
+        sidebar_nav_visible: (shop as any).sidebar_nav_visible ?? true,
+        sidebar_sav_types_visible: (shop as any).sidebar_sav_types_visible ?? true,
+        sidebar_sav_statuses_visible: (shop as any).sidebar_sav_statuses_visible ?? true,
+        sidebar_late_sav_visible: (shop as any).sidebar_late_sav_visible ?? true
       });
     }
   }, [shop]);
@@ -1061,6 +1069,113 @@ export default function Settings() {
                       </div>
                     </div>
                   </div>
+                </CardContent>
+              </Card>
+
+              {/* Section Contrôle de l'affichage de la sidebar */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <SettingsIcon className="h-5 w-5" />
+                    Affichage de la sidebar
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="space-y-4">
+                    <div>
+                      <Label className="text-base font-medium">Éléments visibles dans la sidebar</Label>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        Personnalisez les éléments affichés dans la barre latérale de navigation
+                      </p>
+                    </div>
+                    
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between p-3 border rounded-lg">
+                        <div className="flex-1">
+                          <div className="font-medium">Menus de navigation</div>
+                          <p className="text-sm text-muted-foreground">
+                            Afficher les liens principaux (Tableau de bord, SAV, Stock, etc.)
+                          </p>
+                        </div>
+                        <Switch 
+                          checked={shopForm.sidebar_nav_visible ?? true}
+                          onCheckedChange={checked => setShopForm({
+                            ...shopForm,
+                            sidebar_nav_visible: checked
+                          })} 
+                          disabled={!isAdmin} 
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between p-3 border rounded-lg">
+                        <div className="flex-1">
+                          <div className="font-medium">SAV en retard</div>
+                          <p className="text-sm text-muted-foreground">
+                            Afficher la zone d'alerte pour les SAV dépassant les délais
+                          </p>
+                        </div>
+                        <Switch 
+                          checked={shopForm.sidebar_late_sav_visible ?? true}
+                          onCheckedChange={checked => setShopForm({
+                            ...shopForm,
+                            sidebar_late_sav_visible: checked
+                          })} 
+                          disabled={!isAdmin} 
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between p-3 border rounded-lg">
+                        <div className="flex-1">
+                          <div className="font-medium">Types de SAV</div>
+                          <p className="text-sm text-muted-foreground">
+                            Afficher la section avec les compteurs par type de SAV
+                          </p>
+                        </div>
+                        <Switch 
+                          checked={shopForm.sidebar_sav_types_visible ?? true}
+                          onCheckedChange={checked => setShopForm({
+                            ...shopForm,
+                            sidebar_sav_types_visible: checked
+                          })} 
+                          disabled={!isAdmin} 
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between p-3 border rounded-lg">
+                        <div className="flex-1">
+                          <div className="font-medium">Statuts SAV</div>
+                          <p className="text-sm text-muted-foreground">
+                            Afficher la section avec les compteurs par statut SAV
+                          </p>
+                        </div>
+                        <Switch 
+                          checked={shopForm.sidebar_sav_statuses_visible ?? true}
+                          onCheckedChange={checked => setShopForm({
+                            ...shopForm,
+                            sidebar_sav_statuses_visible: checked
+                          })} 
+                          disabled={!isAdmin} 
+                        />
+                      </div>
+                    </div>
+
+                    <div className="pt-4 border-t">
+                      <div className="text-sm text-muted-foreground space-y-2">
+                        <p className="flex items-center gap-2">
+                          <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                          Les modifications s'appliquent après sauvegarde
+                        </p>
+                        <p className="flex items-center gap-2">
+                          <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                          Une interface plus épurée améliore l'expérience utilisateur
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {isAdmin && <Button onClick={handleSaveShop} disabled={saving}>
+                    {saving ? 'Sauvegarde...' : 'Sauvegarder les préférences'}
+                  </Button>}
                 </CardContent>
               </Card>
 

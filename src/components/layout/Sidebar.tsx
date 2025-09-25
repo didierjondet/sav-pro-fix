@@ -178,7 +178,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
           <ScrollArea className="flex-1 p-4">
             <TooltipProvider>
               <nav className="space-y-2">
-                {navigation.map(item => {
+                {(shop as any)?.sidebar_nav_visible !== false && navigation.map(item => {
                   const Icon = item.icon;
                   const isActive = location.pathname === item.href;
                   return (
@@ -200,8 +200,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                   );
                 })}
                 
-                {/* Super Admin Link */}
-                {profile?.role === 'super_admin' && (
+                {profile?.role === 'super_admin' && (shop as any)?.sidebar_nav_visible !== false && (
                   <Button 
                     variant={location.pathname === '/super-admin' ? 'default' : 'ghost'} 
                     className={cn('w-full justify-start', location.pathname === '/super-admin' && 'bg-primary text-primary-foreground')} 
@@ -216,116 +215,26 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                 )}
               </nav>
 
-              {/* Types de SAV */}
-              <div className="mt-8 p-3 bg-muted rounded-lg">
-                <h3 className="text-base font-semibold text-foreground mb-1 pl-1">
-                  Types de SAV
-                </h3>
-                <div className="space-y-1">
-                  {savTypes.map((type) => {
-                    const count = savTypeCounts[type.type_key]?.count || 0;
-                    const typeInfo = getTypeInfo(type.type_key);
-                    
-                    return (
-                      <Tooltip key={type.id}>
-                        <TooltipTrigger asChild>
-                          <Link
-                            to={`/sav?sav_type=${type.type_key}&exclude_ready=true`}
-                            className="flex items-center justify-between p-1 text-sm hover:bg-accent hover:text-accent-foreground rounded-md transition-colors"
-                          >
-                            <span className="text-muted-foreground">
-                              {typeInfo.label}
-                            </span>
-                            <Badge 
-                              variant="secondary" 
-                              className="ml-2"
-                              style={{
-                                backgroundColor: `${typeInfo.color}20`,
-                                color: typeInfo.color,
-                                borderColor: typeInfo.color
-                              }}
-                            >
-                              {count}
-                            </Badge>
-                          </Link>
-                        </TooltipTrigger>
-                        <TooltipContent side="right" className="max-w-xs">
-                          <div className="space-y-2">
-                            <p className="font-medium">{typeInfo.label}</p>
-                            <p className="text-sm">Nombre de SAV: {count}</p>
-                            {savTypeCounts[type.type_key]?.cases && savTypeCounts[type.type_key].cases.length > 0 && (
-                            <div className="space-y-1">
-                              <p className="text-xs font-medium">SAV concernés:</p>
-                              {savTypeCounts[type.type_key].cases.slice(0, 5).map((savCase) => (
-                                <button 
-                                  key={savCase.id} 
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    navigate(`/sav/${savCase.id}`);
-                                    onClose();
-                                  }} 
-                                  className="block text-primary hover:underline text-left w-full text-xs"
-                                >
-                                  {savCase.customer ? 
-                                    `${savCase.customer.last_name} ${savCase.customer.first_name}` : 
-                                    (savCase.sav_type === 'internal' ? `#${savCase.case_number}` : 'Client non défini')
-                                  } - {savCase.device_brand} {savCase.device_model}
-                                </button>
-                              ))}
-                                {savTypeCounts[type.type_key].cases.length > 5 && (
-                                  <p className="text-xs text-muted-foreground">
-                                    +{savTypeCounts[type.type_key].cases.length - 5} autres...
-                                  </p>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        </TooltipContent>
-                      </Tooltip>
-                    );
-                  })}
-                  {savTypes.length === 0 && (
-                    <div className="text-sm text-muted-foreground text-center py-2">
-                      Aucun type de SAV configuré
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Statuts SAV */}
-              <div className="mt-4 p-3 bg-muted rounded-lg">
-                <h3 className="text-base font-semibold text-foreground mb-1 pl-1">
-                  Statuts SAV
-                </h3>
-                <div className="space-y-1">
-                  {sidebarStatusCounts.map((statusCount) => (
-                    <Tooltip key={statusCount.key}>
+              {(shop as any)?.sidebar_late_sav_visible !== false && (
+                <div className="mt-8 p-4 bg-destructive/10 rounded-lg border border-destructive/20">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-sm font-medium text-destructive">
+                      SAV en retard
+                    </h3>
+                    <Tooltip>
                       <TooltipTrigger asChild>
-                        <div className="flex items-center justify-between p-1 text-sm hover:bg-accent hover:text-accent-foreground rounded-md transition-colors cursor-default">
-                          <span className="text-muted-foreground">
-                            {statusCount.label}
-                          </span>
-                          <Badge 
-                            variant="secondary" 
-                            className="ml-2"
-                            style={{
-                              backgroundColor: `${statusCount.color}20`,
-                              color: statusCount.color,
-                              borderColor: statusCount.color
-                            }}
-                          >
-                            {statusCount.count}
-                          </Badge>
-                        </div>
+                        <button className="hover:bg-accent p-1 rounded-sm">
+                          <Info className="h-4 w-4 text-destructive hover:text-destructive/80" />
+                        </button>
                       </TooltipTrigger>
-                      <TooltipContent side="right" className="max-w-xs">
+                      <TooltipContent side="bottom" className="max-w-sm">
                         <div className="space-y-2">
-                          <p className="font-medium">{statusCount.label}</p>
-                          <p className="text-sm">Nombre de SAV: {statusCount.count}</p>
-                          {statusCount.count > 0 && (
-                            <div className="space-y-1">
-                              <p className="text-xs font-medium">SAV concernés:</p>
-                              {(cases || []).filter(savCase => savCase.status === statusCount.key).slice(0, 5).map((savCase) => (
+                          <p className="font-medium">{getLateSAVInfo().description}</p>
+                          <p className="text-sm">Nombre de SAV: {getLateSAVInfo().count}</p>
+                          {getLateSAVInfo().cases.length > 0 && (
+                            <div className="text-xs space-y-1">
+                              <p className="font-medium">SAV concernés:</p>
+                              {getLateSAVInfo().cases.slice(0, 8).map((savCase) => (
                                 <button 
                                   key={savCase.id} 
                                   onClick={(e) => {
@@ -333,17 +242,17 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                                     navigate(`/sav/${savCase.id}`);
                                     onClose();
                                   }} 
-                                  className="block text-primary hover:underline text-left w-full text-xs"
+                                  className="block text-primary hover:underline text-left w-full"
                                 >
-                                  {savCase.customer ? 
-                                    `${savCase.customer.last_name} ${savCase.customer.first_name}` : 
-                                    (savCase.sav_type === 'internal' ? `#${savCase.case_number}` : 'Client non défini')
-                                  } - {savCase.device_brand} {savCase.device_model}
+                                  {savCase.case_number} - {savCase.device_brand} {savCase.device_model} - 
+                                  <span className="text-destructive">
+                                    {Math.floor(((new Date()).getTime() - new Date(savCase.created_at).getTime()) / (1000 * 60 * 60 * 24))} jours
+                                  </span>
                                 </button>
                               ))}
-                              {(cases || []).filter(savCase => savCase.status === statusCount.key).length > 5 && (
-                                <p className="text-xs text-muted-foreground">
-                                  +{(cases || []).filter(savCase => savCase.status === statusCount.key).length - 5} autres...
+                              {getLateSAVInfo().cases.length > 8 && (
+                                <p className="text-muted-foreground">
+                                  +{getLateSAVInfo().cases.length - 8} autres...
                                 </p>
                               )}
                             </div>
@@ -351,69 +260,177 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                         </div>
                       </TooltipContent>
                     </Tooltip>
-                  ))}
-                  {sidebarStatusCounts.length === 0 && (
-                    <div className="text-sm text-muted-foreground text-center py-2">
-                      Aucun statut configuré pour la sidebar
-                    </div>
-                  )}
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <Badge variant="destructive" className="text-xs">
+                      {lateSAVCount} dossier{lateSAVCount > 1 ? 's' : ''}
+                    </Badge>
+                    {lateSAVCount > 0 && (
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="text-xs h-6 px-2 border-destructive/30 hover:bg-destructive/10"
+                        onClick={() => {
+                          navigate('/sav?filter=late');
+                          onClose();
+                        }}
+                      >
+                        Voir tout
+                      </Button>
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
 
-              {/* SAV en retard */}
-              <div className="mt-4 p-4 bg-destructive/10 rounded-lg border border-destructive/20">
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-sm font-medium text-destructive">
-                    SAV en retard
+              {/* Types de SAV */}
+              {(shop as any)?.sidebar_sav_types_visible !== false && (
+                <div className="mt-4 p-3 bg-muted rounded-lg">
+                  <h3 className="text-base font-semibold text-foreground mb-1 pl-1">
+                    Types de SAV
                   </h3>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button className="hover:bg-accent p-1 rounded-sm">
-                        <Info className="h-4 w-4 text-destructive hover:text-destructive/80" />
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom" className="max-w-sm">
-                      <div className="space-y-2">
-                        <p className="font-medium">{getLateSAVInfo().description}</p>
-                        <p className="text-sm">Nombre de SAV: {getLateSAVInfo().count}</p>
-                        {getLateSAVInfo().cases.length > 0 && (
-                          <div className="text-xs space-y-1">
-                            <p className="font-medium">SAV concernés:</p>
-                            {getLateSAVInfo().cases.slice(0, 8).map((savCase) => (
-                              <button 
-                                key={savCase.id} 
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  navigate(`/sav/${savCase.id}`);
-                                  onClose();
-                                }} 
-                                className="block text-primary hover:underline text-left w-full"
+                  <div className="space-y-1">
+                    {savTypes.map((type) => {
+                      const count = savTypeCounts[type.type_key]?.count || 0;
+                      const typeInfo = getTypeInfo(type.type_key);
+                      
+                      return (
+                        <Tooltip key={type.id}>
+                          <TooltipTrigger asChild>
+                            <Link
+                              to={`/sav?sav_type=${type.type_key}&exclude_ready=true`}
+                              className="flex items-center justify-between p-1 text-sm hover:bg-accent hover:text-accent-foreground rounded-md transition-colors"
+                            >
+                              <span className="text-muted-foreground">
+                                {typeInfo.label}
+                              </span>
+                              <Badge 
+                                variant="secondary" 
+                                className="ml-2"
+                                style={{
+                                  backgroundColor: `${typeInfo.color}20`,
+                                  color: typeInfo.color,
+                                  borderColor: typeInfo.color
+                                }}
                               >
-                                {savCase.case_number} - {savCase.device_brand} {savCase.device_model} - 
-                                <span className="text-muted-foreground">({getStatusInfo(savCase.status).label})</span>
-                              </button>
-                            ))}
-                            {getLateSAVInfo().cases.length > 8 && (
-                              <p className="text-muted-foreground">
-                                +{getLateSAVInfo().cases.length - 8} autres...
-                              </p>
+                                {count}
+                              </Badge>
+                            </Link>
+                          </TooltipTrigger>
+                          <TooltipContent side="right" className="max-w-xs">
+                            <div className="space-y-2">
+                              <p className="font-medium">{typeInfo.label}</p>
+                              <p className="text-sm">Nombre de SAV: {count}</p>
+                              {savTypeCounts[type.type_key]?.cases && savTypeCounts[type.type_key].cases.length > 0 && (
+                              <div className="space-y-1">
+                                <p className="text-xs font-medium">SAV concernés:</p>
+                                {savTypeCounts[type.type_key].cases.slice(0, 5).map((savCase) => (
+                                  <button 
+                                    key={savCase.id} 
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      navigate(`/sav/${savCase.id}`);
+                                      onClose();
+                                    }} 
+                                    className="block text-primary hover:underline text-left w-full text-xs"
+                                  >
+                                    {savCase.customer ? 
+                                      `${savCase.customer.last_name} ${savCase.customer.first_name}` : 
+                                      (savCase.sav_type === 'internal' ? `#${savCase.case_number}` : 'Client non défini')
+                                    } - {savCase.device_brand} {savCase.device_model}
+                                  </button>
+                                ))}
+                                  {savTypeCounts[type.type_key].cases.length > 5 && (
+                                    <p className="text-xs text-muted-foreground">
+                                      +{savTypeCounts[type.type_key].cases.length - 5} autres...
+                                    </p>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          </TooltipContent>
+                        </Tooltip>
+                      );
+                    })}
+                    {savTypes.length === 0 && (
+                      <div className="text-sm text-muted-foreground text-center py-2">
+                        Aucun type de SAV configuré
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Statuts SAV */}
+              {(shop as any)?.sidebar_sav_statuses_visible !== false && (
+                <div className="mt-4 p-3 bg-muted rounded-lg">
+                  <h3 className="text-base font-semibold text-foreground mb-1 pl-1">
+                    Statuts SAV
+                  </h3>
+                  <div className="space-y-1">
+                    {sidebarStatusCounts.map((statusCount) => (
+                      <Tooltip key={statusCount.key}>
+                        <TooltipTrigger asChild>
+                          <div className="flex items-center justify-between p-1 text-sm hover:bg-accent hover:text-accent-foreground rounded-md transition-colors cursor-default">
+                            <span className="text-muted-foreground">
+                              {statusCount.label}
+                            </span>
+                            <Badge 
+                              variant="secondary" 
+                              className="ml-2"
+                              style={{
+                                backgroundColor: `${statusCount.color}20`,
+                                color: statusCount.color,
+                                borderColor: statusCount.color
+                              }}
+                            >
+                              {statusCount.count}
+                            </Badge>
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent side="right" className="max-w-xs">
+                          <div className="space-y-2">
+                            <p className="font-medium">{statusCount.label}</p>
+                            <p className="text-sm">Nombre de SAV: {statusCount.count}</p>
+                            {statusCount.count > 0 && (
+                              <div className="space-y-1">
+                                <p className="text-xs font-medium">SAV concernés:</p>
+                                {(cases || []).filter(savCase => savCase.status === statusCount.key).slice(0, 5).map((savCase) => (
+                                  <button 
+                                    key={savCase.id} 
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      navigate(`/sav/${savCase.id}`);
+                                      onClose();
+                                    }} 
+                                    className="block text-primary hover:underline text-left w-full text-xs"
+                                  >
+                                    {savCase.customer ? 
+                                      `${savCase.customer.last_name} ${savCase.customer.first_name}` : 
+                                      (savCase.sav_type === 'internal' ? `#${savCase.case_number}` : 'Client non défini')
+                                    } - {savCase.device_brand} {savCase.device_model}
+                                  </button>
+                                ))}
+                                {(cases || []).filter(savCase => savCase.status === statusCount.key).length > 5 && (
+                                  <p className="text-xs text-muted-foreground">
+                                    +{(cases || []).filter(savCase => savCase.status === statusCount.key).length - 5} autres...
+                                  </p>
+                                )}
+                              </div>
                             )}
                           </div>
-                        )}
-                        {getLateSAVInfo().cases.length === 0 && (
-                          <p className="text-sm text-muted-foreground">Aucun SAV en retard actuellement</p>
-                        )}
-                        <p className="text-xs italic">Cliquer sur un SAV pour le voir</p>
-                      </div>
-                    </TooltipContent>
-                  </Tooltip>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-destructive font-medium">Non terminés en retard</span>
-                  <span className="font-bold text-destructive">{lateSAVCount}</span>
-                </div>
-              </div>
-            </TooltipProvider>
+                        </TooltipContent>
+                      </Tooltip>
+                    ))}
+                    {sidebarStatusCounts.length === 0 && (
+                      <div className="text-sm text-muted-foreground text-center py-2">
+                        Aucun statut configuré pour la sidebar
+                       </div>
+                     )}
+                   </div>
+                 </div>
+               )}
+             </TooltipProvider>
           </ScrollArea>
 
           <div className="p-4 border-t border-border">

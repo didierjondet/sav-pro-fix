@@ -1273,6 +1273,10 @@ export type Database = {
           sav_external_alert_days: number | null
           sav_internal_alert_days: number | null
           sav_warning_enabled: boolean | null
+          sidebar_late_sav_visible: boolean | null
+          sidebar_nav_visible: boolean | null
+          sidebar_sav_statuses_visible: boolean | null
+          sidebar_sav_types_visible: boolean | null
           slug: string | null
           sms_credits_allocated: number | null
           sms_credits_used: number | null
@@ -1315,6 +1319,10 @@ export type Database = {
           sav_external_alert_days?: number | null
           sav_internal_alert_days?: number | null
           sav_warning_enabled?: boolean | null
+          sidebar_late_sav_visible?: boolean | null
+          sidebar_nav_visible?: boolean | null
+          sidebar_sav_statuses_visible?: boolean | null
+          sidebar_sav_types_visible?: boolean | null
           slug?: string | null
           sms_credits_allocated?: number | null
           sms_credits_used?: number | null
@@ -1357,6 +1365,10 @@ export type Database = {
           sav_external_alert_days?: number | null
           sav_internal_alert_days?: number | null
           sav_warning_enabled?: boolean | null
+          sidebar_late_sav_visible?: boolean | null
+          sidebar_nav_visible?: boolean | null
+          sidebar_sav_statuses_visible?: boolean | null
+          sidebar_sav_types_visible?: boolean | null
           slug?: string | null
           sms_credits_allocated?: number | null
           sms_credits_used?: number | null
