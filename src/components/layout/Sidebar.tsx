@@ -60,7 +60,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const { types: savTypes, getTypeInfo } = useShopSAVTypes();
   const { savWithUnreadMessages } = useSAVUnreadMessages();
   const totalUnread = (savWithUnreadMessages || []).reduce((sum, s) => sum + s.unread_count, 0);
-  const awaitingCount = (savWithUnreadMessages || []).filter((s: any) => s.awaiting_reply).length;
+  const openConversationsCount = (savWithUnreadMessages || []).length;
   const { quotes } = useQuotes();
   const quoteCounts = (quotes || []).reduce((acc, q) => {
     if (q.status === 'accepted') acc.accepted++;
@@ -193,8 +193,8 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                     >
                       <Icon className="mr-3 h-5 w-5" />
                       <span>{item.name}</span>
-                      {item.href === '/client-chats' && awaitingCount > 0 && (
-                        <Badge variant="destructive" className="ml-auto text-xs">{awaitingCount}</Badge>
+                      {item.href === '/client-chats' && openConversationsCount > 0 && (
+                        <Badge variant="destructive" className="ml-auto text-xs">{openConversationsCount}</Badge>
                       )}
                     </Button>
                   );
