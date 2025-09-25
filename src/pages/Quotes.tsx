@@ -42,7 +42,9 @@ import {
   Calendar,
   MessageSquare,
   Clock,
-  CheckCircle
+  CheckCircle,
+  Archive,
+  RotateCcw
 } from 'lucide-react';
 
 import { supabase } from '@/integrations/supabase/client';
@@ -56,7 +58,7 @@ export default function Quotes() {
   const [quoteToConvert, setQuoteToConvert] = useState<Quote | null>(null);
   const [editingQuote, setEditingQuote] = useState<Quote | null>(null);
   const [showQuoteActionDialog, setShowQuoteActionDialog] = useState<Quote | null>(null);
-  const { quotes, loading, createQuote, deleteQuote, updateQuote } = useQuotes();
+  const { quotes, loading, createQuote, deleteQuote, updateQuote, archiveQuote, reactivateQuote } = useQuotes();
   const { createCase } = useSAVCases();
   const { sendQuoteNotification, sendSMS } = useSMS();
   const { shop } = useShop();
@@ -80,15 +82,15 @@ export default function Quotes() {
   };
 
   const activeQuotes = quotes.filter(quote => 
-    quote.status !== 'rejected' && quote.status !== 'accepted' && quote.status !== 'sms_accepted' &&
+    quote.status !== 'rejected' && quote.status !== 'accepted' && quote.status !== 'sms_accepted' && quote.status !== 'archived' &&
     (quote.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
      quote.quote_number.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   const acceptedQuotes = quotes.filter(quote => {
-    // Inclure seulement les devis acceptés mais pas encore terminés
+    // Inclure seulement les devis acceptés mais pas encore terminés ni archivés
     const isAccepted = quote.status === 'accepted' || quote.status === 'sms_accepted';
-    const isNotCompleted = quote.status !== 'completed';
+    const isNotCompleted = quote.status !== 'completed' && quote.status !== 'archived';
     const matchesSearch = quote.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          quote.quote_number.toLowerCase().includes(searchTerm.toLowerCase());
     
@@ -97,6 +99,12 @@ export default function Quotes() {
 
   const rejectedQuotes = quotes.filter(quote => 
     quote.status === 'rejected' &&
+    (quote.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+     quote.quote_number.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
+
+  const archivedQuotes = quotes.filter(quote => 
+    quote.status === 'archived' &&
     (quote.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
      quote.quote_number.toLowerCase().includes(searchTerm.toLowerCase()))
   );
@@ -143,6 +151,26 @@ export default function Quotes() {
     const { error } = await deleteQuote(deletingQuote.id);
     if (!error) {
       setDeletingQuote(null);
+    }
+  };
+
+  const handleArchiveQuote = async (quoteId: string) => {
+    const { error } = await archiveQuote(quoteId);
+    if (!error) {
+      toast({
+        title: "Devis archivé",
+        description: "Le devis a été archivé avec succès",
+      });
+    }
+  };
+
+  const handleReactivateQuote = async (quoteId: string, previousStatus: Quote['status']) => {
+    const { error } = await reactivateQuote(quoteId, previousStatus);
+    if (!error) {
+      toast({
+        title: "Devis réactivé",
+        description: "Le devis a été réactivé avec succès",
+      });
     }
   };
 
@@ -649,6 +677,20 @@ export default function Quotes() {
                 )}
               </>
             )}
+            
+            {/* Bouton d'archivage pour devis actifs et acceptés */}
+            {(quote.status !== 'rejected' && quote.status !== 'archived') && (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="text-orange-600 hover:text-orange-700"
+                onClick={() => handleArchiveQuote(quote.id)}
+              >
+                <Archive className="h-4 w-4 mr-1" />
+                Archiver
+              </Button>
+            )}
+            
             <Button 
               variant="outline" 
               size="sm" 
@@ -713,7 +755,7 @@ export default function Quotes() {
 
                   {/* Onglets pour séparer les devis actifs et refusés */}
                    <Tabs defaultValue="active" className="w-full">
-                    <TabsList className="grid w-full grid-cols-3">
+                    <TabsList className="grid w-full grid-cols-4">
                       <TabsTrigger value="active">
                         Devis actifs ({activeQuotes.length})
                       </TabsTrigger>
@@ -722,6 +764,9 @@ export default function Quotes() {
                       </TabsTrigger>
                       <TabsTrigger value="rejected">
                         Devis refusés ({rejectedQuotes.length})
+                      </TabsTrigger>
+                      <TabsTrigger value="archived">
+                        Archives ({archivedQuotes.length})
                       </TabsTrigger>
                     </TabsList>
                     
@@ -848,16 +893,28 @@ export default function Quotes() {
                                         <div className="text-sm text-muted-foreground px-3 py-1 rounded bg-muted">
                                           SAV en cours...
                                         </div>
-                                      )}
-                                     <Button 
-                                       variant="outline" 
-                                       size="sm"
-                                       className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                                       onClick={() => deleteQuote(quote.id)}
-                                     >
-                                       <Trash2 className="h-4 w-4 mr-1" />
-                                       Supprimer
-                                     </Button>
+                                       )}
+                                      
+                                      {/* Bouton d'archivage */}
+                                      <Button 
+                                        variant="outline" 
+                                        size="sm"
+                                        className="text-orange-600 hover:text-orange-700"
+                                        onClick={() => handleArchiveQuote(quote.id)}
+                                      >
+                                        <Archive className="h-4 w-4 mr-1" />
+                                        Archiver
+                                      </Button>
+                                      
+                                      <Button 
+                                        variant="outline" 
+                                        size="sm"
+                                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                        onClick={() => deleteQuote(quote.id)}
+                                      >
+                                        <Trash2 className="h-4 w-4 mr-1" />
+                                        Supprimer
+                                      </Button>
                                    </div>
                                 </div>
                               </CardContent>
@@ -880,6 +937,109 @@ export default function Quotes() {
                           </Card>
                         ) : (
                           rejectedQuotes.map(renderQuoteCard)
+                        )}
+                      </div>
+                     </TabsContent>
+                    
+                    <TabsContent value="archived" className="mt-6">
+                      <div className="grid gap-4">
+                        {archivedQuotes.length === 0 ? (
+                          <Card>
+                            <CardContent className="text-center py-8">
+                              <Archive className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                              <p className="text-muted-foreground">
+                                {searchTerm ? 'Aucun devis archivé trouvé' : 'Aucun devis archivé'}
+                              </p>
+                            </CardContent>
+                          </Card>
+                        ) : (
+                          archivedQuotes.map((quote) => (
+                            <Card key={quote.id} className="hover:shadow-md transition-shadow border-gray-200 opacity-75">
+                              <CardContent className="p-6">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-4 mb-2">
+                                      <h3 className="font-semibold text-lg text-gray-600">{formatCustomerDisplay(quote.customer_name)}</h3>
+                                      <Badge variant="outline" className="border-gray-300">
+                                        {quote.quote_number}
+                                      </Badge>
+                                      <Badge variant="secondary" className="bg-gray-100 text-gray-600">
+                                        <Archive className="h-3 w-3 mr-1" />
+                                        Archivé
+                                      </Badge>
+                                    </div>
+                                    
+                                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm text-muted-foreground">
+                                      <div>
+                                        <span className="font-medium">Total: </span>
+                                        <span className="text-lg font-bold text-foreground">
+                                          {quote.total_amount.toFixed(2)}€
+                                        </span>
+                                      </div>
+                                      
+                                      {quote.customer_phone && (
+                                        <div>
+                                          <span className="font-medium">Téléphone: </span>
+                                          <span>{quote.customer_phone}</span>
+                                        </div>
+                                      )}
+                                      
+                                      <div>
+                                        <span className="font-medium">Archivé le: </span>
+                                        <span>{new Date(quote.updated_at || quote.created_at).toLocaleDateString()}</span>
+                                      </div>
+                                      
+                                      <div className="flex items-center gap-1 text-gray-500">
+                                        <Archive className="h-3 w-3" />
+                                        <span className="font-medium text-xs">Devis archivé</span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                  
+                                   <div className="flex items-center gap-2 ml-4">
+                                     <Button 
+                                       variant="outline" 
+                                       size="sm"
+                                       onClick={() => handleViewQuote(quote)}
+                                     >
+                                       <Eye className="h-4 w-4 mr-1" />
+                                       Voir
+                                     </Button>
+                                     
+                                     <Button 
+                                       variant="outline" 
+                                       size="sm"
+                                       onClick={() => handleDownloadPDF(quote)}
+                                     >
+                                       <Download className="h-4 w-4 mr-1" />
+                                       PDF
+                                     </Button>
+                                     
+                                     {/* Bouton de réactivation */}
+                                     <Button 
+                                       variant="default" 
+                                       size="sm"
+                                       className="bg-blue-600 hover:bg-blue-700"
+                                       onClick={() => handleReactivateQuote(quote.id, 'draft')}
+                                     >
+                                       <RotateCcw className="h-4 w-4 mr-1" />
+                                       Réactiver
+                                     </Button>
+                                     
+                                     <Button 
+                                       variant="outline" 
+                                       size="sm"
+                                       className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                       onClick={() => deleteQuote(quote.id)}
+                                     >
+                                       <Trash2 className="h-4 w-4 mr-1" />
+                                       Supprimer
+                                     </Button>
+                                   </div>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          ))
                         )}
                       </div>
                     </TabsContent>

@@ -29,7 +29,7 @@ export interface Quote {
   repair_notes?: string | null;
   items: QuoteItem[];
   total_amount: number;
-  status: 'draft' | 'pending_review' | 'sent' | 'under_negotiation' | 'sms_accepted' | 'accepted' | 'rejected' | 'expired' | 'completed';
+  status: 'draft' | 'pending_review' | 'sent' | 'under_negotiation' | 'sms_accepted' | 'accepted' | 'rejected' | 'expired' | 'completed' | 'archived';
   shop_id: string;
   created_at: string;
   updated_at: string;
@@ -225,12 +225,167 @@ const parsedData = (data as any[])?.map(quote => {
     }
   };
 
+  const archiveQuote = async (quoteId: string) => {
+    try {
+      // Récupérer le devis pour connaître les pièces réservées
+      const quote = quotes.find(q => q.id === quoteId);
+      if (!quote) {
+        throw new Error('Devis non trouvé');
+      }
+
+      // Libérer les pièces réservées si elles existent
+      if (quote.items && quote.items.length > 0) {
+        const validParts = quote.items.filter(item => 
+          item.part_id && item.part_id.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)
+        );
+
+        for (const item of validParts) {
+          // Libérer la quantité réservée
+          const { data: currentPart, error: fetchError } = await supabase
+            .from('parts')
+            .select('reserved_quantity')
+            .eq('id', item.part_id)
+            .single();
+
+          if (fetchError) {
+            console.error('Erreur lors de la récupération des pièces:', fetchError);
+            continue;
+          }
+
+          const newReservedQuantity = Math.max(0, (currentPart.reserved_quantity || 0) - item.quantity);
+          
+          const { error: releaseError } = await supabase
+            .from('parts')
+            .update({
+              reserved_quantity: newReservedQuantity
+            })
+            .eq('id', item.part_id);
+
+          if (releaseError) {
+            console.error('Erreur lors de la libération des pièces:', releaseError);
+          }
+        }
+      }
+
+      // Archiver le devis
+      const { error } = await supabase
+        .from('quotes' as any)
+        .update({ 
+          status: 'archived',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', quoteId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Succès",
+        description: "Devis archivé avec succès",
+      });
+
+      fetchQuotes();
+      return { error: null };
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error.message,
+        variant: "destructive",
+      });
+      return { error };
+    }
+  };
+
+  const reactivateQuote = async (quoteId: string, previousStatus: Quote['status']) => {
+    try {
+      // Récupérer le devis pour connaître les pièces à re-réserver
+      const quote = quotes.find(q => q.id === quoteId);
+      if (!quote) {
+        throw new Error('Devis non trouvé');
+      }
+
+      // Re-réserver les pièces si nécessaire
+      if (quote.items && quote.items.length > 0) {
+        const validParts = quote.items.filter(item => 
+          item.part_id && item.part_id.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)
+        );
+
+        for (const item of validParts) {
+          // Vérifier le stock disponible
+          const { data: partData, error: stockError } = await supabase
+            .from('parts')
+            .select('quantity, reserved_quantity')
+            .eq('id', item.part_id)
+            .single();
+
+          if (stockError) {
+            console.error('Erreur lors de la vérification du stock:', stockError);
+            continue;
+          }
+
+          const availableStock = (partData.quantity || 0) - (partData.reserved_quantity || 0);
+          
+          if (availableStock >= item.quantity) {
+            // Re-réserver la quantité
+            const newReservedQuantity = (partData.reserved_quantity || 0) + item.quantity;
+            const { error: reserveError } = await supabase
+              .from('parts')
+              .update({
+                reserved_quantity: newReservedQuantity
+              })
+              .eq('id', item.part_id);
+
+            if (reserveError) {
+              console.error('Erreur lors de la réservation des pièces:', reserveError);
+            }
+          } else {
+            // Stock insuffisant, avertir l'utilisateur mais continuer
+            toast({
+              title: "Attention",
+              description: `Stock insuffisant pour la pièce ${item.part_name}. Quantité disponible: ${availableStock}, demandée: ${item.quantity}`,
+              variant: "destructive",
+            });
+          }
+        }
+      }
+
+      // Réactiver le devis avec son ancien statut
+      const statusToRestore = previousStatus === 'archived' ? 'draft' : previousStatus;
+      
+      const { error } = await supabase
+        .from('quotes' as any)
+        .update({ 
+          status: statusToRestore,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', quoteId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Succès",
+        description: "Devis réactivé avec succès",
+      });
+
+      fetchQuotes();
+      return { error: null };
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error.message,
+        variant: "destructive",
+      });
+      return { error };
+    }
+  };
+
   return {
     quotes,
     loading,
     createQuote,
     updateQuote,
     deleteQuote,
+    archiveQuote,
+    reactivateQuote,
     refetch: fetchQuotes,
   };
 }
