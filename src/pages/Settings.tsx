@@ -52,6 +52,7 @@ import { BillingInvoices } from '@/components/billing/BillingInvoices';
 import { ImportStock } from '@/components/parts/ImportStock';
 import { ImportQuotes } from '@/components/import/ImportQuotes';
 import { ImportSAVs } from '@/components/import/ImportSAVs';
+import { ImportCustomers } from '@/components/import/ImportCustomers';
 import { SAVStatusesManager } from '@/components/sav/SAVStatusesManager';
 import SAVTypesManager from '@/components/sav/SAVTypesManager';
 import { useShop } from '@/hooks/useShop';
@@ -110,6 +111,7 @@ export default function Settings() {
   const [showStockImport, setShowStockImport] = useState(false);
   const [showQuotesImport, setShowQuotesImport] = useState(false);
   const [showSAVsImport, setShowSAVsImport] = useState(false);
+  const [showCustomersImport, setShowCustomersImport] = useState(false);
   const [plans, setPlans] = useState<any[]>([]);
   const { statuses, loading: statusesLoading, refetch: refetchStatuses } = useShopSAVStatuses();
   const { types: savTypes, loading: savTypesLoading, refetch: refetchSavTypes } = useShopSAVTypes();
@@ -1315,6 +1317,12 @@ export default function Settings() {
                     description: 'Import terminé avec succès.'
                   });
                   setShowSAVsImport(false);
+                }} /> : showCustomersImport ? <ImportCustomers onBack={() => setShowCustomersImport(false)} onSuccess={() => {
+                  toast({
+                    title: 'Import clients',
+                    description: 'Import terminé avec succès.'
+                  });
+                  setShowCustomersImport(false);
                 }} /> : <>
                   <Card>
                     <CardHeader>
@@ -1363,6 +1371,10 @@ export default function Settings() {
                       <Button variant="outline" onClick={() => handleExportCustomers('csv')}>Exporter CSV</Button>
                       <Button variant="outline" onClick={() => handleExportCustomers('xlsx')}>Exporter Excel</Button>
                       <Button variant="outline" onClick={() => handleExportCustomers('pdf')}>Exporter PDF</Button>
+                      <Button onClick={() => setShowCustomersImport(true)} variant="destructive" className="ml-4">
+                        <Upload className="h-4 w-4 mr-2" />
+                        Importer les clients
+                      </Button>
                     </CardContent>
                   </Card>
 
