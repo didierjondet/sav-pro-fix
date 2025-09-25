@@ -179,39 +179,88 @@ async function checkSMSCredits(shopId: string): Promise<{allowed: boolean, reaso
 }
 
 async function updateSMSCredits(shopId: string): Promise<void> {
-  // Récupérer les données actuelles du shop
-  const { data: shop } = await supabase
-    .from('shops')
-    .select('monthly_sms_used, sms_credits_allocated, purchased_sms_credits, custom_sms_limit, admin_added_sms_credits')
-    .eq('id', shopId)
-    .single();
+  try {
+    console.log('💳 DÉBUT DÉCOMPTE SMS pour shop:', shopId);
+    
+    // Récupérer les données actuelles du shop
+    const { data: shop, error: shopError } = await supabase
+      .from('shops')
+      .select('monthly_sms_used, sms_credits_allocated, purchased_sms_credits, custom_sms_limit, admin_added_sms_credits')
+      .eq('id', shopId)
+      .single();
 
-  if (!shop) return;
+    if (shopError) {
+      console.error('❌ Erreur lors de la récupération des données shop:', shopError);
+      throw new Error(`Erreur récupération shop: ${shopError.message}`);
+    }
 
-  // Limite mensuelle
-  const monthlyLimit = shop.custom_sms_limit || shop.sms_credits_allocated || 0;
-  const monthlyUsed = shop.monthly_sms_used || 0;
+    if (!shop) {
+      console.error('❌ Shop non trouvé pour ID:', shopId);
+      throw new Error('Shop non trouvé');
+    }
 
-  // PRIORITÉ 1: Utiliser d'abord les SMS mensuels
-  if (monthlyUsed < monthlyLimit) {
-    console.log('📱 Débit des crédits du plan mensuel');
-    await supabase
+    console.log('📊 Données shop actuelles:', {
+      monthly_sms_used: shop.monthly_sms_used,
+      sms_credits_allocated: shop.sms_credits_allocated,
+      purchased_sms_credits: shop.purchased_sms_credits,
+      custom_sms_limit: shop.custom_sms_limit,
+      admin_added_sms_credits: shop.admin_added_sms_credits
+    });
+
+    // Limite mensuelle
+    const monthlyLimit = shop.custom_sms_limit || shop.sms_credits_allocated || 0;
+    const monthlyUsed = shop.monthly_sms_used || 0;
+
+    console.log('💡 Logique de décompte - Plan mensuel:', {
+      monthlyUsed,
+      monthlyLimit,
+      hasMonthlyCredits: monthlyUsed < monthlyLimit
+    });
+
+    // PRIORITÉ 1: Utiliser d'abord les SMS mensuels
+    if (monthlyUsed < monthlyLimit) {
+      console.log('📱 Débit des crédits du plan mensuel');
+      const newMonthlyUsed = monthlyUsed + 1;
+      
+      const { error: updateError } = await supabase
+        .from('shops')
+        .update({ 
+          monthly_sms_used: newMonthlyUsed
+        })
+        .eq('id', shopId);
+
+      if (updateError) {
+        console.error('❌ Erreur mise à jour monthly_sms_used:', updateError);
+        throw new Error(`Erreur décompte mensuel: ${updateError.message}`);
+      }
+
+      console.log(`✅ Crédits mensuels mis à jour: ${monthlyUsed} -> ${newMonthlyUsed}`);
+      return;
+    }
+
+    // PRIORITÉ 2: Si plus de crédits du plan, utiliser les SMS achetés/admin
+    console.log('📦 Débit des crédits achetés/admin (plan épuisé)');
+    const newPurchasedUsed = (shop.purchased_sms_credits || 0) + 1;
+    
+    const { error: updatePurchasedError } = await supabase
       .from('shops')
       .update({ 
-        monthly_sms_used: monthlyUsed + 1
+        purchased_sms_credits: newPurchasedUsed
       })
       .eq('id', shopId);
-    return;
-  }
 
-  // PRIORITÉ 2: Si plus de crédits du plan, utiliser les SMS achetés/admin
-  console.log('📦 Débit des crédits achetés/admin (plan épuisé)');
-  await supabase
-    .from('shops')
-    .update({ 
-      purchased_sms_credits: (shop.purchased_sms_credits || 0) + 1
-    })
-    .eq('id', shopId);
+    if (updatePurchasedError) {
+      console.error('❌ Erreur mise à jour purchased_sms_credits:', updatePurchasedError);
+      throw new Error(`Erreur décompte achetés: ${updatePurchasedError.message}`);
+    }
+
+    console.log(`✅ Crédits achetés/admin mis à jour: ${shop.purchased_sms_credits || 0} -> ${newPurchasedUsed}`);
+    console.log('💳 DÉCOMPTE SMS TERMINÉ AVEC SUCCÈS');
+    
+  } catch (error) {
+    console.error('💥 ERREUR CRITIQUE DANS updateSMSCredits:', error);
+    throw error; // Propager l'erreur pour que l'appelant puisse la gérer
+  }
 }
 
 async function logSMSHistory(request: SMSRequest, status: string): Promise<void> {
@@ -340,8 +389,14 @@ serve(async (req) => {
 
     if (twilioResponse.sid) {
       console.log('6. Mise à jour des crédits...');
-      await updateSMSCredits(smsRequest.shopId);
-      console.log('✅ Crédits mis à jour');
+      try {
+        await updateSMSCredits(smsRequest.shopId);
+        console.log('✅ Crédits mis à jour avec succès');
+      } catch (creditsError) {
+        console.error('❌ ERREUR lors de la mise à jour des crédits:', creditsError);
+        // Log l'erreur mais continuer - le SMS a déjà été envoyé
+        await logSMSHistory({ ...smsRequest, type: 'error_credits' }, 'sent_credits_error');
+      }
       
       console.log('7. Log de l\'historique...');
       await logSMSHistory(smsRequest, 'sent');
