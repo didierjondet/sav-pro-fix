@@ -1008,13 +1008,13 @@ export default function Settings() {
                     <div className="p-4 bg-muted rounded-lg">
                       <h3 className="font-medium mb-1">Crédits disponibles</h3>
                       <div className="text-2xl font-bold">
-                        {(subscription?.sms_credits_allocated || 0) - (subscription?.sms_credits_used || 0)}
+                        {(subscription?.sms_credits_allocated || 0) - (subscription?.monthly_sms_used || 0)}
                       </div>
                       <p className="text-sm text-muted-foreground">SMS restants</p>
                     </div>
                     <div className="p-4 bg-muted rounded-lg">
                       <h3 className="font-medium mb-1">Utilisés ce mois</h3>
-                      <div className="text-2xl font-bold">{subscription?.sms_credits_used || 0}</div>
+                      <div className="text-2xl font-bold">{subscription?.monthly_sms_used || 0}</div>
                       <p className="text-sm text-muted-foreground">SMS envoyés</p>
                     </div>
                   </div>
