@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useQuotes, Quote } from '@/hooks/useQuotes';
 import { useShop } from '@/hooks/useShop';
-import { useSMS } from '@/hooks/useSMS';
+import { useSMSContext } from '@/contexts/SMSContext';
 import { useSAVCases } from '@/hooks/useSAVCases';
 import { QuoteForm } from '@/components/quotes/QuoteForm';
 import { QuoteView } from '@/components/quotes/QuoteView';
@@ -60,7 +60,7 @@ export default function Quotes() {
   const [showQuoteActionDialog, setShowQuoteActionDialog] = useState<Quote | null>(null);
   const { quotes, loading, createQuote, deleteQuote, updateQuote, archiveQuote, reactivateQuote } = useQuotes();
   const { createCase } = useSAVCases();
-  const { sendQuoteNotification, sendSMS } = useSMS();
+  const { sendQuoteNotification, sendSMS } = useSMSContext();
   const { shop } = useShop();
   const { toast } = useToast();
 

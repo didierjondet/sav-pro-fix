@@ -1,7 +1,7 @@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Printer, X, MessageSquare, AlertTriangle } from 'lucide-react';
-import { useSMS } from '@/hooks/useSMS';
+import { useSMSContext } from '@/contexts/SMSContext';
 import { generateShortTrackingUrl } from '@/utils/trackingUtils';
 import { useToast } from '@/hooks/use-toast';
 import { useState } from 'react';
@@ -27,7 +27,7 @@ export function PrintConfirmDialog({
 }: PrintConfirmDialogProps) {
   const [sendingSMS, setSendingSMS] = useState(false);
   const [warningAcknowledged, setWarningAcknowledged] = useState(false);
-  const { sendSMS } = useSMS();
+  const { sendSMS } = useSMSContext();
   const { toast } = useToast();
   const { settings } = useShopSettings();
 

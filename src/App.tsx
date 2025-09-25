@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { LimitDialogProvider } from "@/contexts/LimitDialogContext";
+import { SMSProvider } from "@/contexts/SMSContext";
 import { DelayNotificationProvider } from "@/components/layout/DelayNotificationProvider";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
@@ -50,12 +51,13 @@ const queryClient = new QueryClient({
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
-      <DelayNotificationProvider>
-        <LimitDialogProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
+      <SMSProvider>
+        <DelayNotificationProvider>
+          <LimitDialogProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Sonner />
+              <BrowserRouter>
               <Routes>
                 <Route path="/" element={<Landing />} />
                 <Route path="/dashboard" element={<Index />} />
@@ -95,10 +97,11 @@ const App = () => (
                 <Route path="/shop/:slug" element={<ShopWebsite />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
-            </BrowserRouter>
-          </TooltipProvider>
-        </LimitDialogProvider>
-      </DelayNotificationProvider>
+              </BrowserRouter>
+            </TooltipProvider>
+          </LimitDialogProvider>
+        </DelayNotificationProvider>
+      </SMSProvider>
     </AuthProvider>
   </QueryClientProvider>
 );

@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { Download, Mail, X, MessageSquare, Clock, CheckCircle, FileText } from 'lucide-react';
-import { useSMS } from '@/hooks/useSMS';
+import { useSMSContext } from '@/contexts/SMSContext';
 import { useToast } from '@/hooks/use-toast';
 
 interface QuoteViewProps {
@@ -17,7 +17,7 @@ interface QuoteViewProps {
 }
 
 export function QuoteView({ quote, isOpen, onClose, onDownloadPDF, onSendEmail, onQuoteUpdate }: QuoteViewProps) {
-  const { sendQuoteNotification } = useSMS();
+  const { sendQuoteNotification } = useSMSContext();
   const { toast } = useToast();
   if (!quote) return null;
 
