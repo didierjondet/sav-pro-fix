@@ -289,7 +289,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
               {/* Types de SAV */}
               {(shop as any)?.sidebar_sav_types_visible !== false && (
                 <div className="mt-4 p-3 bg-muted rounded-lg">
-                  <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center justify-between mb-2 pl-1">
                     <h3 className="text-sm font-medium text-foreground">
                       Types de SAV
                     </h3>
