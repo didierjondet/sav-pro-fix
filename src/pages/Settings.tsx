@@ -1,3 +1,4 @@
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Header } from '@/components/layout/Header';
 import { Sidebar } from '@/components/layout/Sidebar';
@@ -7,16 +8,59 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { useToast } from '@/hooks/use-toast';
+import { useTheme } from 'next-themes';
+import { useSearchParams } from 'react-router-dom';
 import {
-  Settings,
+  Settings as SettingsIcon,
   Palette,
   Shield,
   Menu,
   Sidebar as SidebarIcon,
   Lock,
-  Unlock
+  Unlock,
+  Store,
+  MessageSquare,
+  Monitor,
+  Mail,
+  Upload,
+  Tag,
+  Package,
+  CreditCard,
+  FileText,
+  Users,
+  Key,
+  Copy,
+  Star,
+  Bell,
+  Sun,
+  Moon, 
+  UserPlus,
+  Crown,
+  Trash2
 } from 'lucide-react';
 import { StatisticsConfiguration } from '@/components/settings/StatisticsConfiguration';
+import { SMSPackagesDisplay } from '@/components/subscription/SMSPackagesDisplay';
+import { BillingInvoices } from '@/components/billing/BillingInvoices';
+import { ImportStock } from '@/components/parts/ImportStock';
+import { ImportQuotes } from '@/components/import/ImportQuotes';
+import { ImportSAVs } from '@/components/import/ImportSAVs';
+import { SAVStatusesManager } from '@/components/sav/SAVStatusesManager';
+import SAVTypesManager from '@/components/sav/SAVTypesManager';
+import { useShop } from '@/hooks/useShop';
+import { useProfile } from '@/hooks/useProfile';
+import { useSubscription } from '@/hooks/useSubscription';
+import { useShopSAVStatuses } from '@/hooks/useShopSAVStatuses';
+import { useShopSAVTypes } from '@/hooks/useShopSAVTypes';
+import { useMenuPermissions } from '@/hooks/useMenuPermissions';
+import { supabase } from '@/integrations/supabase/client';
+import * as XLSX from 'xlsx';
 
 const AppearanceTab = () => {
   const { shop, loading, refetch } = useShop();

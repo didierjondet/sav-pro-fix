@@ -1082,9 +1082,9 @@ export default function ShopManagementDialog({ shop, isOpen, onClose, onUpdate }
                     Synchroniser avec les limites du plan par défaut
                   </Button>
                 </div>
-
-          </div>
-        </TabsContent>
+              </CardContent>
+            </Card>
+          </TabsContent>
         
         <TabsContent value="overrides" className="space-y-4">
           <Card>
