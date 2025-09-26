@@ -155,24 +155,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const forceReconnect = async () => {
     try {
-      console.log('Reconnexion forcée...');
+      console.log('🔄 Reset complet de l\'authentification...');
       
-      // Nettoyer complètement
+      // Étape 1: Déconnexion complète
       await supabase.auth.signOut({ scope: 'global' });
       
-      // Nettoyer TOUT le stockage
+      // Étape 2: Nettoyage total des données
       localStorage.clear();
       sessionStorage.clear();
       
-      // Attendre un peu
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Étape 3: Nettoyage des cookies Supabase
+      document.cookie.split(";").forEach(function(c) { 
+        document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
+      });
       
-      // Recharger la page complètement
-      window.location.reload();
+      // Étape 4: Forcer la recréation du client Supabase
+      window.location.replace('/auth?reset=true');
       
     } catch (error) {
-      console.error('Erreur de reconnexion forcée:', error);
-      window.location.reload();
+      console.error('❌ Erreur lors du reset:', error);
+      // Fallback: rechargement forcé
+      window.location.replace('/auth?reset=true');
     }
   };
 
