@@ -5,51 +5,48 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { LimitDialogProvider } from "@/contexts/LimitDialogContext";
-import { PageLoader } from "@/components/ui/page-loader";
 
 import { DelayNotificationProvider } from "@/components/layout/DelayNotificationProvider";
-import { Suspense, lazy } from "react";
 
-// Lazy load all pages for better performance
-const Index = lazy(() => import("./pages/Index"));
-const Auth = lazy(() => import("./pages/Auth"));
-const Settings = lazy(() => import("./pages/Settings"));
-const SAVList = lazy(() => import("./pages/SAVList"));
-const NewSAV = lazy(() => import("./pages/NewSAV"));
-const SAVDetail = lazy(() => import("./pages/SAVDetail"));
-const TrackSAV = lazy(() => import("./pages/TrackSAV"));
-const SimpleTrack = lazy(() => import("./pages/SimpleTrack"));
-const Parts = lazy(() => import("./pages/Parts"));
-const Quotes = lazy(() => import("./pages/Quotes"));
-const Customers = lazy(() => import("./pages/Customers"));
-const Statistics = lazy(() => import("./pages/Statistics"));
-const ClientChats = lazy(() => import("./pages/ClientChats"));
-const Landing = lazy(() => import("./pages/Landing"));
-const Orders = lazy(() => import("./pages/Orders"));
-const SuperAdmin = lazy(() => import("./pages/SuperAdmin"));
-const Subscription = lazy(() => import("./pages/Subscription"));
-const Support = lazy(() => import("./pages/Support"));
-const RevenueDetails = lazy(() => import("./pages/RevenueDetails"));
-const ExpensesDetails = lazy(() => import("./pages/ExpensesDetails"));
-const StatsDetailsRouter = lazy(() => import("./pages/StatsDetailsRouter"));
-const NotFound = lazy(() => import("./pages/NotFound"));
-const ShopWebsite = lazy(() => import("./pages/ShopWebsite"));
-const Features = lazy(() => import("./pages/Features"));
-const About = lazy(() => import("./pages/About"));
-const Contact = lazy(() => import("./pages/Contact"));
-const Home = lazy(() => import("./pages/Home"));
-const TestLanding = lazy(() => import("./pages/TestLanding"));
-const SubscriptionSuccess = lazy(() => import("./pages/SubscriptionSuccess"));
-const Notifications = lazy(() => import("./pages/Notifications"));
-const QuotePublic = lazy(() => import("./pages/QuotePublic"));
+// Regular imports for faster navigation
+import Index from "./pages/Index";
+import Auth from "./pages/Auth";
+import Settings from "./pages/Settings";
+import SAVList from "./pages/SAVList";
+import NewSAV from "./pages/NewSAV";
+import SAVDetail from "./pages/SAVDetail";
+import TrackSAV from "./pages/TrackSAV";
+import SimpleTrack from "./pages/SimpleTrack";
+import Parts from "./pages/Parts";
+import Quotes from "./pages/Quotes";
+import Customers from "./pages/Customers";
+import Statistics from "./pages/Statistics";
+import ClientChats from "./pages/ClientChats";
+import Landing from "./pages/Landing";
+import Orders from "./pages/Orders";
+import SuperAdmin from "./pages/SuperAdmin";
+import Subscription from "./pages/Subscription";
+import Support from "./pages/Support";
+import RevenueDetails from "./pages/RevenueDetails";
+import ExpensesDetails from "./pages/ExpensesDetails";
+import StatsDetailsRouter from "./pages/StatsDetailsRouter";
+import NotFound from "./pages/NotFound";
+import ShopWebsite from "./pages/ShopWebsite";
+import Features from "./pages/Features";
+import About from "./pages/About";
+import Contact from "./pages/Contact";
+import Home from "./pages/Home";
+import TestLanding from "./pages/TestLanding";
+import SubscriptionSuccess from "./pages/SubscriptionSuccess";
+import Notifications from "./pages/Notifications";
+import QuotePublic from "./pages/QuotePublic";
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 1000 * 60 * 10, // 10 minutes (augmenté de 5 à 10)
-      retry: 2, // Réduit de 3 à 2
-      refetchOnWindowFocus: false, // Désactiver le refetch au focus
-      refetchOnMount: false, // Utiliser le cache si disponible
+      staleTime: 1000 * 60 * 5, // 5 minutes
+      retry: 3,
+      refetchOnWindowFocus: false, 
     },
   },
 });
@@ -63,7 +60,6 @@ const App = () => (
               <Toaster />
               <Sonner />
               <BrowserRouter>
-              <Suspense fallback={<PageLoader />}>
               <Routes>
                 <Route path="/" element={<Landing />} />
                 <Route path="/dashboard" element={<Index />} />
@@ -103,7 +99,6 @@ const App = () => (
                 <Route path="/shop/:slug" element={<ShopWebsite />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
-              </Suspense>
               </BrowserRouter>
             </TooltipProvider>
           </LimitDialogProvider>
