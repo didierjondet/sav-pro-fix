@@ -6,7 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 interface PartStatusIconProps {
   savCaseId: string;
   className?: string;
-  savStatus?: 'pending' | 'in_progress' | 'testing' | 'parts_ordered' | 'parts_received' | 'ready' | 'cancelled';
+  savStatus?: string;
 }
 
 interface PartStatus {

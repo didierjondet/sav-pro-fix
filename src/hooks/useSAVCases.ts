@@ -8,7 +8,7 @@ export interface SAVCase {
   case_number: string;
   tracking_slug?: string;
   sav_type: string; // Changé de type hardcodé vers string pour supporter les types dynamiques
-  status: 'pending' | 'in_progress' | 'testing' | 'parts_ordered' | 'parts_received' | 'ready' | 'cancelled';
+  status: string;
   device_brand: string;
   device_model: string;
   device_imei?: string;
@@ -146,7 +146,7 @@ export function useSAVCases() {
     }
   };
 
-  const updateCaseStatus = async (caseId: string, status: SAVCase['status'], notes?: string) => {
+  const updateCaseStatus = async (caseId: string, status: string, notes?: string) => {
     try {
       // Si le statut est "cancelled", supprimer définitivement le SAV
       if (status === 'cancelled') {
