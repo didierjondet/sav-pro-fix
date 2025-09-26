@@ -49,7 +49,9 @@ export function SAVStatusManager({ savCase, onStatusUpdated }: SAVStatusManagerP
   
   // États pour la prise en charge
   const [partialTakeover, setPartialTakeover] = useState(savCase.partial_takeover || false);
-  const [takeoverAmount, setTakeoverAmount] = useState(savCase.takeover_amount || 0);
+  const [takeoverAmount, setTakeoverAmount] = useState(
+    savCase.takeover_amount ? savCase.takeover_amount.toString() : ''
+  );
   const [updatingTakeover, setUpdatingTakeover] = useState(false);
   
   // État pour le dialog de clôture SAV unifié
@@ -232,7 +234,8 @@ L'équipe ${shopData.name || 'de réparation'}`;
     if (savCase.sav_type === 'internal') return;
     
     // Validation: notes privées obligatoires si prise en charge appliquée
-    if (partialTakeover && takeoverAmount > 0 && !notes.trim()) {
+    const numericTakeoverAmount = parseFloat(takeoverAmount) || 0;
+    if (partialTakeover && numericTakeoverAmount > 0 && !notes.trim()) {
       toast({
         title: "Notes privées requises",
         description: "Veuillez ajouter des notes privées pour justifier la prise en charge",
@@ -244,7 +247,7 @@ L'équipe ${shopData.name || 'de réparation'}`;
     setUpdatingTakeover(true);
     try {
       const previousTakeoverAmount = savCase.takeover_amount || 0;
-      const newTakeoverAmount = partialTakeover ? takeoverAmount : 0;
+      const newTakeoverAmount = partialTakeover ? numericTakeoverAmount : 0;
       
       // Mise à jour des données du SAV avec les notes privées
       const updateData: any = {
@@ -253,7 +256,7 @@ L'équipe ${shopData.name || 'de réparation'}`;
       };
       
       // Ajouter les notes privées si elles existent ou si une prise en charge est appliquée
-      if (notes.trim() || (partialTakeover && takeoverAmount > 0)) {
+      if (notes.trim() || (partialTakeover && numericTakeoverAmount > 0)) {
         updateData.private_comments = notes;
       }
       
@@ -320,11 +323,11 @@ L'équipe ${shopData.name || 'de réparation'}`;
 
   const hasChanges = selectedStatus !== savCase.status || notes.trim();
   const hasTakeoverChanges = partialTakeover !== (savCase.partial_takeover || false) || 
-                            takeoverAmount !== (savCase.takeover_amount || 0);
+                            parseFloat(takeoverAmount) !== (savCase.takeover_amount || 0);
 
   // Calculer le montant à payer par le client
   const clientAmount = partialTakeover ? 
-    Math.max(0, savCase.total_cost - takeoverAmount) : 
+    Math.max(0, savCase.total_cost - parseFloat(takeoverAmount)) : 
     (savCase.taken_over ? 0 : savCase.total_cost);
 
   return (
@@ -417,8 +420,8 @@ L'équipe ${shopData.name || 'de réparation'}`;
                       max={savCase.total_cost}
                       step="0.01"
                       value={takeoverAmount}
-                      onChange={(e) => setTakeoverAmount(parseFloat(e.target.value) || 0)}
-                      placeholder="0.00"
+                      onChange={(e) => setTakeoverAmount(e.target.value)}
+                      placeholder=""
                     />
                     <p className="text-sm text-muted-foreground">
                       Coût total du SAV : {savCase.total_cost.toFixed(2)}€
@@ -435,31 +438,31 @@ L'équipe ${shopData.name || 'de réparation'}`;
                   </div>
                   {partialTakeover && (
                     <div className="text-xs text-muted-foreground mt-1">
-                      Magasin prend en charge : {takeoverAmount.toFixed(2)}€
+                      Magasin prend en charge : {parseFloat(takeoverAmount).toFixed(2)}€
                     </div>
                   )}
                 </div>
 
                 <div>
                   <label className="text-sm font-medium">
-                    Notes privées {partialTakeover && takeoverAmount > 0 ? '(obligatoire)' : '(optionnel)'}
+                    Notes privées {partialTakeover && parseFloat(takeoverAmount) > 0 ? '(obligatoire)' : '(optionnel)'}
                   </label>
                   <p className="text-xs text-muted-foreground mb-2">
-                    ⚠️ {partialTakeover && takeoverAmount > 0 
+                    ⚠️ {partialTakeover && parseFloat(takeoverAmount) > 0 
                       ? 'Notes obligatoires pour justifier la prise en charge - non visibles par le client' 
                       : 'Ces notes sont privées et ne seront pas visibles par le client'}
                   </p>
                   <Textarea
-                    placeholder={partialTakeover && takeoverAmount > 0 
+                    placeholder={partialTakeover && parseFloat(takeoverAmount) > 0 
                       ? "Justification obligatoire de la prise en charge..." 
                       : "Ajoutez des notes privées sur le changement de statut..."}
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
                     rows={3}
-                    className={`mt-1 ${partialTakeover && takeoverAmount > 0 && !notes.trim() ? 'border-destructive' : ''}`}
-                    required={partialTakeover && takeoverAmount > 0}
+                    className={`mt-1 ${partialTakeover && parseFloat(takeoverAmount) > 0 && !notes.trim() ? 'border-destructive' : ''}`}
+                    required={partialTakeover && parseFloat(takeoverAmount) > 0}
                   />
-                  {partialTakeover && takeoverAmount > 0 && !notes.trim() && (
+                  {partialTakeover && parseFloat(takeoverAmount) > 0 && !notes.trim() && (
                     <p className="text-xs text-destructive mt-1">
                       Notes obligatoires pour justifier la prise en charge
                     </p>
@@ -468,7 +471,7 @@ L'équipe ${shopData.name || 'de réparation'}`;
 
                 <Button
                   onClick={updateTakeover}
-                  disabled={!hasTakeoverChanges || updatingTakeover || (partialTakeover && takeoverAmount > 0 && !notes.trim())}
+                  disabled={!hasTakeoverChanges || updatingTakeover || (partialTakeover && parseFloat(takeoverAmount) > 0 && !notes.trim())}
                   variant="outline"
                   className="w-full"
                 >
