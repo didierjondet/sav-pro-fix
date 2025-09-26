@@ -7,6 +7,7 @@ import { useShop } from '@/hooks/useShop';
 import { useShopStorageUsage } from '@/hooks/useStorageUsage';
 import { useUnifiedSMSCredits } from '@/hooks/useUnifiedSMSCredits';
 import { useSubscription } from '@/hooks/useSubscription';
+import { useProfile } from '@/hooks/useProfile';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useNavigate } from 'react-router-dom';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -25,6 +26,7 @@ export function Header({
   const {
     shop
   } = useShop();
+  const { profile } = useProfile();
   const {
     storageGB
   } = useShopStorageUsage(shop?.id);
@@ -150,7 +152,12 @@ export function Header({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuLabel>{user?.email}</DropdownMenuLabel>
+              <DropdownMenuLabel>
+                {profile ? 
+                  `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || user?.email :
+                  user?.email
+                }
+              </DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => navigate('/settings')}>
                 <Settings className="mr-2 h-4 w-4" />
