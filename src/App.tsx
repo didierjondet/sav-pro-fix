@@ -7,8 +7,6 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { LimitDialogProvider } from "@/contexts/LimitDialogContext";
 
 import { DelayNotificationProvider } from "@/components/layout/DelayNotificationProvider";
-
-// Regular imports for faster navigation
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Settings from "./pages/Settings";
@@ -46,15 +44,9 @@ const queryClient = new QueryClient({
     queries: {
       staleTime: 1000 * 60 * 5, // 5 minutes
       retry: 3,
-      refetchOnWindowFocus: false, 
     },
   },
 });
-
-// Expose queryClient globally for debugging
-if (typeof window !== 'undefined') {
-  (window as any).queryClient = queryClient;
-}
 
 const App = () => (
   <QueryClientProvider client={queryClient}>

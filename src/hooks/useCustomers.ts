@@ -21,75 +21,40 @@ export function useCustomers() {
 
   const fetchCustomers = async () => {
     try {
-      console.log('🔍 [DEBUG] Début fetchCustomers');
-      
-      // Step 1: Get current user
-      const { data: authData, error: authError } = await supabase.auth.getUser();
-      console.log('🔍 [DEBUG] Auth user:', authData?.user?.id, authError);
-      
-      if (authError || !authData?.user?.id) {
-        console.error('❌ [ERROR] Auth failed:', authError);
-        setCustomers([]);
-        return;
-      }
-
-      // Step 2: Get user profile and shop_id
-      const { data: profile, error: profileError } = await supabase
+      // Get current user's shop_id
+      const { data: profile } = await supabase
         .from('profiles')
         .select('shop_id')
-        .eq('user_id', authData.user.id)
+        .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
         .single();
 
-      console.log('🔍 [DEBUG] Profile data:', profile, profileError);
-
-      if (profileError || !profile?.shop_id) {
-        console.error('❌ [ERROR] No shop_id found:', profileError, profile);
+      if (!profile?.shop_id) {
+        console.error('No shop_id found for current user');
         setCustomers([]);
-        toast({
-          title: "Erreur de configuration",
-          description: "Aucun magasin associé à votre compte",
-          variant: "destructive",
-        });
         return;
       }
 
-      // Step 3: Get customers for this shop
-      console.log('🔍 [DEBUG] Fetching customers for shop_id:', profile.shop_id);
       const { data, error } = await supabase
         .from('customers')
         .select('*')
         .eq('shop_id', profile.shop_id)
         .order('created_at', { ascending: false });
 
-      console.log('🔍 [DEBUG] Customers query result:', { count: data?.length, error });
-
       if (error) throw error;
-      
       setCustomers(data || []);
-      console.log('✅ [DEBUG] Customers loaded successfully:', data?.length || 0);
-      
     } catch (error: any) {
-      console.error('❌ [ERROR] fetchCustomers failed:', error);
       toast({
         title: "Erreur",
-        description: error.message || "Impossible de charger les clients",
+        description: "Impossible de charger les clients",
         variant: "destructive",
       });
-      setCustomers([]);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    console.log('🔄 [DEBUG] useCustomers useEffect triggered');
     fetchCustomers();
-    
-    // Force clean any stale React Query cache
-    if (typeof window !== 'undefined' && (window as any).queryClient) {
-      console.log('🧹 [DEBUG] Clearing React Query cache');
-      (window as any).queryClient.clear();
-    }
   }, []);
 
   const createCustomer = async (customerData: Omit<Customer, 'id' | 'created_at' | 'updated_at'>) => {
