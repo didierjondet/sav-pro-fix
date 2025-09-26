@@ -50,8 +50,6 @@ interface Shop {
   website_enabled: boolean;
   website_title: string;
   website_description: string;
-  max_sav_processing_days_client: number;
-  max_sav_processing_days_internal: number;
   slug: string;
   subscription_tier: string;
   subscription_plan_id?: string;

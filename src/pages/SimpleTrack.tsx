@@ -42,8 +42,6 @@ interface SAVCaseData {
     email?: string;
     address?: string;
     logo_url?: string;
-    max_sav_processing_days_client?: number;
-    max_sav_processing_days_internal?: number;
   };
 }
 
@@ -176,7 +174,7 @@ export default function SimpleTrack() {
         .select(`
           id,
           sav_type,
-          shops (name, phone, email, address, logo_url, max_sav_processing_days_client, max_sav_processing_days_internal)
+          shops (name, phone, email, address, logo_url)
         `)
         .eq('tracking_slug', slug)
         .maybeSingle();
@@ -310,10 +308,7 @@ export default function SimpleTrack() {
               sav_type: savCase.sav_type,
               status: savCase.status
             }} 
-            shop={{
-              max_sav_processing_days_client: savCase.shop?.max_sav_processing_days_client ?? 7,
-              max_sav_processing_days_internal: savCase.shop?.max_sav_processing_days_internal ?? 5
-            }} 
+            shop={null}
           />
         </div>
 

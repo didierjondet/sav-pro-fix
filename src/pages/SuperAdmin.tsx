@@ -26,28 +26,14 @@ import { LandingPageManager } from '@/components/admin/LandingPageManager';
 import { SMSPackagesManager } from '@/components/admin/SMSPackagesManager';
 import { SystemAlertsManager } from '@/components/admin/SystemAlertsManager';
 import { useStorageUsage } from '@/hooks/useStorageUsage';
+import { Shop } from '@/hooks/useShop';
 
-interface Shop {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  address: string;
-  invite_code: string;
-  logo_url: string;
-  website_enabled: boolean;
-  website_title: string;
-  website_description: string;
-  max_sav_processing_days_client: number;
-  max_sav_processing_days_internal: number;
-  slug: string;
+interface SuperAdminShop extends Shop {
+  subscription_menu_visible: boolean;
   subscription_tier: string;
-  subscription_plan_id?: string;
   sms_credits_allocated: number;
   sms_credits_used: number;
   active_sav_count: number;
-  subscription_menu_visible: boolean;
-  created_at: string;
   purchased_sms: number;
   total_users?: number;
   total_sav_cases?: number;
@@ -105,7 +91,7 @@ export default function SuperAdmin() {
   const [loading, setLoading] = useState(true);
   const [activeSection, setActiveSection] = useState('dashboard');
   
-  const [shops, setShops] = useState<Shop[]>([]);
+  const [shops, setShops] = useState<SuperAdminShop[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [supportTickets, setSupportTickets] = useState<SupportTicket[]>([]);
   const [activeSupportCount, setActiveSupportCount] = useState(0);
