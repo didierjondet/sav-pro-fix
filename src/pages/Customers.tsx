@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Header } from '@/components/layout/Header';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,6 +14,7 @@ import { useCustomers, Customer } from '@/hooks/useCustomers';
 import { useCustomerActivity } from '@/hooks/useCustomerActivity';
 import { useCustomerSAVs } from '@/hooks/useCustomerSAVs';
 import { useShop } from '@/hooks/useShop';
+import { useCurrentShop } from '@/hooks/useCurrentShop';
 import { multiWordSearch } from '@/utils/searchUtils';
 import { 
   User,
@@ -42,6 +43,17 @@ export default function Customers() {
   
   const { customers, loading, createCustomer, updateCustomer, deleteCustomer, refetch } = useCustomers();
   const { shop } = useShop();
+  const { data: currentShopId } = useCurrentShop();
+
+  // DIAGNOSTIC LOGS
+  useEffect(() => {
+    console.log('🔍 [CUSTOMERS PAGE] Diagnostic info:');
+    console.log('- Customers count:', customers.length);
+    console.log('- Loading state:', loading);
+    console.log('- Shop from useShop:', shop?.id);
+    console.log('- Shop from useCurrentShop:', currentShopId);
+    console.log('- Customers array:', customers);
+  }, [customers, loading, shop, currentShopId]);
 
   // Filtrer les clients en fonction de la recherche
   const filteredCustomers = customers.filter(customer =>
