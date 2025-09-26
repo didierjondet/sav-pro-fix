@@ -51,6 +51,11 @@ const queryClient = new QueryClient({
   },
 });
 
+// Expose queryClient globally for debugging
+if (typeof window !== 'undefined') {
+  (window as any).queryClient = queryClient;
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
