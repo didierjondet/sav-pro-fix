@@ -2014,8 +2014,6 @@ export type Database = {
           customer_first_name: string
           device_brand: string
           device_model: string
-          max_sav_processing_days_client: number
-          max_sav_processing_days_internal: number
           sav_case_id: string
           sav_type: Database["public"]["Enums"]["sav_type"]
           shop_address: string
