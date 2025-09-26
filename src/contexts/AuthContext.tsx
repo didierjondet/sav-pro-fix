@@ -19,40 +19,78 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Nettoyer complètement au démarrage si nécessaire
-    const forceCleanup = () => {
-      Object.keys(localStorage).forEach((key) => {
-        if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
-          localStorage.removeItem(key);
+    let mounted = true;
+
+    const initializeAuth = async () => {
+      try {
+        // Forcer un refresh de session immédiat
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('Session error:', error);
+          // Nettoyer si erreur de session
+          Object.keys(localStorage).forEach((key) => {
+            if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
+              localStorage.removeItem(key);
+            }
+          });
+          setSession(null);
+          setUser(null);
+        } else if (session && mounted) {
+          console.log('Session restored:', session.user?.email);
+          setSession(session);
+          setUser(session.user);
+        } else if (mounted) {
+          setSession(null);
+          setUser(null);
         }
-      });
+      } catch (error) {
+        console.error('Auth initialization error:', error);
+        if (mounted) {
+          setSession(null);
+          setUser(null);
+        }
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
+      }
     };
 
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log('Auth event:', event, 'User:', session?.user?.email);
-        setSession(session);
-        setUser(session?.user ?? null);
-        setLoading(false);
         
-        if (event === 'SIGNED_OUT') {
-          forceCleanup();
-          setUser(null);
+        if (!mounted) return;
+        
+        if (event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED' || !session) {
+          if (event === 'SIGNED_OUT') {
+            // Nettoyer complètement
+            Object.keys(localStorage).forEach((key) => {
+              if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
+                localStorage.removeItem(key);
+              }
+            });
+          }
           setSession(null);
+          setUser(null);
+        } else if (session) {
+          setSession(session);
+          setUser(session.user);
         }
+        
+        setLoading(false);
       }
     );
 
-    // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log('Existing session:', session?.user?.email);
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
+    // Initialiser l'authentification
+    initializeAuth();
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signIn = async (email: string, password: string) => {
