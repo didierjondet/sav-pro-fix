@@ -21,7 +21,8 @@ export function Header({
 }: HeaderProps) {
   const {
     user,
-    signOut
+    signOut,
+    forceReconnect
   } = useAuth();
   const {
     shop
@@ -162,6 +163,10 @@ export function Header({
               <DropdownMenuItem onClick={() => navigate('/settings')}>
                 <Settings className="mr-2 h-4 w-4" />
                 Paramètres
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={forceReconnect} className="text-orange-600">
+                <AlertTriangle className="mr-2 h-4 w-4" />
+                Réparer l'authentification
               </DropdownMenuItem>
               <DropdownMenuItem onClick={signOut}>
                 <LogOut className="mr-2 h-4 w-4" />

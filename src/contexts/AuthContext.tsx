@@ -8,6 +8,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signUp: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
+  forceReconnect: () => Promise<void>;
   loading: boolean;
 }
 
@@ -23,12 +24,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const initializeAuth = async () => {
       try {
-        // Forcer un refresh de session immédiat
+        // Récupérer la session existante sans forcer la déconnexion
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (error) {
           console.error('Session error:', error);
-          // Nettoyer si erreur de session
+          // Nettoyer seulement si erreur de session
           Object.keys(localStorage).forEach((key) => {
             if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
               localStorage.removeItem(key);
@@ -152,12 +153,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const forceReconnect = async () => {
+    try {
+      console.log('Reconnexion forcée...');
+      
+      // Nettoyer complètement
+      await supabase.auth.signOut({ scope: 'global' });
+      
+      // Nettoyer TOUT le stockage
+      localStorage.clear();
+      sessionStorage.clear();
+      
+      // Attendre un peu
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Recharger la page complètement
+      window.location.reload();
+      
+    } catch (error) {
+      console.error('Erreur de reconnexion forcée:', error);
+      window.location.reload();
+    }
+  };
+
   const value = {
     user,
     session,
     signIn,
     signUp,
     signOut,
+    forceReconnect,
     loading,
   };
 
