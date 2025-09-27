@@ -16,12 +16,10 @@ import { calculateSAVDelay } from '@/hooks/useSAVDelay';
 import { useMenuPermissions } from '@/hooks/useMenuPermissions';
 import { MessageSquare, Package, Users, BarChart3, FileText, Settings, X, Plus, Shield, CreditCard, HelpCircle, Info } from 'lucide-react';
 import { useQuotes } from '@/hooks/useQuotes';
-
 interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
 }
-
 const baseNavigation = [{
   name: 'Tableau de bord',
   href: '/dashboard',
@@ -51,23 +49,45 @@ const baseNavigation = [{
   href: '/client-chats',
   icon: MessageSquare
 }];
-
-export function Sidebar({ isOpen, onClose }: SidebarProps) {
+export function Sidebar({
+  isOpen,
+  onClose
+}: SidebarProps) {
   const navigate = useNavigate();
   const location = useLocation();
-  const { cases } = useSAVCases();
-  const { profile } = useProfile();
-  const { shop } = useShop();
-  const { statuses, getStatusInfo, isReadyStatus, isCancelledStatus, isActiveStatus } = useShopSAVStatuses();
-  const { types: savTypes, getTypeInfo } = useShopSAVTypes();
-  const { savWithUnreadMessages } = useSAVUnreadMessages();
-  const { permissions } = useMenuPermissions();
+  const {
+    cases
+  } = useSAVCases();
+  const {
+    profile
+  } = useProfile();
+  const {
+    shop
+  } = useShop();
+  const {
+    statuses,
+    getStatusInfo,
+    isReadyStatus,
+    isCancelledStatus,
+    isActiveStatus
+  } = useShopSAVStatuses();
+  const {
+    types: savTypes,
+    getTypeInfo
+  } = useShopSAVTypes();
+  const {
+    savWithUnreadMessages
+  } = useSAVUnreadMessages();
+  const {
+    permissions
+  } = useMenuPermissions();
   const totalUnread = (savWithUnreadMessages || []).reduce((sum, s) => sum + s.unread_count, 0);
   const openConversationsCount = (savWithUnreadMessages || []).length;
-  const { quotes } = useQuotes();
+  const {
+    quotes
+  } = useQuotes();
   const quoteCounts = (quotes || []).reduce((acc, q) => {
     const activeStatuses = ['draft', 'pending_review', 'sent', 'under_negotiation', 'sms_accepted'];
-    
     if (q.status === 'accepted') {
       acc.accepted++;
     } else if (q.status === 'rejected') {
@@ -77,25 +97,40 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     }
     // archived, completed, expired quotes are not counted
     return acc;
-  }, { inProgress: 0, accepted: 0, rejected: 0 });
+  }, {
+    inProgress: 0,
+    accepted: 0,
+    rejected: 0
+  });
 
   // Filter navigation based on permissions
   const navigation = baseNavigation.filter(item => {
-    switch(item.href) {
-      case '/dashboard': return permissions.dashboard;
-      case '/sav': return permissions.sav;
-      case '/parts': return permissions.parts;
-      case '/quotes': return permissions.quotes;
-      case '/orders': return permissions.orders;
-      case '/customers': return permissions.customers;
-      case '/client-chats': return permissions.chats;
-      default: return true;
+    switch (item.href) {
+      case '/dashboard':
+        return permissions.dashboard;
+      case '/sav':
+        return permissions.sav;
+      case '/parts':
+        return permissions.parts;
+      case '/quotes':
+        return permissions.quotes;
+      case '/orders':
+        return permissions.orders;
+      case '/customers':
+        return permissions.customers;
+      case '/client-chats':
+        return permissions.chats;
+      default:
+        return true;
     }
   });
 
   // Compter les SAV par type
   const savTypeCounts = useMemo(() => {
-    const counts: Record<string, { count: number; cases: any[] }> = {};
+    const counts: Record<string, {
+      count: number;
+      cases: any[];
+    }> = {};
     savTypes.forEach(type => {
       const casesForType = cases.filter(savCase => savCase.sav_type === type.type_key && !isReadyStatus(savCase.status));
       counts[type.type_key] = {
@@ -133,9 +168,9 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     const today = new Date();
     const daysDiff = Math.floor((today.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24));
 
-      // Calculate delay using types configuration
-      const delayInfo = calculateSAVDelay(savCase, shop, savTypes);
-      return delayInfo.isOverdue;
+    // Calculate delay using types configuration
+    const delayInfo = calculateSAVDelay(savCase, shop, savTypes);
+    return delayInfo.isOverdue;
   }).length;
 
   // Get detailed info about late SAV cases for tooltip
@@ -151,7 +186,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       if (statusInfo.pause_timer) {
         return false; // Don't count as late if timer is paused
       }
-      
+
       // Calculate delay using types configuration
       const delayInfo = calculateSAVDelay(savCase, shop, savTypes);
       return delayInfo.isOverdue;
@@ -162,9 +197,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       cases: lateSAVs
     };
   };
-
-  return (
-    <>
+  return <>
       {/* Mobile overlay */}
       {isOpen && <div className="fixed inset-0 z-20 bg-black bg-opacity-50 md:hidden" onClick={onClose} />}
 
@@ -183,47 +216,29 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             <TooltipProvider>
               <nav className="space-y-2">
                 {(shop as any)?.sidebar_nav_visible !== false && navigation.map(item => {
-                  const Icon = item.icon;
-                  const isActive = location.pathname === item.href;
-                  return (
-                    <Button 
-                      key={item.name} 
-                      variant={isActive ? 'default' : 'ghost'} 
-                      className={cn('w-full justify-start', isActive && 'bg-primary text-primary-foreground')} 
-                      onClick={() => {
-                        navigate(item.href);
-                        onClose();
-                      }}
-                    >
+                const Icon = item.icon;
+                const isActive = location.pathname === item.href;
+                return <Button key={item.name} variant={isActive ? 'default' : 'ghost'} className={cn('w-full justify-start', isActive && 'bg-primary text-primary-foreground')} onClick={() => {
+                  navigate(item.href);
+                  onClose();
+                }}>
                       <Icon className="mr-3 h-5 w-5" />
                       <span>{item.name}</span>
-                      {item.href === '/client-chats' && openConversationsCount > 0 && (
-                        <Badge variant="destructive" className="ml-auto text-xs">{openConversationsCount}</Badge>
-                      )}
-                      {item.href === '/quotes' && quoteCounts.inProgress > 0 && (
-                        <Badge variant="destructive" className="ml-auto text-xs">{quoteCounts.inProgress}</Badge>
-                      )}
-                    </Button>
-                  );
-                })}
+                      {item.href === '/client-chats' && openConversationsCount > 0 && <Badge variant="destructive" className="ml-auto text-xs">{openConversationsCount}</Badge>}
+                      {item.href === '/quotes' && quoteCounts.inProgress > 0 && <Badge variant="destructive" className="ml-auto text-xs">{quoteCounts.inProgress}</Badge>}
+                    </Button>;
+              })}
                 
-                {profile?.role === 'super_admin' && (shop as any)?.sidebar_nav_visible !== false && (
-                  <Button 
-                    variant={location.pathname === '/super-admin' ? 'default' : 'ghost'} 
-                    className={cn('w-full justify-start', location.pathname === '/super-admin' && 'bg-primary text-primary-foreground')} 
-                    onClick={() => {
-                      navigate('/super-admin');
-                      onClose();
-                    }}
-                  >
+                {profile?.role === 'super_admin' && (shop as any)?.sidebar_nav_visible !== false && <Button variant={location.pathname === '/super-admin' ? 'default' : 'ghost'} className={cn('w-full justify-start', location.pathname === '/super-admin' && 'bg-primary text-primary-foreground')} onClick={() => {
+                navigate('/super-admin');
+                onClose();
+              }}>
                     <Shield className="mr-3 h-5 w-5" />
                     Super Admin
-                  </Button>
-                )}
+                  </Button>}
               </nav>
 
-              {permissions.sidebar_late_sav && (
-                <div className="mt-8 p-4 bg-destructive/10 rounded-lg border border-destructive/20">
+              {permissions.sidebar_late_sav && <div className="mt-8 p-4 bg-destructive/10 rounded-lg border border-destructive/20">
                   <div className="flex items-center justify-between mb-2">
                     <h3 className="text-sm font-medium text-destructive">
                       SAV en retard
@@ -238,32 +253,22 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                         <div className="space-y-2">
                           <p className="font-medium">{getLateSAVInfo().description}</p>
                           <p className="text-sm">Nombre de SAV: {getLateSAVInfo().count}</p>
-                          {getLateSAVInfo().cases.length > 0 && (
-                            <div className="text-xs space-y-1">
+                          {getLateSAVInfo().cases.length > 0 && <div className="text-xs space-y-1">
                               <p className="font-medium">SAV concernés:</p>
-                              {getLateSAVInfo().cases.slice(0, 8).map((savCase) => (
-                                <button 
-                                  key={savCase.id} 
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    navigate(`/sav/${savCase.id}`);
-                                    onClose();
-                                  }} 
-                                  className="block text-primary hover:underline text-left w-full"
-                                >
+                              {getLateSAVInfo().cases.slice(0, 8).map(savCase => <button key={savCase.id} onClick={e => {
+                          e.stopPropagation();
+                          navigate(`/sav/${savCase.id}`);
+                          onClose();
+                        }} className="block text-primary hover:underline text-left w-full">
                                   {savCase.case_number} - {savCase.device_brand} {savCase.device_model} - 
                                   <span className="text-destructive">
-                                    {Math.floor(((new Date()).getTime() - new Date(savCase.created_at).getTime()) / (1000 * 60 * 60 * 24))} jours
+                                    {Math.floor((new Date().getTime() - new Date(savCase.created_at).getTime()) / (1000 * 60 * 60 * 24))} jours
                                   </span>
-                                </button>
-                              ))}
-                              {getLateSAVInfo().cases.length > 8 && (
-                                <p className="text-muted-foreground">
+                                </button>)}
+                              {getLateSAVInfo().cases.length > 8 && <p className="text-muted-foreground">
                                   +{getLateSAVInfo().cases.length - 8} autres...
-                                </p>
-                              )}
-                            </div>
-                          )}
+                                </p>}
+                            </div>}
                         </div>
                       </TooltipContent>
                     </Tooltip>
@@ -273,26 +278,12 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                     <Badge variant="destructive" className="text-xs">
                       {lateSAVCount} dossier{lateSAVCount > 1 ? 's' : ''}
                     </Badge>
-                    {lateSAVCount > 0 && (
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="text-xs h-6 px-2 border-destructive/30 hover:bg-destructive/10"
-                        onClick={() => {
-                          navigate('/sav?filter=late');
-                          onClose();
-                        }}
-                      >
-                        Voir tout
-                      </Button>
-                    )}
+                    {lateSAVCount > 0}
                   </div>
-                </div>
-              )}
+                </div>}
 
               {/* Types de SAV */}
-              {permissions.sidebar_sav_types && (
-                <div className="mt-4 p-3 bg-muted rounded-lg">
+              {permissions.sidebar_sav_types && <div className="mt-4 p-3 bg-muted rounded-lg">
                   <div className="flex items-center justify-between mb-2 pl-1">
                     <h3 className="text-sm font-medium text-foreground">
                       Types de SAV
@@ -302,29 +293,20 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                     </Badge>
                   </div>
                   <div className="space-y-1">
-                    {savTypes.map((type) => {
-                      const count = savTypeCounts[type.type_key]?.count || 0;
-                      const typeInfo = getTypeInfo(type.type_key);
-                      
-                      return (
-                        <Tooltip key={type.id}>
+                    {savTypes.map(type => {
+                  const count = savTypeCounts[type.type_key]?.count || 0;
+                  const typeInfo = getTypeInfo(type.type_key);
+                  return <Tooltip key={type.id}>
                           <TooltipTrigger asChild>
-                            <Link
-                              to={`/sav?sav_type=${type.type_key}&exclude_ready=true`}
-                              className="flex items-center justify-between p-1 text-sm hover:bg-accent hover:text-accent-foreground rounded-md transition-colors"
-                            >
+                            <Link to={`/sav?sav_type=${type.type_key}&exclude_ready=true`} className="flex items-center justify-between p-1 text-sm hover:bg-accent hover:text-accent-foreground rounded-md transition-colors">
                               <span className="text-muted-foreground">
                                 {typeInfo.label}
                               </span>
-                              <Badge 
-                                variant="secondary" 
-                                className="ml-2"
-                                style={{
-                                  backgroundColor: `${typeInfo.color}20`,
-                                  color: typeInfo.color,
-                                  borderColor: typeInfo.color
-                                }}
-                              >
+                              <Badge variant="secondary" className="ml-2" style={{
+                          backgroundColor: `${typeInfo.color}20`,
+                          color: typeInfo.color,
+                          borderColor: typeInfo.color
+                        }}>
                                 {count}
                               </Badge>
                             </Link>
@@ -333,69 +315,46 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                             <div className="space-y-2">
                               <p className="font-medium">{typeInfo.label}</p>
                               <p className="text-sm">Nombre de SAV: {count}</p>
-                              {savTypeCounts[type.type_key]?.cases && savTypeCounts[type.type_key].cases.length > 0 && (
-                              <div className="space-y-1">
+                              {savTypeCounts[type.type_key]?.cases && savTypeCounts[type.type_key].cases.length > 0 && <div className="space-y-1">
                                 <p className="text-xs font-medium">SAV concernés:</p>
-                                {savTypeCounts[type.type_key].cases.slice(0, 5).map((savCase) => (
-                                  <button 
-                                    key={savCase.id} 
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      navigate(`/sav/${savCase.id}`);
-                                      onClose();
-                                    }} 
-                                    className="block text-primary hover:underline text-left w-full text-xs"
-                                  >
-                                    {savCase.customer ? 
-                                      `${savCase.customer.last_name} ${savCase.customer.first_name}` : 
-                                      (savCase.sav_type === 'internal' ? `#${savCase.case_number}` : 'Client non défini')
-                                    } - {savCase.device_brand} {savCase.device_model}
-                                  </button>
-                                ))}
-                                  {savTypeCounts[type.type_key].cases.length > 5 && (
-                                    <p className="text-xs text-muted-foreground">
+                                {savTypeCounts[type.type_key].cases.slice(0, 5).map(savCase => <button key={savCase.id} onClick={e => {
+                            e.stopPropagation();
+                            navigate(`/sav/${savCase.id}`);
+                            onClose();
+                          }} className="block text-primary hover:underline text-left w-full text-xs">
+                                    {savCase.customer ? `${savCase.customer.last_name} ${savCase.customer.first_name}` : savCase.sav_type === 'internal' ? `#${savCase.case_number}` : 'Client non défini'} - {savCase.device_brand} {savCase.device_model}
+                                  </button>)}
+                                  {savTypeCounts[type.type_key].cases.length > 5 && <p className="text-xs text-muted-foreground">
                                       +{savTypeCounts[type.type_key].cases.length - 5} autres...
-                                    </p>
-                                  )}
-                                </div>
-                              )}
+                                    </p>}
+                                </div>}
                             </div>
                           </TooltipContent>
-                        </Tooltip>
-                      );
-                    })}
-                    {savTypes.length === 0 && (
-                      <div className="text-sm text-muted-foreground text-center py-2">
+                        </Tooltip>;
+                })}
+                    {savTypes.length === 0 && <div className="text-sm text-muted-foreground text-center py-2">
                         Aucun type de SAV configuré
-                      </div>
-                    )}
+                      </div>}
                   </div>
-                </div>
-              )}
+                </div>}
 
               {/* Statuts SAV */}
-              {permissions.sidebar_sav_statuses && (
-                <div className="mt-4 p-3 bg-muted rounded-lg">
+              {permissions.sidebar_sav_statuses && <div className="mt-4 p-3 bg-muted rounded-lg">
                   <h3 className="text-base font-semibold text-foreground mb-1 pl-1">
                     Statuts SAV
                   </h3>
                   <div className="space-y-1">
-                    {sidebarStatusCounts.map((statusCount) => (
-                      <Tooltip key={statusCount.key}>
+                    {sidebarStatusCounts.map(statusCount => <Tooltip key={statusCount.key}>
                         <TooltipTrigger asChild>
                           <div className="flex items-center justify-between p-1 text-sm hover:bg-accent hover:text-accent-foreground rounded-md transition-colors cursor-default">
                             <span className="text-muted-foreground">
                               {statusCount.label}
                             </span>
-                            <Badge 
-                              variant="secondary" 
-                              className="ml-2"
-                              style={{
-                                backgroundColor: `${statusCount.color}20`,
-                                color: statusCount.color,
-                                borderColor: statusCount.color
-                              }}
-                            >
+                            <Badge variant="secondary" className="ml-2" style={{
+                        backgroundColor: `${statusCount.color}20`,
+                        color: statusCount.color,
+                        borderColor: statusCount.color
+                      }}>
                               {statusCount.count}
                             </Badge>
                           </div>
@@ -404,65 +363,47 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                           <div className="space-y-2">
                             <p className="font-medium">{statusCount.label}</p>
                             <p className="text-sm">Nombre de SAV: {statusCount.count}</p>
-                            {statusCount.count > 0 && (
-                              <div className="space-y-1">
+                            {statusCount.count > 0 && <div className="space-y-1">
                                 <p className="text-xs font-medium">SAV concernés:</p>
-                                {(cases || []).filter(savCase => savCase.status === statusCount.key).slice(0, 5).map((savCase) => (
-                                  <button 
-                                    key={savCase.id} 
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      navigate(`/sav/${savCase.id}`);
-                                      onClose();
-                                    }} 
-                                    className="block text-primary hover:underline text-left w-full text-xs"
-                                  >
-                                    {savCase.customer ? 
-                                      `${savCase.customer.last_name} ${savCase.customer.first_name}` : 
-                                      (savCase.sav_type === 'internal' ? `#${savCase.case_number}` : 'Client non défini')
-                                    } - {savCase.device_brand} {savCase.device_model}
-                                  </button>
-                                ))}
-                                {(cases || []).filter(savCase => savCase.status === statusCount.key).length > 5 && (
-                                  <p className="text-xs text-muted-foreground">
+                                {(cases || []).filter(savCase => savCase.status === statusCount.key).slice(0, 5).map(savCase => <button key={savCase.id} onClick={e => {
+                          e.stopPropagation();
+                          navigate(`/sav/${savCase.id}`);
+                          onClose();
+                        }} className="block text-primary hover:underline text-left w-full text-xs">
+                                    {savCase.customer ? `${savCase.customer.last_name} ${savCase.customer.first_name}` : savCase.sav_type === 'internal' ? `#${savCase.case_number}` : 'Client non défini'} - {savCase.device_brand} {savCase.device_model}
+                                  </button>)}
+                                {(cases || []).filter(savCase => savCase.status === statusCount.key).length > 5 && <p className="text-xs text-muted-foreground">
                                     +{(cases || []).filter(savCase => savCase.status === statusCount.key).length - 5} autres...
-                                  </p>
-                                )}
-                              </div>
-                            )}
+                                  </p>}
+                              </div>}
                           </div>
                         </TooltipContent>
-                      </Tooltip>
-                    ))}
-                    {sidebarStatusCounts.length === 0 && (
-                      <div className="text-sm text-muted-foreground text-center py-2">
+                      </Tooltip>)}
+                    {sidebarStatusCounts.length === 0 && <div className="text-sm text-muted-foreground text-center py-2">
                         Aucun statut configuré pour la sidebar
-                       </div>
-                     )}
+                       </div>}
                    </div>
-                 </div>
-               )}
+                 </div>}
              </TooltipProvider>
           </ScrollArea>
 
           <div className="p-4 border-t border-border">
             <Button variant="ghost" className="w-full justify-start mb-2" onClick={() => {
-              navigate('/support');
-              onClose();
-            }}>
+            navigate('/support');
+            onClose();
+          }}>
               <HelpCircle className="mr-3 h-5 w-5" />
               Support
             </Button>
             <Button variant="ghost" className="w-full justify-start" onClick={() => {
-              navigate('/settings');
-              onClose();
-            }}>
+            navigate('/settings');
+            onClose();
+          }}>
               <Settings className="mr-3 h-5 w-5" />
               Paramètres
             </Button>
           </div>
         </div>
       </div>
-    </>
-  );
+    </>;
 }
