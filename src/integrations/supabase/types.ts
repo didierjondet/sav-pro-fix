@@ -1413,34 +1413,40 @@ export type Database = {
       sms_history: {
         Row: {
           created_at: string
+          error_message: string | null
           id: string
           message: string
           record_id: string | null
           shop_id: string
           status: string
           to_number: string
+          twilio_sid: string | null
           type: string
           updated_at: string
         }
         Insert: {
           created_at?: string
+          error_message?: string | null
           id?: string
           message: string
           record_id?: string | null
           shop_id: string
           status?: string
           to_number: string
+          twilio_sid?: string | null
           type: string
           updated_at?: string
         }
         Update: {
           created_at?: string
+          error_message?: string | null
           id?: string
           message?: string
           record_id?: string | null
           shop_id?: string
           status?: string
           to_number?: string
+          twilio_sid?: string | null
           type?: string
           updated_at?: string
         }

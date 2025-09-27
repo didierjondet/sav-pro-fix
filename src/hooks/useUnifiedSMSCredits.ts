@@ -91,8 +91,10 @@ export function useUnifiedSMSCredits() {
         ? Math.round((credits.monthly_used / credits.monthly_allocated) * 100)
         : 0;
       
+      // Calcul corrigé du pourcentage global d'utilisation
+      const total_used = credits.monthly_used + credits.purchased_and_admin_used;
       const overall_usage_percent = credits.total_available > 0 
-        ? Math.round(((credits.monthly_used + credits.purchased_and_admin_used) / credits.total_available) * 100)
+        ? Math.round((total_used / credits.total_available) * 100)
         : 0;
 
       // Statuts d'alerte

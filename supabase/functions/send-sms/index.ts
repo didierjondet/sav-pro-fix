@@ -136,13 +136,26 @@ Deno.serve(async (req) => {
     if (response.ok) {
       console.log('✅ SMS envoyé avec succès:', responseData.sid);
       
-      // Incrémenter le compteur SMS du shop
+      // Logique de décompte SMS correcte : d'abord les crédits mensuels, puis les achetés
+      const currentMonthlyUsed = shop.monthly_sms_used || 0;
+      const monthlyLimit = shop.sms_credits_allocated || 0;
+      const currentPurchasedUsed = shop.purchased_sms_credits || 0;
+      
+      let updateData: any = {};
+      
+      if (currentMonthlyUsed < monthlyLimit) {
+        // Utiliser d'abord les crédits mensuels
+        updateData.monthly_sms_used = currentMonthlyUsed + 1;
+        console.log('💳 Utilisation des crédits mensuels:', currentMonthlyUsed + 1, '/', monthlyLimit);
+      } else {
+        // Les crédits mensuels sont épuisés, utiliser les crédits achetés/admin
+        updateData.purchased_sms_credits = currentPurchasedUsed + 1;
+        console.log('💰 Utilisation des crédits achetés/admin:', currentPurchasedUsed + 1);
+      }
+
       const { error: updateError } = await supabase
         .from('shops')
-        .update({ 
-          monthly_sms_used: (shop.monthly_sms_used || 0) + 1,
-          purchased_sms_credits: Math.max(0, (shop.purchased_sms_credits || 0) - 1)
-        })
+        .update(updateData)
         .eq('id', shopId);
 
       if (updateError) {
