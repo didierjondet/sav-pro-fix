@@ -19,7 +19,7 @@ import {
 interface SAVCaseData {
   id: string;
   case_number: string;
-  sav_type: "client" | "internal" | "external";
+  sav_type: string;
   status: "pending" | "in_progress" | "testing" | "ready" | "cancelled" | "parts_ordered" | "parts_received" | "delivered";
   device_brand: string;
   device_model: string;
@@ -135,7 +135,7 @@ export default function TrackSAV() {
         sku: undefined,
         problem_description: 'Informations disponibles via le magasin',
         repair_notes: undefined,
-        sav_type: (trackingInfo.sav_type || 'client') as "client" | "internal" | "external",
+        sav_type: trackingInfo.sav_type || 'client',
         customer: {
           first_name: String(trackingInfo.customer_first_name || ''),
           last_name: ''
@@ -145,9 +145,7 @@ export default function TrackSAV() {
           phone: String(trackingInfo.shop_phone || ''),
           email: String(trackingInfo.shop_email || ''),
           address: String(trackingInfo.shop_address || ''),
-          logo_url: String(trackingInfo.shop_logo_url || ''),
-          max_sav_processing_days_client: Number(trackingInfo.max_sav_processing_days_client) || 7,
-          max_sav_processing_days_internal: Number(trackingInfo.max_sav_processing_days_internal) || 5
+          logo_url: String(trackingInfo.shop_logo_url || '')
         }
       };
 

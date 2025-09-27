@@ -205,7 +205,7 @@ export default function SAVDetail() {
     try {
       const { error } = await supabase
         .from('sav_cases')
-        .update({ sav_type: tempSavType as 'client' | 'internal' | 'external' })
+        .update({ sav_type: tempSavType })
         .eq('id', savCase.id);
       
       if (error) {
@@ -455,8 +455,7 @@ export default function SAVDetail() {
                           {getTypeInfo(savCase.sav_type).label}
                         </Badge>
                         {/* Ne montrer le bouton d'édition que si le type est modifiable */}
-                        {['client', 'internal', 'external'].includes(savCase.sav_type) && (
-                          <Button 
+                        <Button
                             size="sm" 
                             variant="outline" 
                             onClick={() => {
@@ -466,7 +465,6 @@ export default function SAVDetail() {
                           >
                             <Edit className="h-4 w-4" />
                           </Button>
-                        )}
                       </div>
                     )}
                   </div>

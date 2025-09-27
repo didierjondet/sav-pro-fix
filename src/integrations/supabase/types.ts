@@ -679,7 +679,7 @@ export type Database = {
           private_comments: string | null
           problem_description: string | null
           repair_notes: string | null
-          sav_type: Database["public"]["Enums"]["sav_type"]
+          sav_type: string
           shop_id: string | null
           sku: string | null
           status: string
@@ -709,7 +709,7 @@ export type Database = {
           private_comments?: string | null
           problem_description?: string | null
           repair_notes?: string | null
-          sav_type: Database["public"]["Enums"]["sav_type"]
+          sav_type: string
           shop_id?: string | null
           sku?: string | null
           status?: string
@@ -739,7 +739,7 @@ export type Database = {
           private_comments?: string | null
           problem_description?: string | null
           repair_notes?: string | null
-          sav_type?: Database["public"]["Enums"]["sav_type"]
+          sav_type?: string
           shop_id?: string | null
           sku?: string | null
           status?: string
@@ -2015,7 +2015,7 @@ export type Database = {
           device_brand: string
           device_model: string
           sav_case_id: string
-          sav_type: Database["public"]["Enums"]["sav_type"]
+          sav_type: string
           shop_address: string
           shop_email: string
           shop_logo_url: string
@@ -2094,16 +2094,6 @@ export type Database = {
         | "cancelled"
         | "parts_ordered"
         | "parts_received"
-      sav_type:
-        | "client"
-        | "internal"
-        | "external"
-        | "SAVPC"
-        | "SAVPARTENAIRE"
-        | "WARRANTY"
-        | "DEPOT_VENTE"
-        | "FORMATION"
-        | "MAINTENANCE"
       user_role: "super_admin" | "shop_admin" | "technician" | "admin"
     }
     CompositeTypes: {
@@ -2241,17 +2231,6 @@ export const Constants = {
         "cancelled",
         "parts_ordered",
         "parts_received",
-      ],
-      sav_type: [
-        "client",
-        "internal",
-        "external",
-        "SAVPC",
-        "SAVPARTENAIRE",
-        "WARRANTY",
-        "DEPOT_VENTE",
-        "FORMATION",
-        "MAINTENANCE",
       ],
       user_role: ["super_admin", "shop_admin", "technician", "admin"],
     },
