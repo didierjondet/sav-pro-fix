@@ -49,6 +49,7 @@ export function SAVStatusManager({ savCase, onStatusUpdated }: SAVStatusManagerP
   
   // États pour la prise en charge
   const [partialTakeover, setPartialTakeover] = useState(savCase.partial_takeover || false);
+  const [fullTakeover, setFullTakeover] = useState(savCase.taken_over || false);
   const [takeoverAmount, setTakeoverAmount] = useState(
     savCase.takeover_amount ? savCase.takeover_amount.toString() : ''
   );
@@ -234,8 +235,8 @@ L'équipe ${shopData.name || 'de réparation'}`;
     if (savCase.sav_type === 'internal') return;
     
     // Validation: notes privées obligatoires si prise en charge appliquée
-    const numericTakeoverAmount = parseFloat(takeoverAmount) || 0;
-    if (partialTakeover && numericTakeoverAmount > 0 && !notes.trim()) {
+    const numericTakeoverAmount = fullTakeover ? savCase.total_cost : (partialTakeover ? parseFloat(takeoverAmount) || 0 : 0);
+    if ((partialTakeover || fullTakeover) && numericTakeoverAmount > 0 && !notes.trim()) {
       toast({
         title: "Notes privées requises",
         description: "Veuillez ajouter des notes privées pour justifier la prise en charge",
@@ -247,16 +248,18 @@ L'équipe ${shopData.name || 'de réparation'}`;
     setUpdatingTakeover(true);
     try {
       const previousTakeoverAmount = savCase.takeover_amount || 0;
-      const newTakeoverAmount = partialTakeover ? numericTakeoverAmount : 0;
+      const previousTakenOver = savCase.taken_over || false;
+      const newTakeoverAmount = fullTakeover ? savCase.total_cost : (partialTakeover ? numericTakeoverAmount : 0);
       
       // Mise à jour des données du SAV avec les notes privées
       const updateData: any = {
+        taken_over: fullTakeover,
         partial_takeover: partialTakeover,
         takeover_amount: newTakeoverAmount
       };
       
       // Ajouter les notes privées si elles existent ou si une prise en charge est appliquée
-      if (notes.trim() || (partialTakeover && numericTakeoverAmount > 0)) {
+      if (notes.trim() || ((partialTakeover || fullTakeover) && numericTakeoverAmount > 0)) {
         updateData.private_comments = notes;
       }
       
@@ -268,7 +271,7 @@ L'équipe ${shopData.name || 'de réparation'}`;
       if (error) throw error;
 
       // Envoyer un message automatique si la prise en charge a changé
-      if (previousTakeoverAmount !== newTakeoverAmount) {
+      if (previousTakeoverAmount !== newTakeoverAmount || previousTakenOver !== fullTakeover) {
         const currentUser = await supabase.auth.getUser();
         const { data: profile } = await supabase
           .from('profiles')
@@ -281,9 +284,14 @@ L'équipe ${shopData.name || 'de réparation'}`;
         let message = '';
         const contactType = savCase.sav_type === 'client' ? 'votre' : 'la';
         
-        if (partialTakeover) {
+        if (fullTakeover) {
+          message = `💰 Prise en charge totale appliquée :\n` +
+                   `• Montant total : ${savCase.total_cost.toFixed(2)}€\n` +
+                   `• Prise en charge : ${newTakeoverAmount.toFixed(2)}€\n` +
+                   `• Montant restant à ${contactType} charge : 0€`;
+        } else if (partialTakeover) {
           const clientAmount = savCase.total_cost - newTakeoverAmount;
-          message = `💰 Prise en charge appliquée :\n` +
+          message = `💰 Prise en charge partielle appliquée :\n` +
                    `• Montant total : ${savCase.total_cost.toFixed(2)}€\n` +
                    `• Prise en charge : ${newTakeoverAmount.toFixed(2)}€\n` +
                    `• Montant restant à ${contactType} charge : ${clientAmount.toFixed(2)}€`;
@@ -322,13 +330,35 @@ L'équipe ${shopData.name || 'de réparation'}`;
   };
 
   const hasChanges = selectedStatus !== savCase.status || notes.trim();
-  const hasTakeoverChanges = partialTakeover !== (savCase.partial_takeover || false) || 
+  const hasTakeoverChanges = fullTakeover !== (savCase.taken_over || false) || 
+                            partialTakeover !== (savCase.partial_takeover || false) || 
                             parseFloat(takeoverAmount) !== (savCase.takeover_amount || 0);
 
   // Calculer le montant à payer par le client
-  const clientAmount = partialTakeover ? 
-    Math.max(0, savCase.total_cost - parseFloat(takeoverAmount)) : 
-    (savCase.taken_over ? 0 : savCase.total_cost);
+  const clientAmount = fullTakeover ? 0 :
+    (partialTakeover ? Math.max(0, savCase.total_cost - parseFloat(takeoverAmount)) : savCase.total_cost);
+
+  // Gestion des interactions entre les switches
+  const handleFullTakeoverChange = (checked: boolean) => {
+    if (checked) {
+      setFullTakeover(true);
+      setPartialTakeover(false);
+      setTakeoverAmount(savCase.total_cost.toString());
+    } else {
+      setFullTakeover(false);
+      setTakeoverAmount('');
+    }
+  };
+
+  const handlePartialTakeoverChange = (checked: boolean) => {
+    if (checked) {
+      setPartialTakeover(true);
+      setFullTakeover(false);
+    } else {
+      setPartialTakeover(false);
+      setTakeoverAmount('');
+    }
+  };
 
   return (
     <Card>
@@ -398,6 +428,20 @@ L'équipe ${shopData.name || 'de réparation'}`;
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="space-y-1">
+                    <Label htmlFor="full-takeover">Prise en charge totale</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Le magasin prend en charge l'intégralité du coût du SAV
+                    </p>
+                  </div>
+                  <Switch
+                    id="full-takeover"
+                    checked={fullTakeover}
+                    onCheckedChange={handleFullTakeoverChange}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
                     <Label htmlFor="partial-takeover">Prise en charge partielle</Label>
                     <p className="text-sm text-muted-foreground">
                       Le magasin prend en charge une partie du coût du SAV
@@ -406,7 +450,7 @@ L'équipe ${shopData.name || 'de réparation'}`;
                   <Switch
                     id="partial-takeover"
                     checked={partialTakeover}
-                    onCheckedChange={setPartialTakeover}
+                    onCheckedChange={handlePartialTakeoverChange}
                   />
                 </div>
 
@@ -436,33 +480,33 @@ L'équipe ${shopData.name || 'de réparation'}`;
                       {clientAmount.toFixed(2)}€
                     </span>
                   </div>
-                  {partialTakeover && (
+                  {(partialTakeover || fullTakeover) && (
                     <div className="text-xs text-muted-foreground mt-1">
-                      Magasin prend en charge : {parseFloat(takeoverAmount).toFixed(2)}€
+                      Magasin prend en charge : {fullTakeover ? savCase.total_cost.toFixed(2) : parseFloat(takeoverAmount || '0').toFixed(2)}€
                     </div>
                   )}
                 </div>
 
                 <div>
                   <label className="text-sm font-medium">
-                    Notes privées {partialTakeover && parseFloat(takeoverAmount) > 0 ? '(obligatoire)' : '(optionnel)'}
+                    Notes privées {(partialTakeover || fullTakeover) && ((fullTakeover && savCase.total_cost > 0) || (partialTakeover && parseFloat(takeoverAmount || '0') > 0)) ? '(obligatoire)' : '(optionnel)'}
                   </label>
                   <p className="text-xs text-muted-foreground mb-2">
-                    ⚠️ {partialTakeover && parseFloat(takeoverAmount) > 0 
+                    ⚠️ {(partialTakeover || fullTakeover) && ((fullTakeover && savCase.total_cost > 0) || (partialTakeover && parseFloat(takeoverAmount || '0') > 0))
                       ? 'Notes obligatoires pour justifier la prise en charge - non visibles par le client' 
                       : 'Ces notes sont privées et ne seront pas visibles par le client'}
                   </p>
                   <Textarea
-                    placeholder={partialTakeover && parseFloat(takeoverAmount) > 0 
+                    placeholder={(partialTakeover || fullTakeover) && ((fullTakeover && savCase.total_cost > 0) || (partialTakeover && parseFloat(takeoverAmount || '0') > 0))
                       ? "Justification obligatoire de la prise en charge..." 
                       : "Ajoutez des notes privées sur le changement de statut..."}
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
                     rows={3}
-                    className={`mt-1 ${partialTakeover && parseFloat(takeoverAmount) > 0 && !notes.trim() ? 'border-destructive' : ''}`}
-                    required={partialTakeover && parseFloat(takeoverAmount) > 0}
+                    className={`mt-1 ${((partialTakeover && parseFloat(takeoverAmount || '0') > 0) || fullTakeover) && !notes.trim() ? 'border-destructive' : ''}`}
+                    required={((partialTakeover && parseFloat(takeoverAmount || '0') > 0) || fullTakeover)}
                   />
-                  {partialTakeover && parseFloat(takeoverAmount) > 0 && !notes.trim() && (
+                  {((partialTakeover && parseFloat(takeoverAmount || '0') > 0) || fullTakeover) && !notes.trim() && (
                     <p className="text-xs text-destructive mt-1">
                       Notes obligatoires pour justifier la prise en charge
                     </p>
