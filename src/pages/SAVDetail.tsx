@@ -27,6 +27,8 @@ import { SAVDocuments } from '@/components/sav/SAVDocuments';
 import { PatternLock } from '@/components/sav/PatternLock';
 import { generateFullTrackingUrl } from '@/utils/trackingUtils';
 import { generateSAVRestitutionPDF } from '@/utils/pdfGenerator';
+import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
 export default function SAVDetail() {
   const {
     id
@@ -477,6 +479,9 @@ export default function SAVDetail() {
                   {savCase.sku && <div>
                       <strong>SKU:</strong> {savCase.sku}
                     </div>}
+                  <div>
+                    <strong>Date de création:</strong> {format(new Date(savCase.created_at), 'dd/MM/yyyy à HH:mm', { locale: fr })}
+                  </div>
                   <div>
                     <strong>Coût total:</strong> {savCase.total_cost}€
                   </div>

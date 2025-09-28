@@ -19,6 +19,8 @@ import { useSAVVisits } from '@/hooks/useSAVVisits';
 import { generateSAVListPDF } from '@/utils/pdfGenerator';
 import { toast } from 'sonner';
 import { formatDelayText, calculateSAVDelay } from '@/hooks/useSAVDelay';
+import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
 import { useSAVUnreadMessages } from '@/hooks/useSAVUnreadMessages';
 import { useLimitDialogContext } from '@/contexts/LimitDialogContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -396,12 +398,15 @@ export default function SAVList() {
                             currentStatus={savCase.status}
                             onStatusChange={(newStatus) => handleStatusChange(savCase.id, newStatus)}
                           />
-                           <Badge variant="outline" className={
-                             savCase.sav_type === 'client' ? 'border-red-200 text-red-700' : 'border-blue-200 text-blue-700'
-                           }>
-                             {getTypeInfo(savCase.sav_type).label}
-                           </Badge>
-                        </div>
+                            <Badge variant="outline" className={
+                              savCase.sav_type === 'client' ? 'border-red-200 text-red-700' : 'border-blue-200 text-blue-700'
+                            }>
+                              {getTypeInfo(savCase.sav_type).label}
+                            </Badge>
+                            <Badge variant="secondary" className="text-xs">
+                              Créé le {format(new Date(savCase.created_at), 'dd/MM/yyyy à HH:mm', { locale: fr })}
+                            </Badge>
+                         </div>
                         
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm text-muted-foreground">
                           <div className="flex items-center gap-2">
