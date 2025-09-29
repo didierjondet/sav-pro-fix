@@ -126,9 +126,6 @@ export default function Settings() {
     review_link: '',
     auto_review_enabled: true,
     sav_warning_enabled: true,
-    max_sav_processing_days_client: 7,
-    max_sav_processing_days_internal: 5,
-    max_sav_processing_days_external: 9,
     custom_review_sms_message: '',
     custom_review_chat_message: '',
     sav_delay_alerts_enabled: false,
@@ -175,9 +172,6 @@ export default function Settings() {
         review_link: (shop as any).review_link || '',
         auto_review_enabled: (shop as any).auto_review_enabled ?? true,
         sav_warning_enabled: (shop as any).sav_warning_enabled ?? true,
-        max_sav_processing_days_client: 7, // Valeur par défaut, gérée maintenant par les types SAV
-        max_sav_processing_days_internal: 5, // Valeur par défaut, gérée maintenant par les types SAV
-        max_sav_processing_days_external: 9, // Valeur par défaut, gérée maintenant par les types SAV
         custom_review_sms_message: shop.custom_review_sms_message || 'Bonjour {customer_name}, votre dossier de réparation {case_number} a été mis à jour : {status}. Si vous avez été satisfait(e) de notre service, nous vous serions reconnaissants de prendre un moment pour nous laisser un avis : {review_link}. Merci pour votre confiance ! {shop_name}',
         custom_review_chat_message: shop.custom_review_chat_message || 'Bonjour {customer_name} ! 👋\\n\\nVotre réparation est maintenant terminée ! Si vous avez été satisfait(e) de notre service, nous vous serions reconnaissants de prendre un moment pour nous laisser un avis.\\n\\n⭐ Laisser un avis : {review_link}\\n\\nVotre retour nous aide à continuer d\'améliorer nos services.\\n\\nMerci pour votre confiance ! 😊\\n\\nL\'équipe {shop_name}',
         sav_delay_alerts_enabled: (shop as any).sav_delay_alerts_enabled ?? false,
@@ -867,10 +861,7 @@ export default function Settings() {
                         <div className="space-y-4 mt-4 pt-4 border-t">
                           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                             {savTypes.filter(type => !type.pause_timer).map(type => {
-                              const defaultMaxDays = type.max_processing_days || 
-                                (type.type_key === 'client' ? shopForm.max_sav_processing_days_client : 
-                                 type.type_key === 'external' ? shopForm.max_sav_processing_days_external :
-                                 type.type_key === 'internal' ? shopForm.max_sav_processing_days_internal : 7);
+                              const defaultMaxDays = type.max_processing_days || 7;
                               
                               return (
                                 <div key={type.id} className="space-y-2">

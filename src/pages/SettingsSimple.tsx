@@ -36,9 +36,6 @@ export default function SettingsSimple() {
     website_title: '',
     website_description: '',
     subscription_menu_visible: true,
-    max_sav_processing_days_client: 7,
-    max_sav_processing_days_internal: 7,
-    max_sav_processing_days_external: 9,
     auto_review_enabled: true,
     review_link: '',
     custom_review_sms_message: '',
@@ -69,9 +66,6 @@ export default function SettingsSimple() {
         website_title: (shop as any).website_title || '',
         website_description: (shop as any).website_description || '',
         subscription_menu_visible: (shop as any).subscription_menu_visible ?? true,
-        max_sav_processing_days_client: 7, // Valeur par défaut, gérée maintenant par les types SAV
-        max_sav_processing_days_internal: 5, // Valeur par défaut, gérée maintenant par les types SAV
-        max_sav_processing_days_external: 9, // Valeur par défaut, gérée maintenant par les types SAV
         auto_review_enabled: (shop as any).auto_review_enabled ?? true,
         review_link: (shop as any).review_link || '',
         custom_review_sms_message: (shop as any).custom_review_sms_message || '',

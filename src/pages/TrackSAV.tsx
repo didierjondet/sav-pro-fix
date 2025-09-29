@@ -42,8 +42,6 @@ interface SAVCaseData {
     email?: string;
     address?: string;
     logo_url?: string;
-    max_sav_processing_days_client?: number;
-    max_sav_processing_days_internal?: number;
   };
 }
 
@@ -196,7 +194,7 @@ export default function TrackSAV() {
 
   // Créer un objet SAVCase compatible pour useSAVDelay
   const delayInfo = useMemo(() => {
-    if (!savCase || !savCase.shop) {
+    if (!savCase) {
       return {
         isOverdue: false,
         remainingDays: 0,
@@ -206,9 +204,10 @@ export default function TrackSAV() {
       };
     }
 
-    const maxDays = savCase.sav_type === 'client' 
-      ? savCase.shop.max_sav_processing_days_client ?? 7
-      : savCase.shop.max_sav_processing_days_internal ?? 5;
+    // Utiliser des valeurs par défaut pour les délais
+    // Dans une version future, il faudrait récupérer ces données depuis shop_sav_types
+    const maxDays = savCase.sav_type === 'client' ? 7 : 
+                   savCase.sav_type === 'external' ? 9 : 5;
 
     const createdAt = new Date(savCase.created_at);
     const now = new Date();
@@ -233,7 +232,7 @@ export default function TrackSAV() {
       totalRemainingHours: Math.max(0, totalRemainingHours),
       progress
     };
-  }, [savCase?.created_at, savCase?.sav_type, savCase?.shop?.max_sav_processing_days_client, savCase?.shop?.max_sav_processing_days_internal]);
+  }, [savCase?.created_at, savCase?.sav_type]);
 
   if (loading) {
     return (

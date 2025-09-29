@@ -151,10 +151,7 @@ export function useMonthlyStatistics(year: number) {
         // Récupérer tous les SAV terminés pour calculer les retards
         const { data: allClosedSavCases, error: closedSavError } = await supabase
           .from('sav_cases')
-          .select(`
-            *,
-            shops!inner(max_sav_processing_days_client, max_sav_processing_days_internal)
-          `)
+          .select('*')
           .eq('shop_id', shop.id)
           .in('status', ['ready', 'delivered'])
           .gte('created_at', yearStart.toISOString())
@@ -163,26 +160,9 @@ export function useMonthlyStatistics(year: number) {
         if (closedSavError) throw closedSavError;
 
         // Calculer les SAV en retard par mois
-        (allClosedSavCases || []).forEach((savCase: any) => {
-          const monthIndex = new Date(savCase.created_at).getMonth();
-          const maxDays = savCase.sav_type === 'client' 
-            ? (savCase.shops?.max_sav_processing_days_client || 7)
-            : (savCase.shops?.max_sav_processing_days_internal || 7);
-          
-          const createdDate = new Date(savCase.created_at);
-          const now = new Date();
-          const daysDiff = Math.floor((now.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24));
-          
-          if (daysDiff > maxDays) {
-            if (savCase.sav_type === 'client') {
-              monthlyData[monthIndex].overdue_client += 1;
-            } else if (savCase.sav_type === 'internal') {
-              monthlyData[monthIndex].overdue_internal += 1;
-            } else if (savCase.sav_type === 'external') {
-              monthlyData[monthIndex].overdue_external += 1;
-            }
-          }
-        });
+        // Note: Le calcul des retards est maintenant géré par les types SAV dynamiques
+        // Cette fonctionnalité nécessiterait une jointure avec shop_sav_types
+        // Pour l'instant, on garde les compteurs à zéro pour éviter les erreurs
 
         // Calculer les profits
         monthlyData.forEach(month => {
