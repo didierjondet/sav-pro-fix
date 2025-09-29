@@ -148,19 +148,12 @@ export default function Settings() {
   }, [user]);
   useEffect(() => {
     if (shop && savTypes.length > 0) {
-      // Construire l'objet des alertes de retard pour chaque type SAV
+      // Construire l'objet des alertes de retard pour chaque type SAV à partir des types SAV existants
       const savAlertDays: { [key: string]: number } = {};
       
-      // Migrer les anciennes valeurs si elles existent
-      const defaultValues = {
-        client: (shop as any).sav_client_alert_days || 2,
-        external: (shop as any).sav_external_alert_days || 2,
-        internal: (shop as any).sav_internal_alert_days || 2,
-      };
-      
-      // Pour chaque type SAV, initialiser sa valeur d'alerte
+      // Pour chaque type SAV, utiliser sa valeur alert_days ou 2 par défaut
       savTypes.forEach(type => {
-        savAlertDays[type.type_key] = defaultValues[type.type_key as keyof typeof defaultValues] || 2;
+        savAlertDays[type.type_key] = type.alert_days || 2;
       });
       
       setShopForm({
@@ -230,8 +223,34 @@ export default function Settings() {
   const handleSaveShop = async () => {
     setSaving(true);
     try {
-      // Les délais d'alerte sont maintenant gérés via shop_sav_types.alert_days
-      await updateShopData(shopForm);
+      // Exclure sav_alert_days de la sauvegarde car géré séparément
+      const { sav_alert_days, ...shopDataToSave } = shopForm;
+      
+      // Sauvegarder les données du shop
+      await updateShopData(shopDataToSave);
+      
+      // Sauvegarder les délais d'alerte dans shop_sav_types
+      for (const [typeKey, alertDays] of Object.entries(sav_alert_days)) {
+        const savType = savTypes.find(type => type.type_key === typeKey);
+        if (savType) {
+          await supabase
+            .from('shop_sav_types')
+            .update({ alert_days: alertDays })
+            .eq('id', savType.id);
+        }
+      }
+      
+      toast({
+        title: "Succès",
+        description: "Paramètres du magasin mis à jour"
+      });
+    } catch (error: any) {
+      console.error('Erreur lors de la sauvegarde:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de sauvegarder les paramètres",
+        variant: "destructive"
+      });
     } finally {
       setSaving(false);
     }
