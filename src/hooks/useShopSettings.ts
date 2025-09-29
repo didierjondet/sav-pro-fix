@@ -10,9 +10,6 @@ export interface ShopSettings {
   subscription_tier: string;
   sav_warning_enabled: boolean;
   sav_delay_alerts_enabled: boolean;
-  sav_client_alert_days: number;
-  sav_external_alert_days: number;
-  sav_internal_alert_days: number;
 }
 
 export function useShopSettings() {
@@ -51,7 +48,7 @@ export function useShopSettings() {
         // Récupérer les paramètres du magasin
         const { data: shopData, error: shopError } = await supabase
           .from('shops')
-          .select('subscription_menu_visible, sms_credits_allocated, sms_credits_used, subscription_tier, sav_warning_enabled, sav_delay_alerts_enabled, sav_client_alert_days, sav_external_alert_days, sav_internal_alert_days')
+          .select('subscription_menu_visible, sms_credits_allocated, sms_credits_used, subscription_tier, sav_warning_enabled, sav_delay_alerts_enabled')
           .eq('id', profileData.shop_id)
           .single();
 
@@ -67,10 +64,7 @@ export function useShopSettings() {
             sms_credits_used: smsCredits?.total_available - smsCredits?.total_remaining || shopData.sms_credits_used || 0,
             subscription_tier: shopData.subscription_tier || 'free',
             sav_warning_enabled: shopData.sav_warning_enabled ?? true,
-            sav_delay_alerts_enabled: shopData.sav_delay_alerts_enabled ?? false,
-            sav_client_alert_days: shopData.sav_client_alert_days || 2,
-            sav_external_alert_days: shopData.sav_external_alert_days || 2,
-            sav_internal_alert_days: shopData.sav_internal_alert_days || 2
+            sav_delay_alerts_enabled: shopData.sav_delay_alerts_enabled ?? false
           });
         }
       }
@@ -83,10 +77,7 @@ export function useShopSettings() {
         sms_credits_used: smsCredits?.total_available - smsCredits?.total_remaining || 0,
         subscription_tier: 'free',
         sav_warning_enabled: true,
-        sav_delay_alerts_enabled: false,
-        sav_client_alert_days: 2,
-        sav_external_alert_days: 2,
-        sav_internal_alert_days: 2
+        sav_delay_alerts_enabled: false
       });
     } finally {
       setLoading(false);

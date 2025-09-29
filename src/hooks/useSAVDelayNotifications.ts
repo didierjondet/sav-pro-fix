@@ -43,12 +43,9 @@ export function useSAVDelayNotifications() {
 
         // Déterminer le seuil d'alerte selon le type de SAV
         let alertDays = 2; // Par défaut
-        if (savCase.sav_type === 'client') {
-          alertDays = settings.sav_client_alert_days || 2;
-        } else if (savCase.sav_type === 'external') {
-          alertDays = settings.sav_external_alert_days || 2;
-        } else if (savCase.sav_type === 'internal') {
-          alertDays = settings.sav_internal_alert_days || 2;
+        const savType = types.find(type => type.type_key === savCase.sav_type);
+        if (savType && savType.alert_days) {
+          alertDays = savType.alert_days;
         }
 
         // Si le SAV sera en retard dans X jours ou moins (mais pas encore en retard)

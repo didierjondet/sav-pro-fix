@@ -13,6 +13,7 @@ export interface ShopSAVType {
   is_active: boolean;
   show_customer_info: boolean;
   max_processing_days?: number;
+  alert_days?: number;
   pause_timer: boolean;
   show_in_sidebar: boolean;
   created_at: string;
@@ -67,7 +68,7 @@ export function useShopSAVTypes() {
       // Les politiques RLS se chargent automatiquement de filtrer par shop_id
       const { data, error } = await supabase
         .from('shop_sav_types')
-        .select('*')
+        .select('*, alert_days')
         .eq('is_active', true)
         .order('display_order', { ascending: true });
 

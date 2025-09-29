@@ -998,6 +998,7 @@ export type Database = {
       }
       shop_sav_types: {
         Row: {
+          alert_days: number | null
           created_at: string
           display_order: number
           id: string
@@ -1014,6 +1015,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          alert_days?: number | null
           created_at?: string
           display_order?: number
           id?: string
@@ -1030,6 +1032,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          alert_days?: number | null
           created_at?: string
           display_order?: number
           id?: string
@@ -1274,10 +1277,7 @@ export type Database = {
           phone: string | null
           purchased_sms_credits: number | null
           review_link: string | null
-          sav_client_alert_days: number | null
           sav_delay_alerts_enabled: boolean | null
-          sav_external_alert_days: number | null
-          sav_internal_alert_days: number | null
           sav_warning_enabled: boolean | null
           sidebar_late_sav_visible: boolean | null
           sidebar_nav_visible: boolean | null
@@ -1326,10 +1326,7 @@ export type Database = {
           phone?: string | null
           purchased_sms_credits?: number | null
           review_link?: string | null
-          sav_client_alert_days?: number | null
           sav_delay_alerts_enabled?: boolean | null
-          sav_external_alert_days?: number | null
-          sav_internal_alert_days?: number | null
           sav_warning_enabled?: boolean | null
           sidebar_late_sav_visible?: boolean | null
           sidebar_nav_visible?: boolean | null
@@ -1378,10 +1375,7 @@ export type Database = {
           phone?: string | null
           purchased_sms_credits?: number | null
           review_link?: string | null
-          sav_client_alert_days?: number | null
           sav_delay_alerts_enabled?: boolean | null
-          sav_external_alert_days?: number | null
-          sav_internal_alert_days?: number | null
           sav_warning_enabled?: boolean | null
           sidebar_late_sav_visible?: boolean | null
           sidebar_nav_visible?: boolean | null

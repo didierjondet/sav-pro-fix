@@ -230,14 +230,8 @@ export default function Settings() {
   const handleSaveShop = async () => {
     setSaving(true);
     try {
-      // Migrer les nouvelles alertes vers les anciens champs pour la compatibilité
-      const shopDataWithCompatibility = {
-        ...shopForm,
-        sav_client_alert_days: shopForm.sav_alert_days['client'] || 2,
-        sav_external_alert_days: shopForm.sav_alert_days['external'] || 2,
-        sav_internal_alert_days: shopForm.sav_alert_days['internal'] || 2,
-      };
-      await updateShopData(shopDataWithCompatibility);
+      // Les délais d'alerte sont maintenant gérés via shop_sav_types.alert_days
+      await updateShopData(shopForm);
     } finally {
       setSaving(false);
     }
