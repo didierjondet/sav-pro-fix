@@ -40,6 +40,7 @@ export function QuoteForm({ onSubmit, onCancel, initialQuote, submitLabel, title
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedItems, setSelectedItems] = useState<QuoteItem[]>([]);
   const [deviceInfo, setDeviceInfo] = useState({ brand: '', model: '', imei: '', sku: '', problemDescription: '', attachments: [] as string[] });
+  const [depositAmount, setDepositAmount] = useState<number>(0);
   
   // États pour validation téléphone et détection doublons
   const [phoneValidation, setPhoneValidation] = useState({ isValid: true, message: '' });
@@ -368,6 +369,7 @@ const updateUnitPurchasePrice = (partId: string, unitPrice: number) => {
       notes: notes || null,
       items: selectedItems,
       total_amount: totalAmount,
+      deposit_amount: depositAmount,
       status: initialQuote?.status ?? 'draft'
     });
 
@@ -759,6 +761,33 @@ const updateUnitPurchasePrice = (partId: string, unitPrice: number) => {
                     <div className="flex justify-between items-center text-lg font-bold border-t pt-2">
                       <span>Total:</span>
                       <span>{totalAmount.toFixed(2)}€</span>
+                    </div>
+                    
+                    {/* Acompte client */}
+                    <div className="border-t pt-3 mt-3">
+                      <div className="space-y-2">
+                        <Label htmlFor="depositAmount" className="text-sm font-medium">
+                          Acompte réglé par le client
+                        </Label>
+                        <Input
+                          id="depositAmount"
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={depositAmount}
+                          onChange={(e) => setDepositAmount(parseFloat(e.target.value) || 0)}
+                          placeholder="0.00"
+                          className="text-right"
+                        />
+                        {depositAmount > 0 && (
+                          <div className="flex justify-between text-sm text-muted-foreground pt-1 font-medium">
+                            <span>Reste à payer:</span>
+                            <span className="text-foreground">
+                              {Math.max(0, totalAmount - depositAmount).toFixed(2)}€
+                            </span>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>

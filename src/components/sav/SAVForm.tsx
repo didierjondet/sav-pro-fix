@@ -106,6 +106,7 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
   });
   const [unlockPattern, setUnlockPattern] = useState<number[]>([]);
   const [selectedParts, setSelectedParts] = useState<SelectedPart[]>([]);
+  const [depositAmount, setDepositAmount] = useState<number>(0);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [showPrintDialog, setShowPrintDialog] = useState(false);
@@ -260,6 +261,7 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
         problem_description: deviceInfo.problemDescription,
         total_time_minutes: totalTimeMinutes,
         total_cost: totalCost,
+        deposit_amount: depositAmount,
         status: selectedStatus as any,
         shop_id: profile?.shop_id,
         attachments: deviceInfo.attachments || [], // Ajouter les attachments ici
@@ -383,6 +385,7 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
       });
       setUnlockPattern([]);
       setSelectedParts([]);
+      setDepositAmount(0);
     } catch (error: any) {
       console.error('Error creating SAV case:', error);
       toast({
@@ -928,6 +931,37 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
                             return acc + Math.max(0, lineTotal - discountAmount);
                           }, 0).toFixed(2)}€
                         </span>
+                      </div>
+                    </div>
+                    
+                    {/* Acompte client */}
+                    <div className="border-t pt-2 mt-2">
+                      <div className="space-y-2">
+                        <Label htmlFor="depositAmount" className="text-sm font-medium">
+                          Acompte réglé par le client
+                        </Label>
+                        <Input
+                          id="depositAmount"
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={depositAmount}
+                          onChange={(e) => setDepositAmount(parseFloat(e.target.value) || 0)}
+                          placeholder="0.00"
+                          className="text-right"
+                        />
+                        {depositAmount > 0 && (
+                          <div className="flex justify-between text-sm text-muted-foreground pt-1">
+                            <span>Reste à payer:</span>
+                            <span className="font-medium">
+                              {Math.max(0, selectedParts.reduce((acc, part) => {
+                                const lineTotal = part.quantity * part.unitPrice;
+                                const discountAmount = part.discount?.amount || 0;
+                                return acc + Math.max(0, lineTotal - discountAmount);
+                              }, 0) - depositAmount).toFixed(2)}€
+                            </span>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>

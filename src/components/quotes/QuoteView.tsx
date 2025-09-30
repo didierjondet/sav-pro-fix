@@ -227,10 +227,20 @@ export function QuoteView({ quote, isOpen, onClose, onDownloadPDF, onSendEmail, 
               
               <div className="border-t bg-muted/30 p-3">
                 <div className="flex justify-end">
-                  <div className="text-right">
+                  <div className="text-right space-y-2">
                     <div className="text-lg font-bold">
                       Total: {quote.total_amount.toFixed(2)}€
                     </div>
+                    {quote.deposit_amount && quote.deposit_amount > 0 && (
+                      <>
+                        <div className="text-sm text-muted-foreground">
+                          Acompte réglé: -{quote.deposit_amount.toFixed(2)}€
+                        </div>
+                        <div className="text-base font-semibold text-primary border-t pt-2">
+                          Reste à payer: {Math.max(0, quote.total_amount - quote.deposit_amount).toFixed(2)}€
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>

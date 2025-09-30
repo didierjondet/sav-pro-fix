@@ -576,6 +576,7 @@ export type Database = {
           customer_id: string | null
           customer_name: string
           customer_phone: string | null
+          deposit_amount: number | null
           device_brand: string | null
           device_imei: string | null
           device_model: string | null
@@ -602,6 +603,7 @@ export type Database = {
           customer_id?: string | null
           customer_name: string
           customer_phone?: string | null
+          deposit_amount?: number | null
           device_brand?: string | null
           device_imei?: string | null
           device_model?: string | null
@@ -628,6 +630,7 @@ export type Database = {
           customer_id?: string | null
           customer_name?: string
           customer_phone?: string | null
+          deposit_amount?: number | null
           device_brand?: string | null
           device_imei?: string | null
           device_model?: string | null
@@ -670,6 +673,7 @@ export type Database = {
           case_number: string
           created_at: string
           customer_id: string | null
+          deposit_amount: number | null
           device_brand: string | null
           device_imei: string | null
           device_model: string | null
@@ -700,6 +704,7 @@ export type Database = {
           case_number: string
           created_at?: string
           customer_id?: string | null
+          deposit_amount?: number | null
           device_brand?: string | null
           device_imei?: string | null
           device_model?: string | null
@@ -730,6 +735,7 @@ export type Database = {
           case_number?: string
           created_at?: string
           customer_id?: string | null
+          deposit_amount?: number | null
           device_brand?: string | null
           device_imei?: string | null
           device_model?: string | null

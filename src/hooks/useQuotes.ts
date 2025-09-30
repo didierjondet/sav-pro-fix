@@ -29,6 +29,7 @@ export interface Quote {
   repair_notes?: string | null;
   items: QuoteItem[];
   total_amount: number;
+  deposit_amount?: number;
   status: 'draft' | 'pending_review' | 'sent' | 'under_negotiation' | 'sms_accepted' | 'accepted' | 'rejected' | 'expired' | 'completed' | 'archived';
   shop_id: string;
   created_at: string;
