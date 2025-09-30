@@ -116,15 +116,14 @@ export function TwilioCreditsManager() {
   const fetchAlertSettings = async () => {
     try {
       const { data, error } = await supabase
-        .from('system_settings')
-        .select('setting_value')
-        .eq('setting_key', 'twilio_alert_config')
+        .from('twilio_alert_config')
+        .select('*')
+        .eq('id', '00000000-0000-0000-0000-000000000001')
         .single();
 
-      if (data && data.setting_value) {
-        const config = data.setting_value as any;
-        setAlertThreshold(config.threshold || 100);
-        setAlertPhone(config.phone || '');
+      if (data) {
+        setAlertThreshold(data.threshold_sms || 100);
+        setAlertPhone(data.alert_phone || '');
       }
     } catch (error) {
       console.error('Erreur lors du chargement des paramètres d\'alerte:', error);
@@ -135,14 +134,13 @@ export function TwilioCreditsManager() {
     setSavingAlert(true);
     try {
       const { error } = await supabase
-        .from('system_settings')
-        .upsert({
-          setting_key: 'twilio_alert_config',
-          setting_value: {
-            threshold: alertThreshold,
-            phone: alertPhone
-          }
-        });
+        .from('twilio_alert_config')
+        .update({
+          threshold_sms: alertThreshold,
+          alert_phone: alertPhone,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', '00000000-0000-0000-0000-000000000001');
 
       if (error) throw error;
 

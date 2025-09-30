@@ -1867,6 +1867,33 @@ export type Database = {
         }
         Relationships: []
       }
+      twilio_alert_config: {
+        Row: {
+          alert_phone: string
+          created_at: string
+          id: string
+          is_active: boolean
+          threshold_sms: number
+          updated_at: string
+        }
+        Insert: {
+          alert_phone: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          threshold_sms?: number
+          updated_at?: string
+        }
+        Update: {
+          alert_phone?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          threshold_sms?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
