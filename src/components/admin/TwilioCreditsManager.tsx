@@ -3,13 +3,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { MessageSquare, DollarSign, RotateCcw, TestTube, Plus } from 'lucide-react';
+import { MessageSquare, DollarSign, RotateCcw, TestTube, Plus, Bell } from 'lucide-react';
 import { useTwilioCredits } from '@/hooks/useTwilioCredits';
 import { useGlobalSMSCredits } from '@/hooks/useGlobalSMSCredits';
 import { useState, useEffect } from 'react';
 import { DetailedSMSCreditsView } from './DetailedSMSCreditsView';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { Label } from '@/components/ui/label';
 
 
 export function TwilioCreditsManager() {
@@ -19,6 +20,9 @@ export function TwilioCreditsManager() {
   const [shopCredits, setShopCredits] = useState<any[]>([]);
   const [loadingShops, setLoadingShops] = useState(false);
   const { toast } = useToast();
+  const [alertThreshold, setAlertThreshold] = useState(100);
+  const [alertPhone, setAlertPhone] = useState('');
+  const [savingAlert, setSavingAlert] = useState(false);
 
   // Récupérer les données détaillées des boutiques
   const fetchShopsCreditsDetails = async () => {
@@ -103,10 +107,60 @@ export function TwilioCreditsManager() {
     }
   };
 
-  // Charger les données au montage du composant uniquement
+  // Charger les données au montage du composant
   useEffect(() => {
     fetchShopsCreditsDetails();
-  }, []); // Pas de dépendances pour éviter les re-renders
+    fetchAlertSettings();
+  }, []);
+
+  const fetchAlertSettings = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('system_settings')
+        .select('setting_value')
+        .eq('setting_key', 'twilio_alert_config')
+        .single();
+
+      if (data && data.setting_value) {
+        const config = data.setting_value as any;
+        setAlertThreshold(config.threshold || 100);
+        setAlertPhone(config.phone || '');
+      }
+    } catch (error) {
+      console.error('Erreur lors du chargement des paramètres d\'alerte:', error);
+    }
+  };
+
+  const handleSaveAlert = async () => {
+    setSavingAlert(true);
+    try {
+      const { error } = await supabase
+        .from('system_settings')
+        .upsert({
+          setting_key: 'twilio_alert_config',
+          setting_value: {
+            threshold: alertThreshold,
+            phone: alertPhone
+          }
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: 'Succès',
+        description: 'Configuration d\'alerte sauvegardée',
+      });
+    } catch (error) {
+      console.error('Erreur lors de la sauvegarde:', error);
+      toast({
+        title: 'Erreur',
+        description: 'Impossible de sauvegarder la configuration',
+        variant: 'destructive',
+      });
+    } finally {
+      setSavingAlert(false);
+    }
+  };
 
   const refreshAllData = async () => {
     await Promise.all([
@@ -163,8 +217,9 @@ export function TwilioCreditsManager() {
                 <div>
                   <p className="text-sm text-muted-foreground">Équivalent SMS</p>
                   <p className="text-xl font-semibold">
-                    ≈ {balance ? Math.floor(balance.balance * 100) : 0} SMS
+                    ≈ {balance ? Math.floor(balance.balance / 0.08) : 0} SMS
                   </p>
+                  <p className="text-xs text-muted-foreground">($0.08 par SMS)</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Statut</p>
@@ -317,6 +372,59 @@ export function TwilioCreditsManager() {
               </CardContent>
             </Card>
           </div>
+
+          {/* Configuration des alertes */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Bell className="h-5 w-5" />
+                Alerte de Solde Twilio
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="alert-threshold">
+                  Seuil d'alerte (nombre minimum de SMS)
+                </Label>
+                <Input
+                  id="alert-threshold"
+                  type="number"
+                  value={alertThreshold}
+                  onChange={(e) => setAlertThreshold(Number(e.target.value))}
+                  placeholder="100"
+                  min="0"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Une alerte sera envoyée si le solde descend sous ce nombre de SMS
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="alert-phone">
+                  Numéro de téléphone pour l'alerte
+                </Label>
+                <Input
+                  id="alert-phone"
+                  type="tel"
+                  value={alertPhone}
+                  onChange={(e) => setAlertPhone(e.target.value)}
+                  placeholder="+33612345678"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Format international requis (ex: +33612345678)
+                </p>
+              </div>
+
+              <Button 
+                onClick={handleSaveAlert}
+                disabled={savingAlert || !alertPhone}
+                className="w-full"
+              >
+                <Bell className="h-4 w-4 mr-2" />
+                {savingAlert ? 'Enregistrement...' : 'Enregistrer la configuration'}
+              </Button>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>
