@@ -103,6 +103,32 @@ Deno.serve(async (req) => {
       sms_credits_allocated: shop.sms_credits_allocated
     });
 
+    // Réinitialiser les compteurs mensuels si nécessaire (début du mois)
+    console.log('🔄 Vérification réinitialisation mensuelle...');
+    const { error: resetError } = await supabase.rpc('reset_monthly_counters');
+    if (resetError) {
+      console.error('⚠️ Erreur réinitialisation mensuelle:', resetError);
+    } else {
+      console.log('✅ Compteurs mensuels vérifiés/réinitialisés');
+    }
+
+    // Récupérer à nouveau les données shop après potentielle réinitialisation
+    const { data: refreshedShop, error: refreshError } = await supabase
+      .from('shops')
+      .select('*')
+      .eq('id', shopId)
+      .single();
+    
+    if (refreshError || !refreshedShop) {
+      console.error('❌ Erreur lors du rafraîchissement des données shop:', refreshError);
+    } else {
+      shop = refreshedShop;
+      console.log('🔄 Données shop rafraîchies:', {
+        monthly_sms_used: shop.monthly_sms_used,
+        sms_credits_allocated: shop.sms_credits_allocated
+      });
+    }
+
     // Formater le numéro de téléphone
     const formattedNumber = formatPhoneNumber(toNumber);
     console.log('📱 Numéro formaté pour Twilio:', formattedNumber);
