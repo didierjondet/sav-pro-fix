@@ -183,6 +183,45 @@ Deno.serve(async (req) => {
         console.log('📝 SMS enregistré dans l\'historique');
       }
 
+      // Intégrer le SMS dans la discussion du SAV si applicable
+      if (recordId && (type === 'sav_notification' || type === 'status_change' || type === 'manual')) {
+        console.log('💬 Intégration du SMS dans la discussion du SAV:', recordId);
+        
+        // Vérifier que le recordId correspond bien à un SAV
+        const { data: savCase, error: savError } = await supabase
+          .from('sav_cases')
+          .select('id')
+          .eq('id', recordId)
+          .single();
+        
+        if (savCase && !savError) {
+          // Formater le message pour la discussion
+          const maskedNumber = formattedNumber.slice(0, 8) + '***' + formattedNumber.slice(-2);
+          const discussionMessage = `📱 SMS envoyé au ${maskedNumber}\n\n"${message}"\n\n✅ Message ID: ${responseData.sid}`;
+          
+          // Insérer dans sav_messages
+          const { error: messageError } = await supabase
+            .from('sav_messages')
+            .insert({
+              sav_case_id: recordId,
+              shop_id: shopId,
+              sender_type: 'shop',
+              sender_name: `📱 SMS - ${shop.name}`,
+              message: discussionMessage,
+              read_by_shop: true,
+              read_by_client: false,
+            });
+          
+          if (messageError) {
+            console.error('⚠️ Erreur intégration SMS dans discussion:', messageError);
+          } else {
+            console.log('✅ SMS intégré dans la discussion');
+          }
+        } else {
+          console.log('ℹ️ RecordId ne correspond pas à un SAV, pas d\'intégration dans la discussion');
+        }
+      }
+
       return new Response(
         JSON.stringify({ 
           success: true, 
