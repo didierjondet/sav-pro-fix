@@ -973,31 +973,6 @@ export default function Settings() {
             </TabsContent>
 
             <TabsContent value="sms" className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Mail className="h-5 w-5" />
-                    Crédits SMS - Plan {subscription?.subscription_tier || 'free'}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="p-4 bg-muted rounded-lg">
-                      <h3 className="font-medium mb-1">Crédits disponibles</h3>
-                      <div className="text-2xl font-bold">
-                        {(subscription?.sms_credits_allocated || 0) - (subscription?.monthly_sms_used || 0)}
-                      </div>
-                      <p className="text-sm text-muted-foreground">SMS restants</p>
-                    </div>
-                    <div className="p-4 bg-muted rounded-lg">
-                      <h3 className="font-medium mb-1">Utilisés ce mois</h3>
-                      <div className="text-2xl font-bold">{subscription?.monthly_sms_used || 0}</div>
-                      <p className="text-sm text-muted-foreground">SMS envoyés</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              
               <SMSPackagesDisplay />
             </TabsContent>
 
