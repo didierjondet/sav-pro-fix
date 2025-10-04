@@ -80,7 +80,7 @@ Deno.serve(async (req) => {
     // Vérifier les limites du shop
     console.log('🔍 Vérification des limites du shop:', shopId);
     
-    const { data: shop, error: shopError } = await supabase
+    let { data: shop, error: shopError } = await supabase
       .from('shops')
       .select('*')
       .eq('id', shopId)
