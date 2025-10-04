@@ -9,114 +9,105 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
-
 export default function Auth() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [resetLoading, setResetLoading] = useState(false);
-  const { signIn, signUp, user } = useAuth();
-  const { toast } = useToast();
+  const {
+    signIn,
+    signUp,
+    user
+  } = useAuth();
+  const {
+    toast
+  } = useToast();
   const navigate = useNavigate();
-
   useEffect(() => {
     if (user) {
       navigate('/dashboard');
     }
   }, [user, navigate]);
-
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    
-    const { error } = await signIn(email, password);
-    
+    const {
+      error
+    } = await signIn(email, password);
     if (error) {
       toast({
         title: "Erreur de connexion",
         description: error.message,
-        variant: "destructive",
+        variant: "destructive"
       });
     } else {
       toast({
         title: "Connexion réussie",
-        description: "Vous êtes maintenant connecté.",
+        description: "Vous êtes maintenant connecté."
       });
       navigate('/dashboard');
     }
-    
     setLoading(false);
   };
-
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    
-    const { error } = await signUp(email, password);
-    
+    const {
+      error
+    } = await signUp(email, password);
     if (error) {
       toast({
         title: "Erreur d'inscription",
         description: error.message,
-        variant: "destructive",
+        variant: "destructive"
       });
     } else {
       toast({
         title: "Inscription réussie",
-        description: "Vérifiez votre email pour confirmer votre compte.",
+        description: "Vérifiez votre email pour confirmer votre compte."
       });
     }
-    
     setLoading(false);
   };
-
   const handleResetPassword = async () => {
     if (!email) {
       toast({
         title: "Email requis",
         description: "Veuillez saisir votre adresse email.",
-        variant: "destructive",
+        variant: "destructive"
       });
       return;
     }
-
     setResetLoading(true);
-    
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/auth`,
+    const {
+      error
+    } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/auth`
     });
-    
     if (error) {
       toast({
         title: "Erreur",
         description: error.message,
-        variant: "destructive",
+        variant: "destructive"
       });
     } else {
       toast({
         title: "Email envoyé",
-        description: "Vérifiez votre boîte mail pour réinitialiser votre mot de passe.",
+        description: "Vérifiez votre boîte mail pour réinitialiser votre mot de passe."
       });
     }
-    
     setResetLoading(false);
   };
-
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 to-secondary/5">
+  return <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 to-secondary/5">
       <div className="w-full max-w-md">
         <div className="mb-4">
-          <Button 
-            variant="ghost" 
-            onClick={() => navigate('/')}
-            className="text-sm"
-          >
+          <Button variant="ghost" onClick={() => navigate('/')} className="text-sm">
             ← Retour à l'accueil
           </Button>
         </div>
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle className="text-2xl text-center">SAV Manager</CardTitle>
+          <CardTitle className="text-2xl text-center">FIXway</CardTitle>
           <CardDescription className="text-center">
             Gérez vos réparations en toute simplicité
           </CardDescription>
@@ -132,35 +123,18 @@ export default function Auth() {
               <form onSubmit={handleSignIn} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                  />
+                  <Input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} required />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="password">Mot de passe</Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                  />
+                  <Input id="password" type="password" value={password} onChange={e => setPassword(e.target.value)} required />
                 </div>
                 <Button type="submit" className="w-full" disabled={loading}>
                   {loading ? 'Connexion...' : 'Se connecter'}
                 </Button>
               </form>
               <div className="mt-4 text-center">
-                <button
-                  type="button"
-                  onClick={handleResetPassword}
-                  disabled={resetLoading}
-                  className="text-sm text-primary hover:underline disabled:opacity-50"
-                >
+                <button type="button" onClick={handleResetPassword} disabled={resetLoading} className="text-sm text-primary hover:underline disabled:opacity-50">
                   {resetLoading ? 'Envoi en cours...' : 'Mot de passe oublié ?'}
                 </button>
               </div>
@@ -170,23 +144,11 @@ export default function Auth() {
               <form onSubmit={handleSignUp} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="signup-email">Email</Label>
-                  <Input
-                    id="signup-email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                  />
+                  <Input id="signup-email" type="email" value={email} onChange={e => setEmail(e.target.value)} required />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="signup-password">Mot de passe</Label>
-                  <Input
-                    id="signup-password"
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                  />
+                  <Input id="signup-password" type="password" value={password} onChange={e => setPassword(e.target.value)} required />
                 </div>
                 <Button type="submit" className="w-full" disabled={loading}>
                   {loading ? 'Inscription...' : "S'inscrire"}
@@ -197,6 +159,5 @@ export default function Auth() {
         </CardContent>
       </Card>
       </div>
-    </div>
-  );
+    </div>;
 }
