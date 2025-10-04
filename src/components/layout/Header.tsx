@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Menu, Settings, User, Bell, LogOut, HardDrive, AlertTriangle, MessageSquare, FileCheck } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
-import { useShop } from '@/hooks/useShop';
+import { useShop } from '@/contexts/ShopContext';
 import { useShopStorageUsage } from '@/hooks/useStorageUsage';
 import { useUnifiedSMSCredits } from '@/hooks/useUnifiedSMSCredits';
 import { useSubscription } from '@/hooks/useSubscription';
@@ -11,6 +11,7 @@ import { useProfile } from '@/hooks/useProfile';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useNavigate } from 'react-router-dom';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Skeleton } from '@/components/ui/skeleton';
 interface HeaderProps {
   onMenuClick: () => void;
   isMobileMenuOpen: boolean;
@@ -25,7 +26,8 @@ export function Header({
     forceReconnect
   } = useAuth();
   const {
-    shop
+    shop,
+    loading: shopLoading
   } = useShop();
   const {
     profile
@@ -98,8 +100,29 @@ export function Header({
             <Menu className="h-5 w-5" />
           </Button>
           <div className="flex items-center space-x-2">
-            {shop ? <>
-                {shop.logo_url ? <img src={shop.logo_url} alt="Logo du magasin" className="h-14 w-14 md:h-16 md:w-16 object-contain" /> : <img src="/lovable-uploads/3d99a913-9d52-4f6c-9a65-78b3bd561739.png" alt="Logo FixWay Pro" className="h-14 w-14 md:h-16 md:w-16 object-contain" />}
+            {shopLoading || !shop ? (
+              <div className="flex items-center space-x-2">
+                <Skeleton className="h-14 w-14 md:h-16 md:w-16 rounded" />
+                <div className="flex flex-col space-y-1">
+                  <Skeleton className="h-6 w-32" />
+                  <Skeleton className="h-3 w-40" />
+                </div>
+              </div>
+            ) : (
+              <>
+                {shop.logo_url ? (
+                  <img 
+                    src={shop.logo_url} 
+                    alt="Logo du magasin" 
+                    className="h-14 w-14 md:h-16 md:w-16 object-contain" 
+                  />
+                ) : (
+                  <img 
+                    src="/lovable-uploads/3d99a913-9d52-4f6c-9a65-78b3bd561739.png" 
+                    alt="Logo FixWay Pro" 
+                    className="h-14 w-14 md:h-16 md:w-16 object-contain" 
+                  />
+                )}
                 <div className="flex flex-col">
                   <h1 className="text-xl font-bold text-foreground">
                     {shop.name}
@@ -109,13 +132,8 @@ export function Header({
                     {storageGB > 0}
                   </div>
                 </div>
-              </> : <div className="flex items-center space-x-2">
-                <div className="h-14 w-14 md:h-16 md:w-16 bg-muted animate-pulse rounded" />
-                <div className="flex flex-col space-y-1">
-                  <div className="h-6 w-32 bg-muted animate-pulse rounded" />
-                  <div className="h-3 w-40 bg-muted animate-pulse rounded" />
-                </div>
-              </div>}
+              </>
+            )}
           </div>
         </div>
 

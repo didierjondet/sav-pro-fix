@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { ShopProvider } from "@/contexts/ShopContext";
 import { LimitDialogProvider } from "@/contexts/LimitDialogContext";
 
 import { DelayNotificationProvider } from "@/components/layout/DelayNotificationProvider";
@@ -51,12 +52,13 @@ const queryClient = new QueryClient({
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
-      <DelayNotificationProvider>
-        <LimitDialogProvider>
-          <TooltipProvider>
-              <Toaster />
-              <Sonner />
-              <BrowserRouter>
+      <ShopProvider>
+        <DelayNotificationProvider>
+          <LimitDialogProvider>
+            <TooltipProvider>
+                <Toaster />
+                <Sonner />
+                <BrowserRouter>
               <Routes>
                 <Route path="/" element={<Landing />} />
                 <Route path="/dashboard" element={<Index />} />
@@ -100,6 +102,7 @@ const App = () => (
             </TooltipProvider>
           </LimitDialogProvider>
         </DelayNotificationProvider>
+      </ShopProvider>
     </AuthProvider>
   </QueryClientProvider>
 );
