@@ -27,28 +27,33 @@ export function Header({
   const {
     shop
   } = useShop();
-  const { profile } = useProfile();
+  const {
+    profile
+  } = useProfile();
   const {
     storageGB
   } = useShopStorageUsage(shop?.id);
-  const { subscription, checkLimits } = useSubscription();
-  const { credits: smsCredits } = useUnifiedSMSCredits();
+  const {
+    subscription,
+    checkLimits
+  } = useSubscription();
+  const {
+    credits: smsCredits
+  } = useUnifiedSMSCredits();
   const navigate = useNavigate();
-
   const getSAVLimits = () => {
-    if (!subscription) return { remaining: 0, total: 0, isWarning: false, isCritical: false };
-    
+    if (!subscription) return {
+      remaining: 0,
+      total: 0,
+      isWarning: false,
+      isCritical: false
+    };
     let savLimit = subscription.custom_sav_limit;
     if (!savLimit) {
-      if (subscription.subscription_tier === 'free') savLimit = 5;
-      else if (subscription.subscription_tier === 'premium') savLimit = 50;
-      else if (subscription.subscription_tier === 'enterprise') savLimit = 100;
-      else savLimit = 5;
+      if (subscription.subscription_tier === 'free') savLimit = 5;else if (subscription.subscription_tier === 'premium') savLimit = 50;else if (subscription.subscription_tier === 'enterprise') savLimit = 100;else savLimit = 5;
     }
-    
     const remaining = Math.max(0, savLimit - subscription.monthly_sav_count);
-    const usagePercent = (subscription.monthly_sav_count / savLimit) * 100;
-    
+    const usagePercent = subscription.monthly_sav_count / savLimit * 100;
     return {
       remaining,
       total: savLimit,
@@ -56,10 +61,13 @@ export function Header({
       isCritical: usagePercent >= 95
     };
   };
-
   const getSMSLimits = () => {
-    if (!smsCredits) return { remaining: 0, total: 0, isWarning: false, isCritical: false };
-    
+    if (!smsCredits) return {
+      remaining: 0,
+      total: 0,
+      isWarning: false,
+      isCritical: false
+    };
     return {
       remaining: smsCredits.total_remaining,
       total: smsCredits.total_available,
@@ -67,13 +75,11 @@ export function Header({
       isCritical: smsCredits.is_critical || smsCredits.is_exhausted
     };
   };
-
   const savLimits = getSAVLimits();
   const smsLimits = getSMSLimits();
   const hasWarning = savLimits.isWarning || smsLimits.isWarning || savLimits.isCritical || smsLimits.isCritical;
   return <header className="bg-card border-b border-border shadow-sm">
-      {hasWarning && (
-        <Alert className="rounded-none border-x-0 border-t-0 bg-orange-50 border-orange-200">
+      {hasWarning && <Alert className="rounded-none border-x-0 border-t-0 bg-orange-50 border-orange-200">
           <AlertTriangle className="h-4 w-4 text-orange-600" />
           <AlertDescription className="text-orange-800">
             {savLimits.isCritical && `Limite SAV mensuelle critique atteinte (${subscription?.monthly_sav_count}/${savLimits.total})`}
@@ -85,8 +91,7 @@ export function Header({
               Mettre à niveau
             </Button>
           </AlertDescription>
-        </Alert>
-      )}
+        </Alert>}
       <div className="flex items-center justify-between h-16 px-4">
         <div className="flex items-center space-x-4">
           <Button variant="ghost" size="icon" onClick={onMenuClick} className="md:hidden">
@@ -124,8 +129,7 @@ export function Header({
             </div>
             
             {/* SMS - Affichage détaillé si crédits achetés */}
-            {smsCredits?.has_purchased_credits ? (
-              <div className="flex items-center space-x-2">
+            {smsCredits?.has_purchased_credits ? <div className="flex items-center space-x-2">
                 <MessageSquare className="h-4 w-4" />
                 <div className="flex items-center space-x-1">
                   <span className="bg-green-100 text-green-800 px-1.5 py-0.5 rounded text-xs">
@@ -135,13 +139,10 @@ export function Header({
                     Achetés: {smsCredits.purchasable_remaining}
                   </span>
                 </div>
-              </div>
-            ) : (
-              <div className="flex items-center space-x-1">
+              </div> : <div className="flex items-center space-x-1">
                 <MessageSquare className="h-4 w-4" />
                 <span>{smsLimits.remaining} SMS restants</span>
-              </div>
-            )}
+              </div>}
           </div>
           
           <NotificationBell />
@@ -154,20 +155,14 @@ export function Header({
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>
-                {profile ? 
-                  `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || user?.email :
-                  user?.email
-                }
+                {profile ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || user?.email : user?.email}
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => navigate('/settings')}>
                 <Settings className="mr-2 h-4 w-4" />
                 Paramètres
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={forceReconnect} className="text-orange-600">
-                <AlertTriangle className="mr-2 h-4 w-4" />
-                Réparer l'authentification
-              </DropdownMenuItem>
+              
               <DropdownMenuItem onClick={signOut}>
                 <LogOut className="mr-2 h-4 w-4" />
                 Déconnexion
