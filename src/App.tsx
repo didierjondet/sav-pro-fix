@@ -8,7 +8,6 @@ import { ShopProvider } from "@/contexts/ShopContext";
 import { LimitDialogProvider } from "@/contexts/LimitDialogContext";
 
 import { DelayNotificationProvider } from "@/components/layout/DelayNotificationProvider";
-import { AppLayout } from "./components/layout/AppLayout";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Settings from "./pages/Settings";
@@ -44,9 +43,8 @@ import QuotePublic from "./pages/QuotePublic";
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 1000 * 60 * 10, // 10 minutes - cache plus long
-      retry: 1, // 1 seul retry pour éviter les ralentissements
-      refetchOnWindowFocus: false, // Pas de refetch automatique
+      staleTime: 1000 * 60 * 5, // 5 minutes
+      retry: 3,
     },
   },
 });
@@ -62,48 +60,42 @@ const App = () => (
                 <Sonner />
                 <BrowserRouter>
               <Routes>
-                {/* Routes publiques */}
                 <Route path="/" element={<Landing />} />
+                <Route path="/dashboard" element={<Index />} />
                 <Route path="/auth" element={<Auth />} />
+                <Route path="/settings" element={<Settings />} />
+                <Route path="/sav" element={<SAVList />} />
+                <Route path="/sav/new" element={<NewSAV />} />
+                <Route path="/sav/:id" element={<SAVDetail />} />
                 <Route path="/track/:slug" element={<TrackSAV />} />
+                <Route path="/parts" element={<Parts />} />
+                <Route path="/quotes" element={<Quotes />} />
                 <Route path="/quote/:id" element={<QuotePublic />} />
+                <Route path="/orders" element={<Orders />} />
+                <Route path="/customers" element={<Customers />} />
+                <Route path="/client-chats" element={<ClientChats />} />
+                <Route path="/client-chats/*" element={<ClientChats />} />
+                <Route path="/chats" element={<ClientChats />} />
+                <Route path="/statistics" element={<Statistics />} />
+                <Route path="/statistics/revenue" element={<RevenueDetails />} />
+                <Route path="/statistics/revenue/*" element={<RevenueDetails />} />
+                <Route path="/statistics/expenses" element={<ExpensesDetails />} />
+                <Route path="/statistics/expenses/*" element={<ExpensesDetails />} />
+                <Route path="/stats/revenue" element={<RevenueDetails />} />
+                <Route path="/stats/revenue/*" element={<RevenueDetails />} />
+                <Route path="/stats/expenses" element={<ExpensesDetails />} />
+                <Route path="/stats/expenses/*" element={<ExpensesDetails />} />
+                <Route path="/notifications" element={<Notifications />} />
+                <Route path="/support" element={<Support />} />
+                <Route path="/test" element={<TestLanding />} />
+                <Route path="/subscription-success" element={<SubscriptionSuccess />} />
+                <Route path="/super-admin" element={<SuperAdmin />} />
+                <Route path="/subscription" element={<Subscription />} />
+                <Route path="/landing" element={<Landing />} />
                 <Route path="/features" element={<Features />} />
                 <Route path="/about" element={<About />} />
                 <Route path="/contact" element={<Contact />} />
                 <Route path="/shop/:slug" element={<ShopWebsite />} />
-                <Route path="/test" element={<TestLanding />} />
-                <Route path="/landing" element={<Landing />} />
-                <Route path="/super-admin" element={<SuperAdmin />} />
-                <Route path="/subscription-success" element={<SubscriptionSuccess />} />
-                
-                {/* Routes avec layout (Header + Sidebar) */}
-                <Route element={<AppLayout />}>
-                  <Route path="/dashboard" element={<Index />} />
-                  <Route path="/settings" element={<Settings />} />
-                  <Route path="/sav" element={<SAVList />} />
-                  <Route path="/sav/new" element={<NewSAV />} />
-                  <Route path="/sav/:id" element={<SAVDetail />} />
-                  <Route path="/parts" element={<Parts />} />
-                  <Route path="/quotes" element={<Quotes />} />
-                  <Route path="/orders" element={<Orders />} />
-                  <Route path="/customers" element={<Customers />} />
-                  <Route path="/client-chats" element={<ClientChats />} />
-                  <Route path="/client-chats/*" element={<ClientChats />} />
-                  <Route path="/chats" element={<ClientChats />} />
-                  <Route path="/statistics" element={<Statistics />} />
-                  <Route path="/statistics/revenue" element={<RevenueDetails />} />
-                  <Route path="/statistics/revenue/*" element={<RevenueDetails />} />
-                  <Route path="/statistics/expenses" element={<ExpensesDetails />} />
-                  <Route path="/statistics/expenses/*" element={<ExpensesDetails />} />
-                  <Route path="/stats/revenue" element={<RevenueDetails />} />
-                  <Route path="/stats/revenue/*" element={<RevenueDetails />} />
-                  <Route path="/stats/expenses" element={<ExpensesDetails />} />
-                  <Route path="/stats/expenses/*" element={<ExpensesDetails />} />
-                  <Route path="/notifications" element={<Notifications />} />
-                  <Route path="/support" element={<Support />} />
-                  <Route path="/subscription" element={<Subscription />} />
-                </Route>
-                
                 <Route path="*" element={<NotFound />} />
               </Routes>
               </BrowserRouter>

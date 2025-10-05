@@ -1,8 +1,6 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Menu, Settings, User, Bell, LogOut, HardDrive, AlertTriangle, MessageSquare, FileCheck, RefreshCw, RotateCcw } from 'lucide-react';
-import { useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
+import { Menu, Settings, User, Bell, LogOut, HardDrive, AlertTriangle, MessageSquare, FileCheck } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { useShop } from '@/contexts/ShopContext';
@@ -29,10 +27,8 @@ export function Header({
   } = useAuth();
   const {
     shop,
-    loading: shopLoading,
-    refetch: refetchShop
+    loading: shopLoading
   } = useShop();
-  const queryClient = useQueryClient();
   const {
     profile
   } = useProfile();
@@ -84,27 +80,6 @@ export function Header({
   const savLimits = getSAVLimits();
   const smsLimits = getSMSLimits();
   const hasWarning = savLimits.isWarning || smsLimits.isWarning || savLimits.isCritical || smsLimits.isCritical;
-
-  // Fonction pour vider le cache et rafraîchir
-  const handleClearCache = async () => {
-    try {
-      queryClient.clear(); // Vider tout le cache React Query
-      await refetchShop(); // Recharger les données shop
-      toast.success('Cache vidé avec succès', {
-        description: 'Les données ont été rafraîchies'
-      });
-    } catch (error) {
-      console.error('Erreur lors du vidage du cache:', error);
-      toast.error('Erreur lors du vidage du cache');
-    }
-  };
-
-  // Fonction de reset d'urgence
-  const handleEmergencyReset = async () => {
-    if (window.confirm('⚠️ RESET COMPLET\n\nCela va vous déconnecter et nettoyer toutes les données en cache.\n\nContinuer ?')) {
-      await forceReconnect();
-    }
-  };
   return <header className="bg-card border-b border-border shadow-sm">
       {hasWarning && <Alert className="rounded-none border-x-0 border-t-0 bg-orange-50 border-orange-200">
           <AlertTriangle className="h-4 w-4 text-orange-600" />
@@ -205,18 +180,6 @@ export function Header({
                 <Settings className="mr-2 h-4 w-4" />
                 Paramètres
               </DropdownMenuItem>
-              
-              <DropdownMenuItem onClick={handleClearCache}>
-                <RefreshCw className="mr-2 h-4 w-4" />
-                Vider le cache
-              </DropdownMenuItem>
-
-              <DropdownMenuItem onClick={handleEmergencyReset} className="text-destructive">
-                <RotateCcw className="mr-2 h-4 w-4" />
-                Reset d'urgence
-              </DropdownMenuItem>
-
-              <DropdownMenuSeparator />
               
               <DropdownMenuItem onClick={signOut}>
                 <LogOut className="mr-2 h-4 w-4" />
