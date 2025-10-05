@@ -2,6 +2,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
+import { get, set, del } from "idb-keyval";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ShopProvider } from "@/contexts/ShopContext";
@@ -43,14 +45,43 @@ import QuotePublic from "./pages/QuotePublic";
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 1000 * 60 * 5, // 5 minutes
-      retry: 3,
+      staleTime: 1000 * 60 * 15, // 15 minutes - Données considérées "fraîches"
+      gcTime: 1000 * 60 * 60 * 24, // 24 heures - Durée de vie du cache
+      retry: 1, // Réduit à 1 pour éviter les ralentissements
+      refetchOnWindowFocus: false, // Ne pas recharger au focus
+      refetchOnReconnect: false, // Ne pas recharger à la reconnexion
+      refetchOnMount: false, // Ne pas recharger au montage si data existe
     },
   },
 });
 
+// Persister pour cache IndexedDB avec stratégie stale-while-revalidate
+const persister = {
+  persistClient: async (client: any) => {
+    await set('FIXWAY_REACT_QUERY_CACHE', client);
+  },
+  restoreClient: async () => {
+    return await get('FIXWAY_REACT_QUERY_CACHE');
+  },
+  removeClient: async () => {
+    await del('FIXWAY_REACT_QUERY_CACHE');
+  },
+};
+
 const App = () => (
-  <QueryClientProvider client={queryClient}>
+  <PersistQueryClientProvider 
+    client={queryClient} 
+    persistOptions={{ 
+      persister,
+      maxAge: 1000 * 60 * 60 * 24, // 24 heures
+      dehydrateOptions: {
+        shouldDehydrateQuery: (query) => {
+          // Ne persister que les queries réussies et non en erreur
+          return query.state.status === 'success';
+        },
+      },
+    }}
+  >
     <AuthProvider>
       <ShopProvider>
         <DelayNotificationProvider>
@@ -104,7 +135,7 @@ const App = () => (
         </DelayNotificationProvider>
       </ShopProvider>
     </AuthProvider>
-  </QueryClientProvider>
+  </PersistQueryClientProvider>
 );
 
 export default App;

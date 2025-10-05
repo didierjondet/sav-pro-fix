@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Menu, Settings, User, Bell, LogOut, HardDrive, AlertTriangle, MessageSquare, FileCheck } from 'lucide-react';
+import { Menu, Settings, User, Bell, LogOut, HardDrive, AlertTriangle, MessageSquare, FileCheck, RefreshCw } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { useShop } from '@/contexts/ShopContext';
@@ -12,6 +12,9 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { useNavigate } from 'react-router-dom';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useQueryClient } from '@tanstack/react-query';
+import { useToast } from '@/hooks/use-toast';
+import { del } from 'idb-keyval';
 interface HeaderProps {
   onMenuClick: () => void;
   isMobileMenuOpen: boolean;
@@ -27,7 +30,8 @@ export function Header({
   } = useAuth();
   const {
     shop,
-    loading: shopLoading
+    loading: shopLoading,
+    refetch: refetchShop
   } = useShop();
   const {
     profile
@@ -43,6 +47,39 @@ export function Header({
     credits: smsCredits
   } = useUnifiedSMSCredits();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  const handleClearCache = async () => {
+    try {
+      // Vider le cache React Query
+      await queryClient.invalidateQueries();
+      await queryClient.clear();
+      
+      // Vider le cache IndexedDB
+      await del('FIXWAY_REACT_QUERY_CACHE');
+      
+      // Recharger les données du shop
+      await refetchShop();
+      
+      toast({
+        title: "Cache vidé",
+        description: "Le cache a été vidé avec succès. Les données vont être rechargées.",
+      });
+      
+      // Recharger la page après un court délai
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
+    } catch (error) {
+      console.error('Error clearing cache:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de vider le cache",
+        variant: "destructive",
+      });
+    }
+  };
   const getSAVLimits = () => {
     if (!subscription) return {
       remaining: 0,
@@ -180,6 +217,13 @@ export function Header({
                 <Settings className="mr-2 h-4 w-4" />
                 Paramètres
               </DropdownMenuItem>
+              
+              <DropdownMenuItem onClick={handleClearCache}>
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Vider le cache
+              </DropdownMenuItem>
+              
+              <DropdownMenuSeparator />
               
               <DropdownMenuItem onClick={signOut}>
                 <LogOut className="mr-2 h-4 w-4" />
