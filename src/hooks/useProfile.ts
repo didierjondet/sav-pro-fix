@@ -1,7 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { useToast } from '@/hooks/use-toast';
 
 export interface UserProfile {
   id: string;
@@ -17,23 +16,12 @@ export interface UserProfile {
 
 export function useProfile() {
   const { user } = useAuth();
-  const { toast } = useToast();
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (user) {
-      fetchProfile();
-    } else {
-      setProfile(null);
-      setLoading(false);
-    }
-  }, [user]);
-
-  const fetchProfile = async () => {
-    if (!user) return;
-    
-    try {
+  
+  const { data: profile, isLoading: loading, refetch } = useQuery({
+    queryKey: ['profile', user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+      
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -41,19 +29,15 @@ export function useProfile() {
         .maybeSingle();
 
       if (error) throw error;
-      setProfile(data);
-    } catch (error: any) {
-      console.error('Profile fetch error:', error);
-      // Ne pas afficher de toast d'erreur pour un profil manquant
-      // L'interface se chargera de proposer la création
-    } finally {
-      setLoading(false);
-    }
-  };
+      return data;
+    },
+    enabled: !!user,
+    staleTime: 10 * 60 * 1000, // 10 minutes
+  });
 
   return {
-    profile,
+    profile: profile ?? null,
     loading,
-    refetch: fetchProfile,
+    refetch,
   };
 }

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -55,42 +56,27 @@ export function useStorageUsage() {
 }
 
 export function useShopStorageUsage(shopId?: string) {
-  const [storageGB, setStorageGB] = useState<number>(0);
-  const [loading, setLoading] = useState(true);
+  const { data: storageGB = 0, isLoading: loading, refetch } = useQuery({
+    queryKey: ['shop-storage', shopId],
+    queryFn: async () => {
+      if (!shopId) return 0;
 
-  const fetchShopStorage = async () => {
-    if (!shopId) {
-      setLoading(false);
-      return;
-    }
-
-    try {
       const { data, error } = await supabase.rpc('calculate_shop_storage_usage', {
         p_shop_id: shopId
       });
       
-      if (error) {
-        console.error('Error fetching shop storage:', error);
-        return;
-      }
-
+      if (error) throw error;
+      
       // Convert bytes to GB
-      const gb = data ? Number((data / (1024 * 1024 * 1024)).toFixed(3)) : 0;
-      setStorageGB(gb);
-    } catch (error) {
-      console.error('Error:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchShopStorage();
-  }, [shopId]);
+      return data ? Number((data / (1024 * 1024 * 1024)).toFixed(3)) : 0;
+    },
+    enabled: !!shopId,
+    staleTime: 15 * 60 * 1000, // 15 minutes
+  });
 
   return {
     storageGB,
     loading,
-    refetch: fetchShopStorage
+    refetch,
   };
 }

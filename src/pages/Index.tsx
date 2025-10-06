@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProfile } from '@/hooks/useProfile';
 import { useShop } from '@/contexts/ShopContext';
-import { Header } from '@/components/layout/Header';
+import Header from '@/components/layout/Header';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Footer } from '@/components/layout/Footer';
 import { SAVDashboard } from '@/components/sav/SAVDashboard';

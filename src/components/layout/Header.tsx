@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Menu, Settings, User, Bell, LogOut, HardDrive, AlertTriangle, MessageSquare, FileCheck, RefreshCw } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -19,10 +19,10 @@ interface HeaderProps {
   onMenuClick: () => void;
   isMobileMenuOpen: boolean;
 }
-export function Header({
+const Header = ({
   onMenuClick,
   isMobileMenuOpen
-}: HeaderProps) {
+}: HeaderProps) => {
   const {
     user,
     signOut,
@@ -234,4 +234,6 @@ export function Header({
         </div>
       </div>
     </header>;
-}
+};
+
+export default React.memo(Header);

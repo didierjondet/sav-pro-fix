@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { multiWordSearch } from '@/utils/searchUtils';
-import { Header } from '@/components/layout/Header';
+import Header from '@/components/layout/Header';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { SAVDashboard } from '@/components/sav/SAVDashboard';
 import { SAVTimeline } from '@/components/sav/SAVTimeline';

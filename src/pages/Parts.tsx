@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { multiWordSearch } from '@/utils/searchUtils';
-import { Header } from '@/components/layout/Header';
+import Header from '@/components/layout/Header';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { PaginationControls } from '@/components/ui/pagination-controls';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -36,22 +36,12 @@ export interface UnifiedSMSCredits {
 
 export function useUnifiedSMSCredits() {
   const { user } = useAuth();
-  const [credits, setCredits] = useState<UnifiedSMSCredits | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (user) {
-      fetchUnifiedCredits();
-    } else {
-      setCredits(null);
-      setLoading(false);
-    }
-  }, [user]);
-
-  const fetchUnifiedCredits = async () => {
-    if (!user) return;
-    
-    try {
+  
+  const { data: credits, isLoading: loading, refetch: refreshCredits } = useQuery({
+    queryKey: ['sms-credits', user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+      
       // Récupérer le shop de l'utilisateur
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
@@ -60,8 +50,7 @@ export function useUnifiedSMSCredits() {
         .single();
 
       if (profileError || !profile?.shop_id) {
-        setCredits(null);
-        return;
+        return null;
       }
 
       // Utiliser la nouvelle fonction pour récupérer la répartition des crédits
@@ -71,8 +60,7 @@ export function useUnifiedSMSCredits() {
       if (breakdownError) throw breakdownError;
 
       if (!breakdown || breakdown.length === 0) {
-        setCredits(null);
-        return;
+        return null;
       }
 
       const credits = breakdown[0];
@@ -105,7 +93,7 @@ export function useUnifiedSMSCredits() {
       // Flag pour savoir si le magasin a des crédits épuisables
       const has_purchased_credits = (credits.purchased_total + credits.admin_added) > 0;
 
-      setCredits({
+      return {
         shop_id: profile.shop_id,
         subscription_tier: shop?.subscription_tier || 'free',
         
@@ -134,22 +122,14 @@ export function useUnifiedSMSCredits() {
         
         // Flags d'affichage
         has_purchased_credits
-      });
-
-    } catch (error) {
-      console.error('Erreur lors de la récupération des crédits SMS unifiés:', error);
-      setCredits(null);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const refreshCredits = () => {
-    fetchUnifiedCredits();
-  };
+      };
+    },
+    enabled: !!user,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
 
   return {
-    credits,
+    credits: credits ?? null,
     loading,
     refreshCredits,
   };
