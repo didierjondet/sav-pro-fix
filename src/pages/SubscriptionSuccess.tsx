@@ -8,16 +8,16 @@ import { useSubscription } from '@/hooks/useSubscription';
 export default function SubscriptionSuccess() {
   const [searchParams] = useSearchParams();
   const plan = searchParams.get('plan');
-  const { checkSubscription } = useSubscription();
+  const { refetch } = useSubscription();
 
   useEffect(() => {
     // Rafraîchir le statut d'abonnement après le succès
     const timer = setTimeout(() => {
-      checkSubscription();
+      refetch();
     }, 2000);
 
     return () => clearTimeout(timer);
-  }, [checkSubscription]);
+  }, [refetch]);
 
   return (
     <div className="min-h-screen flex items-center justify-center p-6">

@@ -19,12 +19,12 @@ export default function Subscription() {
     loading,
     createCheckout,
     openCustomerPortal,
-    checkSubscription
+    refetch
   } = useSubscription();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   useEffect(() => {
     if (user) {
-      checkSubscription();
+      refetch();
     }
   }, [user]);
 

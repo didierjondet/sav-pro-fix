@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -21,109 +21,101 @@ export interface SubscriptionInfo {
 export function useSubscription() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [subscription, setSubscription] = useState<SubscriptionInfo | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (user) {
-      checkSubscription();
-    } else {
-      setSubscription(null);
-      setLoading(false);
-    }
-  }, [user]);
-
-  const checkSubscription = async () => {
-    if (!user) return;
-    
-    try {
-      // Récupérer le shop courant
-      const profileRes = await (supabase as any)
-        .from('profiles')
-        .select('shop_id')
-        .eq('user_id', user.id)
-        .single();
-      const profileData: any = profileRes.data;
-
-      if (profileData?.shop_id) {
-        // Charger les infos du shop avec les nouvelles colonnes mensuelles
-        const shopRes = await (supabase as any)
-          .from('shops')
-          .select('subscription_tier, sms_credits_allocated, sms_credits_used, monthly_sms_used, purchased_sms_credits, active_sav_count, monthly_sav_count, subscription_plan_id, subscription_forced, custom_sav_limit, custom_sms_limit')
-          .eq('id', profileData.shop_id)
+  
+  const { data: subscription, isLoading: loading, refetch } = useQuery({
+    queryKey: ['subscription', user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+      
+      try {
+        // Récupérer le shop courant
+        const profileRes = await (supabase as any)
+          .from('profiles')
+          .select('shop_id')
+          .eq('user_id', user.id)
           .single();
-        const shopData: any = shopRes.data;
+        const profileData: any = profileRes.data;
 
-        // Charger le plan si disponible
-        let plan: any = null;
-        if (shopData?.subscription_plan_id) {
-          const planRes = await (supabase as any)
-            .from('subscription_plans')
-            .select('name, sms_limit, sms_cost, sav_limit, monthly_price')
-            .eq('id', shopData.subscription_plan_id)
+        if (profileData?.shop_id) {
+          // Charger les infos du shop avec les nouvelles colonnes mensuelles
+          const shopRes = await (supabase as any)
+            .from('shops')
+            .select('subscription_tier, sms_credits_allocated, sms_credits_used, monthly_sms_used, purchased_sms_credits, active_sav_count, monthly_sav_count, subscription_plan_id, subscription_forced, custom_sav_limit, custom_sms_limit')
+            .eq('id', profileData.shop_id)
             .single();
-          plan = planRes.data;
-        }
+          const shopData: any = shopRes.data;
 
-        const resolveSubscriptionFromLocal = (fallbackSubscribed = true) => {
-          const tier = (plan?.name?.toLowerCase?.() || shopData?.subscription_tier || 'free') as 'free' | 'premium' | 'enterprise';
-          setSubscription({
-            subscribed: fallbackSubscribed,
-            subscription_tier: tier,
-            subscription_end: null,
-            sms_credits_allocated: shopData?.custom_sms_limit ?? plan?.sms_limit ?? shopData?.sms_credits_allocated ?? 15,
-            sms_credits_used: shopData?.sms_credits_used ?? 0,
-            monthly_sms_used: shopData?.monthly_sms_used ?? 0,
-            purchased_sms_credits: shopData?.purchased_sms_credits ?? 0,
-            active_sav_count: shopData?.active_sav_count ?? 0,
-            monthly_sav_count: shopData?.monthly_sav_count ?? 0,
-            forced: !!shopData?.subscription_forced,
-            custom_sav_limit: shopData?.custom_sav_limit,
-            custom_sms_limit: shopData?.custom_sms_limit
-          });
-        };
-
-        // Si abonnement forcé, ne pas appeler Stripe et utiliser les données locales
-        if (shopData?.subscription_forced) {
-          resolveSubscriptionFromLocal(true);
-          return;
-        }
-
-        // Sinon, tenter de vérifier via Stripe, mais ne pas afficher d'erreur bloquante
-        try {
-          const { data, error } = await supabase.functions.invoke('check-subscription');
-          if (error) {
-            console.warn('Stripe verification failed, using local subscription data');
-            resolveSubscriptionFromLocal(true);
-            return;
+          // Charger le plan si disponible
+          let plan: any = null;
+          if (shopData?.subscription_plan_id) {
+            const planRes = await (supabase as any)
+              .from('subscription_plans')
+              .select('name, sms_limit, sms_cost, sav_limit, monthly_price')
+              .eq('id', shopData.subscription_plan_id)
+              .single();
+            plan = planRes.data;
           }
-          const tier = (plan?.name?.toLowerCase?.() || shopData?.subscription_tier || 'free') as 'free' | 'premium' | 'enterprise';
-          setSubscription({
-            subscribed: data?.subscribed ?? false,
-            subscription_tier: tier,
-            subscription_end: data?.subscription_end ?? null,
-            sms_credits_allocated: shopData?.custom_sms_limit ?? plan?.sms_limit ?? shopData?.sms_credits_allocated ?? 15,
-            sms_credits_used: shopData?.sms_credits_used ?? 0,
-            monthly_sms_used: shopData?.monthly_sms_used ?? 0,
-            purchased_sms_credits: shopData?.purchased_sms_credits ?? 0,
-            active_sav_count: shopData?.active_sav_count ?? 0,
-            monthly_sav_count: shopData?.monthly_sav_count ?? 0,
-            forced: false,
-            custom_sav_limit: shopData?.custom_sav_limit,
-            custom_sms_limit: shopData?.custom_sms_limit
-          });
-        } catch (stripeError) {
-          console.warn('Stripe API unavailable, using local subscription data');
-          resolveSubscriptionFromLocal(true);
+
+          const resolveSubscriptionFromLocal = (fallbackSubscribed = true): SubscriptionInfo => {
+            const tier = (plan?.name?.toLowerCase?.() || shopData?.subscription_tier || 'free') as 'free' | 'premium' | 'enterprise';
+            return {
+              subscribed: fallbackSubscribed,
+              subscription_tier: tier,
+              subscription_end: undefined,
+              sms_credits_allocated: shopData?.custom_sms_limit ?? plan?.sms_limit ?? shopData?.sms_credits_allocated ?? 15,
+              sms_credits_used: shopData?.sms_credits_used ?? 0,
+              monthly_sms_used: shopData?.monthly_sms_used ?? 0,
+              purchased_sms_credits: shopData?.purchased_sms_credits ?? 0,
+              active_sav_count: shopData?.active_sav_count ?? 0,
+              monthly_sav_count: shopData?.monthly_sav_count ?? 0,
+              forced: !!shopData?.subscription_forced,
+              custom_sav_limit: shopData?.custom_sav_limit,
+              custom_sms_limit: shopData?.custom_sms_limit
+            };
+          };
+
+          // Si abonnement forcé, ne pas appeler Stripe et utiliser les données locales
+          if (shopData?.subscription_forced) {
+            return resolveSubscriptionFromLocal(true);
+          }
+
+          // Sinon, tenter de vérifier via Stripe, mais ne pas afficher d'erreur bloquante
+          try {
+            const { data, error } = await supabase.functions.invoke('check-subscription');
+            if (error) {
+              console.warn('Stripe verification failed, using local subscription data');
+              return resolveSubscriptionFromLocal(true);
+            }
+            const tier = (plan?.name?.toLowerCase?.() || shopData?.subscription_tier || 'free') as 'free' | 'premium' | 'enterprise';
+            return {
+              subscribed: data?.subscribed ?? false,
+              subscription_tier: tier,
+              subscription_end: data?.subscription_end ?? undefined,
+              sms_credits_allocated: shopData?.custom_sms_limit ?? plan?.sms_limit ?? shopData?.sms_credits_allocated ?? 15,
+              sms_credits_used: shopData?.sms_credits_used ?? 0,
+              monthly_sms_used: shopData?.monthly_sms_used ?? 0,
+              purchased_sms_credits: shopData?.purchased_sms_credits ?? 0,
+              active_sav_count: shopData?.active_sav_count ?? 0,
+              monthly_sav_count: shopData?.monthly_sav_count ?? 0,
+              forced: false,
+              custom_sav_limit: shopData?.custom_sav_limit,
+              custom_sms_limit: shopData?.custom_sms_limit
+            };
+          } catch (stripeError) {
+            console.warn('Stripe API unavailable, using local subscription data');
+            return resolveSubscriptionFromLocal(true);
+          }
         }
+        
+        return null;
+      } catch (error: any) {
+        console.error('Error checking subscription:', error);
+        return null;
       }
-    } catch (error: any) {
-      console.error('Error checking subscription:', error);
-      // Ne pas afficher de toast d'erreur pour éviter de spammer l'utilisateur
-    } finally {
-      setLoading(false);
-    }
-  };
+    },
+    enabled: !!user,
+    staleTime: 10 * 60 * 1000, // 10 minutes
+  });
 
   const createCheckout = async (plan: 'premium' | 'enterprise') => {
     if (!user) return { data: null, error: new Error("Utilisateur non connecté") };
@@ -237,12 +229,11 @@ export function useSubscription() {
   };
 
   return {
-    subscription,
+    subscription: subscription ?? null,
     loading,
-    checkSubscription,
     createCheckout,
     openCustomerPortal,
     checkLimits,
-    refetch: checkSubscription,
+    refetch,
   };
 }
