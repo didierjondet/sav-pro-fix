@@ -30,6 +30,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useShopSAVStatuses } from '@/hooks/useShopSAVStatuses';
 import { useShopSAVTypes } from '@/hooks/useShopSAVTypes';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { AITextReformulator } from '@/components/sav/AITextReformulator';
 
 interface CustomerInfo {
   firstName: string;
@@ -611,7 +612,16 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
             </div>
           </div>
           <div>
-            <Label htmlFor="problemDescription">Description du problème *</Label>
+            <div className="flex items-center justify-between mb-2">
+              <Label htmlFor="problemDescription">Description du problème *</Label>
+              <AITextReformulator
+                text={deviceInfo.problemDescription}
+                context="problem_description"
+                onReformulated={(reformulatedText) =>
+                  setDeviceInfo({ ...deviceInfo, problemDescription: reformulatedText })
+                }
+              />
+            </div>
             <Textarea
               id="problemDescription"
               value={deviceInfo.problemDescription}
@@ -620,6 +630,7 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
               }
               placeholder="Décrivez le problème rencontré..."
               required
+              rows={4}
             />
           </div>
           

@@ -29,6 +29,7 @@ import { generateFullTrackingUrl } from '@/utils/trackingUtils';
 import { generateSAVRestitutionPDF } from '@/utils/pdfGenerator';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { AITextReformulator } from '@/components/sav/AITextReformulator';
 export default function SAVDetail() {
   const {
     id
@@ -560,8 +561,15 @@ export default function SAVDetail() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
-                    <Label htmlFor="technician-comments">Commentaire pour le client</Label>
-                    <Textarea id="technician-comments" placeholder="Décrivez l'intervention réalisée, les problèmes rencontrés ou les recommandations pour le client..." value={technicianComments} onChange={e => setTechnicianComments(e.target.value)} rows={4} className="mt-2" />
+                    <div className="flex items-center justify-between mb-2">
+                      <Label htmlFor="technician-comments">Commentaire pour le client</Label>
+                      <AITextReformulator
+                        text={technicianComments}
+                        context="technician_comments"
+                        onReformulated={(reformulatedText) => setTechnicianComments(reformulatedText)}
+                      />
+                    </div>
+                    <Textarea id="technician-comments" placeholder="Décrivez l'intervention réalisée, les problèmes rencontrés ou les recommandations pour le client..." value={technicianComments} onChange={e => setTechnicianComments(e.target.value)} rows={4} />
                   </div>
                   <Button onClick={saveTechnicianComments} disabled={savingTechnicianComments} size="sm">
                     <Save className="h-4 w-4 mr-2" />
@@ -583,8 +591,15 @@ export default function SAVDetail() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
-                    <Label htmlFor="private-comments">Commentaires internes</Label>
-                    <Textarea id="private-comments" placeholder="Ajoutez vos notes et commentaires privés ici..." value={privateComments} onChange={e => setPrivateComments(e.target.value)} rows={4} className="mt-2" />
+                    <div className="flex items-center justify-between mb-2">
+                      <Label htmlFor="private-comments">Commentaires internes</Label>
+                      <AITextReformulator
+                        text={privateComments}
+                        context="private_comments"
+                        onReformulated={(reformulatedText) => setPrivateComments(reformulatedText)}
+                      />
+                    </div>
+                    <Textarea id="private-comments" placeholder="Ajoutez vos notes et commentaires privés ici..." value={privateComments} onChange={e => setPrivateComments(e.target.value)} rows={4} />
                   </div>
                   <Button onClick={savePrivateComments} disabled={savingComments} size="sm">
                     <Save className="h-4 w-4 mr-2" />

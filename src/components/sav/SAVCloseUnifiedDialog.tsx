@@ -31,6 +31,7 @@ import {
 } from 'lucide-react';
 import { SAVCase } from '@/hooks/useSAVCases';
 import { Shop } from '@/hooks/useShop';
+import { AITextReformulator } from '@/components/sav/AITextReformulator';
 
 interface SAVCloseUnifiedDialogProps {
   isOpen: boolean;
@@ -373,8 +374,17 @@ export function SAVCloseUnifiedDialog({
                   Ce commentaire sera visible sur le document de restitution
                 </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="technician-comments">Commentaires</Label>
+                  <AITextReformulator
+                    text={technicianComments}
+                    context="technician_comments"
+                    onReformulated={(reformulatedText) => setTechnicianComments(reformulatedText)}
+                  />
+                </div>
                 <Textarea
+                  id="technician-comments"
                   placeholder="Décrivez l'intervention réalisée, les problèmes rencontrés ou les recommandations pour le client..."
                   value={technicianComments}
                   onChange={(e) => setTechnicianComments(e.target.value)}
@@ -395,8 +405,17 @@ export function SAVCloseUnifiedDialog({
                   Commentaires internes JAMAIS visibles sur les documents clients
                 </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="private-comments">Commentaires internes</Label>
+                  <AITextReformulator
+                    text={privateComments}
+                    context="private_comments"
+                    onReformulated={(reformulatedText) => setPrivateComments(reformulatedText)}
+                  />
+                </div>
                 <Textarea
+                  id="private-comments"
                   placeholder="Notes privées, historique interne, détails confidentiels..."
                   value={privateComments}
                   onChange={(e) => setPrivateComments(e.target.value)}
