@@ -132,11 +132,19 @@ export const SAVPrintButton = React.forwardRef<SAVPrintButtonRef, SAVPrintButton
           <div class="text problem-description">${(savCase.problem_description || "").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</div>
         </div>`;
 
-      const notesBlock = savCase.repair_notes
+      const repairNotesBlock = savCase.repair_notes
         ? `
         <div class="block">
           <div class="block-title">Notes de réparation</div>
           <div class="text">${(savCase.repair_notes || "").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</div>
+        </div>`
+        : "";
+
+      const technicianCommentsBlock = savCase.technician_comments
+        ? `
+        <div class="block">
+          <div class="block-title">Commentaires du technicien</div>
+          <div class="text">${(savCase.technician_comments || "").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</div>
         </div>`
         : "";
 
@@ -249,7 +257,8 @@ export const SAVPrintButton = React.forwardRef<SAVPrintButtonRef, SAVPrintButton
     ${customerBlock}
     ${deviceBlock}
     ${descriptionBlock}
-    ${notesBlock}
+    ${repairNotesBlock}
+    ${technicianCommentsBlock}
     ${partsTable}
     ${qrBlock}
   </div>
@@ -268,7 +277,8 @@ export const SAVPrintButton = React.forwardRef<SAVPrintButtonRef, SAVPrintButton
     ${customerBlock}
     ${deviceBlock}
     ${descriptionBlock}
-    ${notesBlock}
+    ${repairNotesBlock}
+    ${technicianCommentsBlock}
     ${partsTable}
     ${qrBlock}
     

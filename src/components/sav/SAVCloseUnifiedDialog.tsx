@@ -68,7 +68,7 @@ export function SAVCloseUnifiedDialog({
 }: SAVCloseUnifiedDialogProps) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [technicianComments, setTechnicianComments] = useState(savCase.technician_comments || '');
-  const [statusNotes, setStatusNotes] = useState('');
+  const [privateComments, setPrivateComments] = useState(savCase.private_comments || '');
   const [sendSMS, setSendSMS] = useState(false);
   const [warnings, setWarnings] = useState<WarningInfo>({ noParts: false, noPurchase: false });
   const [forceClose, setForceClose] = useState(false);
@@ -167,6 +167,16 @@ export function SAVCloseUnifiedDialog({
       // Sauvegarder les commentaires technicien s'ils ont été modifiés
       if (technicianComments !== savCase.technician_comments) {
         await updateTechnicianComments(savCase.id, technicianComments);
+      }
+
+      // Sauvegarder les commentaires privés s'ils ont été modifiés
+      if (privateComments !== savCase.private_comments) {
+        const { error: updateError } = await supabase
+          .from('sav_cases')
+          .update({ private_comments: privateComments })
+          .eq('id', savCase.id);
+        
+        if (updateError) throw updateError;
       }
 
       // Envoyer SMS si demandé
@@ -374,25 +384,28 @@ export function SAVCloseUnifiedDialog({
               </CardContent>
             </Card>
 
-            {/* Notes de statut (optionnel) */}
+            {/* Commentaires privés */}
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="flex items-center gap-2">
                   <User className="h-4 w-4" />
-                  Notes internes (optionnel)
+                  Commentaires privés (optionnel)
                 </CardTitle>
                 <CardDescription>
-                  Notes visibles uniquement par votre équipe
+                  Commentaires internes JAMAIS visibles sur les documents clients
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <Textarea
-                  placeholder="Notes internes sur la clôture du dossier..."
-                  value={statusNotes}
-                  onChange={(e) => setStatusNotes(e.target.value)}
+                  placeholder="Notes privées, historique interne, détails confidentiels..."
+                  value={privateComments}
+                  onChange={(e) => setPrivateComments(e.target.value)}
                   rows={3}
                   className="resize-none"
                 />
+                <p className="text-xs text-muted-foreground mt-2">
+                  ⚠️ Ces commentaires ne seront jamais imprimés sur les documents de restitution
+                </p>
               </CardContent>
             </Card>
 
