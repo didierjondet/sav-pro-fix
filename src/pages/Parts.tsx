@@ -265,6 +265,11 @@ export default function Parts() {
                                         Réf: {part.reference}
                                       </Badge>
                                     )}
+                                    {(part.reserved_quantity || 0) > 0 && (
+                                      <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-300">
+                                        Réservé: {part.reserved_quantity}
+                                      </Badge>
+                                    )}
                                     {part.quantity <= part.min_stock && (
                                       <Badge variant="destructive" className="flex items-center gap-1">
                                         <AlertTriangle className="h-3 w-3" />

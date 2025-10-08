@@ -27,12 +27,23 @@ export function StockAdjustment({ part, isOpen, onClose, onAdjust }: StockAdjust
   const [loading, setLoading] = useState(false);
   const [adjustmentType, setAdjustmentType] = useState<'add' | 'remove'>('add');
 
+  // 🛡️ PROTECTION 4: Calculer les quantités
+  const reservedQty = part.reserved_quantity || 0;
+  const availableStock = part.quantity - reservedQty;
+  const maxRemovable = availableStock;
+
   const handleSubmit = async () => {
     if (quantity <= 0) return;
     
+    const adjustment = adjustmentType === 'add' ? quantity : -quantity;
+    
+    // 🛡️ Vérification avant envoi
+    if (adjustmentType === 'remove' && quantity > maxRemovable) {
+      return; // Déjà bloqué par l'UI mais sécurité supplémentaire
+    }
+    
     setLoading(true);
     try {
-      const adjustment = adjustmentType === 'add' ? quantity : -quantity;
       const { error } = await onAdjust(part.id, adjustment, reason);
       if (!error) {
         setQuantity(1);
@@ -50,8 +61,20 @@ export function StockAdjustment({ part, isOpen, onClose, onAdjust }: StockAdjust
         <DialogHeader>
           <DialogTitle>Ajuster le stock - {part.name}</DialogTitle>
           <DialogDescription>
-            Stock actuel: {part.quantity} unité(s)
-            {part.reference && ` • Réf: ${part.reference}`}
+            <div className="space-y-1">
+              <div>Stock total: <strong>{part.quantity}</strong> unité(s)</div>
+              {reservedQty > 0 && (
+                <>
+                  <div className="text-orange-600">
+                    Réservé par SAV: <strong>{reservedQty}</strong> unité(s)
+                  </div>
+                  <div className="text-green-600">
+                    Stock disponible: <strong>{availableStock}</strong> unité(s)
+                  </div>
+                </>
+              )}
+              {part.reference && <div>Réf: {part.reference}</div>}
+            </div>
           </DialogDescription>
         </DialogHeader>
 
@@ -100,14 +123,31 @@ export function StockAdjustment({ part, isOpen, onClose, onAdjust }: StockAdjust
             />
           </div>
 
+          {adjustmentType === 'remove' && quantity > maxRemovable && (
+            <div className="bg-destructive/10 border border-destructive p-3 rounded-lg">
+              <p className="text-sm text-destructive font-medium">
+                ⚠️ Impossible de retirer {quantity} pièce(s). Maximum disponible: {maxRemovable}
+              </p>
+            </div>
+          )}
+
           <div className="bg-muted p-3 rounded-lg">
             <p className="text-sm">
-              <span className="font-medium">Nouveau stock: </span>
+              <span className="font-medium">Nouveau stock total: </span>
               {adjustmentType === 'add' 
                 ? part.quantity + quantity 
                 : Math.max(0, part.quantity - quantity)
               } unité(s)
             </p>
+            {reservedQty > 0 && (
+              <p className="text-sm text-orange-600 mt-1">
+                <span className="font-medium">Stock disponible après: </span>
+                {adjustmentType === 'add' 
+                  ? availableStock + quantity 
+                  : Math.max(0, availableStock - quantity)
+                } unité(s)
+              </p>
+            )}
           </div>
         </div>
 
@@ -115,7 +155,14 @@ export function StockAdjustment({ part, isOpen, onClose, onAdjust }: StockAdjust
           <Button variant="outline" onClick={onClose}>
             Annuler
           </Button>
-          <Button onClick={handleSubmit} disabled={loading || quantity <= 0}>
+          <Button 
+            onClick={handleSubmit} 
+            disabled={
+              loading || 
+              quantity <= 0 || 
+              (adjustmentType === 'remove' && quantity > maxRemovable)
+            }
+          >
             {loading ? 'Ajustement...' : `${adjustmentType === 'add' ? 'Ajouter' : 'Retirer'} ${quantity}`}
           </Button>
         </DialogFooter>
