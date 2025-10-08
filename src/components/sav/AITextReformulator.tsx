@@ -12,7 +12,7 @@ import {
 
 interface AITextReformulatorProps {
   text: string;
-  context: "problem_description" | "repair_notes" | "technician_comments" | "private_comments";
+  context: "problem_description" | "repair_notes" | "technician_comments" | "private_comments" | "chat_message";
   onReformulated: (reformulatedText: string) => void;
   className?: string;
 }
@@ -91,6 +91,8 @@ export function AITextReformulator({
         return "Reformuler et corriger les commentaires avec l'IA";
       case "private_comments":
         return "Reformuler et corriger les commentaires privés avec l'IA";
+      case "chat_message":
+        return "Reformuler et corriger le message avec l'IA";
       default:
         return "Reformuler et corriger avec l'IA";
     }

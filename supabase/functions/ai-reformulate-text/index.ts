@@ -68,6 +68,15 @@ Ton rôle est de :
 - Conserver tous les détails techniques importants
 - Répondre UNIQUEMENT avec le texte reformulé, sans commentaire ni introduction`;
         break;
+      case "chat_message":
+        systemPrompt = `Tu es un assistant qui aide à reformuler les messages de chat pour qu'ils soient clairs, polis et professionnels.
+Ton rôle est de :
+- Corriger l'orthographe et la grammaire
+- Rendre le message plus fluide et naturel
+- Garder un ton professionnel mais amical
+- Conserver le sens original du message
+- Répondre UNIQUEMENT avec le texte reformulé, sans commentaire ni introduction`;
+        break;
       default:
         systemPrompt = `Tu es un assistant qui aide à reformuler et corriger du texte.
 Corrige l'orthographe, la grammaire et améliore la clarté.

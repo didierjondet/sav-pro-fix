@@ -10,6 +10,7 @@ import { fr } from 'date-fns/locale';
 import { useMessaging, Message } from '@/hooks/useMessaging';
 import { SMSButton } from './SMSButton';
 import { MessagePhotoUpload } from './MessagePhotoUpload';
+import { AITextReformulator } from './AITextReformulator';
 import { supabase } from '@/integrations/supabase/client';
 
 interface MessagingInterfaceProps {
@@ -363,18 +364,28 @@ export function MessagingInterface({
           </div>
         ) : (
           <div className="space-y-2">
-            <Textarea
-              placeholder="Tapez votre message ici..."
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSendMessage();
-                }
-              }}
-              rows={3}
-            />
+            <div className="relative">
+              <Textarea
+                placeholder="Tapez votre message ici..."
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSendMessage();
+                  }
+                }}
+                rows={3}
+                className="pr-10"
+              />
+              <div className="absolute top-2 right-2">
+                <AITextReformulator
+                  text={newMessage}
+                  context="chat_message"
+                  onReformulated={setNewMessage}
+                />
+              </div>
+            </div>
             
             {/* Upload de photos (uniquement pour les techniciens) */}
             {userType === 'shop' && (
