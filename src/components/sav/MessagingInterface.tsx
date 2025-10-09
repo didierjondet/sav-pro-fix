@@ -56,12 +56,17 @@ export function MessagingInterface({
     canDeleteMessage 
   } = useMessaging({ savCaseId, trackingSlug, userType });
 
-  // Marquer tous les messages comme lus au montage
+  // Marquer tous les messages comme lus au montage ET à chaque nouveau message
   useEffect(() => {
-    if (markAllAsRead) {
-      markAllAsRead();
+    if (markAllAsRead && messages.length > 0) {
+      // Délai court pour s'assurer que les messages sont bien affichés
+      const timer = setTimeout(() => {
+        markAllAsRead();
+      }, 500);
+      
+      return () => clearTimeout(timer);
     }
-  }, [markAllAsRead]);
+  }, [messages.length, markAllAsRead]);
 
   const handleSendMessage = async () => {
     if ((!newMessage.trim() && messagePhotos.length === 0) || sending) return;
