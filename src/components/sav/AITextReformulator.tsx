@@ -12,7 +12,7 @@ import {
 
 interface AITextReformulatorProps {
   text: string;
-  context: "problem_description" | "repair_notes" | "technician_comments" | "private_comments" | "chat_message";
+  context: "problem_description" | "repair_notes" | "technician_comments" | "private_comments" | "chat_message" | "sms_message";
   onReformulated: (reformulatedText: string) => void;
   className?: string;
 }
@@ -93,6 +93,8 @@ export function AITextReformulator({
         return "Reformuler et corriger les commentaires privés avec l'IA";
       case "chat_message":
         return "Reformuler et corriger le message avec l'IA";
+      case "sms_message":
+        return "Reformuler et optimiser le SMS (max 160 caractères)";
       default:
         return "Reformuler et corriger avec l'IA";
     }

@@ -23,7 +23,7 @@ Deno.serve(async (req) => {
     shopId: string;
     toNumber: string;
     message: string;
-    type: 'sav_notification' | 'quote_notification' | 'manual' | 'status_change';
+    type: 'sav_notification' | 'quote_notification' | 'manual' | 'status_change' | 'review_request';
     recordId?: string;
   }
 
@@ -210,7 +210,7 @@ Deno.serve(async (req) => {
       }
 
       // Intégrer le SMS dans la discussion du SAV si applicable
-      if (recordId && (type === 'sav_notification' || type === 'status_change' || type === 'manual')) {
+      if (recordId && (type === 'sav_notification' || type === 'status_change' || type === 'manual' || type === 'review_request')) {
         console.log('💬 Intégration du SMS dans la discussion du SAV:', recordId);
         
         // Vérifier que le recordId correspond bien à un SAV
@@ -223,7 +223,13 @@ Deno.serve(async (req) => {
         if (savCase && !savError) {
           // Formater le message pour la discussion
           const maskedNumber = formattedNumber.slice(0, 8) + '***' + formattedNumber.slice(-2);
-          const discussionMessage = `📱 SMS envoyé au ${maskedNumber}\n\n"${message}"\n\n✅ Message ID: ${responseData.sid}`;
+          let discussionPrefix = '📱 SMS envoyé au';
+          
+          if (type === 'review_request') {
+            discussionPrefix = '⭐ Demande d\'avis envoyée au';
+          }
+          
+          const discussionMessage = `${discussionPrefix} ${maskedNumber}\n\n"${message}"\n\n✅ Message ID: ${responseData.sid}`;
           
           // Insérer dans sav_messages
           const { error: messageError } = await supabase
@@ -232,7 +238,7 @@ Deno.serve(async (req) => {
               sav_case_id: recordId,
               shop_id: shopId,
               sender_type: 'shop',
-              sender_name: `📱 SMS - ${shop.name}`,
+              sender_name: type === 'review_request' ? `⭐ Demande d'avis - ${shop.name}` : `📱 SMS - ${shop.name}`,
               message: discussionMessage,
               read_by_shop: true,
               read_by_client: false,

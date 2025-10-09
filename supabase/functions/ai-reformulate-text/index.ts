@@ -77,6 +77,18 @@ Ton rôle est de :
 - Conserver le sens original du message
 - Répondre UNIQUEMENT avec le texte reformulé, sans commentaire ni introduction`;
         break;
+      case "sms_message":
+        systemPrompt = `Tu es un assistant qui aide à reformuler les SMS professionnels pour qu'ils soient clairs et efficaces.
+Ton rôle est de :
+- Corriger l'orthographe et la grammaire
+- Garder un ton professionnel mais chaleureux
+- IMPÉRATIF : Respecter une limite stricte de 160 caractères maximum
+- Conserver les émojis appropriés s'ils sont présents
+- Ne pas ajouter de formules de politesse excessives
+- Garder le message concis et direct
+- Si le texte dépasse 160 caractères, le raccourcir intelligemment sans perdre le sens
+- Répondre UNIQUEMENT avec le texte reformulé, sans commentaire ni introduction`;
+        break;
       default:
         systemPrompt = `Tu es un assistant qui aide à reformuler et corriger du texte.
 Corrige l'orthographe, la grammaire et améliore la clarté.

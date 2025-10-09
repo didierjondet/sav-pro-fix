@@ -8,7 +8,7 @@ import { useSubscription } from '@/hooks/useSubscription';
 interface SendSMSRequest {
   toNumber: string;
   message: string;
-  type: 'sav_notification' | 'quote_notification' | 'manual';
+  type: 'sav_notification' | 'quote_notification' | 'manual' | 'review_request';
   recordId?: string;
 }
 
@@ -149,10 +149,31 @@ export function useSMS() {
     });
   };
 
+  const sendReviewRequestSMS = async (
+    customerPhone: string,
+    customerName: string,
+    caseNumber: string,
+    reviewLink: string,
+    customMessage?: string,
+    savCaseId?: string
+  ): Promise<boolean> => {
+    // Utiliser le message personnalisé ou le message par défaut
+    const message = customMessage || 
+      `Bonjour ${customerName}, votre réparation ${caseNumber} est terminée ! 🎉\n\nSi vous êtes satisfait(e), laissez-nous un avis : ${reviewLink}\n\nMerci pour votre confiance ! ⭐`;
+
+    return await sendSMS({
+      toNumber: customerPhone,
+      message,
+      type: 'review_request',
+      recordId: savCaseId,
+    });
+  };
+
   return {
     sendSMS,
     sendSAVNotification,
     sendQuoteNotification,
+    sendReviewRequestSMS,
     loading,
   };
 }

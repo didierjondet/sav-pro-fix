@@ -5,6 +5,9 @@ import { useSMS } from '@/hooks/useSMS';
 import { useLimitDialogContext } from '@/contexts/LimitDialogContext';
 import { generateShortTrackingUrl } from '@/utils/trackingUtils';
 import { supabase } from '@/integrations/supabase/client';
+import { AITextReformulator } from '@/components/sav/AITextReformulator';
+import { useShop } from '@/hooks/useShop';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import {
   Dialog,
   DialogContent,
@@ -47,8 +50,10 @@ export function SMSButton({
   const [useCustomMessage, setUseCustomMessage] = useState(false);
   const [trackingSlug, setTrackingSlug] = useState<string>('');
   const [sending, setSending] = useState(false);
-  const { sendSMS, sendSAVNotification, sendQuoteNotification, loading } = useSMS();
+  const [smsType, setSmsType] = useState<'status' | 'review' | 'custom'>('status');
+  const { sendSMS, sendSAVNotification, sendQuoteNotification, sendReviewRequestSMS, loading } = useSMS();
   const { checkAndShowLimitDialog } = useLimitDialogContext();
+  const { shop } = useShop();
 
   // Récupérer le tracking_slug si c'est un SAV
   useEffect(() => {
@@ -85,7 +90,21 @@ export function SMSButton({
     let success = false;
 
     try {
-      if (useCustomMessage && customMessage.trim()) {
+      if (smsType === 'review') {
+        // Envoi d'une demande d'avis Google
+        if (!shop?.review_link) {
+          setSending(false);
+          return;
+        }
+        success = await sendReviewRequestSMS(
+          customPhone,
+          customerName || 'Client',
+          caseNumber || '',
+          shop.review_link,
+          customMessage.trim() || undefined,
+          caseId
+        );
+      } else if (smsType === 'custom' && customMessage.trim()) {
         // Ajouter l'avertissement aux messages personnalisés avec lien SAV si disponible
         const shortUrl = trackingSlug ? generateShortTrackingUrl(trackingSlug) : '';
         let smsWarning = "\n\n⚠️ Ne répondez pas à ce SMS.";
@@ -101,7 +120,7 @@ export function SMSButton({
           toNumber: customPhone,
           message: messageWithWarning,
           type: 'manual',
-          recordId: caseId, // Passer l'ID du SAV pour l'archivage
+          recordId: caseId,
         });
       } else if (caseNumber && caseId) {
         // Notification SAV automatique
@@ -109,7 +128,7 @@ export function SMSButton({
           customPhone,
           customerName || 'Client',
           caseNumber,
-          'in_progress', // Statut par défaut
+          'in_progress',
           caseId
         );
       } else if (quoteNumber && quoteId) {
@@ -125,11 +144,15 @@ export function SMSButton({
       if (success) {
         setIsOpen(false);
         setCustomMessage('');
-        setUseCustomMessage(false);
+        setSmsType('status');
       }
     } finally {
       setSending(false);
     }
+  };
+
+  const handleAIReformulation = (reformulatedText: string) => {
+    setCustomMessage(reformulatedText);
   };
 
   const getDefaultMessage = () => {
@@ -137,6 +160,16 @@ export function SMSButton({
     const smsWarning = shortUrl ? 
       `\n\n⚠️ Ne répondez pas à ce SMS. Pour échanger avec nous, consultez votre SAV : ${shortUrl}` :
       "\n\n⚠️ Ne répondez pas à ce SMS. Contactez-nous directement pour toute question.";
+    
+    if (smsType === 'review' && shop) {
+      const defaultReviewMsg = shop.custom_review_sms_message || 
+        `Bonjour ${customerName}, votre réparation ${caseNumber} est terminée ! 🎉\n\nSi vous êtes satisfait(e), laissez-nous un avis : ${shop.review_link}\n\nMerci pour votre confiance ! ⭐\n${shop.name}`;
+      return defaultReviewMsg
+        .replace('{customer_name}', customerName || 'Client')
+        .replace('{case_number}', caseNumber || '')
+        .replace('{review_link}', shop.review_link || '')
+        .replace('{shop_name}', shop.name || '');
+    }
     
     if (caseNumber) {
       return `Bonjour ${customerName || 'Client'}, votre dossier SAV ${caseNumber} a été mis à jour.${smsWarning}`;
@@ -187,34 +220,61 @@ export function SMSButton({
           </div>
 
           {(caseNumber || quoteNumber) && (
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                id="custom-message"
-                checked={useCustomMessage}
-                onChange={(e) => setUseCustomMessage(e.target.checked)}
-                className="rounded border-gray-300"
-              />
-              <Label htmlFor="custom-message">Utiliser un message personnalisé</Label>
+            <div>
+              <Label>Type de SMS</Label>
+              <RadioGroup value={smsType} onValueChange={(value: any) => setSmsType(value)}>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="status" id="status" />
+                  <Label htmlFor="status" className="font-normal cursor-pointer">
+                    📱 Notification de statut
+                  </Label>
+                </div>
+                {shop?.review_link && (
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="review" id="review" />
+                    <Label htmlFor="review" className="font-normal cursor-pointer">
+                      ⭐ Demande d'avis Google
+                    </Label>
+                  </div>
+                )}
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="custom" id="custom" />
+                  <Label htmlFor="custom" className="font-normal cursor-pointer">
+                    ✍️ Message personnalisé
+                  </Label>
+                </div>
+              </RadioGroup>
             </div>
           )}
 
           <div>
             <Label htmlFor="message">Message</Label>
-            <Textarea
-              id="message"
-              value={useCustomMessage ? customMessage : getDefaultMessage()}
-              onChange={(e) => {
-                if (useCustomMessage) {
-                  setCustomMessage(e.target.value);
-                }
-              }}
-              placeholder="Tapez votre message ici..."
-              rows={4}
-              disabled={!useCustomMessage && !!(caseNumber || quoteNumber)}
-            />
+            <div className="relative">
+              <Textarea
+                id="message"
+                value={smsType === 'custom' ? customMessage : getDefaultMessage()}
+                onChange={(e) => {
+                  if (smsType === 'custom') {
+                    setCustomMessage(e.target.value);
+                  }
+                }}
+                placeholder="Tapez votre message ici..."
+                rows={6}
+                disabled={smsType !== 'custom'}
+                className="pr-12"
+              />
+              {smsType === 'custom' && (
+                <div className="absolute right-2 top-2">
+                  <AITextReformulator
+                    text={customMessage}
+                    context="sms_message"
+                    onReformulated={handleAIReformulation}
+                  />
+                </div>
+              )}
+            </div>
             <p className="text-sm text-muted-foreground mt-1">
-              {useCustomMessage || (!caseNumber && !quoteNumber) 
+              {smsType === 'custom' 
                 ? `${customMessage.length}/160 caractères`
                 : 'Message automatique généré'
               }
@@ -233,7 +293,7 @@ export function SMSButton({
           <Button
             type="button"
             onClick={handleSendSMS}
-            disabled={loading || sending || !customPhone.trim() || (useCustomMessage && !customMessage.trim())}
+            disabled={loading || sending || !customPhone.trim() || (smsType === 'custom' && !customMessage.trim()) || (smsType === 'review' && !shop?.review_link)}
           >
             {loading || sending ? 'Envoi...' : 'Envoyer SMS'}
           </Button>
