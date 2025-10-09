@@ -62,9 +62,30 @@ export function SAVStatusesManager() {
     try {
       const nextOrder = Math.max(...statuses.map(s => s.display_order), 0) + 1;
       
+      // Générer automatiquement la clé à partir du libellé
+      const generateKey = (label: string) => {
+        const baseKey = label
+          .toLowerCase()
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '') // Retirer les accents
+          .replace(/[^a-z0-9\s]/g, '') // Garder que lettres, chiffres et espaces
+          .trim()
+          .replace(/\s+/g, '_'); // Remplacer espaces par underscores
+        
+        // Vérifier si la clé existe déjà
+        let finalKey = baseKey;
+        let counter = 1;
+        while (statuses.some(s => s.status_key === finalKey)) {
+          finalKey = `${baseKey}_${counter}`;
+          counter++;
+        }
+        
+        return finalKey;
+      };
+      
       await createStatus({
         shop_id: profile.shop_id,
-        status_key: formData.status_key.toLowerCase().replace(/\s+/g, '_'),
+        status_key: generateKey(formData.status_label),
         status_label: formData.status_label,
         status_color: formData.status_color,
         display_order: nextOrder,
@@ -163,15 +184,6 @@ export function SAVStatusesManager() {
               </DialogHeader>
               <div className="space-y-4 py-4">
                 <div className="space-y-2">
-                  <Label htmlFor="status_key">Clé du statut</Label>
-                  <Input
-                    id="status_key"
-                    value={formData.status_key}
-                    onChange={(e) => setFormData(prev => ({ ...prev, status_key: e.target.value }))}
-                    placeholder="ex: en_revision"
-                  />
-                </div>
-                <div className="space-y-2">
                   <Label htmlFor="status_label">Libellé</Label>
                   <Input
                     id="status_label"
@@ -179,6 +191,9 @@ export function SAVStatusesManager() {
                     onChange={(e) => setFormData(prev => ({ ...prev, status_label: e.target.value }))}
                     placeholder="ex: En révision"
                   />
+                  <p className="text-xs text-muted-foreground">
+                    La clé sera générée automatiquement à partir du libellé
+                  </p>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="status_color">Couleur</Label>
@@ -228,7 +243,7 @@ export function SAVStatusesManager() {
                 </Button>
                 <Button 
                   onClick={handleCreate}
-                  disabled={!formData.status_key || !formData.status_label}
+                  disabled={!formData.status_label}
                 >
                   Créer
                 </Button>
