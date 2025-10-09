@@ -14,6 +14,7 @@ interface SAVPartRequirement {
   part_reference?: string;
   quantity: number;
   unit_price: number;
+  purchase_price: number;
   available_stock?: number;
   min_stock?: number;
   needs_ordering: boolean;
@@ -42,6 +43,7 @@ export function SAVPartsRequirements({ savCaseId, onPartsUpdated }: SAVPartsRequ
           part_id,
           quantity,
           unit_price,
+          purchase_price,
           parts (
             name,
             reference,
@@ -68,6 +70,7 @@ export function SAVPartsRequirements({ savCaseId, onPartsUpdated }: SAVPartsRequ
             part_reference: part?.reference,
             quantity: neededQuantity,
             unit_price: savPart.unit_price,
+            purchase_price: savPart.purchase_price || 0,
             available_stock: availableStock,
             min_stock: part?.min_stock || 0,
             needs_ordering: needsOrdering,
@@ -238,6 +241,8 @@ export function SAVPartsRequirements({ savCaseId, onPartsUpdated }: SAVPartsRequ
   }
 
   const totalPartsToOrder = requirements.filter(r => r.needs_ordering).length;
+  const totalPurchasePrice = requirements.reduce((sum, req) => sum + (req.quantity * req.purchase_price), 0);
+  const totalSellingPrice = requirements.reduce((sum, req) => sum + (req.quantity * req.unit_price), 0);
 
   return (
     <Card>
@@ -280,8 +285,13 @@ export function SAVPartsRequirements({ savCaseId, onPartsUpdated }: SAVPartsRequ
                     </Badge>
                   )}
                 </div>
-                <div className="text-sm text-muted-foreground">
-                  Prix unitaire: {requirement.unit_price.toFixed(2)}€
+                <div className="text-sm space-y-1">
+                  <div className="text-muted-foreground">
+                    Prix vente: <span className="font-medium text-foreground">{requirement.unit_price.toFixed(2)}€</span>
+                  </div>
+                  <div className="text-muted-foreground">
+                    Prix achat: <span className="font-medium text-foreground">{requirement.purchase_price.toFixed(2)}€</span>
+                  </div>
                 </div>
               </div>
               
@@ -345,6 +355,25 @@ export function SAVPartsRequirements({ savCaseId, onPartsUpdated }: SAVPartsRequ
             )}
           </div>
         ))}
+
+        {/* Totaux des prix */}
+        <div className="mt-4 p-4 bg-muted rounded-lg space-y-2">
+          <div className="flex justify-between items-center">
+            <span className="font-medium">Total prix d'achat:</span>
+            <span className="text-lg font-bold">{totalPurchasePrice.toFixed(2)}€</span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="font-medium">Total prix vente:</span>
+            <span className="text-lg font-bold">{totalSellingPrice.toFixed(2)}€</span>
+          </div>
+          <div className="flex justify-between items-center pt-2 border-t">
+            <span className="font-medium text-green-600">Marge totale:</span>
+            <span className="text-lg font-bold text-green-600">
+              {(totalSellingPrice - totalPurchasePrice).toFixed(2)}€ 
+              {totalPurchasePrice > 0 && ` (${(((totalSellingPrice - totalPurchasePrice) / totalPurchasePrice) * 100).toFixed(0)}%)`}
+            </span>
+          </div>
+        </div>
 
         {totalPartsToOrder > 0 && (
           <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
