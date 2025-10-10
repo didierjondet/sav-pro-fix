@@ -9,11 +9,12 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Upload, FileText, CheckCircle, AlertCircle, ArrowLeft, Settings } from 'lucide-react';
+import { Upload, FileText, CheckCircle, AlertCircle, ArrowLeft, Settings, AlertTriangle } from 'lucide-react';
 import Papa from 'papaparse';
 import * as XLSX from 'xlsx';
 import { useImportConfigurations, type ColumnMapping, type ImportConfiguration } from '@/hooks/useImportConfigurations';
 import { ImportConfigurationManager } from '@/components/parts/ImportConfigurationManager';
+import { detectFixwayFormat, FIXWAY_STOCK_HEADERS, analyzeMappingStats, type MappingStats } from '@/utils/importHelpers';
 
 interface ImportedPart {
   marque: string;
@@ -47,8 +48,10 @@ export function ImportStock({ onBack, onRefresh }: ImportStatsProps) {
   const [success, setSuccess] = useState<number>(0);
   const [showConfigManager, setShowConfigManager] = useState(false);
   const [selectedConfig, setSelectedConfig] = useState<ImportConfiguration | null>(null);
+  const [detectedFormat, setDetectedFormat] = useState<'fixway' | 'custom' | null>(null);
+  const [mappingStats, setMappingStats] = useState<MappingStats | null>(null);
   const { toast } = useToast();
-  const { configurations, getDefaultConfiguration } = useImportConfigurations();
+  const { configurations, getDefaultConfiguration, getOrCreateFixwayConfig, detectFormatFromHeaders } = useImportConfigurations();
 
   // Use selected configuration or default
   const currentConfig = selectedConfig || getDefaultConfiguration();
@@ -61,6 +64,8 @@ export function ImportStock({ onBack, onRefresh }: ImportStatsProps) {
       setImportData([]);
       setErrors([]);
       setSuccess(0);
+      setDetectedFormat(null);
+      setMappingStats(null);
     }
   };
 
@@ -189,6 +194,45 @@ export function ImportStock({ onBack, onRefresh }: ImportStatsProps) {
         rawData = await parseExcel(file);
       } else {
         throw new Error('Format de fichier non supporté. Utilisez CSV ou Excel.');
+      }
+
+      setProgress(10);
+
+      // Détecter le format du fichier basé sur les en-têtes
+      if (rawData.length > 0) {
+        const headers = Object.keys(rawData[0]);
+        const format = detectFormatFromHeaders(headers);
+        setDetectedFormat(format);
+
+        // Si format Fixway détecté, charger automatiquement la configuration Fixway
+        if (format === 'fixway') {
+          const fixwayConfig = await getOrCreateFixwayConfig();
+          if (fixwayConfig) {
+            setSelectedConfig(fixwayConfig);
+            toast({
+              title: "✓ Format Fixway détecté",
+              description: "Configuration automatique appliquée. Vous pouvez maintenant importer vos données.",
+            });
+          }
+        } else if (!selectedConfig) {
+          // Format personnalisé et pas de config sélectionnée
+          setIsProcessing(false);
+          toast({
+            title: "Configuration requise",
+            description: "Format personnalisé détecté. Veuillez sélectionner ou créer une configuration.",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        // Analyser les statistiques de mapping
+        const stats = analyzeMappingStats(
+          headers,
+          FIXWAY_STOCK_HEADERS,
+          rawData,
+          ['Nom']
+        );
+        setMappingStats(stats);
       }
 
       setProgress(25);
@@ -417,6 +461,80 @@ export function ImportStock({ onBack, onRefresh }: ImportStatsProps) {
                 </Alert>
               </CardContent>
             </Card>
+
+            {/* Format Detection Alert */}
+            {detectedFormat === 'fixway' && (
+              <Alert className="bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-800">
+                <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
+                <AlertDescription>
+                  <strong className="text-green-900 dark:text-green-100">Format Fixway détecté !</strong>
+                  <br />
+                  <span className="text-green-800 dark:text-green-200">
+                    Ce fichier semble avoir été exporté depuis Fixway. 
+                    La configuration a été appliquée automatiquement. Vous pouvez maintenant importer vos données.
+                  </span>
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {detectedFormat === 'custom' && !selectedConfig && (
+              <Alert className="border-amber-200 bg-amber-50 dark:bg-amber-950 dark:border-amber-800">
+                <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                <AlertDescription>
+                  <strong className="text-amber-900 dark:text-amber-100">Format personnalisé détecté</strong>
+                  <br />
+                  <span className="text-amber-800 dark:text-amber-200">
+                    Ce fichier ne correspond pas au format d'export Fixway. 
+                    Veuillez sélectionner ou créer une configuration de colonnes adaptée.
+                  </span>
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {/* Mapping Statistics */}
+            {mappingStats && (
+              <Card className="border-blue-200 bg-blue-50 dark:bg-blue-950 dark:border-blue-800">
+                <CardHeader>
+                  <CardTitle className="text-sm">Aperçu du mapping détecté</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                    <div>
+                      <div className="text-muted-foreground">Colonnes reconnues</div>
+                      <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                        {mappingStats.recognizedColumns}/{mappingStats.totalColumns}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-muted-foreground">Colonnes obligatoires</div>
+                      <div className={`text-2xl font-bold ${mappingStats.requiredColumnsPresent ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                        {mappingStats.requiredColumnsPresent ? '✓' : '✗'}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-muted-foreground">Lignes valides</div>
+                      <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+                        {mappingStats.validRows}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-muted-foreground">Erreurs</div>
+                      <div className="text-2xl font-bold text-red-600 dark:text-red-400">
+                        {mappingStats.invalidRows + mappingStats.warningRows}
+                      </div>
+                    </div>
+                  </div>
+                  {mappingStats.missingRequiredColumns.length > 0 && (
+                    <Alert className="mt-4" variant="destructive">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription>
+                        Colonnes obligatoires manquantes : {mappingStats.missingRequiredColumns.join(', ')}
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                </CardContent>
+              </Card>
+            )}
 
             {/* File Upload */}
             <Card>

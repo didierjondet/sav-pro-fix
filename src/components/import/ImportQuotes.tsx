@@ -9,7 +9,8 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useShop } from '@/hooks/useShop';
 import * as XLSX from 'xlsx';
-import { Upload, AlertTriangle, ArrowLeft, Trash2 } from 'lucide-react';
+import { Upload, AlertTriangle, ArrowLeft, Trash2, CheckCircle } from 'lucide-react';
+import { getFlexibleValue, detectFixwayFormat, FIXWAY_QUOTE_HEADERS } from '@/utils/importHelpers';
 
 interface ImportQuotesProps {
   onBack: () => void;
@@ -44,6 +45,7 @@ export function ImportQuotes({ onBack, onSuccess }: ImportQuotesProps) {
   const [confirmationStep, setConfirmationStep] = useState<'warning' | 'countdown' | 'final'>('warning');
   const [countdown, setCountdown] = useState(10);
   const [errors, setErrors] = useState<string[]>([]);
+  const [detectedFormat, setDetectedFormat] = useState<'fixway' | 'custom' | null>(null);
 
   // Timer pour le countdown
   useEffect(() => {
@@ -123,42 +125,54 @@ export function ImportQuotes({ onBack, onSuccess }: ImportQuotesProps) {
     const quotes: ImportedQuote[] = [];
     const newErrors: string[] = [];
 
+    // Détecter le format du fichier
+    if (data.length > 0) {
+      const headers = Object.keys(data[0]);
+      const isFixway = detectFixwayFormat(headers, FIXWAY_QUOTE_HEADERS, 0.6);
+      setDetectedFormat(isFixway ? 'fixway' : 'custom');
+    }
+
     for (let i = 0; i < data.length; i++) {
       const row = data[i];
       
       try {
+        // Utiliser getFlexibleValue pour accepter plusieurs variantes
+        const quoteNumber = getFlexibleValue(row, ['Numéro', 'quote_number', 'numero', 'ref', 'reference', 'number']);
+        const customerName = getFlexibleValue(row, ['Client (nom complet)', 'customer_name', 'client', 'nom_client', 'customer']);
+
         // Validation des champs obligatoires
-        if (!row['Numéro']) {
+        if (!quoteNumber) {
           newErrors.push(`Ligne ${i + 2}: Numéro de devis manquant`);
           continue;
         }
 
-        if (!row['Client (nom complet)']) {
+        if (!customerName) {
           newErrors.push(`Ligne ${i + 2}: Nom du client manquant`);
           continue;
         }
 
-        // Parse items JSON
+        // Parse items JSON avec mapping flexible
         let items = [];
-        if (row['Articles (JSON)']) {
+        const itemsField = getFlexibleValue(row, ['Articles (JSON)', 'items', 'articles', 'products', 'produits']);
+        if (itemsField) {
           try {
-            items = JSON.parse(row['Articles (JSON)']);
+            items = JSON.parse(itemsField);
           } catch {
             newErrors.push(`Ligne ${i + 2}: Format JSON invalide pour les articles`);
           }
         }
 
         const quote: ImportedQuote = {
-          id: row['ID'] || undefined,
-          quote_number: row['Numéro'],
-          status: row['Statut'] || 'draft',
-          customer_name: row['Client (nom complet)'],
-          customer_email: row['Email devis'] || row['Client email'] || '',
-          customer_phone: row['Téléphone devis'] || row['Client téléphone'] || '',
-          total_amount: parseFloat(row['Total (€)'] || '0'),
+          id: getFlexibleValue(row, ['ID', 'id']) || undefined,
+          quote_number: quoteNumber,
+          status: getFlexibleValue(row, ['Statut', 'status', 'état', 'state']) || 'draft',
+          customer_name: customerName,
+          customer_email: getFlexibleValue(row, ['Email devis', 'Client email', 'email', 'mail', 'customer_email']) || '',
+          customer_phone: getFlexibleValue(row, ['Téléphone devis', 'Client téléphone', 'phone', 'telephone', 'customer_phone']) || '',
+          total_amount: parseFloat(getFlexibleValue(row, ['Total (€)', 'total_amount', 'montant', 'total', 'prix', 'price']) || '0'),
           items: items,
           shop_id: shop?.id,
-          customer_id: row['Customer ID'] || null
+          customer_id: getFlexibleValue(row, ['Customer ID', 'customer_id', 'client_id']) || null
         };
 
         quotes.push(quote);
@@ -365,6 +379,19 @@ export function ImportQuotes({ onBack, onSuccess }: ImportQuotesProps) {
         </Button>
         <h2 className="text-2xl font-bold">Import des Devis</h2>
       </div>
+
+      {detectedFormat === 'fixway' && (
+        <Alert className="bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-800">
+          <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
+          <AlertDescription>
+            <strong className="text-green-900 dark:text-green-100">Format Fixway détecté !</strong>
+            <br />
+            <span className="text-green-800 dark:text-green-200">
+              Ce fichier semble avoir été exporté depuis Fixway. Import automatique prêt.
+            </span>
+          </AlertDescription>
+        </Alert>
+      )}
 
       <Alert>
         <AlertTriangle className="h-4 w-4" />

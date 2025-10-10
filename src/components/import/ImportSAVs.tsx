@@ -10,7 +10,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useShop } from '@/hooks/useShop';
 import { useShopSAVTypes } from '@/hooks/useShopSAVTypes';
 import * as XLSX from 'xlsx';
-import { Upload, AlertTriangle, ArrowLeft, Trash2 } from 'lucide-react';
+import { Upload, AlertTriangle, ArrowLeft, Trash2, CheckCircle } from 'lucide-react';
+import { getFlexibleValue, detectFixwayFormat, FIXWAY_SAV_HEADERS } from '@/utils/importHelpers';
 
 interface ImportSAVsProps {
   onBack: () => void;
@@ -58,6 +59,7 @@ export function ImportSAVs({ onBack, onSuccess }: ImportSAVsProps) {
   const [confirmationStep, setConfirmationStep] = useState<'warning' | 'countdown' | 'final'>('warning');
   const [countdown, setCountdown] = useState(10);
   const [errors, setErrors] = useState<string[]>([]);
+  const [detectedFormat, setDetectedFormat] = useState<'fixway' | 'custom' | null>(null);
 
   // Timer pour le countdown
   useEffect(() => {
@@ -138,54 +140,70 @@ export function ImportSAVs({ onBack, onSuccess }: ImportSAVsProps) {
     const newErrors: string[] = [];
     const availableTypes = getAllTypes();
 
+    // Détecter le format du fichier
+    if (data.length > 0) {
+      const headers = Object.keys(data[0]);
+      const isFixway = detectFixwayFormat(headers, FIXWAY_SAV_HEADERS, 0.6);
+      setDetectedFormat(isFixway ? 'fixway' : 'custom');
+    }
+
     for (let i = 0; i < data.length; i++) {
       const row = data[i];
       
       try {
+        // Utiliser getFlexibleValue pour accepter plusieurs variantes
+        const caseNumber = getFlexibleValue(row, ['Dossier', 'case_number', 'numero', 'numero_dossier', 'ref', 'reference']);
+        const deviceBrand = getFlexibleValue(row, ['Marque', 'device_brand', 'brand', 'marque', 'fabricant']);
+        const deviceModel = getFlexibleValue(row, ['Modèle', 'device_model', 'model', 'modele']);
+
         // Validation des champs obligatoires
-        if (!row['Dossier']) {
+        if (!caseNumber) {
           newErrors.push(`Ligne ${i + 2}: Numéro de dossier manquant`);
           continue;
         }
 
-        if (!row['Marque'] || !row['Modèle']) {
+        if (!deviceBrand || !deviceModel) {
           newErrors.push(`Ligne ${i + 2}: Marque ou modèle de l'appareil manquant`);
           continue;
         }
 
         // Valider le type SAV avec les types disponibles
         let savType = 'client'; // valeur par défaut
-        if (row['Type']) {
+        const typeField = getFlexibleValue(row, ['Type', 'type', 'sav_type', 'category', 'categorie']);
+        if (typeField) {
           const foundType = availableTypes.find(t => 
-            t.value === row['Type'] || 
-            t.label.toLowerCase() === row['Type'].toLowerCase()
+            t.value === typeField || 
+            t.label.toLowerCase() === typeField.toLowerCase()
           );
           if (foundType) {
             savType = foundType.value;
           }
         }
 
+        const statusField = getFlexibleValue(row, ['Statut', 'status', 'état', 'state']);
+        const validStatuses = ['pending', 'in_progress', 'testing', 'ready', 'delivered', 'cancelled', 'parts_ordered', 'parts_received'];
+
         const sav: ImportedSAV = {
-          id: row['ID'] || undefined,
-          case_number: row['Dossier'],
+          id: getFlexibleValue(row, ['ID', 'id']) || undefined,
+          case_number: caseNumber,
           sav_type: savType,
-          status: (['pending', 'in_progress', 'testing', 'ready', 'delivered', 'cancelled', 'parts_ordered', 'parts_received'].includes(row['Statut']) ? row['Statut'] : 'pending') as 'pending' | 'in_progress' | 'testing' | 'ready' | 'delivered' | 'cancelled' | 'parts_ordered' | 'parts_received',
-          total_cost: parseFloat(row['Coût (€)'] || '0'),
-          total_time_minutes: parseInt(row['Temps (min)'] || '0'),
-          device_brand: row['Marque'],
-          device_model: row['Modèle'],
-          device_imei: row['IMEI'] || '',
-          sku: row['SKU'] || '',
-          problem_description: row['Problème'] || '',
-          repair_notes: row['Notes réparation'] || '',
-          private_comments: row['Commentaires privés'] || '',
-          taken_over: row['Prise en charge'] === 'oui' || row['Prise en charge'] === true,
-          partial_takeover: row['Prise partielle'] === 'oui' || row['Prise partielle'] === true,
-          takeover_amount: parseFloat(row['Montant prise en charge'] || '0'),
-          tracking_slug: row['Tracking'] || '',
+          status: (validStatuses.includes(statusField) ? statusField : 'pending') as 'pending' | 'in_progress' | 'testing' | 'ready' | 'delivered' | 'cancelled' | 'parts_ordered' | 'parts_received',
+          total_cost: parseFloat(getFlexibleValue(row, ['Coût (€)', 'cost', 'total_cost', 'cout', 'prix', 'montant']) || '0'),
+          total_time_minutes: parseInt(getFlexibleValue(row, ['Temps (min)', 'time_minutes', 'temps', 'duration', 'duree']) || '0'),
+          device_brand: deviceBrand,
+          device_model: deviceModel,
+          device_imei: getFlexibleValue(row, ['IMEI', 'imei', 'serial', 'numero_serie']) || '',
+          sku: getFlexibleValue(row, ['SKU', 'sku', 'code']) || '',
+          problem_description: getFlexibleValue(row, ['Problème', 'problem', 'problem_description', 'issue', 'probleme']) || '',
+          repair_notes: getFlexibleValue(row, ['Notes réparation', 'repair_notes', 'notes', 'reparation']) || '',
+          private_comments: getFlexibleValue(row, ['Commentaires privés', 'private_comments', 'commentaires', 'comments', 'notes_privees']) || '',
+          taken_over: getFlexibleValue(row, ['Prise en charge', 'taken_over', 'prise_charge']) === 'oui' || getFlexibleValue(row, ['Prise en charge', 'taken_over', 'prise_charge']) === true,
+          partial_takeover: getFlexibleValue(row, ['Prise partielle', 'partial_takeover', 'prise_partielle']) === 'oui' || getFlexibleValue(row, ['Prise partielle', 'partial_takeover', 'prise_partielle']) === true,
+          takeover_amount: parseFloat(getFlexibleValue(row, ['Montant prise en charge', 'takeover_amount', 'montant_prise_charge', 'refund']) || '0'),
+          tracking_slug: getFlexibleValue(row, ['Tracking', 'tracking_slug', 'suivi', 'code_suivi']) || '',
           shop_id: shop?.id,
-          customer_id: row['Customer ID'] || null,
-          technician_id: row['Technicien ID'] || null,
+          customer_id: getFlexibleValue(row, ['Customer ID', 'customer_id', 'client_id']) || null,
+          technician_id: getFlexibleValue(row, ['Technicien ID', 'technician_id', 'tech_id']) || null,
           accessories: { case: false, charger: false, screen_protector: false },
           attachments: []
         };
@@ -395,6 +413,19 @@ export function ImportSAVs({ onBack, onSuccess }: ImportSAVsProps) {
         </Button>
         <h2 className="text-2xl font-bold">Import des Dossiers SAV</h2>
       </div>
+
+      {detectedFormat === 'fixway' && (
+        <Alert className="bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-800">
+          <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
+          <AlertDescription>
+            <strong className="text-green-900 dark:text-green-100">Format Fixway détecté !</strong>
+            <br />
+            <span className="text-green-800 dark:text-green-200">
+              Ce fichier semble avoir été exporté depuis Fixway. Import automatique prêt.
+            </span>
+          </AlertDescription>
+        </Alert>
+      )}
 
       <Alert>
         <AlertTriangle className="h-4 w-4" />

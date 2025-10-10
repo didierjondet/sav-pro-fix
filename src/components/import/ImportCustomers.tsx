@@ -9,7 +9,8 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useShop } from '@/hooks/useShop';
 import * as XLSX from 'xlsx';
-import { Upload, AlertTriangle, ArrowLeft, Trash2 } from 'lucide-react';
+import { Upload, AlertTriangle, ArrowLeft, Trash2, CheckCircle } from 'lucide-react';
+import { getFlexibleValue, detectFixwayFormat, FIXWAY_CUSTOMER_HEADERS } from '@/utils/importHelpers';
 
 interface ImportCustomersProps {
   onBack: () => void;
@@ -41,6 +42,7 @@ export function ImportCustomers({ onBack, onSuccess }: ImportCustomersProps) {
   const [confirmationStep, setConfirmationStep] = useState<'warning' | 'countdown' | 'final'>('warning');
   const [countdown, setCountdown] = useState(10);
   const [errors, setErrors] = useState<string[]>([]);
+  const [detectedFormat, setDetectedFormat] = useState<'fixway' | 'custom' | null>(null);
 
   // Timer pour le countdown
   useEffect(() => {
@@ -117,25 +119,32 @@ export function ImportCustomers({ onBack, onSuccess }: ImportCustomersProps) {
     const customers: ImportedCustomer[] = [];
     const newErrors: string[] = [];
 
+    // Détecter le format du fichier
+    if (rawData.length > 0) {
+      const headers = Object.keys(rawData[0]);
+      const isFixway = detectFixwayFormat(headers, FIXWAY_CUSTOMER_HEADERS, 0.6);
+      setDetectedFormat(isFixway ? 'fixway' : 'custom');
+    }
+
     rawData.forEach((row, index) => {
       const lineNumber = index + 2; // +2 car index commence à 0 et on skip la ligne d'en-tête
 
-      // Validation des champs obligatoires
-      const firstName = row.first_name || row.prenom || row.prénom || row.nom || '';
-      const lastName = row.last_name || row.nom_famille || row.nom_de_famille || row.surname || '';
+      // Utiliser getFlexibleValue pour accepter plusieurs variantes de noms de colonnes
+      const firstName = getFlexibleValue(row, ['Prénom', 'first_name', 'prenom', 'prénom', 'firstname', 'nom']);
+      const lastName = getFlexibleValue(row, ['Nom', 'last_name', 'nom_famille', 'nom_de_famille', 'surname', 'lastname', 'family_name']);
 
       if (!firstName && !lastName) {
         newErrors.push(`Ligne ${lineNumber}: Nom et prénom manquants`);
         return;
       }
 
-      // Construction de l'objet client
+      // Construction de l'objet client avec mapping flexible
       const customer: ImportedCustomer = {
         first_name: firstName || 'Client',
         last_name: lastName || 'Import',
-        email: row.email || row.mail || row.e_mail || null,
-        phone: row.phone || row.telephone || row.tel || row.mobile || null,
-        address: row.address || row.adresse || row.addr || null,
+        email: getFlexibleValue(row, ['Email', 'email', 'mail', 'e_mail', 'e-mail', 'courriel']) || null,
+        phone: getFlexibleValue(row, ['Téléphone', 'phone', 'telephone', 'tel', 'mobile', 'portable', 'phone_number']) || null,
+        address: getFlexibleValue(row, ['Adresse', 'address', 'addr', 'rue', 'street']) || null,
         shop_id: shop?.id
       };
 
@@ -328,6 +337,20 @@ export function ImportCustomers({ onBack, onSuccess }: ImportCustomersProps) {
         </Button>
 
         <div className="space-y-4">
+          {/* Format Detection Alert */}
+          {detectedFormat === 'fixway' && (
+            <Alert className="bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-800">
+              <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
+              <AlertDescription>
+                <strong className="text-green-900 dark:text-green-100">Format Fixway détecté !</strong>
+                <br />
+                <span className="text-green-800 dark:text-green-200">
+                  Ce fichier semble avoir été exporté depuis Fixway. Import automatique prêt.
+                </span>
+              </AlertDescription>
+            </Alert>
+          )}
+
           <div>
             <Label htmlFor="file-upload">Fichier CSV ou Excel</Label>
             <Input
