@@ -99,6 +99,7 @@ export function useOrders() {
             customer_id,
             sav_type,
             shop_id,
+            created_at,
             customers(first_name, last_name)
           )
         `)
@@ -147,8 +148,8 @@ export function useOrders() {
           priority: 'high' as const,
           ordered: false,
           shop_id: item.parts.shop_id || '',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
+          created_at: item.sav_cases?.created_at || new Date().toISOString(),
+          updated_at: item.sav_cases?.created_at || new Date().toISOString(),
           part: item.parts as Part,
           sav_customer_name: item.sav_cases?.customers ? 
             `${item.sav_cases.customers.first_name} ${item.sav_cases.customers.last_name}`.trim() : 
@@ -182,7 +183,7 @@ export function useOrders() {
       // Récupérer les pièces dans les devis dont le stock est insuffisant
       const { data: quotes, error: quotesError } = await supabase
         .from('quotes')
-        .select('id, items')
+        .select('id, items, created_at')
         .eq('status', 'draft')
         .eq('shop_id', profile.shop_id);
 
@@ -229,8 +230,8 @@ export function useOrders() {
                 priority: 'medium',
                 ordered: false,
                 shop_id: part.shop_id,
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString(),
+                created_at: quote.created_at || new Date().toISOString(),
+                updated_at: quote.created_at || new Date().toISOString(),
                 part: part
               });
             }
@@ -294,8 +295,8 @@ export function useOrders() {
         priority: 'low' as const,
         ordered: false,
         shop_id: part.shop_id,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
+        created_at: part.created_at || new Date().toISOString(),
+        updated_at: part.updated_at || new Date().toISOString(),
         part: part
       }));
 
