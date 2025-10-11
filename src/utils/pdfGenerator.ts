@@ -809,7 +809,7 @@ export const generateSAVListPDF = async (savCases: SAVCase[], shop?: Shop, filte
   filterType: string;
   statusFilter: string;
   sortOrder: string;
-}, statuses?: any[]) => {
+}, statuses?: any[], types?: any[]) => {
   // Utiliser directement les cases filtrées passées en paramètre
   const filteredCases = savCases;
   
@@ -848,6 +848,12 @@ export const generateSAVListPDF = async (savCases: SAVCase[], shop?: Shop, filte
   const getStatusText = (status: string) => {
     const customStatus = statuses?.find(s => s.status_key === status);
     return customStatus ? customStatus.status_label : status;
+  };
+
+  // Fonction pour obtenir le libellé du type depuis les types personnalisés
+  const getTypeText = (type: string) => {
+    const customType = types?.find(t => t.type_key === type);
+    return customType ? customType.type_label : type;
   };
 
   const getStatusClass = (status: string) => {
@@ -1080,8 +1086,8 @@ export const generateSAVListPDF = async (savCases: SAVCase[], shop?: Shop, filte
                 <td class="case-number">${savCase.case_number}</td>
                 <td class="text-center">${new Date(savCase.created_at).toLocaleDateString('fr-FR')}</td>
                 <td class="text-center">
-                  <span style="font-size: 8px; font-weight: bold; color: #666;">
-                    ${savCase.sav_type || '-'}
+                  <span style="font-size: 8px; font-weight: bold; color: #0066cc;">
+                    ${getTypeText(savCase.sav_type)}
                   </span>
                 </td>
                 <td class="customer-info">

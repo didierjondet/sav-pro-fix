@@ -142,7 +142,7 @@ export default function SAVList() {
         filterType,
         statusFilter,
         sortOrder
-      }, statuses);
+      }, statuses, types);
       if (result) {
         toast.success("Ouverture de la boîte de dialogue d'impression...");
       }
