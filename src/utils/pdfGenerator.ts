@@ -1061,14 +1061,15 @@ export const generateSAVListPDF = async (savCases: SAVCase[], shop?: Shop, filte
       <table class="sav-table">
         <thead>
           <tr>
-            <th style="width: 12%;">N° Dossier</th>
-            <th style="width: 8%;">Date</th>
-            <th style="width: 15%;">Client</th>
-            <th style="width: 15%;">Appareil</th>
-            <th style="width: 20%;">Problème</th>
-            <th style="width: 12%;">Statut</th>
-            <th style="width: 8%;">Coût</th>
-            <th style="width: 10%;">Dernière MAJ</th>
+            <th style="width: 11%;">N° Dossier</th>
+            <th style="width: 7%;">Date</th>
+            <th style="width: 10%;">Type</th>
+            <th style="width: 14%;">Client</th>
+            <th style="width: 14%;">Appareil</th>
+            <th style="width: 18%;">Problème</th>
+            <th style="width: 11%;">Statut</th>
+            <th style="width: 7%;">Coût</th>
+            <th style="width: 8%;">Dernière MAJ</th>
           </tr>
         </thead>
         <tbody>
@@ -1078,6 +1079,11 @@ export const generateSAVListPDF = async (savCases: SAVCase[], shop?: Shop, filte
               <tr>
                 <td class="case-number">${savCase.case_number}</td>
                 <td class="text-center">${new Date(savCase.created_at).toLocaleDateString('fr-FR')}</td>
+                <td class="text-center">
+                  <span style="font-size: 8px; font-weight: bold; color: #666;">
+                    ${savCase.sav_type || '-'}
+                  </span>
+                </td>
                 <td class="customer-info">
                   ${savCase.customer ? 
                     `<strong>${savCase.customer.first_name} ${savCase.customer.last_name}</strong><br>
@@ -1153,7 +1159,20 @@ export const generateSAVListPDF = async (savCases: SAVCase[], shop?: Shop, filte
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `liste-sav-${new Date().toISOString().split('T')[0]}.html`;
+        
+        // Construire un nom de fichier basé sur les filtres
+        const date = new Date().toISOString().split('T')[0];
+        let fileName = 'fixway-sav';
+        
+        if (filterInfo) {
+          const typeSlug = filterInfo.filterType !== 'all' ? `-${filterInfo.filterType}` : '';
+          const statusSlug = filterInfo.statusFilter !== 'all' ? `-${filterInfo.statusFilter}` : '';
+          fileName = `fixway-sav${typeSlug}${statusSlug}-${date}`;
+        } else {
+          fileName = `fixway-sav-${date}`;
+        }
+        
+        a.download = `${fileName}.html`;
         a.click();
         URL.revokeObjectURL(url);
       }
