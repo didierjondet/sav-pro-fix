@@ -28,6 +28,38 @@ export function SAVDocuments({ savCaseId, attachments, onAttachmentsUpdate }: SA
   const [thumbnails, setThumbnails] = useState<Record<string, string>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Normaliser les attachments pour gérer l'ancien format (string) et le nouveau (objet)
+  const normalizedAttachments: Attachment[] = attachments.map((att, index) => {
+    // Si c'est déjà un objet avec toutes les propriétés, le retourner tel quel
+    if (typeof att === 'object' && att.id && att.name && att.url) {
+      return att;
+    }
+    
+    // Si c'est une string (ancien format), créer un objet
+    const url = typeof att === 'string' ? att : att.url || '';
+    const fileName = url.split('/').pop() || `document-${index + 1}`;
+    const fileExt = fileName.split('.').pop()?.toLowerCase() || '';
+    
+    // Déterminer le type MIME basé sur l'extension
+    let mimeType = 'application/octet-stream';
+    if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(fileExt)) {
+      mimeType = `image/${fileExt === 'jpg' ? 'jpeg' : fileExt}`;
+    } else if (fileExt === 'pdf') {
+      mimeType = 'application/pdf';
+    } else if (['doc', 'docx'].includes(fileExt)) {
+      mimeType = 'application/msword';
+    }
+    
+    return {
+      id: url, // Utiliser l'URL comme ID pour les anciens fichiers
+      name: fileName,
+      url: url,
+      size: undefined,
+      type: mimeType,
+      uploaded_at: new Date().toISOString()
+    };
+  });
+
   const getFileIcon = (type: string | undefined | null, name?: string) => {
     if (!type && name) {
       const ext = name.split('.').pop()?.toLowerCase();
@@ -62,7 +94,7 @@ export function SAVDocuments({ savCaseId, attachments, onAttachmentsUpdate }: SA
     const generateThumbnails = async () => {
       const newThumbnails: Record<string, string> = {};
       
-      for (const attachment of attachments) {
+      for (const attachment of normalizedAttachments) {
         if (attachment.type?.startsWith('image/')) {
           try {
             const { data } = await supabase.storage
@@ -81,10 +113,10 @@ export function SAVDocuments({ savCaseId, attachments, onAttachmentsUpdate }: SA
       setThumbnails(newThumbnails);
     };
 
-    if (attachments.length > 0) {
+    if (normalizedAttachments.length > 0) {
       generateThumbnails();
     }
-  }, [attachments]);
+  }, [attachments, normalizedAttachments]);
 
   const formatFileSize = (bytes?: number) => {
     if (!bytes) return 'Taille inconnue';
@@ -252,8 +284,10 @@ export function SAVDocuments({ savCaseId, attachments, onAttachmentsUpdate }: SA
 
       if (storageError) throw storageError;
 
-      // Mettre à jour la liste des attachments en utilisant l'ID unique
-      const updatedAttachments = attachments.filter(a => a.id !== attachment.id);
+      // Mettre à jour la liste des attachments en utilisant l'ID unique ou l'URL
+      const updatedAttachments = normalizedAttachments.filter(a => 
+        (a.id !== attachment.id) && (a.url !== attachment.url)
+      );
 
       // Mettre à jour la base de données
       const { error } = await supabase
@@ -284,10 +318,10 @@ export function SAVDocuments({ savCaseId, attachments, onAttachmentsUpdate }: SA
         <CardTitle className="flex items-center gap-2">
           <FileIcon className="h-5 w-5" />
           Documents et Photos
-          {attachments.length > 0 && (
+          {normalizedAttachments.length > 0 && (
             <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">
               <Paperclip className="h-3 w-3 mr-1" />
-              {attachments.length} fichier{attachments.length > 1 ? 's' : ''}
+              {normalizedAttachments.length} fichier{normalizedAttachments.length > 1 ? 's' : ''}
             </Badge>
           )}
         </CardTitle>
@@ -321,9 +355,9 @@ export function SAVDocuments({ savCaseId, attachments, onAttachmentsUpdate }: SA
         </div>
 
         {/* Liste des documents */}
-        {attachments.length > 0 ? (
+        {normalizedAttachments.length > 0 ? (
           <div className="space-y-2">
-            {attachments.map((attachment) => (
+            {normalizedAttachments.map((attachment) => (
               <div
                 key={attachment.id || attachment.url}
                 className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50"
