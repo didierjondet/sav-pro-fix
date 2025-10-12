@@ -46,12 +46,12 @@ export const SAVPrintButton = React.forwardRef<SAVPrintButtonRef, SAVPrintButton
       const { data: partsData } = await supabase
         .from("sav_parts")
         .select(
-          `quantity, unit_price, purchase_price, time_minutes, parts:part_id(name, reference)`
+          `quantity, unit_price, purchase_price, time_minutes, custom_part_name, parts:part_id(name, reference)`
         )
         .eq("sav_case_id", savCase.id);
 
       const parts = (partsData || []).map((p: any) => ({
-        name: p.parts?.name || "Pièce personnalisée",
+        name: p.parts?.name || p.custom_part_name || "Pièce personnalisée",
         reference: p.parts?.reference || "",
         quantity: Number(p.quantity) || 0,
         unit_price: Number(p.unit_price) || 0,

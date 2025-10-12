@@ -344,6 +344,8 @@ export const generateSAVRestitutionPDF = async (savCase: SAVCase, shop?: Shop) =
       // Ajouter les pièces au SAV case avec le prix public correct
       savCaseWithParts.sav_parts = savParts?.map(part => ({
         ...part,
+        // Utiliser le nom de la pièce du stock ou le nom personnalisé
+        name: part.parts?.name || part.custom_part_name || 'Pièce personnalisée',
         // Utiliser le prix public (selling_price) de la pièce du stock ou le prix unitaire saisi
         public_price: part.parts?.selling_price || part.unit_price || 0
       })) || [];
@@ -639,7 +641,7 @@ export const generateSAVRestitutionPDF = async (savCase: SAVCase, shop?: Shop) =
                   return `
                     <tr>
                       <td>
-                        <strong>${part.parts?.name || 'Pièce personnalisée'}</strong>
+                        <strong>${part.name || 'Pièce personnalisée'}</strong>
                         ${part.parts?.reference ? `<br><small>Réf: ${part.parts.reference}</small>` : ''}
                         ${discountInfo ? `<br><small style="color: #0066cc;">Remise ${discountInfo.type === 'percentage' ? `${discountInfo.value}%` : `${discountInfo.value}€`}: -${discountAmount.toFixed(2)}€</small>` : ''}
                       </td>

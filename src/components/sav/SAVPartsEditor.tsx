@@ -55,6 +55,7 @@ export function SAVPartsEditor({ savCaseId, onPartsUpdated, trigger }: SAVPartsE
         .select(`
           id,
           part_id,
+          custom_part_name,
           quantity,
           time_minutes,
           unit_price,
@@ -68,7 +69,7 @@ export function SAVPartsEditor({ savCaseId, onPartsUpdated, trigger }: SAVPartsE
       const formattedParts: SAVPart[] = data?.map(item => ({
         id: item.id,
         part_id: item.part_id,
-        part_name: item.parts?.name || 'Pièce personnalisée',
+        part_name: item.parts?.name || item.custom_part_name || 'Pièce personnalisée',
         part_reference: item.parts?.reference,
         quantity: item.quantity,
         time_minutes: item.time_minutes || 0,
@@ -233,6 +234,7 @@ export function SAVPartsEditor({ savCaseId, onPartsUpdated, trigger }: SAVPartsE
 const partsToInsert = savParts.map(part => ({
   sav_case_id: savCaseId,
   part_id: part.part_id,
+  custom_part_name: part.isCustom ? part.part_name : null,
   quantity: part.quantity,
   time_minutes: part.time_minutes,
   unit_price: part.unit_price,

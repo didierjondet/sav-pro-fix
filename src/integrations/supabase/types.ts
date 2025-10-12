@@ -827,6 +827,7 @@ export type Database = {
         Row: {
           attachments: Json | null
           created_at: string
+          custom_part_name: string | null
           discount_info: Json | null
           id: string
           part_id: string | null
@@ -839,6 +840,7 @@ export type Database = {
         Insert: {
           attachments?: Json | null
           created_at?: string
+          custom_part_name?: string | null
           discount_info?: Json | null
           id?: string
           part_id?: string | null
@@ -851,6 +853,7 @@ export type Database = {
         Update: {
           attachments?: Json | null
           created_at?: string
+          custom_part_name?: string | null
           discount_info?: Json | null
           id?: string
           part_id?: string | null
