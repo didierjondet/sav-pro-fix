@@ -1266,6 +1266,7 @@ export type Database = {
           custom_review_sms_message: string | null
           custom_sav_limit: number | null
           custom_sms_limit: number | null
+          custom_status_sms_message: string | null
           email: string | null
           forced_features: Json | null
           id: string
@@ -1315,6 +1316,7 @@ export type Database = {
           custom_review_sms_message?: string | null
           custom_sav_limit?: number | null
           custom_sms_limit?: number | null
+          custom_status_sms_message?: string | null
           email?: string | null
           forced_features?: Json | null
           id?: string
@@ -1364,6 +1366,7 @@ export type Database = {
           custom_review_sms_message?: string | null
           custom_sav_limit?: number | null
           custom_sms_limit?: number | null
+          custom_status_sms_message?: string | null
           email?: string | null
           forced_features?: Json | null
           id?: string

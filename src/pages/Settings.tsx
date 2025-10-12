@@ -126,6 +126,7 @@ export default function Settings() {
     review_link: '',
     auto_review_enabled: true,
     sav_warning_enabled: true,
+    custom_status_sms_message: '',
     custom_review_sms_message: '',
     custom_review_chat_message: '',
     sav_delay_alerts_enabled: false,
@@ -165,6 +166,7 @@ export default function Settings() {
         review_link: (shop as any).review_link || '',
         auto_review_enabled: (shop as any).auto_review_enabled ?? true,
         sav_warning_enabled: (shop as any).sav_warning_enabled ?? true,
+        custom_status_sms_message: (shop as any).custom_status_sms_message || 'Bonjour {customer_name}, votre dossier SAV {case_number} a été mis à jour. ⚠️ Ne répondez pas à ce SMS. Pour échanger avec nous, consultez votre SAV : {tracking_url}',
         custom_review_sms_message: shop.custom_review_sms_message || 'Bonjour {customer_name}, votre dossier de réparation {case_number} a été mis à jour : {status}. Si vous avez été satisfait(e) de notre service, nous vous serions reconnaissants de prendre un moment pour nous laisser un avis : {review_link}. Merci pour votre confiance ! {shop_name}',
         custom_review_chat_message: shop.custom_review_chat_message || 'Bonjour {customer_name} ! 👋\\n\\nVotre réparation est maintenant terminée ! Si vous avez été satisfait(e) de notre service, nous vous serions reconnaissants de prendre un moment pour nous laisser un avis.\\n\\n⭐ Laisser un avis : {review_link}\\n\\nVotre retour nous aide à continuer d\'améliorer nos services.\\n\\nMerci pour votre confiance ! 😊\\n\\nL\'équipe {shop_name}',
         sav_delay_alerts_enabled: (shop as any).sav_delay_alerts_enabled ?? false,
@@ -796,17 +798,42 @@ export default function Settings() {
                   <div className="p-4 border rounded-lg">
                     <h4 className="font-medium mb-4 flex items-center gap-2">
                       <MessageSquare className="h-4 w-4" />
-                      Messages d'avis personnalisés
+                      Messages SMS prédéfinis
                     </h4>
                     <div className="space-y-4">
                       <div>
-                        <Label htmlFor="custom-sms-message">Message SMS lors de la clôture SAV</Label>
-                        <Textarea id="custom-sms-message" value={shopForm.custom_review_sms_message} onChange={e => setShopForm({
+                        <Label htmlFor="custom-status-sms-message">Message de notification de statut SAV</Label>
+                        <Textarea 
+                          id="custom-status-sms-message" 
+                          value={shopForm.custom_status_sms_message} 
+                          onChange={e => setShopForm({
+                            ...shopForm,
+                            custom_status_sms_message: e.target.value
+                          })} 
+                          disabled={!isAdmin} 
+                          rows={3} 
+                          placeholder="Message pour notifier le client d'une mise à jour..." 
+                        />
+                        <p className="text-sm text-muted-foreground mt-2">
+                          Variables disponibles : {"{customer_name}"}, {"{case_number}"}, {"{tracking_url}"}
+                        </p>
+                      </div>
+                      
+                      <div>
+                        <Label htmlFor="custom-review-sms-message">Message de demande d'avis</Label>
+                        <Textarea 
+                          id="custom-review-sms-message" 
+                          value={shopForm.custom_review_sms_message} 
+                          onChange={e => setShopForm({
                             ...shopForm,
                             custom_review_sms_message: e.target.value
-                          })} disabled={!isAdmin} rows={3} placeholder="Message personnalisé pour SMS..." />
+                          })} 
+                          disabled={!isAdmin} 
+                          rows={4} 
+                          placeholder="Message pour demander un avis Google..." 
+                        />
                         <p className="text-sm text-muted-foreground mt-2">
-                          Variables disponibles : {"{customer_name}"}, {"{case_number}"}, {"{status}"}, {"{review_link}"}, {"{shop_name}"}
+                          Variables disponibles : {"{customer_name}"}, {"{case_number}"}, {"{review_link}"}, {"{shop_name}"}
                         </p>
                       </div>
                       

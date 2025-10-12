@@ -157,9 +157,6 @@ export function SMSButton({
 
   const getDefaultMessage = () => {
     const shortUrl = trackingSlug ? generateShortTrackingUrl(trackingSlug) : '';
-    const smsWarning = shortUrl ? 
-      `\n\n⚠️ Ne répondez pas à ce SMS. Pour échanger avec nous, consultez votre SAV : ${shortUrl}` :
-      "\n\n⚠️ Ne répondez pas à ce SMS. Contactez-nous directement pour toute question.";
     
     if (smsType === 'review' && shop) {
       const defaultReviewMsg = shop.custom_review_sms_message || 
@@ -171,11 +168,20 @@ export function SMSButton({
         .replace('{shop_name}', shop.name || '');
     }
     
-    if (caseNumber) {
-      return `Bonjour ${customerName || 'Client'}, votre dossier SAV ${caseNumber} a été mis à jour.${smsWarning}`;
+    if (smsType === 'status' && shop && caseNumber) {
+      const defaultStatusMsg = (shop as any).custom_status_sms_message || 
+        `Bonjour ${customerName || 'Client'}, votre dossier SAV ${caseNumber} a été mis à jour. ⚠️ Ne répondez pas à ce SMS. Pour échanger avec nous, consultez votre SAV : ${shortUrl}`;
+      return defaultStatusMsg
+        .replace('{customer_name}', customerName || 'Client')
+        .replace('{case_number}', caseNumber || '')
+        .replace('{tracking_url}', shortUrl);
+    }
+    
+    if (caseNumber && shortUrl) {
+      return `Bonjour ${customerName || 'Client'}, votre dossier SAV ${caseNumber} a été mis à jour. ⚠️ Ne répondez pas à ce SMS. Pour échanger avec nous, consultez votre SAV : ${shortUrl}`;
     }
     if (quoteNumber) {
-      return `Bonjour ${customerName || 'Client'}, votre devis ${quoteNumber} est prêt ! Consultez-le en ligne ou contactez-nous.${smsWarning}`;
+      return `Bonjour ${customerName || 'Client'}, votre devis ${quoteNumber} est prêt ! Consultez-le en ligne ou contactez-nous.`;
     }
     return '';
   };
