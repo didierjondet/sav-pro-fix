@@ -138,7 +138,7 @@ export function useOrders() {
         const savType = savTypes?.find(t => t.type_key === item.sav_cases?.sav_type);
         
         return {
-          id: `sav-needed-${item.part_id}`,
+          id: `sav-needed-${item.part_id}-${item.sav_case_id}`,
           part_id: item.part_id,
           part_name: item.parts.name,
           part_reference: item.parts.reference,
