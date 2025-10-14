@@ -1,7 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useLimitDialogContext } from '@/contexts/LimitDialogContext';
+import { useAuth } from '@/contexts/AuthContext';
 
 export interface SAVCase {
   id: string;
@@ -43,24 +45,25 @@ export interface SAVCase {
 }
 
 export function useSAVCases() {
-  const [cases, setCases] = useState<SAVCase[]>([]);
-  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
   const { recheckLimitsAndHideDialog } = useLimitDialogContext();
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
 
-  const fetchCases = async () => {
+  const fetchCases = async (): Promise<SAVCase[]> => {
+    if (!user) return [];
+
     try {
       // Get current user's shop_id
       const { data: profile } = await supabase
         .from('profiles')
         .select('shop_id')
-        .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
+        .eq('user_id', user.id)
         .single();
 
       if (!profile?.shop_id) {
         console.error('No shop_id found for current user');
-        setCases([]);
-        return;
+        return [];
       }
 
       const { data, error } = await supabase
@@ -82,20 +85,27 @@ export function useSAVCases() {
         unlock_pattern: item.unlock_pattern as number[]
       })) as SAVCase[];
       
-      setCases(mappedData || []);
+      return mappedData || [];
     } catch (error: any) {
       toast({
         title: "Erreur",
         description: "Impossible de charger les dossiers SAV",
         variant: "destructive",
       });
-    } finally {
-      setLoading(false);
+      return [];
     }
   };
 
+  const { data: cases = [], isLoading: loading, refetch } = useQuery({
+    queryKey: ['sav-cases', user?.id],
+    queryFn: fetchCases,
+    enabled: !!user,
+    staleTime: 2 * 60 * 1000, // 2 minutes - données dynamiques
+    gcTime: 10 * 60 * 1000, // 10 minutes
+  });
+
   useEffect(() => {
-    fetchCases();
+    if (!user) return;
 
     // Set up realtime listener for SAV cases
     const channel = supabase
@@ -109,7 +119,7 @@ export function useSAVCases() {
         },
         (payload) => {
           console.log('SAV case change detected:', payload);
-          fetchCases(); // Refetch all cases when any change occurs
+          queryClient.invalidateQueries({ queryKey: ['sav-cases'] });
         }
       )
       .subscribe();
@@ -117,7 +127,7 @@ export function useSAVCases() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [user, queryClient]);
 
   const createCase = async (caseData: any) => {
     try {
@@ -134,7 +144,7 @@ export function useSAVCases() {
         description: "Dossier SAV créé avec succès",
       });
 
-      fetchCases();
+      refetch();
       return { data, error: null };
     } catch (error: any) {
       toast({
@@ -175,7 +185,7 @@ export function useSAVCases() {
         description: "Statut mis à jour avec succès",
       });
 
-      fetchCases();
+      refetch();
       
       // Re-vérifier les limites après changement de statut (cas d'un statut qui libère un SAV actif)
       if (status === 'ready') {
@@ -206,7 +216,7 @@ export function useSAVCases() {
         description: "Dossier SAV supprimé avec succès",
       });
 
-      fetchCases();
+      refetch();
       
       // Re-vérifier les limites après suppression
       setTimeout(() => {
@@ -235,7 +245,7 @@ export function useSAVCases() {
         description: "Commentaires technicien mis à jour",
       });
 
-      fetchCases();
+      refetch();
     } catch (error: any) {
       toast({
         title: "Erreur",
@@ -252,6 +262,6 @@ export function useSAVCases() {
     updateCaseStatus,
     updateTechnicianComments,
     deleteCase,
-    refetch: fetchCases,
+    refetch,
   };
 }

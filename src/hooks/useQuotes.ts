@@ -1,6 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 import { PartDiscountInfo } from '@/components/ui/part-discount-manager';
 
 export interface QuoteItem {
@@ -41,23 +43,24 @@ export interface Quote {
 }
 
 export function useQuotes() {
-  const [quotes, setQuotes] = useState<Quote[]>([]);
-  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
 
-  const fetchQuotes = async () => {
+  const fetchQuotes = async (): Promise<Quote[]> => {
+    if (!user) return [];
+
     try {
       // Get current user's shop_id
       const { data: profile } = await supabase
         .from('profiles')
         .select('shop_id')
-        .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
+        .eq('user_id', user.id)
         .single();
 
       if (!profile?.shop_id) {
         console.error('No shop_id found for current user');
-        setQuotes([]);
-        return;
+        return [];
       }
 
       const { data, error } = await supabase
@@ -68,19 +71,19 @@ export function useQuotes() {
 
       if (error) throw error;
       
-// Parse JSON items field with backward compatibility for pricing fields
-const parsedData = (data as any[])?.map(quote => {
-  const rawItems = typeof quote.items === 'string' ? JSON.parse(quote.items) : (quote.items || []);
-  const items = (rawItems as any[]).map((it: any) => ({
-    ...it,
-    unit_public_price: it.unit_public_price ?? it.unit_price ?? 0,
-    unit_purchase_price: it.unit_purchase_price ?? 0,
-    total_price: it.total_price ?? ((it.quantity || 0) * (it.unit_public_price ?? it.unit_price ?? 0)),
-  }));
-  return { ...quote, items };
-}) || [];
+      // Parse JSON items field with backward compatibility for pricing fields
+      const parsedData = (data as any[])?.map(quote => {
+        const rawItems = typeof quote.items === 'string' ? JSON.parse(quote.items) : (quote.items || []);
+        const items = (rawItems as any[]).map((it: any) => ({
+          ...it,
+          unit_public_price: it.unit_public_price ?? it.unit_price ?? 0,
+          unit_purchase_price: it.unit_purchase_price ?? 0,
+          total_price: it.total_price ?? ((it.quantity || 0) * (it.unit_public_price ?? it.unit_price ?? 0)),
+        }));
+        return { ...quote, items };
+      }) || [];
       
-      setQuotes(parsedData);
+      return parsedData;
     } catch (error: any) {
       console.error('Error fetching quotes:', error);
       toast({
@@ -88,13 +91,20 @@ const parsedData = (data as any[])?.map(quote => {
         description: "Impossible de charger les devis",
         variant: "destructive",
       });
-    } finally {
-      setLoading(false);
+      return [];
     }
   };
 
+  const { data: quotes = [], isLoading: loading, refetch } = useQuery({
+    queryKey: ['quotes', user?.id],
+    queryFn: fetchQuotes,
+    enabled: !!user,
+    staleTime: 2 * 60 * 1000, // 2 minutes - données dynamiques
+    gcTime: 10 * 60 * 1000, // 10 minutes
+  });
+
   useEffect(() => {
-    fetchQuotes();
+    if (!user) return;
 
     // Set up real-time listener for quotes
     const channel = supabase
@@ -108,8 +118,7 @@ const parsedData = (data as any[])?.map(quote => {
         },
         (payload) => {
           console.log('📋 Quote change detected:', payload);
-          // Refetch quotes when any change occurs
-          fetchQuotes();
+          queryClient.invalidateQueries({ queryKey: ['quotes'] });
         }
       )
       .subscribe();
@@ -117,7 +126,7 @@ const parsedData = (data as any[])?.map(quote => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [user, queryClient]);
 
   const createQuote = async (quoteData: Omit<Quote, 'id' | 'created_at' | 'updated_at' | 'shop_id' | 'quote_number'>) => {
     try {
@@ -171,7 +180,7 @@ const parsedData = (data as any[])?.map(quote => {
         description: "Devis créé avec succès",
       });
 
-      fetchQuotes();
+      refetch();
       return { data, error: null };
     } catch (error: any) {
       console.error('Error creating quote:', error);
@@ -210,7 +219,7 @@ const parsedData = (data as any[])?.map(quote => {
         description: "Devis mis à jour",
       });
 
-      fetchQuotes();
+      refetch();
       return { error: null };
     } catch (error: any) {
       toast({
@@ -236,7 +245,7 @@ const parsedData = (data as any[])?.map(quote => {
         description: "Devis supprimé",
       });
 
-      fetchQuotes();
+      refetch();
       return { error: null };
     } catch (error: any) {
       toast({
@@ -306,7 +315,7 @@ const parsedData = (data as any[])?.map(quote => {
         description: "Devis archivé avec succès",
       });
 
-      fetchQuotes();
+      refetch();
       return { error: null };
     } catch (error: any) {
       toast({
@@ -389,7 +398,7 @@ const parsedData = (data as any[])?.map(quote => {
         description: "Devis réactivé avec succès",
       });
 
-      fetchQuotes();
+      refetch();
       return { error: null };
     } catch (error: any) {
       toast({
@@ -409,6 +418,6 @@ const parsedData = (data as any[])?.map(quote => {
     deleteQuote,
     archiveQuote,
     reactivateQuote,
-    refetch: fetchQuotes,
+    refetch,
   };
 }

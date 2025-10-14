@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -30,41 +31,11 @@ const defaultStatusConfig = {
 
 export function useShopSAVStatuses() {
   const { user } = useAuth();
-  const [statuses, setStatuses] = useState<ShopSAVStatus[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    if (user) {
-      fetchStatuses();
-      
-      // Set up real-time subscription for SAV statuses
-      const channel = supabase
-        .channel('shop-sav-statuses-changes')
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'shop_sav_statuses'
-          },
-          (payload) => {
-            console.log('Shop SAV Status change detected:', payload);
-            // Refetch statuses when any change occurs
-            fetchStatuses();
-          }
-        )
-        .subscribe();
+  const fetchStatuses = async (): Promise<ShopSAVStatus[]> => {
+    if (!user) return [];
 
-      return () => {
-        supabase.removeChannel(channel);
-      };
-    } else {
-      // Pour les utilisateurs non connectés (page publique), utiliser les statuts par défaut
-      setLoading(false);
-    }
-  }, [user]);
-
-  const fetchStatuses = async () => {
     try {
       // Les politiques RLS se chargent automatiquement de filtrer par shop_id
       const { data, error } = await supabase
@@ -74,15 +45,45 @@ export function useShopSAVStatuses() {
         .order('display_order', { ascending: true });
 
       if (error) throw error;
-      setStatuses(data || []);
+      return data || [];
     } catch (error: any) {
       console.error('Error fetching shop SAV statuses:', error);
-      // En cas d'erreur, utiliser les statuts par défaut
-      setStatuses([]);
-    } finally {
-      setLoading(false);
+      return [];
     }
   };
+
+  const { data: statuses = [], isLoading: loading, refetch } = useQuery({
+    queryKey: ['shop-sav-statuses', user?.id],
+    queryFn: fetchStatuses,
+    enabled: !!user,
+    staleTime: 5 * 60 * 1000, // 5 minutes - données stables
+    gcTime: 10 * 60 * 1000, // 10 minutes
+  });
+
+  useEffect(() => {
+    if (!user) return;
+
+    // Set up real-time subscription for SAV statuses
+    const channel = supabase
+      .channel('shop-sav-statuses-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'shop_sav_statuses'
+        },
+        (payload) => {
+          console.log('Shop SAV Status change detected:', payload);
+          queryClient.invalidateQueries({ queryKey: ['shop-sav-statuses'] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, queryClient]);
 
   // Fonction pour obtenir les informations d'un statut
   const getStatusInfo = (statusKey: string) => {
@@ -186,6 +187,6 @@ export function useShopSAVStatuses() {
     isCancelledStatus,
     isPauseTimerStatus,
     isActiveStatus,
-    refetch: fetchStatuses
+    refetch
   };
 }

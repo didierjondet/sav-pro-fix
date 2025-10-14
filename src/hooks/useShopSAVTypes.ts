@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -29,41 +30,11 @@ const defaultTypeConfig = {
 
 export function useShopSAVTypes() {
   const { user } = useAuth();
-  const [types, setTypes] = useState<ShopSAVType[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    if (user) {
-      fetchTypes();
-      
-      // Set up real-time subscription for SAV types
-      const channel = supabase
-        .channel('shop-sav-types-changes')
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'shop_sav_types'
-          },
-          (payload) => {
-            console.log('Shop SAV Type change detected:', payload);
-            // Refetch types when any change occurs
-            fetchTypes();
-          }
-        )
-        .subscribe();
+  const fetchTypes = async (): Promise<ShopSAVType[]> => {
+    if (!user) return [];
 
-      return () => {
-        supabase.removeChannel(channel);
-      };
-    } else {
-      // Pour les utilisateurs non connectés (page publique), utiliser les types par défaut
-      setLoading(false);
-    }
-  }, [user]);
-
-  const fetchTypes = async () => {
     try {
       // Les politiques RLS se chargent automatiquement de filtrer par shop_id
       const { data, error } = await supabase
@@ -73,15 +44,45 @@ export function useShopSAVTypes() {
         .order('display_order', { ascending: true });
 
       if (error) throw error;
-      setTypes(data || []);
+      return data || [];
     } catch (error: any) {
       console.error('Error fetching shop SAV types:', error);
-      // En cas d'erreur, utiliser les types par défaut
-      setTypes([]);
-    } finally {
-      setLoading(false);
+      return [];
     }
   };
+
+  const { data: types = [], isLoading: loading, refetch } = useQuery({
+    queryKey: ['shop-sav-types', user?.id],
+    queryFn: fetchTypes,
+    enabled: !!user,
+    staleTime: 5 * 60 * 1000, // 5 minutes - données stables
+    gcTime: 10 * 60 * 1000, // 10 minutes
+  });
+
+  useEffect(() => {
+    if (!user) return;
+
+    // Set up real-time subscription for SAV types
+    const channel = supabase
+      .channel('shop-sav-types-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'shop_sav_types'
+        },
+        (payload) => {
+          console.log('Shop SAV Type change detected:', payload);
+          queryClient.invalidateQueries({ queryKey: ['shop-sav-types'] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, queryClient]);
 
   // Fonction pour obtenir les informations d'un type
   const getTypeInfo = (typeKey: string) => {
@@ -145,6 +146,6 @@ export function useShopSAVTypes() {
     getTypeInfo,
     getAllTypes,
     getTypeStyle,
-    refetch: fetchTypes
+    refetch
   };
 }

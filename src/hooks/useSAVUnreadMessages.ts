@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -17,16 +18,11 @@ export interface SAVWithUnreadMessages {
 }
 
 export function useSAVUnreadMessages() {
-  const [savWithUnreadMessages, setSavWithUnreadMessages] = useState<SAVWithUnreadMessages[]>([]);
-  const [loading, setLoading] = useState(true);
   const { user } = useAuth();
+  const queryClient = useQueryClient();
 
-  const fetchUnreadMessages = async () => {
-    if (!user) {
-      setSavWithUnreadMessages([]);
-      setLoading(false);
-      return;
-    }
+  const fetchUnreadMessages = async (): Promise<SAVWithUnreadMessages[]> => {
+    if (!user) return [];
 
     try {
       console.log('🔍 Fetching open client conversations for user:', user.id);
@@ -42,9 +38,7 @@ export function useSAVUnreadMessages() {
 
       if (!profile?.shop_id) {
         console.log('❌ No shop_id found for user');
-        setSavWithUnreadMessages([]);
-        setLoading(false);
-        return;
+        return [];
       }
 
       // Get all SAV cases that have client messages and are not closed (ready/cancelled)
@@ -68,9 +62,7 @@ export function useSAVUnreadMessages() {
 
       if (!savCases || savCases.length === 0) {
         console.log('❌ No open SAV cases found');
-        setSavWithUnreadMessages([]);
-        setLoading(false);
-        return;
+        return [];
       }
 
       const savCaseIds = savCases.map(sav => sav.id);
@@ -97,9 +89,7 @@ export function useSAVUnreadMessages() {
 
       if (savCaseIdsWithClientMessages.length === 0) {
         console.log('❌ No SAV cases with client messages found');
-        setSavWithUnreadMessages([]);
-        setLoading(false);
-        return;
+        return [];
       }
 
       // Fetch last message per SAV (any sender) to know if awaiting reply
@@ -147,14 +137,20 @@ export function useSAVUnreadMessages() {
         });
 
       console.log('📊 Final open conversations list:', combined);
-      setSavWithUnreadMessages(combined);
+      return combined;
     } catch (error: any) {
       console.error('❌ Error fetching open conversations:', error);
-      setSavWithUnreadMessages([]);
-    } finally {
-      setLoading(false);
+      return [];
     }
   };
+
+  const { data: savWithUnreadMessages = [], isLoading: loading, refetch } = useQuery({
+    queryKey: ['sav-unread-messages', user?.id],
+    queryFn: fetchUnreadMessages,
+    enabled: !!user,
+    staleTime: 30 * 1000, // 30 secondes - données très dynamiques
+    gcTime: 5 * 60 * 1000, // 5 minutes
+  });
 
   const handleSAVClosed = async (savCaseId: string) => {
     if (!savCaseId) return;
@@ -180,7 +176,7 @@ export function useSAVUnreadMessages() {
         }));
         
         // Rafraîchir la liste des conversations ouvertes
-        fetchUnreadMessages();
+        refetch();
       }
     } catch (error) {
       console.error('Error handling SAV closed:', error);
@@ -188,8 +184,6 @@ export function useSAVUnreadMessages() {
   };
 
   useEffect(() => {
-    fetchUnreadMessages();
-
     if (!user) return;
 
     // Set up realtime listener for SAV messages
@@ -204,7 +198,7 @@ export function useSAVUnreadMessages() {
         },
         () => {
           console.log('🔄 Message change detected, refreshing unread messages');
-          fetchUnreadMessages();
+          queryClient.invalidateQueries({ queryKey: ['sav-unread-messages'] });
         }
       )
       .subscribe();
@@ -229,7 +223,7 @@ export function useSAVUnreadMessages() {
             console.log('🔒 SAV status changed to closed status, closing conversation');
             handleSAVClosed(payload.new?.id);
           } else {
-            fetchUnreadMessages();
+            queryClient.invalidateQueries({ queryKey: ['sav-unread-messages'] });
           }
         }
       )
@@ -257,12 +251,12 @@ export function useSAVUnreadMessages() {
       supabase.removeChannel(statusChannel);
       supabase.removeChannel(deleteChannel);
     };
-  }, [user]);
+  }, [user, queryClient, handleSAVClosed]);
 
   return {
     savWithUnreadMessages,
     loading,
-    refetch: fetchUnreadMessages,
+    refetch,
     handleSAVClosed,
   };
 }
