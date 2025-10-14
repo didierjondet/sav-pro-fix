@@ -29,36 +29,44 @@ export function SAVDocuments({ savCaseId, attachments, onAttachmentsUpdate }: SA
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Normaliser les attachments pour gérer l'ancien format (string) et le nouveau (objet)
-  const normalizedAttachments: Attachment[] = attachments.map((att, index) => {
-    // Si c'est déjà un objet avec toutes les propriétés, le retourner tel quel
-    if (typeof att === 'object' && att.id && att.name && att.url) {
-      return att;
-    }
-    
-    // Si c'est une string (ancien format), créer un objet
-    const url = typeof att === 'string' ? att : att.url || '';
-    const fileName = url.split('/').pop() || `document-${index + 1}`;
-    const fileExt = fileName.split('.').pop()?.toLowerCase() || '';
-    
-    // Déterminer le type MIME basé sur l'extension
-    let mimeType = 'application/octet-stream';
-    if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(fileExt)) {
-      mimeType = `image/${fileExt === 'jpg' ? 'jpeg' : fileExt}`;
-    } else if (fileExt === 'pdf') {
-      mimeType = 'application/pdf';
-    } else if (['doc', 'docx'].includes(fileExt)) {
-      mimeType = 'application/msword';
-    }
-    
-    return {
-      id: url, // Utiliser l'URL comme ID pour les anciens fichiers
-      name: fileName,
-      url: url,
-      size: undefined,
-      type: mimeType,
-      uploaded_at: new Date().toISOString()
-    };
-  });
+  const normalizedAttachments: Attachment[] = attachments
+    .map((att, index) => {
+      // Si c'est déjà un objet avec toutes les propriétés, le retourner tel quel
+      if (typeof att === 'object' && att.id && att.name && att.url) {
+        return att;
+      }
+      
+      // Si c'est une string (ancien format), créer un objet
+      const url = typeof att === 'string' ? att : att.url || '';
+      
+      // Ignorer les URLs vides ou invalides
+      if (!url || url.trim() === '') {
+        return null;
+      }
+      
+      const fileName = url.split('/').pop() || `document-${index + 1}`;
+      const fileExt = fileName.split('.').pop()?.toLowerCase() || '';
+      
+      // Déterminer le type MIME basé sur l'extension
+      let mimeType = 'application/octet-stream';
+      if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(fileExt)) {
+        mimeType = `image/${fileExt === 'jpg' ? 'jpeg' : fileExt}`;
+      } else if (fileExt === 'pdf') {
+        mimeType = 'application/pdf';
+      } else if (['doc', 'docx'].includes(fileExt)) {
+        mimeType = 'application/msword';
+      }
+      
+      return {
+        id: url, // Utiliser l'URL comme ID pour les anciens fichiers
+        name: fileName,
+        url: url,
+        size: undefined,
+        type: mimeType,
+        uploaded_at: new Date().toISOString()
+      };
+    })
+    .filter((att): att is Attachment => att !== null); // Filtrer les attachments invalides
 
   const getFileIcon = (type: string | undefined | null, name?: string) => {
     if (!type && name) {
@@ -95,11 +103,17 @@ export function SAVDocuments({ savCaseId, attachments, onAttachmentsUpdate }: SA
       const newThumbnails: Record<string, string> = {};
       
       for (const attachment of normalizedAttachments) {
-        if (attachment.type?.startsWith('image/')) {
+        // Vérifier que l'URL est valide et que c'est une image
+        if (attachment.url && attachment.url.trim() !== '' && attachment.type?.startsWith('image/')) {
           try {
-            const { data } = await supabase.storage
+            const { data, error } = await supabase.storage
               .from('sav-attachments')
               .createSignedUrl(attachment.url, 3600);
+            
+            if (error) {
+              console.error('Erreur génération miniature pour', attachment.url, ':', error);
+              continue;
+            }
             
             if (data?.signedUrl) {
               newThumbnails[attachment.url] = data.signedUrl;
@@ -116,7 +130,7 @@ export function SAVDocuments({ savCaseId, attachments, onAttachmentsUpdate }: SA
     if (normalizedAttachments.length > 0) {
       generateThumbnails();
     }
-  }, [attachments, normalizedAttachments]);
+  }, [attachments]);
 
   const formatFileSize = (bytes?: number) => {
     if (!bytes) return 'Taille inconnue';
@@ -204,6 +218,11 @@ export function SAVDocuments({ savCaseId, attachments, onAttachmentsUpdate }: SA
     try {
       console.log('Téléchargement de:', attachment);
       
+      // Vérifier que l'URL est valide
+      if (!attachment.url || attachment.url.trim() === '') {
+        throw new Error('URL de fichier invalide');
+      }
+      
       const { data, error } = await supabase.storage
         .from('sav-attachments')
         .download(attachment.url);
@@ -244,6 +263,11 @@ export function SAVDocuments({ savCaseId, attachments, onAttachmentsUpdate }: SA
     try {
       console.log('Tentative de prévisualisation pour:', attachment);
       
+      // Vérifier que l'URL est valide
+      if (!attachment.url || attachment.url.trim() === '') {
+        throw new Error('URL de fichier invalide');
+      }
+      
       const { data, error } = await supabase.storage
         .from('sav-attachments')
         .createSignedUrl(attachment.url, 3600); // 1 heure
@@ -277,6 +301,11 @@ export function SAVDocuments({ savCaseId, attachments, onAttachmentsUpdate }: SA
 
   const handleDelete = async (attachment: Attachment) => {
     try {
+      // Vérifier que l'URL est valide
+      if (!attachment.url || attachment.url.trim() === '') {
+        throw new Error('URL de fichier invalide');
+      }
+      
       // Supprimer du storage
       const { error: storageError } = await supabase.storage
         .from('sav-attachments')
