@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import React, { createContext, useContext } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -66,31 +67,13 @@ const ShopContext = createContext<ShopContextType | undefined>(undefined);
 export function ShopProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [shop, setShop] = useState<Shop | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
-  const [cacheTimestamp, setCacheTimestamp] = useState<number>(0);
+  const queryClient = useQueryClient();
 
-  const fetchShop = useCallback(async () => {
-    if (!user) {
-      setShop(null);
-      setLoading(false);
-      return;
-    }
+  const { data: shop, isLoading: loading, error, refetch } = useQuery({
+    queryKey: ['shop', user?.id],
+    queryFn: async () => {
+      if (!user) return null;
 
-    // Cache valable pendant 5 minutes
-    const now = Date.now();
-    if (shop && cacheTimestamp && (now - cacheTimestamp) < 5 * 60 * 1000) {
-      console.log('🚀 ShopContext: Using cached shop data');
-      setLoading(false);
-      return;
-    }
-
-    try {
-      console.log('🔄 ShopContext: Fetching shop data for user:', user.id);
-      setLoading(true);
-      setError(null);
-      
       // Récupérer le shop_id depuis le profil
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
@@ -101,9 +84,7 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
       if (profileError) throw profileError;
       if (!profileData?.shop_id) {
         console.warn('⚠️ ShopContext: No shop_id found for user');
-        setShop(null);
-        setLoading(false);
-        return;
+        return null;
       }
 
       // Récupérer les données du shop
@@ -116,16 +97,12 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
       if (shopError) throw shopError;
       
       console.log('✅ ShopContext: Shop data loaded:', shopData.name);
-      setShop(shopData);
-      setCacheTimestamp(Date.now());
-    } catch (err: any) {
-      console.error('❌ ShopContext: Error fetching shop:', err);
-      setError(err);
-      setShop(null);
-    } finally {
-      setLoading(false);
-    }
-  }, [user, shop, cacheTimestamp]);
+      return shopData as Shop;
+    },
+    enabled: !!user,
+    staleTime: 5 * 60 * 1000, // 5 minutes - données du shop changent rarement
+    gcTime: 30 * 60 * 1000, // 30 minutes en cache
+  });
 
   const updateShop = async (shopId: string, updates: Partial<Shop>) => {
     try {
@@ -136,10 +113,8 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
 
       if (error) throw error;
 
-      // Mettre à jour le cache local
-      if (shop && shop.id === shopId) {
-        setShop({ ...shop, ...updates });
-      }
+      // Invalider le cache React Query
+      queryClient.invalidateQueries({ queryKey: ['shop', user?.id] });
 
       toast({
         title: 'Succès',
@@ -156,23 +131,18 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const refetch = async () => {
-    setCacheTimestamp(0); // Invalider le cache
-    await fetchShop();
+  const wrappedRefetch = async () => {
+    await refetch();
   };
 
-  useEffect(() => {
-    if (user) {
-      fetchShop();
-    } else {
-      setShop(null);
-      setLoading(false);
-      setCacheTimestamp(0);
-    }
-  }, [user?.id]); // Ne dépendre que de l'ID utilisateur
-
   return (
-    <ShopContext.Provider value={{ shop, loading, error, updateShop, refetch }}>
+    <ShopContext.Provider value={{ 
+      shop: shop ?? null, 
+      loading, 
+      error: error as Error | null, 
+      updateShop, 
+      refetch: wrappedRefetch
+    }}>
       {children}
     </ShopContext.Provider>
   );

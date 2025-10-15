@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useRef, useEffect } from 'react';
 import { useShop } from './useShop';
 import { useSubscriptionFeatures } from './useSubscriptionFeatures';
 
@@ -23,10 +23,19 @@ export function useMenuPermissions(): {
 } {
   const { shop, loading: shopLoading } = useShop();
   const { menuConfig, loading: featuresLoading } = useSubscriptionFeatures();
+  
+  // Garder les dernières permissions valides en mémoire
+  const lastValidPermissions = useRef<MenuPermissions | null>(null);
 
   const permissions = useMemo(() => {
+    // Si on est en chargement ET qu'on a des permissions valides, les retourner
+    if ((shopLoading || featuresLoading) && lastValidPermissions.current) {
+      return lastValidPermissions.current;
+    }
+
+    // Si pas de données, retourner les permissions par défaut
     if (!shop || !menuConfig) {
-      return {
+      const defaultPerms: MenuPermissions = {
         dashboard: true,
         sav: true,
         parts: true,
@@ -39,6 +48,7 @@ export function useMenuPermissions(): {
         sidebar_late_sav: true,
         statistics: false
       };
+      return defaultPerms;
     }
 
     const basePermissions = { ...menuConfig };
@@ -67,7 +77,7 @@ export function useMenuPermissions(): {
     };
 
     // Combiner : si le plan autorise ET que le magasin n'a pas désactivé
-    return {
+    const calculatedPerms: MenuPermissions = {
       dashboard: basePermissions.dashboard && shopPreferences.dashboard,
       sav: basePermissions.sav && shopPreferences.sav,
       parts: basePermissions.parts && shopPreferences.parts,
@@ -80,7 +90,12 @@ export function useMenuPermissions(): {
       sidebar_late_sav: basePermissions.sidebar_late_sav && shopPreferences.sidebar_late_sav,
       statistics: basePermissions.statistics && shopPreferences.statistics
     };
-  }, [shop, menuConfig]);
+    
+    // Sauvegarder les permissions valides
+    lastValidPermissions.current = calculatedPerms;
+    
+    return calculatedPerms;
+  }, [shop, menuConfig, shopLoading, featuresLoading]);
 
   const canToggleMenu = useMemo(() => {
     return (menuKey: keyof MenuPermissions) => {
