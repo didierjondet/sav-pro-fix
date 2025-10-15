@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useShop } from './useShop';
 
@@ -24,19 +24,12 @@ interface SubscriptionFeatures {
 
 export function useSubscriptionFeatures(): SubscriptionFeatures {
   const { shop, loading: shopLoading } = useShop();
-  const [features, setFeatures] = useState<SubscriptionFeatures>({
-    menuConfig: null,
-    planName: '',
-    loading: true
-  });
 
-  useEffect(() => {
-    if (!shop || shopLoading) {
-      setFeatures(prev => ({ ...prev, loading: shopLoading }));
-      return;
-    }
+  const { data, isLoading } = useQuery({
+    queryKey: ['subscription-features', shop?.id, shop?.subscription_plan_id, shop?.subscription_tier],
+    queryFn: async () => {
+      if (!shop) return null;
 
-    const fetchPlanFeatures = async () => {
       try {
         let planQuery;
         
@@ -62,7 +55,7 @@ export function useSubscriptionFeatures(): SubscriptionFeatures {
         if (error) {
           console.error('Error fetching subscription plan:', error);
           // Plan par défaut en cas d'erreur
-          setFeatures({
+          return {
             menuConfig: {
               dashboard: true,
               sav: true,
@@ -76,25 +69,27 @@ export function useSubscriptionFeatures(): SubscriptionFeatures {
               sidebar_late_sav: true,
               statistics: false
             },
-            planName: shop.subscription_tier || 'free',
-            loading: false
-          });
-          return;
+            planName: shop.subscription_tier || 'free'
+          };
         }
 
-        setFeatures({
+        return {
           menuConfig: plan?.menu_config || null,
-          planName: plan?.name || shop.subscription_tier || 'free',
-          loading: false
-        });
+          planName: plan?.name || shop.subscription_tier || 'free'
+        };
       } catch (error) {
         console.error('Error in fetchPlanFeatures:', error);
-        setFeatures(prev => ({ ...prev, loading: false }));
+        return null;
       }
-    };
+    },
+    enabled: !!shop && !shopLoading,
+    staleTime: 30 * 60 * 1000, // 30 minutes - les plans changent rarement
+    gcTime: 60 * 60 * 1000, // 1 heure en cache
+  });
 
-    fetchPlanFeatures();
-  }, [shop, shopLoading]);
-
-  return features;
+  return {
+    menuConfig: data?.menuConfig || null,
+    planName: data?.planName || '',
+    loading: shopLoading || isLoading
+  };
 }
