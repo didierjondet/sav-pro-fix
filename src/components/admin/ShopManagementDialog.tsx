@@ -93,12 +93,14 @@ export default function ShopManagementDialog({ shop, isOpen, onClose, onUpdate }
   const [subscriptionPlans, setSubscriptionPlans] = useState<any[]>([]);
   const [customSmsLimit, setCustomSmsLimit] = useState('');
   const [customSavLimit, setCustomSavLimit] = useState('');
+  const [forcedFeatures, setForcedFeatures] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     if (shop?.id) {
       fetchUsers();
       fetchSubscriptionPlans();
       setSubscriptionMenuVisible(shop.subscription_menu_visible ?? true);
+      setForcedFeatures((shop as any).forced_features || {});
       // Synchroniser avec le plan par défaut si pas de plan spécifique
       syncWithDefaultPlan();
     }
@@ -568,8 +570,7 @@ export default function ShopManagementDialog({ shop, isOpen, onClose, onUpdate }
     
     setLoading(true);
     try {
-      const currentForced = (shop as any).forced_features || {};
-      const newForced = { ...currentForced };
+      const newForced = { ...forcedFeatures };
       
       if (enabled) {
         newForced[feature] = true;
@@ -583,6 +584,9 @@ export default function ShopManagementDialog({ shop, isOpen, onClose, onUpdate }
         .eq('id', shop.id);
 
       if (error) throw error;
+
+      // Mettre à jour l'état local immédiatement
+      setForcedFeatures(newForced);
 
       toast({
         title: "Succès",
@@ -1102,7 +1106,7 @@ export default function ShopManagementDialog({ shop, isOpen, onClose, onUpdate }
                   
                   <div className="flex items-center space-x-2">
                     <Switch
-                      checked={(shop as any).forced_features?.quotes === true}
+                      checked={forcedFeatures?.quotes === true}
                       onCheckedChange={(checked) => handleToggleForcedFeature('quotes', checked)}
                       disabled={loading}
                     />
@@ -1111,7 +1115,7 @@ export default function ShopManagementDialog({ shop, isOpen, onClose, onUpdate }
                   
                   <div className="flex items-center space-x-2">
                     <Switch
-                      checked={(shop as any).forced_features?.orders === true}
+                      checked={forcedFeatures?.orders === true}
                       onCheckedChange={(checked) => handleToggleForcedFeature('orders', checked)}
                       disabled={loading}
                     />
@@ -1120,7 +1124,7 @@ export default function ShopManagementDialog({ shop, isOpen, onClose, onUpdate }
                   
                   <div className="flex items-center space-x-2">
                     <Switch
-                      checked={(shop as any).forced_features?.chats === true}
+                      checked={forcedFeatures?.chats === true}
                       onCheckedChange={(checked) => handleToggleForcedFeature('chats', checked)}
                       disabled={loading}
                     />
@@ -1129,7 +1133,7 @@ export default function ShopManagementDialog({ shop, isOpen, onClose, onUpdate }
                   
                   <div className="flex items-center space-x-2">
                     <Switch
-                      checked={(shop as any).forced_features?.statistics === true}
+                      checked={forcedFeatures?.statistics === true}
                       onCheckedChange={(checked) => handleToggleForcedFeature('statistics', checked)}
                       disabled={loading}
                     />
@@ -1142,7 +1146,7 @@ export default function ShopManagementDialog({ shop, isOpen, onClose, onUpdate }
                   
                   <div className="flex items-center space-x-2">
                     <Switch
-                      checked={(shop as any).forced_features?.sidebar_late_sav === true}
+                      checked={forcedFeatures?.sidebar_late_sav === true}
                       onCheckedChange={(checked) => handleToggleForcedFeature('sidebar_late_sav', checked)}
                       disabled={loading}
                     />
@@ -1151,7 +1155,7 @@ export default function ShopManagementDialog({ shop, isOpen, onClose, onUpdate }
                   
                   <div className="flex items-center space-x-2">
                     <Switch
-                      checked={(shop as any).forced_features?.sidebar_sav_types === true}
+                      checked={forcedFeatures?.sidebar_sav_types === true}
                       onCheckedChange={(checked) => handleToggleForcedFeature('sidebar_sav_types', checked)}
                       disabled={loading}
                     />
@@ -1160,7 +1164,7 @@ export default function ShopManagementDialog({ shop, isOpen, onClose, onUpdate }
                   
                   <div className="flex items-center space-x-2">
                     <Switch
-                      checked={(shop as any).forced_features?.sidebar_sav_statuses === true}
+                      checked={forcedFeatures?.sidebar_sav_statuses === true}
                       onCheckedChange={(checked) => handleToggleForcedFeature('sidebar_sav_statuses', checked)}
                       disabled={loading}
                     />
