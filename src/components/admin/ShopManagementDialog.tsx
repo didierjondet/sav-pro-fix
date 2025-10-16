@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useQueryClient } from '@tanstack/react-query';
 import { useShopLimits } from '@/hooks/useShopLimits';
 import {
   Dialog,
@@ -80,6 +81,7 @@ interface ShopManagementDialogProps {
 
 export default function ShopManagementDialog({ shop, isOpen, onClose, onUpdate }: ShopManagementDialogProps) {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const { refreshShopLimits, forceUnlockShop } = useShopLimits();
   const [loading, setLoading] = useState(false);
   const [smsCreditsToAdd, setSmsCreditsToAdd] = useState('');
@@ -587,6 +589,9 @@ export default function ShopManagementDialog({ shop, isOpen, onClose, onUpdate }
 
       // Mettre à jour l'état local immédiatement
       setForcedFeatures(newForced);
+
+      // Invalider le cache React Query pour que le magasin voit les changements immédiatement
+      queryClient.invalidateQueries({ queryKey: ['shop'] });
 
       toast({
         title: "Succès",
