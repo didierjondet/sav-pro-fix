@@ -315,9 +315,8 @@ export const generateQuotePDF = (quote: Quote, shop?: Shop) => {
 const getStatusText = (status: string) => {
   switch (status) {
     case 'draft': return 'Brouillon';
-    case 'pending_review': return 'En révision';
     case 'sent': return 'Envoyé';
-    case 'under_negotiation': return 'En négociation';
+    case 'viewed': return 'Consulté';
     case 'accepted': return 'Accepté';
     case 'rejected': return 'Refusé';
     case 'expired': return 'Expiré';

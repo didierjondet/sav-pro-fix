@@ -82,14 +82,14 @@ export default function Quotes() {
   };
 
   const activeQuotes = quotes.filter(quote => 
-    quote.status !== 'rejected' && quote.status !== 'accepted' && quote.status !== 'sms_accepted' && quote.status !== 'archived' &&
+    quote.status !== 'rejected' && quote.status !== 'accepted' && quote.status !== 'archived' &&
     (quote.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
      quote.quote_number.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   const acceptedQuotes = quotes.filter(quote => {
     // Inclure seulement les devis acceptés mais pas encore terminés ni archivés
-    const isAccepted = quote.status === 'accepted' || quote.status === 'sms_accepted';
+    const isAccepted = quote.status === 'accepted';
     const isNotCompleted = quote.status !== 'completed' && quote.status !== 'archived';
     const matchesSearch = quote.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          quote.quote_number.toLowerCase().includes(searchTerm.toLowerCase());
@@ -250,21 +250,7 @@ export default function Quotes() {
       }
       return;
     }
-    if (newStatus === 'sms_accepted') {
-      // Acceptation par SMS = acceptation client
-      const result = await updateQuote(quote.id, { 
-        status: newStatus,
-        accepted_by: 'client',
-        accepted_at: new Date().toISOString()
-      });
-      if (!result.error) {
-        toast({
-          title: "Statut mis à jour",
-          description: `Le devis ${quote.quote_number} est maintenant ${getStatusText(newStatus)}`,
-        });
-      }
-      return;
-    }
+    // Tous les autres statuts sont traités normalement
     const result = await updateQuote(quote.id, { status: newStatus });
     if (!result.error) {
       toast({
@@ -277,10 +263,8 @@ export default function Quotes() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'draft': return 'default';
-      case 'pending_review': return 'secondary';
       case 'sent': return 'outline';
-      case 'under_negotiation': return 'secondary';
-      case 'sms_accepted': return 'default';
+      case 'viewed': return 'secondary';
       case 'accepted': return 'default';
       case 'rejected': return 'destructive';
       case 'expired': return 'outline';
@@ -294,7 +278,6 @@ export default function Quotes() {
       case 'pending_review': return 'En révision';
       case 'sent': return 'Envoyé';
       case 'under_negotiation': return 'En négociation';
-      case 'sms_accepted': return 'Accepté par SMS';
       case 'accepted': return 'Accepté';
       case 'rejected': return 'Refusé';
       case 'expired': return 'Expiré';
@@ -555,10 +538,8 @@ export default function Quotes() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="draft">Brouillon</SelectItem>
-                    <SelectItem value="pending_review">En révision</SelectItem>
                     <SelectItem value="sent">Envoyé</SelectItem>
-                    <SelectItem value="under_negotiation">En négociation</SelectItem>
-                    <SelectItem value="sms_accepted">Accepté par SMS</SelectItem>
+                    <SelectItem value="viewed">Consulté</SelectItem>
                     <SelectItem value="accepted">Accepté</SelectItem>
                     <SelectItem value="rejected">Refusé</SelectItem>
                     <SelectItem value="expired">Expiré</SelectItem>
@@ -595,7 +576,7 @@ export default function Quotes() {
               </div>
 
               {/* Affichage de qui a accepté le devis */}
-              {(quote.status === 'accepted' || quote.status === 'sms_accepted') && quote.accepted_by && quote.accepted_at && (
+              {quote.status === 'accepted' && quote.accepted_by && quote.accepted_at && (
                 <div className="flex items-center gap-1 text-green-600">
                   <CheckCircle className="h-3 w-3" />
                   <div className="flex flex-col">
@@ -625,7 +606,7 @@ export default function Quotes() {
           
           <div className="flex items-center gap-2 ml-4">
             {/* Bouton de conversion en SAV pour les devis acceptés */}
-            {(quote.status === 'accepted' || quote.status === 'sms_accepted') && (
+            {quote.status === 'accepted' && (
               <Button 
                 variant="default" 
                 size="sm"
@@ -875,25 +856,19 @@ export default function Quotes() {
                                        <Plus className="h-4 w-4 mr-1" />
                                        Convertir en SAV
                                      </Button>
-                                     
-                                      {quote.status === 'sms_accepted' ? (
-                                        <Button 
-                                          variant="default"
-                                          size="sm"
-                                          className="bg-blue-600 hover:bg-blue-700"
-                                          onClick={async () => {
-                                            await updateQuote(quote.id, { status: 'accepted' });
-                                            setQuoteToConvert(quote);
-                                          }}
-                                        >
-                                          <CheckCircle className="h-4 w-4 mr-1" />
-                                          Démarrer le SAV
-                                        </Button>
-                                      ) : (
+                                      
+                                      {/* Plus besoin du bouton spécial car tous les acceptés utilisent maintenant le même statut */}
+                                      {quote.status === 'accepted' && !quote.sav_case_id && (
+                                        <div className="text-sm text-muted-foreground px-3 py-1 rounded bg-muted">
+                                          En attente de validation...
+                                        </div>
+                                      )}
+                                      
+                                      {quote.sav_case_id && (
                                         <div className="text-sm text-muted-foreground px-3 py-1 rounded bg-muted">
                                           SAV en cours...
                                         </div>
-                                       )}
+                                      )}
                                       
                                       {/* Bouton d'archivage */}
                                       <Button 

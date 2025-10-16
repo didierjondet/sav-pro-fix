@@ -87,7 +87,7 @@ export function Sidebar({
     quotes
   } = useQuotes();
   const quoteCounts = (quotes || []).reduce((acc, q) => {
-    const activeStatuses = ['draft', 'pending_review', 'sent', 'under_negotiation', 'sms_accepted'];
+    const activeStatuses = ['draft', 'sent', 'viewed'];
     if (q.status === 'accepted') {
       acc.accepted++;
     } else if (q.status === 'rejected') {
