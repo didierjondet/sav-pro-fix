@@ -41,7 +41,7 @@ export function useSAVUnreadMessages() {
         return [];
       }
 
-      // Get all SAV cases that have client messages and are not closed (ready/cancelled)
+      // Get all SAV cases that have client messages and are not closed (ready/delivered/cancelled)
       const { data: savCases, error: savError } = await supabase
         .from('sav_cases')
         .select(`
@@ -54,7 +54,7 @@ export function useSAVUnreadMessages() {
           customer:customers(first_name, last_name)
         `)
         .eq('shop_id', profile.shop_id)
-        .not('status', 'in', '("ready","cancelled")');
+        .not('status', 'in', '("ready","delivered","cancelled")');
 
       console.log('🏪 All open SAV cases:', { savCases, savError });
 
@@ -217,9 +217,9 @@ export function useSAVUnreadMessages() {
           const newStatus = payload.new?.status;
           const oldStatus = payload.old?.status;
           
-          // Si le statut passe à "ready" ou "cancelled", fermer la conversation
-          if ((newStatus === 'ready' || newStatus === 'cancelled') && 
-              (oldStatus !== 'ready' && oldStatus !== 'cancelled')) {
+          // Si le statut passe à "ready", "delivered" ou "cancelled", fermer la conversation
+          if ((newStatus === 'ready' || newStatus === 'delivered' || newStatus === 'cancelled') && 
+              (oldStatus !== 'ready' && oldStatus !== 'delivered' && oldStatus !== 'cancelled')) {
             console.log('🔒 SAV status changed to closed status, closing conversation');
             handleSAVClosed(payload.new?.id);
           } else {
