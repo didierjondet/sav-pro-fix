@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -152,7 +152,7 @@ export function useSAVUnreadMessages() {
     gcTime: 5 * 60 * 1000, // 5 minutes
   });
 
-  const handleSAVClosed = async (savCaseId: string) => {
+  const handleSAVClosed = useCallback(async (savCaseId: string) => {
     if (!savCaseId) return;
     
     try {
@@ -175,13 +175,13 @@ export function useSAVUnreadMessages() {
           detail: { savCaseId } 
         }));
         
-        // Rafraîchir la liste des conversations ouvertes
-        refetch();
+        // Force cache invalidation for immediate UI update
+        queryClient.invalidateQueries({ queryKey: ['sav-unread-messages'] });
       }
     } catch (error) {
       console.error('Error handling SAV closed:', error);
     }
-  };
+  }, [queryClient]);
 
   useEffect(() => {
     if (!user) return;
@@ -214,6 +214,11 @@ export function useSAVUnreadMessages() {
           table: 'sav_cases'
         },
         (payload) => {
+          console.log('🔔 SAV status change detected:', {
+            id: payload.new?.id,
+            oldStatus: payload.old?.status,
+            newStatus: payload.new?.status
+          });
           const newStatus = payload.new?.status;
           const oldStatus = payload.old?.status;
           
@@ -251,7 +256,7 @@ export function useSAVUnreadMessages() {
       supabase.removeChannel(statusChannel);
       supabase.removeChannel(deleteChannel);
     };
-  }, [user, queryClient, handleSAVClosed]);
+  }, [user, queryClient]);
 
   return {
     savWithUnreadMessages,
