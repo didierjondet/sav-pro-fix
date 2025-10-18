@@ -12,6 +12,7 @@ import { SMSButton } from './SMSButton';
 import { MessagePhotoUpload } from './MessagePhotoUpload';
 import { AITextReformulator } from './AITextReformulator';
 import { supabase } from '@/integrations/supabase/client';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface MessagingInterfaceProps {
   // Configuration du SAV
@@ -46,6 +47,7 @@ export function MessagingInterface({
   const [newMessage, setNewMessage] = useState('');
   const [sending, setSending] = useState(false);
   const [messagePhotos, setMessagePhotos] = useState<any[]>([]);
+  const queryClient = useQueryClient();
   
   const { 
     messages, 
@@ -67,6 +69,41 @@ export function MessagingInterface({
       return () => clearTimeout(timer);
     }
   }, [messages.length, markAllAsRead]);
+
+  // Listener realtime pour mise à jour instantanée du statut "lu"
+  useEffect(() => {
+    if (!savCaseId) return;
+
+    console.log('📖 Setting up realtime listener for read status on SAV:', savCaseId);
+    
+    const channel = supabase
+      .channel(`message-read-status-${savCaseId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'sav_messages',
+          filter: `sav_case_id=eq.${savCaseId}`
+        },
+        (payload) => {
+          console.log('📖 Message read status updated:', {
+            id: payload.new?.id,
+            read_by_shop: payload.new?.read_by_shop,
+            read_by_client: payload.new?.read_by_client
+          });
+          // Invalider le cache des messages pour refresh immédiat
+          queryClient.invalidateQueries({ queryKey: ['sav-messages', savCaseId] });
+          queryClient.invalidateQueries({ queryKey: ['sav-unread-messages'] });
+        }
+      )
+      .subscribe();
+      
+    return () => {
+      console.log('📖 Cleaning up realtime listener for read status');
+      supabase.removeChannel(channel);
+    };
+  }, [savCaseId, queryClient]);
 
   const handleSendMessage = async () => {
     if ((!newMessage.trim() && messagePhotos.length === 0) || sending) return;

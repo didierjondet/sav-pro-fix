@@ -148,8 +148,9 @@ export function useSAVUnreadMessages() {
     queryKey: ['sav-unread-messages', user?.id],
     queryFn: fetchUnreadMessages,
     enabled: !!user,
-    staleTime: 30 * 1000, // 30 secondes - données très dynamiques
+    staleTime: 5 * 1000, // 5 secondes pour refresh rapide
     gcTime: 5 * 60 * 1000, // 5 minutes
+    refetchInterval: 10 * 1000, // Refetch automatique toutes les 10 secondes
   });
 
   const handleSAVClosed = useCallback(async (savCaseId: string) => {
