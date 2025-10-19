@@ -40,7 +40,7 @@ export function PartForm({ initialData, onSubmit, onCancel, isEdit = false, find
       purchase_price: initialData?.purchase_price || 0,
       selling_price: initialData?.selling_price || 0,
       quantity: initialData?.quantity || 0,
-      min_stock: initialData?.min_stock || 5,
+      min_stock: initialData?.min_stock || 1,
       time_minutes: initialData?.time_minutes ?? 15,
       notes: initialData?.notes || '',
       photo_url: initialData?.photo_url || '',
@@ -276,7 +276,7 @@ export function PartForm({ initialData, onSubmit, onCancel, isEdit = false, find
                 type="number"
                 min="0"
                 {...register('min_stock', { valueAsNumber: true })}
-                placeholder="5"
+                placeholder="1"
               />
             </div>
           </div>
