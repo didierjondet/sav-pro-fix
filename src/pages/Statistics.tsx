@@ -2,6 +2,7 @@ import { useState } from 'react';
 import Header from '@/components/layout/Header';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { DragDropStatistics } from '@/components/statistics/DragDropStatistics';
+import { DailyAssistant } from '@/components/statistics/DailyAssistant';
 export default function Statistics() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [period, setPeriod] = useState<'7d' | '30d' | '3m' | '6m' | '1y'>('30d');
@@ -27,7 +28,8 @@ export default function Statistics() {
           <Header onMenuClick={() => setSidebarOpen(true)} isMobileMenuOpen={sidebarOpen} />
           <main className="flex-1 overflow-y-auto p-6">
             <div className="max-w-7xl mx-auto">
-              <DragDropStatistics 
+              <DailyAssistant />
+              <DragDropStatistics
                 period={period} 
                 onPeriodChange={setPeriod}
               />
