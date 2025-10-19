@@ -11,6 +11,7 @@ import { Search, Plus, Trash2, ArrowLeft, AlertCircle, CheckCircle } from 'lucid
 import { QuoteItem, Quote } from '@/hooks/useQuotes';
 import { CustomerSearch } from '@/components/customers/CustomerSearch';
 import { FileUpload } from '@/components/parts/FileUpload';
+import { AITextReformulator } from '@/components/sav/AITextReformulator';
 import { PartDiscountManager, PartDiscountInfo } from '@/components/ui/part-discount-manager';
 import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
@@ -467,7 +468,14 @@ const updateUnitPurchasePrice = (partId: string, unitPrice: number) => {
               </Alert>
             )}
             <div>
-              <Label htmlFor="notes">Notes (optionnel)</Label>
+              <div className="flex items-center justify-between mb-2">
+                <Label htmlFor="notes">Notes (optionnel)</Label>
+                <AITextReformulator
+                  text={notes}
+                  context="repair_notes"
+                  onReformulated={(reformulatedText) => setNotes(reformulatedText)}
+                />
+              </div>
               <Textarea
                 id="notes"
                 value={notes}
@@ -526,7 +534,14 @@ const updateUnitPurchasePrice = (partId: string, unitPrice: number) => {
               </div>
             </div>
             <div>
-              <Label htmlFor="problemDescription">Description du problème *</Label>
+              <div className="flex items-center justify-between mb-2">
+                <Label htmlFor="problemDescription">Description du problème *</Label>
+                <AITextReformulator
+                  text={deviceInfo.problemDescription}
+                  context="problem_description"
+                  onReformulated={(reformulatedText) => setDeviceInfo({ ...deviceInfo, problemDescription: reformulatedText })}
+                />
+              </div>
               <Textarea
                 id="problemDescription"
                 value={deviceInfo.problemDescription}
