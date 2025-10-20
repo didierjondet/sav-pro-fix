@@ -63,7 +63,7 @@ serve(async (req) => {
 
     // Fetch relevant data
     console.log('📊 [DAILY-ASSISTANT] Récupération des données...');
-    const [savCases, parts, orderItems] = await Promise.all([
+    const [savCases, allParts, orderItems] = await Promise.all([
       supabaseClient
         .from('sav_cases')
         .select(`
@@ -78,8 +78,7 @@ serve(async (req) => {
       supabaseClient
         .from('parts')
         .select('*')
-        .eq('shop_id', profile.shop_id)
-        .lt('quantity', 'min_stock'),
+        .eq('shop_id', profile.shop_id),
       
       supabaseClient
         .from('order_items')
@@ -87,6 +86,14 @@ serve(async (req) => {
         .eq('shop_id', profile.shop_id)
         .eq('ordered', false)
     ]);
+    
+    // Filter low stock parts on the client side (comparing two columns)
+    const parts = {
+      data: allParts.data?.filter(part => 
+        part.quantity < (part.min_stock || 1)
+      ) || [],
+      error: allParts.error
+    };
 
     if (savCases.error) {
       console.error('❌ [DAILY-ASSISTANT] Erreur SAV:', savCases.error);

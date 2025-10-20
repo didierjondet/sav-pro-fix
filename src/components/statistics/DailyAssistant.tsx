@@ -109,57 +109,50 @@ export function DailyAssistant() {
   };
 
   return (
-    <Card className="p-6 mb-6 bg-gradient-to-br from-primary/5 via-background to-background border-primary/20">
-      <div className="flex items-start justify-between mb-4">
-        <div className="flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-primary/10">
-            <Sparkles className="h-5 w-5 text-primary" />
+    <Card className="p-4 mb-6 bg-gradient-to-br from-primary/5 via-background to-background border-primary/20">
+      <div className="flex items-start justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <div className="p-1.5 rounded-lg bg-primary/10">
+            <Sparkles className="h-4 w-4 text-primary" />
           </div>
           <div>
-            <h2 className="text-xl font-semibold">Assistant Quotidien IA</h2>
-            <p className="text-sm text-muted-foreground">
-              Organisez votre journée et optimisez votre productivité
+            <h2 className="text-base font-semibold">Assistant Quotidien IA</h2>
+            <p className="text-xs text-muted-foreground">
+              Optimisez votre journée de travail
             </p>
           </div>
         </div>
-        <Button
-          onClick={fetchRecommendations}
-          disabled={loading}
-          variant="outline"
-          size="sm"
-        >
-          {loading ? (
-            <>
-              <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-              Analyse...
-            </>
-          ) : (
-            <>
-              <RefreshCw className="mr-2 h-4 w-4" />
-              {recommendations ? 'Actualiser' : 'Analyser'}
-            </>
-          )}
-        </Button>
+        {recommendations && (
+          <Button
+            onClick={fetchRecommendations}
+            disabled={loading}
+            variant="ghost"
+            size="sm"
+          >
+            {loading ? (
+              <RefreshCw className="h-4 w-4 animate-spin" />
+            ) : (
+              <RefreshCw className="h-4 w-4" />
+            )}
+          </Button>
+        )}
       </div>
 
       {!recommendations && !loading && (
-        <div className="text-center py-8 space-y-4">
+        <div className="text-center py-6 space-y-3">
           <div className="flex justify-center">
-            <div className="p-4 rounded-full bg-primary/10">
-              <Sparkles className="h-8 w-8 text-primary" />
+            <div className="p-3 rounded-full bg-primary/10">
+              <Sparkles className="h-6 w-6 text-primary" />
             </div>
           </div>
           <div>
-            <p className="text-muted-foreground mb-2">
+            <p className="text-sm text-muted-foreground mb-2">
               Obtenez des recommandations personnalisées pour optimiser votre journée
             </p>
-            <p className="text-sm text-muted-foreground">
-              L'IA analyse vos SAV, pièces et commandes pour vous conseiller
-            </p>
           </div>
-          <Button onClick={fetchRecommendations} className="mt-4">
+          <Button onClick={fetchRecommendations} size="sm">
             <Sparkles className="mr-2 h-4 w-4" />
-            Générer mes recommandations
+            Analyser
           </Button>
         </div>
       )}
