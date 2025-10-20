@@ -9,6 +9,7 @@ import { Footer } from '@/components/layout/Footer';
 import { SAVDashboard } from '@/components/sav/SAVDashboard';
 import { SAVForm } from '@/components/sav/SAVForm';
 import { ProfileSetup } from '@/components/auth/ProfileSetup';
+import { DailyAssistant } from '@/components/statistics/DailyAssistant';
 import { Loader2 } from 'lucide-react';
 const Index = () => {
   const {
@@ -84,7 +85,7 @@ const Index = () => {
           </div>;
       default:
         return <div className="space-y-6">
-            
+            <DailyAssistant />
             <SAVDashboard />
           </div>;
     }
