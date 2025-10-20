@@ -16,11 +16,23 @@ export function DailyAssistant() {
   const fetchRecommendations = async () => {
     setLoading(true);
     try {
+      console.log('🚀 Appel de la fonction daily-assistant...');
       const { data, error } = await supabase.functions.invoke('daily-assistant');
 
-      if (error) throw error;
+      console.log('📦 Réponse complète:', { data, error });
+
+      if (error) {
+        console.error('❌ Erreur Supabase:', error);
+        throw error;
+      }
+
+      if (!data) {
+        console.error('❌ Pas de données reçues');
+        throw new Error('Aucune donnée reçue du serveur');
+      }
 
       if (data.error) {
+        console.error('❌ Erreur dans les données:', data.error);
         if (data.error.includes('429') || data.error.includes('Rate limit')) {
           toast({
             title: "Limite atteinte",
@@ -34,11 +46,16 @@ export function DailyAssistant() {
             variant: "destructive",
           });
         } else {
-          throw new Error(data.error);
+          toast({
+            title: "Erreur",
+            description: data.error,
+            variant: "destructive",
+          });
         }
         return;
       }
 
+      console.log('✅ Recommandations reçues:', data.recommendations?.substring(0, 100));
       setRecommendations(data.recommendations);
       setStats(data.stats);
       
@@ -47,10 +64,11 @@ export function DailyAssistant() {
         description: "Vos recommandations du jour sont prêtes",
       });
     } catch (error: any) {
-      console.error('Error fetching recommendations:', error);
+      console.error('❌ Erreur critique:', error);
+      const errorMessage = error.message || error.toString();
       toast({
         title: "Erreur",
-        description: "Impossible de générer les recommandations",
+        description: `Impossible de générer les recommandations: ${errorMessage}`,
         variant: "destructive",
       });
     } finally {

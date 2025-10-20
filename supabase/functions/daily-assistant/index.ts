@@ -12,8 +12,27 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  console.log('🚀 [DAILY-ASSISTANT] Fonction démarrée');
+
   try {
+    // Test de la clé API au démarrage
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    console.log('🔑 [DAILY-ASSISTANT] LOVABLE_API_KEY présente:', !!LOVABLE_API_KEY);
+    
+    if (!LOVABLE_API_KEY) {
+      console.error('❌ [DAILY-ASSISTANT] LOVABLE_API_KEY manquante');
+      return new Response(
+        JSON.stringify({ error: 'Configuration manquante: LOVABLE_API_KEY non définie' }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
     const authHeader = req.headers.get('Authorization')!;
+    console.log('🔐 [DAILY-ASSISTANT] Authorization header présent:', !!authHeader);
+    
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
@@ -21,11 +40,15 @@ serve(async (req) => {
     );
 
     // Get current user's shop_id
+    console.log('👤 [DAILY-ASSISTANT] Récupération de l\'utilisateur...');
     const { data: { user } } = await supabaseClient.auth.getUser();
     if (!user) {
+      console.error('❌ [DAILY-ASSISTANT] Utilisateur non authentifié');
       throw new Error('Non authentifié');
     }
+    console.log('✅ [DAILY-ASSISTANT] Utilisateur:', user.id);
 
+    console.log('🏪 [DAILY-ASSISTANT] Récupération du profil...');
     const { data: profile } = await supabaseClient
       .from('profiles')
       .select('shop_id')
@@ -33,10 +56,13 @@ serve(async (req) => {
       .single();
 
     if (!profile?.shop_id) {
+      console.error('❌ [DAILY-ASSISTANT] Boutique introuvable pour l\'utilisateur');
       throw new Error('Boutique introuvable');
     }
+    console.log('✅ [DAILY-ASSISTANT] Shop ID:', profile.shop_id);
 
     // Fetch relevant data
+    console.log('📊 [DAILY-ASSISTANT] Récupération des données...');
     const [savCases, parts, orderItems] = await Promise.all([
       supabaseClient
         .from('sav_cases')
@@ -62,9 +88,24 @@ serve(async (req) => {
         .eq('ordered', false)
     ]);
 
-    if (savCases.error) throw savCases.error;
-    if (parts.error) throw parts.error;
-    if (orderItems.error) throw orderItems.error;
+    if (savCases.error) {
+      console.error('❌ [DAILY-ASSISTANT] Erreur SAV:', savCases.error);
+      throw savCases.error;
+    }
+    if (parts.error) {
+      console.error('❌ [DAILY-ASSISTANT] Erreur pièces:', parts.error);
+      throw parts.error;
+    }
+    if (orderItems.error) {
+      console.error('❌ [DAILY-ASSISTANT] Erreur commandes:', orderItems.error);
+      throw orderItems.error;
+    }
+
+    console.log('✅ [DAILY-ASSISTANT] Données récupérées:', {
+      savCount: savCases.data?.length,
+      partsCount: parts.data?.length,
+      ordersCount: orderItems.data?.length
+    });
 
     // Prepare analysis data
     const today = new Date();
@@ -115,11 +156,10 @@ serve(async (req) => {
       total_repair_time: readySavs.reduce((sum, s) => sum + (s.total_time_minutes || 0), 0)
     };
 
+    console.log('📈 [DAILY-ASSISTANT] Données d\'analyse préparées:', analysisData);
+
     // Call Lovable AI for analysis
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    if (!LOVABLE_API_KEY) {
-      throw new Error('LOVABLE_API_KEY non configuré');
-    }
+    console.log('🤖 [DAILY-ASSISTANT] Appel de Lovable AI...');
 
     const systemPrompt = `Tu es un assistant IA spécialisé dans la gestion d'ateliers de réparation. 
 Tu analyses les données de l'atelier et fournis des recommandations concrètes et actionnables pour :
@@ -174,15 +214,42 @@ Fournis maintenant :
       }),
     });
 
+    console.log('📡 [DAILY-ASSISTANT] Réponse AI status:', aiResponse.status);
+
     if (!aiResponse.ok) {
       const errorText = await aiResponse.text();
-      console.error('Lovable AI error:', aiResponse.status, errorText);
-      throw new Error('Erreur lors de l\'analyse IA');
+      console.error('❌ [DAILY-ASSISTANT] Erreur Lovable AI:', aiResponse.status, errorText);
+      
+      // Gestion des erreurs spécifiques
+      if (aiResponse.status === 429) {
+        return new Response(
+          JSON.stringify({ error: 'Rate limit: Trop de requêtes IA. Veuillez réessayer dans quelques minutes.' }),
+          {
+            status: 429,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        );
+      }
+      
+      if (aiResponse.status === 402) {
+        return new Response(
+          JSON.stringify({ error: 'Payment required: Crédits IA insuffisants. Ajoutez des crédits dans votre espace Lovable.' }),
+          {
+            status: 402,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        );
+      }
+      
+      throw new Error(`Erreur Lovable AI (${aiResponse.status}): ${errorText}`);
     }
 
     const aiData = await aiResponse.json();
+    console.log('✅ [DAILY-ASSISTANT] Réponse AI reçue, longueur:', aiData.choices[0]?.message?.content?.length);
+    
     const recommendations = aiData.choices[0].message.content;
 
+    console.log('✅ [DAILY-ASSISTANT] Envoi de la réponse finale');
     return new Response(
       JSON.stringify({
         recommendations,
@@ -194,9 +261,14 @@ Fournis maintenant :
     );
 
   } catch (error) {
-    console.error('Error in daily-assistant:', error);
+    console.error('❌ [DAILY-ASSISTANT] Erreur critique:', error);
+    console.error('❌ [DAILY-ASSISTANT] Stack:', error.stack);
+    
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: error.message || 'Erreur inconnue',
+        details: error.toString()
+      }),
       {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
