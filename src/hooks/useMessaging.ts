@@ -248,7 +248,11 @@ export function useMessaging({ savCaseId, trackingSlug, userType }: UseMessaging
     if (!savCaseId && !trackingSlug) return;
     
     try {
+      // Déterminer quel champ mettre à jour et de quel type de sender marquer les messages comme lus
       const updateField = userType === 'client' ? 'read_by_client' : 'read_by_shop';
+      const senderTypeToMark = userType === 'client' ? 'shop' : 'client';
+      
+      console.log('📖 Marking messages as read:', { userType, updateField, senderTypeToMark });
       
       let query;
       if (savCaseId) {
@@ -256,6 +260,7 @@ export function useMessaging({ savCaseId, trackingSlug, userType }: UseMessaging
           .from('sav_messages')
           .update({ [updateField]: true })
           .eq('sav_case_id', savCaseId)
+          .eq('sender_type', senderTypeToMark)
           .eq(updateField, false);
       } else if (trackingSlug) {
         // Pour les clients avec tracking slug, il faut d'abord récupérer l'ID du SAV case
@@ -271,12 +276,17 @@ export function useMessaging({ savCaseId, trackingSlug, userType }: UseMessaging
           .from('sav_messages')
           .update({ [updateField]: true })
           .eq('sav_case_id', savCase.id)
+          .eq('sender_type', senderTypeToMark)
           .eq(updateField, false);
       }
 
       if (query) {
         const { error } = await query;
-        if (error) throw error;
+        if (error) {
+          console.error('❌ Error marking messages as read:', error);
+          throw error;
+        }
+        console.log('✅ Messages marked as read successfully');
         fetchMessages();
       }
     } catch (error: any) {
