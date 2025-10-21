@@ -30,6 +30,7 @@ import { generateSAVRestitutionPDF } from '@/utils/pdfGenerator';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { AITextReformulator } from '@/components/sav/AITextReformulator';
+import { EditSAVCustomerDialog } from '@/components/sav/EditSAVCustomerDialog';
 export default function SAVDetail() {
   const {
     id
@@ -361,9 +362,19 @@ export default function SAVDetail() {
               {/* Contact Information - For types that require customer info */}
               {getTypeInfo(savCase.sav_type).show_customer_info && <Card>
                   <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <User className="h-5 w-5" />
-                      Coordonnées du client
+                    <CardTitle className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <User className="h-5 w-5" />
+                        Coordonnées du client
+                      </div>
+                      <EditSAVCustomerDialog
+                        savCaseId={savCase.id}
+                        currentCustomerId={savCase.customer_id}
+                        currentCustomerName={savCase.customer ? `${savCase.customer.first_name} ${savCase.customer.last_name}` : undefined}
+                        onCustomerUpdated={() => {
+                          // Le realtime se charge de la mise à jour
+                        }}
+                      />
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
