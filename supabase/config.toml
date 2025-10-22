@@ -62,3 +62,6 @@ verify_jwt = true
 
 [functions.daily-assistant]
 verify_jwt = true
+
+[functions.check-sav-delays]
+verify_jwt = false
