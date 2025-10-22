@@ -60,17 +60,22 @@ export function SAVTimeline({ savCase, shop }: TimelineProps) {
   const createdAt = new Date(savCase.created_at);
   const now = new Date();
   
-  // Calculer le jour actuel (de 1 à maxDays)
+  // Calculer le temps réellement écoulé depuis la création
   const elapsedDays = Math.floor((now.getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24));
-  const currentDay = Math.min(elapsedDays + 1, maxDays);
+  const currentDay = elapsedDays + 1; // On compte à partir du jour 1
+  const remainingDays = Math.max(0, maxDays - elapsedDays);
 
-  // Générer les points de la timeline
+  // Déterminer si le SAV est terminé
+  const isClosed = isReadyStatus(savCase.status) || isCancelledStatus(savCase.status);
+  const shouldShowFinalPoint = isClosed;
+
+  // Générer les points de la timeline en tenant compte du temps réellement écoulé
   const timelinePoints = Array.from({ length: maxDays }, (_, index) => {
     const day = index + 1;
     const isPast = day < currentDay;
-    const isCurrent = day === currentDay && !delayInfo.isOverdue;
-    const isOverdue = delayInfo.isOverdue && day <= currentDay;
-    const isReady = savCase.status === 'ready' || savCase.status === 'cancelled';
+    const isCurrent = day === currentDay && !delayInfo.isOverdue && !isClosed;
+    const isOverdue = delayInfo.isOverdue && day <= Math.min(currentDay, maxDays);
+    const isReady = isClosed;
 
     return {
       day,
@@ -80,10 +85,6 @@ export function SAVTimeline({ savCase, shop }: TimelineProps) {
       isReady,
     };
   });
-
-  // Ajouter un point final de jonction si le SAV est terminé
-  const isClosed = isReadyStatus(savCase.status) || isCancelledStatus(savCase.status);
-  const shouldShowFinalPoint = isClosed;
 
   return (
     <div className="w-full py-2">
@@ -96,7 +97,7 @@ export function SAVTimeline({ savCase, shop }: TimelineProps) {
               isClosed ? 'bg-success' : 'bg-primary'
             }`}
             style={{ 
-              width: isClosed ? '100%' : `${Math.min((currentDay / maxDays) * 100, 100)}%` 
+              width: isClosed ? '100%' : `${Math.min((elapsedDays / maxDays) * 100, 100)}%` 
             }}
           />
         </div>
@@ -156,7 +157,7 @@ export function SAVTimeline({ savCase, shop }: TimelineProps) {
           )}
         </div>
 
-        {/* Légende compacte */}
+        {/* Légende compacte et explicite */}
         <div className="mt-2 text-center">
           <div className="text-xs text-muted-foreground">
             {isClosed ? (
@@ -164,12 +165,14 @@ export function SAVTimeline({ savCase, shop }: TimelineProps) {
                 {getStatusLabel(savCase.status)}
               </span>
             ) : delayInfo.isOverdue ? (
-              <span className="text-destructive font-medium">En retard</span>
+              <span className="text-destructive font-medium">
+                En retard de {Math.abs(delayInfo.remainingDays)} jour{Math.abs(delayInfo.remainingDays) > 1 ? 's' : ''}
+              </span>
             ) : (
               <span>
-                Jour {currentDay}/{maxDays}
-                {delayInfo.remainingDays > 0 && (
-                  <span className="text-muted-foreground/70"> • {delayInfo.remainingDays}j restant{delayInfo.remainingDays > 1 ? 's' : ''}</span>
+                <span className="font-medium">{elapsedDays} jour{elapsedDays > 1 ? 's' : ''} écoulé{elapsedDays > 1 ? 's' : ''}</span>
+                {remainingDays > 0 && (
+                  <span className="text-muted-foreground/70"> • {remainingDays}j restant{remainingDays > 1 ? 's' : ''} (sur {maxDays}j max)</span>
                 )}
               </span>
             )}
