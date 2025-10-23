@@ -11,6 +11,7 @@ import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useProfile } from '@/hooks/useProfile';
+import { useShopSettings } from '@/hooks/useShopSettings';
 
 export interface SAVType {
   id: string;
@@ -38,6 +39,7 @@ interface SAVTypesManagerProps {
 export default function SAVTypesManager({ types, loading, onRefresh }: SAVTypesManagerProps) {
   const { toast } = useToast();
   const { profile } = useProfile();
+  const { settings, refetch: refetchSettings } = useShopSettings();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingType, setEditingType] = useState<SAVType | null>(null);
   const [formData, setFormData] = useState({
@@ -186,6 +188,34 @@ export default function SAVTypesManager({ types, loading, onRefresh }: SAVTypesM
       show_in_sidebar: type.show_in_sidebar,
     });
     setDialogOpen(true);
+  };
+
+  const handleToggleHideEmpty = async (checked: boolean) => {
+    if (!profile?.shop_id) return;
+    
+    try {
+      const { error } = await supabase
+        .from('shops')
+        .update({ hide_empty_sav_types: checked })
+        .eq('id', profile.shop_id);
+        
+      if (error) throw error;
+      
+      toast({
+        title: "Paramètre mis à jour",
+        description: checked 
+          ? "Les types de SAV vides seront masqués dans la sidebar"
+          : "Tous les types de SAV seront affichés dans la sidebar",
+      });
+      
+      refetchSettings();
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de mettre à jour le paramètre",
+        variant: "destructive",
+      });
+    }
   };
 
   if (loading) {
@@ -366,6 +396,24 @@ export default function SAVTypesManager({ types, loading, onRefresh }: SAVTypesM
       </CardHeader>
       
       <CardContent>
+        <div className="mb-4 p-4 border rounded-lg">
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label className="text-sm font-medium flex items-center gap-2">
+                <Sidebar className="w-4 h-4" />
+                Masquer les types de SAV vides
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                N'afficher dans la barre latérale que les types de SAV ayant au moins 1 SAV en cours
+              </p>
+            </div>
+            <Switch
+              checked={settings?.hide_empty_sav_types ?? false}
+              onCheckedChange={handleToggleHideEmpty}
+            />
+          </div>
+        </div>
+        
         <div className="space-y-4">
           {types.length === 0 ? (
             <div className="text-center py-8">

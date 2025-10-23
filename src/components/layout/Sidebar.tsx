@@ -12,6 +12,7 @@ import { useSAVUnreadMessages } from '@/hooks/useSAVUnreadMessages';
 import { useShop } from '@/hooks/useShop';
 import { useShopSAVStatuses } from '@/hooks/useShopSAVStatuses';
 import { useShopSAVTypes } from '@/hooks/useShopSAVTypes';
+import { useShopSettings } from '@/hooks/useShopSettings';
 import { calculateSAVDelay } from '@/hooks/useSAVDelay';
 import { useMenuPermissions } from '@/hooks/useMenuPermissions';
 import { MessageSquare, Package, Users, BarChart3, FileText, Settings, X, Plus, Shield, CreditCard, HelpCircle, Info } from 'lucide-react';
@@ -75,6 +76,9 @@ export function Sidebar({
     types: savTypes,
     getTypeInfo
   } = useShopSAVTypes();
+  const {
+    settings
+  } = useShopSettings();
   const {
     savWithUnreadMessages
   } = useSAVUnreadMessages();
@@ -294,8 +298,13 @@ export function Sidebar({
                   </div>
                   <div className="space-y-1">
                     {savTypes.filter(type => {
-                      const count = savTypeCounts[type.type_key]?.count || 0;
-                      return count > 0;
+                      // Si le paramètre est activé, filtrer par count > 0
+                      if (settings?.hide_empty_sav_types) {
+                        const count = savTypeCounts[type.type_key]?.count || 0;
+                        return count > 0;
+                      }
+                      // Sinon, afficher tous les types
+                      return true;
                     }).map(type => {
                   const count = savTypeCounts[type.type_key]?.count || 0;
                   const typeInfo = getTypeInfo(type.type_key);
