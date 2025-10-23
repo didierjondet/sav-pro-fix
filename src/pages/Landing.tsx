@@ -113,7 +113,7 @@ export default function Landing() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">
-              Pourquoi choisir SAV Pro ?
+              Pourquoi choisir Fixway ?
             </h2>
             <p className="text-lg text-gray-600">
               Des fonctionnalités pensées pour optimiser votre activité
@@ -285,7 +285,7 @@ Achetez vos sms selon vos besoins</p>
             Prêt à révolutionner votre SAV ?
           </h2>
           <p className="text-xl text-blue-100 mb-8">
-            Rejoignez les centaines de boutiques qui ont choisi SAV Pro
+            Rejoignez les centaines de boutiques qui ont choisi Fixway
           </p>
           <Button size="lg" className="bg-white text-blue-600 hover:bg-gray-100" onClick={() => navigate('/auth')}>
             Commencer maintenant
@@ -297,7 +297,7 @@ Achetez vos sms selon vos besoins</p>
       <footer className="bg-gray-900 py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center text-gray-400">
-            <p>&copy; 2024 SAV Pro. Tous droits réservés.</p>
+            <p>&copy; 2024 Fixway. Tous droits réservés.</p>
             <div className="flex justify-center gap-6 mt-4 text-sm">
               <button onClick={() => setLegalDialog({
               isOpen: true,
