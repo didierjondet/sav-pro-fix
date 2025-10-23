@@ -334,7 +334,7 @@ export function Sidebar({
                             navigate(`/sav/${savCase.id}`);
                             onClose();
                           }} className="block text-primary hover:underline text-left w-full text-xs">
-                                    {savCase.customer ? `${savCase.customer.last_name} ${savCase.customer.first_name}` : savCase.sav_type === 'internal' ? `#${savCase.case_number}` : 'Client non défini'} - {savCase.device_brand} {savCase.device_model}
+                                    {savCase.customer ? `${savCase.customer.last_name} ${savCase.customer.first_name}` : `#${savCase.case_number}`} - {savCase.device_brand} {savCase.device_model}
                                   </button>)}
                                   {savTypeCounts[type.type_key].cases.length > 5 && <p className="text-xs text-muted-foreground">
                                       +{savTypeCounts[type.type_key].cases.length - 5} autres...
@@ -382,7 +382,7 @@ export function Sidebar({
                           navigate(`/sav/${savCase.id}`);
                           onClose();
                         }} className="block text-primary hover:underline text-left w-full text-xs">
-                                    {savCase.customer ? `${savCase.customer.last_name} ${savCase.customer.first_name}` : savCase.sav_type === 'internal' ? `#${savCase.case_number}` : 'Client non défini'} - {savCase.device_brand} {savCase.device_model}
+                                    {savCase.customer ? `${savCase.customer.last_name} ${savCase.customer.first_name}` : `#${savCase.case_number}`} - {savCase.device_brand} {savCase.device_model}
                                   </button>)}
                                 {(cases || []).filter(savCase => savCase.status === statusCount.key).length > 5 && <p className="text-xs text-muted-foreground">
                                     +{(cases || []).filter(savCase => savCase.status === statusCount.key).length - 5} autres...
