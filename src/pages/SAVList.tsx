@@ -383,7 +383,7 @@ export default function SAVList() {
                             <h3 className="font-bold text-xl">
                               {savCase.customer ? 
                                 `${savCase.customer.last_name} ${savCase.customer.first_name}` : 
-                                (savCase.sav_type === 'internal' ? `#${savCase.case_number}` : 'Client non défini')
+                                `#${savCase.case_number}`
                               }
                             </h3>
                             {/* Affichage du nombre de visites */}
