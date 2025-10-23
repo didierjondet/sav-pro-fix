@@ -204,6 +204,105 @@ export type Database = {
         }
         Relationships: []
       }
+      invoice_config: {
+        Row: {
+          bank_details: Json | null
+          company_address: string | null
+          company_city: string | null
+          company_email: string | null
+          company_legal_form: string
+          company_name: string
+          company_phone: string | null
+          company_postal_code: string | null
+          company_siret: string | null
+          company_vat_number: string | null
+          company_website: string | null
+          created_at: string
+          footer_text: string | null
+          header_logo_url: string | null
+          header_text: string | null
+          id: string
+          legal_text: string | null
+          service_name: string
+          updated_at: string
+          vat_rate: number
+        }
+        Insert: {
+          bank_details?: Json | null
+          company_address?: string | null
+          company_city?: string | null
+          company_email?: string | null
+          company_legal_form?: string
+          company_name?: string
+          company_phone?: string | null
+          company_postal_code?: string | null
+          company_siret?: string | null
+          company_vat_number?: string | null
+          company_website?: string | null
+          created_at?: string
+          footer_text?: string | null
+          header_logo_url?: string | null
+          header_text?: string | null
+          id?: string
+          legal_text?: string | null
+          service_name?: string
+          updated_at?: string
+          vat_rate?: number
+        }
+        Update: {
+          bank_details?: Json | null
+          company_address?: string | null
+          company_city?: string | null
+          company_email?: string | null
+          company_legal_form?: string
+          company_name?: string
+          company_phone?: string | null
+          company_postal_code?: string | null
+          company_siret?: string | null
+          company_vat_number?: string | null
+          company_website?: string | null
+          created_at?: string
+          footer_text?: string | null
+          header_logo_url?: string | null
+          header_text?: string | null
+          id?: string
+          legal_text?: string | null
+          service_name?: string
+          updated_at?: string
+          vat_rate?: number
+        }
+        Relationships: []
+      }
+      invoice_notifications_config: {
+        Row: {
+          created_at: string
+          id: string
+          in_app_enabled: boolean
+          notification_type: string
+          sms_enabled: boolean
+          sms_message_template: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          in_app_enabled?: boolean
+          notification_type: string
+          sms_enabled?: boolean
+          sms_message_template?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          in_app_enabled?: boolean
+          notification_type?: string
+          sms_enabled?: boolean
+          sms_message_template?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       landing_content: {
         Row: {
           benefit_1_description: string | null
@@ -1467,7 +1566,10 @@ export type Database = {
           created_at: string
           currency: string
           id: string
+          invoice_data: Json | null
           invoice_number: string
+          notification_sent: boolean | null
+          notification_sent_at: string | null
           package_id: string
           paid_at: string | null
           pdf_url: string | null
@@ -1475,14 +1577,21 @@ export type Database = {
           sms_count: number
           status: string
           stripe_payment_intent_id: string | null
+          total_ht_cents: number | null
+          total_ttc_cents: number | null
           updated_at: string
+          vat_amount_cents: number | null
+          vat_rate: number | null
         }
         Insert: {
           amount_cents: number
           created_at?: string
           currency?: string
           id?: string
+          invoice_data?: Json | null
           invoice_number: string
+          notification_sent?: boolean | null
+          notification_sent_at?: string | null
           package_id: string
           paid_at?: string | null
           pdf_url?: string | null
@@ -1490,14 +1599,21 @@ export type Database = {
           sms_count: number
           status?: string
           stripe_payment_intent_id?: string | null
+          total_ht_cents?: number | null
+          total_ttc_cents?: number | null
           updated_at?: string
+          vat_amount_cents?: number | null
+          vat_rate?: number | null
         }
         Update: {
           amount_cents?: number
           created_at?: string
           currency?: string
           id?: string
+          invoice_data?: Json | null
           invoice_number?: string
+          notification_sent?: boolean | null
+          notification_sent_at?: string | null
           package_id?: string
           paid_at?: string | null
           pdf_url?: string | null
@@ -1505,7 +1621,11 @@ export type Database = {
           sms_count?: number
           status?: string
           stripe_payment_intent_id?: string | null
+          total_ht_cents?: number | null
+          total_ttc_cents?: number | null
           updated_at?: string
+          vat_amount_cents?: number | null
+          vat_rate?: number | null
         }
         Relationships: []
       }
@@ -1648,7 +1768,10 @@ export type Database = {
           currency: string
           due_date: string | null
           id: string
+          invoice_data: Json | null
           invoice_number: string
+          notification_sent: boolean | null
+          notification_sent_at: string | null
           paid_at: string | null
           pdf_url: string | null
           period_end: string
@@ -1656,7 +1779,11 @@ export type Database = {
           shop_id: string
           status: string
           stripe_invoice_id: string | null
+          total_ht_cents: number | null
+          total_ttc_cents: number | null
           updated_at: string
+          vat_amount_cents: number | null
+          vat_rate: number | null
         }
         Insert: {
           amount_cents: number
@@ -1664,7 +1791,10 @@ export type Database = {
           currency?: string
           due_date?: string | null
           id?: string
+          invoice_data?: Json | null
           invoice_number: string
+          notification_sent?: boolean | null
+          notification_sent_at?: string | null
           paid_at?: string | null
           pdf_url?: string | null
           period_end: string
@@ -1672,7 +1802,11 @@ export type Database = {
           shop_id: string
           status?: string
           stripe_invoice_id?: string | null
+          total_ht_cents?: number | null
+          total_ttc_cents?: number | null
           updated_at?: string
+          vat_amount_cents?: number | null
+          vat_rate?: number | null
         }
         Update: {
           amount_cents?: number
@@ -1680,7 +1814,10 @@ export type Database = {
           currency?: string
           due_date?: string | null
           id?: string
+          invoice_data?: Json | null
           invoice_number?: string
+          notification_sent?: boolean | null
+          notification_sent_at?: string | null
           paid_at?: string | null
           pdf_url?: string | null
           period_end?: string
@@ -1688,7 +1825,11 @@ export type Database = {
           shop_id?: string
           status?: string
           stripe_invoice_id?: string | null
+          total_ht_cents?: number | null
+          total_ttc_cents?: number | null
           updated_at?: string
+          vat_amount_cents?: number | null
+          vat_rate?: number | null
         }
         Relationships: []
       }
@@ -1985,6 +2126,10 @@ export type Database = {
       ensure_super_admin_profile: { Args: never; Returns: undefined }
       generate_case_number: { Args: never; Returns: string }
       generate_invite_code: { Args: never; Returns: string }
+      generate_invoice_number: {
+        Args: { invoice_type: string }
+        Returns: string
+      }
       generate_quote_number: { Args: never; Returns: string }
       generate_shop_slug: { Args: { shop_name: string }; Returns: string }
       generate_tracking_slug: {
