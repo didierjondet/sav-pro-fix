@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Menu, Settings, User, Bell, LogOut, HardDrive, AlertTriangle, MessageSquare, FileCheck, RefreshCw } from 'lucide-react';
+import { Menu, Settings, User, Bell, LogOut, HardDrive, AlertTriangle, MessageSquare, FileCheck, RefreshCw, Loader2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { useShop } from '@/contexts/ShopContext';
@@ -49,6 +49,7 @@ const Header = ({
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const [isSyncing, setIsSyncing] = useState(false);
 
   const handleClearCache = async () => {
     try {
@@ -80,6 +81,27 @@ const Header = ({
       });
     }
   };
+
+  const handleSync = async () => {
+    setIsSyncing(true);
+    try {
+      await queryClient.invalidateQueries();
+      toast({
+        title: "✅ Synchronisation réussie",
+        description: "Les données ont été mises à jour",
+      });
+    } catch (error) {
+      console.error('Error syncing:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de synchroniser",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
   const getSAVLimits = () => {
     if (!subscription) return {
       remaining: 0,
@@ -178,6 +200,21 @@ const Header = ({
         <div className="flex items-center space-x-4">
           {/* Affichage des limites en permanence */}
           <div className="hidden md:flex items-center space-x-4 text-sm text-muted-foreground">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleSync}
+              disabled={isSyncing}
+              className="h-8"
+              title="Synchroniser les données"
+            >
+              {isSyncing ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <RefreshCw className="h-4 w-4" />
+              )}
+            </Button>
+
             <div className="flex items-center space-x-1">
               <FileCheck className="h-4 w-4" />
               <span>{savLimits.remaining} SAV restants</span>

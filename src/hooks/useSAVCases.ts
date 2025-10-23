@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -100,34 +99,19 @@ export function useSAVCases() {
     queryKey: ['sav-cases', user?.id],
     queryFn: fetchCases,
     enabled: !!user,
-    staleTime: 2 * 60 * 1000, // 2 minutes - données dynamiques
-    gcTime: 10 * 60 * 1000, // 10 minutes
+    staleTime: 1 * 60 * 1000, // 1 minute - réduit pour synchronisation
+    gcTime: 5 * 60 * 1000, // 5 minutes - réduit pour libérer mémoire
+    refetchInterval: (data) => {
+      // Si sur page /new-sav, ne pas recharger automatiquement
+      if (window.location.pathname === '/sav/new') return false;
+      // Si page visible, recharger toutes les 2 minutes
+      // Si page cachée, ne pas recharger (économise ressources)
+      return document.visibilityState === 'visible' ? 2 * 60 * 1000 : false;
+    },
   });
 
-  useEffect(() => {
-    if (!user) return;
-
-    // Set up realtime listener for SAV cases
-    const channel = supabase
-      .channel('sav-cases-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'sav_cases'
-        },
-        (payload) => {
-          console.log('SAV case change detected:', payload);
-          queryClient.invalidateQueries({ queryKey: ['sav-cases'] });
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user, queryClient]);
+  // Listener Realtime déplacé vers RealtimeProvider global pour être actif partout
+  // Plus besoin de listener local ici
 
   const createCase = async (caseData: any) => {
     try {

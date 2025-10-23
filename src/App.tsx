@@ -8,6 +8,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ShopProvider } from "@/contexts/ShopContext";
 import { LimitDialogProvider } from "@/contexts/LimitDialogContext";
+import { RealtimeProvider } from "@/contexts/RealtimeContext";
 
 import { DelayNotificationProvider } from "@/components/layout/DelayNotificationProvider";
 import Index from "./pages/Index";
@@ -45,12 +46,12 @@ import QuotePublic from "./pages/QuotePublic";
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 1000 * 60 * 15, // 15 minutes - Données considérées "fraîches"
-      gcTime: 1000 * 60 * 60 * 24, // 24 heures - Durée de vie du cache
-      retry: 1, // Réduit à 1 pour éviter les ralentissements
-      refetchOnWindowFocus: false, // Ne pas recharger au focus
-      refetchOnReconnect: false, // Ne pas recharger à la reconnexion
-      refetchOnMount: false, // Ne pas recharger au montage si data existe
+      staleTime: 1000 * 60 * 5, // 5 minutes par défaut - réduit de 15 min
+      gcTime: 1000 * 60 * 60, // 1 heure - réduit de 24h pour économiser mémoire
+      retry: 1,
+      refetchOnWindowFocus: true, // ✅ Réactiver pour synchronisation multi-sessions
+      refetchOnReconnect: true, // ✅ Réactiver pour synchronisation
+      refetchOnMount: 'always', // ✅ Toujours recharger au montage pour données fraîches
     },
   },
 });
@@ -73,7 +74,7 @@ const App = () => (
     client={queryClient} 
     persistOptions={{ 
       persister,
-      maxAge: 1000 * 60 * 60 * 24, // 24 heures
+      maxAge: 1000 * 60 * 30, // 30 minutes - réduit de 24h pour synchronisation multi-sessions
       dehydrateOptions: {
         shouldDehydrateQuery: (query) => {
           // Ne persister que les queries réussies et non en erreur
@@ -84,9 +85,10 @@ const App = () => (
   >
     <AuthProvider>
       <ShopProvider>
-        <DelayNotificationProvider>
-          <LimitDialogProvider>
-            <TooltipProvider>
+        <RealtimeProvider>
+          <DelayNotificationProvider>
+            <LimitDialogProvider>
+              <TooltipProvider>
                 <Toaster />
                 <Sonner />
                 <BrowserRouter>
@@ -130,9 +132,10 @@ const App = () => (
                 <Route path="*" element={<NotFound />} />
               </Routes>
               </BrowserRouter>
-            </TooltipProvider>
-          </LimitDialogProvider>
-        </DelayNotificationProvider>
+              </TooltipProvider>
+            </LimitDialogProvider>
+          </DelayNotificationProvider>
+        </RealtimeProvider>
       </ShopProvider>
     </AuthProvider>
   </PersistQueryClientProvider>
