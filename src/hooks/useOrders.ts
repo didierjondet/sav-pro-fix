@@ -25,6 +25,9 @@ export interface OrderItemWithPart extends OrderItem {
   sav_type?: string;
   sav_type_color?: string;
   sav_type_label?: string;
+  sav_cases?: {
+    status: string;
+  };
 }
 
 export function useOrders() {
@@ -54,7 +57,8 @@ export function useOrders() {
         .from('order_items')
         .select(`
           *,
-          part:parts(*)
+          part:parts(*),
+          sav_cases(status)
         `)
         .eq('shop_id', profile.shop_id)
         .order('created_at', { ascending: false });
@@ -99,12 +103,14 @@ export function useOrders() {
             customer_id,
             sav_type,
             shop_id,
+            status,
             created_at,
             customers(first_name, last_name)
           )
         `)
         .eq('parts.quantity', 0)
-        .eq('parts.shop_id', profile.shop_id); // Filtrer par shop_id
+        .eq('parts.shop_id', profile.shop_id)
+        .in('sav_cases.status', ['pending', 'in_progress', 'parts_ordered', 'testing']);
 
       if (savError) throw savError;
 
