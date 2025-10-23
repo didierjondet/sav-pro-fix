@@ -47,7 +47,8 @@ export default function SAVDetail() {
   const {
     cases,
     loading,
-    updateTechnicianComments
+    updateTechnicianComments,
+    updatePrivateComments
   } = useSAVCases();
   const {
     shop
@@ -167,28 +168,15 @@ export default function SAVDetail() {
     if (!savCase?.id) return;
     setSavingComments(true);
     try {
-      const {
-        error
-      } = await supabase.from('sav_cases').update({
-        private_comments: privateComments
-      }).eq('id', savCase.id);
-      if (error) throw error;
-      toast({
-        title: "Succès",
-        description: "Commentaires privés sauvegardés"
-      });
+      await updatePrivateComments(savCase.id, privateComments);
 
       // Mettre à jour l'état local
       setSavCase({
         ...savCase,
         private_comments: privateComments
       });
-    } catch (error: any) {
-      toast({
-        title: "Erreur",
-        description: "Impossible de sauvegarder les commentaires",
-        variant: "destructive"
-      });
+    } catch (error) {
+      // L'erreur est déjà gérée dans le hook
     } finally {
       setSavingComments(false);
     }

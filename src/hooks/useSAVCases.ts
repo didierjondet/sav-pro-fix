@@ -255,12 +255,37 @@ export function useSAVCases() {
     }
   };
 
+  const updatePrivateComments = async (caseId: string, comments: string) => {
+    try {
+      const { error } = await supabase
+        .from('sav_cases')
+        .update({ private_comments: comments })
+        .eq('id', caseId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Succès",
+        description: "Commentaires privés sauvegardés",
+      });
+
+      refetch();
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  };
+
   return {
     cases,
     loading,
     createCase,
     updateCaseStatus,
     updateTechnicianComments,
+    updatePrivateComments,
     deleteCase,
     refetch,
   };
