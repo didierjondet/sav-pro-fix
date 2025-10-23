@@ -1915,10 +1915,7 @@ export type Database = {
         Args: { p_shop_id: string }
         Returns: number
       }
-      check_subscription_limits: {
-        Args: { p_shop_id: string }
-        Returns: Json
-      }
+      check_subscription_limits: { Args: { p_shop_id: string }; Returns: Json }
       check_subscription_limits_v2: {
         Args: { p_action?: string; p_shop_id: string }
         Returns: Json
@@ -1982,32 +1979,17 @@ export type Database = {
         }
         Returns: string
       }
-      ensure_super_admin_profile: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      generate_case_number: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      generate_invite_code: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      generate_quote_number: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      generate_shop_slug: {
-        Args: { shop_name: string }
-        Returns: string
-      }
+      ensure_super_admin_profile: { Args: never; Returns: undefined }
+      generate_case_number: { Args: never; Returns: string }
+      generate_invite_code: { Args: never; Returns: string }
+      generate_quote_number: { Args: never; Returns: string }
+      generate_shop_slug: { Args: { shop_name: string }; Returns: string }
       generate_tracking_slug: {
         Args: { customer_name: string }
         Returns: string
       }
       get_all_shops_storage_usage: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           shop_id: string
           shop_name: string
@@ -2015,18 +1997,9 @@ export type Database = {
           storage_gb: number
         }[]
       }
-      get_available_stock: {
-        Args: { part_id: string }
-        Returns: number
-      }
-      get_current_user_role: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      get_current_user_shop_id: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
+      get_available_stock: { Args: { part_id: string }; Returns: number }
+      get_current_user_role: { Args: never; Returns: string }
+      get_current_user_shop_id: { Args: never; Returns: string }
       get_sms_credits_breakdown: {
         Args: { p_shop_id: string }
         Returns: {
@@ -2041,10 +2014,7 @@ export type Database = {
           total_remaining: number
         }[]
       }
-      get_total_sms_credits: {
-        Args: { p_shop_id: string }
-        Returns: number
-      }
+      get_total_sms_credits: { Args: { p_shop_id: string }; Returns: number }
       get_tracking_info: {
         Args: { p_tracking_slug: string }
         Returns: {
@@ -2086,18 +2056,9 @@ export type Database = {
         }
         Returns: Json
       }
-      is_shop_admin: {
-        Args: { check_user_id?: string }
-        Returns: boolean
-      }
-      is_super_admin: {
-        Args: { check_user_id?: string }
-        Returns: boolean
-      }
-      mask_phone_number: {
-        Args: { phone_number: string }
-        Returns: string
-      }
+      is_shop_admin: { Args: { check_user_id?: string }; Returns: boolean }
+      is_super_admin: { Args: { check_user_id?: string }; Returns: boolean }
+      mask_phone_number: { Args: { phone_number: string }; Returns: string }
       record_sav_visit: {
         Args: {
           p_tracking_slug: string
@@ -2106,14 +2067,8 @@ export type Database = {
         }
         Returns: undefined
       }
-      reset_monthly_counters: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      reset_monthly_sms_credits: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      reset_monthly_counters: { Args: never; Returns: undefined }
+      reset_monthly_sms_credits: { Args: never; Returns: undefined }
       send_client_tracking_message: {
         Args: {
           p_message: string
