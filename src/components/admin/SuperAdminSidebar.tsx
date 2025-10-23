@@ -24,6 +24,7 @@ import {
   HelpCircle,
   TrendingUp,
   Bell,
+  Receipt,
 } from "lucide-react";
 
 interface SuperAdminSidebarProps {
@@ -51,6 +52,7 @@ const menuItems = [
     items: [
       { id: "plans", title: "Plans d'abonnement", icon: Settings },
       { id: "sms", title: "Crédits SMS", icon: MessageSquare },
+      { id: "invoices", title: "Facturation", icon: Receipt },
       { id: "support", title: "Support", icon: HelpCircle },
     ]
   },

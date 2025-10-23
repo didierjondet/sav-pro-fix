@@ -5,6 +5,10 @@ interface SubscriptionInvoice {
   id: string;
   invoice_number: string;
   amount_cents: number;
+  vat_rate: number;
+  vat_amount_cents: number;
+  total_ht_cents: number;
+  total_ttc_cents: number;
   currency: string;
   period_start: string;
   period_end: string;
@@ -20,6 +24,10 @@ interface SMSInvoice {
   invoice_number: string;
   sms_count: number;
   amount_cents: number;
+  vat_rate: number;
+  vat_amount_cents: number;
+  total_ht_cents: number;
+  total_ttc_cents: number;
   currency: string;
   status: string;
   created_at: string;

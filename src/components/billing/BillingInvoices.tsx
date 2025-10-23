@@ -39,6 +39,10 @@ export function BillingInvoices() {
     }).format(cents / 100);
   };
 
+  const formatAmountSimple = (cents: number) => {
+    return (cents / 100).toFixed(2);
+  };
+
   const formatDate = (dateString: string) => {
     return format(new Date(dateString), 'dd/MM/yyyy', { locale: fr });
   };
@@ -95,9 +99,18 @@ export function BillingInvoices() {
                   </div>
                   
                   <div className="flex items-center gap-4 mt-4 md:mt-0">
-                    <div className="text-right">
-                      <div className="font-semibold text-lg">
-                        {formatAmount(invoice.amount_cents, invoice.currency)}
+                    <div className="text-right space-y-1">
+                      <div className="text-xs text-muted-foreground flex justify-between gap-2">
+                        <span>HT:</span>
+                        <span className="font-mono">{formatAmountSimple(invoice.total_ht_cents)} €</span>
+                      </div>
+                      <div className="text-xs text-muted-foreground flex justify-between gap-2">
+                        <span>TVA ({invoice.vat_rate}%):</span>
+                        <span className="font-mono">{formatAmountSimple(invoice.vat_amount_cents)} €</span>
+                      </div>
+                      <div className="font-semibold text-lg flex justify-between gap-2">
+                        <span>TTC:</span>
+                        <span className="font-mono">{formatAmountSimple(invoice.total_ttc_cents)} €</span>
                       </div>
                       {invoice.paid_at && (
                         <div className="text-xs text-muted-foreground">
@@ -163,9 +176,18 @@ export function BillingInvoices() {
                   </div>
                   
                   <div className="flex items-center gap-4 mt-4 md:mt-0">
-                    <div className="text-right">
-                      <div className="font-semibold text-lg">
-                        {formatAmount(invoice.amount_cents, invoice.currency)}
+                    <div className="text-right space-y-1">
+                      <div className="text-xs text-muted-foreground flex justify-between gap-2">
+                        <span>HT:</span>
+                        <span className="font-mono">{formatAmountSimple(invoice.total_ht_cents)} €</span>
+                      </div>
+                      <div className="text-xs text-muted-foreground flex justify-between gap-2">
+                        <span>TVA ({invoice.vat_rate}%):</span>
+                        <span className="font-mono">{formatAmountSimple(invoice.vat_amount_cents)} €</span>
+                      </div>
+                      <div className="font-semibold text-lg flex justify-between gap-2">
+                        <span>TTC:</span>
+                        <span className="font-mono">{formatAmountSimple(invoice.total_ttc_cents)} €</span>
                       </div>
                       {invoice.paid_at && (
                         <div className="text-xs text-muted-foreground">

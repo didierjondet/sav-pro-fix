@@ -25,6 +25,7 @@ import { BrandingManager } from '@/components/admin/BrandingManager';
 import { LandingPageManager } from '@/components/admin/LandingPageManager';
 import { SMSPackagesManager } from '@/components/admin/SMSPackagesManager';
 import { SystemAlertsManager } from '@/components/admin/SystemAlertsManager';
+import { InvoiceManagement } from '@/components/admin/InvoiceManagement';
 import { useStorageUsage } from '@/hooks/useStorageUsage';
 import { Shop } from '@/hooks/useShop';
 
@@ -262,6 +263,8 @@ export default function SuperAdmin() {
             <SMSCreditManager onUpdate={fetchData} />
           </div>
         );
+      case 'invoices':
+        return <InvoiceManagement />;
       case 'support':
         return selectedTicket ? (
           <SupportTicketManager
