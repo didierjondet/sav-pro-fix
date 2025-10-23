@@ -293,7 +293,10 @@ export function Sidebar({
                     </Badge>
                   </div>
                   <div className="space-y-1">
-                    {savTypes.map(type => {
+                    {savTypes.filter(type => {
+                      const count = savTypeCounts[type.type_key]?.count || 0;
+                      return count > 0;
+                    }).map(type => {
                   const count = savTypeCounts[type.type_key]?.count || 0;
                   const typeInfo = getTypeInfo(type.type_key);
                   return <Tooltip key={type.id}>
