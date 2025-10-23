@@ -83,29 +83,68 @@ export function useInvoices() {
 
   const generateInvoicePDF = async (invoiceId: string, type: 'subscription' | 'sms') => {
     try {
-      // TODO: Implémenter la génération PDF via une edge function
-      console.log(`Génération PDF pour ${type} invoice ${invoiceId}`);
+      const { data, error } = await supabase.functions.invoke('generate-invoice-pdf', {
+        body: { invoiceId, invoiceType: type }
+      });
+
+      if (error) throw error;
+      
+      if (data?.pdf_url) {
+        console.log('PDF généré avec succès:', data.pdf_url);
+        await fetchAllInvoices(); // Rafraîchir pour afficher le nouveau PDF
+      }
     } catch (error) {
       console.error('Erreur lors de la génération du PDF:', error);
+      throw error;
     }
   };
 
   const downloadInvoice = async (invoiceId: string, type: 'subscription' | 'sms') => {
     try {
-      // TODO: Implémenter le téléchargement
-      console.log(`Téléchargement ${type} invoice ${invoiceId}`);
+      const table = type === 'subscription' ? 'subscription_invoices' : 'sms_invoices';
+      const { data, error } = await supabase
+        .from(table)
+        .select('pdf_url, invoice_number')
+        .eq('id', invoiceId)
+        .single();
+
+      if (error) throw error;
+      
+      if (data?.pdf_url) {
+        // Télécharger le PDF
+        const link = document.createElement('a');
+        link.href = data.pdf_url;
+        link.download = `${data.invoice_number}.pdf`;
+        link.click();
+      } else {
+        throw new Error('PDF non disponible');
+      }
     } catch (error) {
       console.error('Erreur lors du téléchargement:', error);
+      throw error;
     }
   };
 
   const printInvoice = async (invoiceId: string, type: 'subscription' | 'sms') => {
     try {
-      // TODO: Implémenter l'impression
-      console.log(`Impression ${type} invoice ${invoiceId}`);
-      window.print();
+      const table = type === 'subscription' ? 'subscription_invoices' : 'sms_invoices';
+      const { data, error } = await supabase
+        .from(table)
+        .select('pdf_url')
+        .eq('id', invoiceId)
+        .single();
+
+      if (error) throw error;
+      
+      if (data?.pdf_url) {
+        // Ouvrir le PDF dans un nouvel onglet pour impression
+        window.open(data.pdf_url, '_blank');
+      } else {
+        throw new Error('PDF non disponible');
+      }
     } catch (error) {
       console.error('Erreur lors de l\'impression:', error);
+      throw error;
     }
   };
 

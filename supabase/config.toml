@@ -65,3 +65,9 @@ verify_jwt = true
 
 [functions.check-sav-delays]
 verify_jwt = false
+
+[functions.generate-invoice-pdf]
+verify_jwt = true
+
+[functions.send-invoice-notification]
+verify_jwt = true
