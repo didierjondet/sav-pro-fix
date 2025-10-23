@@ -16,13 +16,13 @@ interface SAVCase {
 
 interface ShopSAVType {
   type_key: string;
-  max_days: number;
+  max_processing_days: number;
   alert_days: number;
 }
 
 interface ShopSAVStatus {
   status_key: string;
-  pauses_delay: boolean;
+  pause_timer: boolean;
 }
 
 interface DelayInfo {
@@ -40,8 +40,8 @@ function calculateSAVDelay(
   const savType = savTypes.find(t => t.type_key === savCase.sav_type);
   const currentStatus = savStatuses.find(s => s.status_key === savCase.status);
   
-  const isPaused = currentStatus?.pauses_delay || false;
-  const maxDays = savType?.max_days || 7;
+  const isPaused = currentStatus?.pause_timer || false;
+  const maxDays = savType?.max_processing_days || 7;
   
   const createdAt = new Date(savCase.created_at);
   const now = new Date();
@@ -102,7 +102,7 @@ Deno.serve(async (req) => {
       // Récupérer les types SAV du shop
       const { data: savTypes, error: typesError } = await supabase
         .from('shop_sav_types')
-        .select('type_key, max_days, alert_days')
+        .select('type_key, max_processing_days, alert_days')
         .eq('shop_id', shop.id)
         .eq('is_active', true);
 
@@ -114,7 +114,7 @@ Deno.serve(async (req) => {
       // Récupérer les statuts SAV du shop
       const { data: savStatuses, error: statusesError } = await supabase
         .from('shop_sav_statuses')
-        .select('status_key, pauses_delay')
+        .select('status_key, pause_timer')
         .eq('shop_id', shop.id)
         .eq('is_active', true);
 
@@ -148,10 +148,18 @@ Deno.serve(async (req) => {
         // Arrondir les jours restants pour la comparaison
         const daysRemainingRounded = Math.ceil(delayInfo.remainingDays);
 
-        console.log(`📊 [CHECK-SAV-DELAYS] SAV ${savCase.case_number} - Type: ${savCase.sav_type} - Remaining: ${delayInfo.remainingDays.toFixed(2)}d (rounded: ${daysRemainingRounded}d) - Alert threshold: ${alertDays}d - Paused: ${delayInfo.isPaused}`);
+        console.log(`📊 [CHECK-SAV-DELAYS] SAV ${savCase.case_number} - Type: ${savCase.sav_type} - Remaining: ${delayInfo.remainingDays.toFixed(2)}d (rounded: ${daysRemainingRounded}d) - Alert threshold: ${alertDays}d - Paused: ${delayInfo.isPaused} - Overdue: ${delayInfo.isOverdue}`);
 
-        // Vérifier si on doit créer une alerte
-        if (!delayInfo.isPaused && !delayInfo.isOverdue && daysRemainingRounded <= alertDays && daysRemainingRounded >= 0) {
+        // Ignorer les SAV en pause
+        if (delayInfo.isPaused) {
+          console.log(`⏸️ [CHECK-SAV-DELAYS] SAV ${savCase.case_number} is paused, skipping alert`);
+          continue;
+        }
+
+        // Vérifier si on doit créer une alerte (pour les SAV approchant la limite OU déjà en retard)
+        const shouldAlert = delayInfo.isOverdue || (daysRemainingRounded <= alertDays && daysRemainingRounded >= 0);
+        
+        if (shouldAlert) {
           // Vérifier qu'une alerte similaire n'existe pas déjà aujourd'hui
           const { data: existingAlerts } = await supabase
             .from('notifications')
@@ -167,10 +175,18 @@ Deno.serve(async (req) => {
           }
 
           // Créer l'alerte
-          const title = daysRemainingRounded === 0 ? 'SAV en retard imminent !' : 'SAV proche de la limite';
-          const message = daysRemainingRounded === 0 
-            ? `⚠️ Le SAV ${savCase.case_number} (${savCase.sav_type}) sera en retard dans moins de 24h !`
-            : `⏰ Le SAV ${savCase.case_number} (${savCase.sav_type}) sera en retard dans ${daysRemainingRounded} jour${daysRemainingRounded > 1 ? 's' : ''}`;
+          let title, message;
+          if (delayInfo.isOverdue) {
+            const daysOverdue = Math.abs(daysRemainingRounded);
+            title = 'SAV en retard !';
+            message = `🚨 Le SAV ${savCase.case_number} (${savCase.sav_type}) est en retard de ${daysOverdue} jour${daysOverdue > 1 ? 's' : ''} !`;
+          } else if (daysRemainingRounded === 0) {
+            title = 'SAV en retard imminent !';
+            message = `⚠️ Le SAV ${savCase.case_number} (${savCase.sav_type}) sera en retard dans moins de 24h !`;
+          } else {
+            title = 'SAV proche de la limite';
+            message = `⏰ Le SAV ${savCase.case_number} (${savCase.sav_type}) sera en retard dans ${daysRemainingRounded} jour${daysRemainingRounded > 1 ? 's' : ''}`;
+          }
 
           const { error: notifError } = await supabase
             .from('notifications')
@@ -186,11 +202,9 @@ Deno.serve(async (req) => {
           if (notifError) {
             console.error(`❌ [CHECK-SAV-DELAYS] Error creating notification for SAV ${savCase.case_number}:`, notifError);
           } else {
-            console.log(`✅ [CHECK-SAV-DELAYS] Alert created for SAV ${savCase.case_number} - ${daysRemainingRounded} day(s) remaining`);
+            console.log(`✅ [CHECK-SAV-DELAYS] Alert created for SAV ${savCase.case_number} - ${delayInfo.isOverdue ? `overdue by ${Math.abs(daysRemainingRounded)}d` : `${daysRemainingRounded}d remaining`}`);
             totalAlertsCreated++;
           }
-        } else if (delayInfo.isOverdue) {
-          console.log(`⚠️ [CHECK-SAV-DELAYS] SAV ${savCase.case_number} is already overdue`);
         }
       }
     }
