@@ -143,13 +143,19 @@ export function NotificationBell() {
     setTimeout(() => setIsAnimating(false), 1500);
   };
 
-  const handleNotificationClick = async (notificationId: string) => {
+  const handleNotificationClick = async (notificationId: string, notification?: any) => {
     await markAsRead(notificationId);
-    if (hasNewActivity) {
-      setHasNewActivity(false);
+    
+    // Navigation si nécessaire
+    if (notification?.sav_case_id) {
+      navigate(`/sav/${notification.sav_case_id}`);
+      setIsOpen(false);
+    } else if (notification?.support_ticket_id) {
+      navigate('/support');
+      setIsOpen(false);
     }
-    // Forcer le re-fetch pour mettre à jour l'affichage
-    setTimeout(() => window.location.reload(), 100);
+    
+    // Pas de reload, la notification disparaîtra au prochain render
   };
 
   const handleSAVClick = async (savCaseId: string) => {
@@ -209,13 +215,12 @@ export function NotificationBell() {
     }
   };
 
-  const handleBellClick = async () => {
+  const handleBellClick = () => {
     setIsOpen(!isOpen);
     
-    // Si on ouvre la popup et qu'il y a des notifications non lues, on les marque comme lues
-    if (!isOpen && (hasNewActivity || totalUnreadCount > 0)) {
-      await handleMarkAllAsRead();
-      refetchSAVMessages();
+    // Simplement réinitialiser l'indicateur d'animation
+    if (!isOpen && hasNewActivity) {
+      setHasNewActivity(false);
     }
   };
 
@@ -355,7 +360,7 @@ export function NotificationBell() {
                   className={`border-0 rounded-none cursor-pointer hover:bg-muted/50 ${
                     !notification.read ? 'bg-muted/30' : ''
                   }`}
-                  onClick={() => handleNotificationClick(notification.id)}
+                  onClick={() => handleNotificationClick(notification.id, notification)}
                 >
                   <CardContent className="p-4">
                     <div className="flex items-start gap-3">
@@ -376,7 +381,7 @@ export function NotificationBell() {
                           </p>
                           {notification.message?.includes('/settings?tab=import-export') && (
                             <div className="mt-2">
-                              <Button variant="outline" size="sm" onClick={() => { navigate('/settings?tab=import-export'); handleNotificationClick(notification.id); }}>
+                              <Button variant="outline" size="sm" onClick={() => { navigate('/settings?tab=import-export'); handleNotificationClick(notification.id, notification); }}>
                                 Ouvrir la page Export
                               </Button>
                             </div>
