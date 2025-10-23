@@ -507,21 +507,19 @@ export function useOrders() {
         
         if (itemId.startsWith('sav-needed-')) {
           console.log('📋 Traitement SAV item:', itemId);
-          // Pour SAV - retirer la pièce du SAV et gérer les réservations
-          const partId = itemId.replace('sav-needed-', '');
-          
-          console.log('🔍 Parsing ID - partId:', partId);
           
           const savItem = partsNeededForSAV.find(item => item.id === itemId);
           console.log('📦 SAV item trouvé:', savItem);
           
-          if (savItem && savItem.sav_case_id && partId) {
-            // Supprimer la pièce des sav_parts
+          if (savItem?.part_id && savItem?.sav_case_id) {
+            console.log('🔍 Utilisation des valeurs réelles - partId:', savItem.part_id, 'savCaseId:', savItem.sav_case_id);
+            
+            // Supprimer la pièce des sav_parts avec les VRAIES valeurs
             const { error: removePartError } = await supabase
               .from('sav_parts')
               .delete()
               .eq('sav_case_id', savItem.sav_case_id)
-              .eq('part_id', partId);
+              .eq('part_id', savItem.part_id);
 
             if (removePartError) console.error('Erreur suppression sav_parts:', removePartError);
 
@@ -531,7 +529,7 @@ export function useOrders() {
               const { error: updateStockError } = await supabase
                 .from('parts')
                 .update({ reserved_quantity: newReservedQuantity })
-                .eq('id', partId);
+                .eq('id', savItem.part_id);
 
               if (updateStockError) console.error('Erreur libération stock réservé:', updateStockError);
             }
@@ -676,8 +674,12 @@ export function useOrders() {
         console.log(`🎯 ALL filter - returning partsNeedingRestock:`, partsNeedingRestock.map(p => p.part_name));
         return partsNeedingRestock;
       case 'reception':
-        // Seulement les vraies commandes qui sont marquées comme commandées
-        const receptionItems = orderItems.filter(item => item.ordered);
+        // Seulement les vraies commandes commandées, en excluant les SAV terminés
+        const receptionItems = orderItems.filter(item => {
+          const isOrdered = item.ordered;
+          const isSAVCompleted = item.sav_cases && ['ready', 'delivered', 'cancelled'].includes(item.sav_cases.status);
+          return isOrdered && !isSAVCompleted;
+        });
         console.log(`🎯 RECEPTION filter - returning ordered items:`, receptionItems.map(p => p.part_name));
         return receptionItems;
       default:
