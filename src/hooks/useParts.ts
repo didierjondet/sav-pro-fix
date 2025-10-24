@@ -29,11 +29,10 @@ export interface PartStatistics {
   lowStockCount: number;
 }
 
-export function useParts(page: number = 1, itemsPerPage: number = 20, searchTerm: string = '') {
+export function useParts(page: number = 1, itemsPerPage: number = 20) {
   const [parts, setParts] = useState<Part[]>([]);
   const [loading, setLoading] = useState(true);
   const [totalCount, setTotalCount] = useState(0);
-  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [statistics, setStatistics] = useState<PartStatistics>({
     totalQuantity: 0,
     totalValue: 0,
@@ -41,15 +40,6 @@ export function useParts(page: number = 1, itemsPerPage: number = 20, searchTerm
   });
   const { toast } = useToast();
   const { shop } = useShop();
-
-  // Debounce search term to avoid excessive API calls
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearchTerm(searchTerm);
-    }, 500); // Wait 500ms after last keystroke
-
-    return () => clearTimeout(timer);
-  }, [searchTerm]);
 
   const fetchStatistics = async () => {
     try {
@@ -96,16 +86,11 @@ export function useParts(page: number = 1, itemsPerPage: number = 20, searchTerm
         return;
       }
 
+      // Get all parts for the shop (no server-side filtering)
       let query = supabase
         .from('parts')
         .select('*, reserved_quantity, price_last_updated', { count: 'exact' })
         .eq('shop_id', shop.id);
-
-      // Server-side search if search term provided
-      if (debouncedSearchTerm) {
-        const searchLower = debouncedSearchTerm.toLowerCase();
-        query = query.or(`name.ilike.%${searchLower}%,reference.ilike.%${searchLower}%`);
-      }
 
       // Get paginated data with count in single query
       const from = (page - 1) * itemsPerPage;
@@ -136,7 +121,7 @@ export function useParts(page: number = 1, itemsPerPage: number = 20, searchTerm
   useEffect(() => {
     setLoading(true);
     fetchParts();
-  }, [page, itemsPerPage, debouncedSearchTerm]);
+  }, [page, itemsPerPage]);
 
   // Fonction pour trouver des pièces similaires
   const findSimilarParts = (name: string, excludeId?: string): Part[] => {

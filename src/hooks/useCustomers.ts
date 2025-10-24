@@ -15,7 +15,7 @@ export interface Customer {
   updated_at: string;
 }
 
-export function useCustomers(page: number = 1, itemsPerPage: number = 10, searchTerm: string = '') {
+export function useCustomers(page: number = 1, itemsPerPage: number = 10) {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [totalCount, setTotalCount] = useState(0);
@@ -31,16 +31,11 @@ export function useCustomers(page: number = 1, itemsPerPage: number = 10, search
         return;
       }
 
+      // Get all customers for the shop (no server-side filtering)
       let query = supabase
         .from('customers')
         .select('*', { count: 'exact' })
         .eq('shop_id', shop.id);
-
-      // Server-side search if search term provided
-      if (searchTerm) {
-        const searchLower = searchTerm.toLowerCase();
-        query = query.or(`first_name.ilike.%${searchLower}%,last_name.ilike.%${searchLower}%,email.ilike.%${searchLower}%,phone.ilike.%${searchLower}%`);
-      }
 
       // Get paginated data with count in single query
       const from = (page - 1) * itemsPerPage;
@@ -68,7 +63,7 @@ export function useCustomers(page: number = 1, itemsPerPage: number = 10, search
   useEffect(() => {
     setLoading(true);
     fetchCustomers();
-  }, [page, itemsPerPage, searchTerm]);
+  }, [page, itemsPerPage]);
 
   const createCustomer = async (customerData: Omit<Customer, 'id' | 'created_at' | 'updated_at'>) => {
     try {

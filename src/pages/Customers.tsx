@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Header from '@/components/layout/Header';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -43,18 +43,36 @@ export default function Customers() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   
-  const { customers, loading, totalCount, createCustomer, updateCustomer, deleteCustomer, refetch } = useCustomers(currentPage, itemsPerPage, searchTerm);
+  const { customers, loading, totalCount, createCustomer, updateCustomer, deleteCustomer, refetch } = useCustomers(currentPage, itemsPerPage);
   const { shop } = useShop();
   
-  const totalPages = Math.ceil(totalCount / itemsPerPage);
+  // Filtrage côté client avec multiWordSearch (comme SAVList)
+  const filteredCustomers = useMemo(() => {
+    if (!searchTerm.trim()) return customers;
+    
+    return customers.filter(customer =>
+      multiWordSearch(
+        searchTerm,
+        customer.first_name,
+        customer.last_name,
+        customer.email,
+        customer.phone,
+        customer.address
+      )
+    );
+  }, [customers, searchTerm]);
+
+  // Pagination après filtrage
+  const totalFilteredCount = filteredCustomers.length;
+  const totalPages = Math.ceil(totalFilteredCount / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedCustomers = filteredCustomers.slice(startIndex, endIndex);
 
   // Reset page to 1 when search term changes
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm]);
-
-  // Filtrer les clients en fonction de la recherche - maintenant fait côté serveur
-  const filteredCustomers = customers;
 
   const handleCreateCustomer = async (customerData: Omit<Customer, 'id' | 'created_at' | 'updated_at'>) => {
     const dataWithShop = {
@@ -171,7 +189,7 @@ export default function Customers() {
               </Card>
             ) : (
               <>
-                {filteredCustomers.map((customer) => {
+                {paginatedCustomers.map((customer) => {
                   return (
                     <CustomerCard 
                       key={customer.id} 
@@ -184,11 +202,11 @@ export default function Customers() {
                 })}
                 
                 {/* Pagination - show when there are results */}
-                {totalCount > 0 && totalPages > 1 && (
+                {totalFilteredCount > 0 && totalPages > 1 && (
                   <div className="mt-6">
                     <PaginationControls
                       currentPage={currentPage}
-                      totalItems={totalCount}
+                      totalItems={totalFilteredCount}
                       itemsPerPage={itemsPerPage}
                       onPageChange={setCurrentPage}
                       onItemsPerPageChange={(value) => {

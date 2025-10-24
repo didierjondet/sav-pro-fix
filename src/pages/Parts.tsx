@@ -47,11 +47,31 @@ export default function Parts() {
   const [showImport, setShowImport] = useState(false);
   const [viewingPhoto, setViewingPhoto] = useState<Part | null>(null);
   
-  const { parts, loading, totalCount, statistics, createPart, updatePart, deletePart, adjustStock, findSimilarParts, refetch } = useParts(currentPage, itemsPerPage, searchTerm);
+  const { parts, loading, totalCount, statistics, createPart, updatePart, deletePart, adjustStock, findSimilarParts, refetch } = useParts(currentPage, itemsPerPage);
 
-  // Pas besoin de filtrer côté client, c'est fait côté serveur
-  const displayedParts = parts;
-  const totalPages = Math.ceil(totalCount / itemsPerPage);
+  // Filtrage côté client avec multiWordSearch (comme SAVList)
+  const filteredParts = useMemo(() => {
+    if (!searchTerm.trim()) return parts;
+    
+    return parts.filter(part =>
+      multiWordSearch(
+        searchTerm,
+        part.name,
+        part.reference,
+        part.sku,
+        part.supplier,
+        part.notes
+      )
+    );
+  }, [parts, searchTerm]);
+
+  // Pagination après filtrage
+  const displayedParts = filteredParts;
+  const totalFilteredCount = filteredParts.length;
+  const totalPages = Math.ceil(totalFilteredCount / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedParts = displayedParts.slice(startIndex, endIndex);
 
   // Réinitialiser la page quand la recherche change
   useEffect(() => {
@@ -178,7 +198,7 @@ export default function Parts() {
 
                    {/* Liste des pièces */}
                    <div className="grid gap-4">
-                     {displayedParts.length === 0 ? (
+                     {paginatedParts.length === 0 ? (
                        <Card>
                          <CardContent className="text-center py-8">
                            <Package className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
@@ -193,8 +213,8 @@ export default function Parts() {
                            )}
                          </CardContent>
                        </Card>
-                      ) : (
-                        displayedParts.map((part) => (
+                       ) : (
+                        paginatedParts.map((part) => (
                         <Card key={part.id} className="hover:shadow-md transition-shadow">
                           <CardContent className="p-6">
                             <div className="flex items-center justify-between">
@@ -334,10 +354,10 @@ export default function Parts() {
                    </div>
 
                    {/* Pagination - show when there are results */}
-                   {totalCount > 0 && totalPages > 1 && (
+                   {totalFilteredCount > 0 && totalPages > 1 && (
                      <div className="mt-6">
                        <PaginationControls
-                         totalItems={totalCount}
+                         totalItems={totalFilteredCount}
                          itemsPerPage={itemsPerPage}
                          currentPage={currentPage}
                          onPageChange={setCurrentPage}
