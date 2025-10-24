@@ -29,10 +29,9 @@ export interface PartStatistics {
   lowStockCount: number;
 }
 
-export function useParts(page: number = 1, itemsPerPage: number = 20) {
+export function useParts() {
   const [parts, setParts] = useState<Part[]>([]);
   const [loading, setLoading] = useState(true);
-  const [totalCount, setTotalCount] = useState(0);
   const [statistics, setStatistics] = useState<PartStatistics>({
     totalQuantity: 0,
     totalValue: 0,
@@ -81,29 +80,20 @@ export function useParts(page: number = 1, itemsPerPage: number = 20) {
     try {
       if (!shop?.id) {
         setParts([]);
-        setTotalCount(0);
         setLoading(false);
         return;
       }
 
-      // Get all parts for the shop (no server-side filtering)
-      let query = supabase
+      // Get all parts for the shop (no pagination)
+      const { data, error } = await supabase
         .from('parts')
-        .select('*, reserved_quantity, price_last_updated', { count: 'exact' })
-        .eq('shop_id', shop.id);
-
-      // Get paginated data with count in single query
-      const from = (page - 1) * itemsPerPage;
-      const to = from + itemsPerPage - 1;
-
-      const { data, error, count } = await query
-        .order('name', { ascending: true })
-        .range(from, to);
+        .select('*, reserved_quantity, price_last_updated')
+        .eq('shop_id', shop.id)
+        .order('name', { ascending: true });
 
       if (error) throw error;
       
       setParts(data || []);
-      setTotalCount(count || 0);
       
       // Fetch statistics in parallel
       fetchStatistics();
@@ -121,7 +111,7 @@ export function useParts(page: number = 1, itemsPerPage: number = 20) {
   useEffect(() => {
     setLoading(true);
     fetchParts();
-  }, [page, itemsPerPage]);
+  }, [shop?.id]);
 
   // Fonction pour trouver des pièces similaires
   const findSimilarParts = (name: string, excludeId?: string): Part[] => {
@@ -306,7 +296,6 @@ export function useParts(page: number = 1, itemsPerPage: number = 20) {
   return {
     parts,
     loading,
-    totalCount,
     statistics,
     createPart,
     updatePart,

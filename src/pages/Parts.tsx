@@ -47,7 +47,7 @@ export default function Parts() {
   const [showImport, setShowImport] = useState(false);
   const [viewingPhoto, setViewingPhoto] = useState<Part | null>(null);
   
-  const { parts, loading, totalCount, statistics, createPart, updatePart, deletePart, adjustStock, findSimilarParts, refetch } = useParts(currentPage, itemsPerPage);
+  const { parts, loading, statistics, createPart, updatePart, deletePart, adjustStock, findSimilarParts, refetch } = useParts();
 
   // Filtrage côté client avec multiWordSearch (comme SAVList)
   const filteredParts = useMemo(() => {
