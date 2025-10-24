@@ -1114,6 +1114,7 @@ export type Database = {
           is_default: boolean
           max_processing_days: number | null
           pause_timer: boolean
+          require_unlock_pattern: boolean
           shop_id: string
           show_customer_info: boolean
           show_in_sidebar: boolean
@@ -1131,6 +1132,7 @@ export type Database = {
           is_default?: boolean
           max_processing_days?: number | null
           pause_timer?: boolean
+          require_unlock_pattern?: boolean
           shop_id: string
           show_customer_info?: boolean
           show_in_sidebar?: boolean
@@ -1148,6 +1150,7 @@ export type Database = {
           is_default?: boolean
           max_processing_days?: number | null
           pause_timer?: boolean
+          require_unlock_pattern?: boolean
           shop_id?: string
           show_customer_info?: boolean
           show_in_sidebar?: boolean

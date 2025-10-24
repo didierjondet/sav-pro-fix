@@ -15,6 +15,8 @@ interface PrintConfirmDialogProps {
   onCancel: () => void;
   savCaseNumber: string;
   savCase?: any; // Ajouter les données complètes du SAV
+  requireUnlockPattern?: boolean; // Nouveau prop pour exiger le code
+  hasUnlockPattern?: boolean; // Nouveau prop pour savoir si le code a été saisi
 }
 
 export function PrintConfirmDialog({ 
@@ -23,7 +25,9 @@ export function PrintConfirmDialog({
   onConfirm, 
   onCancel, 
   savCaseNumber,
-  savCase 
+  savCase,
+  requireUnlockPattern = false,
+  hasUnlockPattern = false
 }: PrintConfirmDialogProps) {
   const [sendingSMS, setSendingSMS] = useState(false);
   const [warningAcknowledged, setWarningAcknowledged] = useState(false);
@@ -32,6 +36,16 @@ export function PrintConfirmDialog({
   const { settings } = useShopSettings();
 
   const handleConfirm = () => {
+    // Vérifier si le code de déverrouillage est obligatoire
+    if (requireUnlockPattern && !hasUnlockPattern) {
+      toast({
+        title: "Code de déverrouillage manquant",
+        description: "Le code de déverrouillage est obligatoire pour ce type de SAV",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (settings?.sav_warning_enabled && !warningAcknowledged) {
       toast({
         title: "Vérification requise",
@@ -50,6 +64,16 @@ export function PrintConfirmDialog({
   };
 
   const handleSendSMS = async () => {
+    // Vérifier si le code de déverrouillage est obligatoire
+    if (requireUnlockPattern && !hasUnlockPattern) {
+      toast({
+        title: "Code de déverrouillage manquant",
+        description: "Le code de déverrouillage est obligatoire pour ce type de SAV",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (settings?.sav_warning_enabled && !warningAcknowledged) {
       toast({
         title: "Vérification requise",
@@ -119,6 +143,23 @@ export function PrintConfirmDialog({
         </DialogHeader>
 
         <div className="space-y-4">
+          {/* Alerte pour le code de déverrouillage obligatoire */}
+          {requireUnlockPattern && !hasUnlockPattern && (
+            <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg p-3">
+              <div className="flex items-start gap-2">
+                <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400 mt-1 flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <h4 className="text-sm font-medium text-red-800 dark:text-red-200 mb-2">
+                    ⚠️ Code de déverrouillage manquant
+                  </h4>
+                  <p className="text-sm text-red-700 dark:text-red-300 break-words">
+                    Le code de déverrouillage est <strong>obligatoire</strong> pour ce type de SAV. Vous devez le saisir avant de continuer.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {settings?.sav_warning_enabled && (
             <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
               <div className="flex items-start gap-2">

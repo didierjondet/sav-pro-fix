@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Edit, Trash2, Plus, Info, Clock, Users, Sidebar } from 'lucide-react';
+import { Edit, Trash2, Plus, Info, Clock, Users, Sidebar, AlertTriangle } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -26,6 +26,7 @@ export interface SAVType {
   max_processing_days?: number;
   pause_timer: boolean;
   show_in_sidebar: boolean;
+  require_unlock_pattern: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -50,6 +51,7 @@ export default function SAVTypesManager({ types, loading, onRefresh }: SAVTypesM
     max_processing_days: 7,
     pause_timer: false,
     show_in_sidebar: true,
+    require_unlock_pattern: false,
   });
 
   const resetForm = () => {
@@ -61,6 +63,7 @@ export default function SAVTypesManager({ types, loading, onRefresh }: SAVTypesM
       max_processing_days: 7,
       pause_timer: false,
       show_in_sidebar: true,
+      require_unlock_pattern: false,
     });
     setEditingType(null);
   };
@@ -83,6 +86,7 @@ export default function SAVTypesManager({ types, loading, onRefresh }: SAVTypesM
             max_processing_days: formData.max_processing_days,
             pause_timer: formData.pause_timer,
             show_in_sidebar: formData.show_in_sidebar,
+            require_unlock_pattern: formData.require_unlock_pattern,
           });
 
       if (error) throw error;
@@ -119,6 +123,7 @@ export default function SAVTypesManager({ types, loading, onRefresh }: SAVTypesM
           max_processing_days: formData.max_processing_days,
           pause_timer: formData.pause_timer,
           show_in_sidebar: formData.show_in_sidebar,
+          require_unlock_pattern: formData.require_unlock_pattern,
         })
         .eq('id', editingType.id);
 
@@ -186,6 +191,7 @@ export default function SAVTypesManager({ types, loading, onRefresh }: SAVTypesM
       max_processing_days: type.max_processing_days || 7,
       pause_timer: type.pause_timer,
       show_in_sidebar: type.show_in_sidebar,
+      require_unlock_pattern: type.require_unlock_pattern,
     });
     setDialogOpen(true);
   };
@@ -373,6 +379,24 @@ export default function SAVTypesManager({ types, loading, onRefresh }: SAVTypesM
                       checked={formData.show_in_sidebar}
                       onCheckedChange={(checked) => 
                         setFormData({ ...formData, show_in_sidebar: checked })
+                      }
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label className="text-sm font-normal flex items-center gap-2">
+                        <AlertTriangle className="w-4 h-4" />
+                        Code de déverrouillage obligatoire
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        Exiger la saisie du code de déverrouillage pour ce type de SAV
+                      </p>
+                    </div>
+                    <Switch
+                      checked={formData.require_unlock_pattern}
+                      onCheckedChange={(checked) => 
+                        setFormData({ ...formData, require_unlock_pattern: checked })
                       }
                     />
                   </div>

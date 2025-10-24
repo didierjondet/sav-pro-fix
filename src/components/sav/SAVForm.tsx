@@ -1011,6 +1011,8 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
         onCancel={handlePrintCancel}
         savCaseNumber={createdSAVCase?.case_number || ''}
         savCase={createdSAVCase}
+        requireUnlockPattern={currentTypeInfo.require_unlock_pattern}
+        hasUnlockPattern={unlockPattern.length > 0}
       />
     </div>
   );

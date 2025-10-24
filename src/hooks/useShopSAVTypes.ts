@@ -17,6 +17,7 @@ export interface ShopSAVType {
   alert_days?: number;
   pause_timer: boolean;
   show_in_sidebar: boolean;
+  require_unlock_pattern: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -39,7 +40,7 @@ export function useShopSAVTypes() {
       // Les politiques RLS se chargent automatiquement de filtrer par shop_id
       const { data, error } = await supabase
         .from('shop_sav_types')
-        .select('*, alert_days')
+        .select('*, alert_days, require_unlock_pattern')
         .eq('is_active', true)
         .order('display_order', { ascending: true });
 
@@ -96,6 +97,7 @@ export function useShopSAVTypes() {
         max_processing_days: customType.max_processing_days,
         pause_timer: customType.pause_timer,
         show_in_sidebar: customType.show_in_sidebar,
+        require_unlock_pattern: customType.require_unlock_pattern,
       };
     }
 
@@ -108,6 +110,7 @@ export function useShopSAVTypes() {
       max_processing_days: 7,
       pause_timer: false,
       show_in_sidebar: true,
+      require_unlock_pattern: false,
     };
   };
 
