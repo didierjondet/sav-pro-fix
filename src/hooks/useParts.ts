@@ -48,17 +48,27 @@ export function useParts(page: number = 1, itemsPerPage: number = 20, searchTerm
         return;
       }
 
+      // Fetch aggregated statistics directly
       const { data, error } = await supabase
-        .rpc('get_parts_statistics', { p_shop_id: shop.id });
+        .from('parts')
+        .select('quantity, purchase_price, min_stock')
+        .eq('shop_id', shop.id);
 
       if (error) throw error;
 
-      if (data && data.length > 0) {
-        const stats = data[0];
+      if (data) {
+        const totalQuantity = data.reduce((sum, part) => sum + (part.quantity || 0), 0);
+        const totalValue = data.reduce((sum, part) => 
+          sum + ((part.quantity || 0) * (part.purchase_price || 0)), 0
+        );
+        const lowStockCount = data.filter(part => 
+          (part.quantity || 0) <= (part.min_stock || 0)
+        ).length;
+
         setStatistics({
-          totalQuantity: stats.total_quantity || 0,
-          totalValue: stats.total_value || 0,
-          lowStockCount: stats.low_stock_count || 0
+          totalQuantity,
+          totalValue,
+          lowStockCount
         });
       }
     } catch (error: any) {

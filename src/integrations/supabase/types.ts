@@ -2151,6 +2151,14 @@ export type Database = {
       get_available_stock: { Args: { part_id: string }; Returns: number }
       get_current_user_role: { Args: never; Returns: string }
       get_current_user_shop_id: { Args: never; Returns: string }
+      get_parts_statistics: {
+        Args: { p_shop_id: string }
+        Returns: {
+          low_stock_count: number
+          total_quantity: number
+          total_value: number
+        }[]
+      }
       get_sms_credits_breakdown: {
         Args: { p_shop_id: string }
         Returns: {
