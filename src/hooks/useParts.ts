@@ -23,12 +23,49 @@ export interface Part {
   price_last_updated?: string;
 }
 
+export interface PartStatistics {
+  totalQuantity: number;
+  totalValue: number;
+  lowStockCount: number;
+}
+
 export function useParts(page: number = 1, itemsPerPage: number = 20, searchTerm: string = '') {
   const [parts, setParts] = useState<Part[]>([]);
   const [loading, setLoading] = useState(true);
   const [totalCount, setTotalCount] = useState(0);
+  const [statistics, setStatistics] = useState<PartStatistics>({
+    totalQuantity: 0,
+    totalValue: 0,
+    lowStockCount: 0
+  });
   const { toast } = useToast();
   const { shop } = useShop();
+
+  const fetchStatistics = async () => {
+    try {
+      if (!shop?.id) {
+        setStatistics({ totalQuantity: 0, totalValue: 0, lowStockCount: 0 });
+        return;
+      }
+
+      const { data, error } = await supabase
+        .rpc('get_parts_statistics', { p_shop_id: shop.id });
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        const stats = data[0];
+        setStatistics({
+          totalQuantity: stats.total_quantity || 0,
+          totalValue: stats.total_value || 0,
+          lowStockCount: stats.low_stock_count || 0
+        });
+      }
+    } catch (error: any) {
+      console.error('Error fetching statistics:', error);
+      setStatistics({ totalQuantity: 0, totalValue: 0, lowStockCount: 0 });
+    }
+  };
 
   const fetchParts = async () => {
     try {
@@ -62,6 +99,9 @@ export function useParts(page: number = 1, itemsPerPage: number = 20, searchTerm
       
       setParts(data || []);
       setTotalCount(count || 0);
+      
+      // Fetch statistics in parallel
+      fetchStatistics();
     } catch (error: any) {
       toast({
         title: "Erreur",
@@ -262,6 +302,7 @@ export function useParts(page: number = 1, itemsPerPage: number = 20, searchTerm
     parts,
     loading,
     totalCount,
+    statistics,
     createPart,
     updatePart,
     deletePart,

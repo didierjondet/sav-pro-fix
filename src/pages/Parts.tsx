@@ -47,7 +47,7 @@ export default function Parts() {
   const [showImport, setShowImport] = useState(false);
   const [viewingPhoto, setViewingPhoto] = useState<Part | null>(null);
   
-  const { parts, loading, totalCount, createPart, updatePart, deletePart, adjustStock, findSimilarParts, refetch } = useParts(currentPage, itemsPerPage, searchTerm);
+  const { parts, loading, totalCount, statistics, createPart, updatePart, deletePart, adjustStock, findSimilarParts, refetch } = useParts(currentPage, itemsPerPage, searchTerm);
 
   // Pas besoin de filtrer côté client, c'est fait côté serveur
   const displayedParts = parts;
@@ -58,10 +58,10 @@ export default function Parts() {
     setCurrentPage(1);
   }, [searchTerm]);
 
-  // Statistiques - basées sur les pièces affichées (limitation acceptable)
-  const lowStockParts = parts.filter(part => (part.quantity || 0) <= (part.min_stock || 0));
-  const totalValue = parts.reduce((sum, part) => sum + ((part.purchase_price || 0) * (part.quantity || 0)), 0);
-  const totalParts = parts.reduce((sum, part) => sum + (part.quantity || 0), 0);
+  // Statistiques globales - basées sur toutes les pièces du shop
+  const totalParts = statistics.totalQuantity;
+  const totalValue = statistics.totalValue;
+  const lowStockCount = statistics.lowStockCount;
 
   const handleCreatePart = async (data: any) => {
     return await createPart(data);
