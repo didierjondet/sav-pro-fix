@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useShop } from '@/hooks/useShop';
 
 export interface Customer {
   id: string;
@@ -19,27 +20,21 @@ export function useCustomers(page: number = 1, itemsPerPage: number = 10, search
   const [loading, setLoading] = useState(true);
   const [totalCount, setTotalCount] = useState(0);
   const { toast } = useToast();
+  const { shop } = useShop();
 
   const fetchCustomers = async () => {
     try {
-      // Get current user's shop_id
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('shop_id')
-        .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
-        .single();
-
-      if (!profile?.shop_id) {
-        console.error('No shop_id found for current user');
+      if (!shop?.id) {
         setCustomers([]);
         setTotalCount(0);
+        setLoading(false);
         return;
       }
 
       let query = supabase
         .from('customers')
         .select('*', { count: 'exact' })
-        .eq('shop_id', profile.shop_id);
+        .eq('shop_id', shop.id);
 
       // Server-side search if search term provided
       if (searchTerm) {
@@ -47,20 +42,18 @@ export function useCustomers(page: number = 1, itemsPerPage: number = 10, search
         query = query.or(`first_name.ilike.%${searchLower}%,last_name.ilike.%${searchLower}%,email.ilike.%${searchLower}%,phone.ilike.%${searchLower}%`);
       }
 
-      // Get total count
-      const { count } = await query;
-      setTotalCount(count || 0);
-
-      // Get paginated data
+      // Get paginated data with count in single query
       const from = (page - 1) * itemsPerPage;
       const to = from + itemsPerPage - 1;
 
-      const { data, error } = await query
+      const { data, error, count } = await query
         .order('created_at', { ascending: false })
         .range(from, to);
 
       if (error) throw error;
+      
       setCustomers(data || []);
+      setTotalCount(count || 0);
     } catch (error: any) {
       toast({
         title: "Erreur",
