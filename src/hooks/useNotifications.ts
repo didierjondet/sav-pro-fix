@@ -58,6 +58,11 @@ export function useNotifications() {
 
   useEffect(() => {
     fetchNotifications();
+    
+    // Polling manuel toutes les 60 secondes (au lieu de realtime)
+    const interval = setInterval(fetchNotifications, 60000);
+    
+    return () => clearInterval(interval);
   }, []);
 
   const createNotification = async (notification: Omit<Notification, 'id' | 'created_at' | 'shop_id' | 'read'>) => {

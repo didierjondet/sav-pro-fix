@@ -52,27 +52,14 @@ export function useSAVMessages(savCaseId?: string) {
 
     if (!savCaseId) return;
 
-    // Set up realtime listener for messages
-    const channel = supabase
-      .channel(`sav-messages-${savCaseId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'sav_messages',
-          filter: `sav_case_id=eq.${savCaseId}`
-        },
-        (payload) => {
-          console.log('📨 SAV message change detected:', payload);
-          // Refetch messages immediately for any change
-          setTimeout(() => fetchMessages(), 100); // Small delay to ensure DB consistency
-        }
-      )
-      .subscribe();
+    // REALTIME DÉSACTIVÉ - Polling toutes les 30s pour performance
+    console.log('📨 [SAVMessages] Polling activé - 30s');
+    const pollInterval = setInterval(() => {
+      fetchMessages();
+    }, 30000);
 
     return () => {
-      supabase.removeChannel(channel);
+      clearInterval(pollInterval);
     };
   }, [savCaseId]);
 

@@ -42,26 +42,14 @@ export function useSupportMessages(ticketId?: string) {
 
     if (!ticketId) return;
 
-    // Set up realtime listener for messages
-    const channel = supabase
-      .channel(`support-messages-${ticketId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'support_messages',
-          filter: `ticket_id=eq.${ticketId}`
-        },
-        (payload) => {
-          console.log('Support message change detected:', payload);
-          fetchMessages(); // Refetch messages when any change occurs
-        }
-      )
-      .subscribe();
+    // REALTIME DÉSACTIVÉ - Polling toutes les 30s pour performance
+    console.log('📨 [SupportMessages] Polling activé - 30s');
+    const pollInterval = setInterval(() => {
+      fetchMessages();
+    }, 30000);
 
     return () => {
-      supabase.removeChannel(channel);
+      clearInterval(pollInterval);
     };
   }, [ticketId]);
 

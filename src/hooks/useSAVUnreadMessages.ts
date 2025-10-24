@@ -187,75 +187,14 @@ export function useSAVUnreadMessages() {
   useEffect(() => {
     if (!user) return;
 
-    // Set up realtime listener for SAV messages
-    const messagesChannel = supabase
-      .channel('sav-unread-messages')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'sav_messages'
-        },
-        () => {
-          console.log('🔄 Message change detected, refreshing unread messages');
-          queryClient.invalidateQueries({ queryKey: ['sav-unread-messages'] });
-        }
-      )
-      .subscribe();
-
-    // Set up realtime listener for SAV status changes
-    const statusChannel = supabase
-      .channel('sav-status-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'sav_cases'
-        },
-        (payload) => {
-          console.log('🔔 SAV status change detected:', {
-            id: payload.new?.id,
-            oldStatus: payload.old?.status,
-            newStatus: payload.new?.status
-          });
-          const newStatus = payload.new?.status;
-          const oldStatus = payload.old?.status;
-          
-          // Si le statut passe à "ready", "delivered" ou "cancelled", fermer la conversation
-          if ((newStatus === 'ready' || newStatus === 'delivered' || newStatus === 'cancelled') && 
-              (oldStatus !== 'ready' && oldStatus !== 'delivered' && oldStatus !== 'cancelled')) {
-            console.log('🔒 SAV status changed to closed status, closing conversation');
-            handleSAVClosed(payload.new?.id);
-          } else {
-            queryClient.invalidateQueries({ queryKey: ['sav-unread-messages'] });
-          }
-        }
-      )
-      .subscribe();
-
-    // Set up realtime listener for SAV deletions
-    const deleteChannel = supabase
-      .channel('sav-deletions')
-      .on(
-        'postgres_changes',
-        {
-          event: 'DELETE',
-          schema: 'public',
-          table: 'sav_cases'
-        },
-        (payload) => {
-          console.log('🗑️ SAV deleted, closing conversation');
-          handleSAVClosed(payload.old?.id);
-        }
-      )
-      .subscribe();
+    // REALTIME DÉSACTIVÉ - Polling toutes les 60s pour performance
+    console.log('📨 [SAVUnread] Polling activé - 60s');
+    const pollInterval = setInterval(() => {
+      queryClient.invalidateQueries({ queryKey: ['sav-unread-messages'] });
+    }, 60000);
 
     return () => {
-      supabase.removeChannel(messagesChannel);
-      supabase.removeChannel(statusChannel);
-      supabase.removeChannel(deleteChannel);
+      clearInterval(pollInterval);
     };
   }, [user, queryClient]);
 

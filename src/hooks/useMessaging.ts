@@ -83,40 +83,20 @@ export function useMessaging({ savCaseId, trackingSlug, userType }: UseMessaging
     }
   };
 
-  // Configuration du real-time
+  // Configuration du real-time - DÉSACTIVÉ (polling à la place)
   useEffect(() => {
     fetchMessages();
 
     if (!savCaseId && !trackingSlug) return;
 
-    // Configuration du canal real-time unifié
-    const channelName = savCaseId ? `sav-messages-${savCaseId}` : `tracking-messages-${trackingSlug}`;
-    
-    console.log(`🔄 Setting up real-time channel: ${channelName}`);
-    
-    const channel = supabase
-      .channel(channelName)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'sav_messages',
-          ...(savCaseId ? { filter: `sav_case_id=eq.${savCaseId}` } : {})
-        },
-        (payload) => {
-          console.log('📨 Real-time message change:', payload.eventType, payload);
-          // Refetch messages après un petit délai pour assurer la consistance
-          setTimeout(() => fetchMessages(), 100);
-        }
-      )
-      .subscribe((status) => {
-        console.log(`📡 Real-time subscription status for ${channelName}:`, status);
-      });
+    // Polling toutes les 30s au lieu de realtime
+    console.log('📨 [Messaging] Polling activé - 30s');
+    const pollInterval = setInterval(() => {
+      fetchMessages();
+    }, 30000);
 
     return () => {
-      console.log(`Cleaning up real-time channel: ${channelName}`);
-      supabase.removeChannel(channel);
+      clearInterval(pollInterval);
     };
   }, [savCaseId, trackingSlug]);
 
