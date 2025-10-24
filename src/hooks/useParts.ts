@@ -33,6 +33,7 @@ export function useParts(page: number = 1, itemsPerPage: number = 20, searchTerm
   const [parts, setParts] = useState<Part[]>([]);
   const [loading, setLoading] = useState(true);
   const [totalCount, setTotalCount] = useState(0);
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [statistics, setStatistics] = useState<PartStatistics>({
     totalQuantity: 0,
     totalValue: 0,
@@ -40,6 +41,15 @@ export function useParts(page: number = 1, itemsPerPage: number = 20, searchTerm
   });
   const { toast } = useToast();
   const { shop } = useShop();
+
+  // Debounce search term to avoid excessive API calls
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 500); // Wait 500ms after last keystroke
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
   const fetchStatistics = async () => {
     try {
@@ -92,8 +102,8 @@ export function useParts(page: number = 1, itemsPerPage: number = 20, searchTerm
         .eq('shop_id', shop.id);
 
       // Server-side search if search term provided
-      if (searchTerm) {
-        const searchLower = searchTerm.toLowerCase();
+      if (debouncedSearchTerm) {
+        const searchLower = debouncedSearchTerm.toLowerCase();
         query = query.or(`name.ilike.%${searchLower}%,reference.ilike.%${searchLower}%`);
       }
 
@@ -126,7 +136,7 @@ export function useParts(page: number = 1, itemsPerPage: number = 20, searchTerm
   useEffect(() => {
     setLoading(true);
     fetchParts();
-  }, [page, itemsPerPage, searchTerm]);
+  }, [page, itemsPerPage, debouncedSearchTerm]);
 
   // Fonction pour trouver des pièces similaires
   const findSimilarParts = (name: string, excludeId?: string): Part[] => {
