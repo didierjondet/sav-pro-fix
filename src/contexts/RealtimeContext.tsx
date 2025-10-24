@@ -21,7 +21,18 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
         { event: '*', schema: 'public', table: 'sav_cases' },
         (payload: any) => {
           console.log('🔔 Realtime SAV change:', payload.eventType, payload.new?.id || payload.old?.id);
-          queryClient.invalidateQueries({ queryKey: ['sav-cases'] });
+          
+          // Ne pas refetch automatiquement - juste invalider le cache
+          queryClient.invalidateQueries({ 
+            queryKey: ['sav-cases'],
+            refetchType: 'none'
+          });
+          
+          // Refetch UNIQUEMENT si on est sur une page SAV ou Orders
+          if (window.location.pathname.includes('/sav') || 
+              window.location.pathname.includes('/orders')) {
+            queryClient.refetchQueries({ queryKey: ['sav-cases'] });
+          }
         }
       )
       .on(
@@ -29,7 +40,15 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
         { event: '*', schema: 'public', table: 'customers' },
         (payload: any) => {
           console.log('🔔 Realtime Customer change:', payload.eventType);
-          queryClient.invalidateQueries({ queryKey: ['customers'] });
+          
+          queryClient.invalidateQueries({ 
+            queryKey: ['customers'],
+            refetchType: 'none'
+          });
+          
+          if (window.location.pathname.includes('/customers')) {
+            queryClient.refetchQueries({ queryKey: ['customers'] });
+          }
         }
       )
       .on(
@@ -37,7 +56,16 @@ export function RealtimeProvider({ children }: { children: ReactNode }) {
         { event: '*', schema: 'public', table: 'parts' },
         (payload: any) => {
           console.log('🔔 Realtime Parts change:', payload.eventType);
-          queryClient.invalidateQueries({ queryKey: ['parts'] });
+          
+          queryClient.invalidateQueries({ 
+            queryKey: ['parts'],
+            refetchType: 'none'
+          });
+          
+          if (window.location.pathname.includes('/parts') || 
+              window.location.pathname.includes('/orders')) {
+            queryClient.refetchQueries({ queryKey: ['parts'] });
+          }
         }
       )
       .subscribe((status) => {

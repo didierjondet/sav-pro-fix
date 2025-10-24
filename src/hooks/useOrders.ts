@@ -318,14 +318,13 @@ export function useOrders() {
     const loadData = async () => {
       setLoading(true);
       try {
-        console.log('📥 Starting fetchOrderItems...');
-        await fetchOrderItems();
-        console.log('📥 Starting fetchPartsNeededForSAV...');
-        await fetchPartsNeededForSAV();
-        console.log('📥 Starting fetchPartsNeededForQuotes...');
-        await fetchPartsNeededForQuotes();
-        console.log('📥 Starting fetchPartsNeedingRestock...');
-        await fetchPartsNeedingRestock();
+        console.log('📥 Starting parallel data fetch...');
+        await Promise.all([
+          fetchOrderItems(),
+          fetchPartsNeededForSAV(),
+          fetchPartsNeededForQuotes(),
+          fetchPartsNeedingRestock()
+        ]);
         console.log('✅ All data fetched successfully');
       } catch (error) {
         console.error('❌ Error loading order data:', error);
