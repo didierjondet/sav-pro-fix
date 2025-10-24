@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Header from '@/components/layout/Header';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,6 +10,7 @@ import { CustomerActivityDialog } from '@/components/customers/CustomerActivityD
 import { DuplicateManager } from '@/components/customers/DuplicateManager';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { PaginationControls } from '@/components/ui/pagination-controls';
 import { useCustomers, Customer } from '@/hooks/useCustomers';
 import { useCustomerActivity } from '@/hooks/useCustomerActivity';
 import { useCustomerSAVs } from '@/hooks/useCustomerSAVs';
@@ -39,9 +40,18 @@ export default function Customers() {
   const [viewingCustomer, setViewingCustomer] = useState<Customer | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [showDuplicateManager, setShowDuplicateManager] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
   
-  const { customers, loading, createCustomer, updateCustomer, deleteCustomer, refetch } = useCustomers();
+  const { customers, loading, totalCount, createCustomer, updateCustomer, deleteCustomer, refetch } = useCustomers(currentPage, itemsPerPage, !!searchTerm);
   const { shop } = useShop();
+  
+  const totalPages = Math.ceil(totalCount / itemsPerPage);
+
+  // Reset page to 1 when search term changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
 
   // Filtrer les clients en fonction de la recherche
   const filteredCustomers = customers.filter(customer =>
@@ -162,17 +172,35 @@ export default function Customers() {
                 </CardContent>
               </Card>
             ) : (
-              filteredCustomers.map((customer) => {
-                return (
-                  <CustomerCard 
-                    key={customer.id} 
-                    customer={customer} 
-                    onEdit={setEditingCustomer}
-                    onDelete={setDeletingCustomer}
-                    onView={setViewingCustomer}
-                  />
-                );
-              })
+              <>
+                {filteredCustomers.map((customer) => {
+                  return (
+                    <CustomerCard 
+                      key={customer.id} 
+                      customer={customer} 
+                      onEdit={setEditingCustomer}
+                      onDelete={setDeletingCustomer}
+                      onView={setViewingCustomer}
+                    />
+                  );
+                })}
+                
+                {/* Pagination - only show when not filtering by search */}
+                {!searchTerm && totalPages > 1 && (
+                  <div className="mt-6">
+                    <PaginationControls
+                      currentPage={currentPage}
+                      totalItems={totalCount}
+                      itemsPerPage={itemsPerPage}
+                      onPageChange={setCurrentPage}
+                      onItemsPerPageChange={(value) => {
+                        setItemsPerPage(value);
+                        setCurrentPage(1);
+                      }}
+                    />
+                  </div>
+                )}
+              </>
             )}
           </div>
             </div>

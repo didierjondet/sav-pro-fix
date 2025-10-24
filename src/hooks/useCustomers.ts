@@ -14,9 +14,10 @@ export interface Customer {
   updated_at: string;
 }
 
-export function useCustomers() {
+export function useCustomers(page: number = 1, itemsPerPage: number = 10, searchMode: boolean = false) {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
+  const [totalCount, setTotalCount] = useState(0);
   const { toast } = useToast();
 
   const fetchCustomers = async () => {
@@ -31,17 +32,43 @@ export function useCustomers() {
       if (!profile?.shop_id) {
         console.error('No shop_id found for current user');
         setCustomers([]);
+        setTotalCount(0);
         return;
       }
 
-      const { data, error } = await supabase
+      // Get total count
+      const { count } = await supabase
         .from('customers')
-        .select('*')
-        .eq('shop_id', profile.shop_id)
-        .order('created_at', { ascending: false });
+        .select('*', { count: 'exact', head: true })
+        .eq('shop_id', profile.shop_id);
 
-      if (error) throw error;
-      setCustomers(data || []);
+      setTotalCount(count || 0);
+
+      // If in search mode, load all customers for filtering
+      if (searchMode) {
+        const { data, error } = await supabase
+          .from('customers')
+          .select('*')
+          .eq('shop_id', profile.shop_id)
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        setCustomers(data || []);
+      } else {
+        // Get paginated data
+        const from = (page - 1) * itemsPerPage;
+        const to = from + itemsPerPage - 1;
+
+        const { data, error } = await supabase
+          .from('customers')
+          .select('*')
+          .eq('shop_id', profile.shop_id)
+          .order('created_at', { ascending: false })
+          .range(from, to);
+
+        if (error) throw error;
+        setCustomers(data || []);
+      }
     } catch (error: any) {
       toast({
         title: "Erreur",
@@ -55,7 +82,7 @@ export function useCustomers() {
 
   useEffect(() => {
     fetchCustomers();
-  }, []);
+  }, [page, itemsPerPage, searchMode]);
 
   const createCustomer = async (customerData: Omit<Customer, 'id' | 'created_at' | 'updated_at'>) => {
     try {
@@ -239,6 +266,7 @@ export function useCustomers() {
   return {
     customers,
     loading,
+    totalCount,
     createCustomer,
     updateCustomer,
     deleteCustomer,
