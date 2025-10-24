@@ -43,7 +43,7 @@ export default function Customers() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   
-  const { customers, loading, totalCount, createCustomer, updateCustomer, deleteCustomer, refetch } = useCustomers(currentPage, itemsPerPage, !!searchTerm);
+  const { customers, loading, totalCount, createCustomer, updateCustomer, deleteCustomer, refetch } = useCustomers(currentPage, itemsPerPage, searchTerm);
   const { shop } = useShop();
   
   const totalPages = Math.ceil(totalCount / itemsPerPage);
@@ -53,10 +53,8 @@ export default function Customers() {
     setCurrentPage(1);
   }, [searchTerm]);
 
-  // Filtrer les clients en fonction de la recherche
-  const filteredCustomers = customers.filter(customer =>
-    !searchTerm || multiWordSearch(searchTerm, customer.first_name, customer.last_name, customer.email || '', customer.phone || '')
-  );
+  // Filtrer les clients en fonction de la recherche - maintenant fait côté serveur
+  const filteredCustomers = customers;
 
   const handleCreateCustomer = async (customerData: Omit<Customer, 'id' | 'created_at' | 'updated_at'>) => {
     const dataWithShop = {
@@ -185,8 +183,8 @@ export default function Customers() {
                   );
                 })}
                 
-                {/* Pagination - only show when not filtering by search */}
-                {!searchTerm && totalPages > 1 && (
+                {/* Pagination - show when there are results */}
+                {totalCount > 0 && totalPages > 1 && (
                   <div className="mt-6">
                     <PaginationControls
                       currentPage={currentPage}

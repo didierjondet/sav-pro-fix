@@ -22,9 +22,10 @@ export interface Part {
   price_last_updated?: string;
 }
 
-export function useParts() {
+export function useParts(page: number = 1, itemsPerPage: number = 20, searchTerm: string = '') {
   const [parts, setParts] = useState<Part[]>([]);
   const [loading, setLoading] = useState(true);
+  const [totalCount, setTotalCount] = useState(0);
   const { toast } = useToast();
 
   const fetchParts = async () => {
@@ -39,14 +40,32 @@ export function useParts() {
       if (!profile?.shop_id) {
         console.error('No shop_id found for current user');
         setParts([]);
+        setTotalCount(0);
         return;
       }
 
-      const { data, error } = await supabase
+      let query = supabase
         .from('parts')
-        .select('*, reserved_quantity, price_last_updated')
-        .eq('shop_id', profile.shop_id)
-        .order('name', { ascending: true });
+        .select('*, reserved_quantity, price_last_updated', { count: 'exact' })
+        .eq('shop_id', profile.shop_id);
+
+      // Server-side search if search term provided
+      if (searchTerm) {
+        const searchLower = searchTerm.toLowerCase();
+        query = query.or(`name.ilike.%${searchLower}%,reference.ilike.%${searchLower}%`);
+      }
+
+      // Get total count
+      const { count } = await query;
+      setTotalCount(count || 0);
+
+      // Get paginated data
+      const from = (page - 1) * itemsPerPage;
+      const to = from + itemsPerPage - 1;
+
+      const { data, error } = await query
+        .order('name', { ascending: true })
+        .range(from, to);
 
       if (error) throw error;
       setParts(data || []);
@@ -62,8 +81,9 @@ export function useParts() {
   };
 
   useEffect(() => {
+    setLoading(true);
     fetchParts();
-  }, []);
+  }, [page, itemsPerPage, searchTerm]);
 
   // Fonction pour trouver des pièces similaires
   const findSimilarParts = (name: string, excludeId?: string): Part[] => {
@@ -255,6 +275,7 @@ export function useParts() {
   return {
     parts,
     loading,
+    totalCount,
     createPart,
     updatePart,
     deletePart,

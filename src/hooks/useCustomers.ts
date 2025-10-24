@@ -14,7 +14,7 @@ export interface Customer {
   updated_at: string;
 }
 
-export function useCustomers(page: number = 1, itemsPerPage: number = 10, searchMode: boolean = false) {
+export function useCustomers(page: number = 1, itemsPerPage: number = 10, searchTerm: string = '') {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [totalCount, setTotalCount] = useState(0);
@@ -36,39 +36,31 @@ export function useCustomers(page: number = 1, itemsPerPage: number = 10, search
         return;
       }
 
-      // Get total count
-      const { count } = await supabase
+      let query = supabase
         .from('customers')
-        .select('*', { count: 'exact', head: true })
+        .select('*', { count: 'exact' })
         .eq('shop_id', profile.shop_id);
 
+      // Server-side search if search term provided
+      if (searchTerm) {
+        const searchLower = searchTerm.toLowerCase();
+        query = query.or(`first_name.ilike.%${searchLower}%,last_name.ilike.%${searchLower}%,email.ilike.%${searchLower}%,phone.ilike.%${searchLower}%`);
+      }
+
+      // Get total count
+      const { count } = await query;
       setTotalCount(count || 0);
 
-      // If in search mode, load all customers for filtering
-      if (searchMode) {
-        const { data, error } = await supabase
-          .from('customers')
-          .select('*')
-          .eq('shop_id', profile.shop_id)
-          .order('created_at', { ascending: false });
+      // Get paginated data
+      const from = (page - 1) * itemsPerPage;
+      const to = from + itemsPerPage - 1;
 
-        if (error) throw error;
-        setCustomers(data || []);
-      } else {
-        // Get paginated data
-        const from = (page - 1) * itemsPerPage;
-        const to = from + itemsPerPage - 1;
+      const { data, error } = await query
+        .order('created_at', { ascending: false })
+        .range(from, to);
 
-        const { data, error } = await supabase
-          .from('customers')
-          .select('*')
-          .eq('shop_id', profile.shop_id)
-          .order('created_at', { ascending: false })
-          .range(from, to);
-
-        if (error) throw error;
-        setCustomers(data || []);
-      }
+      if (error) throw error;
+      setCustomers(data || []);
     } catch (error: any) {
       toast({
         title: "Erreur",
@@ -81,8 +73,9 @@ export function useCustomers(page: number = 1, itemsPerPage: number = 10, search
   };
 
   useEffect(() => {
+    setLoading(true);
     fetchCustomers();
-  }, [page, itemsPerPage, searchMode]);
+  }, [page, itemsPerPage, searchTerm]);
 
   const createCustomer = async (customerData: Omit<Customer, 'id' | 'created_at' | 'updated_at'>) => {
     try {

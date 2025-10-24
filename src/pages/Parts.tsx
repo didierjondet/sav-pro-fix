@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { multiWordSearch } from '@/utils/searchUtils';
 import Header from '@/components/layout/Header';
 import { Sidebar } from '@/components/layout/Sidebar';
@@ -47,47 +47,18 @@ export default function Parts() {
   const [showImport, setShowImport] = useState(false);
   const [viewingPhoto, setViewingPhoto] = useState<Part | null>(null);
   
-  const { parts, loading, createPart, updatePart, deletePart, adjustStock, findSimilarParts, refetch } = useParts();
+  const { parts, loading, totalCount, createPart, updatePart, deletePart, adjustStock, findSimilarParts, refetch } = useParts(currentPage, itemsPerPage, searchTerm);
 
-  const filteredParts = useMemo(() => {
-    return parts
-      .filter(part => multiWordSearch(searchTerm, part.name, part.reference))
-      .sort((a, b) => {
-        if (!searchTerm.trim()) return a.name.localeCompare(b.name);
-        
-        const searchLower = searchTerm.toLowerCase();
-        const aNameMatch = a.name.toLowerCase().includes(searchLower);
-        const bNameMatch = b.name.toLowerCase().includes(searchLower);
-        const aRefMatch = a.reference?.toLowerCase().includes(searchLower) || false;
-        const bRefMatch = b.reference?.toLowerCase().includes(searchLower) || false;
-        
-        // Priorité 1: Correspondance exacte dans le nom
-        if (aNameMatch && !bNameMatch) return -1;
-        if (bNameMatch && !aNameMatch) return 1;
-        
-        // Priorité 2: Si les deux matchent le nom, tri alphabétique
-        if (aNameMatch && bNameMatch) return a.name.localeCompare(b.name);
-        
-        // Priorité 3: Correspondance dans la référence
-        if (aRefMatch && !bRefMatch) return -1;
-        if (bRefMatch && !aRefMatch) return 1;
-        
-        // Par défaut: tri alphabétique par nom
-        return a.name.localeCompare(b.name);
-      });
-  }, [parts, searchTerm]);
-
-  // Calculs de pagination
-  const totalItems = filteredParts.length;
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const paginatedParts = filteredParts.slice(startIndex, endIndex);
+  // Pas besoin de filtrer côté client, c'est fait côté serveur
+  const displayedParts = parts;
+  const totalPages = Math.ceil(totalCount / itemsPerPage);
 
   // Réinitialiser la page quand la recherche change
-  useMemo(() => {
+  useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm]);
 
+  // Statistiques - basées sur les pièces affichées (limitation acceptable)
   const lowStockParts = parts.filter(part => (part.quantity || 0) <= (part.min_stock || 0));
   const totalValue = parts.reduce((sum, part) => sum + ((part.purchase_price || 0) * (part.quantity || 0)), 0);
   const totalParts = parts.reduce((sum, part) => sum + (part.quantity || 0), 0);
@@ -207,7 +178,7 @@ export default function Parts() {
 
                    {/* Liste des pièces */}
                    <div className="grid gap-4">
-                     {paginatedParts.length === 0 ? (
+                     {displayedParts.length === 0 ? (
                        <Card>
                          <CardContent className="text-center py-8">
                            <Package className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
@@ -223,7 +194,7 @@ export default function Parts() {
                          </CardContent>
                        </Card>
                       ) : (
-                        paginatedParts.map((part) => (
+                        displayedParts.map((part) => (
                         <Card key={part.id} className="hover:shadow-md transition-shadow">
                           <CardContent className="p-6">
                             <div className="flex items-center justify-between">
@@ -362,15 +333,18 @@ export default function Parts() {
                       )}
                    </div>
 
-                   {/* Pagination */}
-                   {totalItems > 0 && (
+                   {/* Pagination - show when there are results */}
+                   {totalCount > 0 && totalPages > 1 && (
                      <div className="mt-6">
                        <PaginationControls
-                         totalItems={totalItems}
+                         totalItems={totalCount}
                          itemsPerPage={itemsPerPage}
                          currentPage={currentPage}
                          onPageChange={setCurrentPage}
-                         onItemsPerPageChange={setItemsPerPage}
+                         onItemsPerPageChange={(value) => {
+                           setItemsPerPage(value);
+                           setCurrentPage(1);
+                         }}
                        />
                      </div>
                    )}
