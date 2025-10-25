@@ -54,7 +54,7 @@ export function useSAVUnreadMessages() {
           customer:customers(first_name, last_name)
         `)
         .eq('shop_id', profile.shop_id)
-        .not('status', 'in', '("ready","delivered","cancelled")');
+        .not('status', 'in', '("ready","delivered","cancelled","closed","completed")');
 
       console.log('🏪 All open SAV cases:', { savCases, savError });
 

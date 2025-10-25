@@ -8,12 +8,14 @@ import { useSAVUnreadMessages } from '@/hooks/useSAVUnreadMessages';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useProfile } from '@/hooks/useProfile';
+import { useToast } from '@/hooks/use-toast';
 
 export default function Notifications() {
   const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
   const { savWithUnreadMessages, refetch: refetchSAVMessages } = useSAVUnreadMessages();
   const { profile } = useProfile();
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
@@ -44,13 +46,18 @@ export default function Notifications() {
   };
 
   const getDisplayName = (sav: any) => {
-    if (sav.customer) {
-      return `${sav.customer.first_name} ${sav.customer.last_name} - Message SAV`;
-    } else if (sav.sav_type === 'internal') {
-      return `${sav.device_brand} ${sav.device_model} - SAV ${sav.case_number}`;
-    } else {
-      return `SAV ${sav.case_number} - Nouveau message`;
+    // PRIORITÉ 1 : Nom du client
+    if (sav.customer?.first_name && sav.customer?.last_name) {
+      return `${sav.customer.first_name} ${sav.customer.last_name}`;
     }
+    
+    // PRIORITÉ 2 : SAV interne (marque + modèle)
+    if (sav.sav_type === 'internal' && sav.device_brand && sav.device_model) {
+      return `${sav.device_brand} ${sav.device_model}`;
+    }
+    
+    // PRIORITÉ 3 : Fallback sur le numéro de dossier
+    return `SAV ${sav.case_number}`;
   };
 
   const handleNotificationClick = async (notificationId: string) => {
@@ -74,6 +81,38 @@ export default function Notifications() {
     }
   };
 
+  const handleMarkAllAsRead = async () => {
+    try {
+      // 1. Marquer notifications classiques
+      await markAllAsRead();
+      
+      // 2. Marquer tous les messages SAV non lus
+      if (profile?.shop_id) {
+        await supabase
+          .from('sav_messages')
+          .update({ read_by_shop: true })
+          .eq('shop_id', profile.shop_id)
+          .eq('sender_type', 'client')
+          .eq('read_by_shop', false);
+      }
+      
+      // 3. Rafraîchir
+      refetchSAVMessages();
+      
+      toast({
+        title: "Tout marqué comme lu",
+        description: "Toutes les notifications ont été marquées comme lues"
+      });
+    } catch (error) {
+      console.error('Error marking all as read:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de marquer tout comme lu",
+        variant: "destructive"
+      });
+    }
+  };
+
   const totalUnreadSAVMessages = savWithUnreadMessages.reduce((total, sav) => total + sav.unread_count, 0);
   const totalUnreadCount = unreadCount + totalUnreadSAVMessages;
 
@@ -84,7 +123,7 @@ export default function Notifications() {
           <div className="flex items-center justify-between">
             <CardTitle>Toutes les notifications</CardTitle>
             {totalUnreadCount > 0 && (
-              <Button onClick={markAllAsRead} variant="outline">
+              <Button onClick={handleMarkAllAsRead} variant="outline">
                 Marquer tout comme lu ({totalUnreadCount})
               </Button>
             )}
