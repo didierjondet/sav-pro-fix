@@ -99,6 +99,14 @@ export default function SuperAdmin() {
   const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
   const { storageUsage, getShopStorageUsage } = useStorageUsage();
 
+  // Forcer le mode clair pour SuperAdmin
+  useEffect(() => {
+    document.documentElement.classList.remove('dark');
+    return () => {
+      // Cleanup si nécessaire
+    };
+  }, []);
+
   useEffect(() => {
     if (!user && !authLoading) {
       window.location.href = '/auth';
@@ -310,7 +318,7 @@ export default function SuperAdmin() {
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen bg-slate-50 flex w-full">
+      <div className="min-h-screen bg-slate-50 flex w-full light">
         {/* Header spécial Super Admin */}
         <header className="fixed top-0 left-0 right-0 bg-white border-b border-slate-200 z-50 shadow-sm">
           <div className="flex items-center justify-between px-6 py-4">

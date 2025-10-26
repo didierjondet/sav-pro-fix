@@ -11,6 +11,7 @@ import {
   SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { cn } from "@/lib/utils";
 import {
   BarChart3,
   Store,
@@ -79,7 +80,13 @@ export function SuperAdminSidebar({ activeSection, onSectionChange, activeSuppor
   const collapsed = state === "collapsed";
 
   return (
-    <Sidebar className={collapsed ? "w-14" : "w-60"} collapsible="icon">
+    <Sidebar 
+      className={cn(
+        collapsed ? "w-14" : "w-60",
+        "bg-white border-slate-200 text-slate-900"
+      )} 
+      collapsible="icon"
+    >
       <SidebarTrigger className="m-2 self-end" />
       
       <SidebarContent>
@@ -92,11 +99,12 @@ export function SuperAdminSidebar({ activeSection, onSectionChange, activeSuppor
                   <SidebarMenuItem key={item.id}>
                     <SidebarMenuButton 
                       onClick={() => onSectionChange(item.id)}
-                      className={`cursor-pointer relative ${
+                      className={cn(
+                        "cursor-pointer relative",
                         activeSection === item.id 
-                          ? "bg-primary text-primary-foreground" 
-                          : "hover:bg-muted/50"
-                      }`}
+                          ? "bg-primary text-white" 
+                          : "text-slate-700 hover:bg-slate-100"
+                      )}
                     >
                       <item.icon className="mr-2 h-4 w-4" />
                       {!collapsed && <span>{item.title}</span>}
