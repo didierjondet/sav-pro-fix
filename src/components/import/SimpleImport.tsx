@@ -13,18 +13,20 @@ import Papa from 'papaparse';
 interface SimpleImportProps {
   type: 'parts' | 'customers' | 'quotes' | 'savs';
   shopId: string;
-  onSuccess: () => void;
-  onBack: () => void;
+  mode?: 'replace' | 'merge';
+  onSuccess?: () => void;
+  onBack?: () => void;
   onAdvancedMode?: () => void;
 }
 
-export function SimpleImport({ type, shopId, onSuccess, onBack, onAdvancedMode }: SimpleImportProps) {
+export function SimpleImport({ type, shopId, mode = 'merge', onSuccess, onBack, onAdvancedMode }: SimpleImportProps) {
   const [file, setFile] = useState<File | null>(null);
   const [importing, setImporting] = useState(false);
   const [progress, setProgress] = useState(0);
   const [preview, setPreview] = useState<Record<string, any>[]>([]);
   const [detectedFormat, setDetectedFormat] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [importMode, setImportMode] = useState<'replace' | 'merge'>(mode);
   const { toast } = useToast();
 
   const typeLabels: Record<string, string> = {
@@ -126,12 +128,15 @@ export function SimpleImport({ type, shopId, onSuccess, onBack, onAdvancedMode }
       else if (type === 'quotes') tableName = 'quotes';
       else tableName = 'sav_cases';
 
-      const { error: deleteError } = await supabase
-        .from(tableName)
-        .delete()
-        .eq('shop_id', shopId);
+      // Supprimer les données existantes uniquement en mode 'replace'
+      if (importMode === 'replace') {
+        const { error: deleteError } = await supabase
+          .from(tableName)
+          .delete()
+          .eq('shop_id', shopId);
 
-      if (deleteError) throw deleteError;
+        if (deleteError) throw deleteError;
+      }
 
       for (let i = 0; i < totalBatches; i++) {
         const batch = data.slice(i * batchSize, (i + 1) * batchSize);
@@ -178,13 +183,53 @@ export function SimpleImport({ type, shopId, onSuccess, onBack, onAdvancedMode }
 
   return (
     <div className="space-y-4">
-      <Alert className="bg-blue-50 border-blue-200">
-        <AlertCircle className="h-4 w-4 text-blue-600" />
+      <Alert className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+        <AlertCircle className="h-5 w-5 text-blue-600" />
         <AlertDescription>
-          <strong>💡 Astuce :</strong> Exportez vos données via le bouton "Exporter Excel", modifiez-les, 
-          puis réimportez-les ici. Le format sera automatiquement reconnu !
+          <div className="space-y-2">
+            <p className="font-semibold text-blue-900">
+              🚀 Import en 3 étapes simples :
+            </p>
+            <ol className="text-sm text-blue-800 space-y-1 ml-4">
+              <li>1️⃣ Cliquez "Exporter Excel" dans l'onglet Import/Export</li>
+              <li>2️⃣ Modifiez le fichier dans Excel (ajoutez, supprimez ou éditez des lignes)</li>
+              <li>3️⃣ Réimportez-le ici - Le format est détecté automatiquement !</li>
+            </ol>
+            <p className="text-xs text-blue-600 mt-2">
+              💡 Le système reconnaît automatiquement ses propres exports. Aucune configuration nécessaire !
+            </p>
+          </div>
         </AlertDescription>
       </Alert>
+      
+      <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
+        <div className="flex items-center gap-2">
+          <p className="text-sm font-medium">Mode d'importation :</p>
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              variant={importMode === 'merge' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setImportMode('merge')}
+            >
+              Fusionner
+            </Button>
+            <Button
+              type="button"
+              variant={importMode === 'replace' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setImportMode('replace')}
+            >
+              Remplacer
+            </Button>
+          </div>
+        </div>
+        <p className="text-xs text-muted-foreground max-w-md">
+          {importMode === 'merge' 
+            ? '📝 Les données seront ajoutées aux données existantes' 
+            : '⚠️ Toutes les données existantes seront supprimées et remplacées'}
+        </p>
+      </div>
 
       <Card>
         <CardHeader>

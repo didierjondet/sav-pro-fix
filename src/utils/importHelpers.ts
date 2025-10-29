@@ -256,21 +256,25 @@ export function createAutoMapping(headers: string[], type: 'parts' | 'customers'
       'total_amount': ['total', 'montanttotal', 'montant'],
       'status': ['statut', 'etat', 'status'],
       'deposit_amount': ['depot', 'acompte'],
-      'device_brand': ['marque'],
-      'device_model': ['modele'],
-      'problem_description': ['description', 'probleme']
+      'device_brand': ['marque', 'brand', 'marqueappareil'],
+      'device_model': ['modele', 'model', 'modeleappareil'],
+      'problem_description': ['description', 'probleme', 'descriptionprobleme'],
+      'notes': ['notes', 'remarques', 'commentaires']
     },
     savs: {
-      'case_number': ['dossier', 'numero', 'numfiche'],
+      'case_number': ['dossier', 'numero', 'numfiche', 'numerodossier'],
+      'customer_id': ['clientid', 'idclient'],
       'sav_type': ['type', 'typesav', 'categorie'],
       'status': ['statut', 'etat', 'status'],
-      'customer_name': ['client', 'nomclient'],
-      'device_brand': ['marque'],
-      'device_model': ['modele'],
-      'device_imei': ['imei', 'sn', 'numerodeserie'],
-      'problem_description': ['probleme', 'descriptionduprobleme', 'panne'],
+      'device_brand': ['marque', 'brand', 'marqueappareil'],
+      'device_model': ['modele', 'model', 'modeleappareil'],
+      'imei': ['imei', 'sn', 'numerodeserie', 'serial'],
+      'pattern_lock': ['code', 'pattern', 'patternlock', 'verrouillage'],
+      'issue_description': ['probleme', 'descriptionprobleme', 'panne', 'symptomes'],
+      'diagnostic': ['diagnostic', 'diagnostique', 'analyse'],
       'total_cost': ['cout', 'couttotal', 'total', 'montant'],
-      'total_time_minutes': ['tempsmn', 'temps']
+      'total_time_minutes': ['tempsmn', 'temps', 'duree', 'minutes'],
+      'notes': ['notes', 'remarques', 'commentaires', 'observations']
     }
   };
   

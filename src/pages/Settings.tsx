@@ -53,6 +53,7 @@ import { ImportStock } from '@/components/parts/ImportStock';
 import { ImportQuotes } from '@/components/import/ImportQuotes';
 import { ImportSAVs } from '@/components/import/ImportSAVs';
 import { ImportCustomers } from '@/components/import/ImportCustomers';
+import { ImportDialog } from '@/components/import/ImportDialog';
 import { SAVStatusesManager } from '@/components/sav/SAVStatusesManager';
 import SAVTypesManager from '@/components/sav/SAVTypesManager';
 import { useShop } from '@/hooks/useShop';
@@ -108,10 +109,10 @@ export default function Settings() {
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState<'admin' | 'technician' | 'super_admin' | 'shop_admin'>('technician');
   const [logoUploading, setLogoUploading] = useState(false);
-  const [showStockImport, setShowStockImport] = useState(false);
-  const [showQuotesImport, setShowQuotesImport] = useState(false);
-  const [showSAVsImport, setShowSAVsImport] = useState(false);
-  const [showCustomersImport, setShowCustomersImport] = useState(false);
+  const [importDialog, setImportDialog] = useState<{
+    open: boolean;
+    type: 'parts' | 'customers' | 'quotes' | 'savs' | null;
+  }>({ open: false, type: null });
   const [plans, setPlans] = useState<any[]>([]);
   const { statuses, loading: statusesLoading, refetch: refetchStatuses } = useShopSAVStatuses();
   const { types: savTypes, loading: savTypesLoading, refetch: refetchSavTypes } = useShopSAVTypes();
@@ -1276,39 +1277,14 @@ export default function Settings() {
               </TabsContent>}
 
             <TabsContent value="import-export" className="space-y-6">
-              {showStockImport ? <ImportStock onBack={() => setShowStockImport(false)} onRefresh={() => {
-                  toast({
-                    title: 'Import stock',
-                    description: 'Import terminé avec succès.'
-                  });
-                  setShowStockImport(false);
-                }} /> : showQuotesImport ? <ImportQuotes onBack={() => setShowQuotesImport(false)} onSuccess={() => {
-                  toast({
-                    title: 'Import devis',
-                    description: 'Import terminé avec succès.'
-                  });
-                  setShowQuotesImport(false);
-              }} /> : showSAVsImport ? <ImportSAVs onBack={() => setShowSAVsImport(false)} onSuccess={() => {
-                  toast({
-                    title: 'Import SAV',
-                    description: 'Import terminé avec succès.'
-                  });
-                  setShowSAVsImport(false);
-                }} /> : showCustomersImport ? <ImportCustomers onBack={() => setShowCustomersImport(false)} onSuccess={() => {
-                  toast({
-                    title: 'Import clients',
-                    description: 'Import terminé avec succès.'
-                  });
-                  setShowCustomersImport(false);
-                }} /> : <>
-                  <Card className="mb-6">
-                    <CardHeader>
-                      <CardTitle>Import / Export de données</CardTitle>
-                      <p className="text-sm text-muted-foreground">
-                        Exportez vos données, modifiez-les dans Excel, puis réimportez-les en 2 clics.
-                      </p>
-                    </CardHeader>
-                    <CardContent>
+              <Card className="mb-6">
+                <CardHeader>
+                  <CardTitle>Import / Export de données</CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    Exportez vos données, modifiez-les dans Excel, puis réimportez-les en 2 clics.
+                  </p>
+                </CardHeader>
+                <CardContent>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         
                         {/* Pièces (Stock) */}
@@ -1321,7 +1297,7 @@ export default function Settings() {
                             <Button variant="default" onClick={() => handleExportParts('xlsx')} className="flex-1">
                               📥 Exporter
                             </Button>
-                            <Button variant="outline" onClick={() => setShowStockImport(true)} className="flex-1">
+                            <Button variant="outline" onClick={() => setImportDialog({ open: true, type: 'parts' })} className="flex-1">
                               📤 Importer
                             </Button>
                           </div>
@@ -1340,7 +1316,7 @@ export default function Settings() {
                             <Button variant="default" onClick={() => handleExportCustomers('xlsx')} className="flex-1">
                               📥 Exporter
                             </Button>
-                            <Button variant="outline" onClick={() => setShowCustomersImport(true)} className="flex-1">
+                            <Button variant="outline" onClick={() => setImportDialog({ open: true, type: 'customers' })} className="flex-1">
                               📤 Importer
                             </Button>
                           </div>
@@ -1359,7 +1335,7 @@ export default function Settings() {
                             <Button variant="default" onClick={() => handleExportQuotes('xlsx')} className="flex-1">
                               📥 Exporter
                             </Button>
-                            <Button variant="outline" onClick={() => setShowQuotesImport(true)} className="flex-1">
+                            <Button variant="outline" onClick={() => setImportDialog({ open: true, type: 'quotes' })} className="flex-1">
                               📤 Importer
                             </Button>
                           </div>
@@ -1378,7 +1354,7 @@ export default function Settings() {
                             <Button variant="default" onClick={() => handleExportSAVs('xlsx')} className="flex-1">
                               📥 Exporter
                             </Button>
-                            <Button variant="outline" onClick={() => setShowSAVsImport(true)} className="flex-1">
+                            <Button variant="outline" onClick={() => setImportDialog({ open: true, type: 'savs' })} className="flex-1">
                               📤 Importer
                             </Button>
                           </div>
@@ -1413,11 +1389,10 @@ export default function Settings() {
                           <Button variant="ghost" size="sm" onClick={() => handleExportSAVs('pdf')}>
                             SAV PDF
                           </Button>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </>}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             </TabsContent>
 
             <TabsContent value="sav-statuses" className="space-y-6">
@@ -1554,5 +1529,20 @@ export default function Settings() {
           </main>
         </div>
       </div>
+      
+      {importDialog.open && importDialog.type && (
+        <ImportDialog
+          type={importDialog.type}
+          shopId={profile?.shop_id || ''}
+          onSuccess={() => {
+            setImportDialog({ open: false, type: null });
+            toast({
+              title: 'Import terminé',
+              description: 'Les données ont été importées avec succès.'
+            });
+          }}
+          onClose={() => setImportDialog({ open: false, type: null })}
+        />
+      )}
     </div>;
 }
