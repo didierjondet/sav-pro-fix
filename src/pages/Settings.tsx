@@ -1288,7 +1288,7 @@ export default function Settings() {
                     description: 'Import terminé avec succès.'
                   });
                   setShowQuotesImport(false);
-                }} /> : showSAVsImport ? <ImportSAVs onBack={() => setShowSAVsImport(false)} onSuccess={() => {
+              }} /> : showSAVsImport ? <ImportSAVs onBack={() => setShowSAVsImport(false)} onSuccess={() => {
                   toast({
                     title: 'Import SAV',
                     description: 'Import terminé avec succès.'
@@ -1301,74 +1301,120 @@ export default function Settings() {
                   });
                   setShowCustomersImport(false);
                 }} /> : <>
-                  <Card>
+                  <Card className="mb-6">
                     <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <Upload className="h-5 w-5" />
-                        Exporter les Devis
-                      </CardTitle>
+                      <CardTitle>Import / Export de données</CardTitle>
+                      <p className="text-sm text-muted-foreground">
+                        Exportez vos données, modifiez-les dans Excel, puis réimportez-les en 2 clics.
+                      </p>
                     </CardHeader>
-                    <CardContent className="flex flex-wrap gap-2">
-                      <Button variant="outline" onClick={() => handleExportQuotes('csv')}>Exporter CSV</Button>
-                      <Button variant="outline" onClick={() => handleExportQuotes('xlsx')}>Exporter Excel</Button>
-                      <Button variant="outline" onClick={() => handleExportQuotes('pdf')}>Exporter PDF</Button>
-                      <Button onClick={() => setShowQuotesImport(true)} variant="destructive" className="ml-4">
-                        <Upload className="h-4 w-4 mr-2" />
-                        Importer les devis
-                      </Button>
-                    </CardContent>
-                  </Card>
+                    <CardContent>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        
+                        {/* Pièces (Stock) */}
+                        <div className="border rounded-lg p-4">
+                          <div className="flex items-center gap-2 mb-3">
+                            <Package className="h-5 w-5 text-primary" />
+                            <h3 className="font-semibold">Pièces (Stock)</h3>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button variant="default" onClick={() => handleExportParts('xlsx')} className="flex-1">
+                              📥 Exporter
+                            </Button>
+                            <Button variant="outline" onClick={() => setShowStockImport(true)} className="flex-1">
+                              📤 Importer
+                            </Button>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-2">
+                            Stock disponible
+                          </p>
+                        </div>
+                        
+                        {/* Clients */}
+                        <div className="border rounded-lg p-4">
+                          <div className="flex items-center gap-2 mb-3">
+                            <Users className="h-5 w-5 text-primary" />
+                            <h3 className="font-semibold">Clients</h3>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button variant="default" onClick={() => handleExportCustomers('xlsx')} className="flex-1">
+                              📥 Exporter
+                            </Button>
+                            <Button variant="outline" onClick={() => setShowCustomersImport(true)} className="flex-1">
+                              📤 Importer
+                            </Button>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-2">
+                            Base de données clients
+                          </p>
+                        </div>
+                        
+                        {/* Devis */}
+                        <div className="border rounded-lg p-4">
+                          <div className="flex items-center gap-2 mb-3">
+                            <FileText className="h-5 w-5 text-primary" />
+                            <h3 className="font-semibold">Devis</h3>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button variant="default" onClick={() => handleExportQuotes('xlsx')} className="flex-1">
+                              📥 Exporter
+                            </Button>
+                            <Button variant="outline" onClick={() => setShowQuotesImport(true)} className="flex-1">
+                              📤 Importer
+                            </Button>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-2">
+                            Historique des devis
+                          </p>
+                        </div>
+                        
+                        {/* SAV */}
+                        <div className="border rounded-lg p-4">
+                          <div className="flex items-center gap-2 mb-3">
+                            <Upload className="h-5 w-5 text-primary" />
+                            <h3 className="font-semibold">SAV</h3>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button variant="default" onClick={() => handleExportSAVs('xlsx')} className="flex-1">
+                              📥 Exporter
+                            </Button>
+                            <Button variant="outline" onClick={() => setShowSAVsImport(true)} className="flex-1">
+                              📤 Importer
+                            </Button>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-2">
+                            Dossiers SAV complets
+                          </p>
+                        </div>
+                        
+                      </div>
 
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <Upload className="h-5 w-5" />
-                        Exporter les SAV
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="flex flex-wrap gap-2">
-                      <Button variant="outline" onClick={() => handleExportSAVs('csv')}>Exporter CSV</Button>
-                      <Button variant="outline" onClick={() => handleExportSAVs('xlsx')}>Exporter Excel</Button>
-                      <Button variant="outline" onClick={() => handleExportSAVs('pdf')}>Exporter PDF</Button>
-                      <Button onClick={() => setShowSAVsImport(true)} variant="destructive" className="ml-4">
-                        <Upload className="h-4 w-4 mr-2" />
-                        Importer les SAV
-                      </Button>
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <Users className="h-5 w-5" />
-                        Exporter les Clients
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="flex flex-wrap gap-2">
-                      <Button variant="outline" onClick={() => handleExportCustomers('csv')}>Exporter CSV</Button>
-                      <Button variant="outline" onClick={() => handleExportCustomers('xlsx')}>Exporter Excel</Button>
-                      <Button variant="outline" onClick={() => handleExportCustomers('pdf')}>Exporter PDF</Button>
-                      <Button onClick={() => setShowCustomersImport(true)} variant="destructive" className="ml-4">
-                        <Upload className="h-4 w-4 mr-2" />
-                        Importer les clients
-                      </Button>
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <Upload className="h-5 w-5" />
-                        Stock (Pièces)
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="flex flex-wrap gap-2">
-                      <Button variant="outline" onClick={() => handleExportParts('csv')}>Exporter CSV</Button>
-                      <Button variant="outline" onClick={() => handleExportParts('xlsx')}>Exporter Excel</Button>
-                      <Button onClick={() => setShowStockImport(true)} variant="destructive" className="ml-4">
-                        <Upload className="h-4 w-4 mr-2" />
-                        Importer le stock
-                      </Button>
+                      <div className="mt-6 p-4 bg-muted/50 rounded-lg">
+                        <h4 className="font-medium text-sm mb-2">Autres formats d'export</h4>
+                        <div className="flex flex-wrap gap-2">
+                          <Button variant="ghost" size="sm" onClick={() => handleExportParts('csv')}>
+                            Stock CSV
+                          </Button>
+                          <Button variant="ghost" size="sm" onClick={() => handleExportCustomers('csv')}>
+                            Clients CSV
+                          </Button>
+                          <Button variant="ghost" size="sm" onClick={() => handleExportQuotes('csv')}>
+                            Devis CSV
+                          </Button>
+                          <Button variant="ghost" size="sm" onClick={() => handleExportSAVs('csv')}>
+                            SAV CSV
+                          </Button>
+                          <Button variant="ghost" size="sm" onClick={() => handleExportCustomers('pdf')}>
+                            Clients PDF
+                          </Button>
+                          <Button variant="ghost" size="sm" onClick={() => handleExportQuotes('pdf')}>
+                            Devis PDF
+                          </Button>
+                          <Button variant="ghost" size="sm" onClick={() => handleExportSAVs('pdf')}>
+                            SAV PDF
+                          </Button>
+                        </div>
+                      </div>
                     </CardContent>
                   </Card>
                 </>}

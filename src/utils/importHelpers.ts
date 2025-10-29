@@ -190,3 +190,109 @@ export const findMatchingColumn = (
   
   return null;
 };
+
+/**
+ * Détecte si un fichier correspond à un export système (format maison)
+ * Retourne le type de données détecté ou null
+ */
+export function detectOwnExportFormat(headers: string[]): 'parts' | 'customers' | 'quotes' | 'savs' | null {
+  const normalizedHeaders = headers.map(h => normalizeColumnName(h));
+  
+  // Headers spécifiques pour chaque type (colonnes clés qui doivent être présentes)
+  const keyHeadersByType = {
+    parts: ['nom', 'reference', 'quantite', 'prixachat', 'prixvente'],
+    customers: ['prenom', 'nom', 'telephone', 'email'],
+    quotes: ['numero', 'client', 'montanttotal', 'statut'],
+    savs: ['dossier', 'typesav', 'statut', 'client', 'marque']
+  };
+  
+  // Calculer le score de match pour chaque type
+  for (const [type, keyHeaders] of Object.entries(keyHeadersByType)) {
+    const matchCount = keyHeaders.filter(key => 
+      normalizedHeaders.some(h => h.includes(key) || key.includes(h))
+    ).length;
+    
+    // Si au moins 60% des colonnes clés sont présentes
+    if (matchCount / keyHeaders.length >= 0.6) {
+      return type as 'parts' | 'customers' | 'quotes' | 'savs';
+    }
+  }
+  
+  return null;
+}
+
+/**
+ * Crée automatiquement un mapping basé sur les headers détectés
+ */
+export function createAutoMapping(headers: string[], type: 'parts' | 'customers' | 'quotes' | 'savs'): Record<string, string> {
+  const mapping: Record<string, string> = {};
+  
+  // Mappings de colonnes par type
+  const fieldMappings: Record<string, Record<string, string[]>> = {
+    parts: {
+      'name': ['nom', 'designation', 'libelle'],
+      'reference': ['reference', 'ref', 'code'],
+      'quantity': ['quantite', 'stock', 'qte'],
+      'purchase_price': ['prixachat', 'pa', 'coutachat'],
+      'selling_price': ['prixvente', 'pv', 'prix'],
+      'min_stock': ['stockmin', 'stockminimum', 'minimum'],
+      'supplier': ['fournisseur', 'supplier'],
+      'sku': ['sku', 'codearticle'],
+      'time_minutes': ['tempsmn', 'temps', 'duree'],
+      'notes': ['notes', 'remarques', 'commentaires']
+    },
+    customers: {
+      'first_name': ['prenom', 'firstname'],
+      'last_name': ['nom', 'lastname', 'nomdefamille'],
+      'email': ['email', 'mail', 'courriel'],
+      'phone': ['telephone', 'tel', 'mobile', 'phone'],
+      'address': ['adresse', 'address', 'rue']
+    },
+    quotes: {
+      'quote_number': ['numero', 'numdevis', 'reference'],
+      'customer_name': ['client', 'nomclient', 'clientnomcomplet'],
+      'customer_email': ['emaildevis', 'email'],
+      'customer_phone': ['telephonedevis', 'telephone', 'tel'],
+      'total_amount': ['total', 'montanttotal', 'montant'],
+      'status': ['statut', 'etat', 'status'],
+      'deposit_amount': ['depot', 'acompte'],
+      'device_brand': ['marque'],
+      'device_model': ['modele'],
+      'problem_description': ['description', 'probleme']
+    },
+    savs: {
+      'case_number': ['dossier', 'numero', 'numfiche'],
+      'sav_type': ['type', 'typesav', 'categorie'],
+      'status': ['statut', 'etat', 'status'],
+      'customer_name': ['client', 'nomclient'],
+      'device_brand': ['marque'],
+      'device_model': ['modele'],
+      'device_imei': ['imei', 'sn', 'numerodeserie'],
+      'problem_description': ['probleme', 'descriptionduprobleme', 'panne'],
+      'total_cost': ['cout', 'couttotal', 'total', 'montant'],
+      'total_time_minutes': ['tempsmn', 'temps']
+    }
+  };
+  
+  const typeMapping = fieldMappings[type];
+  if (!typeMapping) return mapping;
+  
+  const normalizedHeaders = headers.map(h => normalizeColumnName(h));
+  
+  // Pour chaque champ système, trouver la colonne correspondante
+  for (const [systemField, possibleNames] of Object.entries(typeMapping)) {
+    for (const possibleName of possibleNames) {
+      const normalizedPossible = normalizeColumnName(possibleName);
+      const matchIndex = normalizedHeaders.findIndex(h => 
+        h === normalizedPossible || h.includes(normalizedPossible) || normalizedPossible.includes(h)
+      );
+      
+      if (matchIndex !== -1) {
+        mapping[systemField] = headers[matchIndex];
+        break;
+      }
+    }
+  }
+  
+  return mapping;
+}
