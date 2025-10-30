@@ -773,6 +773,7 @@ export type Database = {
           created_at: string
           customer_id: string | null
           deposit_amount: number | null
+          details_updated_at: string | null
           device_brand: string | null
           device_imei: string | null
           device_model: string | null
@@ -796,6 +797,7 @@ export type Database = {
           tracking_slug: string | null
           unlock_pattern: Json | null
           updated_at: string
+          updated_by: string | null
         }
         Insert: {
           accessories?: Json | null
@@ -804,6 +806,7 @@ export type Database = {
           created_at?: string
           customer_id?: string | null
           deposit_amount?: number | null
+          details_updated_at?: string | null
           device_brand?: string | null
           device_imei?: string | null
           device_model?: string | null
@@ -827,6 +830,7 @@ export type Database = {
           tracking_slug?: string | null
           unlock_pattern?: Json | null
           updated_at?: string
+          updated_by?: string | null
         }
         Update: {
           accessories?: Json | null
@@ -835,6 +839,7 @@ export type Database = {
           created_at?: string
           customer_id?: string | null
           deposit_amount?: number | null
+          details_updated_at?: string | null
           device_brand?: string | null
           device_imei?: string | null
           device_model?: string | null
@@ -858,6 +863,7 @@ export type Database = {
           tracking_slug?: string | null
           unlock_pattern?: Json | null
           updated_at?: string
+          updated_by?: string | null
         }
         Relationships: [
           {

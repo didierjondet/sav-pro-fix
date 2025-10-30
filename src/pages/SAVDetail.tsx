@@ -16,7 +16,7 @@ import { useShopSAVTypes } from '@/hooks/useShopSAVTypes';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { QrCode, ExternalLink, ArrowLeft, Copy, Share, Save, Lock, User, Mail, Phone, MapPin, CheckCircle, X, MessageSquare, Edit } from 'lucide-react';
+import { QrCode, ExternalLink, ArrowLeft, Copy, Share, Save, Lock, User, Mail, Phone, MapPin, CheckCircle, X, MessageSquare, Edit, Clock } from 'lucide-react';
 import { SMSButton } from '@/components/sav/SMSButton';
 import { useNavigate } from 'react-router-dom';
 import { SAVPartsEditor } from '@/components/sav/SAVPartsEditor';
@@ -31,6 +31,7 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { AITextReformulator } from '@/components/sav/AITextReformulator';
 import { EditSAVCustomerDialog } from '@/components/sav/EditSAVCustomerDialog';
+import { EditSAVDetailsDialog } from '@/components/sav/EditSAVDetailsDialog';
 export default function SAVDetail() {
   const {
     id
@@ -410,9 +411,22 @@ export default function SAVDetail() {
 
               {/* Case Details */}
               <Card>
-                <CardHeader>
-                  <CardTitle>Détails du dossier</CardTitle>
-                </CardHeader>
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <span>Détails du dossier</span>
+                  <EditSAVDetailsDialog
+                    savCaseId={savCase.id}
+                    currentDetails={{
+                      device_brand: savCase.device_brand,
+                      device_model: savCase.device_model,
+                      device_imei: savCase.device_imei,
+                      problem_description: savCase.problem_description,
+                      repair_notes: savCase.repair_notes,
+                      sku: savCase.sku
+                    }}
+                  />
+                </CardTitle>
+              </CardHeader>
                 <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="flex items-center gap-2">
                     <strong>Type:</strong> 
@@ -493,6 +507,20 @@ export default function SAVDetail() {
                       <strong>Notes de réparation:</strong>
                       <p className="mt-1 text-muted-foreground">{savCase.repair_notes}</p>
                     </div>}
+                  
+                  {savCase.details_updated_at && (
+                    <div className="md:col-span-2 mt-4 pt-4 border-t">
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Clock className="h-4 w-4" />
+                        <span>
+                          Détails modifiés le {format(new Date(savCase.details_updated_at), 'dd/MM/yyyy à HH:mm', { locale: fr })}
+                          {savCase.updated_by_profile && 
+                            ` par ${savCase.updated_by_profile.first_name} ${savCase.updated_by_profile.last_name}`
+                          }
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
 
