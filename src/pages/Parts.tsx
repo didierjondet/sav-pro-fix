@@ -31,9 +31,11 @@ import {
   BarChart3,
   Eye,
   Upload,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Clock
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { isPriceOutdated, getMonthsSinceUpdate } from '@/utils/priceUtils';
 
 export default function Parts() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -309,6 +311,25 @@ export default function Parts() {
                                        <span>{((part.purchase_price || 0) * part.quantity).toFixed(2)}€</span>
                                      </div>
                                    </div>
+                                   
+                                   {/* Alerte prix obsolète */}
+                                   {isPriceOutdated(part.price_last_updated, 6) && (
+                                     <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-md flex items-start gap-2">
+                                       <Clock className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                                       <div className="text-sm text-amber-800">
+                                         <span className="font-semibold">Prix obsolète : </span>
+                                         <span>
+                                           Le prix d'achat (HT) et/ou le prix public (TTC) n'ont pas été mis à jour depuis{' '}
+                                           {getMonthsSinceUpdate(part.price_last_updated) === Infinity ? (
+                                             <strong>leur création</strong>
+                                           ) : (
+                                             <strong>{getMonthsSinceUpdate(part.price_last_updated)} mois</strong>
+                                           )}
+                                           .{' '}Pensez à vérifier auprès de votre fournisseur.
+                                         </span>
+                                       </div>
+                                     </div>
+                                   )}
                                    
                                    {part.supplier && (
                                      <div className="mt-2 text-sm text-muted-foreground">
