@@ -69,8 +69,7 @@ export function useSAVCases() {
         .from('sav_cases')
         .select(`
           *,
-          customer:customers(first_name, last_name, email, phone, address),
-          updated_by_profile:profiles!updated_by(first_name, last_name)
+          customer:customers(first_name, last_name, email, phone, address)
         `)
         .eq('shop_id', profile.shop_id)
         .order('created_at', { ascending: false });
