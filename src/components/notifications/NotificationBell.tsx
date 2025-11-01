@@ -293,7 +293,7 @@ export function NotificationBell() {
                 hasNewActivity ? 'animate-pulse bg-red-600 border-red-600' : ''
               }`}
             >
-              {totalUnreadCount > 9 ? '9+' : totalUnreadCount || '!'}
+              {totalUnreadCount > 9 ? '9+' : totalUnreadCount}
             </Badge>
           )}
         </Button>

@@ -100,20 +100,34 @@ export function useNotifications() {
 
   const markAsRead = async (notificationId: string) => {
     try {
+      // Mettre à jour immédiatement le state local
+      setNotifications(prev => prev.map(notif => 
+        notif.id === notificationId 
+          ? { ...notif, read: true }
+          : notif
+      ));
+      setUnreadCount(prev => Math.max(0, prev - 1));
+      
+      // Puis mettre à jour la DB
       const { error } = await supabase
         .from('notifications')
         .update({ read: true })
         .eq('id', notificationId);
 
       if (error) throw error;
-      fetchNotifications();
     } catch (error: any) {
       console.error('Error marking notification as read:', error);
+      // En cas d'erreur, re-fetch pour resynchroniser
+      fetchNotifications();
     }
   };
 
   const markAllAsRead = async () => {
     try {
+      // Mettre à jour immédiatement le state local
+      setNotifications(prev => prev.map(notif => ({ ...notif, read: true })));
+      setUnreadCount(0);
+      
       // Get current user's shop_id
       const { data: profile } = await supabase
         .from('profiles')
@@ -123,6 +137,7 @@ export function useNotifications() {
 
       if (!profile?.shop_id) return;
 
+      // Puis mettre à jour la DB
       const { error } = await supabase
         .from('notifications')
         .update({ read: true })
@@ -130,9 +145,10 @@ export function useNotifications() {
         .eq('shop_id', profile.shop_id);
 
       if (error) throw error;
-      fetchNotifications();
     } catch (error: any) {
       console.error('Error marking all notifications as read:', error);
+      // En cas d'erreur, re-fetch pour resynchroniser
+      fetchNotifications();
     }
   };
 
