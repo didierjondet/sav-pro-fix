@@ -108,15 +108,17 @@ export function useNotifications() {
               setUnreadCount(prev => prev + 1);
             } else if (payload.eventType === 'UPDATE') {
               const updatedNotif = payload.new as Notification;
-              setNotifications(prev => 
-                prev.map(n => n.id === updatedNotif.id ? updatedNotif : n)
-              );
-              // Recalculer le unreadCount
-              setNotifications(prev => {
-                const count = prev.filter(n => !n.read).length;
-                setUnreadCount(count);
-                return prev;
-              });
+              
+              // Si la notification est marquée comme lue, la RETIRER du state local
+              if (updatedNotif.read) {
+                setNotifications(prev => prev.filter(n => n.id !== updatedNotif.id));
+                setUnreadCount(prev => Math.max(0, prev - 1));
+              } else {
+                // Sinon, la mettre à jour normalement
+                setNotifications(prev => 
+                  prev.map(n => n.id === updatedNotif.id ? updatedNotif : n)
+                );
+              }
             } else if (payload.eventType === 'DELETE') {
               const deletedId = (payload.old as any).id;
               setNotifications(prev => prev.filter(n => n.id !== deletedId));
