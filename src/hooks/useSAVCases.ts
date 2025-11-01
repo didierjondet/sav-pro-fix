@@ -70,7 +70,7 @@ export function useSAVCases() {
         .select(`
           *,
           customer:customers(first_name, last_name, email, phone, address),
-          updated_by_profile:profiles!sav_cases_updated_by_fkey(first_name, last_name)
+          updated_by_profile:profiles!updated_by(first_name, last_name)
         `)
         .eq('shop_id', profile.shop_id)
         .order('created_at', { ascending: false });
