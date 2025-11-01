@@ -15,6 +15,20 @@ export interface Notification {
   shop_id: string;
 }
 
+/**
+ * Hook pour gérer les notifications de l'application
+ * 
+ * ARCHITECTURE :
+ * - Utilise REALTIME Supabase pour synchroniser les notifications en temps réel
+ * - Optimistic updates : met à jour le state local immédiatement, puis la DB
+ * - Pas de polling (contrairement au reste de l'app désactivé pour performance)
+ * - Les notifications sont GLOBALES : quand un user marque comme lu, tous les users le voient
+ * 
+ * POURQUOI REALTIME ICI ?
+ * - Les notifications sont peu volumineuses (quelques KB par jour)
+ * - Besoin d'instantanéité (UX critique)
+ * - Pas de risque de surcharge CPU (contrairement aux SAV/messages qui pollaient toutes les 10s)
+ */
 export function useNotifications() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
@@ -56,13 +70,77 @@ export function useNotifications() {
     }
   };
 
+  // 🔥 REALTIME : Écouter les changements sur la table notifications
   useEffect(() => {
-    fetchNotifications();
+    const initRealtime = async () => {
+      // Fetch initial
+      await fetchNotifications();
+      
+      // Get current user's shop_id for filtering
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('shop_id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (!profile?.shop_id) return;
+
+      // Subscribe to notifications changes for this shop
+      const channel = supabase
+        .channel('notifications-realtime')
+        .on(
+          'postgres_changes',
+          {
+            event: '*', // INSERT, UPDATE, DELETE
+            schema: 'public',
+            table: 'notifications',
+            filter: `shop_id=eq.${profile.shop_id}`
+          },
+          (payload) => {
+            console.log('🔔 Notification change:', payload);
+            
+            if (payload.eventType === 'INSERT') {
+              const newNotif = payload.new as Notification;
+              setNotifications(prev => [newNotif, ...prev]);
+              setUnreadCount(prev => prev + 1);
+            } else if (payload.eventType === 'UPDATE') {
+              const updatedNotif = payload.new as Notification;
+              setNotifications(prev => 
+                prev.map(n => n.id === updatedNotif.id ? updatedNotif : n)
+              );
+              // Recalculer le unreadCount
+              setNotifications(prev => {
+                const count = prev.filter(n => !n.read).length;
+                setUnreadCount(count);
+                return prev;
+              });
+            } else if (payload.eventType === 'DELETE') {
+              const deletedId = (payload.old as any).id;
+              setNotifications(prev => prev.filter(n => n.id !== deletedId));
+              setUnreadCount(prev => Math.max(0, prev - 1));
+            }
+          }
+        )
+        .subscribe();
+
+      return channel;
+    };
+
+    let channel: any;
     
-    // Polling manuel toutes les 60 secondes (au lieu de realtime)
-    const interval = setInterval(fetchNotifications, 60000);
-    
-    return () => clearInterval(interval);
+    initRealtime().then(ch => {
+      channel = ch;
+    });
+
+    return () => {
+      if (channel) {
+        console.log('🔔 Cleanup notifications realtime');
+        supabase.removeChannel(channel);
+      }
+    };
   }, []);
 
   const createNotification = async (notification: Omit<Notification, 'id' | 'created_at' | 'shop_id' | 'read'>) => {
@@ -100,7 +178,7 @@ export function useNotifications() {
 
   const markAsRead = async (notificationId: string) => {
     try {
-      // Mettre à jour immédiatement le state local
+      // Mettre à jour immédiatement le state local (optimistic update)
       setNotifications(prev => prev.map(notif => 
         notif.id === notificationId 
           ? { ...notif, read: true }
@@ -108,23 +186,25 @@ export function useNotifications() {
       ));
       setUnreadCount(prev => Math.max(0, prev - 1));
       
-      // Puis mettre à jour la DB
+      // Puis mettre à jour la DB (le realtime propagera le changement)
       const { error } = await supabase
         .from('notifications')
         .update({ read: true })
         .eq('id', notificationId);
 
       if (error) throw error;
+      
+      console.log('✅ Notification marked as read:', notificationId);
     } catch (error: any) {
       console.error('Error marking notification as read:', error);
-      // En cas d'erreur, re-fetch pour resynchroniser
+      // En cas d'erreur, rollback optimistic update
       fetchNotifications();
     }
   };
 
   const markAllAsRead = async () => {
     try {
-      // Mettre à jour immédiatement le state local
+      // Mettre à jour immédiatement le state local (optimistic update)
       setNotifications(prev => prev.map(notif => ({ ...notif, read: true })));
       setUnreadCount(0);
       
@@ -137,7 +217,7 @@ export function useNotifications() {
 
       if (!profile?.shop_id) return;
 
-      // Puis mettre à jour la DB
+      // Puis mettre à jour la DB (le realtime propagera le changement)
       const { error } = await supabase
         .from('notifications')
         .update({ read: true })
@@ -145,9 +225,11 @@ export function useNotifications() {
         .eq('shop_id', profile.shop_id);
 
       if (error) throw error;
+      
+      console.log('✅ All notifications marked as read');
     } catch (error: any) {
       console.error('Error marking all notifications as read:', error);
-      // En cas d'erreur, re-fetch pour resynchroniser
+      // En cas d'erreur, rollback optimistic update
       fetchNotifications();
     }
   };

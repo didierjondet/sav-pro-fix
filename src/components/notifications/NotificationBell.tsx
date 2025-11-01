@@ -26,16 +26,16 @@ export function NotificationBell() {
   const { profile } = useProfile();
   const navigate = useNavigate();
 
-  // Listen to real-time changes
+  // 🔥 REALTIME pour les messages SAV et Support (crée des notifications dans la table)
   useEffect(() => {
     if (!user || !profile?.shop_id) return;
 
     let savChannel: any;
     let supportChannel: any;
 
-    // Listen to SAV messages
+    // Écouter les nouveaux messages SAV clients
     savChannel = supabase
-      .channel('sav-messages-realtime')
+      .channel('sav-messages-bell')
       .on(
         'postgres_changes',
         {
@@ -45,13 +45,12 @@ export function NotificationBell() {
           filter: `shop_id=eq.${profile.shop_id}`
         },
         async (payload) => {
-          console.log('New SAV message:', payload);
           if (payload.new.sender_type === 'client') {
+            console.log('🔔 New SAV message from client');
             triggerNotificationEffect();
             
-            // Créer une notification SAV
+            // Créer une notification (sera propagée par le realtime de useNotifications)
             try {
-              // Récupérer les infos du SAV pour le numéro de cas
               const { data: savCase } = await supabase
                 .from('sav_cases')
                 .select('case_number')
@@ -66,14 +65,14 @@ export function NotificationBell() {
                 );
               }
             } catch (error) {
-              console.error('Erreur création notification SAV:', error);
+              console.error('Error creating SAV notification:', error);
             }
           }
         }
       )
       .subscribe();
 
-    // Get shop ticket IDs for support messages
+    // Écouter les nouveaux messages Support admin
     const setupSupportListener = async () => {
       try {
         const { data: tickets } = await supabase
@@ -84,9 +83,8 @@ export function NotificationBell() {
         if (tickets && tickets.length > 0) {
           const ticketIds = tickets.map(t => t.id);
           
-          // Listen to support messages
           supportChannel = supabase
-            .channel('support-messages-realtime')
+            .channel('support-messages-bell')
             .on(
               'postgres_changes',
               {
@@ -95,12 +93,10 @@ export function NotificationBell() {
                 table: 'support_messages'
               },
               async (payload) => {
-                console.log('New support message:', payload);
-                // Only trigger if it's from admin and for this shop's tickets
                 if (payload.new.sender_type === 'admin' && ticketIds.includes(payload.new.ticket_id)) {
+                  console.log('🔔 New support message from admin');
                   triggerNotificationEffect();
                   
-                  // Créer une notification support
                   try {
                     const ticket = tickets.find(t => t.id === payload.new.ticket_id);
                     if (ticket) {
@@ -111,7 +107,7 @@ export function NotificationBell() {
                       );
                     }
                   } catch (error) {
-                    console.error('Erreur création notification support:', error);
+                    console.error('Error creating support notification:', error);
                   }
                 }
               }
@@ -119,13 +115,14 @@ export function NotificationBell() {
             .subscribe();
         }
       } catch (error) {
-        console.error('Erreur setup support listener:', error);
+        console.error('Error setup support listener:', error);
       }
     };
 
     setupSupportListener();
 
     return () => {
+      console.log('🔔 Cleanup message listeners');
       if (savChannel) supabase.removeChannel(savChannel);
       if (supportChannel) supabase.removeChannel(supportChannel);
     };
