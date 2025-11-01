@@ -72,7 +72,7 @@ serve(async (req) => {
           sav_parts(*, part:parts(*))
         `)
         .eq('shop_id', profile.shop_id)
-        .not('status', 'in', '(delivered,cancelled)')
+        .not('status', 'in', '(ready,delivered,cancelled)')
         .order('created_at', { ascending: true }),
       
       supabaseClient

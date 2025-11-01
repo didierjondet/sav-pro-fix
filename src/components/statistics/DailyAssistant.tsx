@@ -109,52 +109,37 @@ export function DailyAssistant() {
   };
 
   return (
-    <Card className="p-4 mb-6 bg-gradient-to-br from-primary/5 via-background to-background border-primary/20">
-      <div className="flex items-start justify-between mb-3">
+    <Card className="p-4 mb-4 bg-gradient-to-br from-primary/5 via-background to-background border-primary/20">
+      <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <div className="p-1.5 rounded-lg bg-primary/10">
             <Sparkles className="h-4 w-4 text-primary" />
           </div>
-          <div>
-            <h2 className="text-base font-semibold">Assistant Quotidien IA</h2>
-            <p className="text-xs text-muted-foreground">
-              Optimisez votre journée de travail
-            </p>
-          </div>
+          <h2 className="text-base font-semibold">Assistant Quotidien IA</h2>
         </div>
-        {recommendations && (
-          <Button
-            onClick={fetchRecommendations}
-            disabled={loading}
-            variant="ghost"
-            size="sm"
-          >
-            {loading ? (
-              <RefreshCw className="h-4 w-4 animate-spin" />
-            ) : (
-              <RefreshCw className="h-4 w-4" />
-            )}
-          </Button>
-        )}
+        <Button
+          onClick={fetchRecommendations}
+          disabled={loading}
+          size="sm"
+        >
+          {loading ? (
+            <>
+              <RefreshCw className="h-4 w-4 animate-spin mr-2" />
+              Analyse...
+            </>
+          ) : (
+            <>
+              <Sparkles className="h-4 w-4 mr-2" />
+              Analyser
+            </>
+          )}
+        </Button>
       </div>
 
       {!recommendations && !loading && (
-        <div className="text-center py-6 space-y-3">
-          <div className="flex justify-center">
-            <div className="p-3 rounded-full bg-primary/10">
-              <Sparkles className="h-6 w-6 text-primary" />
-            </div>
-          </div>
-          <div>
-            <p className="text-sm text-muted-foreground mb-2">
-              Obtenez des recommandations personnalisées pour optimiser votre journée
-            </p>
-          </div>
-          <Button onClick={fetchRecommendations} size="sm">
-            <Sparkles className="mr-2 h-4 w-4" />
-            Analyser
-          </Button>
-        </div>
+        <p className="text-sm text-muted-foreground text-center py-2">
+          Obtenez des recommandations personnalisées pour optimiser votre journée
+        </p>
       )}
 
       {loading && (
