@@ -180,15 +180,11 @@ export function useNotifications() {
 
   const markAsRead = async (notificationId: string) => {
     try {
-      // Mettre à jour immédiatement le state local (optimistic update)
-      setNotifications(prev => prev.map(notif => 
-        notif.id === notificationId 
-          ? { ...notif, read: true }
-          : notif
-      ));
+      // 1. Optimistic update : RETIRER la notification du state local
+      setNotifications(prev => prev.filter(n => n.id !== notificationId));
       setUnreadCount(prev => Math.max(0, prev - 1));
       
-      // Puis mettre à jour la DB (le realtime propagera le changement)
+      // 2. Update DB (le realtime propagera le changement aux autres utilisateurs)
       const { error } = await supabase
         .from('notifications')
         .update({ read: true })
@@ -206,8 +202,8 @@ export function useNotifications() {
 
   const markAllAsRead = async () => {
     try {
-      // Mettre à jour immédiatement le state local (optimistic update)
-      setNotifications(prev => prev.map(notif => ({ ...notif, read: true })));
+      // 1. Optimistic update : VIDER le state local
+      setNotifications([]);
       setUnreadCount(0);
       
       // Get current user's shop_id
@@ -219,7 +215,7 @@ export function useNotifications() {
 
       if (!profile?.shop_id) return;
 
-      // Puis mettre à jour la DB (le realtime propagera le changement)
+      // 2. Update DB (le realtime propagera le changement)
       const { error } = await supabase
         .from('notifications')
         .update({ read: true })
@@ -231,7 +227,7 @@ export function useNotifications() {
       console.log('✅ All notifications marked as read');
     } catch (error: any) {
       console.error('Error marking all notifications as read:', error);
-      // En cas d'erreur, rollback optimistic update
+      // En cas d'erreur, rollback
       fetchNotifications();
     }
   };
