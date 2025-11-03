@@ -117,13 +117,22 @@ export default function Notifications() {
   const totalUnreadSAVMessages = savWithUnreadMessages.reduce((total, sav) => total + sav.unread_count, 0);
   const totalUnreadCount = unreadCount + totalUnreadSAVMessages;
 
+  const handleBack = () => {
+    // Retour vers la page précédente si elle existe, sinon Dashboard
+    if (window.history.state?.idx > 0) {
+      navigate(-1);
+    } else {
+      navigate('/Dashboard');
+    }
+  };
+
   return (
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex items-center gap-2">
         <Button 
           variant="ghost" 
           size="sm"
-          onClick={() => navigate(-1)}
+          onClick={handleBack}
           className="gap-2"
         >
           <ArrowLeft className="h-4 w-4" />
