@@ -119,6 +119,13 @@ export const DragDropStatistics = ({ period, onPeriodChange }: DragDropStatistic
   };
 
   const renderWidget = (module: StatisticModule) => {
+    // Définir baseProps pour tous les widgets (standards et personnalisés)
+    const baseProps = {
+      id: module.id,
+      title: module.name,
+      isEnabled: module.enabled
+    };
+
     // Gérer les widgets personnalisés créés par l'IA
     if (module.isCustom) {
       const size = DEFAULT_MODULE_SIZES[module.id] || 'medium';
@@ -126,16 +133,12 @@ export const DragDropStatistics = ({ period, onPeriodChange }: DragDropStatistic
       
       return (
         <div className={className}>
-          <CustomWidgetRenderer config={module} />
+          <DraggableStatisticsWidget {...baseProps}>
+            <CustomWidgetRenderer config={module} />
+          </DraggableStatisticsWidget>
         </div>
       );
     }
-
-    const baseProps = {
-      id: module.id,
-      title: module.name,
-      isEnabled: module.enabled
-    };
 
     const size = DEFAULT_MODULE_SIZES[module.id] || 'small';
     const className = getWidgetClasses(size);
