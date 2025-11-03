@@ -118,6 +118,24 @@ export const useStatisticsConfig = () => {
 
   const updateModule = async (moduleId: string, updates: Partial<StatisticModule>) => {
     const updated = modules.map(m => m.id === moduleId ? { ...m, ...updates } : m);
+    
+    // Si c'est un widget personnalisé, mettre à jour Supabase
+    const module = modules.find(m => m.id === moduleId);
+    if (module?.isCustom && module.customWidgetId) {
+      const { error } = await supabase
+        .from('custom_widgets')
+        .update({ 
+          enabled: updates.enabled !== undefined ? updates.enabled : module.enabled,
+          display_order: updates.order !== undefined ? updates.order : module.order
+        })
+        .eq('id', module.customWidgetId);
+      
+      if (error) {
+        console.error('Error updating custom widget:', error);
+        return;
+      }
+    }
+    
     await saveConfig(updated);
   };
 
@@ -130,6 +148,17 @@ export const useStatisticsConfig = () => {
 
   const reorderModules = async (newModules: StatisticModule[]) => {
     const reordered = newModules.map((m, i) => ({ ...m, order: i }));
+    
+    // Mettre à jour l'ordre des widgets personnalisés dans Supabase
+    for (const module of reordered.filter(m => m.isCustom)) {
+      if (module.customWidgetId) {
+        await supabase
+          .from('custom_widgets')
+          .update({ display_order: module.order })
+          .eq('id', module.customWidgetId);
+      }
+    }
+    
     await saveConfig(reordered);
   };
 

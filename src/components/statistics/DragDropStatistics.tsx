@@ -74,6 +74,8 @@ export const DragDropStatistics = ({ period, onPeriodChange }: DragDropStatistic
 
   useEffect(() => {
     const enabledModules = modules.filter(m => m.enabled).sort((a, b) => a.order - b.order);
+    console.log('📊 Enabled modules:', enabledModules);
+    console.log('🎨 Custom widgets:', enabledModules.filter(m => m.isCustom));
     setSortedModules(enabledModules);
   }, [modules]);
 
