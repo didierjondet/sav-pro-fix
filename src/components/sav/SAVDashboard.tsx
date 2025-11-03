@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, HardDrive, Calendar, Info, GripVertical } from 'lucide-react';
+import { Plus, HardDrive, Calendar, Info } from 'lucide-react';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as ChartTooltip, ResponsiveContainer, Legend, LineChart, Line } from 'recharts';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -23,12 +23,14 @@ import { SortableContext, sortableKeyboardCoordinates, rectSortingStrategy, arra
 import { DraggableStatisticsWidget } from '@/components/statistics/DraggableStatisticsWidget';
 import { useStatisticsConfig, StatisticModule } from '@/hooks/useStatisticsConfig';
 import { SortableBlock } from '@/components/statistics/SortableBlock';
+import { WidgetManager } from '@/components/statistics/WidgetManager';
 
 // Limite de stockage par magasin (500 MB = 0.5 GB)
 const STORAGE_LIMIT_GB = 0.5;
 
 export function SAVDashboard() {
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isWidgetDialogOpen, setIsWidgetDialogOpen] = useState(false);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const { cases, loading } = useSAVCases();
   const { shop } = useShop();
@@ -39,7 +41,7 @@ export function SAVDashboard() {
   const navigate = useNavigate();
 
   // Drag & Drop config shared
-  const { modules, reorderModules } = useStatisticsConfig();
+  const { modules, reorderModules, updateModule } = useStatisticsConfig();
   const dashboardModuleIds = [
     'sav-types-grid',
     'finance-kpis',
@@ -77,6 +79,10 @@ export function SAVDashboard() {
     const others = modules.filter(m => !dashboardModuleIds.includes(m.id)).sort((a,b) => a.order - b.order);
     const merged = [...others, ...newOrder];
     reorderModules(merged);
+  };
+
+  const handleRemoveWidget = (moduleId: string) => {
+    updateModule(moduleId, { enabled: false });
   };
 
   // Fonctions pour naviguer vers les SAV filtrés avec types dynamiques
@@ -688,27 +694,51 @@ export function SAVDashboard() {
           year: 'numeric'
         }).slice(1)}
         </h2>
-        <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              Nouveau SAV
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Créer un nouveau dossier SAV</DialogTitle>
-            </DialogHeader>
-            <SAVForm onSuccess={() => setIsFormOpen(false)} />
-          </DialogContent>
-        </Dialog>
+        <div className="flex gap-2">
+          <Dialog open={isWidgetDialogOpen} onOpenChange={setIsWidgetDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline">
+                <Plus className="mr-2 h-4 w-4" />
+                Ajouter widget
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Gérer les widgets du Dashboard</DialogTitle>
+              </DialogHeader>
+              <WidgetManager 
+                availableModuleIds={dashboardModuleIds}
+                onClose={() => setIsWidgetDialogOpen(false)}
+              />
+            </DialogContent>
+          </Dialog>
+          
+          <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="mr-2 h-4 w-4" />
+                Nouveau SAV
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Créer un nouveau dossier SAV</DialogTitle>
+              </DialogHeader>
+              <SAVForm onSuccess={() => setIsFormOpen(false)} />
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={sortedModules.map(m => m.id)} strategy={rectSortingStrategy}>
           <div className="grid gap-6 md:grid-cols-2">
             {sortedModules.map((m) => (
-              <SortableBlock key={m.id} id={m.id}>
+              <SortableBlock 
+                key={m.id} 
+                id={m.id}
+                onRemove={() => handleRemoveWidget(m.id)}
+              >
                 {renderSection(m.id)}
               </SortableBlock>
             ))}
