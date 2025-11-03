@@ -45,7 +45,7 @@ import {
   Crown,
   Trash2
 } from 'lucide-react';
-import { StatisticsConfiguration } from '@/components/settings/StatisticsConfiguration';
+
 import { MenuConfigurationTab } from '@/components/settings/MenuConfigurationTab';
 import { SMSPackagesDisplay } from '@/components/subscription/SMSPackagesDisplay';
 import { BillingInvoices } from '@/components/billing/BillingInvoices';
@@ -1116,9 +1116,6 @@ export default function Settings() {
 
               {/* Menu Configuration */}
               <MenuConfigurationTab />
-
-              {/* Section Statistiques */}
-              <StatisticsConfiguration />
 
             </TabsContent>
 

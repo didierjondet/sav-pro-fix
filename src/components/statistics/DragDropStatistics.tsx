@@ -39,6 +39,7 @@ import { StorageUsageWidget } from './widgets/StorageUsageWidget';
 import { SAVTypeDistributionWidget } from './widgets/SAVTypeDistributionWidget';
 import { MonthlyProfitabilityWidget } from './widgets/MonthlyProfitabilityWidget';
 import { AnnualStatsWidget } from './widgets/AnnualStatsWidget';
+import { CustomWidgetRenderer } from './CustomWidgetRenderer';
 
 interface DragDropStatisticsProps {
   period: '7d' | '30d' | '3m' | '6m' | '1y';
@@ -118,6 +119,18 @@ export const DragDropStatistics = ({ period, onPeriodChange }: DragDropStatistic
   };
 
   const renderWidget = (module: StatisticModule) => {
+    // Gérer les widgets personnalisés créés par l'IA
+    if (module.isCustom) {
+      const size = DEFAULT_MODULE_SIZES[module.id] || 'medium';
+      const className = getWidgetClasses(size);
+      
+      return (
+        <div className={className}>
+          <CustomWidgetRenderer config={module} />
+        </div>
+      );
+    }
+
     const baseProps = {
       id: module.id,
       title: module.name,

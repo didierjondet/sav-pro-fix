@@ -68,6 +68,21 @@ export const CustomWidgetRenderer = ({ config }: CustomWidgetRendererProps) => {
     fetchData();
   }, [config, shop?.id]);
 
+  const getIcon = () => {
+    const iconName = config.display_config?.icon;
+    const iconClass = "h-5 w-5";
+    switch (iconName) {
+      case 'TrendingUp':
+        return <TrendingUp className={iconClass} />;
+      case 'Package':
+        return <Package className={iconClass} />;
+      case 'Activity':
+        return <Activity className={iconClass} />;
+      default:
+        return <Activity className={iconClass} />;
+    }
+  };
+
   if (loading) {
     return (
       <Card>
@@ -85,33 +100,28 @@ export const CustomWidgetRenderer = ({ config }: CustomWidgetRendererProps) => {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">{config.name}</CardTitle>
+          <CardTitle className="text-sm font-medium flex items-center gap-2">
+            {getIcon()}
+            {config.name}
+          </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-muted-foreground">Aucune donnée disponible</p>
+          <div className="h-32 flex items-center justify-center text-muted-foreground">
+            <div className="text-center">
+              <p className="text-sm font-medium">Aucune donnée disponible</p>
+              <p className="text-xs mt-2">
+                Le widget s'affichera dès que des données seront collectées
+              </p>
+            </div>
+          </div>
         </CardContent>
       </Card>
     );
   }
 
-  const getIcon = () => {
-    const iconName = config.display_config?.icon;
-    const iconClass = "h-5 w-5";
-    switch (iconName) {
-      case 'TrendingUp':
-        return <TrendingUp className={iconClass} />;
-      case 'Package':
-        return <Package className={iconClass} />;
-      case 'Activity':
-        return <Activity className={iconClass} />;
-      default:
-        return <Activity className={iconClass} />;
-    }
-  };
-
   // KPI Widget
   if (config.widget_type === 'kpi') {
-    const value = data[0]?.total ?? data.length;
+    const value = data && data[0]?.total !== undefined ? data[0].total : (data ? data.length : 0);
     return (
       <Card>
         <CardHeader>
@@ -126,6 +136,11 @@ export const CustomWidgetRenderer = ({ config }: CustomWidgetRendererProps) => {
           </div>
           {config.description && (
             <p className="text-xs text-muted-foreground mt-1">{config.description}</p>
+          )}
+          {(!data || data.length === 0) && (
+            <p className="text-xs text-muted-foreground mt-2 italic">
+              Aucune donnée pour la période actuelle
+            </p>
           )}
         </CardContent>
       </Card>

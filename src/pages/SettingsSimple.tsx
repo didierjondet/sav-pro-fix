@@ -18,7 +18,6 @@ import {
   Lock,
   Unlock
 } from 'lucide-react';
-import { StatisticsConfiguration } from '@/components/settings/StatisticsConfiguration';
 
 export default function SettingsSimple() {
   const { shop, loading, refetch } = useShop();
@@ -137,10 +136,6 @@ export default function SettingsSimple() {
           <TabsTrigger value="appearance" className="flex items-center gap-2">
             <Palette className="h-4 w-4" />
             Apparence
-          </TabsTrigger>
-          <TabsTrigger value="statistics" className="flex items-center gap-2">
-            <Settings className="h-4 w-4" />
-            Statistiques
           </TabsTrigger>
         </TabsList>
 
@@ -334,10 +329,6 @@ export default function SettingsSimple() {
               </div>
             </CardContent>
           </Card>
-        </TabsContent>
-
-        <TabsContent value="statistics">
-          <StatisticsConfiguration />
         </TabsContent>
       </Tabs>
     </div>
