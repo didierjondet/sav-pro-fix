@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { useShop } from './useShop';
 
 export interface StatisticModule {
   id: string;
@@ -7,6 +8,15 @@ export interface StatisticModule {
   description: string;
   enabled: boolean;
   order: number;
+  isCustom?: boolean;
+  customWidgetId?: string;
+  originalPrompt?: string;
+  aiInterpretation?: any;
+  widgetType?: string;
+  chartType?: string;
+  dataSource?: string;
+  dataConfig?: any;
+  displayConfig?: any;
 }
 
 const DEFAULT_MODULES: StatisticModule[] = [
@@ -44,88 +54,85 @@ const DEFAULT_MODULES: StatisticModule[] = [
   { id: 'customer-satisfaction', name: 'Satisfaction client', description: 'Indicateurs de satisfaction', enabled: true, order: 22 }
 ];
 
-export const useStatisticsConfig = () => {
-  const { toast } = useToast();
-  const [modules, setModules] = useState<StatisticModule[]>(DEFAULT_MODULES);
-  const [loading, setLoading] = useState(true);
+const STORAGE_KEY = 'statisticsConfig';
 
-  useEffect(() => {
-    loadConfig();
-  }, []);
+export const useStatisticsConfig = () => {
+  const [modules, setModules] = useState<StatisticModule[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { shop } = useShop();
 
   const loadConfig = async () => {
     try {
-      // Utilisation temporaire du localStorage jusqu'à ce que les types Supabase soient mis à jour
-      const saved = localStorage.getItem('statisticsConfig');
-      if (saved) {
-        const savedModules = JSON.parse(saved) as StatisticModule[];
-        // Merger avec les modules par défaut pour ajouter les nouveaux modules
-        const mergedModules = DEFAULT_MODULES.map(defaultModule => {
-          const savedModule = savedModules.find(sm => sm.id === defaultModule.id);
-          return savedModule ? { ...defaultModule, ...savedModule } : defaultModule;
-        });
-        
-        // Ajouter les nouveaux modules qui ne sont pas dans la config sauvée
-        savedModules.forEach(savedModule => {
-          if (!DEFAULT_MODULES.find(dm => dm.id === savedModule.id)) {
-            mergedModules.push(savedModule);
-          }
-        });
+      const saved = localStorage.getItem(STORAGE_KEY);
+      let standardModules = saved ? JSON.parse(saved) : DEFAULT_MODULES;
 
-        setModules(mergedModules.sort((a, b) => a.order - b.order));
+      if (shop?.id) {
+        const { data: customWidgets } = await supabase
+          .from('custom_widgets')
+          .select('*')
+          .eq('shop_id', shop.id)
+          .order('display_order');
+
+        if (customWidgets) {
+          const customModules: StatisticModule[] = customWidgets.map((w, idx) => ({
+            id: `custom-${w.id}`,
+            name: w.name,
+            description: w.description || '',
+            enabled: w.enabled,
+            order: standardModules.length + idx,
+            isCustom: true,
+            customWidgetId: w.id,
+            originalPrompt: w.original_prompt,
+            aiInterpretation: w.ai_interpretation,
+            widgetType: w.widget_type,
+            chartType: w.chart_type,
+            dataSource: w.data_source,
+            dataConfig: w.data_config,
+            displayConfig: w.display_config,
+          }));
+          setModules([...standardModules, ...customModules]);
+        } else {
+          setModules(standardModules);
+        }
       } else {
-        setModules(DEFAULT_MODULES);
+        setModules(standardModules);
       }
     } catch (error) {
-      console.error('Erreur lors du chargement de la configuration:', error);
+      console.error('Error loading config:', error);
       setModules(DEFAULT_MODULES);
     } finally {
       setLoading(false);
     }
   };
 
+  useEffect(() => {
+    loadConfig();
+  }, [shop?.id]);
+
   const saveConfig = async (newModules: StatisticModule[]) => {
-    try {
-      // Utilisation temporaire du localStorage jusqu'à ce que les types Supabase soient mis à jour
-      localStorage.setItem('statisticsConfig', JSON.stringify(newModules));
-      setModules(newModules);
-      
-      toast({
-        title: "Configuration sauvegardée",
-        description: "Les paramètres des statistiques ont été mis à jour"
-      });
-    } catch (error: any) {
-      toast({
-        title: "Erreur",
-        description: error.message || "Impossible de sauvegarder la configuration",
-        variant: "destructive"
-      });
-    }
+    const standard = newModules.filter(m => !m.isCustom);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(standard));
+    setModules(newModules);
   };
 
-  const updateModule = (moduleId: string, updates: Partial<StatisticModule>) => {
-    const newModules = modules.map(module =>
-      module.id === moduleId ? { ...module, ...updates } : module
-    );
-    saveConfig(newModules);
+  const updateModule = async (moduleId: string, updates: Partial<StatisticModule>) => {
+    const updated = modules.map(m => m.id === moduleId ? { ...m, ...updates } : m);
+    await saveConfig(updated);
   };
 
-  const reorderModules = (newModules: StatisticModule[]) => {
-    const reorderedModules = newModules.map((module, index) => ({
-      ...module,
-      order: index
-    }));
-    saveConfig(reorderedModules);
+  const deleteCustomWidget = async (widgetId: string) => {
+    if (!shop?.id) return;
+    await supabase.from('custom_widgets').delete().eq('id', widgetId);
+    const updated = modules.filter(m => m.customWidgetId !== widgetId);
+    setModules(updated);
+  };
+
+  const reorderModules = async (newModules: StatisticModule[]) => {
+    const reordered = newModules.map((m, i) => ({ ...m, order: i }));
+    await saveConfig(reordered);
   };
 
   const getEnabledModules = () => modules.filter(m => m.enabled).sort((a, b) => a.order - b.order);
 
-  return {
-    modules,
-    loading,
-    updateModule,
-    reorderModules,
-    getEnabledModules,
-    refetch: loadConfig
-  };
+  return { modules, loading, updateModule, reorderModules, getEnabledModules, deleteCustomWidget, refetch: loadConfig };
 };

@@ -24,6 +24,7 @@ import { DraggableStatisticsWidget } from '@/components/statistics/DraggableStat
 import { useStatisticsConfig, StatisticModule } from '@/hooks/useStatisticsConfig';
 import { SortableBlock } from '@/components/statistics/SortableBlock';
 import { WidgetManager } from '@/components/statistics/WidgetManager';
+import { CustomWidgetRenderer } from '@/components/statistics/CustomWidgetRenderer';
 
 // Limite de stockage par magasin (500 MB = 0.5 GB)
 const STORAGE_LIMIT_GB = 0.5;
@@ -739,7 +740,11 @@ export function SAVDashboard() {
                 id={m.id}
                 onRemove={() => handleRemoveWidget(m.id)}
               >
-                {renderSection(m.id)}
+                {m.isCustom ? (
+                  <CustomWidgetRenderer config={m} />
+                ) : (
+                  renderSection(m.id)
+                )}
               </SortableBlock>
             ))}
           </div>
