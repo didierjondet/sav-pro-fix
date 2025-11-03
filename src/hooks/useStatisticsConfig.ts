@@ -12,11 +12,11 @@ export interface StatisticModule {
   customWidgetId?: string;
   originalPrompt?: string;
   aiInterpretation?: any;
-  widgetType?: string;
-  chartType?: string;
-  dataSource?: string;
-  dataConfig?: any;
-  displayConfig?: any;
+  widget_type?: string; // Garder snake_case pour CustomWidgetRenderer
+  chart_type?: string;
+  data_source?: string;
+  data_config?: any;
+  display_config?: any;
 }
 
 const DEFAULT_MODULES: StatisticModule[] = [
@@ -84,12 +84,13 @@ export const useStatisticsConfig = () => {
             customWidgetId: w.id,
             originalPrompt: w.original_prompt,
             aiInterpretation: w.ai_interpretation,
-            widgetType: w.widget_type,
-            chartType: w.chart_type,
-            dataSource: w.data_source,
-            dataConfig: w.data_config,
-            displayConfig: w.display_config,
+            widget_type: w.widget_type, // Garder snake_case pour CustomWidgetRenderer
+            chart_type: w.chart_type,
+            data_source: w.data_source,
+            data_config: w.data_config,
+            display_config: w.display_config,
           }));
+          console.log('🎨 Custom widgets loaded:', customModules);
           setModules([...standardModules, ...customModules]);
         } else {
           setModules(standardModules);

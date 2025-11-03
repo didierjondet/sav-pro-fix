@@ -134,7 +134,7 @@ export function WidgetManager({ availableModuleIds }: WidgetManagerProps) {
             description: m.description,
             original_prompt: m.originalPrompt!,
             enabled: m.enabled,
-            widget_type: m.widgetType!,
+            widget_type: m.widget_type!,
           }))}
           onEdit={() => {
             toast.info('Modification à venir');
