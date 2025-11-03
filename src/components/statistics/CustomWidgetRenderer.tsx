@@ -34,8 +34,42 @@ export const CustomWidgetRenderer = ({ config }: CustomWidgetRendererProps) => {
         const filters = dataConfig.filters as FilterConfig[] | undefined;
         if (filters && Array.isArray(filters)) {
           for (const filter of filters) {
-            const value = filter.value === '{shop_id}' ? shop.id : filter.value;
-            query = query.eq(filter.column, value);
+            let value = filter.value;
+            
+            // Handle special variables
+            if (value === '{shop_id}') {
+              value = shop.id;
+            } else if (value === 'start_of_current_month') {
+              const now = new Date();
+              value = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+            } else if (value === 'end_of_current_month') {
+              const now = new Date();
+              value = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59).toISOString();
+            }
+            
+            // Apply the correct operator
+            switch (filter.operator) {
+              case 'eq':
+                query = query.eq(filter.column, value);
+                break;
+              case 'neq':
+                query = query.neq(filter.column, value);
+                break;
+              case 'gt':
+                query = query.gt(filter.column, value);
+                break;
+              case 'gte':
+                query = query.gte(filter.column, value);
+                break;
+              case 'lt':
+                query = query.lt(filter.column, value);
+                break;
+              case 'lte':
+                query = query.lte(filter.column, value);
+                break;
+              default:
+                query = query.eq(filter.column, value);
+            }
           }
         }
 
