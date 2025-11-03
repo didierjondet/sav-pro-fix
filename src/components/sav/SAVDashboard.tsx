@@ -60,8 +60,10 @@ export function SAVDashboard() {
 
   useEffect(() => {
     const enabled = modules
-      .filter(m => m.enabled && dashboardModuleIds.includes(m.id))
+      .filter(m => m.enabled && (dashboardModuleIds.includes(m.id) || m.isCustom))
       .sort((a, b) => a.order - b.order);
+    console.log('📊 Dashboard enabled modules:', enabled);
+    console.log('🎨 Dashboard custom widgets:', enabled.filter(m => m.isCustom));
     setSortedModules(enabled);
   }, [modules]);
   // Déplacement et sauvegarde de l'ordre
@@ -679,6 +681,11 @@ export function SAVDashboard() {
           </Card>
         );
       default:
+        // Gérer les widgets personnalisés
+        const module = sortedModules.find(m => m.id === id);
+        if (module?.isCustom) {
+          return <CustomWidgetRenderer config={module} />;
+        }
         return null;
     }
   };
