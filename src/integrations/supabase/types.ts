@@ -91,6 +91,68 @@ export type Database = {
         }
         Relationships: []
       }
+      custom_widgets: {
+        Row: {
+          ai_interpretation: Json
+          chart_type: string | null
+          created_at: string | null
+          data_config: Json
+          data_source: string
+          description: string | null
+          display_config: Json | null
+          display_order: number | null
+          enabled: boolean | null
+          id: string
+          name: string
+          original_prompt: string
+          shop_id: string
+          updated_at: string | null
+          widget_type: string
+        }
+        Insert: {
+          ai_interpretation: Json
+          chart_type?: string | null
+          created_at?: string | null
+          data_config: Json
+          data_source: string
+          description?: string | null
+          display_config?: Json | null
+          display_order?: number | null
+          enabled?: boolean | null
+          id?: string
+          name: string
+          original_prompt: string
+          shop_id: string
+          updated_at?: string | null
+          widget_type: string
+        }
+        Update: {
+          ai_interpretation?: Json
+          chart_type?: string | null
+          created_at?: string | null
+          data_config?: Json
+          data_source?: string
+          description?: string | null
+          display_config?: Json | null
+          display_order?: number | null
+          enabled?: boolean | null
+          id?: string
+          name?: string
+          original_prompt?: string
+          shop_id?: string
+          updated_at?: string | null
+          widget_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "custom_widgets_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       customers: {
         Row: {
           address: string | null
