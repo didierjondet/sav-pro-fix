@@ -137,6 +137,9 @@ export const useStatisticsConfig = () => {
     }
     
     await saveConfig(updated);
+    
+    // Forcer le rechargement pour propager les changements immédiatement
+    await loadConfig();
   };
 
   const deleteCustomWidget = async (widgetId: string) => {
@@ -160,6 +163,9 @@ export const useStatisticsConfig = () => {
     }
     
     await saveConfig(reordered);
+    
+    // Forcer le rechargement pour propager les changements immédiatement
+    await loadConfig();
   };
 
   const getEnabledModules = () => modules.filter(m => m.enabled).sort((a, b) => a.order - b.order);
