@@ -2196,7 +2196,14 @@ export type Database = {
       }
       ensure_super_admin_profile: { Args: never; Returns: undefined }
       execute_custom_widget_query: {
-        Args: { query_params: string[]; query_text: string }
+        Args: {
+          param2?: string
+          param3?: string
+          param4?: string
+          param5?: string
+          query_text: string
+          shop_id_param: string
+        }
         Returns: Json
       }
       generate_case_number: { Args: never; Returns: string }

@@ -53,14 +53,18 @@ Deno.serve(async (req) => {
 
     console.log("Executing custom SQL query for widget:", widget_id);
 
-    // Prepare parameters for the SQL query
-    const queryParams = [profile.shop_id];
-    if (year) queryParams.push(year);
+    // Préparer les paramètres pour la requête SQL
+    const param2 = year ? year.toString() : null;
+    const param3 = data_config.parameters?.find((p: any) => p.name === 'status')?.default || null;
 
-    // Execute the raw SQL query
+    // Exécuter la requête SQL avec les bons types
     const { data, error } = await supabaseClient.rpc('execute_custom_widget_query', {
       query_text: data_config.sqlQuery,
-      query_params: queryParams
+      shop_id_param: profile.shop_id,
+      param2: param2,
+      param3: param3,
+      param4: null,
+      param5: null
     });
 
     if (error) {
