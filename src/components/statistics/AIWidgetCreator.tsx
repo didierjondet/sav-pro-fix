@@ -4,10 +4,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Loader2, Sparkles, ChevronDown } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Loader2, Sparkles, ChevronDown, CheckCircle2, AlertCircle, Database } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { WidgetPreview } from './WidgetPreview';
+import { useShop } from '@/hooks/useShop';
 
 interface AIWidgetCreatorProps {
   onSuccess: (widget: any) => void;
@@ -15,12 +17,15 @@ interface AIWidgetCreatorProps {
 }
 
 export const AIWidgetCreator = ({ onSuccess, onCancel }: AIWidgetCreatorProps) => {
+  const { shop } = useShop();
   const [prompt, setPrompt] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [interpretation, setInterpretation] = useState('');
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const [testResults, setTestResults] = useState<Record<number, { hasData: boolean; rowCount: number; error?: string } | null>>({});
+  const [isTesting, setIsTesting] = useState<Record<number, boolean>>({});
 
   const handleGenerate = async () => {
     if (!prompt.trim()) {
@@ -45,6 +50,77 @@ export const AIWidgetCreator = ({ onSuccess, onCancel }: AIWidgetCreatorProps) =
       toast.error('Erreur lors de la génération des suggestions');
     } finally {
       setIsGenerating(false);
+    }
+  };
+
+  const handleTestData = async (index: number) => {
+    if (!shop?.id) return;
+    
+    const suggestion = suggestions[index];
+    setIsTesting(prev => ({ ...prev, [index]: true }));
+
+    try {
+      const dataConfig = suggestion.data_config;
+      
+      // Test avec Edge Function si nécessaire
+      if (dataConfig.useEdgeFunction) {
+        const { data: result, error } = await supabase.functions.invoke(
+          'fetch-custom-widget-data',
+          {
+            body: {
+              widget_id: 'test',
+              data_config: dataConfig,
+              shop_id: shop.id,
+              year: new Date().getFullYear()
+            }
+          }
+        );
+        
+        if (error) {
+          setTestResults(prev => ({ 
+            ...prev, 
+            [index]: { hasData: false, rowCount: 0, error: error.message } 
+          }));
+        } else {
+          const rowCount = result?.data?.length || 0;
+          setTestResults(prev => ({ 
+            ...prev, 
+            [index]: { hasData: rowCount > 0, rowCount } 
+          }));
+        }
+      } else {
+        // Test simple via client Supabase - utilise une requête générique
+        try {
+          // @ts-ignore - Type dynamique basé sur la config
+          const { count, error } = await supabase
+            .from(dataConfig.table)
+            .select('*', { count: 'exact', head: true })
+            .eq(
+              dataConfig.filters?.[0]?.column || 'shop_id',
+              dataConfig.filters?.[0]?.value === '{shop_id}' ? shop.id : dataConfig.filters?.[0]?.value
+            );
+          
+          if (error) throw error;
+          
+          setTestResults(prev => ({ 
+            ...prev, 
+            [index]: { hasData: (count || 0) > 0, rowCount: count || 0 } 
+          }));
+        } catch (err: any) {
+          setTestResults(prev => ({ 
+            ...prev, 
+            [index]: { hasData: false, rowCount: 0, error: err.message } 
+          }));
+        }
+      }
+    } catch (error: any) {
+      console.error('Error testing widget data:', error);
+      setTestResults(prev => ({ 
+        ...prev, 
+        [index]: { hasData: false, rowCount: 0, error: error.message } 
+      }));
+    } finally {
+      setIsTesting(prev => ({ ...prev, [index]: false }));
     }
   };
 
@@ -155,6 +231,54 @@ export const AIWidgetCreator = ({ onSuccess, onCancel }: AIWidgetCreatorProps) =
                   {/* Prévisualisation */}
                   <WidgetPreview config={suggestion} />
                   
+                  {/* Test des données */}
+                  <div className="space-y-2">
+                    <Button 
+                      onClick={() => handleTestData(index)}
+                      disabled={isTesting[index]}
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                    >
+                      {isTesting[index] ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Test en cours...
+                        </>
+                      ) : (
+                        <>
+                          <Database className="mr-2 h-4 w-4" />
+                          Tester les données
+                        </>
+                      )}
+                    </Button>
+                    
+                    {testResults[index] && (
+                      <Alert variant={testResults[index]!.hasData ? 'default' : 'destructive'}>
+                        <div className="flex items-center gap-2">
+                          {testResults[index]!.hasData ? (
+                            <>
+                              <CheckCircle2 className="h-4 w-4 text-green-600" />
+                              <AlertDescription>
+                                ✅ {testResults[index]!.rowCount} lignes trouvées - Données disponibles
+                              </AlertDescription>
+                            </>
+                          ) : (
+                            <>
+                              <AlertCircle className="h-4 w-4" />
+                              <AlertDescription>
+                                {testResults[index]!.error 
+                                  ? `❌ Erreur: ${testResults[index]!.error}`
+                                  : '❌ Aucune donnée disponible pour ce widget'
+                                }
+                              </AlertDescription>
+                            </>
+                          )}
+                        </div>
+                      </Alert>
+                    )}
+                  </div>
+                  
                   {/* Détails techniques */}
                   <Collapsible>
                     <CollapsibleTrigger asChild>
@@ -169,6 +293,12 @@ export const AIWidgetCreator = ({ onSuccess, onCancel }: AIWidgetCreatorProps) =
                         <div><strong>Graphique :</strong> {suggestion.chart_type}</div>
                       )}
                       <div><strong>Source :</strong> {suggestion.data_source}</div>
+                      {suggestion.data_config.useEdgeFunction && (
+                        <div className="p-2 bg-primary/5 rounded">
+                          <strong>⚡ Calculs complexes (Edge Function)</strong>
+                          <p className="text-xs mt-1 font-mono">{suggestion.data_config.sqlQuery}</p>
+                        </div>
+                      )}
                       <div className="pt-2 border-t">
                         <strong>Raison :</strong>
                         <p className="mt-1 text-sm">{suggestion.reasoning}</p>

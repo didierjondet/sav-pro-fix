@@ -28,68 +28,92 @@ export const CustomWidgetRenderer = ({ config }: CustomWidgetRendererProps) => {
       setLoading(true);
       try {
         const dataConfig = config.data_config;
-        let query = supabase.from(dataConfig.table).select(dataConfig.select || '*');
-
-        // Apply filters
-        const filters = dataConfig.filters as FilterConfig[] | undefined;
-        if (filters && Array.isArray(filters)) {
-          for (const filter of filters) {
-            let value = filter.value;
-            
-            // Handle special variables
-            if (value === '{shop_id}') {
-              value = shop.id;
-            } else if (value === 'start_of_current_month') {
-              const now = new Date();
-              value = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-            } else if (value === 'end_of_current_month') {
-              const now = new Date();
-              value = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59).toISOString();
+        
+        // Si le widget nécessite des calculs complexes via Edge Function
+        if (dataConfig.useEdgeFunction) {
+          const { data: result, error } = await supabase.functions.invoke(
+            'fetch-custom-widget-data',
+            {
+              body: {
+                widget_id: config.customWidgetId,
+                data_config: dataConfig,
+                shop_id: shop.id,
+                year: new Date().getFullYear() // Année en cours par défaut
+              }
             }
-            
-            // Apply the correct operator
-            switch (filter.operator) {
-              case 'eq':
-                query = query.eq(filter.column, value);
-                break;
-              case 'neq':
-                query = query.neq(filter.column, value);
-                break;
-              case 'gt':
-                query = query.gt(filter.column, value);
-                break;
-              case 'gte':
-                query = query.gte(filter.column, value);
-                break;
-              case 'lt':
-                query = query.lt(filter.column, value);
-                break;
-              case 'lte':
-                query = query.lte(filter.column, value);
-                break;
-              default:
-                query = query.eq(filter.column, value);
+          );
+          
+          if (error) {
+            console.error('Error fetching via edge function:', error);
+            setData(null);
+          } else {
+            setData(result?.data || null);
+          }
+        } else {
+          // Requêtes simples via le client Supabase
+          let query = supabase.from(dataConfig.table).select(dataConfig.select || '*');
+
+          // Apply filters
+          const filters = dataConfig.filters as FilterConfig[] | undefined;
+          if (filters && Array.isArray(filters)) {
+            for (const filter of filters) {
+              let value = filter.value;
+              
+              // Handle special variables
+              if (value === '{shop_id}') {
+                value = shop.id;
+              } else if (value === 'start_of_current_month') {
+                const now = new Date();
+                value = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+              } else if (value === 'end_of_current_month') {
+                const now = new Date();
+                value = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59).toISOString();
+              }
+              
+              // Apply the correct operator
+              switch (filter.operator) {
+                case 'eq':
+                  query = query.eq(filter.column, value);
+                  break;
+                case 'neq':
+                  query = query.neq(filter.column, value);
+                  break;
+                case 'gt':
+                  query = query.gt(filter.column, value);
+                  break;
+                case 'gte':
+                  query = query.gte(filter.column, value);
+                  break;
+                case 'lt':
+                  query = query.lt(filter.column, value);
+                  break;
+                case 'lte':
+                  query = query.lte(filter.column, value);
+                  break;
+                default:
+                  query = query.eq(filter.column, value);
+              }
             }
           }
-        }
 
-        // Apply ordering
-        if (dataConfig.orderBy) {
-          query = query.order(dataConfig.orderBy, { ascending: dataConfig.ascending ?? true });
-        }
+          // Apply ordering
+          if (dataConfig.orderBy) {
+            query = query.order(dataConfig.orderBy, { ascending: dataConfig.ascending ?? true });
+          }
 
-        // Apply limit
-        if (dataConfig.limit) {
-          query = query.limit(dataConfig.limit);
-        }
+          // Apply limit
+          if (dataConfig.limit) {
+            query = query.limit(dataConfig.limit);
+          }
 
-        const { data: result, error } = await query;
+          const { data: result, error } = await query;
 
-        if (error) {
-          console.error('Error fetching custom widget data:', error);
-          setData(null);
-        } else {
-          setData(result);
+          if (error) {
+            console.error('Error fetching custom widget data:', error);
+            setData(null);
+          } else {
+            setData(result);
+          }
         }
       } catch (error) {
         console.error('Error in custom widget renderer:', error);

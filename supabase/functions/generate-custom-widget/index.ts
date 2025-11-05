@@ -24,14 +24,55 @@ TYPES DE WIDGETS POSSIBLES :
 2. Chart : Graphiques variés (line, bar, pie, area)
 3. Table : Tableau de données avec colonnes personnalisables
 
+RÈGLES CRITIQUES DE GÉNÉRATION :
+
+**1. REQUÊTES SIMPLES (pour widgets standards):**
+- ✅ Autorisé : .eq(), .gte(), .lte(), .select('*'), .order(), .limit()
+- ❌ INTERDIT : strftime(), SUM(), COUNT(), GROUP BY, sous-requêtes
+- Utilise UNIQUEMENT des filtres compatibles avec le client Supabase JS
+- Exemple : {"filters": [{"column": "shop_id", "operator": "eq", "value": "{shop_id}"}, {"column": "status", "operator": "eq", "value": "completed"}]}
+
+**2. CALCULS COMPLEXES (graphiques avec agrégations):**
+- Si tu as besoin de SUM/COUNT/AVG/GROUP BY → définir "useEdgeFunction": true
+- Exemple pour marge mensuelle :
+  {
+    "data_config": {
+      "useEdgeFunction": true,
+      "sqlQuery": "SELECT TO_CHAR(created_at, 'YYYY-MM') AS month, SUM(total_cost) AS revenue, COUNT(*) AS sav_count FROM sav_cases WHERE shop_id = $1 AND EXTRACT(YEAR FROM created_at) = $2 AND status = 'completed' GROUP BY month ORDER BY month",
+      "parameters": ["shop_id", "year"],
+      "expectedColumns": ["month", "revenue", "sav_count"]
+    }
+  }
+
+**3. VÉRIFICATION DES DONNÉES (OBLIGATOIRE):**
+Dans "ai_interpretation", tu DOIS inclure :
+- Les tables et colonnes utilisées (ex: "sav_cases.total_cost, sav_cases.created_at")
+- Les filtres appliqués (ex: "Filtrage par shop_id et status='completed'")
+- Un exemple de résultat attendu (ex: "On devrait voir environ 50-200 SAV par mois")
+- Une QUESTION de validation : "Confirmez-vous que votre boutique a des SAV avec le champ 'total_cost' rempli ?"
+
+**4. DISPLAY CONFIG (pour graphiques):**
+- Pour les graphiques ligne/bar/area, spécifie toujours :
+  {
+    "display_config": {
+      "xAxis": {"dataKey": "month", "label": "Mois"},
+      "yAxis": {"label": "Montant (€)"},
+      "dataKeys": [
+        {"key": "revenue", "label": "Chiffre d'affaires", "color": "hsl(var(--primary))"},
+        {"key": "sav_count", "label": "Nombre de SAV", "color": "hsl(var(--accent))"}
+      ]
+    }
+  }
+
 TON RÔLE :
 - Analyser le prompt utilisateur
 - Proposer 3 configurations de widgets DIFFÉRENTES mais pertinentes
 - Utiliser des icônes lucide-react (TrendingUp, Package, Activity, DollarSign, Users, etc.)
+- TOUJOURS demander confirmation des données dans "ai_interpretation"
 
 RÉPONDS UNIQUEMENT avec un JSON valide au format :
 {
-  "interpretation": "Ton analyse du besoin",
+  "interpretation": "Ton analyse du besoin + QUESTION de validation des données (ex: 'Ce widget utilisera sav_cases.total_cost et created_at. Confirmez-vous avoir des SAV avec ces champs remplis ?')",
   "suggestions": [
     {
       "name": "Nom court",
@@ -40,10 +81,10 @@ RÉPONDS UNIQUEMENT avec un JSON valide au format :
       "chart_type": "line|bar|pie|area",
       "data_source": "sav_cases",
       "data_config": {
+        "useEdgeFunction": false,
         "table": "sav_cases",
         "select": "id, created_at, total_cost",
         "filters": [{"column": "shop_id", "operator": "eq", "value": "{shop_id}"}],
-        "aggregations": [],
         "orderBy": "created_at",
         "limit": 100
       },
@@ -52,7 +93,7 @@ RÉPONDS UNIQUEMENT avec un JSON valide au format :
         "icon": "TrendingUp",
         "size": "medium"
       },
-      "reasoning": "Pourquoi cette approche"
+      "reasoning": "Pourquoi cette approche + colonnes/tables utilisées"
     }
   ]
 }`;
