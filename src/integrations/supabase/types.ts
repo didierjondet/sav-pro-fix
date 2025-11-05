@@ -2195,6 +2195,10 @@ export type Database = {
         Returns: string
       }
       ensure_super_admin_profile: { Args: never; Returns: undefined }
+      execute_custom_widget_query: {
+        Args: { query_params: string[]; query_text: string }
+        Returns: Json
+      }
       generate_case_number: { Args: never; Returns: string }
       generate_invite_code: { Args: never; Returns: string }
       generate_invoice_number: {
