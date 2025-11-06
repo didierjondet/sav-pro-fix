@@ -121,20 +121,12 @@ export const useCustomWidgetData = ({ metrics, filters, groupBy }: UseCustomWidg
         const startDate = new Date(year, 0, 1);
         const endDate = new Date(year, 11, 31, 23, 59, 59);
 
-        // Récupérer les SAV cases
+        // Récupérer les SAV cases avec leurs pièces
         const { data: savCases, error: savError } = await supabase
           .from('sav_cases')
           .select(`
             *,
-            sav_parts_requirements (
-              id,
-              quantity,
-              unit_price,
-              part:parts (
-                name,
-                reference
-              )
-            )
+            sav_parts(*, part:parts(*))
           `)
           .eq('shop_id', shop.id)
           .gte('created_at', startDate.toISOString())
@@ -163,66 +155,98 @@ export const useCustomWidgetData = ({ metrics, filters, groupBy }: UseCustomWidg
         const devicesCount: Record<string, number> = {};
 
         // Traiter chaque SAV
-        savCases?.forEach(sav => {
+        savCases?.forEach((sav: any) => {
           const monthIndex = new Date(sav.created_at).getMonth();
           
           // Compter les SAV
           monthlyData[monthIndex].monthly_sav_count++;
 
-          // Calculer les coûts des pièces
+          // Calculer les coûts et revenus des pièces
           let savCost = 0;
-          sav.sav_parts_requirements?.forEach((req: any) => {
-            const cost = (req.quantity || 0) * (req.unit_price || 0);
-            savCost += cost;
+          let savRevenue = 0;
+          
+          sav.sav_parts?.forEach((savPart: any) => {
+            const qty = Number(savPart.quantity) || 0;
+            const purchase = Number(savPart.part?.purchase_price) || 0;
+            const selling = Number(savPart.part?.selling_price) || 0;
+            const unit = Number(savPart.unit_price ?? selling) || 0;
+            
+            const partCost = purchase * qty;
+            const partRevenue = unit * qty;
+            
+            savCost += partCost;
+            savRevenue += partRevenue;
             
             // Comptabiliser l'usage des pièces
-            if (req.part?.name) {
-              partsUsage[req.part.name] = (partsUsage[req.part.name] || 0) + (req.quantity || 0);
+            if (savPart.part?.name) {
+              partsUsage[savPart.part.name] = (partsUsage[savPart.part.name] || 0) + qty;
             }
           });
           
           monthlyData[monthIndex].monthly_costs += savCost;
 
-          // Calculer le revenu (uniquement pour les SAV ready)
-          if (sav.status === 'ready') {
-            const revenue = sav.total_price || 0;
-            monthlyData[monthIndex].monthly_revenue += revenue;
-            totalRevenue += revenue;
+          // Calculer le revenu (uniquement pour les SAV ready, hors internal)
+          if (sav.status === 'ready' && sav.sav_type !== 'internal') {
+            // Ajuster le revenu selon la prise en charge
+            if (sav.partial_takeover && sav.takeover_amount) {
+              const denom = Number(sav.total_cost) || 1;
+              const rawRatio = Number(sav.takeover_amount) / denom;
+              const ratio = Math.min(1, Math.max(0, rawRatio));
+              savRevenue = savCost + (savRevenue - savCost) * (1 - ratio);
+            } else if (sav.taken_over) {
+              savRevenue = savCost;
+            }
+            
+            monthlyData[monthIndex].monthly_revenue += savRevenue;
+            totalRevenue += savRevenue;
 
             // Calculer la marge
-            monthlyData[monthIndex].monthly_margin += revenue - savCost;
+            monthlyData[monthIndex].monthly_margin += savRevenue - savCost;
 
             // Revenu par type
-            if (sav.type === 'client') {
-              monthlyData[monthIndex].monthly_client_revenue += revenue;
-            } else if (sav.type === 'external') {
-              monthlyData[monthIndex].monthly_external_revenue += revenue;
+            if (sav.sav_type === 'client') {
+              monthlyData[monthIndex].monthly_client_revenue += savRevenue;
+            } else if (sav.sav_type === 'external') {
+              monthlyData[monthIndex].monthly_external_revenue += savRevenue;
             }
 
             // Prises en charge
             if (sav.takeover_amount) {
-              takeoverAmount += sav.takeover_amount;
+              takeoverAmount += Number(sav.takeover_amount) || 0;
             }
           }
 
-          // Temps moyen (pour les SAV terminés)
-          if (sav.status === 'ready' && sav.created_at && sav.ready_at) {
-            const timeInHours = (new Date(sav.ready_at).getTime() - new Date(sav.created_at).getTime()) / (1000 * 60 * 60);
-            totalSavTime += timeInHours;
-            countSavTime++;
+          // Temps moyen basé sur les temps des pièces
+          if (sav.status === 'ready') {
+            let totalMinutes = 0;
+            sav.sav_parts?.forEach((savPart: any) => {
+              const time = (savPart.part?.time_minutes || 15) * (savPart.quantity || 0);
+              totalMinutes += time;
+            });
+            if (totalMinutes > 0) {
+              totalSavTime += totalMinutes / 60; // Convertir en heures
+              countSavTime++;
+            }
           }
 
           // Taux de retard (pour les SAV actifs)
-          if (sav.status !== 'ready' && sav.status !== 'closed') {
+          if (sav.status !== 'ready' && sav.status !== 'delivered' && sav.status !== 'cancelled') {
             activeSavCount++;
-            if (sav.expected_date && new Date(sav.expected_date) < new Date()) {
+            // Calculer le retard basé sur created_at + processing days
+            const createdDate = new Date(sav.created_at);
+            const processingDays = 7; // Valeur par défaut
+            const expectedDate = new Date(createdDate);
+            expectedDate.setDate(expectedDate.getDate() + processingDays);
+            
+            if (new Date() > expectedDate) {
               lateSavCount++;
             }
           }
 
           // Comptabiliser les appareils
-          if (sav.device_type) {
-            devicesCount[sav.device_type] = (devicesCount[sav.device_type] || 0) + 1;
+          if (sav.device_brand || sav.device_model) {
+            const deviceName = `${sav.device_brand || ''} ${sav.device_model || ''}`.trim();
+            devicesCount[deviceName] = (devicesCount[deviceName] || 0) + 1;
           }
         });
 
