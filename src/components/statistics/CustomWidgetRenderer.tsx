@@ -1,130 +1,19 @@
-import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { supabase } from '@/integrations/supabase/client';
-import { useShop } from '@/hooks/useShop';
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
 import { TrendingUp, Package, Activity } from 'lucide-react';
+import { useCustomWidgetData } from '@/hooks/useCustomWidgetData';
 
 interface CustomWidgetRendererProps {
   config: any;
 }
 
-interface FilterConfig {
-  column: string;
-  operator: string;
-  value: string;
-}
-
 export const CustomWidgetRenderer = ({ config }: CustomWidgetRendererProps) => {
-  const [data, setData] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const { shop } = useShop();
-
-  useEffect(() => {
-    if (!shop?.id) return;
-
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        const dataConfig = config.data_config;
-        
-        // Si le widget nécessite des calculs complexes via Edge Function
-        if (dataConfig.useEdgeFunction) {
-          const { data: result, error } = await supabase.functions.invoke(
-            'fetch-custom-widget-data',
-            {
-              body: {
-                widget_id: config.customWidgetId,
-                data_config: dataConfig,
-                shop_id: shop.id,
-                year: new Date().getFullYear() // Année en cours par défaut
-              }
-            }
-          );
-          
-          if (error) {
-            console.error('Error fetching via edge function:', error);
-            setData(null);
-          } else {
-            setData(result?.data || null);
-          }
-        } else {
-          // Requêtes simples via le client Supabase
-          let query = supabase.from(dataConfig.table).select(dataConfig.select || '*');
-
-          // Apply filters
-          const filters = dataConfig.filters as FilterConfig[] | undefined;
-          if (filters && Array.isArray(filters)) {
-            for (const filter of filters) {
-              let value = filter.value;
-              
-              // Handle special variables
-              if (value === '{shop_id}') {
-                value = shop.id;
-              } else if (value === 'start_of_current_month') {
-                const now = new Date();
-                value = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-              } else if (value === 'end_of_current_month') {
-                const now = new Date();
-                value = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59).toISOString();
-              }
-              
-              // Apply the correct operator
-              switch (filter.operator) {
-                case 'eq':
-                  query = query.eq(filter.column, value);
-                  break;
-                case 'neq':
-                  query = query.neq(filter.column, value);
-                  break;
-                case 'gt':
-                  query = query.gt(filter.column, value);
-                  break;
-                case 'gte':
-                  query = query.gte(filter.column, value);
-                  break;
-                case 'lt':
-                  query = query.lt(filter.column, value);
-                  break;
-                case 'lte':
-                  query = query.lte(filter.column, value);
-                  break;
-                default:
-                  query = query.eq(filter.column, value);
-              }
-            }
-          }
-
-          // Apply ordering
-          if (dataConfig.orderBy) {
-            query = query.order(dataConfig.orderBy, { ascending: dataConfig.ascending ?? true });
-          }
-
-          // Apply limit
-          if (dataConfig.limit) {
-            query = query.limit(dataConfig.limit);
-          }
-
-          const { data: result, error } = await query;
-
-          if (error) {
-            console.error('Error fetching custom widget data:', error);
-            setData(null);
-          } else {
-            setData(result);
-          }
-        }
-      } catch (error) {
-        console.error('Error in custom widget renderer:', error);
-        setData(null);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [config, shop?.id]);
+  const { data, loading } = useCustomWidgetData({
+    metrics: config.data_config?.metrics || [],
+    filters: config.data_config?.filters,
+    groupBy: config.data_config?.groupBy
+  });
 
   const getIcon = () => {
     const iconName = config.display_config?.icon;

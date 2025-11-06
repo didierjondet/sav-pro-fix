@@ -5,11 +5,13 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, Sparkles, ChevronDown, CheckCircle2, AlertCircle, Database } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Loader2, Sparkles, ChevronDown, CheckCircle2, AlertCircle, Database, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { WidgetPreview } from './WidgetPreview';
 import { useShop } from '@/hooks/useShop';
+import { AVAILABLE_METRICS } from '@/hooks/useCustomWidgetData';
 
 interface AIWidgetCreatorProps {
   onSuccess: (widget: any) => void;
@@ -26,6 +28,8 @@ export const AIWidgetCreator = ({ onSuccess, onCancel }: AIWidgetCreatorProps) =
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [testResults, setTestResults] = useState<Record<number, { hasData: boolean; rowCount: number; error?: string } | null>>({});
   const [isTesting, setIsTesting] = useState<Record<number, boolean>>({});
+  const [editingMetrics, setEditingMetrics] = useState<string[]>([]);
+  const [showMetricsPicker, setShowMetricsPicker] = useState(false);
 
   const handleGenerate = async () => {
     if (!prompt.trim()) {
@@ -44,6 +48,8 @@ export const AIWidgetCreator = ({ onSuccess, onCancel }: AIWidgetCreatorProps) =
       setSuggestions(data.suggestions || []);
       setInterpretation(data.interpretation || '');
       setSelectedIndex(null);
+      setEditingMetrics([]);
+      setShowMetricsPicker(false);
       toast.success('3 suggestions générées !');
     } catch (error: any) {
       console.error('Error generating widget:', error);
@@ -54,67 +60,22 @@ export const AIWidgetCreator = ({ onSuccess, onCancel }: AIWidgetCreatorProps) =
   };
 
   const handleTestData = async (index: number) => {
-    if (!shop?.id) return;
-    
-    const suggestion = suggestions[index];
+    // Pour les widgets basés sur metrics, on vérifie juste qu'il y a des SAV
     setIsTesting(prev => ({ ...prev, [index]: true }));
-
+    
     try {
-      const dataConfig = suggestion.data_config;
+      const { count, error } = await supabase
+        .from('sav_cases')
+        .select('*', { count: 'exact', head: true })
+        .eq('shop_id', shop?.id);
       
-      // Test avec Edge Function si nécessaire
-      if (dataConfig.useEdgeFunction) {
-        const { data: result, error } = await supabase.functions.invoke(
-          'fetch-custom-widget-data',
-          {
-            body: {
-              widget_id: 'test',
-              data_config: dataConfig,
-              shop_id: shop.id,
-              year: new Date().getFullYear()
-            }
-          }
-        );
-        
-        if (error) {
-          setTestResults(prev => ({ 
-            ...prev, 
-            [index]: { hasData: false, rowCount: 0, error: error.message } 
-          }));
-        } else {
-          const rowCount = result?.data?.length || 0;
-          setTestResults(prev => ({ 
-            ...prev, 
-            [index]: { hasData: rowCount > 0, rowCount } 
-          }));
-        }
-      } else {
-        // Test simple via client Supabase - utilise une requête générique
-        try {
-          // @ts-ignore - Type dynamique basé sur la config
-          const { count, error } = await supabase
-            .from(dataConfig.table)
-            .select('*', { count: 'exact', head: true })
-            .eq(
-              dataConfig.filters?.[0]?.column || 'shop_id',
-              dataConfig.filters?.[0]?.value === '{shop_id}' ? shop.id : dataConfig.filters?.[0]?.value
-            );
-          
-          if (error) throw error;
-          
-          setTestResults(prev => ({ 
-            ...prev, 
-            [index]: { hasData: (count || 0) > 0, rowCount: count || 0 } 
-          }));
-        } catch (err: any) {
-          setTestResults(prev => ({ 
-            ...prev, 
-            [index]: { hasData: false, rowCount: 0, error: err.message } 
-          }));
-        }
-      }
+      if (error) throw error;
+      
+      setTestResults(prev => ({ 
+        ...prev, 
+        [index]: { hasData: (count || 0) > 0, rowCount: count || 0 } 
+      }));
     } catch (error: any) {
-      console.error('Error testing widget data:', error);
       setTestResults(prev => ({ 
         ...prev, 
         [index]: { hasData: false, rowCount: 0, error: error.message } 
@@ -133,6 +94,11 @@ export const AIWidgetCreator = ({ onSuccess, onCancel }: AIWidgetCreatorProps) =
     const selected = suggestions[selectedIndex];
     setIsSaving(true);
 
+    // Utiliser les métriques éditées si elles existent
+    const finalDataConfig = editingMetrics.length > 0 
+      ? { ...selected.data_config, metrics: editingMetrics }
+      : selected.data_config;
+
     try {
       const { data, error } = await supabase.functions.invoke('save-custom-widget', {
         body: {
@@ -143,7 +109,7 @@ export const AIWidgetCreator = ({ onSuccess, onCancel }: AIWidgetCreatorProps) =
           widget_type: selected.widget_type,
           chart_type: selected.chart_type,
           data_source: selected.data_source,
-          data_config: selected.data_config,
+          data_config: finalDataConfig,
           display_config: selected.display_config,
         },
       });
@@ -200,6 +166,61 @@ export const AIWidgetCreator = ({ onSuccess, onCancel }: AIWidgetCreatorProps) =
           <p className="text-sm text-muted-foreground">
             <span className="font-semibold">Analyse :</span> {interpretation}
           </p>
+        </div>
+      )}
+
+      {/* Interface de sélection des variables */}
+      {selectedIndex !== null && (
+        <div className="p-4 border rounded-lg space-y-3">
+          <h3 className="text-sm font-semibold">Variables utilisées :</h3>
+          <div className="flex flex-wrap gap-2">
+            {(editingMetrics.length > 0 ? editingMetrics : suggestions[selectedIndex]?.data_config?.metrics || []).map((metric: string) => {
+              const metricDef = AVAILABLE_METRICS.find(m => m.key === metric);
+              return (
+                <Badge key={metric} variant="secondary" className="cursor-pointer gap-1">
+                  <span className="font-mono text-xs">{metric}</span>
+                  <X 
+                    className="h-3 w-3 hover:text-destructive" 
+                    onClick={() => setEditingMetrics(prev => 
+                      prev.length > 0 
+                        ? prev.filter(m => m !== metric)
+                        : (suggestions[selectedIndex]?.data_config?.metrics || []).filter((m: string) => m !== metric)
+                    )}
+                  />
+                </Badge>
+              );
+            })}
+          </div>
+          
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => setShowMetricsPicker(!showMetricsPicker)}
+          >
+            + Ajouter une variable
+          </Button>
+
+          {showMetricsPicker && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-3">
+              {AVAILABLE_METRICS.map(metric => (
+                <Card 
+                  key={metric.key}
+                  onClick={() => {
+                    const currentMetrics = editingMetrics.length > 0 
+                      ? editingMetrics 
+                      : suggestions[selectedIndex]?.data_config?.metrics || [];
+                    setEditingMetrics([...currentMetrics, metric.key]);
+                    setShowMetricsPicker(false);
+                  }}
+                  className="cursor-pointer hover:bg-accent p-3 transition-colors"
+                >
+                  <p className="font-mono text-sm font-semibold">{metric.key}</p>
+                  <p className="text-xs text-muted-foreground mt-1">{metric.description}</p>
+                  <Badge variant="outline" className="mt-2 text-xs">{metric.category}</Badge>
+                </Card>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
