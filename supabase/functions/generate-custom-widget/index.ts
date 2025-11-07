@@ -213,21 +213,13 @@ Deno.serve(async (req) => {
 
     const parsedResponse = JSON.parse(jsonText);
 
-    const processedSuggestions = parsedResponse.suggestions.map((suggestion: any) => ({
-      ...suggestion,
-      data_config: {
-        ...suggestion.data_config,
-        filters: suggestion.data_config.filters?.map((filter: any) => ({
-          ...filter,
-          value: filter.value === "{shop_id}" ? profile.shop_id : filter.value
-        })) || []
-      }
-    }));
-
+    // Les suggestions sont déjà au bon format, pas besoin de transformation
+    // filters est un objet { year: 2025 }, pas un tableau
+    // shop_id est géré automatiquement dans useCustomWidgetData
     return new Response(
       JSON.stringify({
         interpretation: parsedResponse.interpretation,
-        suggestions: processedSuggestions,
+        suggestions: parsedResponse.suggestions,
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
