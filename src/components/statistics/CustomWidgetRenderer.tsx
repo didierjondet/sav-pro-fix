@@ -68,7 +68,8 @@ export const CustomWidgetRenderer = ({ config }: CustomWidgetRendererProps) => {
 
   // KPI Widget
   if (config.widget_type === 'kpi') {
-    const value = data && data[0]?.total !== undefined ? data[0].total : (data ? data.length : 0);
+    const metricKey = config.data_config?.metrics?.[0];
+    const value = data && data[0] && metricKey ? data[0][metricKey] : 0;
     return (
       <Card>
         <CardHeader>
@@ -96,9 +97,17 @@ export const CustomWidgetRenderer = ({ config }: CustomWidgetRendererProps) => {
 
   // Chart Widget
   if (config.widget_type === 'chart') {
-    const chartColor = config.display_config?.color || 'hsl(var(--primary))';
-    const showLegend = config.display_config?.showLegend ?? false;
-    const showLabels = config.display_config?.showLabels ?? false;
+    const displayConfig = config.display_config || {};
+    const xAxisKey = displayConfig.xAxis?.key || 'name';
+    const lines = displayConfig.lines || [];
+    
+    const dataKeys = lines.length > 0 
+      ? lines 
+      : Object.keys(data[0] || {}).filter(key => key !== xAxisKey).map(key => ({
+          key,
+          label: key,
+          color: 'hsl(var(--primary))'
+        }));
     
     return (
       <Card>
@@ -110,45 +119,72 @@ export const CustomWidgetRenderer = ({ config }: CustomWidgetRendererProps) => {
             {config.chart_type === 'line' ? (
               <LineChart data={data}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
+                <XAxis dataKey={xAxisKey} />
                 <YAxis />
                 <Tooltip />
-                {showLegend && <Legend />}
-                <Line type="monotone" dataKey="value" stroke={chartColor} />
+                <Legend />
+                {dataKeys.map((line: any, idx: number) => (
+                  <Line 
+                    key={line.key}
+                    type="monotone" 
+                    dataKey={line.key}
+                    name={line.label || line.key}
+                    stroke={line.color || `hsl(var(--chart-${idx + 1}))`}
+                  />
+                ))}
               </LineChart>
             ) : config.chart_type === 'bar' ? (
               <BarChart data={data}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
+                <XAxis dataKey={xAxisKey} />
                 <YAxis />
                 <Tooltip />
-                {showLegend && <Legend />}
-                <Bar dataKey="value" fill={chartColor} />
+                <Legend />
+                {dataKeys.map((line: any, idx: number) => (
+                  <Bar 
+                    key={line.key}
+                    dataKey={line.key}
+                    name={line.label || line.key}
+                    fill={line.color || `hsl(var(--chart-${idx + 1}))`}
+                  />
+                ))}
               </BarChart>
             ) : config.chart_type === 'pie' ? (
               <PieChart>
                 <Pie
                   data={data}
-                  dataKey="value"
-                  nameKey="name"
+                  dataKey={dataKeys[0]?.key || 'value'}
+                  nameKey={xAxisKey}
                   cx="50%"
                   cy="50%"
                   outerRadius={80}
-                  label={showLabels}
+                  label
                 >
                   {data.map((_: any, index: number) => (
-                    <Cell key={`cell-${index}`} fill={`hsl(var(--primary) / ${Math.max(0.2, 1 - index * 0.2)})`} />
+                    <Cell key={`cell-${index}`} fill={`hsl(var(--chart-${(index % 5) + 1}))`} />
                   ))}
                 </Pie>
+                <Tooltip />
+                <Legend />
               </PieChart>
             ) : config.chart_type === 'area' ? (
               <AreaChart data={data}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
+                <XAxis dataKey={xAxisKey} />
                 <YAxis />
                 <Tooltip />
-                {showLegend && <Legend />}
-                <Area type="monotone" dataKey="value" stroke={chartColor} fill={chartColor} fillOpacity={0.3} />
+                <Legend />
+                {dataKeys.map((line: any, idx: number) => (
+                  <Area 
+                    key={line.key}
+                    type="monotone" 
+                    dataKey={line.key}
+                    name={line.label || line.key}
+                    stroke={line.color || `hsl(var(--chart-${idx + 1}))`}
+                    fill={line.color || `hsl(var(--chart-${idx + 1}))`}
+                    fillOpacity={0.3}
+                  />
+                ))}
               </AreaChart>
             ) : (
               <div className="text-sm text-muted-foreground">Type de graphique non supporté</div>

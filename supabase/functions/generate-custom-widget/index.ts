@@ -46,8 +46,8 @@ Pour un graphique d'évolution mensuelle :
   "display_config": {
     "xAxis": { "key": "month", "label": "Mois" },
     "lines": [
-      { "key": "monthly_revenue", "label": "Revenu", "color": "hsl(var(--primary))" },
-      { "key": "monthly_margin", "label": "Marge", "color": "hsl(var(--accent))" }
+      { "key": "monthly_revenue", "label": "Revenu", "color": "hsl(142, 76%, 36%)" },
+      { "key": "monthly_margin", "label": "Marge", "color": "hsl(221, 83%, 53%)" }
     ]
   }
 }
