@@ -6,6 +6,7 @@ import { Separator } from '@/components/ui/separator';
 import { Eye, EyeOff, Plus, X, Sparkles } from 'lucide-react';
 import { useStatisticsConfig } from '@/hooks/useStatisticsConfig';
 import { AIWidgetCreator } from './AIWidgetCreator';
+import { AIWidgetEditor } from './AIWidgetEditor';
 import { CustomWidgetList } from './CustomWidgetList';
 import { toast } from 'sonner';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
@@ -18,6 +19,7 @@ interface WidgetManagerProps {
 export function WidgetManager({ availableModuleIds }: WidgetManagerProps) {
   const { modules, updateModule, deleteCustomWidget, refetch } = useStatisticsConfig();
   const [showCreator, setShowCreator] = useState(false);
+  const [editingWidget, setEditingWidget] = useState<any | null>(null);
   const [deleteWidgetId, setDeleteWidgetId] = useState<string | null>(null);
 
   const dashboardModules = modules.filter(m => !m.isCustom && availableModuleIds.includes(m.id));
@@ -95,10 +97,18 @@ export function WidgetManager({ availableModuleIds }: WidgetManagerProps) {
             </p>
           </div>
           <Button 
-            variant={showCreator ? "ghost" : "outline"}
-            onClick={() => setShowCreator(!showCreator)}
+            variant={(showCreator || editingWidget) ? "ghost" : "outline"}
+            onClick={() => {
+              if (showCreator || editingWidget) {
+                setShowCreator(false);
+                setEditingWidget(null);
+              } else {
+                setShowCreator(true);
+              }
+            }}
+            disabled={!!editingWidget}
           >
-            {showCreator ? (
+            {(showCreator || editingWidget) ? (
               <>
                 <X className="mr-2 h-4 w-4" />
                 Annuler
@@ -112,7 +122,7 @@ export function WidgetManager({ availableModuleIds }: WidgetManagerProps) {
           </Button>
         </div>
 
-        {/* Formulaire de création (conditionnel) */}
+        {/* Formulaire de création ou édition (conditionnel) */}
         {showCreator && (
           <div className="mb-4 p-4 border rounded-lg bg-muted/20">
             <AIWidgetCreator 
@@ -126,6 +136,20 @@ export function WidgetManager({ availableModuleIds }: WidgetManagerProps) {
           </div>
         )}
 
+        {editingWidget && (
+          <div className="mb-4 p-4 border rounded-lg bg-purple-50/50">
+            <AIWidgetEditor
+              widget={editingWidget}
+              onSuccess={() => {
+                setEditingWidget(null);
+                refetch();
+                toast.success('Widget modifié avec succès !');
+              }}
+              onCancel={() => setEditingWidget(null)}
+            />
+          </div>
+        )}
+
         {/* Liste des widgets personnalisés */}
         <CustomWidgetList 
           widgets={customWidgets.map(m => ({
@@ -135,9 +159,13 @@ export function WidgetManager({ availableModuleIds }: WidgetManagerProps) {
             original_prompt: m.originalPrompt!,
             enabled: m.enabled,
             widget_type: m.widget_type!,
+            chart_type: m.chart_type,
+            data_config: m.data_config,
+            display_config: m.display_config
           }))}
-          onEdit={() => {
-            toast.info('Modification à venir');
+          onEdit={(widget) => {
+            setShowCreator(false);
+            setEditingWidget(widget);
           }}
           onDelete={setDeleteWidgetId}
           onToggle={(id, enabled) => updateModule(`custom-${id}`, { enabled })}
