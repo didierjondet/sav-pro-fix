@@ -81,7 +81,8 @@ Pour un tableau de classement :
 1. Identifier les variables nécessaires pour répondre à la demande
 2. Dans "interpretation", lister clairement : "Ce widget utilisera : **monthly_margin** (marge mensuelle = revenu - coûts des pièces)"
 3. Proposer 3 configurations DIFFÉRENTES mais pertinentes
-4. Demander TOUJOURS confirmation : "Confirmez-vous que ces variables correspondent à votre besoin ?"
+4. **UTILISER L'ANNÉE COURANTE (2025) PAR DÉFAUT** sauf si l'utilisateur spécifie une autre année
+5. Demander TOUJOURS confirmation : "Confirmez-vous que ces variables correspondent à votre besoin ?"
 
 RÉPONDS UNIQUEMENT avec un JSON valide au format :
 {
