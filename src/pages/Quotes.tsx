@@ -128,6 +128,10 @@ export default function Quotes() {
       if (!result.error) {
         setShowForm(false);
         setEditingQuote(null);
+        toast({
+          title: "Devis modifié",
+          description: `Le devis ${editingQuote.quote_number} a été mis à jour avec succès`,
+        });
       }
       return { data: null, error: result.error } as any;
     }

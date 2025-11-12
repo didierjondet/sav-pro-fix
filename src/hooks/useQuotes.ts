@@ -175,11 +175,6 @@ export function useQuotes() {
 
       if (error) throw error;
 
-      toast({
-        title: "Succès",
-        description: "Devis créé avec succès",
-      });
-
       refetch();
       return { data, error: null };
     } catch (error: any) {
@@ -214,11 +209,6 @@ export function useQuotes() {
 
       if (error) throw error;
 
-      toast({
-        title: "Succès",
-        description: "Devis mis à jour",
-      });
-
       refetch();
       return { error: null };
     } catch (error: any) {
@@ -239,11 +229,6 @@ export function useQuotes() {
         .eq('id', quoteId);
 
       if (error) throw error;
-
-      toast({
-        title: "Succès",
-        description: "Devis supprimé",
-      });
 
       refetch();
       return { error: null };
