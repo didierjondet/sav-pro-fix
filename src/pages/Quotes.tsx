@@ -386,11 +386,23 @@ export default function Quotes() {
       });
 
       // 4) Traitement intelligent des pièces avec gestion du stock
-      const partsWithValidIds = cleanQuote.items.filter((it) => it.part_id !== null);
+      // Séparer les pièces cataloguées (avec part_id valide) des pièces personnalisées
+      const catalogParts = cleanQuote.items.filter((it) => 
+        it.part_id && 
+        typeof it.part_id === 'string' &&
+        it.part_id.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)
+      );
+
+      const customParts = cleanQuote.items.filter((it) => 
+        !it.part_id || 
+        typeof it.part_id !== 'string' ||
+        !it.part_id.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)
+      );
       
-      if (partsWithValidIds.length > 0) {
+      // Traiter les pièces cataloguées avec gestion du stock
+      if (catalogParts.length > 0) {
         // Récupérer les infos de stock pour toutes les pièces
-        const partIds = partsWithValidIds.map(it => it.part_id!);
+        const partIds = catalogParts.map(it => it.part_id!);
         const { data: partsStock, error: stockError } = await supabase
           .from('parts')
           .select('id, quantity, reserved_quantity')
@@ -403,7 +415,7 @@ export default function Quotes() {
         const partsToInsert = [];
         const ordersToInsert = [];
 
-        for (const item of partsWithValidIds) {
+        for (const item of catalogParts) {
           const stockInfo = partsStockMap.get(item.part_id!);
           const availableStock = stockInfo ? (stockInfo.quantity - stockInfo.reserved_quantity) : 0;
           const requestedQuantity = item.quantity || 0;
@@ -467,6 +479,31 @@ export default function Quotes() {
           
           if (statusError) throw statusError;
         }
+      }
+
+      // 5) Traiter les pièces personnalisées (sans part_id du catalogue)
+      if (customParts.length > 0) {
+        const customPartsToInsert = customParts.map(item => ({
+          sav_case_id: savCaseId,
+          part_id: null, // Pas de référence au catalogue
+          custom_part_name: item.part_name || 'Pièce personnalisée',
+          quantity: item.quantity || 1,
+          unit_price: item.unit_public_price || 0,
+          purchase_price: item.unit_purchase_price || null,
+          time_minutes: 0,
+          discount_info: item.discount ? JSON.parse(JSON.stringify(item.discount)) : null,
+        }));
+
+        const { error: customPartsError } = await supabase
+          .from('sav_parts')
+          .insert(customPartsToInsert);
+        
+        if (customPartsError) {
+          console.error('Erreur insertion pièces personnalisées:', customPartsError);
+          throw customPartsError;
+        }
+
+        console.log(`✅ ${customParts.length} pièce(s) personnalisée(s) transférée(s) vers le SAV`);
       }
 
       // 6) Envoyer un SMS au client avec le lien de suivi du SAV créé
