@@ -59,6 +59,7 @@ const STORAGE_KEY = 'statisticsConfig';
 export const useStatisticsConfig = () => {
   const [modules, setModules] = useState<StatisticModule[]>([]);
   const [loading, setLoading] = useState(true);
+  const [revision, setRevision] = useState(0); // Compteur pour forcer le rechargement
   const { shop } = useShop();
 
   const loadConfig = async () => {
@@ -108,7 +109,7 @@ export const useStatisticsConfig = () => {
 
   useEffect(() => {
     loadConfig();
-  }, [shop?.id]);
+  }, [shop?.id, revision]); // Rechargement automatique quand revision change
 
   const saveConfig = async (newModules: StatisticModule[]) => {
     const standard = newModules.filter(m => !m.isCustom);
@@ -170,5 +171,11 @@ export const useStatisticsConfig = () => {
 
   const getEnabledModules = () => modules.filter(m => m.enabled).sort((a, b) => a.order - b.order);
 
-  return { modules, loading, updateModule, reorderModules, getEnabledModules, deleteCustomWidget, refetch: loadConfig };
+  // Fonction refetch qui force le rechargement via le compteur de révision
+  const refetch = async () => {
+    await loadConfig();
+    setRevision(r => r + 1); // Incrémenter pour forcer le useEffect
+  };
+
+  return { modules, loading, updateModule, reorderModules, getEnabledModules, deleteCustomWidget, refetch };
 };

@@ -116,7 +116,6 @@ export const AIWidgetCreator = ({ onSuccess, onCancel }: AIWidgetCreatorProps) =
 
       if (error) throw error;
 
-      toast.success('Widget créé avec succès !');
       onSuccess(data.widget);
     } catch (error: any) {
       console.error('Error saving widget:', error);

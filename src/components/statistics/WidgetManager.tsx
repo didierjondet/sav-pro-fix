@@ -126,9 +126,9 @@ export function WidgetManager({ availableModuleIds }: WidgetManagerProps) {
         {showCreator && (
           <div className="mb-4 p-4 border rounded-lg bg-muted/20">
             <AIWidgetCreator 
-              onSuccess={() => {
+              onSuccess={async () => {
+                await refetch(); // Attendre le rechargement des données
                 setShowCreator(false);
-                refetch();
                 toast.success('Widget créé avec succès !');
               }}
               onCancel={() => setShowCreator(false)}
@@ -140,9 +140,9 @@ export function WidgetManager({ availableModuleIds }: WidgetManagerProps) {
           <div className="mb-4 p-4 border rounded-lg bg-purple-50/50">
             <AIWidgetEditor
               widget={editingWidget}
-              onSuccess={() => {
+              onSuccess={async () => {
+                await refetch(); // Attendre le rechargement des données
                 setEditingWidget(null);
-                refetch();
                 toast.success('Widget modifié avec succès !');
               }}
               onCancel={() => setEditingWidget(null)}
