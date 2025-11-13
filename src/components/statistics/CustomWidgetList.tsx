@@ -12,6 +12,9 @@ interface CustomWidget {
   original_prompt: string;
   enabled: boolean;
   widget_type: string;
+  chart_type?: string;
+  data_config: any;
+  display_config: any;
 }
 
 interface CustomWidgetListProps {

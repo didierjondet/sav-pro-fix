@@ -119,8 +119,8 @@ export const CustomWidgetRenderer = ({ config }: CustomWidgetRendererProps) => {
             {config.chart_type === 'line' ? (
               <LineChart data={data}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey={xAxisKey} />
-                <YAxis />
+                <XAxis dataKey={xAxisKey} label={displayConfig.xAxisLabel ? { value: displayConfig.xAxisLabel, position: 'insideBottom', offset: -5 } : undefined} />
+                <YAxis label={displayConfig.yAxisLabel ? { value: displayConfig.yAxisLabel, angle: -90, position: 'insideLeft' } : undefined} />
                 <Tooltip />
                 <Legend />
                 {dataKeys.map((line: any, idx: number) => (
@@ -136,8 +136,8 @@ export const CustomWidgetRenderer = ({ config }: CustomWidgetRendererProps) => {
             ) : config.chart_type === 'bar' ? (
               <BarChart data={data}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey={xAxisKey} />
-                <YAxis />
+                <XAxis dataKey={xAxisKey} label={displayConfig.xAxisLabel ? { value: displayConfig.xAxisLabel, position: 'insideBottom', offset: -5 } : undefined} />
+                <YAxis label={displayConfig.yAxisLabel ? { value: displayConfig.yAxisLabel, angle: -90, position: 'insideLeft' } : undefined} />
                 <Tooltip />
                 <Legend />
                 {dataKeys.map((line: any, idx: number) => (
@@ -170,8 +170,8 @@ export const CustomWidgetRenderer = ({ config }: CustomWidgetRendererProps) => {
             ) : config.chart_type === 'area' ? (
               <AreaChart data={data}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey={xAxisKey} />
-                <YAxis />
+                <XAxis dataKey={xAxisKey} label={displayConfig.xAxisLabel ? { value: displayConfig.xAxisLabel, position: 'insideBottom', offset: -5 } : undefined} />
+                <YAxis label={displayConfig.yAxisLabel ? { value: displayConfig.yAxisLabel, angle: -90, position: 'insideLeft' } : undefined} />
                 <Tooltip />
                 <Legend />
                 {dataKeys.map((line: any, idx: number) => (

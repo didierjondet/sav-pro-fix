@@ -32,6 +32,9 @@ export const AIWidgetEditor = ({ widget, onSuccess, onCancel }: AIWidgetEditorPr
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [testingData, setTestingData] = useState<Record<number, boolean>>({});
   const [dataResults, setDataResults] = useState<Record<number, boolean>>({});
+  const [customTitle, setCustomTitle] = useState(widget.display_config?.title || widget.name);
+  const [customXAxisLabel, setCustomXAxisLabel] = useState(widget.display_config?.xAxisLabel || '');
+  const [customYAxisLabel, setCustomYAxisLabel] = useState(widget.display_config?.yAxisLabel || '');
 
   const handleGenerate = async () => {
     if (!prompt.trim()) {
@@ -98,6 +101,33 @@ export const AIWidgetEditor = ({ widget, onSuccess, onCancel }: AIWidgetEditorPr
     }
   };
 
+  const handleSaveCustomization = async () => {
+    try {
+      const updatedDisplayConfig = {
+        ...widget.display_config,
+        title: customTitle,
+        xAxisLabel: customXAxisLabel,
+        yAxisLabel: customYAxisLabel
+      };
+
+      const { error } = await supabase
+        .from('custom_widgets')
+        .update({
+          name: customTitle,
+          display_config: updatedDisplayConfig,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', widget.id);
+
+      if (error) throw error;
+
+      onSuccess({ ...widget, name: customTitle, display_config: updatedDisplayConfig });
+    } catch (error: any) {
+      console.error('Error updating customization:', error);
+      toast.error(error.message || "Erreur lors de l'enregistrement");
+    }
+  };
+
   const handleSave = async () => {
     if (selectedIndex === null) {
       toast.error("Veuillez sélectionner une suggestion");
@@ -107,17 +137,24 @@ export const AIWidgetEditor = ({ widget, onSuccess, onCancel }: AIWidgetEditorPr
     const selectedSuggestion = suggestions[selectedIndex];
     
     try {
+      const mergedDisplayConfig = {
+        ...selectedSuggestion.display_config,
+        title: customTitle || selectedSuggestion.name,
+        xAxisLabel: customXAxisLabel || selectedSuggestion.display_config?.xAxisLabel,
+        yAxisLabel: customYAxisLabel || selectedSuggestion.display_config?.yAxisLabel
+      };
+
       const { error } = await supabase
         .from('custom_widgets')
         .update({
-          name: selectedSuggestion.name,
+          name: customTitle || selectedSuggestion.name,
           description: selectedSuggestion.description,
           original_prompt: prompt,
           widget_type: selectedSuggestion.widget_type,
           chart_type: selectedSuggestion.chart_type || null,
           data_source: selectedSuggestion.data_source,
           data_config: selectedSuggestion.data_config,
-          display_config: selectedSuggestion.display_config,
+          display_config: mergedDisplayConfig,
           ai_interpretation: { interpretation, selectedIndex },
           updated_at: new Date().toISOString()
         })
@@ -125,8 +162,7 @@ export const AIWidgetEditor = ({ widget, onSuccess, onCancel }: AIWidgetEditorPr
 
       if (error) throw error;
 
-      toast.success("Widget modifié avec succès !");
-      onSuccess(selectedSuggestion);
+      onSuccess({ ...selectedSuggestion, name: customTitle || selectedSuggestion.name, display_config: mergedDisplayConfig });
     } catch (error: any) {
       console.error('Error updating widget:', error);
       toast.error(error.message || "Erreur lors de la mise à jour");
@@ -148,8 +184,50 @@ export const AIWidgetEditor = ({ widget, onSuccess, onCancel }: AIWidgetEditorPr
         </Button>
       </div>
 
+      <div className="space-y-4 p-4 border rounded-lg bg-muted/10">
+        <h4 className="font-semibold text-sm">Personnalisation du widget</h4>
+        
+        <div className="space-y-2">
+          <Label>Titre du widget</Label>
+          <Input
+            value={customTitle}
+            onChange={(e) => setCustomTitle(e.target.value)}
+            placeholder="Ex: Évolution mensuelle du chiffre d'affaires"
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-2">
+            <Label>Label axe X (abscisse)</Label>
+            <Input
+              value={customXAxisLabel}
+              onChange={(e) => setCustomXAxisLabel(e.target.value)}
+              placeholder="Ex: Mois"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Label axe Y (ordonnée)</Label>
+            <Input
+              value={customYAxisLabel}
+              onChange={(e) => setCustomYAxisLabel(e.target.value)}
+              placeholder="Ex: Montant (€)"
+            />
+          </div>
+        </div>
+
+        <Button 
+          onClick={handleSaveCustomization} 
+          variant="outline"
+          className="w-full"
+        >
+          <Check className="mr-2 h-4 w-4" />
+          Enregistrer la personnalisation
+        </Button>
+      </div>
+
       <div className="space-y-2">
-        <Label>Nouvelle description du widget</Label>
+        <Label>Ou générer de nouvelles suggestions IA</Label>
         <Input
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
