@@ -3,7 +3,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { useCustomers, Customer } from '@/hooks/useCustomers';
+import { useAllCustomers } from '@/hooks/useAllCustomers';
+import { Customer } from '@/hooks/useCustomers';
 import { Search, User, Plus, Mail, Phone } from 'lucide-react';
 import { multiWordSearch } from '@/utils/searchUtils';
 
@@ -26,7 +27,7 @@ export function CustomerSearch({ customerInfo, setCustomerInfo, onCustomerSelect
   const [showResults, setShowResults] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   
-  const { customers } = useCustomers();
+  const { customers } = useAllCustomers();
 
   // Filtrer les clients en fonction de la recherche
   const filteredCustomers = customers.filter(customer =>
