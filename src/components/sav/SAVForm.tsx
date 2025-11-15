@@ -703,6 +703,12 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
         </CardContent>
       </Card>
 
+      {/* Codes de sécurité */}
+      <SecurityCodesSection 
+        codes={securityCodes}
+        onChange={setSecurityCodes}
+      />
+
       {/* Schéma de verrouillage */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <PatternLock
@@ -723,12 +729,6 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
           </CardContent>
         </Card>
       </div>
-
-      {/* Codes de sécurité */}
-      <SecurityCodesSection 
-        codes={securityCodes}
-        onChange={setSecurityCodes}
-      />
 
       <Card>
         <CardHeader>
