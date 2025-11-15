@@ -846,6 +846,7 @@ export type Database = {
           problem_description: string | null
           repair_notes: string | null
           sav_type: string
+          security_codes: Json | null
           shop_id: string | null
           sku: string | null
           status: string
@@ -879,6 +880,7 @@ export type Database = {
           problem_description?: string | null
           repair_notes?: string | null
           sav_type: string
+          security_codes?: Json | null
           shop_id?: string | null
           sku?: string | null
           status?: string
@@ -912,6 +914,7 @@ export type Database = {
           problem_description?: string | null
           repair_notes?: string | null
           sav_type?: string
+          security_codes?: Json | null
           shop_id?: string | null
           sku?: string | null
           status?: string

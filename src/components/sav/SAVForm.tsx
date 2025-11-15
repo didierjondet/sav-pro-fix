@@ -31,6 +31,7 @@ import { useShopSAVStatuses } from '@/hooks/useShopSAVStatuses';
 import { useShopSAVTypes } from '@/hooks/useShopSAVTypes';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AITextReformulator } from '@/components/sav/AITextReformulator';
+import { SecurityCodesSection, SecurityCodes } from './SecurityCodesSection';
 
 interface CustomerInfo {
   firstName: string;
@@ -112,6 +113,12 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [showPrintDialog, setShowPrintDialog] = useState(false);
   const [createdSAVCase, setCreatedSAVCase] = useState<any>(null);
+  const [securityCodes, setSecurityCodes] = useState<SecurityCodes>({
+    unlock_code: '',
+    icloud_id: '',
+    icloud_password: '',
+    sim_pin: '',
+  });
   const [savLimits, setSavLimits] = useState<{ allowed: boolean; reason: string; action: string | null }>({ allowed: true, reason: '', action: null });
   const printButtonRef = React.useRef<SAVPrintButtonRef>(null);
   
@@ -268,6 +275,12 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
         attachments: deviceInfo.attachments || [], // Ajouter les attachments ici
         accessories,
         unlock_pattern: unlockPattern.length > 0 ? unlockPattern : null,
+        security_codes: (securityCodes.unlock_code || securityCodes.icloud_id || securityCodes.icloud_password || securityCodes.sim_pin) ? {
+          unlock_code: securityCodes.unlock_code || null,
+          icloud_id: securityCodes.icloud_id || null,
+          icloud_password: securityCodes.icloud_password || null,
+          sim_pin: securityCodes.sim_pin || null,
+        } : null,
       });
       
       if (caseError) throw caseError;
@@ -710,6 +723,12 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
           </CardContent>
         </Card>
       </div>
+
+      {/* Codes de sécurité */}
+      <SecurityCodesSection 
+        codes={securityCodes}
+        onChange={setSecurityCodes}
+      />
 
       <Card>
         <CardHeader>
