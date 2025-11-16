@@ -190,13 +190,22 @@ export function useNotifications() {
         .update({ read: true })
         .eq('id', notificationId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ [NOTIF] Error marking notification as read:', error);
+        throw error;
+      }
       
-      console.log('✅ Notification marked as read:', notificationId);
+      console.log('✅ [NOTIF] Notification marked as read:', notificationId);
     } catch (error: any) {
       console.error('Error marking notification as read:', error);
       // En cas d'erreur, rollback optimistic update
       fetchNotifications();
+      
+      toast({
+        title: "Erreur",
+        description: "Impossible de marquer la notification comme lue",
+        variant: "destructive",
+      });
     }
   };
 
@@ -213,18 +222,25 @@ export function useNotifications() {
         .eq('user_id', (await supabase.auth.getUser()).data.user?.id)
         .single();
 
-      if (!profile?.shop_id) return;
+      if (!profile?.shop_id) {
+        console.error('❌ [NOTIF] No shop_id found');
+        return;
+      }
 
-      // 2. Update DB (le realtime propagera le changement)
-      const { error } = await supabase
+      // 2. Update DB avec retour du nombre de lignes modifiées
+      const { data, error } = await supabase
         .from('notifications')
         .update({ read: true })
         .eq('read', false)
-        .eq('shop_id', profile.shop_id);
+        .eq('shop_id', profile.shop_id)
+        .select(); // 🆕 Récupérer les IDs des notifications modifiées
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ [NOTIF] Error in markAllAsRead:', error);
+        throw error;
+      }
       
-      console.log('✅ All notifications marked as read');
+      console.log(`✅ [NOTIF] ${data?.length || 0} notifications marquées comme lues`);
     } catch (error: any) {
       console.error('Error marking all notifications as read:', error);
       // En cas d'erreur, rollback
@@ -296,23 +312,26 @@ export function useNotifications() {
   };
 
   const createSAVDelayAlert = async (savCaseId: string, caseNumber: string, daysLeft: number, savType: string) => {
-    const title = 'SAV proche de la limite';
-    const message = `Le SAV ${caseNumber} (${savType}) sera en retard dans ${daysLeft} jour${daysLeft > 1 ? 's' : ''}`;
+    const title = daysLeft > 0 ? 'SAV proche de la limite' : 'SAV à la limite';
+    const message = daysLeft > 0 
+      ? `⏰ Le SAV ${caseNumber} (${savType}) sera en retard dans ${daysLeft} jour${daysLeft > 1 ? 's' : ''}`
+      : `⚠️ Le SAV ${caseNumber} (${savType}) doit être livré aujourd'hui !`;
     
-    // Vérifier qu'une alerte similaire n'existe pas déjà pour ce SAV aujourd'hui
-    const today = new Date().toISOString().split('T')[0];
+    // 🆕 VÉRIFICATION AMÉLIORÉE : Chercher une notification NON LUE pour ce SAV (peu importe la date)
     const { data: existingAlert } = await supabase
       .from('notifications')
       .select('id')
       .eq('sav_case_id', savCaseId)
       .eq('type', 'sav_delay_alert')
-      .gte('created_at', today + 'T00:00:00.000Z')
-      .single();
+      .eq('read', false) // 🔥 Vérifier seulement les non lues
+      .maybeSingle(); // Utiliser maybeSingle au lieu de single pour éviter les erreurs si 0 résultat
     
     if (existingAlert) {
-      return { data: null, error: null }; // Alerte déjà envoyée aujourd'hui
+      console.log(`⏭️ [NOTIF] Notification déjà existante pour SAV ${caseNumber}, skip`);
+      return { data: null, error: null }; 
     }
     
+    console.log(`✅ [NOTIF] Création notification pour SAV ${caseNumber}`);
     return await createNotification({
       type: 'sav_delay_alert',
       title,
