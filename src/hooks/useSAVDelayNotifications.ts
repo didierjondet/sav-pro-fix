@@ -82,9 +82,9 @@ export function useSAVDelayNotifications() {
 
         console.log('📊 [SAV-DELAY-ALERTS] SAV', savCase.case_number, '- Type:', savType?.type_label, '- Alerte:', alertDays, 'jours - Reste:', delayInfo.remainingDays, 'jours');
 
-        // Si le SAV sera en retard dans X jours ou moins (mais pas encore en retard)
+        // 🆕 MODIFICATION : Ne créer des alertes QUE pour les SAV proches de la limite (pas ceux déjà en retard)
         if (!delayInfo.isOverdue && delayInfo.remainingDays <= alertDays && delayInfo.remainingDays >= 0) {
-          console.log(`🔔 [SAV-DELAY-ALERTS] Envoi alerte retard pour SAV ${savCase.case_number}, reste ${delayInfo.remainingDays} jours`);
+          console.log(`🔔 [SAV-DELAY-ALERTS] Envoi alerte pour SAV ${savCase.case_number}, reste ${delayInfo.remainingDays} jours`);
           
           await createSAVDelayAlert(
             savCase.id,
@@ -92,18 +92,8 @@ export function useSAVDelayNotifications() {
             delayInfo.remainingDays,
             savCase.sav_type
           );
-        }
-
-        // Si le SAV est déjà en retard
-        if (delayInfo.isOverdue) {
-          console.log(`🚨 [SAV-DELAY-ALERTS] Envoi alerte retard pour SAV ${savCase.case_number}, déjà en retard de ${Math.abs(delayInfo.remainingDays)} jours`);
-          
-          await createSAVDelayAlert(
-            savCase.id,
-            savCase.case_number,
-            0, // 0 jours = déjà en retard
-            savCase.sav_type
-          );
+        } else if (delayInfo.isOverdue) {
+          console.log(`⏭️ [SAV-DELAY-ALERTS] SAV ${savCase.case_number} déjà en retard, skip (pas de notification)`);
         }
       }
       
