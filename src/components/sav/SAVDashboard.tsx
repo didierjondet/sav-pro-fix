@@ -78,8 +78,14 @@ export function SAVDashboard() {
     const newOrder = arrayMove(sortedModules, oldIndex, newIndex);
     setSortedModules(newOrder);
 
-    // Conserver l'ordre global des autres modules et mettre à jour seulement ceux du dashboard
-    const others = modules.filter(m => !dashboardModuleIds.includes(m.id)).sort((a,b) => a.order - b.order);
+    // Créer un Set des IDs des modules réordonnés pour éviter la duplication
+    const newOrderIds = new Set(newOrder.map(m => m.id));
+    
+    // Exclure les modules qui sont déjà dans newOrder pour éviter la duplication
+    const others = modules
+      .filter(m => !dashboardModuleIds.includes(m.id) && !newOrderIds.has(m.id))
+      .sort((a,b) => a.order - b.order);
+      
     const merged = [...others, ...newOrder];
     reorderModules(merged);
   };
