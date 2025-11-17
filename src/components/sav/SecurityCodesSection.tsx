@@ -36,14 +36,18 @@ export function SecurityCodesSection({ codes, onChange }: SecurityCodesSectionPr
       <CardContent className="space-y-4">
         {/* Code de déverrouillage */}
         <div>
-          <Label htmlFor="unlock-code">Code de déverrouillage (max 6 caractères)</Label>
+          <Label htmlFor="unlock-code">Code de déverrouillage (max 8 caractères)</Label>
           <Input
             id="unlock-code"
             type="text"
-            maxLength={6}
+            maxLength={8}
             value={codes.unlock_code}
-            onChange={(e) => onChange({...codes, unlock_code: e.target.value})}
-            placeholder="Ex: 123456"
+            onChange={(e) => {
+              // Accepter uniquement les caractères alphanumériques
+              const value = e.target.value.replace(/[^a-zA-Z0-9]/g, '');
+              onChange({...codes, unlock_code: value});
+            }}
+            placeholder="Ex: ABC12345"
           />
         </div>
 
