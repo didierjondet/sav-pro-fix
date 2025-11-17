@@ -437,7 +437,7 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
       )}
       
       <form onSubmit={handleSubmit} className="space-y-6">
-      <Card>
+      <Card className="bg-blue-50/30 border-blue-200">
         <CardHeader>
           <CardTitle>Type de SAV</CardTitle>
         </CardHeader>
@@ -491,7 +491,7 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
       </Card>
 
       {currentTypeInfo.show_customer_info && (
-        <Card>
+        <Card className="bg-blue-50/30 border-blue-200">
           <CardHeader>
             <CardTitle>
               Informations Client
@@ -570,7 +570,7 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
         </Card>
       )}
 
-      <Card>
+      <Card className="bg-blue-50/30 border-blue-200">
         <CardHeader>
           <CardTitle>Informations Appareil</CardTitle>
         </CardHeader>
@@ -657,7 +657,7 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
       </Card>
 
       {/* Accessoires présents */}
-      <Card>
+      <Card className="bg-blue-50/30 border-blue-200">
         <CardHeader>
           <CardTitle>Accessoires présents</CardTitle>
         </CardHeader>
@@ -715,7 +715,7 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
           pattern={unlockPattern}
           onChange={setUnlockPattern}
         />
-        <Card className="lg:col-span-1">
+        <Card className="lg:col-span-1 bg-blue-50/30 border-blue-200">
           <CardHeader>
             <CardTitle>Instructions</CardTitle>
           </CardHeader>
@@ -730,7 +730,7 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
         </Card>
       </div>
 
-      <Card>
+      <Card className="bg-blue-50/30 border-blue-200">
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle>Pièces détachées</CardTitle>
