@@ -22,6 +22,7 @@ interface ShopSAVType {
 
 interface ShopSAVStatus {
   status_key: string;
+  status_label: string;
   pause_timer: boolean;
 }
 
@@ -111,10 +112,10 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      // Récupérer les statuts SAV du shop
+      // Récupérer TOUS les statuts SAV du shop (avec labels pour filtrage intelligent)
       const { data: savStatuses, error: statusesError } = await supabase
         .from('shop_sav_statuses')
-        .select('status_key, pause_timer')
+        .select('status_key, status_label, pause_timer')
         .eq('shop_id', shop.id)
         .eq('is_active', true);
 
@@ -123,12 +124,45 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      // Récupérer les SAV actifs (pas delivered ni cancelled)
+      // Identifier les statuts "prêt/terminé" en cherchant dans les labels
+      const readyStatuses = savStatuses
+        .filter(s => {
+          const label = s.status_label.toLowerCase();
+          return label.includes('prêt') || label.includes('pret') || 
+                 label.includes('ready') || label.includes('terminé') || 
+                 label.includes('termine') || label.includes('livré') || 
+                 label.includes('livre');
+        })
+        .map(s => s.status_key);
+
+      // Identifier les statuts "annulé"
+      const cancelledStatuses = savStatuses
+        .filter(s => {
+          const label = s.status_label.toLowerCase();
+          return label.includes('annulé') || label.includes('annule') || 
+                 label.includes('cancelled') || label.includes('abandon');
+        })
+        .map(s => s.status_key);
+
+      // Construire la liste complète d'exclusion (statuts terminés + fallback defaults)
+      const excludedStatuses = [
+        ...readyStatuses,
+        ...cancelledStatuses,
+        'delivered', // Fallback pour les statuts par défaut
+        'cancelled'
+      ];
+
+      console.log(`📋 [CHECK-SAV-DELAYS] Shop ${shop.name}:`);
+      console.log(`   - Ready/Completed statuses detected: ${readyStatuses.length > 0 ? readyStatuses.join(', ') : 'none'}`);
+      console.log(`   - Cancelled statuses detected: ${cancelledStatuses.length > 0 ? cancelledStatuses.join(', ') : 'none'}`);
+      console.log(`   - Total excluded statuses: ${excludedStatuses.join(', ')}`);
+
+      // Récupérer les SAV actifs (en excluant tous les statuts terminés/annulés)
       const { data: savCases, error: casesError } = await supabase
         .from('sav_cases')
         .select('id, case_number, sav_type, status, created_at, shop_id')
         .eq('shop_id', shop.id)
-        .not('status', 'in', '(delivered,cancelled)');
+        .not('status', 'in', `(${excludedStatuses.join(',')})`);
 
       if (casesError || !savCases) {
         console.error(`❌ [CHECK-SAV-DELAYS] Error fetching SAV cases for shop ${shop.id}:`, casesError);
