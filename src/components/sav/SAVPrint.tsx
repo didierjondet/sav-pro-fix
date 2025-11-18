@@ -280,7 +280,6 @@ export const SAVPrintButton = React.forwardRef<SAVPrintButtonRef, SAVPrintButton
     ${repairNotesBlock}
     ${technicianCommentsBlock}
     ${partsTable}
-    ${qrBlock}
     
   </div>
 </div>
