@@ -622,10 +622,9 @@ export const generateSAVRestitutionPDF = async (savCase: SAVCase, shop?: Shop) =
             <table class="parts-table">
               <thead>
                 <tr>
-                  <th style="width: 40%;">Pièce</th>
+                  <th style="width: 50%;">Pièce</th>
                   <th style="width: 15%;" class="text-center">Quantité</th>
                   <th style="width: 20%;" class="text-right">Prix unitaire</th>
-                  <th style="width: 15%;" class="text-right">Temps (min)</th>
                   <th style="width: 15%;" class="text-right">Total</th>
                 </tr>
               </thead>
@@ -646,7 +645,6 @@ export const generateSAVRestitutionPDF = async (savCase: SAVCase, shop?: Shop) =
                       </td>
                       <td class="text-center">${part.quantity}</td>
                       <td class="text-right">${unitPrice.toFixed(2)}€</td>
-                      <td class="text-center">${part.time_minutes || 0}</td>
                       <td class="text-right">${finalTotal.toFixed(2)}€</td>
                     </tr>
                   `;
