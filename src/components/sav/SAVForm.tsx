@@ -438,7 +438,10 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
       
       <form onSubmit={handleSubmit} className="space-y-6">
       <Card className="bg-blue-50/30 border-blue-200">
-        <CardHeader>
+        <CardHeader className="relative">
+          <div className="absolute -top-3 -right-3 w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-lg font-bold shadow-lg">
+            1
+          </div>
           <CardTitle>Type de SAV</CardTitle>
         </CardHeader>
         <CardContent>
@@ -492,7 +495,10 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
 
       {currentTypeInfo.show_customer_info && (
         <Card className="bg-blue-50/30 border-blue-200">
-          <CardHeader>
+          <CardHeader className="relative">
+            <div className="absolute -top-3 -right-3 w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-lg font-bold shadow-lg">
+              2
+            </div>
             <CardTitle>
               Informations Client
             </CardTitle>
@@ -571,7 +577,10 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
       )}
 
       <Card className="bg-blue-50/30 border-blue-200">
-        <CardHeader>
+        <CardHeader className="relative">
+          <div className="absolute -top-3 -right-3 w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-lg font-bold shadow-lg">
+            {currentTypeInfo.show_customer_info ? 3 : 2}
+          </div>
           <CardTitle>Informations Appareil</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -658,7 +667,10 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
 
       {/* Accessoires présents */}
       <Card className="bg-blue-50/30 border-blue-200">
-        <CardHeader>
+        <CardHeader className="relative">
+          <div className="absolute -top-3 -right-3 w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-lg font-bold shadow-lg">
+            {currentTypeInfo.show_customer_info ? 4 : 3}
+          </div>
           <CardTitle>Accessoires présents</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -707,14 +719,20 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
       <SecurityCodesSection 
         codes={securityCodes}
         onChange={setSecurityCodes}
+        stepNumber={currentTypeInfo.show_customer_info ? 5 : 4}
       />
 
       {/* Schéma de verrouillage */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <PatternLock
-          pattern={unlockPattern}
-          onChange={setUnlockPattern}
-        />
+        <div className="relative">
+          <div className="absolute -top-3 -right-3 w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-lg font-bold shadow-lg z-10">
+            {currentTypeInfo.show_customer_info ? 6 : 5}
+          </div>
+          <PatternLock
+            pattern={unlockPattern}
+            onChange={setUnlockPattern}
+          />
+        </div>
         <Card className="lg:col-span-1 bg-blue-50/30 border-blue-200">
           <CardHeader>
             <CardTitle>Instructions</CardTitle>
@@ -731,7 +749,10 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
       </div>
 
       <Card className="bg-blue-50/30 border-blue-200">
-        <CardHeader>
+        <CardHeader className="relative">
+          <div className="absolute -top-3 -right-3 w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-lg font-bold shadow-lg">
+            {currentTypeInfo.show_customer_info ? 7 : 6}
+          </div>
           <div className="flex items-center justify-between">
             <CardTitle>Pièces détachées</CardTitle>
             <Button type="button" onClick={addCustomPart} size="sm" variant="outline">
