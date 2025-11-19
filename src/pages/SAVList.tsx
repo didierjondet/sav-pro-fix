@@ -49,6 +49,8 @@ export default function SAVList() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all'); // 'all', 'client', 'internal', etc.
   const [statusFilter, setStatusFilter] = useState('all-except-ready'); // Par défaut, masquer les SAV prêts
+  const [colorFilter, setColorFilter] = useState('all');
+  const [gradeFilter, setGradeFilter] = useState('all');
   const [sortOrder, setSortOrder] = useState('priority'); // 'priority', 'oldest', 'newest'
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(20);
@@ -184,8 +186,20 @@ export default function SAVList() {
       filteredByStatus = filteredByType.filter(case_ => case_.status === statusFilter);
     }
 
-    // 4. Filtrer par recherche
-    const filteredBySearch = filteredByStatus.filter(case_ =>
+    // 4. Filtrer par couleur
+    let filteredByColor = filteredByStatus;
+    if (colorFilter !== 'all') {
+      filteredByColor = filteredByStatus.filter(case_ => case_.device_color === colorFilter);
+    }
+
+    // 5. Filtrer par grade
+    let filteredByGrade = filteredByColor;
+    if (gradeFilter !== 'all') {
+      filteredByGrade = filteredByColor.filter(case_ => case_.device_grade === gradeFilter);
+    }
+
+    // 6. Filtrer par recherche
+    const filteredBySearch = filteredByGrade.filter(case_ =>
       multiWordSearch(
         searchTerm, 
         case_.customer?.first_name, 
@@ -212,7 +226,7 @@ export default function SAVList() {
         return a.delayInfo.totalRemainingHours - b.delayInfo.totalRemainingHours;
       }
     });
-  }, [cases, shop, filterType, statusFilter, sortOrder, searchTerm]);
+  }, [cases, shop, filterType, statusFilter, colorFilter, gradeFilter, sortOrder, searchTerm, types, getAllTypes, isReadyStatus]);
 
   // Calculs de pagination
   const totalItems = filteredAndSortedCases.length;
@@ -223,7 +237,7 @@ export default function SAVList() {
   // Réinitialiser la page quand les filtres changent
   useMemo(() => {
     setCurrentPage(1);
-  }, [searchTerm, filterType, statusFilter, sortOrder]);
+  }, [searchTerm, filterType, statusFilter, colorFilter, gradeFilter, sortOrder]);
 
   if (loading) {
     return (
@@ -292,6 +306,45 @@ export default function SAVList() {
                          ))}
                          <SelectItem value="shop">SAV CLIENTS (INTERNE+EXTERNE)</SelectItem>
                        </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium">Couleur:</span>
+                    <Select value={colorFilter} onValueChange={setColorFilter}>
+                      <SelectTrigger className="w-40">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Toutes</SelectItem>
+                        <SelectItem value="black">⚫ Noir</SelectItem>
+                        <SelectItem value="white">⚪ Blanc</SelectItem>
+                        <SelectItem value="grey">🔘 Gris</SelectItem>
+                        <SelectItem value="blue">🔵 Bleu</SelectItem>
+                        <SelectItem value="red">🔴 Rouge</SelectItem>
+                        <SelectItem value="gold">🟡 Or</SelectItem>
+                        <SelectItem value="silver">⚪ Argent</SelectItem>
+                        <SelectItem value="green">🟢 Vert</SelectItem>
+                        <SelectItem value="pink">🩷 Rose</SelectItem>
+                        <SelectItem value="purple">🟣 Violet</SelectItem>
+                        <SelectItem value="other">⚫ Autre</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium">Grade:</span>
+                    <Select value={gradeFilter} onValueChange={setGradeFilter}>
+                      <SelectTrigger className="w-32">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Tous</SelectItem>
+                        <SelectItem value="A">Grade A</SelectItem>
+                        <SelectItem value="B">Grade B</SelectItem>
+                        <SelectItem value="C">Grade C</SelectItem>
+                        <SelectItem value="D">Grade D</SelectItem>
+                      </SelectContent>
                     </Select>
                   </div>
                   

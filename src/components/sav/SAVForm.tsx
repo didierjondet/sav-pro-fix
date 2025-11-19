@@ -93,11 +93,13 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
     phone: '',
     address: '',
   });
-  const [deviceInfo, setDeviceInfo] = useState<DeviceInfo>({
+  const [deviceInfo, setDeviceInfo] = useState({
     brand: '',
     model: '',
     imei: '',
     sku: '',
+    color: '',
+    grade: '',
     problemDescription: '',
     attachments: [],
   });
@@ -265,6 +267,8 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
         device_brand: deviceInfo.brand ? deviceInfo.brand.toUpperCase().trim() : null,
         device_model: deviceInfo.model ? deviceInfo.model.toUpperCase().trim() : null,
         device_imei: deviceInfo.imei || null,
+        device_color: deviceInfo.color || null,
+        device_grade: deviceInfo.grade || null,
         sku: deviceInfo.sku || null,
         problem_description: deviceInfo.problemDescription,
         total_time_minutes: totalTimeMinutes,
@@ -389,6 +393,8 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
         model: '',
         imei: '',
         sku: '',
+        color: '',
+        grade: '',
         problemDescription: '',
         attachments: [],
       });
@@ -633,6 +639,82 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
               />
             </div>
           </div>
+
+          {/* Couleur du produit */}
+          <div>
+            <Label className="mb-3 block">Couleur du produit</Label>
+            <div className="flex flex-wrap gap-3">
+              {[
+                { value: 'black', label: 'Noir', color: 'hsl(0 0% 0%)' },
+                { value: 'white', label: 'Blanc', color: 'hsl(0 0% 100%)', border: true },
+                { value: 'grey', label: 'Gris', color: 'hsl(0 0% 50%)' },
+                { value: 'blue', label: 'Bleu', color: 'hsl(217 91% 60%)' },
+                { value: 'red', label: 'Rouge', color: 'hsl(0 84% 60%)' },
+                { value: 'gold', label: 'Or', color: 'hsl(45 100% 51%)' },
+                { value: 'silver', label: 'Argent', color: 'hsl(0 0% 75%)' },
+                { value: 'green', label: 'Vert', color: 'hsl(142 71% 45%)' },
+                { value: 'pink', label: 'Rose', color: 'hsl(330 81% 60%)' },
+                { value: 'purple', label: 'Violet', color: 'hsl(271 91% 65%)' },
+                { value: 'other', label: 'Autre', color: 'hsl(0 0% 42%)' },
+              ].map((colorOption) => (
+                <button
+                  key={colorOption.value}
+                  type="button"
+                  onClick={() => setDeviceInfo({ ...deviceInfo, color: colorOption.value })}
+                  className={`group relative flex flex-col items-center gap-2 transition-all ${
+                    deviceInfo.color === colorOption.value ? 'scale-110' : 'hover:scale-105'
+                  }`}
+                >
+                  <div
+                    className={`w-10 h-10 rounded-lg shadow-md transition-all ${
+                      deviceInfo.color === colorOption.value
+                        ? 'ring-4 ring-primary ring-offset-2'
+                        : 'hover:ring-2 hover:ring-primary/50'
+                    } ${colorOption.border ? 'border-2 border-border' : ''}`}
+                    style={{ backgroundColor: colorOption.color }}
+                  />
+                  <span className="text-xs font-medium text-muted-foreground group-hover:text-foreground">
+                    {colorOption.label}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Grade / État du produit */}
+          <div>
+            <Label className="mb-3 block">Grade / État du produit</Label>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {[
+                { value: 'A', label: 'Grade A', description: 'Excellent état', color: 'bg-emerald-500' },
+                { value: 'B', label: 'Grade B', description: 'Bon état', color: 'bg-blue-500' },
+                { value: 'C', label: 'Grade C', description: 'État moyen', color: 'bg-orange-500' },
+                { value: 'D', label: 'Grade D', description: 'Mauvais état', color: 'bg-red-500' },
+              ].map((gradeOption) => (
+                <button
+                  key={gradeOption.value}
+                  type="button"
+                  onClick={() => setDeviceInfo({ ...deviceInfo, grade: gradeOption.value })}
+                  className={`flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-all ${
+                    deviceInfo.grade === gradeOption.value
+                      ? 'border-primary bg-primary/5 shadow-md'
+                      : 'border-border hover:border-primary/50 hover:bg-accent'
+                  }`}
+                >
+                  <div
+                    className={`w-12 h-12 rounded-full ${gradeOption.color} text-white flex items-center justify-center text-xl font-bold shadow-lg`}
+                  >
+                    {gradeOption.value}
+                  </div>
+                  <div className="text-center">
+                    <p className="font-medium text-sm">{gradeOption.label}</p>
+                    <p className="text-xs text-muted-foreground">{gradeOption.description}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+          
           <div>
             <div className="flex items-center justify-between mb-2">
               <Label htmlFor="problemDescription">Description du problème *</Label>

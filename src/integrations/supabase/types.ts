@@ -837,6 +837,8 @@ export type Database = {
           deposit_amount: number | null
           details_updated_at: string | null
           device_brand: string | null
+          device_color: string | null
+          device_grade: string | null
           device_imei: string | null
           device_model: string | null
           discount_info: Json | null
@@ -871,6 +873,8 @@ export type Database = {
           deposit_amount?: number | null
           details_updated_at?: string | null
           device_brand?: string | null
+          device_color?: string | null
+          device_grade?: string | null
           device_imei?: string | null
           device_model?: string | null
           discount_info?: Json | null
@@ -905,6 +909,8 @@ export type Database = {
           deposit_amount?: number | null
           details_updated_at?: string | null
           device_brand?: string | null
+          device_color?: string | null
+          device_grade?: string | null
           device_imei?: string | null
           device_model?: string | null
           discount_info?: Json | null
