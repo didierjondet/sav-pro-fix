@@ -14,12 +14,16 @@ export interface SecurityCodes {
 interface SecurityCodesSectionProps {
   codes: SecurityCodes;
   onChange: (codes: SecurityCodes) => void;
+  stepNumber: number;
 }
 
-export function SecurityCodesSection({ codes, onChange }: SecurityCodesSectionProps) {
+export function SecurityCodesSection({ codes, onChange, stepNumber }: SecurityCodesSectionProps) {
   return (
     <Card className="border-orange-200 bg-orange-50/30">
-      <CardHeader>
+      <CardHeader className="relative">
+        <div className="absolute -top-3 -right-3 w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-lg font-bold shadow-lg">
+          {stepNumber}
+        </div>
         <CardTitle className="flex items-center gap-2">
           <Lock className="h-5 w-5 text-orange-600" />
           Codes de sécurité
