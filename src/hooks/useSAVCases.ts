@@ -13,6 +13,8 @@ export interface SAVCase {
   device_brand: string;
   device_model: string;
   device_imei?: string;
+  device_color?: string;
+  device_grade?: 'A' | 'B' | 'C' | 'D';
   sku?: string;
   problem_description: string;
   repair_notes?: string;
