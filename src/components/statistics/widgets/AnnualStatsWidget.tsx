@@ -12,6 +12,7 @@ interface MonthlyStats {
   customerSatisfaction: number;
   partsUsed: number;
   efficiency: number;
+  profit?: number;
 }
 
 interface AnnualStatsWidgetProps {
@@ -139,17 +140,18 @@ export const AnnualStatsWidget = ({
                 <ChartTooltip 
                   content={({ active, payload, label }) => {
                     if (active && payload && payload.length) {
+                      const data = payload[0]?.payload;
                       return (
                         <div className="bg-background border rounded-lg p-2 shadow-md">
-                          <p className="font-medium text-xs mb-1">{label}</p>
-                          {payload.map((entry: any, index: number) => (
-                            <p key={index} className="text-xs" style={{ color: entry.color }}>
-                              {entry.dataKey === 'revenue' 
-                                ? `CA: ${formatCurrency(entry.value)}`
-                                : `${entry.name}: ${entry.value}`
-                              }
+                          <p className="font-medium text-xs mb-2">{label}</p>
+                          <p className="text-xs mb-1">
+                            SAV: <span className="font-semibold">{data.savCount}</span>
+                          </p>
+                          {data.profit !== undefined && (
+                            <p className="text-xs">
+                              Marge: <span className="font-semibold">{formatCurrency(data.profit)}</span>
                             </p>
-                          ))}
+                          )}
                         </div>
                       );
                     }

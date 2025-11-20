@@ -627,7 +627,8 @@ export const DragDropStatistics = ({ period, onPeriodChange }: DragDropStatistic
           averageTime: savStats.averageTime + (Math.random() - 0.5) * 10,
           customerSatisfaction: 85 + Math.random() * 15,
           partsUsed: Math.floor(Math.random() * 50) + 20,
-          efficiency: Math.max(60, Math.min(95, 80 + (Math.random() - 0.5) * 20))
+          efficiency: Math.max(60, Math.min(95, 80 + (Math.random() - 0.5) * 20)),
+          profit: item.profit
         }));
         
         return (
