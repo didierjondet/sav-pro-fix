@@ -142,16 +142,18 @@ export const AnnualStatsWidget = ({
                     if (active && payload && payload.length) {
                       const data = payload[0]?.payload;
                       return (
-                        <div className="bg-background border rounded-lg p-2 shadow-md">
-                          <p className="font-medium text-xs mb-2">{label}</p>
-                          <p className="text-xs mb-1">
-                            SAV: <span className="font-semibold">{data.savCount}</span>
-                          </p>
-                          {data.profit !== undefined && (
-                            <p className="text-xs">
-                              Marge: <span className="font-semibold">{formatCurrency(data.profit)}</span>
+                        <div className="bg-background border rounded-lg p-2 shadow-md min-w-[150px]">
+                          <p className="font-semibold text-xs mb-2 text-primary">{label}</p>
+                          <div className="space-y-1">
+                            <p className="text-xs flex justify-between gap-2">
+                              <span className="text-muted-foreground">SAV:</span>
+                              <span className="font-semibold">{data.savCount}</span>
                             </p>
-                          )}
+                            <p className="text-xs flex justify-between gap-2">
+                              <span className="text-muted-foreground">Marge:</span>
+                              <span className="font-semibold">{formatCurrency(data.profit || 0)}</span>
+                            </p>
+                          </div>
                         </div>
                       );
                     }
