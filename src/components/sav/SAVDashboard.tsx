@@ -78,15 +78,44 @@ export function SAVDashboard() {
     const newOrder = arrayMove(sortedModules, oldIndex, newIndex);
     setSortedModules(newOrder);
 
-    // Créer un Set des IDs des modules réordonnés pour éviter la duplication
-    const newOrderIds = new Set(newOrder.map(m => m.id));
+    // Créer 4 groupes distincts pour préserver TOUS les widgets
+    const visibleDashboardIds = new Set(newOrder.map(m => m.id));
     
-    // Exclure les modules qui sont déjà dans newOrder pour éviter la duplication
-    const others = modules
-      .filter(m => !dashboardModuleIds.includes(m.id) && !newOrderIds.has(m.id))
-      .sort((a,b) => a.order - b.order);
-      
-    const merged = [...others, ...newOrder];
+    // 1. Widgets du dashboard qui sont désactivés (à préserver !)
+    const disabledDashboard = modules.filter(m => 
+      dashboardModuleIds.includes(m.id) && 
+      !visibleDashboardIds.has(m.id)
+    );
+    
+    // 2. Widgets personnalisés qui ne sont pas dans le dashboard
+    const customWidgets = modules.filter(m => 
+      m.isCustom && 
+      !visibleDashboardIds.has(m.id)
+    );
+    
+    // 3. Autres widgets standards qui ne sont pas dans le dashboard
+    const otherStandardWidgets = modules.filter(m =>
+      !m.isCustom &&
+      !dashboardModuleIds.includes(m.id) &&
+      !visibleDashboardIds.has(m.id)
+    );
+
+    // Merger dans le bon ordre: dashboard visibles + dashboard désactivés + widgets perso + autres standards
+    const merged = [
+      ...newOrder,
+      ...disabledDashboard,
+      ...customWidgets.sort((a, b) => a.order - b.order),
+      ...otherStandardWidgets.sort((a, b) => a.order - b.order)
+    ];
+    
+    console.log('🔄 Reordering modules:', {
+      visible: newOrder.length,
+      disabled: disabledDashboard.length,
+      custom: customWidgets.length,
+      other: otherStandardWidgets.length,
+      total: merged.length
+    });
+    
     reorderModules(merged);
   };
 
