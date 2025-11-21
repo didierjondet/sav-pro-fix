@@ -1474,6 +1474,8 @@ export type Database = {
           sidebar_sav_statuses_visible: boolean | null
           sidebar_sav_types_visible: boolean | null
           slug: string | null
+          sms_alert_enabled: boolean | null
+          sms_alert_threshold: number | null
           sms_credits_allocated: number | null
           sms_credits_used: number | null
           subscription_end: string | null
@@ -1525,6 +1527,8 @@ export type Database = {
           sidebar_sav_statuses_visible?: boolean | null
           sidebar_sav_types_visible?: boolean | null
           slug?: string | null
+          sms_alert_enabled?: boolean | null
+          sms_alert_threshold?: number | null
           sms_credits_allocated?: number | null
           sms_credits_used?: number | null
           subscription_end?: string | null
@@ -1576,6 +1580,8 @@ export type Database = {
           sidebar_sav_statuses_visible?: boolean | null
           sidebar_sav_types_visible?: boolean | null
           slug?: string | null
+          sms_alert_enabled?: boolean | null
+          sms_alert_threshold?: number | null
           sms_credits_allocated?: number | null
           sms_credits_used?: number | null
           subscription_end?: string | null

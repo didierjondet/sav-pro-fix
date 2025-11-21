@@ -123,31 +123,43 @@ const Header = ({
     };
   };
   const getSMSLimits = () => {
-    if (!smsCredits) return {
+    if (!smsCredits || !shop) return {
       remaining: 0,
       total: 0,
+      used: 0,
       isWarning: false,
-      isCritical: false
+      isCritical: false,
+      showAlert: false
     };
+    
+    // Vérifier si l'alerte SMS est activée
+    const alertEnabled = (shop as any).sms_alert_enabled ?? true;
+    const alertThreshold = (shop as any).sms_alert_threshold ?? 20;
+    
+    const totalUsed = smsCredits.monthly_used + smsCredits.purchasable_used;
+    const showAlert = alertEnabled && smsCredits.total_remaining <= alertThreshold;
+    
     return {
       remaining: smsCredits.total_remaining,
       total: smsCredits.total_available,
-      isWarning: smsCredits.is_warning,
-      isCritical: smsCredits.is_critical || smsCredits.is_exhausted
+      used: totalUsed,
+      isWarning: showAlert && smsCredits.total_remaining > 0,
+      isCritical: smsCredits.total_remaining <= 0,
+      showAlert
     };
   };
   const savLimits = getSAVLimits();
   const smsLimits = getSMSLimits();
-  const hasWarning = savLimits.isWarning || smsLimits.isWarning || savLimits.isCritical || smsLimits.isCritical;
+  const hasWarning = savLimits.isWarning || savLimits.isCritical || smsLimits.showAlert;
   return <header className="bg-card border-b border-border shadow-sm">
       {hasWarning && <Alert className="rounded-none border-x-0 border-t-0 bg-orange-50 border-orange-200">
           <AlertTriangle className="h-4 w-4 text-orange-600" />
           <AlertDescription className="text-orange-800">
             {savLimits.isCritical && `Limite SAV mensuelle critique atteinte (${subscription?.monthly_sav_count}/${savLimits.total})`}
             {savLimits.isWarning && !savLimits.isCritical && `Attention: limite SAV mensuelle bientôt atteinte (${subscription?.monthly_sav_count}/${savLimits.total})`}
-            {(savLimits.isCritical || savLimits.isWarning) && (smsLimits.isCritical || smsLimits.isWarning) && ' - '}
-            {smsLimits.isCritical && `Crédits SMS épuisés (${(smsCredits?.monthly_used || 0) + (smsCredits?.purchasable_used || 0)}/${smsLimits.total})`}
-            {smsLimits.isWarning && !smsLimits.isCritical && `Attention: crédits SMS bientôt épuisés (${(smsCredits?.monthly_used || 0) + (smsCredits?.purchasable_used || 0)}/${smsLimits.total})`}
+            {(savLimits.isCritical || savLimits.isWarning) && smsLimits.showAlert && ' - '}
+            {smsLimits.isCritical && `Crédits SMS épuisés (${smsLimits.used}/${smsLimits.total})`}
+            {smsLimits.isWarning && !smsLimits.isCritical && `Attention: crédits SMS bientôt épuisés (${smsLimits.used}/${smsLimits.total})`}
             {' '}<Button variant="link" className="h-auto p-0 text-orange-800 underline" onClick={() => navigate('/subscription')}>
               Mettre à niveau
             </Button>
