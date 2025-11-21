@@ -158,8 +158,8 @@ const Header = ({
             {savLimits.isCritical && `Limite SAV mensuelle critique atteinte (${subscription?.monthly_sav_count}/${savLimits.total})`}
             {savLimits.isWarning && !savLimits.isCritical && `Attention: limite SAV mensuelle bientôt atteinte (${subscription?.monthly_sav_count}/${savLimits.total})`}
             {(savLimits.isCritical || savLimits.isWarning) && smsLimits.showAlert && ' - '}
-            {smsLimits.isCritical && `Crédits SMS épuisés (${smsLimits.remaining}/${smsLimits.total})`}
-            {smsLimits.isWarning && !smsLimits.isCritical && `Attention: crédits SMS bientôt épuisés (${smsLimits.remaining}/${smsLimits.total})`}
+            {smsLimits.isCritical && `Crédits SMS épuisés (${smsLimits.remaining} restants)`}
+            {smsLimits.isWarning && !smsLimits.isCritical && `Attention: crédits SMS bientôt épuisés (${smsLimits.remaining} restants)`}
             {' '}<Button variant="link" className="h-auto p-0 text-orange-800 underline" onClick={() => navigate('/subscription')}>
               Mettre à niveau
             </Button>

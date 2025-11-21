@@ -41,7 +41,7 @@ export default function Customers() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showDuplicateManager, setShowDuplicateManager] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [itemsPerPage, setItemsPerPage] = useState(15);
   
   const { customers, loading, totalCount, createCustomer, updateCustomer, deleteCustomer, refetch } = useCustomers(currentPage, itemsPerPage);
   const { shop } = useShop();
@@ -142,7 +142,13 @@ export default function Customers() {
           <main className="flex-1 overflow-y-auto p-6">
             <div className="max-w-7xl mx-auto">
               <div className="flex justify-between items-center mb-6">
-                <h1 className="text-2xl font-bold">Gestion des clients</h1>
+                <div className="flex items-center gap-4">
+                  <h1 className="text-2xl font-bold">Gestion des clients</h1>
+                  <Badge variant="secondary" className="text-base">
+                    <Users className="h-4 w-4 mr-2" />
+                    {totalCount} client{totalCount > 1 ? 's' : ''}
+                  </Badge>
+                </div>
                 <div className="flex gap-2">
                   <Button variant="outline" onClick={() => setShowDuplicateManager(true)}>
                     <Users className="h-4 w-4 mr-2" />
