@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
-import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Legend, BarChart, Bar } from 'recharts';
+import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Legend, BarChart, Bar, Tooltip } from 'recharts';
 import { Calendar, TrendingUp, Award, Target, Activity } from 'lucide-react';
 
 interface MonthlyStats {
@@ -137,20 +137,20 @@ export const AnnualStatsWidget = ({
                   tickLine={false}
                 />
                 <YAxis hide />
-                <ChartTooltip 
+                <Tooltip 
                   content={({ active, payload, label }) => {
                     if (active && payload && payload.length) {
                       const data = payload[0]?.payload;
                       return (
-                        <div className="bg-background border rounded-lg p-2 shadow-md min-w-[150px]">
-                          <p className="font-semibold text-xs mb-2 text-primary">{label}</p>
+                        <div className="bg-background border rounded-lg p-3 shadow-md min-w-[160px]">
+                          <p className="font-semibold text-sm mb-2 text-primary">{label}</p>
                           <div className="space-y-1">
-                            <p className="text-xs flex justify-between gap-2">
-                              <span className="text-muted-foreground">SAV:</span>
+                            <p className="text-xs flex justify-between gap-3">
+                              <span className="text-muted-foreground">Nombre de SAV:</span>
                               <span className="font-semibold">{data.savCount}</span>
                             </p>
-                            <p className="text-xs flex justify-between gap-2">
-                              <span className="text-muted-foreground">Marge:</span>
+                            <p className="text-xs flex justify-between gap-3">
+                              <span className="text-muted-foreground">Marge générée:</span>
                               <span className="font-semibold">{formatCurrency(data.profit || 0)}</span>
                             </p>
                           </div>
