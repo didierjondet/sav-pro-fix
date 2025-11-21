@@ -132,6 +132,8 @@ export default function Settings() {
     custom_review_chat_message: '',
     sav_delay_alerts_enabled: false,
     sav_alert_days: {} as { [key: string]: number },
+    sms_alert_enabled: true,
+    sms_alert_threshold: 20,
     sidebar_nav_visible: true,
     sidebar_sav_types_visible: true,
     sidebar_sav_statuses_visible: true,
@@ -172,6 +174,8 @@ export default function Settings() {
         custom_review_chat_message: shop.custom_review_chat_message || 'Bonjour {customer_name} ! 👋\\n\\nVotre réparation est maintenant terminée ! Si vous avez été satisfait(e) de notre service, nous vous serions reconnaissants de prendre un moment pour nous laisser un avis.\\n\\n⭐ Laisser un avis : {review_link}\\n\\nVotre retour nous aide à continuer d\'améliorer nos services.\\n\\nMerci pour votre confiance ! 😊\\n\\nL\'équipe {shop_name}',
         sav_delay_alerts_enabled: (shop as any).sav_delay_alerts_enabled ?? false,
         sav_alert_days: savAlertDays,
+        sms_alert_enabled: (shop as any).sms_alert_enabled ?? true,
+        sms_alert_threshold: (shop as any).sms_alert_threshold ?? 20,
         sidebar_nav_visible: (shop as any).sidebar_nav_visible ?? true,
         sidebar_sav_types_visible: (shop as any).sidebar_sav_types_visible ?? true,
         sidebar_sav_statuses_visible: (shop as any).sidebar_sav_statuses_visible ?? true,
@@ -975,6 +979,47 @@ export default function Settings() {
                       <p className="text-sm text-muted-foreground">
                         Les notifications apparaîtront dans la cloche de notification lorsque les SAV approchent de leur délai maximum.
                       </p>
+                    </div>
+                  </div>
+
+                  <div className="p-4 border rounded-lg">
+                    <h4 className="font-medium mb-4 flex items-center gap-2">
+                      <MessageSquare className="h-4 w-4" />
+                      Alerte crédits SMS
+                    </h4>
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="font-medium">Activer l'alerte SMS</div>
+                          <p className="text-sm text-muted-foreground">Afficher une barre d'alerte en haut de l'interface quand les crédits SMS sont faibles</p>
+                        </div>
+                        <Switch checked={shopForm.sms_alert_enabled} onCheckedChange={checked => setShopForm({
+                            ...shopForm,
+                            sms_alert_enabled: checked
+                          })} disabled={!isAdmin} />
+                      </div>
+                      
+                      {shopForm.sms_alert_enabled && (
+                        <div className="space-y-2 pt-4 border-t">
+                          <Label htmlFor="sms-alert-threshold">Seuil d'alerte (crédits restants)</Label>
+                          <Input 
+                            id="sms-alert-threshold" 
+                            type="number" 
+                            min="0" 
+                            max="200" 
+                            value={shopForm.sms_alert_threshold} 
+                            onChange={e => setShopForm({
+                              ...shopForm,
+                              sms_alert_threshold: parseInt(e.target.value) || 20
+                            })} 
+                            disabled={!isAdmin} 
+                            placeholder="Nombre de crédits restants"
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            L'alerte s'affichera quand le total des crédits SMS restants (plan + achetés) sera inférieur à cette valeur.
+                          </p>
+                        </div>
+                      )}
                     </div>
                   </div>
 
