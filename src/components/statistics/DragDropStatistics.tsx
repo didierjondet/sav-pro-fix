@@ -81,27 +81,28 @@ export const DragDropStatistics = ({ period, onPeriodChange }: DragDropStatistic
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
+    if (!over || active.id === over.id) return;
 
-    if (over && active.id !== over.id) {
-      const oldIndex = sortedModules.findIndex(m => m.id === active.id);
-      const newIndex = sortedModules.findIndex(m => m.id === over.id);
-      
-      if (oldIndex !== -1 && newIndex !== -1) {
-        const newOrder = arrayMove(sortedModules, oldIndex, newIndex);
-        setSortedModules(newOrder);
-        
-        // Mettre à jour l'ordre dans la configuration complète
-        const updatedModules = modules.map(module => {
-          const newOrderItem = newOrder.find(no => no.id === module.id);
-          if (newOrderItem) {
-            return { ...module, order: newOrder.indexOf(newOrderItem) };
-          }
-          return module;
-        });
-        
-        reorderModules(updatedModules);
-      }
-    }
+    const oldIndex = sortedModules.findIndex(m => m.id === active.id);
+    const newIndex = sortedModules.findIndex(m => m.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    const newOrder = arrayMove(sortedModules, oldIndex, newIndex);
+    setSortedModules(newOrder);
+
+    // Préserver tous les modules invisibles et les merger avec le nouvel ordre
+    const visibleIds = new Set(newOrder.map(m => m.id));
+    const invisibleModules = modules.filter(m => !visibleIds.has(m.id));
+    
+    const merged = [...newOrder, ...invisibleModules.sort((a, b) => a.order - b.order)];
+    
+    console.log('🔄 Statistics page reordering:', {
+      visible: newOrder.length,
+      invisible: invisibleModules.length,
+      total: merged.length
+    });
+    
+    reorderModules(merged);
   };
 
   const formatCurrency = (v: number) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(v || 0);

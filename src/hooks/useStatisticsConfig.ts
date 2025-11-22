@@ -64,43 +64,76 @@ export const useStatisticsConfig = () => {
 
   const loadConfig = async () => {
     try {
+      // 1. TOUJOURS partir de DEFAULT_MODULES complet (23 widgets)
+      let mergedModules = [...DEFAULT_MODULES];
+      
+      // 2. Charger les préférences depuis localStorage (seulement enabled et order)
       const saved = localStorage.getItem(STORAGE_KEY);
-      let standardModules = saved ? JSON.parse(saved) : DEFAULT_MODULES;
+      if (saved) {
+        try {
+          const savedPrefs = JSON.parse(saved);
+          console.log('📦 Preferences loaded from localStorage:', savedPrefs.length);
+          
+          // Merger les préférences avec DEFAULT_MODULES
+          mergedModules = DEFAULT_MODULES.map(defaultModule => {
+            const savedPref = savedPrefs.find((s: StatisticModule) => s.id === defaultModule.id);
+            if (savedPref) {
+              return {
+                ...defaultModule,
+                enabled: savedPref.enabled !== undefined ? savedPref.enabled : defaultModule.enabled,
+                order: savedPref.order !== undefined ? savedPref.order : defaultModule.order
+              };
+            }
+            return defaultModule;
+          });
+        } catch (e) {
+          console.warn('⚠️ Error parsing localStorage, using defaults:', e);
+        }
+      }
 
+      // 3. Charger les widgets personnalisés depuis Supabase
       if (shop?.id) {
-        const { data: customWidgets } = await supabase
+        const { data: customWidgets, error } = await supabase
           .from('custom_widgets')
           .select('*')
           .eq('shop_id', shop.id)
           .order('display_order');
 
-        if (customWidgets) {
-          const customModules: StatisticModule[] = customWidgets.map((w, idx) => ({
+        if (error) {
+          console.error('❌ Error loading custom widgets:', error);
+        } else if (customWidgets) {
+          const customModules: StatisticModule[] = customWidgets.map((w) => ({
             id: `custom-${w.id}`,
             name: w.name,
             description: w.description || '',
-            enabled: w.enabled,
-            order: standardModules.length + idx,
+            enabled: w.enabled ?? true,
+            order: w.display_order ?? (mergedModules.length + 1),
             isCustom: true,
             customWidgetId: w.id,
             originalPrompt: w.original_prompt,
             aiInterpretation: w.ai_interpretation,
-            widget_type: w.widget_type, // Garder snake_case pour CustomWidgetRenderer
+            widget_type: w.widget_type,
             chart_type: w.chart_type,
             data_source: w.data_source,
             data_config: w.data_config,
             display_config: w.display_config,
           }));
-          console.log('🎨 Custom widgets loaded:', customModules);
-          setModules([...standardModules, ...customModules]);
+          
+          console.log('✅ All modules loaded:', {
+            standard: mergedModules.length,
+            custom: customModules.length,
+            total: mergedModules.length + customModules.length
+          });
+          
+          setModules([...mergedModules, ...customModules]);
         } else {
-          setModules(standardModules);
+          setModules(mergedModules);
         }
       } else {
-        setModules(standardModules);
+        setModules(mergedModules);
       }
     } catch (error) {
-      console.error('Error loading config:', error);
+      console.error('❌ Critical error loading config:', error);
       setModules(DEFAULT_MODULES);
     } finally {
       setLoading(false);

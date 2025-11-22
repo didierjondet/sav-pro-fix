@@ -12,17 +12,50 @@ import { toast } from 'sonner';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
 interface WidgetManagerProps {
-  availableModuleIds: string[];
   onClose?: () => void;
 }
 
-export function WidgetManager({ availableModuleIds }: WidgetManagerProps) {
+export function WidgetManager({ onClose }: WidgetManagerProps) {
   const { modules, updateModule, deleteCustomWidget, refetch } = useStatisticsConfig();
   const [showCreator, setShowCreator] = useState(false);
   const [editingWidget, setEditingWidget] = useState<any | null>(null);
   const [deleteWidgetId, setDeleteWidgetId] = useState<string | null>(null);
 
-  const dashboardModules = modules.filter(m => !m.isCustom && availableModuleIds.includes(m.id));
+  // Catégoriser les widgets en sections
+  const dashboardModules = modules.filter(m => 
+    !m.isCustom && [
+      'sav-types-grid',
+      'finance-kpis',
+      'storage-usage',
+      'sav-type-distribution',
+      'monthly-profitability',
+      'annual-stats'
+    ].includes(m.id)
+  );
+
+  const advancedModules = modules.filter(m => 
+    !m.isCustom && [
+      'financial-overview',
+      'performance-trends',
+      'parts-usage-heatmap'
+    ].includes(m.id)
+  );
+
+  const statisticsModules = modules.filter(m => 
+    !m.isCustom && 
+    ![
+      'sav-types-grid',
+      'finance-kpis',
+      'storage-usage',
+      'sav-type-distribution',
+      'monthly-profitability',
+      'annual-stats',
+      'financial-overview',
+      'performance-trends',
+      'parts-usage-heatmap'
+    ].includes(m.id)
+  );
+
   const customWidgets = modules.filter(m => m.isCustom);
 
   const handleToggle = (moduleId: string, currentEnabled: boolean) => {
@@ -38,14 +71,64 @@ export function WidgetManager({ availableModuleIds }: WidgetManagerProps) {
 
   return (
     <div className="space-y-6 max-h-[70vh] overflow-y-auto pr-2">
-      {/* Section 1 : Widgets standards */}
+      {/* Section 1 : Widgets Dashboard */}
       <div>
-        <h3 className="text-lg font-semibold mb-2">Widgets standards</h3>
+        <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
+          📊 Widgets Dashboard
+        </h3>
         <p className="text-sm text-muted-foreground mb-4">
-          Activez ou désactivez les widgets prédéfinis.
+          Widgets affichés sur la page principale (/dashboard)
         </p>
         <div className="grid gap-3">
           {dashboardModules.map((module) => (
+            <Card
+              key={module.id}
+              className={`cursor-pointer transition-all ${
+                module.enabled 
+                  ? 'border-primary bg-primary/5' 
+                  : 'border-muted hover:border-border'
+              }`}
+              onClick={() => handleToggle(module.id, module.enabled)}
+            >
+              <CardHeader className="p-4">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      {module.enabled ? (
+                        <Eye className="h-4 w-4 text-primary" />
+                      ) : (
+                        <EyeOff className="h-4 w-4 text-muted-foreground" />
+                      )}
+                      {module.name}
+                    </CardTitle>
+                    <CardDescription className="text-sm mt-1">
+                      {module.description}
+                    </CardDescription>
+                  </div>
+                  <Switch
+                    checked={module.enabled}
+                    onCheckedChange={() => handleToggle(module.id, module.enabled)}
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                </div>
+              </CardHeader>
+            </Card>
+          ))}
+        </div>
+      </div>
+
+      <Separator />
+
+      {/* Section 2 : Widgets Statistiques Avancés */}
+      <div>
+        <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
+          📈 Widgets Statistiques Avancés
+        </h3>
+        <p className="text-sm text-muted-foreground mb-4">
+          Widgets combinés pour analyses détaillées (page /statistics)
+        </p>
+        <div className="grid gap-3">
+          {advancedModules.map((module) => (
             <Card 
               key={module.id}
               className={`cursor-pointer transition-all ${
@@ -84,7 +167,55 @@ export function WidgetManager({ availableModuleIds }: WidgetManagerProps) {
 
       <Separator />
 
-      {/* Section 2 : Widgets personnalisés */}
+      {/* Section 3 : Widgets Statistiques */}
+      <div>
+        <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
+          📉 Widgets Statistiques
+        </h3>
+        <p className="text-sm text-muted-foreground mb-4">
+          KPIs et graphiques pour analyses (page /statistics)
+        </p>
+        <div className="grid gap-3">
+          {statisticsModules.map((module) => (
+            <Card 
+              key={module.id}
+              className={`cursor-pointer transition-all ${
+                module.enabled 
+                  ? 'border-primary bg-primary/5' 
+                  : 'border-muted hover:border-border'
+              }`}
+              onClick={() => handleToggle(module.id, module.enabled)}
+            >
+              <CardHeader className="p-4">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      {module.enabled ? (
+                        <Eye className="h-4 w-4 text-primary" />
+                      ) : (
+                        <EyeOff className="h-4 w-4 text-muted-foreground" />
+                      )}
+                      {module.name}
+                    </CardTitle>
+                    <CardDescription className="text-sm mt-1">
+                      {module.description}
+                    </CardDescription>
+                  </div>
+                  <Switch
+                    checked={module.enabled}
+                    onCheckedChange={() => handleToggle(module.id, module.enabled)}
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                </div>
+              </CardHeader>
+            </Card>
+          ))}
+        </div>
+      </div>
+
+      <Separator />
+
+      {/* Section 4 : Widgets personnalisés */}
       <div>
         <div className="flex items-center justify-between mb-4">
           <div>

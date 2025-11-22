@@ -747,10 +747,9 @@ export function SAVDashboard() {
             </DialogTrigger>
             <DialogContent className="max-w-2xl">
               <DialogHeader>
-                <DialogTitle>Gérer les widgets du Dashboard</DialogTitle>
+                <DialogTitle>Gestion des Widgets</DialogTitle>
               </DialogHeader>
               <WidgetManager 
-                availableModuleIds={dashboardModuleIds}
                 onClose={() => setIsWidgetDialogOpen(false)}
               />
             </DialogContent>
