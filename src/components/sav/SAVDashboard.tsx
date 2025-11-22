@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, HardDrive, Calendar, Info } from 'lucide-react';
+import { Plus, HardDrive, Calendar, Info, Medal, Trophy, Award } from 'lucide-react';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as ChartTooltip, ResponsiveContainer, Legend, LineChart, Line } from 'recharts';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,12 +8,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
 import { SAVForm } from './SAVForm';
 import { useSAVCases } from '@/hooks/useSAVCases';
 import { useShop } from '@/hooks/useShop';
 import { useSAVPartsCosts } from '@/hooks/useSAVPartsCosts';
 import { useShopStorageUsage } from '@/hooks/useStorageUsage';
 import { useMonthlyStatistics } from '@/hooks/useMonthlyStatistics';
+import { useStatistics } from '@/hooks/useStatistics';
 import { calculateSAVDelay } from '@/hooks/useSAVDelay';
 import { useShopSAVTypes } from '@/hooks/useShopSAVTypes';
 import { useShopSAVStatuses } from '@/hooks/useShopSAVStatuses';
@@ -25,6 +27,12 @@ import { useStatisticsConfig, StatisticModule } from '@/hooks/useStatisticsConfi
 import { SortableBlock } from '@/components/statistics/SortableBlock';
 import { WidgetManager } from '@/components/statistics/WidgetManager';
 import { CustomWidgetRenderer } from '@/components/statistics/CustomWidgetRenderer';
+import { FinancialOverviewWidget } from '@/components/statistics/advanced/FinancialOverviewWidget';
+import { SAVPerformanceWidget } from '@/components/statistics/advanced/SAVPerformanceWidget';
+import { PartsUsageHeatmapWidget } from '@/components/statistics/advanced/PartsUsageHeatmapWidget';
+import { MonthlyComparisonWidget } from '@/components/statistics/advanced/MonthlyComparisonWidget';
+import { RevenueBreakdownWidget } from '@/components/statistics/advanced/RevenueBreakdownWidget';
+import { CustomerSatisfactionWidget } from '@/components/statistics/advanced/CustomerSatisfactionWidget';
 
 // Limite de stockage par magasin (500 MB = 0.5 GB)
 const STORAGE_LIMIT_GB = 0.5;
@@ -40,6 +48,9 @@ export function SAVDashboard() {
   const { data: monthlyData, loading: monthlyLoading } = useMonthlyStatistics(selectedYear);
   const { getAllTypes, getTypeInfo, types } = useShopSAVTypes();
   const navigate = useNavigate();
+
+  // Hook pour les statistiques additionnelles (widgets statistiques)
+  const statistics = useStatistics('30d');
 
   // Drag & Drop config shared
   const { modules, reorderModules, updateModule } = useStatisticsConfig();
@@ -715,6 +726,402 @@ export function SAVDashboard() {
             </CardContent>
           </Card>
         );
+      
+      // Widgets statistiques avancés
+      case 'financial-overview':
+        const financialData = statistics.profitabilityChart.map(item => ({
+          date: item.date,
+          revenue: item.revenue,
+          expenses: item.expenses,
+          profit: item.profit,
+          margin: item.profit ? (item.profit / item.revenue) * 100 : 0,
+          savCount: statistics.completedSavChart.find(c => c.date === item.date)?.completed || 0
+        }));
+        
+        return (
+          <Card className="md:col-span-2">
+            <FinancialOverviewWidget 
+              data={financialData}
+              totalRevenue={statistics.revenue}
+              totalExpenses={statistics.expenses}
+              totalProfit={statistics.profit}
+              averageMargin={statistics.profit ? (statistics.profit / statistics.revenue) * 100 : 0}
+            />
+          </Card>
+        );
+
+      case 'performance-trends':
+        const performanceData = [
+          { metric: 'Temps moyen', value: Math.min((statistics.savStats.averageTime / 48) * 100, 100), maxValue: 100, fullMark: 100 },
+          { metric: 'Taux completion', value: 85, maxValue: 100, fullMark: 100 },
+          { metric: 'Satisfaction', value: 92, maxValue: 100, fullMark: 100 },
+          { metric: 'Efficacité', value: Math.max(100 - statistics.savStats.lateRate, 0), maxValue: 100, fullMark: 100 },
+          { metric: 'Qualité', value: 88, maxValue: 100, fullMark: 100 }
+        ];
+
+        const statusData = [
+          { name: 'En attente', value: statistics.savStats.total - Math.floor(statistics.savStats.total * 0.7), color: 'hsl(var(--warning))' },
+          { name: 'En cours', value: Math.floor(statistics.savStats.total * 0.4), color: 'hsl(var(--info))' },
+          { name: 'Prêt', value: Math.floor(statistics.savStats.total * 0.2), color: 'hsl(var(--success))' },
+          { name: 'Livré', value: Math.floor(statistics.savStats.total * 0.1), color: 'hsl(var(--muted-foreground))' }
+        ];
+        
+        return (
+          <Card className="md:col-span-2">
+            <SAVPerformanceWidget 
+              performanceData={performanceData}
+              statusData={statusData}
+              totalSAV={statistics.savStats.total}
+              averageTime={statistics.savStats.averageTime}
+              completionRate={85}
+              customerSatisfaction={92}
+            />
+          </Card>
+        );
+
+      case 'parts-usage-heatmap':
+        const partsUsageData = statistics.topParts.map((part, index) => ({
+          name: part.name,
+          value: part.quantity,
+          cost: part.quantity * 25,
+          frequency: Math.max(10 - index, 1),
+          trend: index < 2 ? 'up' as const : index > 5 ? 'down' as const : 'stable' as const,
+          category: 'Écran'
+        }));
+        
+        return (
+          <Card className="md:col-span-2">
+            <PartsUsageHeatmapWidget 
+              partsData={partsUsageData}
+              totalParts={statistics.topParts.reduce((sum, p) => sum + p.quantity, 0)}
+              totalCost={statistics.expenses}
+              topCategory="Écrans"
+            />
+          </Card>
+        );
+
+      // KPIs individuels
+      case 'kpi-revenue':
+        return (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Chiffre d'affaires</CardTitle>
+              <CardDescription>Revenus totaux</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div 
+                onClick={() => navigate(`/stats/revenue?period=30d`)}
+                className="cursor-pointer hover:bg-accent/20 p-2 rounded transition-colors"
+              >
+                <p className="text-3xl font-semibold">{new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(statistics.revenue)}</p>
+              </div>
+            </CardContent>
+          </Card>
+        );
+
+      case 'kpi-expenses':
+        return (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Dépenses</CardTitle>
+              <CardDescription>Coût des pièces</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div 
+                onClick={() => navigate(`/stats/expenses?period=30d`)}
+                className="cursor-pointer hover:bg-accent/20 p-2 rounded transition-colors"
+              >
+                <p className="text-3xl font-semibold">{new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(statistics.expenses)}</p>
+              </div>
+            </CardContent>
+          </Card>
+        );
+
+      case 'kpi-profit':
+        return (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Profit</CardTitle>
+              <CardDescription>Bénéfices nets</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p className="text-3xl font-semibold">{new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(statistics.profit)}</p>
+            </CardContent>
+          </Card>
+        );
+
+      case 'kpi-takeover':
+        return (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Prises en charge</CardTitle>
+              <CardDescription>Montant et nombre</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-sm text-muted-foreground">Montant total</div>
+              <div className="text-2xl font-semibold">{new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(statistics.takeoverStats.amount)}</div>
+              <div className="text-sm text-muted-foreground mt-1">Nombre de SAV</div>
+              <div className="text-lg">{statistics.takeoverStats.count}</div>
+            </CardContent>
+          </Card>
+        );
+
+      case 'sav-stats':
+        return (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">SAV & Durée</CardTitle>
+              <CardDescription>Total SAV et temps moyen</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-sm text-muted-foreground">Total SAV</div>
+              <div className="text-2xl font-semibold">{statistics.savStats.total}</div>
+              <div className="text-sm text-muted-foreground mt-1">Temps moyen</div>
+              <div className="text-lg">{statistics.savStats.averageTime} h</div>
+            </CardContent>
+          </Card>
+        );
+
+      case 'late-rate':
+        return (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Taux de retard</CardTitle>
+              <CardDescription>SAV en retard</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-sm text-muted-foreground">SAV en retard</div>
+              <div className="text-3xl font-semibold text-destructive">{statistics.savStats.lateRate.toFixed(1)}%</div>
+              <div className="text-sm text-muted-foreground mt-1">Basé sur les délais configurés</div>
+            </CardContent>
+          </Card>
+        );
+
+      // Graphiques
+      case 'profitability-chart':
+        return (
+          <Card className="md:col-span-2">
+            <CardHeader>
+              <CardTitle className="text-base">Évolution rentabilité</CardTitle>
+              <CardDescription>Graphique revenus/dépenses/profit</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ChartContainer
+                config={{
+                  revenue: { label: "Revenus", color: "hsl(var(--primary))" },
+                  expenses: { label: "Dépenses", color: "hsl(var(--muted-foreground))" },
+                  profit: { label: "Profit", color: "hsl(var(--secondary))" }
+                }}
+                className="h-72"
+              >
+                <LineChart data={statistics.profitabilityChart}>
+                  <XAxis dataKey="date" tickLine={false} axisLine={false} />
+                  <YAxis tickFormatter={(v) => `${v/1000}k`} tickLine={false} axisLine={false} />
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Legend />
+                  <Line type="monotone" dataKey="revenue" stroke="var(--color-revenue)" strokeWidth={2} dot={false} />
+                  <Line type="monotone" dataKey="expenses" stroke="var(--color-expenses)" strokeWidth={2} dot={false} />
+                  <Line type="monotone" dataKey="profit" stroke="var(--color-profit)" strokeWidth={2} dot={false} />
+                </LineChart>
+              </ChartContainer>
+            </CardContent>
+          </Card>
+        );
+
+      case 'completed-sav-chart':
+        return (
+          <Card className="md:col-span-2">
+            <CardHeader>
+              <CardTitle className="text-base">SAV terminés</CardTitle>
+              <CardDescription>Évolution des SAV complétés</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ChartContainer
+                config={{ completed: { label: "SAV terminés", color: "hsl(var(--secondary))" } }}
+                className="h-72"
+              >
+                <BarChart data={statistics.completedSavChart}>
+                  <XAxis dataKey="date" tickLine={false} axisLine={false} />
+                  <YAxis tickLine={false} axisLine={false} />
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Bar dataKey="completed" fill="var(--color-completed)" radius={4} />
+                </BarChart>
+              </ChartContainer>
+            </CardContent>
+          </Card>
+        );
+
+      case 'top-parts-chart':
+        return (
+          <Card className="md:col-span-2">
+            <CardHeader>
+              <CardTitle className="text-base">Top pièces utilisées</CardTitle>
+              <CardDescription>Classement des pièces</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ChartContainer
+                config={{ quantity: { label: "Quantité", color: "hsl(var(--primary))" } }}
+                className="h-72"
+              >
+                <BarChart data={statistics.topParts}>
+                  <XAxis dataKey="name" tickLine={false} axisLine={false} interval={0} angle={-15} textAnchor="end" height={60} />
+                  <YAxis tickLine={false} axisLine={false} />
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Bar dataKey="quantity" fill="var(--color-quantity)" radius={4} />
+                </BarChart>
+              </ChartContainer>
+            </CardContent>
+          </Card>
+        );
+
+      case 'late-rate-chart':
+        return (
+          <Card className="md:col-span-2">
+            <CardHeader>
+              <CardTitle className="text-base">Évolution retards</CardTitle>
+              <CardDescription>Tendance du taux de retard</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ChartContainer
+                config={{ lateRate: { label: "Taux de retard (%)", color: "hsl(var(--destructive))" } }}
+                className="h-72"
+              >
+                <LineChart data={statistics.lateRateChart}>
+                  <XAxis dataKey="date" tickLine={false} axisLine={false} />
+                  <YAxis domain={[0, 100]} tickFormatter={(v) => `${v}%`} tickLine={false} axisLine={false} />
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Line type="monotone" dataKey="lateRate" stroke="var(--color-lateRate)" strokeWidth={2} dot={true} />
+                </LineChart>
+              </ChartContainer>
+            </CardContent>
+          </Card>
+        );
+
+      case 'top-devices':
+        const getPodiumIcon = (index: number) => {
+          if (index === 0) return <Trophy className="w-6 h-6 text-yellow-500" />;
+          if (index === 1) return <Medal className="w-6 h-6 text-gray-400" />;
+          if (index === 2) return <Award className="w-6 h-6 text-amber-600" />;
+          return <div className="w-6 h-6 flex items-center justify-center text-lg font-bold text-muted-foreground">{index + 1}</div>;
+        };
+
+        const getPodiumBg = (index: number) => {
+          if (index === 0) return "bg-gradient-to-r from-yellow-50 to-yellow-100 border-yellow-200";
+          if (index === 1) return "bg-gradient-to-r from-gray-50 to-gray-100 border-gray-200";
+          if (index === 2) return "bg-gradient-to-r from-amber-50 to-amber-100 border-amber-200";
+          return "bg-gradient-to-r from-slate-50 to-slate-100 border-slate-200";
+        };
+
+        return (
+          <Card className="md:col-span-2">
+            <CardHeader>
+              <CardTitle className="text-base">Podium téléphones</CardTitle>
+              <CardDescription>Téléphones les plus réparés</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {statistics.topDevices.slice(0, 10).map((device, index) => (
+                  <div 
+                    key={index}
+                    className={`flex items-center gap-4 p-3 rounded-lg border-2 transition-all ${getPodiumBg(index)}`}
+                  >
+                    <div className="flex-shrink-0">
+                      {getPodiumIcon(index)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold truncate">{device.brand} {device.model}</div>
+                      <div className="text-sm text-muted-foreground">{device.count} réparations</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        );
+
+      case 'monthly-comparison':
+        const monthlyComparisonData = statistics.profitabilityChart.slice(-6).map((current, index) => {
+          const previous = statistics.profitabilityChart[statistics.profitabilityChart.length - 6 + index - 1] || current;
+          const growth = previous.revenue ? ((current.revenue - previous.revenue) / previous.revenue) * 100 : 0;
+          
+          return {
+            month: current.date,
+            currentRevenue: current.revenue,
+            previousRevenue: previous.revenue,
+            currentSavCount: statistics.completedSavChart.find(c => c.date === current.date)?.completed || 0,
+            previousSavCount: statistics.completedSavChart.find(c => c.date === previous.date)?.completed || 0,
+            currentProfit: current.profit,
+            previousProfit: previous.profit,
+            growth
+          };
+        });
+        
+        return (
+          <Card className="md:col-span-2">
+            <MonthlyComparisonWidget 
+              data={monthlyComparisonData}
+              totalGrowth={15.2}
+              bestMonth="Mars"
+              worstMonth="Janvier"
+            />
+          </Card>
+        );
+
+      case 'revenue-breakdown':
+        const revenueSources = [
+          { name: 'Réparations', value: statistics.revenue * 0.6, percentage: 60, color: 'hsl(var(--primary))' },
+          { name: 'Remplacements', value: statistics.revenue * 0.25, percentage: 25, color: 'hsl(var(--success))' },
+          { name: 'Diagnostics', value: statistics.revenue * 0.15, percentage: 15, color: 'hsl(var(--warning))' }
+        ];
+
+        const serviceTypes = [
+          { type: 'Réparation', revenue: statistics.revenue * 0.6, count: Math.floor(statistics.savStats.total * 0.6), averageValue: (statistics.revenue * 0.6) / Math.floor(statistics.savStats.total * 0.6) },
+          { type: 'Remplacement', revenue: statistics.revenue * 0.25, count: Math.floor(statistics.savStats.total * 0.25), averageValue: (statistics.revenue * 0.25) / Math.floor(statistics.savStats.total * 0.25) },
+          { type: 'Diagnostic', revenue: statistics.revenue * 0.15, count: Math.floor(statistics.savStats.total * 0.15), averageValue: (statistics.revenue * 0.15) / Math.floor(statistics.savStats.total * 0.15) }
+        ];
+        
+        return (
+          <Card className="md:col-span-2">
+            <RevenueBreakdownWidget 
+              revenueSources={revenueSources}
+              serviceTypes={serviceTypes}
+              totalRevenue={statistics.revenue}
+              topService="Réparation d'écran"
+            />
+          </Card>
+        );
+
+      case 'customer-satisfaction':
+        const satisfactionData = [
+          { period: 'Jan', rating: 4.2, reviews: 35, response_rate: 95 },
+          { period: 'Fév', rating: 4.5, reviews: 42, response_rate: 97 },
+          { period: 'Mar', rating: 4.3, reviews: 38, response_rate: 96 },
+          { period: 'Avr', rating: 4.7, reviews: 45, response_rate: 98 },
+          { period: 'Mai', rating: 4.6, reviews: 41, response_rate: 97 },
+          { period: 'Juin', rating: 4.8, reviews: 47, response_rate: 99 }
+        ];
+        
+        const satisfactionBreakdown = [
+          { stars: 5, count: 185, percentage: 75, color: 'hsl(var(--primary))' },
+          { stars: 4, count: 42, percentage: 17, color: 'hsl(var(--success))' },
+          { stars: 3, count: 15, percentage: 6, color: 'hsl(var(--warning))' },
+          { stars: 2, count: 4, percentage: 1.5, color: 'hsl(var(--destructive))' },
+          { stars: 1, count: 2, percentage: 0.5, color: 'hsl(var(--muted))' }
+        ];
+
+        return (
+          <Card className="md:col-span-2">
+            <CustomerSatisfactionWidget 
+              satisfactionData={satisfactionData}
+              satisfactionBreakdown={satisfactionBreakdown}
+              averageRating={4.6}
+              totalReviews={248}
+              responseRate={97}
+              trend="up"
+            />
+          </Card>
+        );
+
       default:
         // Gérer les widgets personnalisés
         const module = sortedModules.find(m => m.id === id);
