@@ -43,7 +43,8 @@ import {
   Moon, 
   UserPlus,
   Crown,
-  Trash2
+  Trash2,
+  Volume2
 } from 'lucide-react';
 
 import { MenuConfigurationTab } from '@/components/settings/MenuConfigurationTab';
@@ -62,6 +63,7 @@ import { useSubscription } from '@/hooks/useSubscription';
 import { useShopSAVStatuses } from '@/hooks/useShopSAVStatuses';
 import { useShopSAVTypes } from '@/hooks/useShopSAVTypes';
 import { useMenuPermissions } from '@/hooks/useMenuPermissions';
+import { useNotificationSound } from '@/hooks/useNotificationSound';
 import { supabase } from '@/integrations/supabase/client';
 import * as XLSX from 'xlsx';
 
@@ -116,6 +118,15 @@ export default function Settings() {
   const [plans, setPlans] = useState<any[]>([]);
   const { statuses, loading: statusesLoading, refetch: refetchStatuses } = useShopSAVStatuses();
   const { types: savTypes, loading: savTypesLoading, refetch: refetchSavTypes } = useShopSAVTypes();
+  const menuPermissions = useMenuPermissions();
+  const { 
+    testSound, 
+    uploadCustomSound, 
+    deleteCustomSound, 
+    getCustomSoundUrl, 
+    customSoundUrl, 
+    isUploading: isUploadingSound 
+  } = useNotificationSound();
 
   // Local state for form data
   const [shopForm, setShopForm] = useState({
@@ -148,8 +159,12 @@ export default function Settings() {
     if (user) {
       fetchProfiles();
       fetchPlans();
+      // Charger l'URL du son personnalisé si un shop existe
+      if (shop?.id) {
+        getCustomSoundUrl(shop.id);
+      }
     }
-  }, [user]);
+  }, [user, shop?.id]);
   useEffect(() => {
     if (shop && savTypes.length > 0) {
       // Construire l'objet des alertes de retard pour chaque type SAV à partir des types SAV existants
@@ -1028,12 +1043,78 @@ export default function Settings() {
                     <div className="space-y-4">
                       <div className="flex items-center justify-between">
                         <div>
-                          <div className="font-medium">Son des nouveaux messages clients</div>
-                          <p className="text-sm text-muted-foreground">Jouer un son lorsqu'un client envoie un message.</p>
+                          <div className="font-medium">Son des nouveaux messages</div>
+                          <p className="text-sm text-muted-foreground">Jouer un son lorsqu'une notification arrive.</p>
                         </div>
-                        <Switch checked={typeof window !== 'undefined' ? localStorage.getItem('chatSoundEnabled') !== 'false' : true} onCheckedChange={val => {
+                        <Switch 
+                          checked={typeof window !== 'undefined' ? localStorage.getItem('chatSoundEnabled') !== 'false' : true} 
+                          onCheckedChange={val => {
                             localStorage.setItem('chatSoundEnabled', val ? 'true' : 'false');
-                          }} />
+                          }} 
+                        />
+                      </div>
+
+                      <div className="space-y-3 pt-4 border-t">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <div className="font-medium">Son personnalisé</div>
+                            <p className="text-sm text-muted-foreground">Uploadez votre propre son de notification (max 500KB, MP3/WAV/OGG)</p>
+                          </div>
+                          {customSoundUrl ? (
+                            <Badge variant="secondary">
+                              <Volume2 className="h-3 w-3 mr-1" />
+                              Personnalisé
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline">Par défaut</Badge>
+                          )}
+                        </div>
+
+                        <div className="flex gap-2">
+                          <div className="flex-1">
+                            <Input
+                              type="file"
+                              accept="audio/*"
+                              disabled={isUploadingSound}
+                              onChange={async (e) => {
+                                const file = e.target.files?.[0];
+                                if (file && shop?.id) {
+                                  await uploadCustomSound(file, shop.id);
+                                  await getCustomSoundUrl(shop.id);
+                                }
+                              }}
+                            />
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={testSound}
+                            title="Tester le son"
+                          >
+                            <Volume2 className="h-4 w-4" />
+                          </Button>
+                          {customSoundUrl && (
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              onClick={async () => {
+                                if (shop?.id) {
+                                  await deleteCustomSound(shop.id);
+                                  await getCustomSoundUrl(shop.id);
+                                }
+                              }}
+                              title="Supprimer le son personnalisé"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+
+                        {isUploadingSound && (
+                          <p className="text-sm text-muted-foreground">
+                            ⏳ Upload en cours...
+                          </p>
+                        )}
                       </div>
                     </div>
                   </div>
