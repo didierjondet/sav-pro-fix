@@ -1154,7 +1154,7 @@ export function SAVDashboard() {
             <DialogTrigger asChild>
               <Button variant="outline">
                 <Plus className="mr-2 h-4 w-4" />
-                Ajouter widget
+                Gestion widget
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-2xl">
