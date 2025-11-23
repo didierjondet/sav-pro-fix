@@ -267,17 +267,44 @@ export function useNotifications() {
     const title = senderType === 'admin' ? 'Nouveau message du support' : 'Nouvelle réponse client';
     const message = `Nouveau message dans le ticket: ${subject}`;
     
-    // Play notification sound
-    try {
-      const audio = new Audio('/notification.mp3');
-      audio.volume = 0.3;
-      audio.play().catch(() => {
-        // Fallback to system notification sound
+    // Play notification sound using centralized hook logic
+    const playSound = async () => {
+      if (typeof window === 'undefined' || localStorage.getItem('chatSoundEnabled') === 'false') return;
+      
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('shop_id')
+            .eq('user_id', user.id)
+            .single();
+
+          if (profile?.shop_id) {
+            const { data: shop } = await supabase
+              .from('shops')
+              .select('custom_notification_sound_url')
+              .eq('id', profile.shop_id)
+              .single();
+
+            if (shop?.custom_notification_sound_url) {
+              const audio = new Audio(shop.custom_notification_sound_url);
+              audio.volume = 0.5;
+              await audio.play();
+              return;
+            }
+          }
+        }
+        
+        const audio = new Audio('/notification.mp3');
+        audio.volume = 0.3;
+        await audio.play();
+      } catch (error) {
         console.log('🔔 Support notification');
-      });
-    } catch (error) {
-      console.log('🔔 Support notification');
-    }
+      }
+    };
+    
+    await playSound();
     
     return await createNotification({
       type: 'support_message',
@@ -291,17 +318,44 @@ export function useNotifications() {
     const title = senderType === 'client' ? 'Nouveau message client' : 'Nouvelle réponse SAV';
     const message = `Nouveau message dans le SAV: ${caseNumber}`;
     
-    // Play notification sound
-    try {
-      const audio = new Audio('/notification.mp3');
-      audio.volume = 0.3;
-      audio.play().catch(() => {
-        // Fallback to system notification sound
+    // Play notification sound using centralized hook logic
+    const playSound = async () => {
+      if (typeof window === 'undefined' || localStorage.getItem('chatSoundEnabled') === 'false') return;
+      
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('shop_id')
+            .eq('user_id', user.id)
+            .single();
+
+          if (profile?.shop_id) {
+            const { data: shop } = await supabase
+              .from('shops')
+              .select('custom_notification_sound_url')
+              .eq('id', profile.shop_id)
+              .single();
+
+            if (shop?.custom_notification_sound_url) {
+              const audio = new Audio(shop.custom_notification_sound_url);
+              audio.volume = 0.5;
+              await audio.play();
+              return;
+            }
+          }
+        }
+        
+        const audio = new Audio('/notification.mp3');
+        audio.volume = 0.3;
+        await audio.play();
+      } catch (error) {
         console.log('🔔 SAV notification');
-      });
-    } catch (error) {
-      console.log('🔔 SAV notification');
-    }
+      }
+    };
+    
+    await playSound();
     
     return await createNotification({
       type: 'general',

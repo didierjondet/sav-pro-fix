@@ -128,13 +128,48 @@ export function NotificationBell() {
     };
   }, [user, profile?.shop_id, createSAVMessageNotification, createSupportMessageNotification]);
 
-  const triggerNotificationEffect = () => {
+  const triggerNotificationEffect = async () => {
     setHasNewActivity(true);
     setIsAnimating(true);
     
-    // Play notification sound
-    const audio = new Audio('/notification.mp3');
-    audio.play().catch(console.error);
+    // Play notification sound using centralized logic
+    const playSound = async () => {
+      if (typeof window === 'undefined' || localStorage.getItem('chatSoundEnabled') === 'false') return;
+      
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('shop_id')
+            .eq('user_id', user.id)
+            .single();
+
+          if (profile?.shop_id) {
+            const { data: shop } = await supabase
+              .from('shops')
+              .select('custom_notification_sound_url')
+              .eq('id', profile.shop_id)
+              .single();
+
+            if (shop?.custom_notification_sound_url) {
+              const audio = new Audio(shop.custom_notification_sound_url);
+              audio.volume = 0.5;
+              await audio.play();
+              return;
+            }
+          }
+        }
+        
+        const audio = new Audio('/notification.mp3');
+        audio.volume = 0.3;
+        await audio.play();
+      } catch (error) {
+        console.error('Erreur lecture son:', error);
+      }
+    };
+    
+    await playSound();
     
     // Stop animation after shaking
     setTimeout(() => setIsAnimating(false), 1500);

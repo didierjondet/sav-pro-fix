@@ -1441,6 +1441,7 @@ export type Database = {
           admin_added_sms_credits: number | null
           auto_review_enabled: boolean
           created_at: string
+          custom_notification_sound_url: string | null
           custom_review_chat_message: string | null
           custom_review_sms_message: string | null
           custom_sav_limit: number | null
@@ -1494,6 +1495,7 @@ export type Database = {
           admin_added_sms_credits?: number | null
           auto_review_enabled?: boolean
           created_at?: string
+          custom_notification_sound_url?: string | null
           custom_review_chat_message?: string | null
           custom_review_sms_message?: string | null
           custom_sav_limit?: number | null
@@ -1547,6 +1549,7 @@ export type Database = {
           admin_added_sms_credits?: number | null
           auto_review_enabled?: boolean
           created_at?: string
+          custom_notification_sound_url?: string | null
           custom_review_chat_message?: string | null
           custom_review_sms_message?: string | null
           custom_sav_limit?: number | null
