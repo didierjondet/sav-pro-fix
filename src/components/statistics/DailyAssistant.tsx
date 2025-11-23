@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Sparkles, RefreshCw, AlertCircle, TrendingUp } from 'lucide-react';
+import { Sparkles, RefreshCw, AlertCircle, TrendingUp, Settings } from 'lucide-react';
+import { DailyAssistantConfigDialog } from './DailyAssistantConfigDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -11,6 +12,7 @@ export function DailyAssistant() {
   const [loading, setLoading] = useState(false);
   const [recommendations, setRecommendations] = useState<string | null>(null);
   const [stats, setStats] = useState<any>(null);
+  const [configOpen, setConfigOpen] = useState(false);
   const { toast } = useToast();
 
   const fetchRecommendations = async () => {
@@ -117,23 +119,32 @@ export function DailyAssistant() {
           </div>
           <h2 className="text-base font-semibold">Assistant Quotidien IA</h2>
         </div>
-        <Button
-          onClick={fetchRecommendations}
-          disabled={loading}
-          size="sm"
-        >
-          {loading ? (
-            <>
-              <RefreshCw className="h-4 w-4 animate-spin mr-2" />
-              Analyse...
-            </>
-          ) : (
-            <>
-              <Sparkles className="h-4 w-4 mr-2" />
-              Analyser
-            </>
-          )}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setConfigOpen(true)}
+          >
+            <Settings className="h-4 w-4" />
+          </Button>
+          <Button
+            onClick={fetchRecommendations}
+            disabled={loading}
+            size="sm"
+          >
+            {loading ? (
+              <>
+                <RefreshCw className="h-4 w-4 animate-spin mr-2" />
+                Analyse...
+              </>
+            ) : (
+              <>
+                <Sparkles className="h-4 w-4 mr-2" />
+                Analyser
+              </>
+            )}
+          </Button>
+        </div>
       </div>
 
       {!recommendations && !loading && (
@@ -183,6 +194,8 @@ export function DailyAssistant() {
           </div>
         </div>
       )}
+
+      <DailyAssistantConfigDialog open={configOpen} onOpenChange={setConfigOpen} />
     </Card>
   );
 }

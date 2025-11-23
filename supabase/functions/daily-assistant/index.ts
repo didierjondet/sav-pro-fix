@@ -61,19 +61,63 @@ serve(async (req) => {
     }
     console.log('✅ [DAILY-ASSISTANT] Shop ID:', profile.shop_id);
 
-    // Fetch relevant data
+    // 🆕 Fetch configuration
+    console.log('⚙️ [DAILY-ASSISTANT] Récupération de la configuration...');
+    const { data: config } = await supabaseClient
+      .from('daily_assistant_config')
+      .select('*')
+      .eq('shop_id', profile.shop_id)
+      .maybeSingle();
+
+    // Default config if none exists
+    const effectiveConfig = config || {
+      sav_statuses_included: ['pending', 'in_progress', 'parts_ordered', 'testing'],
+      sav_types_included: null,
+      min_sav_age_days: 0,
+      late_threshold_days: 3,
+      low_stock_threshold: 5,
+      analysis_priority: 'balanced',
+      tone: 'professional',
+      sections_enabled: {
+        daily_priorities: true,
+        quick_actions: true,
+        parts_management: true,
+        productivity_tips: true,
+        revenue_optimization: true
+      },
+      top_items_count: 5
+    };
+
+    console.log('✅ [DAILY-ASSISTANT] Configuration:', effectiveConfig);
+
+    // Fetch relevant data with filters
     console.log('📊 [DAILY-ASSISTANT] Récupération des données...');
+    
+    // Build SAV query with filters
+    let savQuery = supabaseClient
+      .from('sav_cases')
+      .select(`
+        *,
+        customer:customers(first_name, last_name),
+        sav_parts(*, part:parts(*))
+      `)
+      .eq('shop_id', profile.shop_id)
+      .in('status', effectiveConfig.sav_statuses_included);
+
+    // Apply SAV type filter if specified
+    if (effectiveConfig.sav_types_included && effectiveConfig.sav_types_included.length > 0) {
+      savQuery = savQuery.in('sav_type', effectiveConfig.sav_types_included);
+    }
+
+    // Apply min age filter
+    if (effectiveConfig.min_sav_age_days > 0) {
+      const minDate = new Date();
+      minDate.setDate(minDate.getDate() - effectiveConfig.min_sav_age_days);
+      savQuery = savQuery.lte('created_at', minDate.toISOString());
+    }
+
     const [savCases, allParts, orderItems] = await Promise.all([
-      supabaseClient
-        .from('sav_cases')
-        .select(`
-          *,
-          customer:customers(first_name, last_name),
-          sav_parts(*, part:parts(*))
-        `)
-        .eq('shop_id', profile.shop_id)
-        .not('status', 'in', '(ready,delivered,cancelled)')
-        .order('created_at', { ascending: true }),
+      savQuery.order('created_at', { ascending: true }),
       
       supabaseClient
         .from('parts')
@@ -87,10 +131,10 @@ serve(async (req) => {
         .eq('ordered', false)
     ]);
     
-    // Filter low stock parts on the client side (comparing two columns)
+    // Filter low stock parts using custom threshold
     const parts = {
       data: allParts.data?.filter(part => 
-        part.quantity < (part.min_stock || 1)
+        part.quantity < (effectiveConfig.low_stock_threshold || 5)
       ) || [],
       error: allParts.error
     };
@@ -114,12 +158,12 @@ serve(async (req) => {
       ordersCount: orderItems.data?.length
     });
 
-    // Prepare analysis data
+    // Prepare analysis data with custom late threshold
     const today = new Date();
     const lateSavs = savCases.data?.filter(sav => {
       const createdDate = new Date(sav.created_at);
       const daysSinceCreation = Math.floor((today.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24));
-      return daysSinceCreation > 3;
+      return daysSinceCreation > effectiveConfig.late_threshold_days;
     }) || [];
 
     const readySavs = savCases.data?.filter(sav => {
@@ -139,10 +183,11 @@ serve(async (req) => {
       });
     }) || [];
 
+    const topN = effectiveConfig.top_items_count || 5;
     const analysisData = {
       total_active_savs: savCases.data?.length || 0,
       late_savs_count: lateSavs.length,
-      late_savs: lateSavs.slice(0, 3).map(s => ({
+      late_savs: lateSavs.slice(0, topN).map(s => ({
         case_number: s.case_number,
         customer: `${s.customer?.first_name} ${s.customer?.last_name}`,
         device: `${s.device_brand} ${s.device_model}`,
@@ -150,7 +195,7 @@ serve(async (req) => {
         status: s.status
       })),
       ready_to_repair_count: readySavs.length,
-      ready_savs: readySavs.slice(0, 3).map(s => ({
+      ready_savs: readySavs.slice(0, topN).map(s => ({
         case_number: s.case_number,
         customer: `${s.customer?.first_name} ${s.customer?.last_name}`,
         estimated_time: s.total_time_minutes,
@@ -165,25 +210,46 @@ serve(async (req) => {
 
     console.log('📈 [DAILY-ASSISTANT] Données d\'analyse préparées:', analysisData);
 
-    // Call Lovable AI for analysis
+    // Build dynamic system prompt based on tone and priority
     console.log('🤖 [DAILY-ASSISTANT] Appel de Lovable AI...');
 
-    const systemPrompt = `Tu es un assistant IA spécialisé dans la gestion d'ateliers de réparation. 
-Tu analyses les données de l'atelier et fournis des recommandations concrètes et actionnables pour :
-1. Organiser efficacement la journée
-2. Prioriser les réparations selon l'urgence et le potentiel de revenus
-3. Gérer les pièces et les commandes
-4. Améliorer la productivité
-5. Augmenter les marges et le chiffre d'affaires
+    const toneInstructions = {
+      professional: 'Utilise un ton formel et technique. Fournis des analyses détaillées et précises.',
+      motivating: 'Utilise un ton encourageant et dynamique. Inspire l\'action et la progression.',
+      concise: 'Sois direct et concis. Va droit au but avec des phrases courtes.',
+      detailed: 'Fournis des analyses approfondies avec beaucoup de détails et d\'explications.'
+    };
 
-Sois concis, précis et actionnable. Structure ta réponse avec des sections claires et des bullet points.
+    const priorityInstructions = {
+      revenue: 'Priorise les actions qui maximisent le chiffre d\'affaires et les marges.',
+      satisfaction: 'Priorise la satisfaction client et la résolution rapide des SAV en retard.',
+      productivity: 'Priorise l\'efficacité opérationnelle et l\'optimisation du temps.',
+      balanced: 'Équilibre entre revenus, satisfaction client et productivité.'
+    };
+
+    const systemPrompt = `Tu es un assistant IA spécialisé dans la gestion d'ateliers de réparation.
+${toneInstructions[effectiveConfig.tone as keyof typeof toneInstructions] || toneInstructions.professional}
+${priorityInstructions[effectiveConfig.analysis_priority as keyof typeof priorityInstructions] || priorityInstructions.balanced}
+
+Tu analyses les données de l'atelier et fournis des recommandations concrètes et actionnables.
+Structure ta réponse avec des sections claires et des bullet points.
 Utilise des émojis pour rendre la lecture plus agréable.`;
+
+    // Build sections based on enabled config
+    const sections = [];
+    const sectionsConfig = effectiveConfig.sections_enabled;
+    
+    if (sectionsConfig.daily_priorities) sections.push('1. 🎯 PRIORITÉS DU JOUR : Quelle réparation faire en premier et pourquoi');
+    if (sectionsConfig.quick_actions) sections.push('2. ⚡ ACTIONS RAPIDES : Quick wins pour avancer');
+    if (sectionsConfig.parts_management) sections.push('3. 📦 GESTION DES PIÈCES : Quelles commandes passer en priorité');
+    if (sectionsConfig.productivity_tips) sections.push('4. 💡 CONSEILS PRODUCTIVITÉ : Comment optimiser le temps');
+    if (sectionsConfig.revenue_optimization) sections.push('5. 💰 OPTIMISATION REVENUS : Comment maximiser le CA et les marges');
 
     const userPrompt = `Analyse les données suivantes de l'atelier et fournis des recommandations :
 
 SITUATION ACTUELLE :
 - SAV actifs : ${analysisData.total_active_savs}
-- SAV en retard : ${analysisData.late_savs_count}
+- SAV en retard (>${effectiveConfig.late_threshold_days}j) : ${analysisData.late_savs_count}
 - SAV prêts à réparer : ${analysisData.ready_to_repair_count}
 - En attente de pièces : ${analysisData.waiting_parts_count}
 - Pièces en stock faible : ${analysisData.low_stock_parts}
@@ -191,20 +257,16 @@ SITUATION ACTUELLE :
 - Revenu potentiel aujourd'hui : ${analysisData.total_potential_revenue}€
 - Temps de réparation estimé : ${Math.round(analysisData.total_repair_time / 60)}h
 
-${lateSavs.length > 0 ? `\nSAV EN RETARD (TOP 3) :\n${analysisData.late_savs.map(s => 
+${lateSavs.length > 0 ? `\nSAV EN RETARD (TOP ${topN}) :\n${analysisData.late_savs.map(s => 
   `- ${s.case_number} : ${s.customer} (${s.device}) - ${s.days_late}j de retard`
 ).join('\n')}` : ''}
 
-${readySavs.length > 0 ? `\nSAV PRÊTS À RÉPARER (TOP 3) :\n${analysisData.ready_savs.map(s => 
+${readySavs.length > 0 ? `\nSAV PRÊTS À RÉPARER (TOP ${topN}) :\n${analysisData.ready_savs.map(s => 
   `- ${s.case_number} : ${s.customer} - ${Math.round(s.estimated_time / 60)}h - ${s.revenue}€`
 ).join('\n')}` : ''}
 
 Fournis maintenant :
-1. 🎯 PRIORITÉS DU JOUR : Quelle réparation faire en premier et pourquoi
-2. ⚡ ACTIONS RAPIDES : Quick wins pour avancer
-3. 📦 GESTION DES PIÈCES : Quelles commandes passer en priorité
-4. 💡 CONSEILS PRODUCTIVITÉ : Comment optimiser le temps
-5. 💰 OPTIMISATION REVENUS : Comment maximiser le CA et les marges`;
+${sections.join('\n')}`;
 
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',

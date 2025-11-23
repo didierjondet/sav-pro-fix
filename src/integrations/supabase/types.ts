@@ -197,6 +197,62 @@ export type Database = {
           },
         ]
       }
+      daily_assistant_config: {
+        Row: {
+          analysis_priority: string | null
+          created_at: string | null
+          id: string
+          late_threshold_days: number | null
+          low_stock_threshold: number | null
+          min_sav_age_days: number | null
+          sav_statuses_included: string[] | null
+          sav_types_included: string[] | null
+          sections_enabled: Json | null
+          shop_id: string
+          tone: string | null
+          top_items_count: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          analysis_priority?: string | null
+          created_at?: string | null
+          id?: string
+          late_threshold_days?: number | null
+          low_stock_threshold?: number | null
+          min_sav_age_days?: number | null
+          sav_statuses_included?: string[] | null
+          sav_types_included?: string[] | null
+          sections_enabled?: Json | null
+          shop_id: string
+          tone?: string | null
+          top_items_count?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          analysis_priority?: string | null
+          created_at?: string | null
+          id?: string
+          late_threshold_days?: number | null
+          low_stock_threshold?: number | null
+          min_sav_age_days?: number | null
+          sav_statuses_included?: string[] | null
+          sav_types_included?: string[] | null
+          sections_enabled?: Json | null
+          shop_id?: string
+          tone?: string | null
+          top_items_count?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_assistant_config_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: true
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       global_sms_credits: {
         Row: {
           created_at: string
