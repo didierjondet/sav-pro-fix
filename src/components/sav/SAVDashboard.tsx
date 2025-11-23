@@ -54,14 +54,6 @@ export function SAVDashboard() {
 
   // Drag & Drop config shared
   const { modules, reorderModules, updateModule, refetch } = useStatisticsConfig();
-  const dashboardModuleIds = [
-    'sav-types-grid',
-    'finance-kpis',
-    'storage-usage',
-    'sav-type-distribution',
-    'monthly-profitability',
-    'annual-stats'
-  ];
   const [sortedModules, setSortedModules] = useState<StatisticModule[]>([]);
 
   const sensors = useSensors(
@@ -70,8 +62,16 @@ export function SAVDashboard() {
   );
 
   useEffect(() => {
+    // Liste des widgets Advanced (trop grands pour le dashboard)
+    const advancedModuleIds = ['financial-overview', 'performance-trends', 'parts-usage-heatmap'];
+    
     const enabled = modules
-      .filter(m => m.enabled && (dashboardModuleIds.includes(m.id) || m.isCustom))
+      .filter(m => {
+        if (!m.enabled) return false;
+        if (m.isCustom) return true; // Toujours inclure les widgets personnalisés
+        // Exclure uniquement les widgets avancés
+        return !advancedModuleIds.includes(m.id);
+      })
       .sort((a, b) => a.order - b.order);
     console.log('📊 Dashboard enabled modules:', enabled);
     console.log('🎨 Dashboard custom widgets:', enabled.filter(m => m.isCustom));
@@ -89,41 +89,42 @@ export function SAVDashboard() {
     const newOrder = arrayMove(sortedModules, oldIndex, newIndex);
     setSortedModules(newOrder);
 
-    // Créer 4 groupes distincts pour préserver TOUS les widgets
-    const visibleDashboardIds = new Set(newOrder.map(m => m.id));
+    // Liste des widgets Advanced pour la logique de filtrage
+    const advancedModuleIds = ['financial-overview', 'performance-trends', 'parts-usage-heatmap'];
     
-    // 1. Widgets du dashboard qui sont désactivés (à préserver !)
-    const disabledDashboard = modules.filter(m => 
-      dashboardModuleIds.includes(m.id) && 
-      !visibleDashboardIds.has(m.id)
+    // Créer 3 groupes distincts pour préserver TOUS les widgets
+    const visibleIds = new Set(newOrder.map(m => m.id));
+    
+    // 1. Widgets désactivés (à préserver !)
+    const disabledWidgets = modules.filter(m => 
+      !m.enabled && !visibleIds.has(m.id)
     );
     
-    // 2. Widgets personnalisés qui ne sont pas dans le dashboard
-    const customWidgets = modules.filter(m => 
-      m.isCustom && 
-      !visibleDashboardIds.has(m.id)
+    // 2. Widgets Advanced (exclus du dashboard mais à préserver)
+    const advancedWidgets = modules.filter(m => 
+      advancedModuleIds.includes(m.id) && !visibleIds.has(m.id)
     );
     
-    // 3. Autres widgets standards qui ne sont pas dans le dashboard
-    const otherStandardWidgets = modules.filter(m =>
-      !m.isCustom &&
-      !dashboardModuleIds.includes(m.id) &&
-      !visibleDashboardIds.has(m.id)
+    // 3. Autres widgets non visibles
+    const otherWidgets = modules.filter(m =>
+      !visibleIds.has(m.id) &&
+      !advancedModuleIds.includes(m.id) &&
+      m.enabled
     );
 
-    // Merger dans le bon ordre: dashboard visibles + dashboard désactivés + widgets perso + autres standards
+    // Merger: widgets visibles + désactivés + advanced + autres
     const merged = [
       ...newOrder,
-      ...disabledDashboard,
-      ...customWidgets.sort((a, b) => a.order - b.order),
-      ...otherStandardWidgets.sort((a, b) => a.order - b.order)
+      ...disabledWidgets.sort((a, b) => a.order - b.order),
+      ...advancedWidgets.sort((a, b) => a.order - b.order),
+      ...otherWidgets.sort((a, b) => a.order - b.order)
     ];
     
     console.log('🔄 Reordering modules:', {
       visible: newOrder.length,
-      disabled: disabledDashboard.length,
-      custom: customWidgets.length,
-      other: otherStandardWidgets.length,
+      disabled: disabledWidgets.length,
+      advanced: advancedWidgets.length,
+      other: otherWidgets.length,
       total: merged.length
     });
     
