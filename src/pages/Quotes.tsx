@@ -1112,23 +1112,26 @@ export default function Quotes() {
                 onPrint={() => {
                   if (showQuoteActionDialog) {
                     handleDownloadPDF(showQuoteActionDialog);
+                    setShowQuoteActionDialog(null);
                   }
                 }}
                 onSendSMS={() => {
                   if (showQuoteActionDialog) {
                     handleSendSMS(showQuoteActionDialog);
+                    setShowQuoteActionDialog(null);
                   }
                 }}
                 onSkip={() => {
-                  // Option pour passer sans action
                   toast({
                     title: "Devis accepté",
                     description: `Le devis ${showQuoteActionDialog?.quote_number} a été marqué comme accepté`,
                   });
+                  setShowQuoteActionDialog(null);
                 }}
                 onConvertToSAV={() => {
                   if (showQuoteActionDialog) {
                     setQuoteToConvert(showQuoteActionDialog);
+                    setShowQuoteActionDialog(null);
                   }
                 }}
                 quoteNumber={showQuoteActionDialog?.quote_number || ''}

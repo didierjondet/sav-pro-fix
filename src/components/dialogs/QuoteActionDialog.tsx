@@ -25,22 +25,18 @@ export function QuoteActionDialog({
 }: QuoteActionDialogProps) {
   const handlePrint = () => {
     onPrint();
-    onClose();
   };
 
   const handleSendSMS = () => {
     onSendSMS();
-    onClose();
   };
 
   const handleSkip = () => {
     onSkip();
-    onClose();
   };
 
   const handleConvertToSAV = () => {
     onConvertToSAV();
-    onClose();
   };
 
   return (
