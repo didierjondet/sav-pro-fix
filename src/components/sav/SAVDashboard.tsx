@@ -53,7 +53,7 @@ export function SAVDashboard() {
   const statistics = useStatistics('30d');
 
   // Drag & Drop config shared
-  const { modules, reorderModules, updateModule } = useStatisticsConfig();
+  const { modules, reorderModules, updateModule, refetch } = useStatisticsConfig();
   const dashboardModuleIds = [
     'sav-types-grid',
     'finance-kpis',
@@ -1145,7 +1145,12 @@ export function SAVDashboard() {
         }).slice(1)}
         </h2>
         <div className="flex gap-2">
-          <Dialog open={isWidgetDialogOpen} onOpenChange={setIsWidgetDialogOpen}>
+          <Dialog open={isWidgetDialogOpen} onOpenChange={(open) => {
+            if (!open) {
+              refetch();
+            }
+            setIsWidgetDialogOpen(open);
+          }}>
             <DialogTrigger asChild>
               <Button variant="outline">
                 <Plus className="mr-2 h-4 w-4" />
