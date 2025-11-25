@@ -66,7 +66,7 @@ export function WidgetConfigDialog({ open, onOpenChange, widgetId, widgetTitle }
           <DialogTitle>Configuration: {widgetTitle}</DialogTitle>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 pr-4">
+        <div className="flex-1 overflow-y-auto pr-4">
           <div className="space-y-6 py-2">
             {/* Temporalité */}
             <div className="space-y-2">
@@ -87,7 +87,7 @@ export function WidgetConfigDialog({ open, onOpenChange, widgetId, widgetTitle }
             <div className="space-y-2">
               <Label>Statuts SAV à inclure</Label>
               <p className="text-xs text-muted-foreground">Laisser vide pour inclure tous les statuts</p>
-              <ScrollArea className="h-36 border rounded-md p-3 pointer-events-auto">
+              <div className="max-h-36 overflow-y-auto border rounded-md p-3">
                 <div className="space-y-2">
                   {statuses.map((status) => (
                     <div key={status.id} className="flex items-center space-x-2">
@@ -109,14 +109,14 @@ export function WidgetConfigDialog({ open, onOpenChange, widgetId, widgetTitle }
                     </div>
                   ))}
                 </div>
-              </ScrollArea>
+              </div>
             </div>
 
             {/* Filtres par type */}
             <div className="space-y-2">
               <Label>Types SAV à inclure</Label>
               <p className="text-xs text-muted-foreground">Laisser vide pour inclure tous les types</p>
-              <ScrollArea className="h-36 border rounded-md p-3 pointer-events-auto">
+              <div className="max-h-36 overflow-y-auto border rounded-md p-3">
                 <div className="space-y-2">
                   {types.map((type) => (
                     <div key={type.id} className="flex items-center space-x-2">
@@ -138,10 +138,10 @@ export function WidgetConfigDialog({ open, onOpenChange, widgetId, widgetTitle }
                     </div>
                   ))}
                 </div>
-              </ScrollArea>
+              </div>
             </div>
           </div>
-        </ScrollArea>
+        </div>
 
         <DialogFooter className="flex-shrink-0 mt-4">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
