@@ -25,14 +25,22 @@ export function WidgetConfigDialog({ open, onOpenChange, widgetId, widgetTitle }
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
 
-  // Charger la configuration existante
+  // Charger la configuration existante ou réinitialiser aux valeurs par défaut
   useEffect(() => {
-    if (config) {
-      setTemporality(config.temporality);
-      setSelectedStatuses(config.sav_statuses_filter || []);
-      setSelectedTypes(config.sav_types_filter || []);
+    if (open) {
+      if (config) {
+        // Charger la config du widget actuel
+        setTemporality(config.temporality);
+        setSelectedStatuses(config.sav_statuses_filter || []);
+        setSelectedTypes(config.sav_types_filter || []);
+      } else {
+        // Pas de config = réinitialiser aux défauts
+        setTemporality('monthly');
+        setSelectedStatuses([]);
+        setSelectedTypes([]);
+      }
     }
-  }, [config]);
+  }, [config, widgetId, open]);
 
   const handleSave = async () => {
     await upsertConfig({
