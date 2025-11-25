@@ -274,23 +274,28 @@ export const DragDropStatistics = ({ period, onPeriodChange }: DragDropStatistic
 
       // KPIs simples existants
       case 'kpi-revenue':
+        const revPeriodLabel = period === '7d' ? '7j' : period === '30d' ? '30j' : period === '3m' ? '3m' : period === '6m' ? '6m' : '1an';
         return (
           <div className={className}>
             <DraggableStatisticsWidget {...baseProps}>
+              <div className="text-xs text-muted-foreground mb-1">📅 {revPeriodLabel} • SAV ready uniquement</div>
               <div 
                 onClick={() => navigate(`/stats/revenue?period=${period}`)}
                 className="cursor-pointer hover:bg-accent/20 p-2 rounded transition-colors"
               >
                 <p className="text-3xl font-semibold">{formatCurrency(revenue)}</p>
               </div>
+              <div className="text-xs text-muted-foreground mt-1">Marge brute: {((revenue / (revenue + expenses || 1)) * 100).toFixed(0)}%</div>
             </DraggableStatisticsWidget>
           </div>
         );
 
       case 'kpi-expenses':
+        const expPeriodLabel = period === '7d' ? '7j' : period === '30d' ? '30j' : period === '3m' ? '3m' : period === '6m' ? '6m' : '1an';
         return (
           <div className={className}>
             <DraggableStatisticsWidget {...baseProps}>
+              <div className="text-xs text-muted-foreground mb-1">📅 {expPeriodLabel} • Coût pièces SAV ready</div>
               <div 
                 onClick={() => navigate(`/stats/expenses?period=${period}`)}
                 className="cursor-pointer hover:bg-accent/20 p-2 rounded transition-colors"
@@ -302,19 +307,24 @@ export const DragDropStatistics = ({ period, onPeriodChange }: DragDropStatistic
         );
 
       case 'kpi-profit':
+        const profPeriodLabel = period === '7d' ? '7j' : period === '30d' ? '30j' : period === '3m' ? '3m' : period === '6m' ? '6m' : '1an';
         return (
           <div className={className}>
             <DraggableStatisticsWidget {...baseProps}>
+              <div className="text-xs text-muted-foreground mb-1">📅 {profPeriodLabel} • CA - Coût pièces</div>
               <p className="text-3xl font-semibold">{formatCurrency(profit)}</p>
+              <div className="text-xs text-muted-foreground mt-1">Marge nette: {((profit / (revenue || 1)) * 100).toFixed(1)}%</div>
             </DraggableStatisticsWidget>
           </div>
         );
 
       case 'kpi-takeover':
+        const takeoverPeriodLabel = period === '7d' ? '7j' : period === '30d' ? '30j' : period === '3m' ? '3m' : period === '6m' ? '6m' : '1an';
         return (
           <div className={className}>
             <DraggableStatisticsWidget {...baseProps}>
-              <div className="text-sm text-muted-foreground">Montant total</div>
+              <div className="text-xs text-muted-foreground mb-1">📅 {takeoverPeriodLabel}</div>
+              <div className="text-sm text-muted-foreground">Montant total pris en charge</div>
               <div className="text-2xl font-semibold">{formatCurrency(takeoverStats.amount)}</div>
               <div className="text-sm text-muted-foreground mt-1">Nombre de SAV</div>
               <div className="text-lg">{takeoverStats.count}</div>
@@ -323,24 +333,32 @@ export const DragDropStatistics = ({ period, onPeriodChange }: DragDropStatistic
         );
 
       case 'sav-stats':
+        const periodLabel = period === '7d' ? '7 derniers jours' : period === '30d' ? '30 derniers jours' : period === '3m' ? '3 derniers mois' : period === '6m' ? '6 derniers mois' : 'Année';
         return (
           <div className={className}>
             <DraggableStatisticsWidget {...baseProps}>
-              <div className="text-sm text-muted-foreground">Total SAV</div>
+              <div className="flex items-center justify-between mb-2">
+                <div className="text-xs text-muted-foreground">📅 {periodLabel}</div>
+              </div>
+              <div className="text-sm text-muted-foreground">Total SAV (hors internes)</div>
               <div className="text-2xl font-semibold">{savStats.total}</div>
-              <div className="text-sm text-muted-foreground mt-1">Temps moyen</div>
-              <div className="text-lg">{savStats.averageTime} h</div>
+              <div className="text-sm text-muted-foreground mt-2">Temps moyen de réparation</div>
+              <div className="text-lg font-semibold">{savStats.averageTime}h</div>
+              <div className="text-xs text-muted-foreground mt-1">Calculé sur SAV avec temps saisi</div>
             </DraggableStatisticsWidget>
           </div>
         );
 
       case 'late-rate':
+        const latePeriodLabel = period === '7d' ? '7j' : period === '30d' ? '30j' : period === '3m' ? '3m' : period === '6m' ? '6m' : '1an';
         return (
           <div className={className}>
             <DraggableStatisticsWidget {...baseProps}>
+              <div className="text-xs text-muted-foreground mb-1">📅 {latePeriodLabel}</div>
               <div className="text-sm text-muted-foreground">SAV en retard</div>
               <div className="text-3xl font-semibold text-destructive">{savStats.lateRate.toFixed(1)}%</div>
-              <div className="text-sm text-muted-foreground mt-1">Basé sur les délais configurés</div>
+              <div className="text-xs text-muted-foreground mt-1">SAV actifs dépassant délai configuré</div>
+              <div className="text-xs text-muted-foreground">Hors SAV terminés/annulés</div>
             </DraggableStatisticsWidget>
           </div>
         );
