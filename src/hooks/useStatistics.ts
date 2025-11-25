@@ -31,7 +31,15 @@ interface StatisticsData {
   loading: boolean;
 }
 
-export function useStatistics(period: '7d' | '30d' | '3m' | '6m' | '1y'): StatisticsData {
+interface StatisticsFilters {
+  savStatuses?: string[] | null;
+  savTypes?: string[] | null;
+}
+
+export function useStatistics(
+  period: '7d' | '30d' | '3m' | '6m' | '1y',
+  filters?: StatisticsFilters
+): StatisticsData {
   const { shop } = useShop();
   const [data, setData] = useState<Omit<StatisticsData, 'loading'>>({
     revenue: 0,
@@ -112,7 +120,7 @@ export function useStatistics(period: '7d' | '30d' | '3m' | '6m' | '1y'): Statis
         const { start, end } = getDateRange();
 
         // Récupérer les SAV de la période
-        const { data: savCases, error: savError } = await supabase
+        const { data: savCasesRaw, error: savError } = await supabase
           .from('sav_cases')
           .select(`
             *,
@@ -124,6 +132,19 @@ export function useStatistics(period: '7d' | '30d' | '3m' | '6m' | '1y'): Statis
           .lte('created_at', end.toISOString());
 
         if (savError) throw savError;
+
+        // Appliquer les filtres de configuration (statuts / types SAV)
+        const savCases = (savCasesRaw || []).filter((savCase: any) => {
+          const statusOk =
+            !filters?.savStatuses ||
+            filters.savStatuses.length === 0 ||
+            filters.savStatuses.includes(savCase.status);
+          const typeOk =
+            !filters?.savTypes ||
+            filters.savTypes.length === 0 ||
+            filters.savTypes.includes(savCase.sav_type);
+          return statusOk && typeOk;
+        });
 
         // Séparer les SAV pour les calculs financiers (ready uniquement) et pour les retards (tous les SAV actifs)
         const readySavCases = (savCases || []).filter((c: any) => c.status === 'ready' && c.sav_type !== 'internal');
@@ -358,7 +379,7 @@ export function useStatistics(period: '7d' | '30d' | '3m' | '6m' | '1y'): Statis
     };
 
     fetchStatistics();
-  }, [shop?.id, period]);
+  }, [shop?.id, period, filters?.savStatuses?.join(','), filters?.savTypes?.join(',')]);
 
   return { ...data, loading };
 }
