@@ -2195,6 +2195,47 @@ export type Database = {
         }
         Relationships: []
       }
+      widget_configurations: {
+        Row: {
+          created_at: string | null
+          id: string
+          sav_statuses_filter: string[] | null
+          sav_types_filter: string[] | null
+          shop_id: string
+          temporality: string | null
+          updated_at: string | null
+          widget_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          sav_statuses_filter?: string[] | null
+          sav_types_filter?: string[] | null
+          shop_id: string
+          temporality?: string | null
+          updated_at?: string | null
+          widget_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          sav_statuses_filter?: string[] | null
+          sav_types_filter?: string[] | null
+          shop_id?: string
+          temporality?: string | null
+          updated_at?: string | null
+          widget_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "widget_configurations_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

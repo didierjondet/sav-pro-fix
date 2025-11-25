@@ -3,11 +3,12 @@ import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/ca
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { Eye, EyeOff, Plus, X, Sparkles } from 'lucide-react';
+import { Eye, EyeOff, Plus, X, Sparkles, Settings } from 'lucide-react';
 import { useStatisticsConfig } from '@/hooks/useStatisticsConfig';
 import { AIWidgetCreator } from './AIWidgetCreator';
 import { AIWidgetEditor } from './AIWidgetEditor';
 import { CustomWidgetList } from './CustomWidgetList';
+import { WidgetConfigDialog } from './WidgetConfigDialog';
 import { toast } from 'sonner';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
@@ -20,6 +21,8 @@ export function WidgetManager({ onClose }: WidgetManagerProps) {
   const [showCreator, setShowCreator] = useState(false);
   const [editingWidget, setEditingWidget] = useState<any | null>(null);
   const [deleteWidgetId, setDeleteWidgetId] = useState<string | null>(null);
+  const [configWidgetId, setConfigWidgetId] = useState<string | null>(null);
+  const [configWidgetTitle, setConfigWidgetTitle] = useState<string>('');
 
   // Catégoriser les widgets en sections
   const dashboardModules = modules.filter(m => 
@@ -105,11 +108,25 @@ export function WidgetManager({ onClose }: WidgetManagerProps) {
                       {module.description}
                     </CardDescription>
                   </div>
-                  <Switch
-                    checked={module.enabled}
-                    onCheckedChange={() => handleToggle(module.id, module.enabled)}
-                    onClick={(e) => e.stopPropagation()}
-                  />
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setConfigWidgetId(module.id);
+                        setConfigWidgetTitle(module.name);
+                      }}
+                      className="h-8 w-8"
+                    >
+                      <Settings className="h-4 w-4" />
+                    </Button>
+                    <Switch
+                      checked={module.enabled}
+                      onCheckedChange={() => handleToggle(module.id, module.enabled)}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  </div>
                 </div>
               </CardHeader>
             </Card>
@@ -153,11 +170,25 @@ export function WidgetManager({ onClose }: WidgetManagerProps) {
                       {module.description}
                     </CardDescription>
                   </div>
-                  <Switch
-                    checked={module.enabled}
-                    onCheckedChange={() => handleToggle(module.id, module.enabled)}
-                    onClick={(e) => e.stopPropagation()}
-                  />
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setConfigWidgetId(module.id);
+                        setConfigWidgetTitle(module.name);
+                      }}
+                      className="h-8 w-8"
+                    >
+                      <Settings className="h-4 w-4" />
+                    </Button>
+                    <Switch
+                      checked={module.enabled}
+                      onCheckedChange={() => handleToggle(module.id, module.enabled)}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  </div>
                 </div>
               </CardHeader>
             </Card>
@@ -201,11 +232,25 @@ export function WidgetManager({ onClose }: WidgetManagerProps) {
                       {module.description}
                     </CardDescription>
                   </div>
-                  <Switch
-                    checked={module.enabled}
-                    onCheckedChange={() => handleToggle(module.id, module.enabled)}
-                    onClick={(e) => e.stopPropagation()}
-                  />
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setConfigWidgetId(module.id);
+                        setConfigWidgetTitle(module.name);
+                      }}
+                      className="h-8 w-8"
+                    >
+                      <Settings className="h-4 w-4" />
+                    </Button>
+                    <Switch
+                      checked={module.enabled}
+                      onCheckedChange={() => handleToggle(module.id, module.enabled)}
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  </div>
                 </div>
               </CardHeader>
             </Card>
@@ -323,6 +368,19 @@ export function WidgetManager({ onClose }: WidgetManagerProps) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Dialog de configuration des widgets */}
+      <WidgetConfigDialog
+        open={!!configWidgetId}
+        onOpenChange={(open) => {
+          if (!open) {
+            setConfigWidgetId(null);
+            setConfigWidgetTitle('');
+          }
+        }}
+        widgetId={configWidgetId || ''}
+        widgetTitle={configWidgetTitle}
+      />
     </div>
   );
 }
