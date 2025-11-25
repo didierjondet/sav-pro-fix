@@ -80,14 +80,16 @@ export const DraggableStatisticsWidget = ({
         <CardHeader className="relative">
           <CardTitle className="flex items-center justify-between gap-2">
             <span className="flex-1">{title}</span>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
               {config && (
-                <TooltipProvider>
+                <TooltipProvider delayDuration={200}>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Info className="w-4 h-4 text-muted-foreground cursor-help" />
+                      <div className="p-1 hover:bg-muted rounded cursor-help">
+                        <Info className="w-4 h-4 text-muted-foreground" />
+                      </div>
                     </TooltipTrigger>
-                    <TooltipContent side="left" className="max-w-xs">
+                    <TooltipContent side="left" className="max-w-xs z-50">
                       <div className="space-y-1.5 text-xs">
                         <div>
                           <span className="font-semibold">Période:</span> {getTemporalityLabel(config.temporality)}
@@ -106,7 +108,7 @@ export const DraggableStatisticsWidget = ({
               <div
                 {...attributes}
                 {...listeners}
-                className="opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing p-1 hover:bg-muted rounded"
+                className="cursor-grab active:cursor-grabbing p-1 hover:bg-muted rounded"
                 title="Glisser pour réorganiser"
               >
                 <GripVertical className="w-4 h-4 text-muted-foreground" />
