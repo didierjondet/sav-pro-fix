@@ -2,7 +2,11 @@ import { ReactNode } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { GripVertical } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { GripVertical, Info } from 'lucide-react';
+import { useWidgetConfiguration } from '@/hooks/useWidgetConfiguration';
+import { useShopSAVStatuses } from '@/hooks/useShopSAVStatuses';
+import { useShopSAVTypes } from '@/hooks/useShopSAVTypes';
 
 interface DraggableStatisticsWidgetProps {
   id: string;
@@ -19,6 +23,10 @@ export const DraggableStatisticsWidget = ({
   isEnabled,
   className = ""
 }: DraggableStatisticsWidgetProps) => {
+  const { config } = useWidgetConfiguration(id);
+  const { statuses } = useShopSAVStatuses();
+  const { types } = useShopSAVTypes();
+
   const {
     attributes,
     listeners,
@@ -27,6 +35,31 @@ export const DraggableStatisticsWidget = ({
     transition,
     isDragging,
   } = useSortable({ id, disabled: !isEnabled });
+
+  const getTemporalityLabel = (temp: string) => {
+    switch (temp) {
+      case 'monthly': return 'Mensuel (30 derniers jours)';
+      case 'quarterly': return 'Trimestriel (3 derniers mois)';
+      case 'yearly': return 'Annuel (12 derniers mois)';
+      default: return 'Non configuré';
+    }
+  };
+
+  const getStatusLabels = (statusKeys: string[] | null | undefined) => {
+    if (!statusKeys || statusKeys.length === 0) return 'Tous les statuts';
+    return statusKeys
+      .map(key => statuses.find(s => s.status_key === key)?.status_label)
+      .filter(Boolean)
+      .join(', ');
+  };
+
+  const getTypeLabels = (typeKeys: string[] | null | undefined) => {
+    if (!typeKeys || typeKeys.length === 0) return 'Tous les types';
+    return typeKeys
+      .map(key => types.find(t => t.type_key === key)?.type_label)
+      .filter(Boolean)
+      .join(', ');
+  };
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -45,15 +78,39 @@ export const DraggableStatisticsWidget = ({
     >
       <Card className={`${isDragging ? 'opacity-50' : ''} transition-opacity`}>
         <CardHeader className="relative">
-          <CardTitle className="flex items-center justify-between">
-            {title}
-            <div
-              {...attributes}
-              {...listeners}
-              className="opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing p-1 hover:bg-muted rounded"
-              title="Glisser pour réorganiser"
-            >
-              <GripVertical className="w-4 h-4 text-muted-foreground" />
+          <CardTitle className="flex items-center justify-between gap-2">
+            <span className="flex-1">{title}</span>
+            <div className="flex items-center gap-2">
+              {config && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="w-4 h-4 text-muted-foreground cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent side="left" className="max-w-xs">
+                      <div className="space-y-1.5 text-xs">
+                        <div>
+                          <span className="font-semibold">Période:</span> {getTemporalityLabel(config.temporality)}
+                        </div>
+                        <div>
+                          <span className="font-semibold">Statuts:</span> {getStatusLabels(config.sav_statuses_filter)}
+                        </div>
+                        <div>
+                          <span className="font-semibold">Types:</span> {getTypeLabels(config.sav_types_filter)}
+                        </div>
+                      </div>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
+              <div
+                {...attributes}
+                {...listeners}
+                className="opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing p-1 hover:bg-muted rounded"
+                title="Glisser pour réorganiser"
+              >
+                <GripVertical className="w-4 h-4 text-muted-foreground" />
+              </div>
             </div>
           </CardTitle>
         </CardHeader>
