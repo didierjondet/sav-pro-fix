@@ -140,7 +140,8 @@ export function useStatistics(period: '7d' | '30d' | '3m' | '6m' | '1y'): Statis
         // Calculer les revenus et dépenses
         let totalRevenue = 0;
         let totalExpenses = 0;
-        let totalTimeFromParts = 0;
+        let totalTimeMinutes = 0;
+        let savWithTimeCount = 0;
         let takeoverAmount = 0;
         let takeoverCount = 0;
         let lateCount = 0;
@@ -185,6 +186,12 @@ export function useStatistics(period: '7d' | '30d' | '3m' | '6m' | '1y'): Statis
             }
             deviceUsage[normalizedKey].count++;
           }
+
+          // Calculer le temps total pour tous les SAV (pas seulement ready)
+          if (savCase.total_time_minutes && savCase.total_time_minutes > 0) {
+            totalTimeMinutes += savCase.total_time_minutes;
+            savWithTimeCount++;
+          }
         });
 
         // D'abord calculer les retards sur TOUS les SAV actifs
@@ -220,16 +227,13 @@ export function useStatistics(period: '7d' | '30d' | '3m' | '6m' | '1y'): Statis
           // Calculer le coût total des pièces
           let caseCost = 0;
           let caseRevenue = 0;
-          let caseTimeFromParts = 0;
 
           savCase.sav_parts?.forEach((savPart: any) => {
             const partCost = (savPart.part?.purchase_price || 0) * savPart.quantity;
             const partRevenue = (savPart.unit_price || savPart.part?.selling_price || 0) * savPart.quantity;
-            const partTime = (savPart.part?.time_minutes || 15) * savPart.quantity;
             
             caseCost += partCost;
             caseRevenue += partRevenue;
-            caseTimeFromParts += partTime;
 
             // Tracking des pièces les plus utilisées
             const partKey = savPart.part?.name || 'Pièce inconnue';
@@ -255,7 +259,6 @@ export function useStatistics(period: '7d' | '30d' | '3m' | '6m' | '1y'): Statis
 
           totalRevenue += caseRevenue;
           totalExpenses += caseCost;
-          totalTimeFromParts += caseTimeFromParts;
 
           // Compter les statuts
           const status = savCase.status;
@@ -314,8 +317,8 @@ export function useStatistics(period: '7d' | '30d' | '3m' | '6m' | '1y'): Statis
           expenses: totalExpenses,
           profit: totalRevenue - totalExpenses,
           savStats: {
-            total: readySavCases.length || 0,
-            averageTime: readySavCases.length ? Math.round(totalTimeFromParts / readySavCases.length / 60) : 0,
+            total: (savCases || []).filter((c: any) => c.sav_type !== 'internal').length,
+            averageTime: savWithTimeCount > 0 ? Math.round(totalTimeMinutes / savWithTimeCount / 60) : 0,
             lateRate: lateRate
           },
           partsStats: {
