@@ -61,87 +61,89 @@ export function WidgetConfigDialog({ open, onOpenChange, widgetId, widgetTitle }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle>Configuration: {widgetTitle}</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6">
-          {/* Temporalité */}
-          <div className="space-y-2">
-            <Label>Temporalité des données</Label>
-            <Select value={temporality} onValueChange={(value: any) => setTemporality(value)}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="monthly">Mensuel (30 derniers jours)</SelectItem>
-                <SelectItem value="quarterly">Trimestriel (3 derniers mois)</SelectItem>
-                <SelectItem value="yearly">Annuel (12 derniers mois)</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+        <ScrollArea className="flex-1 pr-4">
+          <div className="space-y-6 py-2">
+            {/* Temporalité */}
+            <div className="space-y-2">
+              <Label>Temporalité des données</Label>
+              <Select value={temporality} onValueChange={(value: any) => setTemporality(value)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="monthly">Mensuel (30 derniers jours)</SelectItem>
+                  <SelectItem value="quarterly">Trimestriel (3 derniers mois)</SelectItem>
+                  <SelectItem value="yearly">Annuel (12 derniers mois)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-          {/* Filtres par statut */}
-          <div className="space-y-2">
-            <Label>Statuts SAV à inclure</Label>
-            <p className="text-xs text-muted-foreground">Laisser vide pour inclure tous les statuts</p>
-            <ScrollArea className="h-48 border rounded-md p-4">
-              <div className="space-y-2">
-                {statuses.map((status) => (
-                  <div key={status.id} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={`status-${status.id}`}
-                      checked={selectedStatuses.includes(status.status_key)}
-                      onCheckedChange={() => toggleStatus(status.status_key)}
-                    />
-                    <Label
-                      htmlFor={`status-${status.id}`}
-                      className="flex items-center gap-2 cursor-pointer"
-                    >
-                      <div
-                        className="w-3 h-3 rounded-full"
-                        style={{ backgroundColor: status.status_color }}
+            {/* Filtres par statut */}
+            <div className="space-y-2">
+              <Label>Statuts SAV à inclure</Label>
+              <p className="text-xs text-muted-foreground">Laisser vide pour inclure tous les statuts</p>
+              <ScrollArea className="h-36 border rounded-md p-3">
+                <div className="space-y-2">
+                  {statuses.map((status) => (
+                    <div key={status.id} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`status-${status.id}`}
+                        checked={selectedStatuses.includes(status.status_key)}
+                        onCheckedChange={() => toggleStatus(status.status_key)}
                       />
-                      {status.status_label}
-                    </Label>
-                  </div>
-                ))}
-              </div>
-            </ScrollArea>
-          </div>
+                      <Label
+                        htmlFor={`status-${status.id}`}
+                        className="flex items-center gap-2 cursor-pointer"
+                      >
+                        <div
+                          className="w-3 h-3 rounded-full"
+                          style={{ backgroundColor: status.status_color }}
+                        />
+                        {status.status_label}
+                      </Label>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            </div>
 
-          {/* Filtres par type */}
-          <div className="space-y-2">
-            <Label>Types SAV à inclure</Label>
-            <p className="text-xs text-muted-foreground">Laisser vide pour inclure tous les types</p>
-            <ScrollArea className="h-48 border rounded-md p-4">
-              <div className="space-y-2">
-                {types.map((type) => (
-                  <div key={type.id} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={`type-${type.id}`}
-                      checked={selectedTypes.includes(type.type_key)}
-                      onCheckedChange={() => toggleType(type.type_key)}
-                    />
-                    <Label
-                      htmlFor={`type-${type.id}`}
-                      className="flex items-center gap-2 cursor-pointer"
-                    >
-                      <div
-                        className="w-3 h-3 rounded-full"
-                        style={{ backgroundColor: type.type_color }}
+            {/* Filtres par type */}
+            <div className="space-y-2">
+              <Label>Types SAV à inclure</Label>
+              <p className="text-xs text-muted-foreground">Laisser vide pour inclure tous les types</p>
+              <ScrollArea className="h-36 border rounded-md p-3">
+                <div className="space-y-2">
+                  {types.map((type) => (
+                    <div key={type.id} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`type-${type.id}`}
+                        checked={selectedTypes.includes(type.type_key)}
+                        onCheckedChange={() => toggleType(type.type_key)}
                       />
-                      {type.type_label}
-                    </Label>
-                  </div>
-                ))}
-              </div>
-            </ScrollArea>
+                      <Label
+                        htmlFor={`type-${type.id}`}
+                        className="flex items-center gap-2 cursor-pointer"
+                      >
+                        <div
+                          className="w-3 h-3 rounded-full"
+                          style={{ backgroundColor: type.type_color }}
+                        />
+                        {type.type_label}
+                      </Label>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            </div>
           </div>
-        </div>
+        </ScrollArea>
 
-        <DialogFooter>
+        <DialogFooter className="flex-shrink-0 mt-4">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Annuler
           </Button>
