@@ -312,13 +312,19 @@ export function useStatistics(period: '7d' | '30d' | '3m' | '6m' | '1y'): Statis
           value
         }));
 
+        console.log('📊 Statistiques temps:', {
+          totalTimeMinutes,
+          savWithTimeCount,
+          averageTimeHours: savWithTimeCount > 0 ? (totalTimeMinutes / savWithTimeCount / 60).toFixed(1) : 0
+        });
+
         setData({
           revenue: totalRevenue,
           expenses: totalExpenses,
           profit: totalRevenue - totalExpenses,
           savStats: {
             total: (savCases || []).filter((c: any) => c.sav_type !== 'internal').length,
-            averageTime: savWithTimeCount > 0 ? Math.round(totalTimeMinutes / savWithTimeCount / 60) : 0,
+            averageTime: savWithTimeCount > 0 ? Number((totalTimeMinutes / savWithTimeCount / 60).toFixed(1)) : 0,
             lateRate: lateRate
           },
           partsStats: {
