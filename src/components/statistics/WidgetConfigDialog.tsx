@@ -87,7 +87,7 @@ export function WidgetConfigDialog({ open, onOpenChange, widgetId, widgetTitle }
             <div className="space-y-2">
               <Label>Statuts SAV à inclure</Label>
               <p className="text-xs text-muted-foreground">Laisser vide pour inclure tous les statuts</p>
-              <ScrollArea className="h-36 border rounded-md p-3">
+              <ScrollArea className="h-36 border rounded-md p-3 pointer-events-auto">
                 <div className="space-y-2">
                   {statuses.map((status) => (
                     <div key={status.id} className="flex items-center space-x-2">
@@ -116,7 +116,7 @@ export function WidgetConfigDialog({ open, onOpenChange, widgetId, widgetTitle }
             <div className="space-y-2">
               <Label>Types SAV à inclure</Label>
               <p className="text-xs text-muted-foreground">Laisser vide pour inclure tous les types</p>
-              <ScrollArea className="h-36 border rounded-md p-3">
+              <ScrollArea className="h-36 border rounded-md p-3 pointer-events-auto">
                 <div className="space-y-2">
                   {types.map((type) => (
                     <div key={type.id} className="flex items-center space-x-2">
