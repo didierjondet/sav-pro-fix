@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   DndContext,
@@ -23,6 +23,7 @@ import { useStatistics } from '@/hooks/useStatistics';
 import { useStatisticsConfig, StatisticModule } from '@/hooks/useStatisticsConfig';
 import { DraggableStatisticsWidget } from './DraggableStatisticsWidget';
 import { WIDGET_SIZES, getWidgetClasses, DEFAULT_MODULE_SIZES } from './StatisticsWidgetSizes';
+import { useWidgetConfiguration } from '@/hooks/useWidgetConfiguration';
 
 // Importation des widgets avancés
 import { FinancialOverviewWidget } from './advanced/FinancialOverviewWidget';
@@ -45,6 +46,41 @@ interface DragDropStatisticsProps {
   period: '7d' | '30d' | '3m' | '6m' | '1y';
   onPeriodChange: (period: '7d' | '30d' | '3m' | '6m' | '1y') => void;
 }
+
+type StatisticsPeriod = '7d' | '30d' | '3m' | '6m' | '1y';
+
+interface StatisticsWidgetContainerProps {
+  module: StatisticModule;
+  period: StatisticsPeriod;
+  children: (args: { stats: ReturnType<typeof useStatistics>; effectivePeriod: StatisticsPeriod }) => ReactNode;
+}
+
+const StatisticsWidgetContainer = ({ module, period, children }: StatisticsWidgetContainerProps) => {
+  const { config } = useWidgetConfiguration(module.id);
+
+  const effectivePeriod: StatisticsPeriod = config?.temporality === 'monthly'
+    ? '30d'
+    : config?.temporality === 'quarterly'
+      ? '3m'
+      : config?.temporality === 'yearly'
+        ? '1y'
+        : period;
+
+  const stats = useStatistics(effectivePeriod, {
+    savStatuses: config?.sav_statuses_filter ?? undefined,
+    savTypes: config?.sav_types_filter ?? undefined,
+  });
+
+  return (
+    <DraggableStatisticsWidget
+      id={module.id}
+      title={module.name}
+      isEnabled={module.enabled}
+    >
+      {children({ stats, effectivePeriod })}
+    </DraggableStatisticsWidget>
+  );
+};
 
 export const DragDropStatistics = ({ period, onPeriodChange }: DragDropStatisticsProps) => {
   const navigate = useNavigate();
@@ -272,94 +308,207 @@ export const DragDropStatistics = ({ period, onPeriodChange }: DragDropStatistic
           </div>
         );
 
-      // KPIs simples existants
       case 'kpi-revenue':
-        const revPeriodLabel = period === '7d' ? '7j' : period === '30d' ? '30j' : period === '3m' ? '3m' : period === '6m' ? '6m' : '1an';
         return (
           <div className={className}>
-            <DraggableStatisticsWidget {...baseProps}>
-              <div className="text-xs text-muted-foreground mb-1">📅 {revPeriodLabel} • SAV ready uniquement</div>
-              <div 
-                onClick={() => navigate(`/stats/revenue?period=${period}`)}
-                className="cursor-pointer hover:bg-accent/20 p-2 rounded transition-colors"
-              >
-                <p className="text-3xl font-semibold">{formatCurrency(revenue)}</p>
-              </div>
-              <div className="text-xs text-muted-foreground mt-1">Marge brute: {((revenue / (revenue + expenses || 1)) * 100).toFixed(0)}%</div>
-            </DraggableStatisticsWidget>
+            <StatisticsWidgetContainer module={module} period={period}>
+              {({ stats, effectivePeriod }) => {
+                const revPeriodLabel =
+                  effectivePeriod === '7d'
+                    ? '7j'
+                    : effectivePeriod === '30d'
+                    ? '30j'
+                    : effectivePeriod === '3m'
+                    ? '3m'
+                    : effectivePeriod === '6m'
+                    ? '6m'
+                    : '1an';
+
+                const { revenue, expenses } = stats;
+
+                return (
+                  <>
+                    <div className="text-xs text-muted-foreground mb-1">📅 {revPeriodLabel} • SAV ready uniquement</div>
+                    <div
+                      onClick={() => navigate(`/stats/revenue?period=${effectivePeriod}`)}
+                      className="cursor-pointer hover:bg-accent/20 p-2 rounded transition-colors"
+                    >
+                      <p className="text-3xl font-semibold">{formatCurrency(revenue)}</p>
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-1">
+                      Marge brute: {((revenue / (revenue + expenses || 1)) * 100).toFixed(0)}%
+                    </div>
+                  </>
+                );
+              }}
+            </StatisticsWidgetContainer>
           </div>
         );
 
       case 'kpi-expenses':
-        const expPeriodLabel = period === '7d' ? '7j' : period === '30d' ? '30j' : period === '3m' ? '3m' : period === '6m' ? '6m' : '1an';
         return (
           <div className={className}>
-            <DraggableStatisticsWidget {...baseProps}>
-              <div className="text-xs text-muted-foreground mb-1">📅 {expPeriodLabel} • Coût pièces SAV ready</div>
-              <div 
-                onClick={() => navigate(`/stats/expenses?period=${period}`)}
-                className="cursor-pointer hover:bg-accent/20 p-2 rounded transition-colors"
-              >
-                <p className="text-3xl font-semibold">{formatCurrency(expenses)}</p>
-              </div>
-            </DraggableStatisticsWidget>
+            <StatisticsWidgetContainer module={module} period={period}>
+              {({ stats, effectivePeriod }) => {
+                const expPeriodLabel =
+                  effectivePeriod === '7d'
+                    ? '7j'
+                    : effectivePeriod === '30d'
+                    ? '30j'
+                    : effectivePeriod === '3m'
+                    ? '3m'
+                    : effectivePeriod === '6m'
+                    ? '6m'
+                    : '1an';
+
+                const { expenses } = stats;
+
+                return (
+                  <>
+                    <div className="text-xs text-muted-foreground mb-1">📅 {expPeriodLabel} • Coût pièces SAV ready</div>
+                    <div
+                      onClick={() => navigate(`/stats/expenses?period=${effectivePeriod}`)}
+                      className="cursor-pointer hover:bg-accent/20 p-2 rounded transition-colors"
+                    >
+                      <p className="text-3xl font-semibold">{formatCurrency(expenses)}</p>
+                    </div>
+                  </>
+                );
+              }}
+            </StatisticsWidgetContainer>
           </div>
         );
 
       case 'kpi-profit':
-        const profPeriodLabel = period === '7d' ? '7j' : period === '30d' ? '30j' : period === '3m' ? '3m' : period === '6m' ? '6m' : '1an';
         return (
           <div className={className}>
-            <DraggableStatisticsWidget {...baseProps}>
-              <div className="text-xs text-muted-foreground mb-1">📅 {profPeriodLabel} • CA - Coût pièces</div>
-              <p className="text-3xl font-semibold">{formatCurrency(profit)}</p>
-              <div className="text-xs text-muted-foreground mt-1">Marge nette: {((profit / (revenue || 1)) * 100).toFixed(1)}%</div>
-            </DraggableStatisticsWidget>
+            <StatisticsWidgetContainer module={module} period={period}>
+              {({ stats, effectivePeriod }) => {
+                const profPeriodLabel =
+                  effectivePeriod === '7d'
+                    ? '7j'
+                    : effectivePeriod === '30d'
+                    ? '30j'
+                    : effectivePeriod === '3m'
+                    ? '3m'
+                    : effectivePeriod === '6m'
+                    ? '6m'
+                    : '1an';
+
+                const { revenue, profit } = stats;
+
+                return (
+                  <>
+                    <div className="text-xs text-muted-foreground mb-1">📅 {profPeriodLabel} • CA - Coût pièces</div>
+                    <p className="text-3xl font-semibold">{formatCurrency(profit)}</p>
+                    <div className="text-xs text-muted-foreground mt-1">
+                      Marge nette: {((profit / (revenue || 1)) * 100).toFixed(1)}%
+                    </div>
+                  </>
+                );
+              }}
+            </StatisticsWidgetContainer>
           </div>
         );
 
       case 'kpi-takeover':
-        const takeoverPeriodLabel = period === '7d' ? '7j' : period === '30d' ? '30j' : period === '3m' ? '3m' : period === '6m' ? '6m' : '1an';
         return (
           <div className={className}>
-            <DraggableStatisticsWidget {...baseProps}>
-              <div className="text-xs text-muted-foreground mb-1">📅 {takeoverPeriodLabel}</div>
-              <div className="text-sm text-muted-foreground">Montant total pris en charge</div>
-              <div className="text-2xl font-semibold">{formatCurrency(takeoverStats.amount)}</div>
-              <div className="text-sm text-muted-foreground mt-1">Nombre de SAV</div>
-              <div className="text-lg">{takeoverStats.count}</div>
-            </DraggableStatisticsWidget>
+            <StatisticsWidgetContainer module={module} period={period}>
+              {({ stats, effectivePeriod }) => {
+                const takeoverPeriodLabel =
+                  effectivePeriod === '7d'
+                    ? '7j'
+                    : effectivePeriod === '30d'
+                    ? '30j'
+                    : effectivePeriod === '3m'
+                    ? '3m'
+                    : effectivePeriod === '6m'
+                    ? '6m'
+                    : '1an';
+
+                const { takeoverStats } = stats;
+
+                return (
+                  <>
+                    <div className="text-xs text-muted-foreground mb-1">📅 {takeoverPeriodLabel}</div>
+                    <div className="text-sm text-muted-foreground">Montant total pris en charge</div>
+                    <div className="text-2xl font-semibold">{formatCurrency(takeoverStats.amount)}</div>
+                    <div className="text-sm text-muted-foreground mt-1">Nombre de SAV</div>
+                    <div className="text-lg">{takeoverStats.count}</div>
+                  </>
+                );
+              }}
+            </StatisticsWidgetContainer>
           </div>
         );
 
       case 'sav-stats':
-        const periodLabel = period === '7d' ? '7 derniers jours' : period === '30d' ? '30 derniers jours' : period === '3m' ? '3 derniers mois' : period === '6m' ? '6 derniers mois' : 'Année';
         return (
           <div className={className}>
-            <DraggableStatisticsWidget {...baseProps}>
-              <div className="flex items-center justify-between mb-2">
-                <div className="text-xs text-muted-foreground">📅 {periodLabel}</div>
-              </div>
-              <div className="text-sm text-muted-foreground">Total SAV (hors internes)</div>
-              <div className="text-2xl font-semibold">{savStats.total}</div>
-              <div className="text-sm text-muted-foreground mt-2">Temps moyen de réparation</div>
-              <div className="text-lg font-semibold">{savStats.averageTime}h</div>
-              <div className="text-xs text-muted-foreground mt-1">Calculé sur SAV avec temps saisi</div>
-            </DraggableStatisticsWidget>
+            <StatisticsWidgetContainer module={module} period={period}>
+              {({ stats, effectivePeriod }) => {
+                const periodLabel =
+                  effectivePeriod === '7d'
+                    ? '7 derniers jours'
+                    : effectivePeriod === '30d'
+                    ? '30 derniers jours'
+                    : effectivePeriod === '3m'
+                    ? '3 derniers mois'
+                    : effectivePeriod === '6m'
+                    ? '6 derniers mois'
+                    : 'Année';
+
+                const { savStats } = stats;
+
+                return (
+                  <>
+                    <DraggableStatisticsWidget id={module.id} title={module.name} isEnabled={module.enabled}>
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="text-xs text-muted-foreground">📅 {periodLabel}</div>
+                      </div>
+                      <div className="text-sm text-muted-foreground">Total SAV (hors internes)</div>
+                      <div className="text-2xl font-semibold">{savStats.total}</div>
+                      <div className="text-sm text-muted-foreground mt-2">Temps moyen de réparation</div>
+                      <div className="text-lg font-semibold">{savStats.averageTime}h</div>
+                      <div className="text-xs text-muted-foreground mt-1">Calculé sur SAV avec temps saisi</div>
+                    </DraggableStatisticsWidget>
+                  </>
+                );
+              }}
+            </StatisticsWidgetContainer>
           </div>
         );
 
       case 'late-rate':
-        const latePeriodLabel = period === '7d' ? '7j' : period === '30d' ? '30j' : period === '3m' ? '3m' : period === '6m' ? '6m' : '1an';
         return (
           <div className={className}>
-            <DraggableStatisticsWidget {...baseProps}>
-              <div className="text-xs text-muted-foreground mb-1">📅 {latePeriodLabel}</div>
-              <div className="text-sm text-muted-foreground">SAV en retard</div>
-              <div className="text-3xl font-semibold text-destructive">{savStats.lateRate.toFixed(1)}%</div>
-              <div className="text-xs text-muted-foreground mt-1">SAV actifs dépassant délai configuré</div>
-              <div className="text-xs text-muted-foreground">Hors SAV terminés/annulés</div>
-            </DraggableStatisticsWidget>
+            <StatisticsWidgetContainer module={module} period={period}>
+              {({ stats, effectivePeriod }) => {
+                const latePeriodLabel =
+                  effectivePeriod === '7d'
+                    ? '7j'
+                    : effectivePeriod === '30d'
+                    ? '30j'
+                    : effectivePeriod === '3m'
+                    ? '3m'
+                    : effectivePeriod === '6m'
+                    ? '6m'
+                    : '1an';
+
+                const { savStats } = stats;
+
+                return (
+                  <>
+                    <div className="text-xs text-muted-foreground mb-1">📅 {latePeriodLabel}</div>
+                    <div className="text-sm text-muted-foreground">SAV en retard</div>
+                    <div className="text-3xl font-semibold text-destructive">{savStats.lateRate.toFixed(1)}%</div>
+                    <div className="text-xs text-muted-foreground mt-1">SAV actifs dépassant délai configuré</div>
+                    <div className="text-xs text-muted-foreground">Hors SAV terminés/annulés</div>
+                  </>
+                );
+              }}
+            </StatisticsWidgetContainer>
           </div>
         );
 
