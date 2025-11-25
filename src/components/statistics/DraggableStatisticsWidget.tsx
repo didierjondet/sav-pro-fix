@@ -74,7 +74,7 @@ export const DraggableStatisticsWidget = ({
     <div
       ref={setNodeRef}
       style={style}
-      className={`relative group ${className}`}
+      className={`relative ${className}`}
     >
       <Card className={`${isDragging ? 'opacity-50' : ''} transition-opacity`}>
         <CardHeader className="relative">
@@ -82,30 +82,28 @@ export const DraggableStatisticsWidget = ({
             <span className="flex-1">{title}</span>
             <div className="flex items-center gap-1">
               {config && (
-                <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                  <TooltipProvider delayDuration={200}>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div className="p-1 hover:bg-muted rounded cursor-help">
-                          <Info className="w-4 h-4 text-muted-foreground" />
+                <TooltipProvider delayDuration={200}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="p-1 hover:bg-muted rounded cursor-help">
+                        <Info className="w-4 h-4 text-foreground" />
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent side="left" className="max-w-xs z-50">
+                      <div className="space-y-1.5 text-xs">
+                        <div>
+                          <span className="font-semibold">Période:</span> {getTemporalityLabel(config.temporality)}
                         </div>
-                      </TooltipTrigger>
-                      <TooltipContent side="left" className="max-w-xs z-50">
-                        <div className="space-y-1.5 text-xs">
-                          <div>
-                            <span className="font-semibold">Période:</span> {getTemporalityLabel(config.temporality)}
-                          </div>
-                          <div>
-                            <span className="font-semibold">Statuts:</span> {getStatusLabels(config.sav_statuses_filter)}
-                          </div>
-                          <div>
-                            <span className="font-semibold">Types:</span> {getTypeLabels(config.sav_types_filter)}
-                          </div>
+                        <div>
+                          <span className="font-semibold">Statuts:</span> {getStatusLabels(config.sav_statuses_filter)}
                         </div>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </div>
+                        <div>
+                          <span className="font-semibold">Types:</span> {getTypeLabels(config.sav_types_filter)}
+                        </div>
+                      </div>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               )}
               <div
                 {...attributes}
@@ -113,7 +111,7 @@ export const DraggableStatisticsWidget = ({
                 className="cursor-grab active:cursor-grabbing p-1 hover:bg-muted rounded"
                 title="Glisser pour réorganiser"
               >
-                <GripVertical className="w-4 h-4 text-muted-foreground" />
+                <GripVertical className="w-4 h-4 text-foreground" />
               </div>
             </div>
           </CardTitle>
