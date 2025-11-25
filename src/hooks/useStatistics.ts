@@ -187,8 +187,8 @@ export function useStatistics(period: '7d' | '30d' | '3m' | '6m' | '1y'): Statis
             deviceUsage[normalizedKey].count++;
           }
 
-          // Calculer le temps total pour tous les SAV (pas seulement ready)
-          if (savCase.total_time_minutes && savCase.total_time_minutes > 0) {
+          // Calculer le temps total pour tous les SAV non-internal qui ont un temps > 0
+          if (savCase.sav_type !== 'internal' && savCase.total_time_minutes && savCase.total_time_minutes > 0) {
             totalTimeMinutes += savCase.total_time_minutes;
             savWithTimeCount++;
           }
