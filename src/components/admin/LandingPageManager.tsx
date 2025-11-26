@@ -6,7 +6,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Save, Globe, Users, Award, DollarSign, FileText } from 'lucide-react';
+import { Save, Globe, Users, Award, DollarSign, FileText, Image } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
 import { CarouselManager } from '@/components/admin/CarouselManager';
 
 interface LandingContent {
@@ -44,6 +45,7 @@ interface LandingContent {
   show_address?: boolean;
   show_email?: boolean;
   show_phone?: boolean;
+  show_carousel?: boolean;
 }
 
 export function LandingPageManager() {
@@ -194,6 +196,39 @@ export function LandingPageManager() {
       </Card>
 
       {/* Section Carrousel */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <Image className="h-5 w-5" />
+            <CardTitle>Affichage du Carrousel</CardTitle>
+          </div>
+          <Button
+            onClick={() => saveSection('Carrousel', ['show_carousel'])}
+            disabled={saving === 'Carrousel'}
+            size="sm"
+          >
+            <Save className="h-4 w-4 mr-2" />
+            {saving === 'Carrousel' ? 'Sauvegarde...' : 'Sauvegarder'}
+          </Button>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <Label htmlFor="show_carousel">Afficher le carrousel sur la landing page</Label>
+              <p className="text-sm text-muted-foreground">
+                Activer ou désactiver l'affichage du carrousel de médias
+              </p>
+            </div>
+            <Switch
+              id="show_carousel"
+              checked={content.show_carousel ?? true}
+              onCheckedChange={(checked) => updateContent('show_carousel', checked)}
+            />
+          </div>
+        </CardContent>
+      </Card>
+      
+      {/* Gestion du contenu du Carrousel */}
       <CarouselManager />
 
       {/* Section Fonctionnalités */}

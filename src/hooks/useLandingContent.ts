@@ -5,6 +5,7 @@ import { useToast } from '@/hooks/use-toast';
 interface LandingContent {
   id?: string;
   contact_email?: string;
+  show_carousel?: boolean;
 }
 
 export function useLandingContent() {
@@ -20,7 +21,7 @@ export function useLandingContent() {
     try {
       const { data, error } = await supabase
         .from('landing_content')
-        .select('contact_email')
+        .select('contact_email, show_carousel')
         .single();
 
       if (error && error.code !== 'PGRST116') {

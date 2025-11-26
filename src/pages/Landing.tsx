@@ -7,6 +7,7 @@ import { Smartphone, Clock, MessageSquare, BarChart3, Users, Settings, CheckCirc
 import { supabase } from '@/integrations/supabase/client';
 import LegalDocumentDialog from '@/components/legal/LegalDocumentDialog';
 import { LandingCarousel } from '@/components/landing/LandingCarousel';
+import { useLandingContent } from '@/hooks/useLandingContent';
 interface SubscriptionPlan {
   id: string;
   name: string;
@@ -33,6 +34,7 @@ export default function Landing() {
     title: ''
   });
   const navigate = useNavigate();
+  const { content: landingContent } = useLandingContent();
   useEffect(() => {
     fetchSubscriptionPlans();
   }, []);
@@ -106,7 +108,7 @@ export default function Landing() {
       </section>
 
       {/* Carousel Section */}
-      <LandingCarousel />
+      {(landingContent.show_carousel ?? true) && <LandingCarousel />}
 
       {/* Features */}
       <section className="py-20 bg-white">
