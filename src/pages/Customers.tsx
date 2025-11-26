@@ -11,10 +11,13 @@ import { DuplicateManager } from '@/components/customers/DuplicateManager';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { PaginationControls } from '@/components/ui/pagination-controls';
-import { useCustomers, Customer } from '@/hooks/useCustomers';
+import { useAllCustomers } from '@/hooks/useAllCustomers';
+import type { Customer } from '@/hooks/useCustomers';
 import { useCustomerActivity } from '@/hooks/useCustomerActivity';
 import { useCustomerSAVs } from '@/hooks/useCustomerSAVs';
 import { useShop } from '@/hooks/useShop';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 import { multiWordSearch } from '@/utils/searchUtils';
 import { 
   User,
@@ -43,8 +46,9 @@ export default function Customers() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(15);
   
-  const { customers, loading, totalCount, createCustomer, updateCustomer, deleteCustomer, refetch } = useCustomers(currentPage, itemsPerPage);
+  const { customers, loading, refetch } = useAllCustomers();
   const { shop } = useShop();
+  const { toast } = useToast();
   
   // Filtrage côté client avec multiWordSearch (comme SAVList)
   const filteredCustomers = useMemo(() => {
@@ -75,22 +79,92 @@ export default function Customers() {
   }, [searchTerm]);
 
   const handleCreateCustomer = async (customerData: Omit<Customer, 'id' | 'created_at' | 'updated_at'>) => {
-    const dataWithShop = {
-      ...customerData,
-      shop_id: shop?.id || ''
-    };
-    return await createCustomer(dataWithShop);
+    try {
+      const dataWithShop = {
+        ...customerData,
+        shop_id: shop?.id || ''
+      };
+      
+      const { data, error } = await supabase
+        .from('customers')
+        .insert([dataWithShop])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      toast({
+        title: "Succès",
+        description: "Client créé avec succès",
+      });
+
+      refetch();
+      return { data, error: null };
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error.message,
+        variant: "destructive",
+      });
+      return { data: null, error };
+    }
   };
 
   const handleUpdateCustomer = async (customerData: Omit<Customer, 'id' | 'created_at' | 'updated_at'>) => {
     if (!editingCustomer) return { error: 'No customer selected' };
-    return await updateCustomer(editingCustomer.id, customerData);
+    
+    try {
+      const { data, error } = await supabase
+        .from('customers')
+        .update(customerData)
+        .eq('id', editingCustomer.id)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      toast({
+        title: "Succès",
+        description: "Client mis à jour avec succès",
+      });
+
+      refetch();
+      return { data, error: null };
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error.message,
+        variant: "destructive",
+      });
+      return { data: null, error };
+    }
   };
 
   const handleDeleteCustomer = async () => {
     if (!deletingCustomer) return;
-    await deleteCustomer(deletingCustomer.id);
-    setDeletingCustomer(null);
+    
+    try {
+      const { error } = await supabase
+        .from('customers')
+        .delete()
+        .eq('id', deletingCustomer.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Succès",
+        description: "Client supprimé avec succès",
+      });
+
+      refetch();
+      setDeletingCustomer(null);
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
   };
 
   if (loading) {
@@ -146,7 +220,7 @@ export default function Customers() {
                   <h1 className="text-2xl font-bold">Gestion des clients</h1>
                   <Badge variant="secondary" className="text-base">
                     <Users className="h-4 w-4 mr-2" />
-                    {totalCount} client{totalCount > 1 ? 's' : ''}
+                    {customers.length} client{customers.length > 1 ? 's' : ''}
                   </Badge>
                 </div>
                 <div className="flex gap-2">
