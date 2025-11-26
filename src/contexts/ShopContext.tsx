@@ -50,6 +50,8 @@ export interface Shop {
   sidebar_sav_statuses_visible: boolean | null;
   sidebar_late_sav_visible: boolean | null;
   forced_features: any;
+  ai_market_prices_enabled: boolean | null;
+  ai_modules_config: any;
   created_at: string;
   updated_at: string;
 }

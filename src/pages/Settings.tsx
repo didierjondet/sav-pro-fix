@@ -44,7 +44,8 @@ import {
   UserPlus,
   Crown,
   Trash2,
-  Volume2
+  Volume2,
+  Sparkles
 } from 'lucide-react';
 
 import { MenuConfigurationTab } from '@/components/settings/MenuConfigurationTab';
@@ -148,7 +149,8 @@ export default function Settings() {
     sidebar_nav_visible: true,
     sidebar_sav_types_visible: true,
     sidebar_sav_statuses_visible: true,
-    sidebar_late_sav_visible: true
+    sidebar_late_sav_visible: true,
+    ai_market_prices_enabled: false
   });
   const [profileForm, setProfileForm] = useState({
     first_name: '',
@@ -194,7 +196,8 @@ export default function Settings() {
         sidebar_nav_visible: (shop as any).sidebar_nav_visible ?? true,
         sidebar_sav_types_visible: (shop as any).sidebar_sav_types_visible ?? true,
         sidebar_sav_statuses_visible: (shop as any).sidebar_sav_statuses_visible ?? true,
-        sidebar_late_sav_visible: (shop as any).sidebar_late_sav_visible ?? true
+        sidebar_late_sav_visible: (shop as any).sidebar_late_sav_visible ?? true,
+        ai_market_prices_enabled: (shop as any).ai_market_prices_enabled ?? false
       });
     }
   }, [shop, savTypes]);
@@ -643,7 +646,7 @@ export default function Settings() {
                 return p;
               });
             }} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-9">
+            <TabsList className="grid w-full grid-cols-10">
               <TabsTrigger value="shop" className="flex items-center gap-2">
                 <Store className="h-4 w-4" />
                 Magasin
@@ -679,6 +682,10 @@ export default function Settings() {
               <TabsTrigger value="billing" className="flex items-center gap-2">
                 <FileText className="h-4 w-4" />
                 Facturation
+              </TabsTrigger>
+              <TabsTrigger value="ai" className="flex items-center gap-2">
+                <Sparkles className="h-4 w-4" />
+                IA
               </TabsTrigger>
               {isAdmin && <TabsTrigger value="users" className="flex items-center gap-2">
                   <Users className="h-4 w-4" />
@@ -1398,6 +1405,71 @@ export default function Settings() {
                   </CardContent>
                 </Card>
               </TabsContent>}
+
+            <TabsContent value="ai" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Sparkles className="h-5 w-5" />
+                    Modules Intelligence Artificielle
+                  </CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    Activez ou désactivez les fonctionnalités IA pour votre magasin
+                  </p>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {/* Module 1: Prix du marché */}
+                  <div className="p-4 border rounded-lg space-y-3">
+                    <div className="flex items-start justify-between">
+                      <div className="space-y-1 flex-1">
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-semibold">Prix moyens du marché</h4>
+                          <Badge variant="secondary" className="text-xs">Beta</Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          Affiche une estimation IA du prix marché moyen pour chaque pièce dans votre stock, 
+                          avec indication de tendance par rapport à vos prix publics.
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-2">
+                          💡 Les estimations sont basées sur les prix actuels du marché français et sont mises en cache 24h.
+                        </p>
+                      </div>
+                      <Switch
+                        checked={shopForm.ai_market_prices_enabled}
+                        onCheckedChange={(checked) => 
+                          setShopForm(prev => ({ ...prev, ai_market_prices_enabled: checked }))
+                        }
+                      />
+                    </div>
+                  </div>
+
+                  {/* Futurs modules (désactivés) */}
+                  <div className="p-4 border rounded-lg opacity-50 space-y-1">
+                    <div className="flex items-center gap-2">
+                      <h4 className="font-semibold text-muted-foreground">Assistant diagnostic SAV</h4>
+                      <Badge variant="outline" className="text-xs">Bientôt</Badge>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Suggestions de diagnostic automatique basées sur les symptômes et l'historique des réparations.
+                    </p>
+                  </div>
+
+                  <div className="p-4 border rounded-lg opacity-50 space-y-1">
+                    <div className="flex items-center gap-2">
+                      <h4 className="font-semibold text-muted-foreground">Prédiction de durée de réparation</h4>
+                      <Badge variant="outline" className="text-xs">Bientôt</Badge>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Estimation du temps de réparation basée sur le type de panne et l'historique des SAV similaires.
+                    </p>
+                  </div>
+
+                  <Button onClick={handleSaveShop} disabled={saving} className="w-full">
+                    {saving ? 'Enregistrement...' : 'Enregistrer les paramètres IA'}
+                  </Button>
+                </CardContent>
+              </Card>
+            </TabsContent>
 
             <TabsContent value="import-export" className="space-y-6">
               <Card className="mb-6">
