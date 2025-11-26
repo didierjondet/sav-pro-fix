@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import LegalDocumentDialog from '@/components/legal/LegalDocumentDialog';
 import { LandingCarousel } from '@/components/landing/LandingCarousel';
+import { useLandingContent } from '@/hooks/useLandingContent';
 
 interface SubscriptionPlan {
   id: string;
@@ -34,6 +35,7 @@ export default function PublicLanding() {
     type: 'cgu_content',
     title: ''
   });
+  const { content: landingContent } = useLandingContent();
   
   useEffect(() => {
     // Check if user is already authenticated and redirect
@@ -136,7 +138,7 @@ export default function PublicLanding() {
       </section>
 
       {/* Carousel Section */}
-      <LandingCarousel />
+      {(landingContent.show_carousel ?? true) && <LandingCarousel />}
 
       {/* Features */}
       <section className="py-20 bg-white">

@@ -456,6 +456,7 @@ export type Database = {
           id: string
           privacy_policy: string | null
           show_address: boolean | null
+          show_carousel: boolean | null
           show_email: boolean | null
           show_phone: boolean | null
           updated_at: string
@@ -494,6 +495,7 @@ export type Database = {
           id?: string
           privacy_policy?: string | null
           show_address?: boolean | null
+          show_carousel?: boolean | null
           show_email?: boolean | null
           show_phone?: boolean | null
           updated_at?: string
@@ -532,6 +534,7 @@ export type Database = {
           id?: string
           privacy_policy?: string | null
           show_address?: boolean | null
+          show_carousel?: boolean | null
           show_email?: boolean | null
           show_phone?: boolean | null
           updated_at?: string
