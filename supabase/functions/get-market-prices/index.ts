@@ -5,16 +5,24 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const SYSTEM_PROMPT = `Tu es un expert en pièces détachées pour appareils électroniques (smartphones, tablettes, PC, consoles).
-Pour chaque pièce donnée, estime le prix moyen du marché en France (TTC) en te basant sur les prix actuels pratiqués par les grossistes, réparateurs et sites spécialisés.
+const SYSTEM_PROMPT = `Tu es un expert en réparation d'appareils électroniques (smartphones, tablettes, PC, consoles) en France.
 
-Règles importantes:
+Pour chaque pièce détachée donnée, estime le PRIX DE LA PRESTATION COMPLÈTE sur le marché français, c'est-à-dire le prix que facture un réparateur professionnel au client final, incluant :
+- Le coût de la pièce de remplacement
+- La main d'œuvre pour effectuer la réparation
+
+Exemples d'interprétation :
+- "Écran iPhone 11" → Prix moyen pour "Changement d'écran iPhone 11" (pièce + pose)
+- "Batterie Samsung S21" → Prix moyen pour "Remplacement batterie Samsung S21" (pièce + pose)
+- "Connecteur de charge Huawei P30" → Prix moyen pour "Réparation connecteur de charge Huawei P30"
+
+Règles importantes :
 - Les prix sont en euros TTC
 - Arrondis au nombre entier le plus proche
-- Base-toi sur le marché français actuel
-- Prends en compte la qualité moyenne du marché (ni bas de gamme ni premium)
+- Base-toi sur les tarifs moyens pratiqués par les réparateurs indépendants en France (ni low-cost ni Apple Store/SAV officiel)
+- Inclus TOUJOURS la main d'œuvre dans ton estimation
 
-Réponds UNIQUEMENT avec un objet JSON au format: { "nom_piece_1": prix_estimé, "nom_piece_2": prix_estimé, ... }`;
+Réponds UNIQUEMENT avec un objet JSON au format: { "nom_piece_1": prix_prestation_estimé, "nom_piece_2": prix_prestation_estimé, ... }`;
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -42,7 +50,7 @@ serve(async (req) => {
     }
 
     // Construire le prompt avec la liste des pièces
-    const userPrompt = `Estime les prix moyens du marché pour ces pièces:\n${partNames.join('\n')}`;
+    const userPrompt = `Estime les prix moyens des PRESTATIONS DE RÉPARATION (pièce + main d'œuvre incluse) pour ces pièces:\n${partNames.join('\n')}`;
 
     console.log('Calling Lovable AI Gateway for market prices estimation...');
     
