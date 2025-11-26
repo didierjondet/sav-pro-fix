@@ -1495,6 +1495,8 @@ export type Database = {
           active_sav_count: number | null
           address: string | null
           admin_added_sms_credits: number | null
+          ai_market_prices_enabled: boolean | null
+          ai_modules_config: Json | null
           auto_review_enabled: boolean
           created_at: string
           custom_notification_sound_url: string | null
@@ -1549,6 +1551,8 @@ export type Database = {
           active_sav_count?: number | null
           address?: string | null
           admin_added_sms_credits?: number | null
+          ai_market_prices_enabled?: boolean | null
+          ai_modules_config?: Json | null
           auto_review_enabled?: boolean
           created_at?: string
           custom_notification_sound_url?: string | null
@@ -1603,6 +1607,8 @@ export type Database = {
           active_sav_count?: number | null
           address?: string | null
           admin_added_sms_credits?: number | null
+          ai_market_prices_enabled?: boolean | null
+          ai_modules_config?: Json | null
           auto_review_enabled?: boolean
           created_at?: string
           custom_notification_sound_url?: string | null

@@ -11,6 +11,7 @@ import { useParts, Part } from '@/hooks/useParts';
 import { PartForm } from '@/components/parts/PartForm';
 import { StockAdjustment } from '@/components/parts/StockAdjustment';
 import { ImportStock } from '@/components/parts/ImportStock';
+import { useMarketPrices, calculatePriceTrend } from '@/hooks/useMarketPrices';
 import {
   Dialog,
   DialogContent,
@@ -84,6 +85,10 @@ export default function Parts() {
   const totalParts = statistics.totalQuantity;
   const totalValue = statistics.totalValue;
   const lowStockCount = statistics.lowStockCount;
+
+  // Récupérer les prix du marché pour les pièces affichées
+  const partNames = useMemo(() => paginatedParts.map(p => p.name), [paginatedParts]);
+  const { marketPrices, loading: marketPricesLoading, isEnabled: marketPricesEnabled } = useMarketPrices(partNames);
 
   const handleCreatePart = async (data: any) => {
     return await createPart(data);
@@ -299,6 +304,36 @@ export default function Parts() {
                                      <div>
                                        <span className="font-medium">Prix public TTC: </span>
                                        <span className="text-black text-lg font-bold">{(part.selling_price || 0).toFixed(2)}€</span>
+                                       
+                                       {/* Prix du marché IA */}
+                                       {marketPricesEnabled && marketPrices[part.name] && (
+                                         <div className="flex items-center gap-1 text-xs mt-1">
+                                           {(() => {
+                                             const marketPrice = marketPrices[part.name];
+                                             const trend = calculatePriceTrend(part.selling_price || 0, marketPrice);
+                                             return (
+                                               <>
+                                                 <BarChart3 className="h-3 w-3 text-muted-foreground" />
+                                                 <span className="text-muted-foreground">Marché: ~{marketPrice}€</span>
+                                                 <span 
+                                                   className={
+                                                     trend.direction === 'above' ? 'text-red-600' :
+                                                     trend.direction === 'below' ? 'text-green-600' :
+                                                     'text-muted-foreground'
+                                                   }
+                                                   title={
+                                                     trend.direction === 'above' ? 'Votre prix est au-dessus du marché' :
+                                                     trend.direction === 'below' ? 'Votre prix est en dessous du marché' :
+                                                     'Votre prix est proche du marché'
+                                                   }
+                                                 >
+                                                   {trend.icon} ({trend.percentage > 0 ? '+' : ''}{trend.percentage}%)
+                                                 </span>
+                                               </>
+                                             );
+                                           })()}
+                                         </div>
+                                       )}
                                      </div>
                                      
                                      <div>
