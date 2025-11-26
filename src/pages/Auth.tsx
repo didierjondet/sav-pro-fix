@@ -14,6 +14,8 @@ export default function Auth() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [resetLoading, setResetLoading] = useState(false);
+  const [resendLoading, setResendLoading] = useState(false);
+  const [showResendOption, setShowResendOption] = useState(false);
   const {
     signIn,
     signUp,
@@ -31,10 +33,15 @@ export default function Auth() {
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setShowResendOption(false);
     const {
       error
     } = await signIn(email, password);
     if (error) {
+      const isEmailNotConfirmed = error.message.toLowerCase().includes('email not confirmed');
+      if (isEmailNotConfirmed) {
+        setShowResendOption(true);
+      }
       toast({
         title: "Erreur de connexion",
         description: error.message,
@@ -98,6 +105,39 @@ export default function Auth() {
     }
     setResetLoading(false);
   };
+
+  const handleResendConfirmation = async () => {
+    if (!email) {
+      toast({
+        title: "Email requis",
+        description: "Veuillez saisir votre adresse email.",
+        variant: "destructive"
+      });
+      return;
+    }
+    setResendLoading(true);
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email: email,
+      options: {
+        emailRedirectTo: `${window.location.origin}/auth`
+      }
+    });
+    if (error) {
+      toast({
+        title: "Erreur",
+        description: error.message,
+        variant: "destructive"
+      });
+    } else {
+      toast({
+        title: "Email envoyé",
+        description: "Un nouvel email de confirmation a été envoyé."
+      });
+      setShowResendOption(false);
+    }
+    setResendLoading(false);
+  };
   return <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 to-secondary/5">
       <div className="w-full max-w-md">
         <div className="mb-4">
@@ -133,6 +173,23 @@ export default function Auth() {
                   {loading ? 'Connexion...' : 'Se connecter'}
                 </Button>
               </form>
+              {showResendOption && (
+                <div className="mt-4 p-3 bg-muted rounded-md">
+                  <p className="text-sm text-muted-foreground mb-2">
+                    Votre email n'a pas été confirmé. Veuillez vérifier votre boîte mail.
+                  </p>
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={handleResendConfirmation} 
+                    disabled={resendLoading}
+                    className="w-full"
+                  >
+                    {resendLoading ? 'Envoi en cours...' : 'Renvoyer l\'email de confirmation'}
+                  </Button>
+                </div>
+              )}
               <div className="mt-4 text-center">
                 <button type="button" onClick={handleResetPassword} disabled={resetLoading} className="text-sm text-primary hover:underline disabled:opacity-50">
                   {resetLoading ? 'Envoi en cours...' : 'Mot de passe oublié ?'}
@@ -154,6 +211,17 @@ export default function Auth() {
                   {loading ? 'Inscription...' : "S'inscrire"}
                 </Button>
               </form>
+              <div className="mt-4 text-center text-sm text-muted-foreground">
+                <p>Vous n'avez pas reçu l'email de confirmation ?</p>
+                <button 
+                  type="button" 
+                  onClick={handleResendConfirmation} 
+                  disabled={resendLoading}
+                  className="text-primary hover:underline disabled:opacity-50"
+                >
+                  {resendLoading ? 'Envoi en cours...' : 'Renvoyer l\'email'}
+                </button>
+              </div>
             </TabsContent>
           </Tabs>
         </CardContent>
