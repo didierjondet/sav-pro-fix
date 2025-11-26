@@ -11,6 +11,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { useNotifications } from '@/hooks/useNotifications';
 import { useSAVUnreadMessages } from '@/hooks/useSAVUnreadMessages';
+import { useNotificationSound } from '@/hooks/useNotificationSound';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -22,6 +23,7 @@ export function NotificationBell() {
   const [isAnimating, setIsAnimating] = useState(false);
   const { notifications, unreadCount, markAsRead, markAllAsRead, createSAVMessageNotification, createSupportMessageNotification } = useNotifications();
   const { savWithUnreadMessages, refetch: refetchSAVMessages } = useSAVUnreadMessages();
+  const { playNotificationSound } = useNotificationSound();
   const { user } = useAuth();
   const { profile } = useProfile();
   const navigate = useNavigate();
@@ -132,44 +134,8 @@ export function NotificationBell() {
     setHasNewActivity(true);
     setIsAnimating(true);
     
-    // Play notification sound using centralized logic
-    const playSound = async () => {
-      if (typeof window === 'undefined' || localStorage.getItem('chatSoundEnabled') === 'false') return;
-      
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('shop_id')
-            .eq('user_id', user.id)
-            .single();
-
-          if (profile?.shop_id) {
-            const { data: shop } = await supabase
-              .from('shops')
-              .select('custom_notification_sound_url')
-              .eq('id', profile.shop_id)
-              .single();
-
-            if (shop?.custom_notification_sound_url) {
-              const audio = new Audio(shop.custom_notification_sound_url);
-              audio.volume = 0.5;
-              await audio.play();
-              return;
-            }
-          }
-        }
-        
-        const audio = new Audio('/notification.mp3');
-        audio.volume = 0.3;
-        await audio.play();
-      } catch (error) {
-        console.error('Erreur lecture son:', error);
-      }
-    };
-    
-    await playSound();
+    // Utiliser le hook centralisé pour le son
+    await playNotificationSound();
     
     // Stop animation after shaking
     setTimeout(() => setIsAnimating(false), 1500);
