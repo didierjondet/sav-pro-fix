@@ -10,6 +10,8 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { ShopProvider } from "@/contexts/ShopContext";
 import { LimitDialogProvider } from "@/contexts/LimitDialogContext";
 import { RealtimeProvider } from "@/contexts/RealtimeContext";
+import { useEffect } from "react";
+import { unlockAudio } from "@/hooks/useNotificationSound";
 
 import { DelayNotificationProvider } from "@/components/layout/DelayNotificationProvider";
 import Index from "./pages/Index";
@@ -70,8 +72,24 @@ const persister = {
   },
 };
 
-const App = () => (
-  <PersistQueryClientProvider 
+const App = () => {
+  // Débloquer l'audio au premier clic/tap pour permettre les notifications automatiques
+  useEffect(() => {
+    const handleUserInteraction = () => {
+      unlockAudio();
+    };
+
+    document.addEventListener('click', handleUserInteraction, { once: true });
+    document.addEventListener('touchstart', handleUserInteraction, { once: true });
+
+    return () => {
+      document.removeEventListener('click', handleUserInteraction);
+      document.removeEventListener('touchstart', handleUserInteraction);
+    };
+  }, []);
+
+  return (
+    <PersistQueryClientProvider
     client={queryClient} 
     persistOptions={{ 
       persister,
@@ -142,6 +160,7 @@ const App = () => (
     </AuthProvider>
     </ThemeProvider>
   </PersistQueryClientProvider>
-);
+  );
+};
 
 export default App;

@@ -2,6 +2,65 @@ import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
+// Variable globale pour suivre si l'audio a été débloqué
+let audioUnlocked = false;
+
+// Fonction pour débloquer l'audio au premier clic utilisateur
+export const unlockAudio = () => {
+  if (audioUnlocked) return;
+  
+  try {
+    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    
+    // Créer un buffer silencieux pour débloquer l'audio
+    const buffer = audioContext.createBuffer(1, 1, 22050);
+    const source = audioContext.createBufferSource();
+    source.buffer = buffer;
+    source.connect(audioContext.destination);
+    source.start(0);
+    
+    audioUnlocked = true;
+    console.log('🔊 Audio débloqué pour les notifications automatiques');
+  } catch (error) {
+    console.error('Erreur déblocage audio:', error);
+  }
+};
+
+// Générer un son de notification agréable avec Web Audio API
+const generateNotificationSound = async (): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    try {
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      
+      // Créer un oscillateur pour un son doux (deux notes : Mi5 puis Sol5)
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      // Fréquences agréables
+      oscillator.frequency.setValueAtTime(659, audioContext.currentTime); // Mi5
+      oscillator.frequency.setValueAtTime(784, audioContext.currentTime + 0.1); // Sol5
+      
+      // Enveloppe de volume pour un son doux et non-intrusif
+      gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+      gainNode.gain.linearRampToValueAtTime(0.3, audioContext.currentTime + 0.02);
+      gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + 0.3);
+      
+      oscillator.type = 'sine';
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + 0.3);
+      
+      oscillator.onended = () => resolve();
+      
+      setTimeout(() => resolve(), 400);
+    } catch (error) {
+      reject(error);
+    }
+  });
+};
+
 export const useNotificationSound = () => {
   const { toast } = useToast();
   const [isUploading, setIsUploading] = useState(false);
@@ -46,14 +105,12 @@ export const useNotificationSound = () => {
         }
       }
 
-      // Fallback sur le son par défaut
-      const audio = new Audio('/notification.mp3');
-      audio.volume = 0.3;
-      await audio.play();
+      // Fallback sur le son généré avec Web Audio API
+      await generateNotificationSound();
     } catch (error: any) {
       // Si autoplay est bloqué, afficher un message discret
       if (error.name === 'NotAllowedError') {
-        console.log('🔇 Autoplay bloqué par le navigateur');
+        console.log('🔇 Autoplay bloqué par le navigateur - utilisez unlockAudio() au premier clic');
       } else {
         console.log('🔔 Notification silencieuse');
       }
