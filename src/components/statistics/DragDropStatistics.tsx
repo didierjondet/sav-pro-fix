@@ -141,7 +141,12 @@ export const DragDropStatistics = ({ period, onPeriodChange }: DragDropStatistic
     reorderModules(merged);
   };
 
-  const formatCurrency = (v: number) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(v || 0);
+  const formatCurrency = (v: number) => new Intl.NumberFormat('fr-FR', { 
+    style: 'currency', 
+    currency: 'EUR',
+    maximumFractionDigits: 0,
+    minimumFractionDigits: 0
+  }).format(Math.round(v || 0));
 
   const getPodiumIcon = (index: number) => {
     if (index === 0) return <Trophy className="w-6 h-6 text-yellow-500" />;
@@ -336,7 +341,7 @@ export const DragDropStatistics = ({ period, onPeriodChange }: DragDropStatistic
                       <p className="text-3xl font-semibold">{formatCurrency(revenue)}</p>
                     </div>
                     <div className="text-xs text-muted-foreground mt-1">
-                      Marge brute: {((revenue / (revenue + expenses || 1)) * 100).toFixed(0)}%
+                      Marge brute: {Math.round((revenue / (revenue + expenses || 1)) * 100)}%
                     </div>
                   </>
                 );
@@ -402,7 +407,7 @@ export const DragDropStatistics = ({ period, onPeriodChange }: DragDropStatistic
                     <div className="text-xs text-muted-foreground mb-1">📅 {profPeriodLabel} • CA - Coût pièces</div>
                     <p className="text-3xl font-semibold">{formatCurrency(profit)}</p>
                     <div className="text-xs text-muted-foreground mt-1">
-                      Marge nette: {((profit / (revenue || 1)) * 100).toFixed(1)}%
+                      Marge nette: {Math.round((profit / (revenue || 1)) * 100)}%
                     </div>
                   </>
                 );
@@ -502,7 +507,7 @@ export const DragDropStatistics = ({ period, onPeriodChange }: DragDropStatistic
                   <>
                     <div className="text-xs text-muted-foreground mb-1">📅 {latePeriodLabel}</div>
                     <div className="text-sm text-muted-foreground">SAV en retard</div>
-                    <div className="text-3xl font-semibold text-destructive">{savStats.lateRate.toFixed(1)}%</div>
+                    <div className="text-3xl font-semibold text-destructive">{Math.round(savStats.lateRate)}%</div>
                     <div className="text-xs text-muted-foreground mt-1">SAV actifs dépassant délai configuré</div>
                     <div className="text-xs text-muted-foreground">Hors SAV terminés/annulés</div>
                   </>
@@ -527,7 +532,7 @@ export const DragDropStatistics = ({ period, onPeriodChange }: DragDropStatistic
               >
                 <LineChart data={profitabilityChart}>
                   <XAxis dataKey="date" tickLine={false} axisLine={false} />
-                  <YAxis tickFormatter={(v) => `${v/1000}k`} tickLine={false} axisLine={false} />
+                  <YAxis tickFormatter={(v) => `${Math.round(v/1000)}k`} tickLine={false} axisLine={false} />
                   <ChartTooltip content={<ChartTooltipContent />} />
                   <Legend />
                   <Line type="monotone" dataKey="revenue" stroke="var(--color-revenue)" strokeWidth={2} dot={false} />
@@ -587,7 +592,7 @@ export const DragDropStatistics = ({ period, onPeriodChange }: DragDropStatistic
               >
                 <LineChart data={lateRateChart}>
                   <XAxis dataKey="date" tickLine={false} axisLine={false} />
-                  <YAxis domain={[0, 100]} tickFormatter={(v) => `${v}%`} tickLine={false} axisLine={false} />
+                  <YAxis domain={[0, 100]} tickFormatter={(v) => `${Math.round(v)}%`} tickLine={false} axisLine={false} />
                   <ChartTooltip content={<ChartTooltipContent />} />
                   <Line type="monotone" dataKey="lateRate" stroke="var(--color-lateRate)" strokeWidth={2} dot={true} />
                 </LineChart>

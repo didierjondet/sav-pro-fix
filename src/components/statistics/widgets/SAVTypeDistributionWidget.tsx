@@ -29,9 +29,14 @@ export const SAVTypeDistributionWidget = ({
 }: SAVTypeDistributionWidgetProps) => {
 
   const formatCurrency = (value: number) => 
-    new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(value);
+    new Intl.NumberFormat('fr-FR', { 
+      style: 'currency', 
+      currency: 'EUR',
+      maximumFractionDigits: 0,
+      minimumFractionDigits: 0
+    }).format(Math.round(value));
 
-  const formatPercent = (value: number) => `${value.toFixed(1)}%`;
+  const formatPercent = (value: number) => `${Math.round(value)}%`;
 
   const getTrendIcon = (trend: string) => {
     switch (trend) {
@@ -83,7 +88,7 @@ export const SAVTypeDistributionWidget = ({
         dominantBaseline="central"
         className="text-xs font-medium"
       >
-        {`${(percent * 100).toFixed(0)}%`}
+        {`${Math.round(percent * 100)}%`}
       </text>
     );
   };

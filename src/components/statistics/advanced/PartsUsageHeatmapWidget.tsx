@@ -26,7 +26,12 @@ export const PartsUsageHeatmapWidget = ({
   topCategory
 }: PartsUsageHeatmapWidgetProps) => {
   const formatCurrency = (value: number) => 
-    new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(value || 0);
+    new Intl.NumberFormat('fr-FR', { 
+      style: 'currency', 
+      currency: 'EUR',
+      maximumFractionDigits: 0,
+      minimumFractionDigits: 0
+    }).format(Math.round(value || 0));
 
   // Préparer les données pour le treemap
   const treemapData = partsData.map(part => ({

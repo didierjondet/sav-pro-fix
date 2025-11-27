@@ -31,7 +31,8 @@ export const MonthlyComparisonWidget = ({
   const formatCurrency = (value: number) => 
     new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(value || 0);
 
-  const formatPercent = (value: number) => `${value > 0 ? '+' : ''}${value.toFixed(1)}%`;
+  const formatPercent = (value: number) => `${Math.round(value >= 0 ? value : -value)}%`;
+  const formatPercentWithSign = (value: number) => `${value >= 0 ? '+' : ''}${Math.round(value)}%`;
 
   const chartConfig = {
     currentRevenue: { label: "CA actuel", color: "hsl(var(--primary))" },
@@ -56,7 +57,7 @@ export const MonthlyComparisonWidget = ({
             <div className="text-center">
               <div className={`flex items-center justify-center gap-1 ${totalGrowth > 0 ? 'text-success' : 'text-destructive'}`}>
                 {totalGrowth > 0 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
-                <span className="text-xl font-bold">{formatPercent(totalGrowth)}</span>
+                <span className="text-xl font-bold">{formatPercentWithSign(totalGrowth)}</span>
               </div>
               <p className="text-sm text-muted-foreground">Croissance globale</p>
             </div>
@@ -98,7 +99,7 @@ export const MonthlyComparisonWidget = ({
                 <YAxis 
                   yAxisId="currency"
                   orientation="left"
-                  tickFormatter={(v) => `${v/1000}k€`}
+                  tickFormatter={(v) => `${Math.round(v/1000)}k€`}
                   tickLine={false} 
                   axisLine={false}
                   className="text-xs"
@@ -106,20 +107,20 @@ export const MonthlyComparisonWidget = ({
                 <YAxis 
                   yAxisId="percent"
                   orientation="right"
-                  tickFormatter={(v) => `${v}%`}
+                  tickFormatter={(v) => `${Math.round(v)}%`}
                   tickLine={false} 
                   axisLine={false}
                   className="text-xs"
                 />
                 
-                <ChartTooltip 
-                  content={<ChartTooltipContent />}
-                  formatter={(value, name) => {
-                    if (name === 'growth') return [formatPercent(value as number), 'Croissance'];
-                    if (String(name).includes('SavCount')) return [value, String(name).includes('current') ? 'SAV actuels' : 'SAV précédents'];
-                    return [formatCurrency(value as number), String(name).includes('current') ? 'CA actuel' : 'CA précédent'];
-                  }}
-                />
+                  <ChartTooltip 
+                    content={<ChartTooltipContent />}
+                    formatter={(value, name) => {
+                      if (name === 'growth') return [formatPercentWithSign(value as number), 'Croissance'];
+                      if (String(name).includes('SavCount')) return [value, String(name).includes('current') ? 'SAV actuels' : 'SAV précédents'];
+                      return [formatCurrency(value as number), String(name).includes('current') ? 'CA actuel' : 'CA précédent'];
+                    }}
+                  />
                 <Legend />
                 
                 {/* Barres pour les revenus actuels et précédents */}
@@ -168,7 +169,7 @@ export const MonthlyComparisonWidget = ({
                   <div className="flex justify-between">
                     <span>Évolution:</span>
                     <span className={`font-medium ${month.growth > 0 ? 'text-success' : 'text-destructive'}`}>
-                      {formatPercent(month.growth)}
+                      {formatPercentWithSign(month.growth)}
                     </span>
                   </div>
                 </div>

@@ -61,7 +61,7 @@ export const SAVPerformanceWidget = ({
         dominantBaseline="central"
         className="text-xs font-medium"
       >
-        {`${(percent * 100).toFixed(0)}%`}
+        {`${Math.round(percent * 100)}%`}
       </text>
     );
   };

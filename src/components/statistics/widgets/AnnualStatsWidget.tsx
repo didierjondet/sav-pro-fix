@@ -38,9 +38,15 @@ export const AnnualStatsWidget = ({
 }: AnnualStatsWidgetProps) => {
 
   const formatCurrency = (value: number) => 
-    new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', notation: 'compact' }).format(value);
+    new Intl.NumberFormat('fr-FR', { 
+      style: 'currency', 
+      currency: 'EUR', 
+      notation: 'compact',
+      maximumFractionDigits: 0,
+      minimumFractionDigits: 0
+    }).format(Math.round(value));
 
-  const formatPercent = (value: number) => `${value >= 0 ? '+' : ''}${value.toFixed(1)}%`;
+  const formatPercent = (value: number) => `${value >= 0 ? '+' : ''}${Math.round(value)}%`;
 
   const getGrowthColor = (growth: number) => {
     if (growth > 0) return 'text-green-600';
@@ -112,7 +118,7 @@ export const AnnualStatsWidget = ({
           <div className="p-2 bg-success/10 rounded-lg text-center">
             <div className="text-xs text-muted-foreground mb-1">Efficacité</div>
             <div className={`text-sm font-bold ${getPerformanceColor(averageEfficiency)}`}>
-              {averageEfficiency.toFixed(1)}%
+              {Math.round(averageEfficiency)}%
             </div>
           </div>
           
