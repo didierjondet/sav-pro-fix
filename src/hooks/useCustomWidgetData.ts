@@ -121,6 +121,24 @@ export const useCustomWidgetData = ({ metrics, filters, groupBy }: UseCustomWidg
         const startDate = new Date(year, 0, 1);
         const endDate = new Date(year, 11, 31, 23, 59, 59);
 
+        // Récupérer les types SAV avec leurs délais configurés
+        const { data: shopSavTypes, error: typesError } = await supabase
+          .from('shop_sav_types')
+          .select('type_key, max_processing_days')
+          .eq('shop_id', shop.id)
+          .eq('is_active', true);
+
+        if (typesError) throw typesError;
+
+        // Récupérer les statuts SAV avec pause_timer
+        const { data: shopSavStatuses, error: statusesError } = await supabase
+          .from('shop_sav_statuses')
+          .select('status_key, pause_timer')
+          .eq('shop_id', shop.id)
+          .eq('is_active', true);
+
+        if (statusesError) throw statusesError;
+
         // Récupérer les SAV cases avec leurs pièces
         const { data: savCases, error: savError } = await supabase
           .from('sav_cases')
@@ -231,10 +249,33 @@ export const useCustomWidgetData = ({ metrics, filters, groupBy }: UseCustomWidg
 
           // Taux de retard (pour les SAV actifs)
           if (sav.status !== 'ready' && sav.status !== 'delivered' && sav.status !== 'cancelled') {
+            // Vérifier si le statut actuel met le timer en pause
+            const statusConfig = shopSavStatuses?.find(s => s.status_key === sav.status);
+            if (statusConfig?.pause_timer) {
+              return; // Ne pas compter comme SAV actif si timer en pause
+            }
+
+            // Trouver la configuration du type SAV
+            const typeConfig = shopSavTypes?.find(t => t.type_key === sav.sav_type);
+            const getDefaultProcessingDays = (savType: string): number => {
+              switch (savType) {
+                case 'internal': return 0; // Pas de calcul de retard pour SAV internes
+                case 'external': return 7;
+                case 'client': return 7;
+                default: return 7;
+              }
+            };
+            const processingDays = typeConfig?.max_processing_days || getDefaultProcessingDays(sav.sav_type);
+            
+            // Ignorer les SAV internes
+            if (processingDays === 0) {
+              return;
+            }
+
             activeSavCount++;
-            // Calculer le retard basé sur created_at + processing days
+            
+            // Calculer le retard basé sur created_at + processing days configurés
             const createdDate = new Date(sav.created_at);
-            const processingDays = 7; // Valeur par défaut
             const expectedDate = new Date(createdDate);
             expectedDate.setDate(expectedDate.getDate() + processingDays);
             
