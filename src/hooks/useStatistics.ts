@@ -117,21 +117,39 @@ export function useStatistics(
     const fetchStatistics = async () => {
       setLoading(true);
       try {
-        const { start, end } = getDateRange();
+      const { start, end } = getDateRange();
 
-        // Récupérer les SAV de la période
-        const { data: savCasesRaw, error: savError } = await supabase
-          .from('sav_cases')
-          .select(`
-            *,
-            customer:customers(*),
-            sav_parts(*, part:parts(*))
-          `)
-          .eq('shop_id', shop.id)
-          .gte('created_at', start.toISOString())
-          .lte('created_at', end.toISOString());
+      // Récupérer les types SAV avec leurs délais configurés
+      const { data: shopSavTypes, error: typesError } = await supabase
+        .from('shop_sav_types')
+        .select('type_key, max_processing_days')
+        .eq('shop_id', shop.id)
+        .eq('is_active', true);
 
-        if (savError) throw savError;
+      if (typesError) throw typesError;
+
+      // Récupérer les statuts SAV avec pause_timer
+      const { data: shopSavStatuses, error: statusesError } = await supabase
+        .from('shop_sav_statuses')
+        .select('status_key, pause_timer')
+        .eq('shop_id', shop.id)
+        .eq('is_active', true);
+
+      if (statusesError) throw statusesError;
+
+      // Récupérer les SAV de la période
+      const { data: savCasesRaw, error: savError } = await supabase
+        .from('sav_cases')
+        .select(`
+          *,
+          customer:customers(*),
+          sav_parts(*, part:parts(*))
+        `)
+        .eq('shop_id', shop.id)
+        .gte('created_at', start.toISOString())
+        .lte('created_at', end.toISOString());
+
+      if (savError) throw savError;
 
         // Appliquer les filtres de configuration (statuts / types SAV)
         const savCases = (savCasesRaw || []).filter((savCase: any) => {
@@ -215,11 +233,36 @@ export function useStatistics(
           }
         });
 
+        // Fonction pour obtenir les jours de traitement par défaut
+        const getDefaultProcessingDays = (savType: string): number => {
+          switch (savType) {
+            case 'internal': return 0; // Pas de calcul de retard pour SAV internes
+            case 'external': return 7;
+            case 'client': return 7;
+            default: return 7;
+          }
+        };
+
         // D'abord calculer les retards sur TOUS les SAV actifs
         activeSavCases.forEach((savCase: any) => {
+          // Vérifier si le statut actuel met le timer en pause
+          const statusConfig = shopSavStatuses?.find(s => s.status_key === savCase.status);
+          if (statusConfig?.pause_timer) {
+            console.log(`⏸️ SAV ${savCase.case_number}: Timer en pause (statut: ${savCase.status})`);
+            return; // Ne pas compter comme en retard
+          }
+
+          // Trouver la configuration du type SAV
+          const typeConfig = shopSavTypes?.find(t => t.type_key === savCase.sav_type);
+          const processingDays = typeConfig?.max_processing_days || getDefaultProcessingDays(savCase.sav_type);
+          
+          // Ignorer les SAV internes (processingDays = 0)
+          if (processingDays === 0) {
+            return;
+          }
+
           // Utiliser created_at comme date de référence
           const startDate = new Date(savCase.created_at);
-          const processingDays = 7; // Valeur par défaut, sera remplacée par la configuration SAV types
           const theoreticalEndDate = new Date(startDate);
           theoreticalEndDate.setDate(theoreticalEndDate.getDate() + processingDays);
           
@@ -235,8 +278,9 @@ export function useStatistics(
           
           console.log(`🔍 SAV ${savCase.case_number}:`, {
             status: savCase.status,
+            sav_type: savCase.sav_type,
+            processing_days_config: processingDays,
             created_at: savCase.created_at,
-            taken_over_at: savCase.taken_over_at,
             startDate: startDate.toISOString(),
             theoreticalEnd: theoreticalEndDate.toISOString(),
             isLate: currentDate > theoreticalEndDate,
