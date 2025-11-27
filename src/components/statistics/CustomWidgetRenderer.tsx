@@ -80,7 +80,7 @@ export const CustomWidgetRenderer = ({ config }: CustomWidgetRendererProps) => {
         </CardHeader>
         <CardContent>
           <div className="text-3xl font-bold" style={{ color: config.display_config?.color || 'hsl(var(--primary))' }}>
-            {typeof value === 'number' ? value.toLocaleString() : value}
+            {typeof value === 'number' ? Math.round(value).toLocaleString('fr-FR') : value}
           </div>
           {config.description && (
             <p className="text-xs text-muted-foreground mt-1">{config.description}</p>
@@ -119,9 +119,15 @@ export const CustomWidgetRenderer = ({ config }: CustomWidgetRendererProps) => {
             {config.chart_type === 'line' ? (
               <LineChart data={data}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey={xAxisKey} label={displayConfig.xAxisLabel ? { value: displayConfig.xAxisLabel, position: 'insideBottom', offset: -5 } : undefined} />
-                <YAxis label={displayConfig.yAxisLabel ? { value: displayConfig.yAxisLabel, angle: -90, position: 'insideLeft' } : undefined} />
-                <Tooltip />
+                <XAxis 
+                  dataKey={xAxisKey} 
+                  label={displayConfig.xAxisLabel ? { value: displayConfig.xAxisLabel, position: 'insideBottom', offset: -5 } : undefined} 
+                />
+                <YAxis 
+                  tickFormatter={(v) => Math.round(v).toString()}
+                  label={displayConfig.yAxisLabel ? { value: displayConfig.yAxisLabel, angle: -90, position: 'insideLeft' } : undefined} 
+                />
+                <Tooltip formatter={(value: any) => [typeof value === 'number' ? Math.round(value).toLocaleString('fr-FR') : value]} />
                 <Legend />
                 {dataKeys.map((line: any, idx: number) => (
                   <Line 
@@ -136,9 +142,15 @@ export const CustomWidgetRenderer = ({ config }: CustomWidgetRendererProps) => {
             ) : config.chart_type === 'bar' ? (
               <BarChart data={data}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey={xAxisKey} label={displayConfig.xAxisLabel ? { value: displayConfig.xAxisLabel, position: 'insideBottom', offset: -5 } : undefined} />
-                <YAxis label={displayConfig.yAxisLabel ? { value: displayConfig.yAxisLabel, angle: -90, position: 'insideLeft' } : undefined} />
-                <Tooltip />
+                <XAxis 
+                  dataKey={xAxisKey} 
+                  label={displayConfig.xAxisLabel ? { value: displayConfig.xAxisLabel, position: 'insideBottom', offset: -5 } : undefined} 
+                />
+                <YAxis 
+                  tickFormatter={(v) => Math.round(v).toString()}
+                  label={displayConfig.yAxisLabel ? { value: displayConfig.yAxisLabel, angle: -90, position: 'insideLeft' } : undefined} 
+                />
+                <Tooltip formatter={(value: any) => [typeof value === 'number' ? Math.round(value).toLocaleString('fr-FR') : value]} />
                 <Legend />
                 {dataKeys.map((line: any, idx: number) => (
                   <Bar 
@@ -164,15 +176,21 @@ export const CustomWidgetRenderer = ({ config }: CustomWidgetRendererProps) => {
                     <Cell key={`cell-${index}`} fill={`hsl(var(--chart-${(index % 5) + 1}))`} />
                   ))}
                 </Pie>
-                <Tooltip />
+                <Tooltip formatter={(value: any) => [typeof value === 'number' ? Math.round(value).toLocaleString('fr-FR') : value]} />
                 <Legend />
               </PieChart>
             ) : config.chart_type === 'area' ? (
               <AreaChart data={data}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey={xAxisKey} label={displayConfig.xAxisLabel ? { value: displayConfig.xAxisLabel, position: 'insideBottom', offset: -5 } : undefined} />
-                <YAxis label={displayConfig.yAxisLabel ? { value: displayConfig.yAxisLabel, angle: -90, position: 'insideLeft' } : undefined} />
-                <Tooltip />
+                <XAxis 
+                  dataKey={xAxisKey} 
+                  label={displayConfig.xAxisLabel ? { value: displayConfig.xAxisLabel, position: 'insideBottom', offset: -5 } : undefined} 
+                />
+                <YAxis 
+                  tickFormatter={(v) => Math.round(v).toString()}
+                  label={displayConfig.yAxisLabel ? { value: displayConfig.yAxisLabel, angle: -90, position: 'insideLeft' } : undefined} 
+                />
+                <Tooltip formatter={(value: any) => [typeof value === 'number' ? Math.round(value).toLocaleString('fr-FR') : value]} />
                 <Legend />
                 {dataKeys.map((line: any, idx: number) => (
                   <Area 
@@ -220,9 +238,9 @@ export const CustomWidgetRenderer = ({ config }: CustomWidgetRendererProps) => {
                 {data.slice(0, 10).map((row: any, idx: number) => (
                   <tr key={idx} className="border-b">
                     {columns.map((col) => (
-                      <td key={col} className="p-2">
-                        {row[col]}
-                      </td>
+                    <td key={col} className="p-2">
+                      {typeof row[col] === 'number' ? Math.round(row[col]).toLocaleString('fr-FR') : row[col]}
+                    </td>
                     ))}
                   </tr>
                 ))}

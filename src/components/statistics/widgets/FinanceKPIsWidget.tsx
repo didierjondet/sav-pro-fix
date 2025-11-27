@@ -38,9 +38,15 @@ export const FinanceKPIsWidget = ({
 }: FinanceKPIsWidgetProps) => {
 
   const formatCurrency = (value: number) => 
-    new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', notation: 'compact' }).format(value);
+    new Intl.NumberFormat('fr-FR', { 
+      style: 'currency', 
+      currency: 'EUR', 
+      notation: 'compact',
+      maximumFractionDigits: 0,
+      minimumFractionDigits: 0
+    }).format(Math.round(value));
 
-  const formatPercent = (value: number) => `${value >= 0 ? '+' : ''}${value.toFixed(1)}%`;
+  const formatPercent = (value: number) => `${value >= 0 ? '+' : ''}${Math.round(value)}%`;
 
   const getGrowthColor = (growth: number) => {
     if (growth > 0) return 'text-green-600';
@@ -95,7 +101,7 @@ export const FinanceKPIsWidget = ({
             className="h-1" 
           />
           <div className="text-xs text-muted-foreground">
-            Objectif: {formatCurrency(yearTarget)} ({((currentMonth.revenue / yearTarget) * 100).toFixed(1)}%)
+            Objectif: {formatCurrency(yearTarget)} ({Math.round((currentMonth.revenue / yearTarget) * 100)}%)
           </div>
         </div>
 
@@ -113,7 +119,7 @@ export const FinanceKPIsWidget = ({
           </div>
           <div className="text-lg font-bold text-destructive">{formatCurrency(currentMonth.expenses)}</div>
           <div className="text-xs text-muted-foreground">
-            Ratio: {((currentMonth.expenses / currentMonth.revenue) * 100).toFixed(1)}% du CA
+            Ratio: {Math.round((currentMonth.expenses / currentMonth.revenue) * 100)}% du CA
           </div>
         </div>
 
@@ -133,7 +139,7 @@ export const FinanceKPIsWidget = ({
           <div className="flex items-center gap-2 text-xs">
             <span className="text-muted-foreground">Marge:</span>
             <Badge variant={currentMonth.margin > 50 ? "default" : currentMonth.margin > 30 ? "secondary" : "destructive"}>
-              {currentMonth.margin.toFixed(1)}%
+              {Math.round(currentMonth.margin)}%
             </Badge>
           </div>
         </div>

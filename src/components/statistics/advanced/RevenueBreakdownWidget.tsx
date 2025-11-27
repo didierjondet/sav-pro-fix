@@ -33,7 +33,12 @@ export const RevenueBreakdownWidget = ({
   topService
 }: RevenueBreakdownWidgetProps) => {
   const formatCurrency = (value: number) => 
-    new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(value || 0);
+    new Intl.NumberFormat('fr-FR', { 
+      style: 'currency', 
+      currency: 'EUR',
+      maximumFractionDigits: 0,
+      minimumFractionDigits: 0
+    }).format(Math.round(value || 0));
 
   const chartConfig = {
     revenue: { label: "Chiffre d'affaires", color: "hsl(var(--primary))" }
@@ -56,7 +61,7 @@ export const RevenueBreakdownWidget = ({
         dominantBaseline="central"
         className="text-xs font-medium"
       >
-        {`${(percent * 100).toFixed(1)}%`}
+        {`${Math.round(percent * 100)}%`}
       </text>
     );
   };
@@ -122,7 +127,7 @@ export const RevenueBreakdownWidget = ({
                         {source.name}
                       </span>
                     </div>
-                    <span className="font-medium">{source.percentage.toFixed(1)}%</span>
+                    <span className="font-medium">{Math.round(source.percentage)}%</span>
                   </div>
                 ))}
               </div>
@@ -144,7 +149,7 @@ export const RevenueBreakdownWidget = ({
                       className="text-xs"
                     />
                     <YAxis 
-                      tickFormatter={(v) => `${v/1000}k€`}
+                      tickFormatter={(v) => `${Math.round(v/1000)}k€`}
                       tickLine={false} 
                       axisLine={false}
                       className="text-xs"

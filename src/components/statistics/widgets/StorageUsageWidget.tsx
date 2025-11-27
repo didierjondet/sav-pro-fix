@@ -98,7 +98,7 @@ export const StorageUsageWidget = ({
             className={`h-2 ${isCritical ? 'bg-red-100' : isNearLimit ? 'bg-yellow-100' : ''}`}
           />
           <div className="text-xs text-muted-foreground text-center">
-            {usagePercentage.toFixed(1)}% utilisé • {formatBytes(totalLimit - totalUsed)} restant
+            {Math.round(usagePercentage)}% utilisé • {formatBytes(totalLimit - totalUsed)} restant
           </div>
         </div>
 

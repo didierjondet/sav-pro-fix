@@ -28,9 +28,14 @@ export const FinancialOverviewWidget = ({
   averageMargin
 }: FinancialOverviewWidgetProps) => {
   const formatCurrency = (value: number) => 
-    new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(value || 0);
+    new Intl.NumberFormat('fr-FR', { 
+      style: 'currency', 
+      currency: 'EUR',
+      maximumFractionDigits: 0,
+      minimumFractionDigits: 0
+    }).format(Math.round(value || 0));
 
-  const formatPercent = (value: number) => `${value.toFixed(1)}%`;
+  const formatPercent = (value: number) => `${Math.round(value)}%`;
 
   const chartConfig = {
     revenue: { label: "Chiffre d'affaires", color: "hsl(var(--success))" },
@@ -97,7 +102,7 @@ export const FinancialOverviewWidget = ({
                 <YAxis 
                   yAxisId="currency"
                   orientation="left"
-                  tickFormatter={(v) => `${v/1000}k€`}
+                  tickFormatter={(v) => `${Math.round(v/1000)}k€`}
                   tickLine={false} 
                   axisLine={false}
                   className="text-xs"
@@ -105,7 +110,7 @@ export const FinancialOverviewWidget = ({
                 <YAxis 
                   yAxisId="percent"
                   orientation="right" 
-                  tickFormatter={(v) => `${v}%`}
+                  tickFormatter={(v) => `${Math.round(v)}%`}
                   tickLine={false} 
                   axisLine={false}
                   className="text-xs"

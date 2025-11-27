@@ -33,9 +33,15 @@ export const MonthlyProfitabilityWidget = ({
 }: MonthlyProfitabilityWidgetProps) => {
 
   const formatCurrency = (value: number) => 
-    new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', notation: 'compact' }).format(value);
+    new Intl.NumberFormat('fr-FR', { 
+      style: 'currency', 
+      currency: 'EUR', 
+      notation: 'compact',
+      maximumFractionDigits: 0,
+      minimumFractionDigits: 0
+    }).format(Math.round(value));
 
-  const formatPercent = (value: number) => `${value.toFixed(1)}%`;
+  const formatPercent = (value: number) => `${Math.round(value)}%`;
 
   const getMarginStatus = (margin: number, target: number) => {
     if (margin >= target + 10) return { color: 'text-green-600', status: 'Excellent' };
@@ -125,7 +131,7 @@ export const MonthlyProfitabilityWidget = ({
                 />
                 <YAxis 
                   yAxisId="left"
-                  tickFormatter={(value) => formatCurrency(value)}
+                  tickFormatter={(value) => `${Math.round(value/1000)}k€`}
                   tick={{ fontSize: 10 }}
                   axisLine={false}
                   tickLine={false}
@@ -134,7 +140,7 @@ export const MonthlyProfitabilityWidget = ({
                   yAxisId="right" 
                   orientation="right"
                   domain={[0, 100]}
-                  tickFormatter={(value) => `${value}%`}
+                  tickFormatter={(value) => `${Math.round(value)}%`}
                   tick={{ fontSize: 10 }}
                   axisLine={false}
                   tickLine={false}
