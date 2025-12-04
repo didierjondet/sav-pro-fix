@@ -121,18 +121,27 @@ export const useCustomWidgetData = ({ metrics, filters, groupBy }: UseCustomWidg
         const startDate = new Date(year, 0, 1);
         const endDate = new Date(year, 11, 31, 23, 59, 59);
 
-        // Récupérer les types SAV avec leurs délais configurés et exclusion des stats
+        // Récupérer les types SAV avec leurs délais configurés et exclusions granulaires
         const { data: shopSavTypes, error: typesError } = await supabase
           .from('shop_sav_types')
-          .select('type_key, max_processing_days, exclude_from_stats')
+          .select('type_key, max_processing_days, exclude_from_stats, exclude_purchase_costs, exclude_sales_revenue')
           .eq('shop_id', shop.id)
           .eq('is_active', true);
 
         if (typesError) throw typesError;
 
-        // Calculer la liste des types exclus des statistiques financières
+        // Calculer les listes de types exclus (séparément pour coûts et revenus)
+        const excludeFromPurchaseCosts = (shopSavTypes || [])
+          .filter(t => t.exclude_purchase_costs || t.exclude_from_stats)
+          .map(t => t.type_key);
+        
+        const excludeFromSalesRevenue = (shopSavTypes || [])
+          .filter(t => t.exclude_sales_revenue || t.exclude_from_stats)
+          .map(t => t.type_key);
+
+        // Types exclus complètement (les deux exclus = pas de calcul du tout)
         const excludedFromStatsTypes = (shopSavTypes || [])
-          .filter(t => t.exclude_from_stats)
+          .filter(t => t.exclude_from_stats || (t.exclude_purchase_costs && t.exclude_sales_revenue))
           .map(t => t.type_key);
 
         // Récupérer les statuts SAV avec pause_timer
@@ -184,9 +193,13 @@ export const useCustomWidgetData = ({ metrics, filters, groupBy }: UseCustomWidg
           // Compter les SAV
           monthlyData[monthIndex].monthly_sav_count++;
 
-          // Calculer les coûts et revenus des pièces
+          // Calculer les coûts et revenus des pièces avec exclusions granulaires
           let savCost = 0;
           let savRevenue = 0;
+          
+          // Vérifier si ce type exclut les coûts ou revenus
+          const excludeCosts = excludeFromPurchaseCosts.includes(sav.sav_type);
+          const excludeRevenue = excludeFromSalesRevenue.includes(sav.sav_type);
           
           sav.sav_parts?.forEach((savPart: any) => {
             const qty = Number(savPart.quantity) || 0;
@@ -197,19 +210,29 @@ export const useCustomWidgetData = ({ metrics, filters, groupBy }: UseCustomWidg
             const partCost = purchase * qty;
             const partRevenue = unit * qty;
             
-            savCost += partCost;
-            savRevenue += partRevenue;
+            // Ajouter les coûts seulement si non exclus
+            if (!excludeCosts) {
+              savCost += partCost;
+            }
             
-            // Comptabiliser l'usage des pièces
+            // Ajouter les revenus seulement si non exclus
+            if (!excludeRevenue) {
+              savRevenue += partRevenue;
+            }
+            
+            // Comptabiliser l'usage des pièces (toujours)
             if (savPart.part?.name) {
               partsUsage[savPart.part.name] = (partsUsage[savPart.part.name] || 0) + qty;
             }
           });
           
-          monthlyData[monthIndex].monthly_costs += savCost;
+          // Ajouter les coûts mensuels (seulement si non exclus)
+          if (!excludeCosts) {
+            monthlyData[monthIndex].monthly_costs += savCost;
+          }
 
-          // Calculer le revenu (uniquement pour les SAV ready, hors types exclus)
-          if (sav.status === 'ready' && !excludedFromStatsTypes.includes(sav.sav_type)) {
+          // Calculer le revenu (uniquement pour les SAV ready, hors types exclus des revenus)
+          if (sav.status === 'ready' && !excludeRevenue) {
             // Ajuster le revenu selon la prise en charge
             if (sav.partial_takeover && sav.takeover_amount) {
               const denom = Number(sav.total_cost) || 1;
@@ -223,8 +246,10 @@ export const useCustomWidgetData = ({ metrics, filters, groupBy }: UseCustomWidg
             monthlyData[monthIndex].monthly_revenue += savRevenue;
             totalRevenue += savRevenue;
 
-            // Calculer la marge
-            monthlyData[monthIndex].monthly_margin += savRevenue - savCost;
+            // Calculer la marge (uniquement si ni coûts ni revenus exclus)
+            if (!excludeCosts) {
+              monthlyData[monthIndex].monthly_margin += savRevenue - savCost;
+            }
 
             // Revenu par type
             if (sav.sav_type === 'client') {
