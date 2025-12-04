@@ -119,14 +119,19 @@ export function useStatistics(
       try {
       const { start, end } = getDateRange();
 
-      // Récupérer les types SAV avec leurs délais configurés
+      // Récupérer les types SAV avec leurs délais configurés et exclusion des stats
       const { data: shopSavTypes, error: typesError } = await supabase
         .from('shop_sav_types')
-        .select('type_key, max_processing_days')
+        .select('type_key, max_processing_days, exclude_from_stats')
         .eq('shop_id', shop.id)
         .eq('is_active', true);
 
       if (typesError) throw typesError;
+
+      // Calculer la liste des types exclus des statistiques financières
+      const excludedFromStatsTypes = (shopSavTypes || [])
+        .filter(t => t.exclude_from_stats)
+        .map(t => t.type_key);
 
       // Récupérer les statuts SAV avec pause_timer
       const { data: shopSavStatuses, error: statusesError } = await supabase
@@ -164,17 +169,22 @@ export function useStatistics(
           return statusOk && typeOk;
         });
 
-        // Séparer les SAV pour les calculs financiers (ready uniquement) et pour les retards (tous les SAV actifs)
-        const readySavCases = (savCases || []).filter((c: any) => c.status === 'ready' && c.sav_type !== 'internal');
-        const activeSavCases = (savCases || []).filter((c: any) => 
-          c.status !== 'delivered' && c.status !== 'cancelled' && c.sav_type !== 'internal'
+        // Séparer les SAV pour les calculs financiers (ready uniquement, hors types exclus)
+        // et pour les retards (tous les SAV actifs, hors types exclus)
+        const readySavCases = (savCases || []).filter((c: any) => 
+          c.status === 'ready' && !excludedFromStatsTypes.includes(c.sav_type)
         );
-        const completedSavCases = (savCases || []).filter((c: any) => c.status === 'delivered' && c.sav_type !== 'internal');
+        const activeSavCases = (savCases || []).filter((c: any) => 
+          c.status !== 'delivered' && c.status !== 'cancelled' && !excludedFromStatsTypes.includes(c.sav_type)
+        );
+        const completedSavCases = (savCases || []).filter((c: any) => 
+          c.status === 'delivered' && !excludedFromStatsTypes.includes(c.sav_type)
+        );
 
-        console.log('🔍 Debug retard - Total SAV récupérés:', savCases?.length || 0);
-        console.log('🔍 Debug retard - SAV actifs:', activeSavCases.length);
-        console.log('🔍 Debug retard - SAV ready:', readySavCases.length);
-        console.log('🔍 Debug retard - Délai max calculé via types SAV');
+        console.log('🔍 Debug stats - Types exclus:', excludedFromStatsTypes);
+        console.log('🔍 Debug stats - Total SAV récupérés:', savCases?.length || 0);
+        console.log('🔍 Debug stats - SAV actifs (hors exclus):', activeSavCases.length);
+        console.log('🔍 Debug stats - SAV ready (hors exclus):', readySavCases.length);
 
         // Calculer les revenus et dépenses
         let totalRevenue = 0;
@@ -208,9 +218,9 @@ export function useStatistics(
           }
         });
 
-        // Tracking des téléphones les plus réparés (tous les SAV, pas seulement terminés)
+        // Tracking des téléphones les plus réparés (tous les SAV, pas seulement terminés, hors exclus)
         (savCases || []).forEach((savCase: any) => {
-          if (savCase.sav_type !== 'internal' && (savCase.device_brand || savCase.device_model)) {
+          if (!excludedFromStatsTypes.includes(savCase.sav_type) && (savCase.device_brand || savCase.device_model)) {
             const { normalizedKey, displayBrand, displayModel } = normalizeDeviceName(
               savCase.device_brand, 
               savCase.device_model
@@ -226,8 +236,8 @@ export function useStatistics(
             deviceUsage[normalizedKey].count++;
           }
 
-          // Calculer le temps total pour tous les SAV non-internal qui ont un temps > 0
-          if (savCase.sav_type !== 'internal' && savCase.total_time_minutes && savCase.total_time_minutes > 0) {
+          // Calculer le temps total pour tous les SAV non exclus qui ont un temps > 0
+          if (!excludedFromStatsTypes.includes(savCase.sav_type) && savCase.total_time_minutes && savCase.total_time_minutes > 0) {
             totalTimeMinutes += savCase.total_time_minutes;
             savWithTimeCount++;
           }
@@ -388,7 +398,7 @@ export function useStatistics(
           expenses: totalExpenses,
           profit: totalRevenue - totalExpenses,
           savStats: {
-            total: (savCases || []).filter((c: any) => c.sav_type !== 'internal').length,
+            total: (savCases || []).filter((c: any) => !excludedFromStatsTypes.includes(c.sav_type)).length,
             averageTime: savWithTimeCount > 0 ? Number((totalTimeMinutes / savWithTimeCount / 60).toFixed(1)) : 0,
             lateRate: lateRate
           },

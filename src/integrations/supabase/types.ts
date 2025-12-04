@@ -1245,6 +1245,7 @@ export type Database = {
           alert_days: number | null
           created_at: string
           display_order: number
+          exclude_from_stats: boolean
           id: string
           is_active: boolean
           is_default: boolean
@@ -1263,6 +1264,7 @@ export type Database = {
           alert_days?: number | null
           created_at?: string
           display_order?: number
+          exclude_from_stats?: boolean
           id?: string
           is_active?: boolean
           is_default?: boolean
@@ -1281,6 +1283,7 @@ export type Database = {
           alert_days?: number | null
           created_at?: string
           display_order?: number
+          exclude_from_stats?: boolean
           id?: string
           is_active?: boolean
           is_default?: boolean
