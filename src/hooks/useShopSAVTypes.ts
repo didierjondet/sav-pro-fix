@@ -19,6 +19,8 @@ export interface ShopSAVType {
   show_in_sidebar: boolean;
   require_unlock_pattern: boolean;
   exclude_from_stats: boolean;
+  exclude_purchase_costs: boolean;
+  exclude_sales_revenue: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -100,6 +102,8 @@ export function useShopSAVTypes() {
         show_in_sidebar: customType.show_in_sidebar,
         require_unlock_pattern: customType.require_unlock_pattern,
         exclude_from_stats: customType.exclude_from_stats,
+        exclude_purchase_costs: customType.exclude_purchase_costs,
+        exclude_sales_revenue: customType.exclude_sales_revenue,
       };
     }
 
@@ -114,6 +118,8 @@ export function useShopSAVTypes() {
       show_in_sidebar: true,
       require_unlock_pattern: false,
       exclude_from_stats: false,
+      exclude_purchase_costs: false,
+      exclude_sales_revenue: false,
     };
   };
 

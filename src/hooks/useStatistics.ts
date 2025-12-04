@@ -119,18 +119,27 @@ export function useStatistics(
       try {
       const { start, end } = getDateRange();
 
-      // Récupérer les types SAV avec leurs délais configurés et exclusion des stats
+      // Récupérer les types SAV avec leurs délais configurés et exclusions granulaires
       const { data: shopSavTypes, error: typesError } = await supabase
         .from('shop_sav_types')
-        .select('type_key, max_processing_days, exclude_from_stats')
+        .select('type_key, max_processing_days, exclude_from_stats, exclude_purchase_costs, exclude_sales_revenue')
         .eq('shop_id', shop.id)
         .eq('is_active', true);
 
       if (typesError) throw typesError;
 
-      // Calculer la liste des types exclus des statistiques financières
+      // Calculer les listes de types exclus (séparément pour coûts et revenus)
+      const excludeFromPurchaseCosts = (shopSavTypes || [])
+        .filter(t => t.exclude_purchase_costs || t.exclude_from_stats)
+        .map(t => t.type_key);
+      
+      const excludeFromSalesRevenue = (shopSavTypes || [])
+        .filter(t => t.exclude_sales_revenue || t.exclude_from_stats)
+        .map(t => t.type_key);
+
+      // Types exclus complètement (les deux exclus = pas de calcul du tout)
       const excludedFromStatsTypes = (shopSavTypes || [])
-        .filter(t => t.exclude_from_stats)
+        .filter(t => t.exclude_from_stats || (t.exclude_purchase_costs && t.exclude_sales_revenue))
         .map(t => t.type_key);
 
       // Récupérer les statuts SAV avec pause_timer
@@ -181,7 +190,8 @@ export function useStatistics(
           c.status === 'delivered' && !excludedFromStatsTypes.includes(c.sav_type)
         );
 
-        console.log('🔍 Debug stats - Types exclus:', excludedFromStatsTypes);
+        console.log('🔍 Debug stats - Types excluant coûts:', excludeFromPurchaseCosts);
+        console.log('🔍 Debug stats - Types excluant revenus:', excludeFromSalesRevenue);
         console.log('🔍 Debug stats - Total SAV récupérés:', savCases?.length || 0);
         console.log('🔍 Debug stats - SAV actifs (hors exclus):', activeSavCases.length);
         console.log('🔍 Debug stats - SAV ready (hors exclus):', readySavCases.length);
@@ -299,37 +309,52 @@ export function useStatistics(
         });
 
         readySavCases.forEach((savCase: any) => {
-          // Calculer le coût total des pièces
+          // Calculer le coût total des pièces avec exclusions granulaires
           let caseCost = 0;
           let caseRevenue = 0;
+          
+          // Vérifier si ce type exclut les coûts ou revenus
+          const excludeCosts = excludeFromPurchaseCosts.includes(savCase.sav_type);
+          const excludeRevenue = excludeFromSalesRevenue.includes(savCase.sav_type);
 
           savCase.sav_parts?.forEach((savPart: any) => {
             const partCost = (savPart.part?.purchase_price || 0) * savPart.quantity;
             const partRevenue = (savPart.unit_price || savPart.part?.selling_price || 0) * savPart.quantity;
             
-            caseCost += partCost;
-            caseRevenue += partRevenue;
+            // Ajouter les coûts seulement si non exclus
+            if (!excludeCosts) {
+              caseCost += partCost;
+            }
+            
+            // Ajouter les revenus seulement si non exclus
+            if (!excludeRevenue) {
+              caseRevenue += partRevenue;
+            }
 
-            // Tracking des pièces les plus utilisées
+            // Tracking des pièces les plus utilisées (toujours comptabilisé)
             const partKey = savPart.part?.name || 'Pièce inconnue';
             if (!partsUsage[partKey]) {
               partsUsage[partKey] = { quantity: 0, revenue: 0, name: partKey };
             }
             partsUsage[partKey].quantity += savPart.quantity;
-            partsUsage[partKey].revenue += partRevenue;
+            if (!excludeRevenue) {
+              partsUsage[partKey].revenue += partRevenue;
+            }
           });
 
-          // Calculer les prises en charge
-          if (savCase.partial_takeover && savCase.takeover_amount) {
-            takeoverAmount += Number(savCase.takeover_amount) || 0;
-            takeoverCount++;
-            const rawRatio = Number(savCase.takeover_amount) / (Number(savCase.total_cost) || 1);
-            const takeoverRatio = Math.min(1, Math.max(0, rawRatio));
-            caseRevenue = caseCost + (caseRevenue - caseCost) * (1 - takeoverRatio);
-          } else if (savCase.taken_over) {
-            takeoverAmount += caseCost;
-            takeoverCount++;
-            caseRevenue = caseCost; // Pas de marge si pris en charge totalement
+          // Calculer les prises en charge (seulement si revenus non exclus)
+          if (!excludeRevenue) {
+            if (savCase.partial_takeover && savCase.takeover_amount) {
+              takeoverAmount += Number(savCase.takeover_amount) || 0;
+              takeoverCount++;
+              const rawRatio = Number(savCase.takeover_amount) / (Number(savCase.total_cost) || 1);
+              const takeoverRatio = Math.min(1, Math.max(0, rawRatio));
+              caseRevenue = caseCost + (caseRevenue - caseCost) * (1 - takeoverRatio);
+            } else if (savCase.taken_over) {
+              takeoverAmount += caseCost;
+              takeoverCount++;
+              caseRevenue = caseCost; // Pas de marge si pris en charge totalement
+            }
           }
 
           totalRevenue += caseRevenue;

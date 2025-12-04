@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Edit, Trash2, Plus, Info, Clock, Users, Sidebar, AlertTriangle, BarChart3 } from 'lucide-react';
+import { Edit, Trash2, Plus, Info, Clock, Users, Sidebar, AlertTriangle, BarChart3, TrendingDown, TrendingUp } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -28,6 +28,8 @@ export interface SAVType {
   show_in_sidebar: boolean;
   require_unlock_pattern: boolean;
   exclude_from_stats: boolean;
+  exclude_purchase_costs: boolean;
+  exclude_sales_revenue: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -54,6 +56,8 @@ export default function SAVTypesManager({ types, loading, onRefresh }: SAVTypesM
     show_in_sidebar: true,
     require_unlock_pattern: false,
     exclude_from_stats: false,
+    exclude_purchase_costs: false,
+    exclude_sales_revenue: false,
   });
 
   const resetForm = () => {
@@ -67,6 +71,8 @@ export default function SAVTypesManager({ types, loading, onRefresh }: SAVTypesM
       show_in_sidebar: true,
       require_unlock_pattern: false,
       exclude_from_stats: false,
+      exclude_purchase_costs: false,
+      exclude_sales_revenue: false,
     });
     setEditingType(null);
   };
@@ -91,6 +97,8 @@ export default function SAVTypesManager({ types, loading, onRefresh }: SAVTypesM
             show_in_sidebar: formData.show_in_sidebar,
             require_unlock_pattern: formData.require_unlock_pattern,
             exclude_from_stats: formData.exclude_from_stats,
+            exclude_purchase_costs: formData.exclude_purchase_costs,
+            exclude_sales_revenue: formData.exclude_sales_revenue,
           });
 
       if (error) throw error;
@@ -129,6 +137,8 @@ export default function SAVTypesManager({ types, loading, onRefresh }: SAVTypesM
           show_in_sidebar: formData.show_in_sidebar,
           require_unlock_pattern: formData.require_unlock_pattern,
           exclude_from_stats: formData.exclude_from_stats,
+          exclude_purchase_costs: formData.exclude_purchase_costs,
+          exclude_sales_revenue: formData.exclude_sales_revenue,
         })
         .eq('id', editingType.id);
 
@@ -198,6 +208,8 @@ export default function SAVTypesManager({ types, loading, onRefresh }: SAVTypesM
       show_in_sidebar: type.show_in_sidebar,
       require_unlock_pattern: type.require_unlock_pattern,
       exclude_from_stats: type.exclude_from_stats ?? false,
+      exclude_purchase_costs: type.exclude_purchase_costs ?? false,
+      exclude_sales_revenue: type.exclude_sales_revenue ?? false,
     });
     setDialogOpen(true);
   };
@@ -410,20 +422,44 @@ export default function SAVTypesManager({ types, loading, onRefresh }: SAVTypesM
                   <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
                       <Label className="text-sm font-normal flex items-center gap-2">
-                        <BarChart3 className="w-4 h-4" />
-                        Exclure des statistiques financières
+                        <TrendingDown className="w-4 h-4" />
+                        Exclure les coûts d'achat
                       </Label>
                       <p className="text-xs text-muted-foreground">
-                        Les prix d'achat, de vente et la marge de ce type ne seront pas comptabilisés
+                        Les prix d'achat des pièces ne seront pas comptabilisés dans les dépenses
                       </p>
                     </div>
                     <Switch
-                      checked={formData.exclude_from_stats}
+                      checked={formData.exclude_purchase_costs}
                       onCheckedChange={(checked) => 
-                        setFormData({ ...formData, exclude_from_stats: checked })
+                        setFormData({ ...formData, exclude_purchase_costs: checked })
                       }
                     />
                   </div>
+
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label className="text-sm font-normal flex items-center gap-2">
+                        <TrendingUp className="w-4 h-4" />
+                        Exclure les revenus de vente
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        Les prix de vente ne seront pas comptabilisés dans les revenus (pas de calcul de marge)
+                      </p>
+                    </div>
+                    <Switch
+                      checked={formData.exclude_sales_revenue}
+                      onCheckedChange={(checked) => 
+                        setFormData({ ...formData, exclude_sales_revenue: checked })
+                      }
+                    />
+                  </div>
+
+                  {(formData.exclude_purchase_costs !== formData.exclude_sales_revenue) && (
+                    <p className="text-xs text-amber-600 bg-amber-50 p-2 rounded">
+                      ⚠️ Note : La marge ne sera pas calculée si l'un des deux prix est exclu.
+                    </p>
+                  )}
                 </div>
               </div>
               
@@ -515,11 +551,19 @@ export default function SAVTypesManager({ types, loading, onRefresh }: SAVTypesM
                           {type.show_in_sidebar ? "Visible sidebar" : "Masqué sidebar"}
                         </span>
                       </div>
-                      {type.exclude_from_stats && (
+                      {type.exclude_purchase_costs && (
                         <div className="flex items-center space-x-1 text-xs">
-                          <BarChart3 className="w-3 h-3" />
+                          <TrendingDown className="w-3 h-3" />
                           <span className="text-orange-600">
-                            Exclu stats
+                            Coûts exclus
+                          </span>
+                        </div>
+                      )}
+                      {type.exclude_sales_revenue && (
+                        <div className="flex items-center space-x-1 text-xs">
+                          <TrendingUp className="w-3 h-3" />
+                          <span className="text-orange-600">
+                            Revenus exclus
                           </span>
                         </div>
                       )}

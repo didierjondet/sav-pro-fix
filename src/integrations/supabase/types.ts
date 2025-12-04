@@ -1246,6 +1246,8 @@ export type Database = {
           created_at: string
           display_order: number
           exclude_from_stats: boolean
+          exclude_purchase_costs: boolean
+          exclude_sales_revenue: boolean
           id: string
           is_active: boolean
           is_default: boolean
@@ -1265,6 +1267,8 @@ export type Database = {
           created_at?: string
           display_order?: number
           exclude_from_stats?: boolean
+          exclude_purchase_costs?: boolean
+          exclude_sales_revenue?: boolean
           id?: string
           is_active?: boolean
           is_default?: boolean
@@ -1284,6 +1288,8 @@ export type Database = {
           created_at?: string
           display_order?: number
           exclude_from_stats?: boolean
+          exclude_purchase_costs?: boolean
+          exclude_sales_revenue?: boolean
           id?: string
           is_active?: boolean
           is_default?: boolean
