@@ -121,14 +121,19 @@ export const useCustomWidgetData = ({ metrics, filters, groupBy }: UseCustomWidg
         const startDate = new Date(year, 0, 1);
         const endDate = new Date(year, 11, 31, 23, 59, 59);
 
-        // Récupérer les types SAV avec leurs délais configurés
+        // Récupérer les types SAV avec leurs délais configurés et exclusion des stats
         const { data: shopSavTypes, error: typesError } = await supabase
           .from('shop_sav_types')
-          .select('type_key, max_processing_days')
+          .select('type_key, max_processing_days, exclude_from_stats')
           .eq('shop_id', shop.id)
           .eq('is_active', true);
 
         if (typesError) throw typesError;
+
+        // Calculer la liste des types exclus des statistiques financières
+        const excludedFromStatsTypes = (shopSavTypes || [])
+          .filter(t => t.exclude_from_stats)
+          .map(t => t.type_key);
 
         // Récupérer les statuts SAV avec pause_timer
         const { data: shopSavStatuses, error: statusesError } = await supabase
@@ -203,8 +208,8 @@ export const useCustomWidgetData = ({ metrics, filters, groupBy }: UseCustomWidg
           
           monthlyData[monthIndex].monthly_costs += savCost;
 
-          // Calculer le revenu (uniquement pour les SAV ready, hors internal)
-          if (sav.status === 'ready' && sav.sav_type !== 'internal') {
+          // Calculer le revenu (uniquement pour les SAV ready, hors types exclus)
+          if (sav.status === 'ready' && !excludedFromStatsTypes.includes(sav.sav_type)) {
             // Ajuster le revenu selon la prise en charge
             if (sav.partial_takeover && sav.takeover_amount) {
               const denom = Number(sav.total_cost) || 1;
@@ -258,8 +263,9 @@ export const useCustomWidgetData = ({ metrics, filters, groupBy }: UseCustomWidg
             // Trouver la configuration du type SAV
             const typeConfig = shopSavTypes?.find(t => t.type_key === sav.sav_type);
             const getDefaultProcessingDays = (savType: string): number => {
+              // Pas de calcul de retard pour types exclus
+              if (excludedFromStatsTypes.includes(savType)) return 0;
               switch (savType) {
-                case 'internal': return 0; // Pas de calcul de retard pour SAV internes
                 case 'external': return 7;
                 case 'client': return 7;
                 default: return 7;

@@ -18,6 +18,7 @@ export interface ShopSAVType {
   pause_timer: boolean;
   show_in_sidebar: boolean;
   require_unlock_pattern: boolean;
+  exclude_from_stats: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -40,7 +41,7 @@ export function useShopSAVTypes() {
       // Les politiques RLS se chargent automatiquement de filtrer par shop_id
       const { data, error } = await supabase
         .from('shop_sav_types')
-        .select('*, alert_days, require_unlock_pattern')
+        .select('*, alert_days, require_unlock_pattern, exclude_from_stats')
         .eq('is_active', true)
         .order('display_order', { ascending: true });
 
@@ -98,6 +99,7 @@ export function useShopSAVTypes() {
         pause_timer: customType.pause_timer,
         show_in_sidebar: customType.show_in_sidebar,
         require_unlock_pattern: customType.require_unlock_pattern,
+        exclude_from_stats: customType.exclude_from_stats,
       };
     }
 
@@ -111,6 +113,7 @@ export function useShopSAVTypes() {
       pause_timer: false,
       show_in_sidebar: true,
       require_unlock_pattern: false,
+      exclude_from_stats: false,
     };
   };
 
