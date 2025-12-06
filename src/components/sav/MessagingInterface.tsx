@@ -31,7 +31,6 @@ interface MessagingInterfaceProps {
   shopId?: string;
   customerId?: string;
   showSatisfactionButton?: boolean;
-  isReady?: boolean;
   
   // Props optionnelles pour le client
   isCaseClosed?: boolean;
@@ -49,7 +48,6 @@ export function MessagingInterface({
   shopId,
   customerId,
   showSatisfactionButton = false,
-  isReady = false,
   isCaseClosed = false,
   shopPhone
 }: MessagingInterfaceProps) {
@@ -296,7 +294,7 @@ export function MessagingInterface({
                 size="sm"
               />
             )}
-            {userType === 'shop' && showSatisfactionButton && isReady && customerPhone && shopId && (
+            {userType === 'shop' && showSatisfactionButton && customerPhone && shopId && (
               <SatisfactionRequestButton
                 savCaseId={savCaseId!}
                 shopId={shopId}
