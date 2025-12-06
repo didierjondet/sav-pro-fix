@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { TrendingUp, TrendingDown, Calendar, BarChart3 } from 'lucide-react';
 
 interface MonthlyData {
-  month: string;
+  month: number;
   currentRevenue: number;
   previousRevenue: number;
   currentSavCount: number;
@@ -18,8 +18,8 @@ interface MonthlyData {
 interface MonthlyComparisonWidgetProps {
   data: MonthlyData[];
   totalGrowth: number;
-  bestMonth: string;
-  worstMonth: string;
+  bestMonth: number | string;
+  worstMonth: number | string;
 }
 
 export const MonthlyComparisonWidget = ({
