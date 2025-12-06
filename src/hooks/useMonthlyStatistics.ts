@@ -4,7 +4,7 @@ import { useShop } from './useShop';
 import { startOfYear, endOfYear, startOfMonth, endOfMonth, format, addMonths } from 'date-fns';
 
 export interface MonthlyData {
-  month: string;
+  month: number;
   revenue: number;
   costs: number;
   profit: number;
@@ -34,9 +34,8 @@ export function useMonthlyStatistics(year: number) {
         // Initialiser les données pour tous les mois
         const monthlyData: MonthlyData[] = [];
         for (let i = 0; i < 12; i++) {
-          const monthDate = addMonths(yearStart, i);
           monthlyData.push({
-            month: format(monthDate, 'MMM'),
+            month: i + 1,
             revenue: 0,
             costs: 0,
             profit: 0,

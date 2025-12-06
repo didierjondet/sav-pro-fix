@@ -660,15 +660,7 @@ export function SAVDashboard() {
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis 
                       dataKey="month" 
-                      tickFormatter={(value) => {
-                        const monthNum = Number(value);
-                        if (!monthNum || monthNum < 1 || monthNum > 12) return '';
-                        try {
-                          return format(new Date(selectedYear, monthNum - 1), 'MMM');
-                        } catch (error) {
-                          return '';
-                        }
-                      }}
+                      tickFormatter={(value) => String(value)}
                     />
                     <YAxis yAxisId="left" />
                     <YAxis yAxisId="right" orientation="right" />
@@ -1014,8 +1006,11 @@ export function SAVDashboard() {
           const previous = statistics.profitabilityChart[statistics.profitabilityChart.length - 6 + index - 1] || current;
           const growth = previous.revenue ? ((current.revenue - previous.revenue) / previous.revenue) * 100 : 0;
           
+          // Extract month number from date string (assuming format like "Jan" or similar)
+          const monthIndex = index + 1;
+          
           return {
-            month: current.date,
+            month: monthIndex,
             currentRevenue: current.revenue,
             previousRevenue: previous.revenue,
             currentSavCount: statistics.completedSavChart.find(c => c.date === current.date)?.completed || 0,
@@ -1031,8 +1026,8 @@ export function SAVDashboard() {
             <MonthlyComparisonWidget 
               data={monthlyComparisonData}
               totalGrowth={15.2}
-              bestMonth="Mars"
-              worstMonth="Janvier"
+              bestMonth={3}
+              worstMonth={1}
             />
           </Card>
         );
