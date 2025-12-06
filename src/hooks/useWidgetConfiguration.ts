@@ -7,7 +7,7 @@ export interface WidgetConfiguration {
   id: string;
   shop_id: string;
   widget_id: string;
-  temporality: 'monthly' | 'quarterly' | 'yearly';
+  temporality: 'monthly' | 'monthly_calendar' | 'quarterly' | 'yearly';
   sav_statuses_filter: string[] | null;
   sav_types_filter: string[] | null;
   created_at: string;

@@ -27,7 +27,9 @@ export const SortableBlock = ({ id, children, onRemove }: SortableBlockProps) =>
   const getTemporalityLabel = (temp: string | null | undefined) => {
     switch (temp) {
       case 'monthly':
-        return 'Mensuel (30 derniers jours)';
+        return 'Mensuel glissant (30 derniers jours)';
+      case 'monthly_calendar':
+        return 'Mensuel calendaire (depuis le 1er du mois)';
       case 'quarterly':
         return 'Trimestriel (3 derniers mois)';
       case 'yearly':

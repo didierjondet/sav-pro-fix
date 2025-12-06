@@ -21,7 +21,7 @@ export function WidgetConfigDialog({ open, onOpenChange, widgetId, widgetTitle }
   const { statuses } = useShopSAVStatuses();
   const { types } = useShopSAVTypes();
 
-  const [temporality, setTemporality] = useState<'monthly' | 'quarterly' | 'yearly'>('monthly');
+  const [temporality, setTemporality] = useState<'monthly' | 'monthly_calendar' | 'quarterly' | 'yearly'>('monthly');
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
 
@@ -84,7 +84,8 @@ export function WidgetConfigDialog({ open, onOpenChange, widgetId, widgetTitle }
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="monthly">Mensuel (30 derniers jours)</SelectItem>
+                  <SelectItem value="monthly">Mensuel glissant (30 derniers jours)</SelectItem>
+                  <SelectItem value="monthly_calendar">Mensuel calendaire (depuis le 1er du mois)</SelectItem>
                   <SelectItem value="quarterly">Trimestriel (3 derniers mois)</SelectItem>
                   <SelectItem value="yearly">Annuel (12 derniers mois)</SelectItem>
                 </SelectContent>
