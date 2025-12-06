@@ -5,7 +5,7 @@ import { DragDropStatistics } from '@/components/statistics/DragDropStatistics';
 import { DailyAssistant } from '@/components/statistics/DailyAssistant';
 export default function Statistics() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [period, setPeriod] = useState<'7d' | '30d' | '3m' | '6m' | '1y'>('30d');
+  const [period, setPeriod] = useState<'7d' | '30d' | '1m_calendar' | '3m' | '6m' | '1y'>('30d');
 
   // SEO basics
   if (typeof document !== 'undefined') {
