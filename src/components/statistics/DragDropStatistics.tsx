@@ -567,24 +567,6 @@ export const DragDropStatistics = ({ period, onPeriodChange }: DragDropStatistic
           </div>
         );
 
-      case 'completed-sav-chart':
-        return (
-          <div className={className}>
-            <DraggableStatisticsWidget {...baseProps}>
-              <ChartContainer
-                config={{ completed: { label: "SAV terminés", color: "hsl(var(--secondary))" } }}
-                className="h-72"
-              >
-                <BarChart data={completedSavChart}>
-                  <XAxis dataKey="date" tickLine={false} axisLine={false} />
-                  <YAxis tickLine={false} axisLine={false} />
-                  <ChartTooltip content={<ChartTooltipContent />} />
-                  <Bar dataKey="completed" fill="var(--color-completed)" radius={4} />
-                </BarChart>
-              </ChartContainer>
-            </DraggableStatisticsWidget>
-          </div>
-        );
 
       case 'top-parts-chart':
         return (

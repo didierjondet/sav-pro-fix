@@ -42,9 +42,8 @@ const DEFAULT_MODULES: StatisticModule[] = [
   
   // Graphiques spécialisés
   { id: 'profitability-chart', name: 'Évolution rentabilité', description: 'Graphique revenus/dépenses/profit', enabled: true, order: 14 },
-  { id: 'completed-sav-chart', name: 'SAV terminés', description: 'Évolution des SAV complétés', enabled: true, order: 15 },
-  { id: 'top-parts-chart', name: 'Top pièces utilisées', description: 'Classement des pièces', enabled: true, order: 16 },
-  { id: 'late-rate-chart', name: 'Évolution retards', description: 'Tendance du taux de retard', enabled: true, order: 17 },
+  { id: 'top-parts-chart', name: 'Top pièces utilisées', description: 'Classement des pièces', enabled: true, order: 15 },
+  { id: 'late-rate-chart', name: 'Évolution retards', description: 'Tendance du taux de retard', enabled: true, order: 16 },
   { id: 'top-devices', name: 'Podium téléphones', description: 'Téléphones les plus réparés', enabled: true, order: 18 },
   
   // Widgets de comparaison

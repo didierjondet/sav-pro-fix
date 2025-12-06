@@ -73,7 +73,6 @@ export const DEFAULT_MODULE_SIZES: ModuleSizeConfig = {
   
   // Graphiques moyens
   'profitability-chart': 'large',
-  'completed-sav-chart': 'medium',
   'top-parts-chart': 'medium',
   'late-rate-chart': 'medium',
   
