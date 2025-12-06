@@ -673,10 +673,10 @@ export function SAVDashboard() {
                     <YAxis yAxisId="left" />
                     <YAxis yAxisId="right" orientation="right" />
                     <ChartTooltip 
-                      content={({ active, payload, label }) => {
+                      content={({ active, payload }) => {
                         if (active && payload && payload.length > 0) {
                           const data = payload[0]?.payload;
-                          const monthNum = Number(label);
+                          const monthNum = Number(data?.month);
                           let monthLabel = '';
                           if (monthNum && monthNum >= 1 && monthNum <= 12) {
                             try {
@@ -687,7 +687,7 @@ export function SAVDashboard() {
                           }
                           return (
                             <div className="bg-background border rounded-lg p-3 shadow-md min-w-[180px]">
-                              <p className="font-bold text-sm mb-2 border-b pb-2 capitalize">{monthLabel}</p>
+                              <p className="font-bold text-sm mb-2 border-b pb-2 capitalize text-foreground">{monthLabel}</p>
                               <div className="space-y-1.5">
                                 <p className="text-xs flex justify-between gap-3">
                                   <span className="text-muted-foreground">Nombre de SAV:</span>
