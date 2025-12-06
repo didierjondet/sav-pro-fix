@@ -310,7 +310,7 @@ export function Sidebar({
                   const typeInfo = getTypeInfo(type.type_key);
                   return <Tooltip key={type.id}>
                           <TooltipTrigger asChild>
-                            <Link to={`/sav?sav_type=${type.type_key}&exclude_ready=true`} className="flex items-center justify-between p-1 text-sm hover:bg-accent hover:text-accent-foreground rounded-md transition-colors">
+                            <Link to={`/sav?sav_type=${encodeURIComponent(type.type_key)}&exclude_ready=true`} className="flex items-center justify-between p-1 text-sm hover:bg-accent hover:text-accent-foreground rounded-md transition-colors">
                               <span className="text-muted-foreground">
                                 {typeInfo.label}
                               </span>
