@@ -21,6 +21,7 @@ import { useShopSAVTypes } from '@/hooks/useShopSAVTypes';
 import { useShopSAVStatuses } from '@/hooks/useShopSAVStatuses';
 import { useSatisfactionSurveys } from '@/hooks/useSatisfactionSurveys';
 import { format, differenceInHours } from 'date-fns';
+import { fr } from 'date-fns/locale';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, sortableKeyboardCoordinates, rectSortingStrategy, arrayMove } from '@dnd-kit/sortable';
 import { DraggableStatisticsWidget } from '@/components/statistics/DraggableStatisticsWidget';
@@ -672,20 +673,39 @@ export function SAVDashboard() {
                     <YAxis yAxisId="left" />
                     <YAxis yAxisId="right" orientation="right" />
                     <ChartTooltip 
-                      labelFormatter={(value) => {
-                        const monthNum = Number(value);
-                        if (!monthNum || monthNum < 1 || monthNum > 12) return '';
-                        try {
-                          return format(new Date(selectedYear, monthNum - 1), 'MMMM yyyy');
-                        } catch (error) {
-                          return '';
+                      content={({ active, payload, label }) => {
+                        if (active && payload && payload.length > 0) {
+                          const data = payload[0]?.payload;
+                          const monthNum = Number(label);
+                          let monthLabel = '';
+                          if (monthNum && monthNum >= 1 && monthNum <= 12) {
+                            try {
+                              monthLabel = format(new Date(selectedYear, monthNum - 1), 'MMMM yyyy', { locale: fr });
+                            } catch (error) {
+                              monthLabel = '';
+                            }
+                          }
+                          return (
+                            <div className="bg-background border rounded-lg p-3 shadow-md min-w-[180px]">
+                              <p className="font-semibold text-sm mb-2 text-primary capitalize">{monthLabel}</p>
+                              <div className="space-y-1">
+                                <p className="text-xs flex justify-between gap-3">
+                                  <span className="text-muted-foreground">Nombre de SAV:</span>
+                                  <span className="font-semibold">{data.savCount}</span>
+                                </p>
+                                <p className="text-xs flex justify-between gap-3">
+                                  <span className="text-muted-foreground">Chiffre d'affaires:</span>
+                                  <span className="font-semibold">{data.revenue?.toFixed(2)} €</span>
+                                </p>
+                                <p className="text-xs flex justify-between gap-3">
+                                  <span className="text-muted-foreground">Marge:</span>
+                                  <span className="font-semibold">{data.profit?.toFixed(2)} €</span>
+                                </p>
+                              </div>
+                            </div>
+                          );
                         }
-                      }}
-                      formatter={(value: any, name: string) => {
-                        if (name === 'Nombre de SAV') {
-                          return [value, name];
-                        }
-                        return [`${Number(value).toFixed(2)} €`, name];
+                        return null;
                       }}
                     />
                     <Legend />
