@@ -44,11 +44,11 @@ import { AnnualStatsWidget } from './widgets/AnnualStatsWidget';
 import { CustomWidgetRenderer } from './CustomWidgetRenderer';
 
 interface DragDropStatisticsProps {
-  period: '7d' | '30d' | '3m' | '6m' | '1y';
-  onPeriodChange: (period: '7d' | '30d' | '3m' | '6m' | '1y') => void;
+  period: '7d' | '30d' | '1m_calendar' | '3m' | '6m' | '1y';
+  onPeriodChange: (period: '7d' | '30d' | '1m_calendar' | '3m' | '6m' | '1y') => void;
 }
 
-type StatisticsPeriod = '7d' | '30d' | '3m' | '6m' | '1y';
+type StatisticsPeriod = '7d' | '30d' | '1m_calendar' | '3m' | '6m' | '1y';
 
 interface StatisticsWidgetContainerProps {
   module: StatisticModule;
@@ -61,11 +61,13 @@ const StatisticsWidgetContainer = ({ module, period, children }: StatisticsWidge
 
   const effectivePeriod: StatisticsPeriod = config?.temporality === 'monthly'
     ? '30d'
-    : config?.temporality === 'quarterly'
-      ? '3m'
-      : config?.temporality === 'yearly'
-        ? '1y'
-        : period;
+    : config?.temporality === 'monthly_calendar'
+      ? '1m_calendar'
+      : config?.temporality === 'quarterly'
+        ? '3m'
+        : config?.temporality === 'yearly'
+          ? '1y'
+          : period;
 
   const stats = useStatistics(effectivePeriod, {
     savStatuses: config?.sav_statuses_filter ?? undefined,
@@ -354,6 +356,8 @@ export const DragDropStatistics = ({ period, onPeriodChange }: DragDropStatistic
                     ? '7j'
                     : effectivePeriod === '30d'
                     ? '30j'
+                    : effectivePeriod === '1m_calendar'
+                    ? 'Ce mois'
                     : effectivePeriod === '3m'
                     ? '3m'
                     : effectivePeriod === '6m'
@@ -391,6 +395,8 @@ export const DragDropStatistics = ({ period, onPeriodChange }: DragDropStatistic
                     ? '7j'
                     : effectivePeriod === '30d'
                     ? '30j'
+                    : effectivePeriod === '1m_calendar'
+                    ? 'Ce mois'
                     : effectivePeriod === '3m'
                     ? '3m'
                     : effectivePeriod === '6m'
@@ -425,6 +431,8 @@ export const DragDropStatistics = ({ period, onPeriodChange }: DragDropStatistic
                     ? '7j'
                     : effectivePeriod === '30d'
                     ? '30j'
+                    : effectivePeriod === '1m_calendar'
+                    ? 'Ce mois'
                     : effectivePeriod === '3m'
                     ? '3m'
                     : effectivePeriod === '6m'
@@ -457,6 +465,8 @@ export const DragDropStatistics = ({ period, onPeriodChange }: DragDropStatistic
                     ? '7j'
                     : effectivePeriod === '30d'
                     ? '30j'
+                    : effectivePeriod === '1m_calendar'
+                    ? 'Ce mois'
                     : effectivePeriod === '3m'
                     ? '3m'
                     : effectivePeriod === '6m'
@@ -489,6 +499,8 @@ export const DragDropStatistics = ({ period, onPeriodChange }: DragDropStatistic
                     ? '7 derniers jours'
                     : effectivePeriod === '30d'
                     ? '30 derniers jours'
+                    : effectivePeriod === '1m_calendar'
+                    ? 'Ce mois'
                     : effectivePeriod === '3m'
                     ? '3 derniers mois'
                     : effectivePeriod === '6m'
@@ -526,6 +538,8 @@ export const DragDropStatistics = ({ period, onPeriodChange }: DragDropStatistic
                     ? '7j'
                     : effectivePeriod === '30d'
                     ? '30j'
+                    : effectivePeriod === '1m_calendar'
+                    ? 'Ce mois'
                     : effectivePeriod === '3m'
                     ? '3m'
                     : effectivePeriod === '6m'
