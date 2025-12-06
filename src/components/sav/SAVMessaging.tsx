@@ -9,7 +9,6 @@ interface SAVMessagingProps {
   shopId?: string;
   customerId?: string;
   showSatisfactionButton?: boolean;
-  isReady?: boolean;
 }
 
 export function SAVMessaging({ 
@@ -19,8 +18,7 @@ export function SAVMessaging({
   customerName,
   shopId,
   customerId,
-  showSatisfactionButton = false,
-  isReady = false
+  showSatisfactionButton = false
 }: SAVMessagingProps) {
   const { profile } = useProfile();
 
@@ -41,7 +39,6 @@ export function SAVMessaging({
       shopId={shopId}
       customerId={customerId}
       showSatisfactionButton={showSatisfactionButton}
-      isReady={isReady}
     />
   );
 }

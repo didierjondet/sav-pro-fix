@@ -739,7 +739,6 @@ export default function SAVDetail() {
                   shopId={savCase.shop_id}
                   customerId={savCase.customer_id}
                   showSatisfactionButton={getTypeInfo(savCase.sav_type).show_satisfaction_survey}
-                  isReady={isReadyStatus(savCase.status)}
                 />
               </div>
             </div>
