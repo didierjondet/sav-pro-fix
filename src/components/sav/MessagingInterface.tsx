@@ -9,6 +9,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useMessaging, Message } from '@/hooks/useMessaging';
 import { SMSButton } from './SMSButton';
+import { SatisfactionRequestButton } from './SatisfactionRequestButton';
 import { MessagePhotoUpload } from './MessagePhotoUpload';
 import { AITextReformulator } from './AITextReformulator';
 import { supabase } from '@/integrations/supabase/client';
@@ -27,6 +28,10 @@ interface MessagingInterfaceProps {
   // Props optionnelles pour le magasin
   customerPhone?: string;
   customerName?: string;
+  shopId?: string;
+  customerId?: string;
+  showSatisfactionButton?: boolean;
+  isReady?: boolean;
   
   // Props optionnelles pour le client
   isCaseClosed?: boolean;
@@ -41,6 +46,10 @@ export function MessagingInterface({
   senderName,
   customerPhone,
   customerName,
+  shopId,
+  customerId,
+  showSatisfactionButton = false,
+  isReady = false,
   isCaseClosed = false,
   shopPhone
 }: MessagingInterfaceProps) {
@@ -277,15 +286,27 @@ export function MessagingInterface({
             <MessageSquare className="h-5 w-5" />
             Discussion - Dossier {caseNumber}
           </div>
-          {userType === 'shop' && customerPhone && (
-            <SMSButton
-              customerPhone={customerPhone}
-              customerName={customerName}
-              caseNumber={caseNumber}
-              caseId={savCaseId!}
-              size="sm"
-            />
-          )}
+          <div className="flex items-center gap-2">
+            {userType === 'shop' && customerPhone && (
+              <SMSButton
+                customerPhone={customerPhone}
+                customerName={customerName}
+                caseNumber={caseNumber}
+                caseId={savCaseId!}
+                size="sm"
+              />
+            )}
+            {userType === 'shop' && showSatisfactionButton && isReady && customerPhone && shopId && (
+              <SatisfactionRequestButton
+                savCaseId={savCaseId!}
+                shopId={shopId}
+                customerId={customerId}
+                customerName={customerName || 'Client'}
+                customerPhone={customerPhone}
+                caseNumber={caseNumber}
+              />
+            )}
+          </div>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
