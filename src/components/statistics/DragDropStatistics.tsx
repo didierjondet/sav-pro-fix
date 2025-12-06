@@ -21,6 +21,7 @@ import { Medal, Trophy, Award } from 'lucide-react';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { useStatistics } from '@/hooks/useStatistics';
 import { useStatisticsConfig, StatisticModule } from '@/hooks/useStatisticsConfig';
+import { useMonthlyStatistics } from '@/hooks/useMonthlyStatistics';
 import { useSatisfactionSurveys } from '@/hooks/useSatisfactionSurveys';
 import { DraggableStatisticsWidget } from './DraggableStatisticsWidget';
 import { WIDGET_SIZES, getWidgetClasses, DEFAULT_MODULE_SIZES } from './StatisticsWidgetSizes';
@@ -87,6 +88,11 @@ export const DragDropStatistics = ({ period, onPeriodChange }: DragDropStatistic
   const { modules, reorderModules } = useStatisticsConfig();
   const satisfactionStats = useSatisfactionSurveys();
   const [sortedModules, setSortedModules] = useState<StatisticModule[]>([]);
+  
+  // Données mensuelles pour le widget de comparaison
+  const currentYear = new Date().getFullYear();
+  const { data: currentYearData } = useMonthlyStatistics(currentYear);
+  const { data: previousYearData } = useMonthlyStatistics(currentYear - 1);
   
   const {
     revenue,
@@ -263,29 +269,45 @@ export const DragDropStatistics = ({ period, onPeriodChange }: DragDropStatistic
         );
 
       case 'monthly-comparison':
-        const monthlyData = profitabilityChart.slice(-6).map((current, index) => {
-          const previous = profitabilityChart[profitabilityChart.length - 6 + index - 1] || current;
-          const growth = previous.revenue ? ((current.revenue - previous.revenue) / previous.revenue) * 100 : 0;
+        // Préparer les données de comparaison avec les vraies données mensuelles
+        const currentMonth = new Date().getMonth();
+        const comparisonData = currentYearData.slice(0, currentMonth + 1).map((current, index) => {
+          const previous = previousYearData[index];
+          const growth = previous?.revenue 
+            ? ((current.revenue - previous.revenue) / previous.revenue) * 100 
+            : 0;
           
           return {
-            month: current.date,
+            month: current.month,
             currentRevenue: current.revenue,
-            previousRevenue: previous.revenue,
-            currentSavCount: completedSavChart.find(c => c.date === current.date)?.completed || 0,
-            previousSavCount: completedSavChart.find(c => c.date === previous.date)?.completed || 0,
+            previousRevenue: previous?.revenue || 0,
+            currentSavCount: current.savCount,
+            previousSavCount: previous?.savCount || 0,
             currentProfit: current.profit,
-            previousProfit: previous.profit,
+            previousProfit: previous?.profit || 0,
             growth
           };
         });
+
+        // Calculer la croissance totale réelle
+        const currentTotal = comparisonData.reduce((sum, m) => sum + m.currentRevenue, 0);
+        const previousTotal = comparisonData.reduce((sum, m) => sum + m.previousRevenue, 0);
+        const realTotalGrowth = previousTotal > 0 
+          ? ((currentTotal - previousTotal) / previousTotal) * 100 
+          : 0;
+
+        // Trouver le vrai meilleur et pire mois (par croissance)
+        const sortedByGrowth = [...comparisonData].filter(m => m.previousRevenue > 0).sort((a, b) => b.growth - a.growth);
+        const realBestMonth = sortedByGrowth[0]?.month || comparisonData[0]?.month || '-';
+        const realWorstMonth = sortedByGrowth[sortedByGrowth.length - 1]?.month || comparisonData[0]?.month || '-';
         
         return (
           <div className={className}>
             <MonthlyComparisonWidget 
-              data={monthlyData}
-              totalGrowth={15.2}
-              bestMonth="Mars"
-              worstMonth="Janvier"
+              data={comparisonData}
+              totalGrowth={realTotalGrowth}
+              bestMonth={realBestMonth}
+              worstMonth={realWorstMonth}
             />
           </div>
         );
