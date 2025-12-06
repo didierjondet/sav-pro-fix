@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useShop } from './useShop';
-import { format, subDays, subMonths, startOfDay, endOfDay } from 'date-fns';
+import { format, subDays, subMonths, startOfDay, endOfDay, startOfMonth } from 'date-fns';
 
 interface StatisticsData {
   revenue: number;
@@ -37,7 +37,7 @@ interface StatisticsFilters {
 }
 
 export function useStatistics(
-  period: '7d' | '30d' | '3m' | '6m' | '1y',
+  period: '7d' | '30d' | '1m_calendar' | '3m' | '6m' | '1y',
   filters?: StatisticsFilters
 ): StatisticsData {
   const { shop } = useShop();
@@ -69,6 +69,9 @@ export function useStatistics(
         break;
       case '30d':
         start = subDays(end, 30);
+        break;
+      case '1m_calendar':
+        start = startOfMonth(end);
         break;
       case '3m':
         start = subMonths(end, 3);
