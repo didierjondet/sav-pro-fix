@@ -687,19 +687,19 @@ export function SAVDashboard() {
                           }
                           return (
                             <div className="bg-background border rounded-lg p-3 shadow-md min-w-[180px]">
-                              <p className="font-semibold text-sm mb-2 text-primary capitalize">{monthLabel}</p>
-                              <div className="space-y-1">
+                              <p className="font-bold text-sm mb-2 border-b pb-2 capitalize">{monthLabel}</p>
+                              <div className="space-y-1.5">
                                 <p className="text-xs flex justify-between gap-3">
                                   <span className="text-muted-foreground">Nombre de SAV:</span>
                                   <span className="font-semibold">{data.savCount}</span>
                                 </p>
                                 <p className="text-xs flex justify-between gap-3">
                                   <span className="text-muted-foreground">Chiffre d'affaires:</span>
-                                  <span className="font-semibold">{data.revenue?.toFixed(2)} €</span>
+                                  <span className="font-semibold text-green-600">{data.revenue?.toFixed(2)} €</span>
                                 </p>
                                 <p className="text-xs flex justify-between gap-3">
                                   <span className="text-muted-foreground">Marge:</span>
-                                  <span className="font-semibold">{data.profit?.toFixed(2)} €</span>
+                                  <span className="font-semibold text-blue-600">{data.profit?.toFixed(2)} €</span>
                                 </p>
                               </div>
                             </div>
