@@ -156,7 +156,11 @@ export const AnnualStatsWidget = ({
                               <span className="font-semibold">{data.savCount}</span>
                             </p>
                             <p className="text-xs flex justify-between gap-3">
-                              <span className="text-muted-foreground">Marge générée:</span>
+                              <span className="text-muted-foreground">Chiffre d'affaires:</span>
+                              <span className="font-semibold">{formatCurrency(data.revenue || 0)}</span>
+                            </p>
+                            <p className="text-xs flex justify-between gap-3">
+                              <span className="text-muted-foreground">Marge:</span>
                               <span className="font-semibold">{formatCurrency(data.profit || 0)}</span>
                             </p>
                           </div>
