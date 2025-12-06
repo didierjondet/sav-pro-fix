@@ -920,28 +920,6 @@ export function SAVDashboard() {
           </Card>
         );
 
-      case 'completed-sav-chart':
-        return (
-          <Card className="md:col-span-2">
-            <CardHeader>
-              <CardTitle className="text-base">SAV terminés</CardTitle>
-              <CardDescription>Évolution des SAV complétés</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ChartContainer
-                config={{ completed: { label: "SAV terminés", color: "hsl(var(--secondary))" } }}
-                className="h-72"
-              >
-                <BarChart data={statistics.completedSavChart}>
-                  <XAxis dataKey="date" tickLine={false} axisLine={false} />
-                  <YAxis tickLine={false} axisLine={false} />
-                  <ChartTooltip content={<ChartTooltipContent />} />
-                  <Bar dataKey="completed" fill="var(--color-completed)" radius={4} />
-                </BarChart>
-              </ChartContainer>
-            </CardContent>
-          </Card>
-        );
 
       case 'top-parts-chart':
         return (
