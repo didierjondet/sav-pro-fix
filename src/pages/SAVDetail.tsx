@@ -23,6 +23,7 @@ import { SAVPartsEditor } from '@/components/sav/SAVPartsEditor';
 import { SAVPartsRequirements } from '@/components/sav/SAVPartsRequirements';
 import { SAVPrintButton } from '@/components/sav/SAVPrint';
 import { ReviewRequestButton } from '@/components/sav/ReviewRequestButton';
+import { SatisfactionRequestButton } from '@/components/sav/SatisfactionRequestButton';
 import { SAVDocuments } from '@/components/sav/SAVDocuments';
 import { PatternLock } from '@/components/sav/PatternLock';
 import { SecurityCodesSection } from '@/components/sav/SecurityCodesSection';
@@ -718,6 +719,7 @@ export default function SAVDetail() {
                         Prévisualiser
                       </Button>
                       {isReadyStatus(savCase.status) && <ReviewRequestButton savCaseId={savCase.id} shopId={savCase.shop_id} customerName={savCase.sav_type === 'client' ? `${savCase.customer?.first_name || ''} ${savCase.customer?.last_name || ''}`.trim() : savCase.external_contact_name || 'Contact externe'} caseNumber={savCase.case_number} />}
+                      {isReadyStatus(savCase.status) && <SatisfactionRequestButton savCaseId={savCase.id} shopId={savCase.shop_id} customerId={savCase.customer_id} customerName={savCase.sav_type === 'client' ? `${savCase.customer?.first_name || ''} ${savCase.customer?.last_name || ''}`.trim() : savCase.external_contact_name || 'Contact externe'} customerPhone={savCase.customer?.phone} caseNumber={savCase.case_number} />}
                     </div>
                   </CardContent>
                 </Card>}

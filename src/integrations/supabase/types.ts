@@ -886,6 +886,73 @@ export type Database = {
           },
         ]
       }
+      satisfaction_surveys: {
+        Row: {
+          access_token: string
+          comment: string | null
+          completed_at: string | null
+          created_at: string
+          customer_id: string | null
+          id: string
+          rating: number | null
+          sav_case_id: string | null
+          sent_at: string | null
+          sent_via: string | null
+          shop_id: string
+          updated_at: string
+        }
+        Insert: {
+          access_token: string
+          comment?: string | null
+          completed_at?: string | null
+          created_at?: string
+          customer_id?: string | null
+          id?: string
+          rating?: number | null
+          sav_case_id?: string | null
+          sent_at?: string | null
+          sent_via?: string | null
+          shop_id: string
+          updated_at?: string
+        }
+        Update: {
+          access_token?: string
+          comment?: string | null
+          completed_at?: string | null
+          created_at?: string
+          customer_id?: string | null
+          id?: string
+          rating?: number | null
+          sav_case_id?: string | null
+          sent_at?: string | null
+          sent_via?: string | null
+          shop_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "satisfaction_surveys_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "satisfaction_surveys_sav_case_id_fkey"
+            columns: ["sav_case_id"]
+            isOneToOne: false
+            referencedRelation: "sav_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "satisfaction_surveys_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sav_cases: {
         Row: {
           accessories: Json | null
@@ -2346,6 +2413,7 @@ export type Database = {
         Returns: string
       }
       generate_quote_number: { Args: never; Returns: string }
+      generate_satisfaction_token: { Args: never; Returns: string }
       generate_shop_slug: { Args: { shop_name: string }; Returns: string }
       generate_tracking_slug: {
         Args: { customer_name: string }

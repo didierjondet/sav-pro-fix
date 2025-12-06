@@ -19,6 +19,7 @@ import { useStatistics } from '@/hooks/useStatistics';
 import { calculateSAVDelay } from '@/hooks/useSAVDelay';
 import { useShopSAVTypes } from '@/hooks/useShopSAVTypes';
 import { useShopSAVStatuses } from '@/hooks/useShopSAVStatuses';
+import { useSatisfactionSurveys } from '@/hooks/useSatisfactionSurveys';
 import { format, differenceInHours } from 'date-fns';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, sortableKeyboardCoordinates, rectSortingStrategy, arrayMove } from '@dnd-kit/sortable';
@@ -51,8 +52,9 @@ export function SAVDashboard() {
 
   // Hook pour les statistiques additionnelles (widgets statistiques)
   const statistics = useStatistics('30d');
-
-  // Drag & Drop config shared
+  
+  // Hook pour les données de satisfaction client
+  const satisfactionStats = useSatisfactionSurveys();
   const { modules, reorderModules, updateModule, refetch } = useStatisticsConfig();
   const [sortedModules, setSortedModules] = useState<StatisticModule[]>([]);
 
@@ -573,38 +575,7 @@ export function SAVDashboard() {
             </CardContent>
           </Card>
         );
-      case 'sav-type-distribution':
-        return (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Répartition des SAV</CardTitle>
-              <CardDescription>Par type de service</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={savDistributionData}
-                      cx="50%"
-                      cy="50%"
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="value"
-                      label={(entry) => `${entry.name}: ${entry.value}`}
-                    >
-                      {savDistributionData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <ChartTooltip />
-                    <Legend />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-            </CardContent>
-          </Card>
-        );
+      // Widget sav-type-distribution supprimé
       case 'monthly-profitability':
         return (
           <Card className="md:col-span-2">
@@ -1093,32 +1064,15 @@ export function SAVDashboard() {
         );
 
       case 'customer-satisfaction':
-        const satisfactionData = [
-          { period: 'Jan', rating: 4.2, reviews: 35, response_rate: 95 },
-          { period: 'Fév', rating: 4.5, reviews: 42, response_rate: 97 },
-          { period: 'Mar', rating: 4.3, reviews: 38, response_rate: 96 },
-          { period: 'Avr', rating: 4.7, reviews: 45, response_rate: 98 },
-          { period: 'Mai', rating: 4.6, reviews: 41, response_rate: 97 },
-          { period: 'Juin', rating: 4.8, reviews: 47, response_rate: 99 }
-        ];
-        
-        const satisfactionBreakdown = [
-          { stars: 5, count: 185, percentage: 75, color: 'hsl(var(--primary))' },
-          { stars: 4, count: 42, percentage: 17, color: 'hsl(var(--success))' },
-          { stars: 3, count: 15, percentage: 6, color: 'hsl(var(--warning))' },
-          { stars: 2, count: 4, percentage: 1.5, color: 'hsl(var(--destructive))' },
-          { stars: 1, count: 2, percentage: 0.5, color: 'hsl(var(--muted))' }
-        ];
-
         return (
           <Card className="md:col-span-2">
             <CustomerSatisfactionWidget 
-              satisfactionData={satisfactionData}
-              satisfactionBreakdown={satisfactionBreakdown}
-              averageRating={4.6}
-              totalReviews={248}
-              responseRate={97}
-              trend="up"
+              satisfactionData={satisfactionStats.monthlyData}
+              satisfactionBreakdown={satisfactionStats.satisfactionBreakdown}
+              averageRating={satisfactionStats.averageRating}
+              totalReviews={satisfactionStats.totalReviews}
+              responseRate={satisfactionStats.responseRate}
+              trend={satisfactionStats.trend}
             />
           </Card>
         );

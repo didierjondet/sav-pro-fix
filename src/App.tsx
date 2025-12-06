@@ -45,6 +45,7 @@ import TestLanding from "./pages/TestLanding";
 import SubscriptionSuccess from "./pages/SubscriptionSuccess";
 import Notifications from "./pages/Notifications";
 import QuotePublic from "./pages/QuotePublic";
+import Satisfaction from "./pages/Satisfaction";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -124,6 +125,7 @@ const App = () => {
                 <Route path="/parts" element={<Parts />} />
                 <Route path="/quotes" element={<Quotes />} />
                 <Route path="/quote/:id" element={<QuotePublic />} />
+                <Route path="/satisfaction/:token" element={<Satisfaction />} />
                 <Route path="/orders" element={<Orders />} />
                 <Route path="/customers" element={<Customers />} />
                 <Route path="/client-chats" element={<ClientChats />} />
