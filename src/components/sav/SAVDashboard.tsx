@@ -1021,13 +1021,31 @@ export function SAVDashboard() {
           };
         });
         
+        // Calculer la croissance globale entre le premier et dernier mois
+        const calculatedTotalGrowth = monthlyComparisonData.length > 1 
+          ? ((monthlyComparisonData[monthlyComparisonData.length - 1].currentRevenue - monthlyComparisonData[0].currentRevenue) / 
+             (monthlyComparisonData[0].currentRevenue || 1)) * 100
+          : 0;
+        
+        // Trouver le meilleur mois (plus haute croissance)
+        const bestMonthData = monthlyComparisonData.length > 0 
+          ? monthlyComparisonData.reduce((best, current) => current.growth > best.growth ? current : best, monthlyComparisonData[0])
+          : null;
+        const calculatedBestMonth = bestMonthData?.month || 1;
+        
+        // Trouver le pire mois (plus basse croissance)
+        const worstMonthData = monthlyComparisonData.length > 0 
+          ? monthlyComparisonData.reduce((worst, current) => current.growth < worst.growth ? current : worst, monthlyComparisonData[0])
+          : null;
+        const calculatedWorstMonth = worstMonthData?.month || 1;
+        
         return (
           <Card className="md:col-span-2">
             <MonthlyComparisonWidget 
               data={monthlyComparisonData}
-              totalGrowth={15.2}
-              bestMonth={3}
-              worstMonth={1}
+              totalGrowth={calculatedTotalGrowth}
+              bestMonth={calculatedBestMonth}
+              worstMonth={calculatedWorstMonth}
             />
           </Card>
         );
