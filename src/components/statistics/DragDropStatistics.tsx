@@ -21,6 +21,7 @@ import { Medal, Trophy, Award } from 'lucide-react';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { useStatistics } from '@/hooks/useStatistics';
 import { useStatisticsConfig, StatisticModule } from '@/hooks/useStatisticsConfig';
+import { useSatisfactionSurveys } from '@/hooks/useSatisfactionSurveys';
 import { DraggableStatisticsWidget } from './DraggableStatisticsWidget';
 import { WIDGET_SIZES, getWidgetClasses, DEFAULT_MODULE_SIZES } from './StatisticsWidgetSizes';
 import { useWidgetConfiguration } from '@/hooks/useWidgetConfiguration';
@@ -37,7 +38,6 @@ import { CustomerSatisfactionWidget } from './advanced/CustomerSatisfactionWidge
 import { SAVTypesGridWidget } from './widgets/SAVTypesGridWidget';
 import { FinanceKPIsWidget } from './widgets/FinanceKPIsWidget';
 import { StorageUsageWidget } from './widgets/StorageUsageWidget';
-import { SAVTypeDistributionWidget } from './widgets/SAVTypeDistributionWidget';
 import { MonthlyProfitabilityWidget } from './widgets/MonthlyProfitabilityWidget';
 import { AnnualStatsWidget } from './widgets/AnnualStatsWidget';
 import { CustomWidgetRenderer } from './CustomWidgetRenderer';
@@ -85,6 +85,7 @@ const StatisticsWidgetContainer = ({ module, period, children }: StatisticsWidge
 export const DragDropStatistics = ({ period, onPeriodChange }: DragDropStatisticsProps) => {
   const navigate = useNavigate();
   const { modules, reorderModules } = useStatisticsConfig();
+  const satisfactionStats = useSatisfactionSurveys();
   const [sortedModules, setSortedModules] = useState<StatisticModule[]>([]);
   
   const {
@@ -650,25 +651,12 @@ export const DragDropStatistics = ({ period, onPeriodChange }: DragDropStatistic
         return (
           <div className={className}>
             <CustomerSatisfactionWidget 
-              satisfactionData={[
-                { period: 'Jan', rating: 4.2, reviews: 45, response_rate: 92 },
-                { period: 'Fév', rating: 4.4, reviews: 52, response_rate: 94 },
-                { period: 'Mar', rating: 4.3, reviews: 38, response_rate: 88 },
-                { period: 'Avr', rating: 4.6, reviews: 61, response_rate: 96 },
-                { period: 'Mai', rating: 4.5, reviews: 47, response_rate: 91 },
-                { period: 'Juin', rating: 4.7, reviews: 55, response_rate: 98 }
-              ]}
-              satisfactionBreakdown={[
-                { stars: 5, count: 156, percentage: 65, color: '#10b981' },
-                { stars: 4, count: 72, percentage: 30, color: '#3b82f6' },
-                { stars: 3, count: 8, percentage: 3, color: '#f59e0b' },
-                { stars: 2, count: 3, percentage: 1, color: '#ef4444' },
-                { stars: 1, count: 1, percentage: 1, color: '#dc2626' }
-              ]}
-              averageRating={4.5}
-              totalReviews={240}
-              responseRate={94}
-              trend="up"
+              satisfactionData={satisfactionStats.monthlyData}
+              satisfactionBreakdown={satisfactionStats.satisfactionBreakdown}
+              averageRating={satisfactionStats.averageRating}
+              totalReviews={satisfactionStats.totalReviews}
+              responseRate={satisfactionStats.responseRate}
+              trend={satisfactionStats.trend}
             />
           </div>
         );
@@ -748,25 +736,7 @@ export const DragDropStatistics = ({ period, onPeriodChange }: DragDropStatistic
           </div>
         );
 
-      case 'sav-type-distribution':
-        const serviceTypesDistribution = [
-          { type: 'Réparation d\'écran', count: Math.floor(savStats.total * 0.35), percentage: 35, averageRevenue: 120, averageTime: 24, color: 'hsl(var(--primary))', trend: 'up' as const },
-          { type: 'Remplacement batterie', count: Math.floor(savStats.total * 0.25), percentage: 25, averageRevenue: 80, averageTime: 12, color: 'hsl(var(--secondary))', trend: 'stable' as const },
-          { type: 'Réparation connecteur', count: Math.floor(savStats.total * 0.15), percentage: 15, averageRevenue: 60, averageTime: 18, color: 'hsl(var(--success))', trend: 'up' as const },
-          { type: 'Diagnostic', count: Math.floor(savStats.total * 0.15), percentage: 15, averageRevenue: 35, averageTime: 6, color: 'hsl(var(--warning))', trend: 'stable' as const },
-          { type: 'Réparation carte mère', count: Math.floor(savStats.total * 0.1), percentage: 10, averageRevenue: 200, averageTime: 48, color: 'hsl(var(--destructive))', trend: 'down' as const }
-        ];
-        
-        return (
-          <div className={className}>
-            <SAVTypeDistributionWidget 
-              serviceTypes={serviceTypesDistribution}
-              totalSAV={savStats.total}
-              totalRevenue={revenue}
-              dominantType="Écrans"
-            />
-          </div>
-        );
+      // Widget sav-type-distribution supprimé
 
       case 'monthly-profitability':
         const profitabilityMonthlyData = profitabilityChart.slice(-6).map((item, index) => ({
