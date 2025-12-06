@@ -5,6 +5,17 @@ import { useToast } from '@/hooks/use-toast';
 import { useShop } from '@/hooks/useShop';
 import { useSMS } from '@/hooks/useSMS';
 import { supabase } from '@/integrations/supabase/client';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 interface SatisfactionRequestButtonProps {
   savCaseId: string;
@@ -25,6 +36,7 @@ export function SatisfactionRequestButton({
 }: SatisfactionRequestButtonProps) {
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
   const { toast } = useToast();
   const { shop } = useShop();
   const { sendSMS } = useSMS();
@@ -40,6 +52,7 @@ export function SatisfactionRequestButton({
     }
 
     setSending(true);
+    setDialogOpen(false);
 
     try {
       // 1. Générer un token unique
@@ -96,32 +109,70 @@ export function SatisfactionRequestButton({
 
   if (sent) {
     return (
-      <Button variant="outline" size="sm" disabled className="bg-green-50 text-green-700 border-green-200">
-        <Check className="h-4 w-4 mr-2" />
-        Questionnaire envoyé
+      <Button 
+        variant="outline" 
+        size="sm" 
+        disabled 
+        className="bg-green-50 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-700"
+      >
+        <Check className="h-4 w-4 mr-1" />
+        Envoyé
       </Button>
     );
   }
 
+  if (!customerPhone) {
+    return null;
+  }
+
   return (
-    <Button
-      variant="outline"
-      size="sm"
-      onClick={sendSatisfactionRequest}
-      disabled={sending || !customerPhone}
-      className="bg-yellow-50 hover:bg-yellow-100 text-yellow-700 border-yellow-200"
-    >
-      {sending ? (
-        <>
-          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-          Envoi...
-        </>
-      ) : (
-        <>
-          <Star className="h-4 w-4 mr-2" />
-          Questionnaire satisfaction
-        </>
-      )}
-    </Button>
+    <AlertDialog open={dialogOpen} onOpenChange={setDialogOpen}>
+      <AlertDialogTrigger asChild>
+        <Button
+          variant="outline"
+          size="sm"
+          disabled={sending}
+          className="bg-amber-50 hover:bg-amber-100 text-amber-700 border-amber-300 dark:bg-amber-900/30 dark:hover:bg-amber-900/50 dark:text-amber-300 dark:border-amber-700"
+        >
+          {sending ? (
+            <>
+              <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+              Envoi...
+            </>
+          ) : (
+            <>
+              <Star className="h-4 w-4 mr-1 fill-amber-500" />
+              Satisfaction
+            </>
+          )}
+        </Button>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle className="flex items-center gap-2">
+            <Star className="h-5 w-5 text-amber-500 fill-amber-500" />
+            Envoyer le questionnaire de satisfaction ?
+          </AlertDialogTitle>
+          <AlertDialogDescription className="space-y-2">
+            <p>
+              Un SMS sera envoyé à <strong>{customerName}</strong> avec un lien pour évaluer votre service.
+            </p>
+            <p className="text-sm text-muted-foreground">
+              📱 Numéro : {customerPhone}
+            </p>
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Annuler</AlertDialogCancel>
+          <AlertDialogAction 
+            onClick={sendSatisfactionRequest}
+            className="bg-amber-500 hover:bg-amber-600 text-white"
+          >
+            <Star className="h-4 w-4 mr-2" />
+            Envoyer
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }

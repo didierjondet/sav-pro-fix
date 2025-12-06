@@ -23,7 +23,6 @@ import { SAVPartsEditor } from '@/components/sav/SAVPartsEditor';
 import { SAVPartsRequirements } from '@/components/sav/SAVPartsRequirements';
 import { SAVPrintButton } from '@/components/sav/SAVPrint';
 import { ReviewRequestButton } from '@/components/sav/ReviewRequestButton';
-import { SatisfactionRequestButton } from '@/components/sav/SatisfactionRequestButton';
 import { SAVDocuments } from '@/components/sav/SAVDocuments';
 import { PatternLock } from '@/components/sav/PatternLock';
 import { SecurityCodesSection } from '@/components/sav/SecurityCodesSection';
@@ -719,7 +718,6 @@ export default function SAVDetail() {
                         Prévisualiser
                       </Button>
                       {isReadyStatus(savCase.status) && <ReviewRequestButton savCaseId={savCase.id} shopId={savCase.shop_id} customerName={savCase.sav_type === 'client' ? `${savCase.customer?.first_name || ''} ${savCase.customer?.last_name || ''}`.trim() : savCase.external_contact_name || 'Contact externe'} caseNumber={savCase.case_number} />}
-                      {isReadyStatus(savCase.status) && <SatisfactionRequestButton savCaseId={savCase.id} shopId={savCase.shop_id} customerId={savCase.customer_id} customerName={savCase.sav_type === 'client' ? `${savCase.customer?.first_name || ''} ${savCase.customer?.last_name || ''}`.trim() : savCase.external_contact_name || 'Contact externe'} customerPhone={savCase.customer?.phone} caseNumber={savCase.case_number} />}
                     </div>
                   </CardContent>
                 </Card>}
@@ -733,7 +731,16 @@ export default function SAVDetail() {
               {/* Status Management and Messaging */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <SAVStatusManager savCase={savCase} onStatusUpdated={handleStatusUpdated} />
-                <SAVMessaging savCaseId={savCase.id} savCaseNumber={savCase.case_number} customerPhone={savCase.customer?.phone || savCase.external_contact_phone} customerName={savCase.sav_type === 'client' ? `${savCase.customer?.first_name || ''} ${savCase.customer?.last_name || ''}`.trim() : savCase.external_contact_name || 'Contact externe'} />
+                <SAVMessaging 
+                  savCaseId={savCase.id} 
+                  savCaseNumber={savCase.case_number} 
+                  customerPhone={savCase.customer?.phone || savCase.external_contact_phone} 
+                  customerName={savCase.sav_type === 'client' ? `${savCase.customer?.first_name || ''} ${savCase.customer?.last_name || ''}`.trim() : savCase.external_contact_name || 'Contact externe'} 
+                  shopId={savCase.shop_id}
+                  customerId={savCase.customer_id}
+                  showSatisfactionButton={getTypeInfo(savCase.sav_type).show_satisfaction_survey}
+                  isReady={isReadyStatus(savCase.status)}
+                />
               </div>
             </div>
           </main>

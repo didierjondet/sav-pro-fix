@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Edit, Trash2, Plus, Info, Clock, Users, Sidebar, AlertTriangle, BarChart3, TrendingDown, TrendingUp } from 'lucide-react';
+import { Edit, Trash2, Plus, Info, Clock, Users, Sidebar, AlertTriangle, BarChart3, TrendingDown, TrendingUp, Star } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -30,6 +30,7 @@ export interface SAVType {
   exclude_from_stats: boolean;
   exclude_purchase_costs: boolean;
   exclude_sales_revenue: boolean;
+  show_satisfaction_survey: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -58,6 +59,7 @@ export default function SAVTypesManager({ types, loading, onRefresh }: SAVTypesM
     exclude_from_stats: false,
     exclude_purchase_costs: false,
     exclude_sales_revenue: false,
+    show_satisfaction_survey: true,
   });
 
   const resetForm = () => {
@@ -73,6 +75,7 @@ export default function SAVTypesManager({ types, loading, onRefresh }: SAVTypesM
       exclude_from_stats: false,
       exclude_purchase_costs: false,
       exclude_sales_revenue: false,
+      show_satisfaction_survey: true,
     });
     setEditingType(null);
   };
@@ -99,6 +102,7 @@ export default function SAVTypesManager({ types, loading, onRefresh }: SAVTypesM
             exclude_from_stats: formData.exclude_from_stats,
             exclude_purchase_costs: formData.exclude_purchase_costs,
             exclude_sales_revenue: formData.exclude_sales_revenue,
+            show_satisfaction_survey: formData.show_satisfaction_survey,
           });
 
       if (error) throw error;
@@ -139,6 +143,7 @@ export default function SAVTypesManager({ types, loading, onRefresh }: SAVTypesM
           exclude_from_stats: formData.exclude_from_stats,
           exclude_purchase_costs: formData.exclude_purchase_costs,
           exclude_sales_revenue: formData.exclude_sales_revenue,
+          show_satisfaction_survey: formData.show_satisfaction_survey,
         })
         .eq('id', editingType.id);
 
@@ -210,6 +215,7 @@ export default function SAVTypesManager({ types, loading, onRefresh }: SAVTypesM
       exclude_from_stats: type.exclude_from_stats ?? false,
       exclude_purchase_costs: type.exclude_purchase_costs ?? false,
       exclude_sales_revenue: type.exclude_sales_revenue ?? false,
+      show_satisfaction_survey: type.show_satisfaction_survey ?? true,
     });
     setDialogOpen(true);
   };
@@ -451,6 +457,24 @@ export default function SAVTypesManager({ types, loading, onRefresh }: SAVTypesM
                       checked={formData.exclude_sales_revenue}
                       onCheckedChange={(checked) => 
                         setFormData({ ...formData, exclude_sales_revenue: checked })
+                      }
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label className="text-sm font-normal flex items-center gap-2">
+                        <Star className="w-4 h-4" />
+                        Afficher questionnaire satisfaction
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        Permet d'envoyer un questionnaire de satisfaction aux clients pour ce type de SAV
+                      </p>
+                    </div>
+                    <Switch
+                      checked={formData.show_satisfaction_survey}
+                      onCheckedChange={(checked) => 
+                        setFormData({ ...formData, show_satisfaction_survey: checked })
                       }
                     />
                   </div>

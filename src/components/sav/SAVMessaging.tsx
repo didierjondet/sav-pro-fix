@@ -6,9 +6,22 @@ interface SAVMessagingProps {
   savCaseNumber: string;
   customerPhone?: string;
   customerName?: string;
+  shopId?: string;
+  customerId?: string;
+  showSatisfactionButton?: boolean;
+  isReady?: boolean;
 }
 
-export function SAVMessaging({ savCaseId, savCaseNumber, customerPhone, customerName }: SAVMessagingProps) {
+export function SAVMessaging({ 
+  savCaseId, 
+  savCaseNumber, 
+  customerPhone, 
+  customerName,
+  shopId,
+  customerId,
+  showSatisfactionButton = false,
+  isReady = false
+}: SAVMessagingProps) {
   const { profile } = useProfile();
 
   if (!profile) {
@@ -25,6 +38,10 @@ export function SAVMessaging({ savCaseId, savCaseNumber, customerPhone, customer
       senderName={senderName}
       customerPhone={customerPhone}
       customerName={customerName}
+      shopId={shopId}
+      customerId={customerId}
+      showSatisfactionButton={showSatisfactionButton}
+      isReady={isReady}
     />
   );
 }

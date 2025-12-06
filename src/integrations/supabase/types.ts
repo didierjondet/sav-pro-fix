@@ -1324,6 +1324,7 @@ export type Database = {
           shop_id: string
           show_customer_info: boolean
           show_in_sidebar: boolean
+          show_satisfaction_survey: boolean
           type_color: string | null
           type_key: string
           type_label: string
@@ -1345,6 +1346,7 @@ export type Database = {
           shop_id: string
           show_customer_info?: boolean
           show_in_sidebar?: boolean
+          show_satisfaction_survey?: boolean
           type_color?: string | null
           type_key: string
           type_label: string
@@ -1366,6 +1368,7 @@ export type Database = {
           shop_id?: string
           show_customer_info?: boolean
           show_in_sidebar?: boolean
+          show_satisfaction_survey?: boolean
           type_color?: string | null
           type_key?: string
           type_label?: string
