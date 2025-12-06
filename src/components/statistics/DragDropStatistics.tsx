@@ -269,6 +269,13 @@ export const DragDropStatistics = ({ period, onPeriodChange }: DragDropStatistic
         );
 
       case 'monthly-comparison':
+        // Mapper les numéros de mois vers les noms français
+        const monthNamesFr: Record<number, string> = {
+          1: 'Janvier', 2: 'Février', 3: 'Mars', 4: 'Avril',
+          5: 'Mai', 6: 'Juin', 7: 'Juillet', 8: 'Août',
+          9: 'Septembre', 10: 'Octobre', 11: 'Novembre', 12: 'Décembre'
+        };
+        
         // Préparer les données de comparaison avec les vraies données mensuelles
         const currentMonth = new Date().getMonth();
         const comparisonData = currentYearData.slice(0, currentMonth + 1).map((current, index) => {
@@ -279,6 +286,7 @@ export const DragDropStatistics = ({ period, onPeriodChange }: DragDropStatistic
           
           return {
             month: current.month,
+            monthName: monthNamesFr[current.month] || `Mois ${current.month}`,
             currentRevenue: current.revenue,
             previousRevenue: previous?.revenue || 0,
             currentSavCount: current.savCount,
@@ -289,17 +297,17 @@ export const DragDropStatistics = ({ period, onPeriodChange }: DragDropStatistic
           };
         });
 
-        // Calculer la croissance totale réelle
-        const currentTotal = comparisonData.reduce((sum, m) => sum + m.currentRevenue, 0);
-        const previousTotal = comparisonData.reduce((sum, m) => sum + m.previousRevenue, 0);
-        const realTotalGrowth = previousTotal > 0 
-          ? ((currentTotal - previousTotal) / previousTotal) * 100 
+        // Croissance globale = moyenne des croissances mensuelles (excluant le premier mois)
+        const growthValuesComp = comparisonData.slice(1).filter(m => m.previousRevenue > 0).map(m => m.growth);
+        const realTotalGrowth = growthValuesComp.length > 0 
+          ? growthValuesComp.reduce((sum, g) => sum + g, 0) / growthValuesComp.length
           : 0;
 
-        // Trouver le vrai meilleur et pire mois (par croissance)
-        const sortedByGrowth = [...comparisonData].filter(m => m.previousRevenue > 0).sort((a, b) => b.growth - a.growth);
-        const realBestMonth = sortedByGrowth[0]?.month || comparisonData[0]?.month || '-';
-        const realWorstMonth = sortedByGrowth[sortedByGrowth.length - 1]?.month || comparisonData[0]?.month || '-';
+        // Trouver le vrai meilleur et pire mois (par croissance) - exclure le premier mois
+        const monthsWithGrowthComp = comparisonData.slice(1).filter(m => m.previousRevenue > 0);
+        const sortedByGrowth = [...monthsWithGrowthComp].sort((a, b) => b.growth - a.growth);
+        const realBestMonth = sortedByGrowth[0]?.monthName || 'N/A';
+        const realWorstMonth = sortedByGrowth[sortedByGrowth.length - 1]?.monthName || 'N/A';
         
         return (
           <div className={className}>

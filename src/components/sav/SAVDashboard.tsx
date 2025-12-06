@@ -1002,15 +1002,24 @@ export function SAVDashboard() {
         );
 
       case 'monthly-comparison':
+        // Mapper les abréviations anglaises vers les noms français
+        const monthNamesFr: Record<string, string> = {
+          'Jan': 'Janvier', 'Feb': 'Février', 'Mar': 'Mars', 'Apr': 'Avril',
+          'May': 'Mai', 'Jun': 'Juin', 'Jul': 'Juillet', 'Aug': 'Août',
+          'Sep': 'Septembre', 'Oct': 'Octobre', 'Nov': 'Novembre', 'Dec': 'Décembre'
+        };
+        
         const monthlyComparisonData = statistics.profitabilityChart.slice(-6).map((current, index) => {
           const previous = statistics.profitabilityChart[statistics.profitabilityChart.length - 6 + index - 1] || current;
           const growth = previous.revenue ? ((current.revenue - previous.revenue) / previous.revenue) * 100 : 0;
           
-          // Extract month number from date string (assuming format like "Jan" or similar)
-          const monthIndex = index + 1;
+          // Extraire le vrai nom du mois depuis la date (format "Jan", "Feb", etc.)
+          const monthAbbr = current.date; // "Jan", "Feb", etc.
+          const monthName = monthNamesFr[monthAbbr] || monthAbbr;
           
           return {
-            month: monthIndex,
+            month: index + 1,
+            monthName: monthName,
             currentRevenue: current.revenue,
             previousRevenue: previous.revenue,
             currentSavCount: statistics.completedSavChart.find(c => c.date === current.date)?.completed || 0,
@@ -1021,23 +1030,24 @@ export function SAVDashboard() {
           };
         });
         
-        // Calculer la croissance globale entre le premier et dernier mois
-        const calculatedTotalGrowth = monthlyComparisonData.length > 1 
-          ? ((monthlyComparisonData[monthlyComparisonData.length - 1].currentRevenue - monthlyComparisonData[0].currentRevenue) / 
-             (monthlyComparisonData[0].currentRevenue || 1)) * 100
+        // Croissance globale = moyenne des croissances mensuelles (excluant le premier mois sans référence)
+        const growthValues = monthlyComparisonData.slice(1).map(m => m.growth);
+        const calculatedTotalGrowth = growthValues.length > 0 
+          ? growthValues.reduce((sum, g) => sum + g, 0) / growthValues.length
           : 0;
         
-        // Trouver le meilleur mois (plus haute croissance)
-        const bestMonthData = monthlyComparisonData.length > 0 
-          ? monthlyComparisonData.reduce((best, current) => current.growth > best.growth ? current : best, monthlyComparisonData[0])
+        // Trouver le meilleur mois (plus haute croissance) - exclure le premier mois
+        const monthsWithGrowth = monthlyComparisonData.slice(1);
+        const bestMonthData = monthsWithGrowth.length > 0 
+          ? monthsWithGrowth.reduce((best, current) => current.growth > best.growth ? current : best, monthsWithGrowth[0])
           : null;
-        const calculatedBestMonth = bestMonthData?.month || 1;
+        const calculatedBestMonth = bestMonthData?.monthName || 'N/A';
         
         // Trouver le pire mois (plus basse croissance)
-        const worstMonthData = monthlyComparisonData.length > 0 
-          ? monthlyComparisonData.reduce((worst, current) => current.growth < worst.growth ? current : worst, monthlyComparisonData[0])
+        const worstMonthData = monthsWithGrowth.length > 0 
+          ? monthsWithGrowth.reduce((worst, current) => current.growth < worst.growth ? current : worst, monthsWithGrowth[0])
           : null;
-        const calculatedWorstMonth = worstMonthData?.month || 1;
+        const calculatedWorstMonth = worstMonthData?.monthName || 'N/A';
         
         return (
           <Card className="md:col-span-2">
