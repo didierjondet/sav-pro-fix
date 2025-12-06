@@ -310,18 +310,24 @@ export function Sidebar({
                   const typeInfo = getTypeInfo(type.type_key);
                   return <Tooltip key={type.id}>
                           <TooltipTrigger asChild>
-                            <Link to={`/sav?sav_type=${encodeURIComponent(type.type_key)}&exclude_ready=true`} className="flex items-center justify-between p-1 text-sm hover:bg-accent hover:text-accent-foreground rounded-md transition-colors">
+                            <button 
+                              onClick={() => {
+                                navigate(`/sav?sav_type=${encodeURIComponent(type.type_key)}&exclude_ready=true`);
+                                onClose();
+                              }}
+                              className="flex items-center justify-between p-1 text-sm hover:bg-accent hover:text-accent-foreground rounded-md transition-colors w-full cursor-pointer"
+                            >
                               <span className="text-muted-foreground">
                                 {typeInfo.label}
                               </span>
                               <Badge variant="secondary" className="ml-2" style={{
-                          backgroundColor: `${typeInfo.color}20`,
-                          color: typeInfo.color,
-                          borderColor: typeInfo.color
-                        }}>
+                                backgroundColor: `${typeInfo.color}20`,
+                                color: typeInfo.color,
+                                borderColor: typeInfo.color
+                              }}>
                                 {count}
                               </Badge>
-                            </Link>
+                            </button>
                           </TooltipTrigger>
                           <TooltipContent side="right" className="max-w-xs">
                             <div className="space-y-2">
