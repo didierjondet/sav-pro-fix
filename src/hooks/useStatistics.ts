@@ -184,7 +184,7 @@ export function useStatistics(
           c.status === 'ready' && !excludedFromStatsTypes.includes(c.sav_type)
         );
         const activeSavCases = (savCases || []).filter((c: any) => 
-          c.status !== 'delivered' && c.status !== 'cancelled' && !excludedFromStatsTypes.includes(c.sav_type)
+          c.status !== 'ready' && c.status !== 'delivered' && c.status !== 'cancelled' && !excludedFromStatsTypes.includes(c.sav_type)
         );
         const completedSavCases = (savCases || []).filter((c: any) => 
           c.status === 'delivered' && !excludedFromStatsTypes.includes(c.sav_type)
