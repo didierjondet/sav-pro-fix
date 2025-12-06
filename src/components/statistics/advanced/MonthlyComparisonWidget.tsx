@@ -6,6 +6,7 @@ import { TrendingUp, TrendingDown, Calendar, BarChart3 } from 'lucide-react';
 
 interface MonthlyData {
   month: number;
+  monthName: string;
   currentRevenue: number;
   previousRevenue: number;
   currentSavCount: number;
@@ -18,8 +19,8 @@ interface MonthlyData {
 interface MonthlyComparisonWidgetProps {
   data: MonthlyData[];
   totalGrowth: number;
-  bestMonth: number | string;
-  worstMonth: number | string;
+  bestMonth: string;
+  worstMonth: string;
 }
 
 export const MonthlyComparisonWidget = ({
@@ -91,7 +92,8 @@ export const MonthlyComparisonWidget = ({
             <ChartContainer config={chartConfig} className="h-full">
               <ComposedChart data={data}>
                 <XAxis 
-                  dataKey="month" 
+                  dataKey="monthName" 
+                  tickFormatter={(value) => value ? value.slice(0, 3) : ''}
                   tickLine={false} 
                   axisLine={false} 
                   className="text-xs"
@@ -154,9 +156,9 @@ export const MonthlyComparisonWidget = ({
 
           {/* Tableau récapitulatif des 3 derniers mois */}
           <div className="grid grid-cols-3 gap-4 pt-4 border-t">
-            {data.slice(-3).map((month, index) => (
+            {data.slice(-3).map((month) => (
               <div key={month.month} className="text-center space-y-2">
-                <h4 className="font-medium">{month.month}</h4>
+                <h4 className="font-medium capitalize">{month.monthName}</h4>
                 <div className="space-y-1 text-sm">
                   <div className="flex justify-between">
                     <span>CA:</span>
