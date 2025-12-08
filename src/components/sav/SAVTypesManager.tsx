@@ -273,7 +273,7 @@ export default function SAVTypesManager({ types, loading, onRefresh }: SAVTypesM
                 Nouveau type
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="max-h-[90vh] flex flex-col">
               <DialogHeader>
                 <DialogTitle>
                   {editingType ? 'Modifier le type de SAV' : 'Nouveau type de SAV'}
@@ -283,7 +283,7 @@ export default function SAVTypesManager({ types, loading, onRefresh }: SAVTypesM
                 </DialogDescription>
               </DialogHeader>
               
-              <div className="space-y-4">
+              <div className="flex-1 overflow-y-auto space-y-4 pr-2">
                 <div>
                   <Label htmlFor="type_key">Clé du type</Label>
                   <Input
@@ -487,7 +487,7 @@ export default function SAVTypesManager({ types, loading, onRefresh }: SAVTypesM
                 </div>
               </div>
               
-              <DialogFooter>
+              <DialogFooter className="flex-shrink-0 pt-4 border-t">
                 <Button variant="outline" onClick={() => setDialogOpen(false)}>
                   Annuler
                 </Button>
