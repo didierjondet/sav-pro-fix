@@ -646,51 +646,53 @@ export default function Settings() {
                 return p;
               });
             }} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-10">
-              <TabsTrigger value="shop" className="flex items-center gap-2">
-                <Store className="h-4 w-4" />
-                Magasin
+            <TabsList className="flex w-full overflow-x-auto gap-1 h-auto p-1">
+              <TabsTrigger value="shop" className="flex items-center gap-2 px-3 py-2 shrink-0">
+                <Store className="h-4 w-4 shrink-0" />
+                <span className="hidden sm:inline">Magasin</span>
               </TabsTrigger>
-              <TabsTrigger value="notifications" className="flex items-center gap-2">
-                <MessageSquare className="h-4 w-4" />
-                Notifications
+              <TabsTrigger value="notifications" className="flex items-center gap-2 px-3 py-2 shrink-0">
+                <MessageSquare className="h-4 w-4 shrink-0" />
+                <span className="hidden sm:inline">Notifications</span>
               </TabsTrigger>
-              <TabsTrigger value="appearance" className="flex items-center gap-2">
-                <Monitor className="h-4 w-4" />
-                Apparence
+              <TabsTrigger value="appearance" className="flex items-center gap-2 px-3 py-2 shrink-0">
+                <Monitor className="h-4 w-4 shrink-0" />
+                <span className="hidden sm:inline">Apparence</span>
               </TabsTrigger>
-              <TabsTrigger value="sms" className="flex items-center gap-2">
-                <Mail className="h-4 w-4" />
-                Crédits SMS
+              <TabsTrigger value="sms" className="flex items-center gap-2 px-3 py-2 shrink-0">
+                <Mail className="h-4 w-4 shrink-0" />
+                <span className="hidden sm:inline">Crédits SMS</span>
               </TabsTrigger>
-              <TabsTrigger value="import-export" className="flex items-center gap-2">
-                <Upload className="h-4 w-4" />
-                Import/Export
+              <TabsTrigger value="import-export" className="flex items-center gap-2 px-3 py-2 shrink-0">
+                <Upload className="h-4 w-4 shrink-0" />
+                <span className="hidden sm:inline">Import/Export</span>
               </TabsTrigger>
-              <TabsTrigger value="sav-statuses" className="flex items-center gap-2">
-                <Tag className="h-4 w-4" />
-                Statuts SAV
+              <TabsTrigger value="sav-statuses" className="flex items-center gap-2 px-3 py-2 shrink-0">
+                <Tag className="h-4 w-4 shrink-0" />
+                <span className="hidden sm:inline">Statuts SAV</span>
               </TabsTrigger>
-              <TabsTrigger value="sav-types" className="flex items-center gap-2">
-                <Package className="h-4 w-4" />
-                Types de SAV
+              <TabsTrigger value="sav-types" className="flex items-center gap-2 px-3 py-2 shrink-0">
+                <Package className="h-4 w-4 shrink-0" />
+                <span className="hidden sm:inline">Types de SAV</span>
               </TabsTrigger>
-              <TabsTrigger value="subscription" className="flex items-center gap-2">
-                <CreditCard className="h-4 w-4" />
-                Abonnement
+              <TabsTrigger value="subscription" className="flex items-center gap-2 px-3 py-2 shrink-0">
+                <CreditCard className="h-4 w-4 shrink-0" />
+                <span className="hidden sm:inline">Abonnement</span>
               </TabsTrigger>
-              <TabsTrigger value="billing" className="flex items-center gap-2">
-                <FileText className="h-4 w-4" />
-                Facturation
+              <TabsTrigger value="billing" className="flex items-center gap-2 px-3 py-2 shrink-0">
+                <FileText className="h-4 w-4 shrink-0" />
+                <span className="hidden sm:inline">Facturation</span>
               </TabsTrigger>
-              <TabsTrigger value="ai" className="flex items-center gap-2">
-                <Sparkles className="h-4 w-4" />
-                IA
+              <TabsTrigger value="ai" className="flex items-center gap-2 px-3 py-2 shrink-0">
+                <Sparkles className="h-4 w-4 shrink-0" />
+                <span className="hidden sm:inline">IA</span>
               </TabsTrigger>
-              {isAdmin && <TabsTrigger value="users" className="flex items-center gap-2">
-                  <Users className="h-4 w-4" />
-                  Utilisateurs
-                </TabsTrigger>}
+              {isAdmin && (
+                <TabsTrigger value="users" className="flex items-center gap-2 px-3 py-2 shrink-0">
+                  <Users className="h-4 w-4 shrink-0" />
+                  <span className="hidden sm:inline">Utilisateurs</span>
+                </TabsTrigger>
+              )}
             </TabsList>
 
             <TabsContent value="shop" className="space-y-6">
