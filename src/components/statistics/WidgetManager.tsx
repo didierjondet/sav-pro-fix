@@ -27,7 +27,6 @@ export function WidgetManager({ onClose }: WidgetManagerProps) {
   // Catégoriser les widgets en sections
   const dashboardModules = modules.filter(m => 
     !m.isCustom && [
-      'sav-types-grid',
       'finance-kpis',
       'storage-usage',
       'annual-stats'
@@ -45,7 +44,6 @@ export function WidgetManager({ onClose }: WidgetManagerProps) {
   const statisticsModules = modules.filter(m => 
     !m.isCustom && 
     ![
-      'sav-types-grid',
       'finance-kpis',
       'storage-usage',
       'annual-stats',
