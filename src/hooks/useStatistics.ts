@@ -10,6 +10,7 @@ interface StatisticsData {
   savStats: {
     total: number;
     averageTime: number;
+    averageProcessingDays: number;
     lateRate: number;
   };
   partsStats: {
@@ -45,7 +46,7 @@ export function useStatistics(
     revenue: 0,
     expenses: 0,
     profit: 0,
-    savStats: { total: 0, averageTime: 0, lateRate: 0 },
+    savStats: { total: 0, averageTime: 0, averageProcessingDays: 0, lateRate: 0 },
     partsStats: { totalUsed: 0, averageCost: 0 },
     takeoverStats: { amount: 0, count: 0 },
     revenueChart: [],
@@ -421,6 +422,53 @@ export function useStatistics(
           averageTimeHours: savWithTimeCount > 0 ? (totalTimeMinutes / savWithTimeCount / 60).toFixed(1) : 0
         });
 
+        // Calculer le temps moyen de traitement (ouverture → fermeture avec statut prêt ou annulé)
+        // Identifier les statuts "prêt" et "annulé" dynamiquement
+        const readyStatusKeys = (shopSavStatuses || [])
+          .filter(s => s.status_key.toLowerCase().includes('ready') || s.status_key.toLowerCase().includes('prêt') || s.status_key.toLowerCase().includes('pret'))
+          .map(s => s.status_key);
+        
+        const cancelledStatusKeys = (shopSavStatuses || [])
+          .filter(s => s.status_key.toLowerCase().includes('cancel') || s.status_key.toLowerCase().includes('annul'))
+          .map(s => s.status_key);
+        
+        // Fallback si aucun statut trouvé
+        const closedStatusKeys = [...readyStatusKeys, ...cancelledStatusKeys];
+        if (closedStatusKeys.length === 0) {
+          closedStatusKeys.push('ready', 'cancelled');
+        }
+
+        // Filtrer les SAV fermés (prêt ou annulé)
+        const closedSavCases = (savCases || []).filter((c: any) => 
+          closedStatusKeys.includes(c.status) && !excludedFromStatsTypes.includes(c.sav_type)
+        );
+
+        let totalProcessingDays = 0;
+        let closedSavCount = 0;
+
+        closedSavCases.forEach((savCase: any) => {
+          const createdAt = new Date(savCase.created_at);
+          const closedAt = new Date(savCase.updated_at); // La date de mise à jour = date de fermeture
+          
+          // Calculer la différence en jours
+          const diffTime = closedAt.getTime() - createdAt.getTime();
+          const diffDays = diffTime / (1000 * 60 * 60 * 24);
+          
+          if (diffDays >= 0) {
+            totalProcessingDays += diffDays;
+            closedSavCount++;
+          }
+        });
+
+        const averageProcessingDays = closedSavCount > 0 
+          ? Number((totalProcessingDays / closedSavCount).toFixed(1)) 
+          : 0;
+
+        console.log('📊 Temps moyen de traitement:', {
+          closedSavCount,
+          averageProcessingDays: averageProcessingDays + ' jours'
+        });
+
         setData({
           revenue: totalRevenue,
           expenses: totalExpenses,
@@ -428,6 +476,7 @@ export function useStatistics(
           savStats: {
             total: (savCases || []).filter((c: any) => !excludedFromStatsTypes.includes(c.sav_type)).length,
             averageTime: savWithTimeCount > 0 ? Number((totalTimeMinutes / savWithTimeCount / 60).toFixed(1)) : 0,
+            averageProcessingDays,
             lateRate: lateRate
           },
           partsStats: {

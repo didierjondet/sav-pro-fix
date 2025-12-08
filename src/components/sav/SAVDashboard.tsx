@@ -756,14 +756,16 @@ export function SAVDashboard() {
         return (
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">SAV & Durée</CardTitle>
-              <CardDescription>Total SAV et temps moyen</CardDescription>
+              <CardTitle className="text-base">Temps moyen de traitement</CardTitle>
+              <CardDescription>De l'ouverture à la fermeture du SAV</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="text-sm text-muted-foreground">Total SAV</div>
-              <div className="text-2xl font-semibold">{statistics.savStats.total}</div>
-              <div className="text-sm text-muted-foreground mt-1">Temps moyen</div>
-              <div className="text-lg">{statistics.savStats.averageTime} h</div>
+              <div className="text-3xl font-semibold">
+                {statistics.savStats.averageProcessingDays} jours
+              </div>
+              <div className="text-sm text-muted-foreground mt-2">
+                Basé sur {statistics.savStats.total} SAV terminés (statut "Prêt" ou "Annulé")
+              </div>
             </CardContent>
           </Card>
         );

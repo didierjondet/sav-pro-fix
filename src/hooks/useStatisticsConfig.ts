@@ -37,7 +37,7 @@ const DEFAULT_MODULES: StatisticModule[] = [
   { id: 'kpi-expenses', name: 'Dépenses', description: 'Coût des pièces', enabled: true, order: 9 },
   { id: 'kpi-profit', name: 'Profit', description: 'Bénéfices nets', enabled: true, order: 10 },
   { id: 'kpi-takeover', name: 'Prises en charge', description: 'Montant et nombre', enabled: true, order: 11 },
-  { id: 'sav-stats', name: 'SAV & Durée', description: 'Total SAV et temps moyen', enabled: true, order: 12 },
+  { id: 'sav-stats', name: 'Temps moyen de traitement', description: 'Durée moyenne ouverture → fermeture', enabled: true, order: 12 },
   { id: 'late-rate', name: 'Taux de retard', description: 'SAV en retard', enabled: true, order: 13 },
   
   // Graphiques spécialisés
