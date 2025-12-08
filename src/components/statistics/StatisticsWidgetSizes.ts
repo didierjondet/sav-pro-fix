@@ -72,7 +72,7 @@ export const DEFAULT_MODULE_SIZES: ModuleSizeConfig = {
   'late-rate': 'small',
   
   // Graphiques moyens
-  'profitability-chart': 'large',
+  // 'profitability-chart' supprimé
   'top-parts-chart': 'medium',
   'late-rate-chart': 'medium',
   

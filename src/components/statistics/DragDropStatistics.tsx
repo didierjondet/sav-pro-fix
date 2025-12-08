@@ -566,32 +566,7 @@ export const DragDropStatistics = ({ period, onPeriodChange }: DragDropStatistic
           </div>
         );
 
-      // Graphiques existants
-      case 'profitability-chart':
-        return (
-          <div className={className}>
-            <DraggableStatisticsWidget {...baseProps}>
-              <ChartContainer
-                config={{
-                  revenue: { label: "Revenus", color: "hsl(var(--primary))" },
-                  expenses: { label: "Dépenses", color: "hsl(var(--muted-foreground))" },
-                  profit: { label: "Profit", color: "hsl(var(--secondary))" }
-                }}
-                className="h-72"
-              >
-                <LineChart data={profitabilityChart}>
-                  <XAxis dataKey="date" tickLine={false} axisLine={false} />
-                  <YAxis tickFormatter={(v) => `${Math.round(v/1000)}k`} tickLine={false} axisLine={false} />
-                  <ChartTooltip content={<ChartTooltipContent />} />
-                  <Legend />
-                  <Line type="monotone" dataKey="revenue" stroke="var(--color-revenue)" strokeWidth={2} dot={false} />
-                  <Line type="monotone" dataKey="expenses" stroke="var(--color-expenses)" strokeWidth={2} dot={false} />
-                  <Line type="monotone" dataKey="profit" stroke="var(--color-profit)" strokeWidth={2} dot={false} />
-                </LineChart>
-              </ChartContainer>
-            </DraggableStatisticsWidget>
-          </div>
-        );
+      // Widget profitability-chart supprimé
 
 
       case 'top-parts-chart':

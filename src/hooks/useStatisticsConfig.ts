@@ -41,7 +41,7 @@ const DEFAULT_MODULES: StatisticModule[] = [
   { id: 'late-rate', name: 'Taux de retard', description: 'SAV en retard', enabled: true, order: 13 },
   
   // Graphiques spécialisés
-  { id: 'profitability-chart', name: 'Évolution rentabilité', description: 'Graphique revenus/dépenses/profit', enabled: true, order: 14 },
+  // Widget profitability-chart supprimé
   { id: 'top-parts-chart', name: 'Top pièces utilisées', description: 'Classement des pièces', enabled: true, order: 15 },
   { id: 'late-rate-chart', name: 'Évolution retards', description: 'Tendance du taux de retard', enabled: true, order: 16 },
   { id: 'top-devices', name: 'Podium téléphones', description: 'Téléphones les plus réparés', enabled: true, order: 18 },
