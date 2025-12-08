@@ -1016,25 +1016,33 @@ export function SAVDashboard() {
         return (
           <DashboardWidgetContainer widgetId="revenue-breakdown">
             {(stats, periodLabel) => {
-              const revenueSources = [
-                { name: 'Réparations', value: stats.revenue * 0.6, percentage: 60, color: 'hsl(var(--primary))' },
-                { name: 'Remplacements', value: stats.revenue * 0.25, percentage: 25, color: 'hsl(var(--success))' },
-                { name: 'Diagnostics', value: stats.revenue * 0.15, percentage: 15, color: 'hsl(var(--warning))' }
-              ];
+              // Utiliser les vraies données de catégorisation des produits
+              const revenueSources = stats.revenueByProductCategory.map(cat => ({
+                name: cat.category,
+                value: cat.revenue,
+                percentage: cat.percentage,
+                color: cat.color
+              }));
 
-              const serviceTypes = [
-                { type: 'Réparation', revenue: stats.revenue * 0.6, count: Math.floor(stats.savStats.total * 0.6), averageValue: (stats.revenue * 0.6) / Math.max(Math.floor(stats.savStats.total * 0.6), 1) },
-                { type: 'Remplacement', revenue: stats.revenue * 0.25, count: Math.floor(stats.savStats.total * 0.25), averageValue: (stats.revenue * 0.25) / Math.max(Math.floor(stats.savStats.total * 0.25), 1) },
-                { type: 'Diagnostic', revenue: stats.revenue * 0.15, count: Math.floor(stats.savStats.total * 0.15), averageValue: (stats.revenue * 0.15) / Math.max(Math.floor(stats.savStats.total * 0.15), 1) }
-              ];
+              const serviceTypes = stats.revenueByProductCategory.map(cat => ({
+                type: cat.category,
+                revenue: cat.revenue,
+                count: cat.count,
+                averageValue: cat.count > 0 ? cat.revenue / cat.count : 0
+              }));
+
+              const topService = stats.revenueByProductCategory[0]?.category || 'N/A';
               
               return (
                 <Card className="md:col-span-2">
+                  <CardHeader className="pb-2">
+                    <CardDescription>{periodLabel} • Catégorisation intelligente basée sur les appareils</CardDescription>
+                  </CardHeader>
                   <RevenueBreakdownWidget 
                     revenueSources={revenueSources}
                     serviceTypes={serviceTypes}
                     totalRevenue={stats.revenue}
-                    topService="Réparation d'écran"
+                    topService={topService}
                   />
                 </Card>
               );

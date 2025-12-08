@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis } from 'recharts';
 import { Progress } from '@/components/ui/progress';
-import { DollarSign, Wrench, Phone, Users } from 'lucide-react';
+import { DollarSign, Wrench, Phone, Laptop, Gamepad2, Tablet, HelpCircle } from 'lucide-react';
 
 interface RevenueSource {
   name: string;
@@ -172,13 +172,22 @@ export const RevenueBreakdownWidget = ({
           {/* Détails des types de services */}
           <div className="space-y-3">
             <h4 className="text-sm font-medium">Détail par type de service</h4>
-            {serviceTypes.map((service, index) => (
+            {serviceTypes.map((service, index) => {
+              const getServiceIcon = (type: string) => {
+                switch (type) {
+                  case 'Téléphones': return <Phone className="h-4 w-4" />;
+                  case 'Informatique': return <Laptop className="h-4 w-4" />;
+                  case 'Consoles': return <Gamepad2 className="h-4 w-4" />;
+                  case 'Tablettes': return <Tablet className="h-4 w-4" />;
+                  default: return <HelpCircle className="h-4 w-4" />;
+                }
+              };
+              
+              return (
               <div key={index} className="space-y-2">
                 <div className="flex justify-between items-center">
                   <span className="text-sm font-medium flex items-center gap-2">
-                    {service.type === 'Réparation' && <Wrench className="h-4 w-4" />}
-                    {service.type === 'Remplacement' && <Phone className="h-4 w-4" />}
-                    {service.type === 'Diagnostic' && <Users className="h-4 w-4" />}
+                    {getServiceIcon(service.type)}
                     {service.type}
                   </span>
                   <div className="text-right text-sm">
@@ -189,11 +198,12 @@ export const RevenueBreakdownWidget = ({
                   </div>
                 </div>
                 <Progress 
-                  value={(service.revenue / totalRevenue) * 100} 
+                  value={totalRevenue > 0 ? (service.revenue / totalRevenue) * 100 : 0} 
                   className="h-2"
                 />
               </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </CardContent>
