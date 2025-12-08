@@ -30,7 +30,6 @@ export function WidgetManager({ onClose }: WidgetManagerProps) {
       'sav-types-grid',
       'finance-kpis',
       'storage-usage',
-      'monthly-profitability',
       'annual-stats'
     ].includes(m.id)
   );
@@ -49,7 +48,6 @@ export function WidgetManager({ onClose }: WidgetManagerProps) {
       'sav-types-grid',
       'finance-kpis',
       'storage-usage',
-      'monthly-profitability',
       'annual-stats',
       'financial-overview',
       'performance-trends',

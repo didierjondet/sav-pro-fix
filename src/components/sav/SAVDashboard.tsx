@@ -577,31 +577,7 @@ export function SAVDashboard() {
           </Card>
         );
       // Widget sav-type-distribution supprimé
-      case 'monthly-profitability':
-        return (
-          <Card className="md:col-span-2">
-            <CardHeader>
-              <CardTitle className="text-lg">Rentabilité mensuelle</CardTitle>
-              <CardDescription>Chiffre d'affaires vs Coûts</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={profitabilityData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" />
-                    <YAxis />
-                    <ChartTooltip formatter={(value) => [`${Number(value).toFixed(2)} €`, '']} />
-                    <Legend />
-                    <Bar dataKey="Chiffre d'affaires" fill="#22c55e" name="Chiffre d'affaires" />
-                    <Bar dataKey="Coûts" fill="#ef4444" name="Coûts" />
-                    <Bar dataKey="Marge" fill="#3b82f6" name="Marge" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </CardContent>
-          </Card>
-        );
+      // Widget monthly-profitability supprimé
       case 'annual-stats':
         return (
           <Card className="md:col-span-2">
