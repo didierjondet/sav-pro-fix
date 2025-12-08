@@ -3,6 +3,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { useShop } from './useShop';
 import { format, subDays, subMonths, startOfDay, endOfDay, startOfMonth } from 'date-fns';
 
+interface ProductCategoryRevenue {
+  category: string;
+  revenue: number;
+  count: number;
+  percentage: number;
+  color: string;
+}
+
 interface StatisticsData {
   revenue: number;
   expenses: number;
@@ -29,6 +37,7 @@ interface StatisticsData {
   topParts: Array<{ name: string; quantity: number; revenue: number }>;
   topDevices: Array<{ model: string; brand: string; count: number }>;
   savStatusDistribution: Array<{ name: string; value: number }>;
+  revenueByProductCategory: ProductCategoryRevenue[];
   loading: boolean;
 }
 
@@ -56,7 +65,8 @@ export function useStatistics(
     profitabilityChart: [],
     topParts: [],
     topDevices: [],
-    savStatusDistribution: []
+    savStatusDistribution: [],
+    revenueByProductCategory: []
   });
   const [loading, setLoading] = useState(true);
 
@@ -88,6 +98,76 @@ export function useStatistics(
     }
     
     return { start: startOfDay(start), end: endOfDay(end) };
+  };
+
+  // Fonction de catégorisation intelligente des produits
+  const categorizeDevice = (brand: string, model: string): string => {
+    const brandUpper = (brand || '').toUpperCase().trim();
+    const modelUpper = (model || '').toUpperCase().trim();
+    const combined = `${brandUpper} ${modelUpper}`;
+    
+    // Consoles de jeux
+    if (brandUpper === 'SONY' && (modelUpper.includes('PS') || modelUpper.includes('PLAYSTATION'))) {
+      return 'Consoles';
+    }
+    if (['MICROSOFT', 'XBOX', 'NINTENDO'].includes(brandUpper)) {
+      return 'Consoles';
+    }
+    if (combined.includes('PS4') || combined.includes('PS5') || combined.includes('PS3') || 
+        combined.includes('XBOX') || combined.includes('SWITCH') || combined.includes('NINTENDO') ||
+        combined.includes('PLAYSTATION') || modelUpper.includes('CONSOLE')) {
+      return 'Consoles';
+    }
+    
+    // Informatique (PC, laptops, MacBooks)
+    if (['TOSHIBA', 'HP', 'LENOVO', 'DELL', 'ASUS', 'ACER', 'MSI', 'GIGABYTE', 'RAZER'].includes(brandUpper)) {
+      return 'Informatique';
+    }
+    if (modelUpper.includes('MACBOOK') || modelUpper.includes('IMAC') || modelUpper.includes('MAC MINI')) {
+      return 'Informatique';
+    }
+    if (combined.includes('PC') || combined.includes('LAPTOP') || combined.includes('NOTEBOOK') ||
+        combined.includes('PROBOOK') || combined.includes('IDEAPAD') || combined.includes('VIVOBOOK') ||
+        combined.includes('THINKPAD') || combined.includes('PAVILION') || combined.includes('INSPIRON') ||
+        combined.includes('ORDINATEUR')) {
+      return 'Informatique';
+    }
+    
+    // Tablettes
+    if (modelUpper.includes('IPAD') || modelUpper.includes('TAB') || modelUpper.includes('TABLETTE') ||
+        modelUpper.includes('GALAXY TAB') || modelUpper.includes('SURFACE')) {
+      return 'Tablettes';
+    }
+    
+    // Téléphones (par défaut pour les marques connues de smartphones)
+    if (['APPLE', 'SAMSUNG', 'HUAWEI', 'XIAOMI', 'OPPO', 'GOOGLE', 'ONEPLUS', 'HONOR', 
+         'REALME', 'VIVO', 'MOTOROLA', 'NOKIA', 'LG', 'SONY', 'ASUS', 'ZTE', 'WIKO'].includes(brandUpper)) {
+      // Si c'est ASUS mais pas un PC, vérifier si c'est un téléphone
+      if (brandUpper === 'ASUS' && !modelUpper.includes('PHONE') && !modelUpper.includes('ROG PHONE')) {
+        // Pourrait être un PC, laisser passer pour autre vérification
+      } else if (brandUpper === 'SONY' && !modelUpper.includes('XPERIA')) {
+        // Pourrait être autre chose (PS, etc.)
+      } else {
+        return 'Téléphones';
+      }
+    }
+    if (modelUpper.includes('IPHONE') || modelUpper.includes('GALAXY') || modelUpper.includes('REDMI') ||
+        modelUpper.includes('PIXEL') || modelUpper.includes('MATE') || modelUpper.includes('XPERIA') ||
+        modelUpper.includes('PHONE') || modelUpper.includes('SMARTPHONE')) {
+      return 'Téléphones';
+    }
+    
+    // Autres (tout ce qui n'est pas identifié)
+    return 'Autres';
+  };
+
+  // Couleurs pour les catégories de produits
+  const categoryColors: Record<string, string> = {
+    'Téléphones': 'hsl(217, 91%, 60%)', // Bleu
+    'Informatique': 'hsl(142, 71%, 45%)', // Vert
+    'Consoles': 'hsl(32, 95%, 50%)', // Orange
+    'Tablettes': 'hsl(270, 70%, 60%)', // Violet
+    'Autres': 'hsl(220, 9%, 46%)' // Gris
   };
 
   const normalizeDeviceName = (brand: string, model: string) => {
@@ -211,6 +291,7 @@ export function useStatistics(
         const statusCounts: Record<string, number> = {};
         const partsUsage: Record<string, { quantity: number; revenue: number; name: string }> = {};
         const deviceUsage: Record<string, { model: string; brand: string; count: number }> = {};
+        const productCategoryData: Record<string, { revenue: number; count: number }> = {};
         const dailyData: Record<string, { revenue: number; expenses: number; count: number; completed: number; lateCount: number; activeCount: number }> = {};
 
         const currentDate = new Date();
@@ -375,6 +456,14 @@ export function useStatistics(
             dailyData[dateKey].expenses += caseCost;
             dailyData[dateKey].count += 1;
           }
+          
+          // Catégoriser le produit et accumuler les revenus par catégorie
+          const category = categorizeDevice(savCase.device_brand || '', savCase.device_model || '');
+          if (!productCategoryData[category]) {
+            productCategoryData[category] = { revenue: 0, count: 0 };
+          }
+          productCategoryData[category].revenue += caseRevenue;
+          productCategoryData[category].count += 1;
         });
 
         // Calculer le taux de retard sur TOUS les SAV actifs
@@ -499,7 +588,16 @@ export function useStatistics(
           })),
           topParts: topPartsArray,
           topDevices: topDevicesArray,
-          savStatusDistribution: statusDistribution
+          savStatusDistribution: statusDistribution,
+          revenueByProductCategory: Object.entries(productCategoryData)
+            .map(([category, data]) => ({
+              category,
+              revenue: data.revenue,
+              count: data.count,
+              percentage: totalRevenue > 0 ? (data.revenue / totalRevenue) * 100 : 0,
+              color: categoryColors[category] || categoryColors['Autres']
+            }))
+            .sort((a, b) => b.revenue - a.revenue)
         });
 
       } catch (error) {

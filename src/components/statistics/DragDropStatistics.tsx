@@ -107,6 +107,7 @@ export const DragDropStatistics = ({ period, onPeriodChange }: DragDropStatistic
     topParts,
     topDevices,
     lateRateChart,
+    revenueByProductCategory,
     loading
   } = useStatistics(period);
 
@@ -323,25 +324,30 @@ export const DragDropStatistics = ({ period, onPeriodChange }: DragDropStatistic
         );
 
       case 'revenue-breakdown':
-        const revenueSources = [
-          { name: 'Réparations', value: revenue * 0.6, percentage: 60, color: 'hsl(var(--primary))' },
-          { name: 'Remplacements', value: revenue * 0.25, percentage: 25, color: 'hsl(var(--success))' },
-          { name: 'Diagnostics', value: revenue * 0.15, percentage: 15, color: 'hsl(var(--warning))' }
-        ];
+        // Utiliser les vraies données de catégorisation des produits
+        const realRevenueSources = revenueByProductCategory.map(cat => ({
+          name: cat.category,
+          value: cat.revenue,
+          percentage: cat.percentage,
+          color: cat.color
+        }));
 
-        const serviceTypes = [
-          { type: 'Réparation', revenue: revenue * 0.6, count: Math.floor(savStats.total * 0.6), averageValue: (revenue * 0.6) / Math.floor(savStats.total * 0.6) },
-          { type: 'Remplacement', revenue: revenue * 0.25, count: Math.floor(savStats.total * 0.25), averageValue: (revenue * 0.25) / Math.floor(savStats.total * 0.25) },
-          { type: 'Diagnostic', revenue: revenue * 0.15, count: Math.floor(savStats.total * 0.15), averageValue: (revenue * 0.15) / Math.floor(savStats.total * 0.15) }
-        ];
+        const realServiceTypes = revenueByProductCategory.map(cat => ({
+          type: cat.category,
+          revenue: cat.revenue,
+          count: cat.count,
+          averageValue: cat.count > 0 ? cat.revenue / cat.count : 0
+        }));
+
+        const topCategory = revenueByProductCategory[0]?.category || 'N/A';
         
         return (
           <div className={className}>
             <RevenueBreakdownWidget 
-              revenueSources={revenueSources}
-              serviceTypes={serviceTypes}
+              revenueSources={realRevenueSources}
+              serviceTypes={realServiceTypes}
               totalRevenue={revenue}
-              topService="Réparation d'écran"
+              topService={topCategory}
             />
           </div>
         );
