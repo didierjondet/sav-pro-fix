@@ -21,7 +21,7 @@ export interface StatisticModule {
 
 const DEFAULT_MODULES: StatisticModule[] = [
   // Modules du tableau de bord SAV (/dashboard)
-  { id: 'sav-types-grid', name: 'Types de SAV', description: 'Répartition et accès rapides', enabled: true, order: 0 },
+  // Widget sav-types-grid supprimé
   { id: 'finance-kpis', name: 'Indicateurs financiers (mois)', description: 'CA, coûts, marge, prises en charge', enabled: true, order: 1 },
   { id: 'storage-usage', name: 'Espace de stockage', description: 'Utilisation du stockage', enabled: true, order: 2 },
   // Widget monthly-profitability supprimé

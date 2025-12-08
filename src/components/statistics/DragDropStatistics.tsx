@@ -36,7 +36,7 @@ import { RevenueBreakdownWidget } from './advanced/RevenueBreakdownWidget';
 import { CustomerSatisfactionWidget } from './advanced/CustomerSatisfactionWidget';
 
 // Importation des widgets spécialisés
-import { SAVTypesGridWidget } from './widgets/SAVTypesGridWidget';
+// SAVTypesGridWidget supprimé
 import { FinanceKPIsWidget } from './widgets/FinanceKPIsWidget';
 import { StorageUsageWidget } from './widgets/StorageUsageWidget';
 // MonthlyProfitabilityWidget supprimé
@@ -687,26 +687,7 @@ export const DragDropStatistics = ({ period, onPeriodChange }: DragDropStatistic
           </div>
         );
 
-      // Nouveaux widgets spécialisés
-      case 'sav-types-grid':
-        const savTypesData = [
-          { id: 'smartphone', name: 'Smartphone', count: Math.floor(savStats.total * 0.4), averageTime: 24, trend: 'up' as const, color: 'hsl(var(--primary))', icon: 'smartphone' },
-          { id: 'tablet', name: 'Tablette', count: Math.floor(savStats.total * 0.2), averageTime: 48, trend: 'stable' as const, color: 'hsl(var(--secondary))', icon: 'tablet' },
-          { id: 'laptop', name: 'Ordinateur', count: Math.floor(savStats.total * 0.15), averageTime: 72, trend: 'down' as const, color: 'hsl(var(--success))', icon: 'laptop' },
-          { id: 'watch', name: 'Montre', count: Math.floor(savStats.total * 0.1), averageTime: 12, trend: 'up' as const, color: 'hsl(var(--warning))', icon: 'watch' },
-          { id: 'headphones', name: 'Écouteurs', count: Math.floor(savStats.total * 0.1), averageTime: 6, trend: 'stable' as const, color: 'hsl(var(--accent))', icon: 'headphones' },
-          { id: 'camera', name: 'Appareil photo', count: Math.floor(savStats.total * 0.05), averageTime: 96, trend: 'down' as const, color: 'hsl(var(--muted-foreground))', icon: 'camera' }
-        ];
-        
-        return (
-          <div className={className}>
-            <SAVTypesGridWidget 
-              savTypes={savTypesData}
-              totalSAV={savStats.total}
-              onCreateNewSAV={(typeId) => navigate('/sav/new')}
-            />
-          </div>
-        );
+      // Widget sav-types-grid supprimé
 
       case 'finance-kpis':
         const currentMonthFinance = {

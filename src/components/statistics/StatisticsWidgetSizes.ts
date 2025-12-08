@@ -90,7 +90,6 @@ export const DEFAULT_MODULE_SIZES: ModuleSizeConfig = {
   'performance-trends': 'large',
   
   // Nouveaux widgets spécialisés
-  'sav-types-grid': 'medium',
   'finance-kpis': 'tall',
   'storage-usage': 'medium',
   'annual-stats': 'wide'
