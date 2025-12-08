@@ -1002,30 +1002,32 @@ export function SAVDashboard() {
         );
 
       case 'monthly-comparison':
-        // Mapper les abréviations anglaises vers les noms français
-        const monthNamesFr: Record<string, string> = {
-          'Jan': 'Janvier', 'Feb': 'Février', 'Mar': 'Mars', 'Apr': 'Avril',
-          'May': 'Mai', 'Jun': 'Juin', 'Jul': 'Juillet', 'Aug': 'Août',
-          'Sep': 'Septembre', 'Oct': 'Octobre', 'Nov': 'Novembre', 'Dec': 'Décembre'
+        // Utiliser les vraies données mensuelles de useMonthlyStatistics
+        const monthNamesFr: Record<number, string> = {
+          1: 'Janvier', 2: 'Février', 3: 'Mars', 4: 'Avril',
+          5: 'Mai', 6: 'Juin', 7: 'Juillet', 8: 'Août',
+          9: 'Septembre', 10: 'Octobre', 11: 'Novembre', 12: 'Décembre'
         };
         
-        const monthlyComparisonData = statistics.profitabilityChart.slice(-6).map((current, index) => {
-          const previous = statistics.profitabilityChart[statistics.profitabilityChart.length - 6 + index - 1] || current;
-          const growth = previous.revenue ? ((current.revenue - previous.revenue) / previous.revenue) * 100 : 0;
-          
-          // Extraire le vrai nom du mois depuis la date (format "Jan", "Feb", etc.)
-          const monthAbbr = current.date; // "Jan", "Feb", etc.
-          const monthName = monthNamesFr[monthAbbr] || monthAbbr;
+        // Prendre les données mensuelles jusqu'au mois actuel
+        const currentMonthIndex = new Date().getMonth(); // 0-11
+        const relevantMonthlyData = monthlyData.slice(0, currentMonthIndex + 1);
+        
+        const monthlyComparisonData = relevantMonthlyData.map((current, index) => {
+          const previous = index > 0 ? relevantMonthlyData[index - 1] : null;
+          const growth = previous?.revenue && previous.revenue > 0
+            ? ((current.revenue - previous.revenue) / previous.revenue) * 100 
+            : 0;
           
           return {
-            month: index + 1,
-            monthName: monthName,
+            month: current.month,
+            monthName: monthNamesFr[current.month] || `Mois ${current.month}`,
             currentRevenue: current.revenue,
-            previousRevenue: previous.revenue,
-            currentSavCount: statistics.completedSavChart.find(c => c.date === current.date)?.completed || 0,
-            previousSavCount: statistics.completedSavChart.find(c => c.date === previous.date)?.completed || 0,
+            previousRevenue: previous?.revenue || 0,
+            currentSavCount: current.savCount,
+            previousSavCount: previous?.savCount || 0,
             currentProfit: current.profit,
-            previousProfit: previous.profit,
+            previousProfit: previous?.profit || 0,
             growth
           };
         });
