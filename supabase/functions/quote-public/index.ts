@@ -45,8 +45,9 @@ Deno.serve(async (req) => {
     // Handle POST/PUT requests for status updates
     if (req.method === 'POST' || req.method === 'PUT') {
       const body = await req.json();
-      const { status } = body;
+      const { status, rejection_reason } = body;
 
+      // Valider le statut
       if (!status || !['accepted', 'rejected', 'sms_accepted'].includes(status)) {
         return new Response(
           JSON.stringify({ error: 'Invalid status. Must be "accepted", "rejected", or "sms_accepted"' }),
@@ -57,10 +58,34 @@ Deno.serve(async (req) => {
         );
       }
 
+      // Valider la raison de refus si statut = rejected
+      if (status === 'rejected') {
+        const validReasons = ['too_expensive', 'too_slow', 'no_trust', 'postponed'];
+        if (!rejection_reason || !validReasons.includes(rejection_reason)) {
+          return new Response(
+            JSON.stringify({ error: 'Une raison de refus est requise (too_expensive, too_slow, no_trust, postponed)' }),
+            { 
+              status: 400, 
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+            }
+          );
+        }
+      }
+
+      // Préparer les données de mise à jour
+      const updateData: Record<string, any> = { status };
+      
+      if (status === 'rejected') {
+        updateData.rejection_reason = rejection_reason;
+        updateData.rejected_at = new Date().toISOString();
+      } else if (status === 'accepted' || status === 'sms_accepted') {
+        updateData.accepted_at = new Date().toISOString();
+      }
+
       // Update quote status
       const { data: updatedQuote, error: updateError } = await supabase
         .from('quotes')
-        .update({ status })
+        .update(updateData)
         .eq('id', quoteId)
         .select()
         .single();
@@ -75,6 +100,8 @@ Deno.serve(async (req) => {
           }
         );
       }
+
+      console.log(`Quote ${quoteId} updated to status: ${status}${rejection_reason ? `, reason: ${rejection_reason}` : ''}`);
 
       return new Response(
         JSON.stringify({ success: true, quote: updatedQuote }),
