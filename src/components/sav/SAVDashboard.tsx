@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, HardDrive, Calendar, Info, Medal, Trophy, Award } from 'lucide-react';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as ChartTooltip, ResponsiveContainer, Legend, LineChart, Line } from 'recharts';
@@ -16,6 +16,7 @@ import { useSAVPartsCosts } from '@/hooks/useSAVPartsCosts';
 import { useShopStorageUsage } from '@/hooks/useStorageUsage';
 import { useMonthlyStatistics } from '@/hooks/useMonthlyStatistics';
 import { useStatistics } from '@/hooks/useStatistics';
+import { useWidgetConfiguration } from '@/hooks/useWidgetConfiguration';
 import { calculateSAVDelay } from '@/hooks/useSAVDelay';
 import { useShopSAVTypes } from '@/hooks/useShopSAVTypes';
 import { useShopSAVStatuses } from '@/hooks/useShopSAVStatuses';
@@ -39,6 +40,42 @@ import { CustomerSatisfactionWidget } from '@/components/statistics/advanced/Cus
 // Limite de stockage par magasin (500 MB = 0.5 GB)
 const STORAGE_LIMIT_GB = 0.5;
 
+// Type pour les périodes de statistiques
+type StatisticsPeriod = '7d' | '30d' | '1m_calendar' | '3m' | '6m' | '1y';
+
+// Composant wrapper pour appliquer les configurations individuelles des widgets
+interface DashboardWidgetContainerProps {
+  widgetId: string;
+  children: (stats: ReturnType<typeof useStatistics>, periodLabel: string) => ReactNode;
+}
+
+function DashboardWidgetContainer({ widgetId, children }: DashboardWidgetContainerProps) {
+  const { config } = useWidgetConfiguration(widgetId);
+  
+  // Mapper la temporalité configurée vers la période useStatistics
+  const effectivePeriod: StatisticsPeriod = 
+    config?.temporality === 'monthly' ? '30d'
+    : config?.temporality === 'monthly_calendar' ? '1m_calendar'
+    : config?.temporality === 'quarterly' ? '3m'
+    : config?.temporality === 'yearly' ? '1y'
+    : '30d';
+  
+  // Label pour l'affichage
+  const periodLabel = 
+    config?.temporality === 'monthly' ? '30 derniers jours'
+    : config?.temporality === 'monthly_calendar' ? 'Ce mois (calendaire)'
+    : config?.temporality === 'quarterly' ? '3 derniers mois'
+    : config?.temporality === 'yearly' ? 'Cette année'
+    : '30 derniers jours';
+  
+  const stats = useStatistics(effectivePeriod, {
+    savStatuses: config?.sav_statuses_filter ?? undefined,
+    savTypes: config?.sav_types_filter ?? undefined,
+  });
+  
+  return <>{children(stats, periodLabel)}</>;
+}
+
 export function SAVDashboard() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isWidgetDialogOpen, setIsWidgetDialogOpen] = useState(false);
@@ -51,8 +88,8 @@ export function SAVDashboard() {
   const { getAllTypes, getTypeInfo, types } = useShopSAVTypes();
   const navigate = useNavigate();
 
-  // Hook pour les statistiques additionnelles (widgets statistiques)
-  const statistics = useStatistics('30d');
+  // Hook pour les statistiques par défaut (pour widgets non configurables)
+  const defaultStatistics = useStatistics('30d');
   
   // Hook pour les données de satisfaction client
   const satisfactionStats = useSatisfactionSurveys();
@@ -615,41 +652,41 @@ export function SAVDashboard() {
       
       // Widgets statistiques avancés
       case 'financial-overview':
-        const financialData = statistics.profitabilityChart.map(item => ({
+        const financialData = defaultStatistics.profitabilityChart.map(item => ({
           date: item.date,
           revenue: item.revenue,
           expenses: item.expenses,
           profit: item.profit,
           margin: item.profit ? (item.profit / item.revenue) * 100 : 0,
-          savCount: statistics.completedSavChart.find(c => c.date === item.date)?.completed || 0
+          savCount: defaultStatistics.completedSavChart.find(c => c.date === item.date)?.completed || 0
         }));
         
         return (
           <Card className="md:col-span-2">
             <FinancialOverviewWidget 
               data={financialData}
-              totalRevenue={statistics.revenue}
-              totalExpenses={statistics.expenses}
-              totalProfit={statistics.profit}
-              averageMargin={statistics.profit ? (statistics.profit / statistics.revenue) * 100 : 0}
+              totalRevenue={defaultStatistics.revenue}
+              totalExpenses={defaultStatistics.expenses}
+              totalProfit={defaultStatistics.profit}
+              averageMargin={defaultStatistics.profit ? (defaultStatistics.profit / defaultStatistics.revenue) * 100 : 0}
             />
           </Card>
         );
 
       case 'performance-trends':
         const performanceData = [
-          { metric: 'Temps moyen', value: Math.min((statistics.savStats.averageTime / 48) * 100, 100), maxValue: 100, fullMark: 100 },
+          { metric: 'Temps moyen', value: Math.min((defaultStatistics.savStats.averageTime / 48) * 100, 100), maxValue: 100, fullMark: 100 },
           { metric: 'Taux completion', value: 85, maxValue: 100, fullMark: 100 },
           { metric: 'Satisfaction', value: 92, maxValue: 100, fullMark: 100 },
-          { metric: 'Efficacité', value: Math.max(100 - statistics.savStats.lateRate, 0), maxValue: 100, fullMark: 100 },
+          { metric: 'Efficacité', value: Math.max(100 - defaultStatistics.savStats.lateRate, 0), maxValue: 100, fullMark: 100 },
           { metric: 'Qualité', value: 88, maxValue: 100, fullMark: 100 }
         ];
 
         const statusData = [
-          { name: 'En attente', value: statistics.savStats.total - Math.floor(statistics.savStats.total * 0.7), color: 'hsl(var(--warning))' },
-          { name: 'En cours', value: Math.floor(statistics.savStats.total * 0.4), color: 'hsl(var(--info))' },
-          { name: 'Prêt', value: Math.floor(statistics.savStats.total * 0.2), color: 'hsl(var(--success))' },
-          { name: 'Livré', value: Math.floor(statistics.savStats.total * 0.1), color: 'hsl(var(--muted-foreground))' }
+          { name: 'En attente', value: defaultStatistics.savStats.total - Math.floor(defaultStatistics.savStats.total * 0.7), color: 'hsl(var(--warning))' },
+          { name: 'En cours', value: Math.floor(defaultStatistics.savStats.total * 0.4), color: 'hsl(var(--info))' },
+          { name: 'Prêt', value: Math.floor(defaultStatistics.savStats.total * 0.2), color: 'hsl(var(--success))' },
+          { name: 'Livré', value: Math.floor(defaultStatistics.savStats.total * 0.1), color: 'hsl(var(--muted-foreground))' }
         ];
         
         return (
@@ -657,8 +694,8 @@ export function SAVDashboard() {
             <SAVPerformanceWidget 
               performanceData={performanceData}
               statusData={statusData}
-              totalSAV={statistics.savStats.total}
-              averageTime={statistics.savStats.averageTime}
+              totalSAV={defaultStatistics.savStats.total}
+              averageTime={defaultStatistics.savStats.averageTime}
               completionRate={85}
               customerSatisfaction={92}
             />
@@ -666,7 +703,7 @@ export function SAVDashboard() {
         );
 
       case 'parts-usage-heatmap':
-        const partsUsageData = statistics.topParts.map((part, index) => ({
+        const partsUsageData = defaultStatistics.topParts.map((part, index) => ({
           name: part.name,
           value: part.quantity,
           cost: part.quantity * 25,
@@ -679,230 +716,272 @@ export function SAVDashboard() {
           <Card className="md:col-span-2">
             <PartsUsageHeatmapWidget 
               partsData={partsUsageData}
-              totalParts={statistics.topParts.reduce((sum, p) => sum + p.quantity, 0)}
-              totalCost={statistics.expenses}
+              totalParts={defaultStatistics.topParts.reduce((sum, p) => sum + p.quantity, 0)}
+              totalCost={defaultStatistics.expenses}
               topCategory="Écrans"
             />
           </Card>
         );
 
-      // KPIs individuels
+      // KPIs individuels avec DashboardWidgetContainer
       case 'kpi-revenue':
         return (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Chiffre d'affaires</CardTitle>
-              <CardDescription>Revenus totaux</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div 
-                onClick={() => navigate(`/stats/revenue?period=30d`)}
-                className="cursor-pointer hover:bg-accent/20 p-2 rounded transition-colors"
-              >
-                <p className="text-3xl font-semibold">{new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(statistics.revenue)}</p>
-              </div>
-            </CardContent>
-          </Card>
+          <DashboardWidgetContainer widgetId="kpi-revenue">
+            {(stats, periodLabel) => (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Chiffre d'affaires</CardTitle>
+                  <CardDescription>{periodLabel}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div 
+                    onClick={() => navigate(`/stats/revenue?period=30d`)}
+                    className="cursor-pointer hover:bg-accent/20 p-2 rounded transition-colors"
+                  >
+                    <p className="text-3xl font-semibold">{new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(stats.revenue)}</p>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </DashboardWidgetContainer>
         );
 
       case 'kpi-expenses':
         return (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Dépenses</CardTitle>
-              <CardDescription>Coût des pièces</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div 
-                onClick={() => navigate(`/stats/expenses?period=30d`)}
-                className="cursor-pointer hover:bg-accent/20 p-2 rounded transition-colors"
-              >
-                <p className="text-3xl font-semibold">{new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(statistics.expenses)}</p>
-              </div>
-            </CardContent>
-          </Card>
+          <DashboardWidgetContainer widgetId="kpi-expenses">
+            {(stats, periodLabel) => (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Dépenses</CardTitle>
+                  <CardDescription>{periodLabel}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div 
+                    onClick={() => navigate(`/stats/expenses?period=30d`)}
+                    className="cursor-pointer hover:bg-accent/20 p-2 rounded transition-colors"
+                  >
+                    <p className="text-3xl font-semibold">{new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(stats.expenses)}</p>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </DashboardWidgetContainer>
         );
 
       case 'kpi-profit':
         return (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Profit</CardTitle>
-              <CardDescription>Bénéfices nets</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-semibold">{new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(statistics.profit)}</p>
-            </CardContent>
-          </Card>
+          <DashboardWidgetContainer widgetId="kpi-profit">
+            {(stats, periodLabel) => (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Profit</CardTitle>
+                  <CardDescription>{periodLabel}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-3xl font-semibold">{new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(stats.profit)}</p>
+                </CardContent>
+              </Card>
+            )}
+          </DashboardWidgetContainer>
         );
 
       case 'kpi-takeover':
         return (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Prises en charge</CardTitle>
-              <CardDescription>Montant et nombre</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-sm text-muted-foreground">Montant total</div>
-              <div className="text-2xl font-semibold">{new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(statistics.takeoverStats.amount)}</div>
-              <div className="text-sm text-muted-foreground mt-1">Nombre de SAV</div>
-              <div className="text-lg">{statistics.takeoverStats.count}</div>
-            </CardContent>
-          </Card>
+          <DashboardWidgetContainer widgetId="kpi-takeover">
+            {(stats, periodLabel) => (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Prises en charge</CardTitle>
+                  <CardDescription>{periodLabel}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-sm text-muted-foreground">Montant total</div>
+                  <div className="text-2xl font-semibold">{new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(stats.takeoverStats.amount)}</div>
+                  <div className="text-sm text-muted-foreground mt-1">Nombre de SAV</div>
+                  <div className="text-lg">{stats.takeoverStats.count}</div>
+                </CardContent>
+              </Card>
+            )}
+          </DashboardWidgetContainer>
         );
 
       case 'sav-stats':
         return (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Temps moyen de traitement</CardTitle>
-              <CardDescription>De l'ouverture à la fermeture du SAV</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-semibold">
-                {statistics.savStats.averageProcessingDays} jours
-              </div>
-              <div className="text-sm text-muted-foreground mt-2">
-                Basé sur {statistics.savStats.total} SAV terminés (statut "Prêt" ou "Annulé")
-              </div>
-            </CardContent>
-          </Card>
+          <DashboardWidgetContainer widgetId="sav-stats">
+            {(stats, periodLabel) => (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Temps moyen de traitement</CardTitle>
+                  <CardDescription>{periodLabel}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-semibold">
+                    {stats.savStats.averageProcessingDays} jours
+                  </div>
+                  <div className="text-sm text-muted-foreground mt-2">
+                    Basé sur {stats.savStats.total} SAV terminés (statut "Prêt" ou "Annulé")
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </DashboardWidgetContainer>
         );
 
       case 'late-rate':
         return (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Taux de retard</CardTitle>
-              <CardDescription>SAV en retard</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="text-sm text-muted-foreground">SAV en retard</div>
-              <div className="text-3xl font-semibold text-destructive">{statistics.savStats.lateRate.toFixed(1)}%</div>
-              <div className="text-sm text-muted-foreground mt-1">Basé sur les délais configurés</div>
-            </CardContent>
-          </Card>
+          <DashboardWidgetContainer widgetId="late-rate">
+            {(stats, periodLabel) => (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Taux de retard</CardTitle>
+                  <CardDescription>{periodLabel}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-sm text-muted-foreground">SAV en retard</div>
+                  <div className="text-3xl font-semibold text-destructive">{stats.savStats.lateRate.toFixed(1)}%</div>
+                  <div className="text-sm text-muted-foreground mt-1">Basé sur les délais configurés</div>
+                </CardContent>
+              </Card>
+            )}
+          </DashboardWidgetContainer>
         );
 
       // Graphiques
       case 'profitability-chart':
         return (
-          <Card className="md:col-span-2">
-            <CardHeader>
-              <CardTitle className="text-base">Évolution rentabilité</CardTitle>
-              <CardDescription>Graphique revenus/dépenses/profit</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ChartContainer
-                config={{
-                  revenue: { label: "Revenus", color: "hsl(var(--primary))" },
-                  expenses: { label: "Dépenses", color: "hsl(var(--muted-foreground))" },
-                  profit: { label: "Profit", color: "hsl(var(--secondary))" }
-                }}
-                className="h-72"
-              >
-                <LineChart data={statistics.profitabilityChart}>
-                  <XAxis dataKey="date" tickLine={false} axisLine={false} />
-                  <YAxis tickFormatter={(v) => `${v/1000}k`} tickLine={false} axisLine={false} />
-                  <ChartTooltip content={<ChartTooltipContent />} />
-                  <Legend />
-                  <Line type="monotone" dataKey="revenue" stroke="var(--color-revenue)" strokeWidth={2} dot={false} />
-                  <Line type="monotone" dataKey="expenses" stroke="var(--color-expenses)" strokeWidth={2} dot={false} />
-                  <Line type="monotone" dataKey="profit" stroke="var(--color-profit)" strokeWidth={2} dot={false} />
-                </LineChart>
-              </ChartContainer>
-            </CardContent>
-          </Card>
+          <DashboardWidgetContainer widgetId="profitability-chart">
+            {(stats, periodLabel) => (
+              <Card className="md:col-span-2">
+                <CardHeader>
+                  <CardTitle className="text-base">Évolution rentabilité</CardTitle>
+                  <CardDescription>{periodLabel}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ChartContainer
+                    config={{
+                      revenue: { label: "Revenus", color: "hsl(var(--primary))" },
+                      expenses: { label: "Dépenses", color: "hsl(var(--muted-foreground))" },
+                      profit: { label: "Profit", color: "hsl(var(--secondary))" }
+                    }}
+                    className="h-72"
+                  >
+                    <LineChart data={stats.profitabilityChart}>
+                      <XAxis dataKey="date" tickLine={false} axisLine={false} />
+                      <YAxis tickFormatter={(v) => `${Math.round(v/1000)}k`} tickLine={false} axisLine={false} />
+                      <ChartTooltip content={<ChartTooltipContent />} />
+                      <Legend />
+                      <Line type="monotone" dataKey="revenue" stroke="var(--color-revenue)" strokeWidth={2} dot={false} />
+                      <Line type="monotone" dataKey="expenses" stroke="var(--color-expenses)" strokeWidth={2} dot={false} />
+                      <Line type="monotone" dataKey="profit" stroke="var(--color-profit)" strokeWidth={2} dot={false} />
+                    </LineChart>
+                  </ChartContainer>
+                </CardContent>
+              </Card>
+            )}
+          </DashboardWidgetContainer>
         );
 
 
       case 'top-parts-chart':
         return (
-          <Card className="md:col-span-2">
-            <CardHeader>
-              <CardTitle className="text-base">Top pièces utilisées</CardTitle>
-              <CardDescription>Classement des pièces</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ChartContainer
-                config={{ quantity: { label: "Quantité", color: "hsl(var(--primary))" } }}
-                className="h-72"
-              >
-                <BarChart data={statistics.topParts}>
-                  <XAxis dataKey="name" tickLine={false} axisLine={false} interval={0} angle={-15} textAnchor="end" height={60} />
-                  <YAxis tickLine={false} axisLine={false} />
-                  <ChartTooltip content={<ChartTooltipContent />} />
-                  <Bar dataKey="quantity" fill="var(--color-quantity)" radius={4} />
-                </BarChart>
-              </ChartContainer>
-            </CardContent>
-          </Card>
+          <DashboardWidgetContainer widgetId="top-parts-chart">
+            {(stats, periodLabel) => (
+              <Card className="md:col-span-2">
+                <CardHeader>
+                  <CardTitle className="text-base">Top pièces utilisées</CardTitle>
+                  <CardDescription>{periodLabel}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ChartContainer
+                    config={{ quantity: { label: "Quantité", color: "hsl(var(--primary))" } }}
+                    className="h-72"
+                  >
+                    <BarChart data={stats.topParts}>
+                      <XAxis dataKey="name" tickLine={false} axisLine={false} interval={0} angle={-15} textAnchor="end" height={60} />
+                      <YAxis tickLine={false} axisLine={false} />
+                      <ChartTooltip content={<ChartTooltipContent />} />
+                      <Bar dataKey="quantity" fill="var(--color-quantity)" radius={4} />
+                    </BarChart>
+                  </ChartContainer>
+                </CardContent>
+              </Card>
+            )}
+          </DashboardWidgetContainer>
         );
 
       case 'late-rate-chart':
         return (
-          <Card className="md:col-span-2">
-            <CardHeader>
-              <CardTitle className="text-base">Évolution retards</CardTitle>
-              <CardDescription>Tendance du taux de retard</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ChartContainer
-                config={{ lateRate: { label: "Taux de retard (%)", color: "hsl(var(--destructive))" } }}
-                className="h-72"
-              >
-                <LineChart data={statistics.lateRateChart}>
-                  <XAxis dataKey="date" tickLine={false} axisLine={false} />
-                  <YAxis domain={[0, 100]} tickFormatter={(v) => `${v}%`} tickLine={false} axisLine={false} />
-                  <ChartTooltip content={<ChartTooltipContent />} />
-                  <Line type="monotone" dataKey="lateRate" stroke="var(--color-lateRate)" strokeWidth={2} dot={true} />
-                </LineChart>
-              </ChartContainer>
-            </CardContent>
-          </Card>
+          <DashboardWidgetContainer widgetId="late-rate-chart">
+            {(stats, periodLabel) => (
+              <Card className="md:col-span-2">
+                <CardHeader>
+                  <CardTitle className="text-base">Évolution retards</CardTitle>
+                  <CardDescription>{periodLabel}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ChartContainer
+                    config={{ lateRate: { label: "Taux de retard (%)", color: "hsl(var(--destructive))" } }}
+                    className="h-72"
+                  >
+                    <LineChart data={stats.lateRateChart}>
+                      <XAxis dataKey="date" tickLine={false} axisLine={false} />
+                      <YAxis domain={[0, 100]} tickFormatter={(v) => `${Math.round(v)}%`} tickLine={false} axisLine={false} />
+                      <ChartTooltip content={<ChartTooltipContent />} />
+                      <Line type="monotone" dataKey="lateRate" stroke="var(--color-lateRate)" strokeWidth={2} dot={true} />
+                    </LineChart>
+                  </ChartContainer>
+                </CardContent>
+              </Card>
+            )}
+          </DashboardWidgetContainer>
         );
 
       case 'top-devices':
-        const getPodiumIcon = (index: number) => {
-          if (index === 0) return <Trophy className="w-6 h-6 text-yellow-500" />;
-          if (index === 1) return <Medal className="w-6 h-6 text-gray-400" />;
-          if (index === 2) return <Award className="w-6 h-6 text-amber-600" />;
-          return <div className="w-6 h-6 flex items-center justify-center text-lg font-bold text-muted-foreground">{index + 1}</div>;
-        };
-
-        const getPodiumBg = (index: number) => {
-          if (index === 0) return "bg-gradient-to-r from-yellow-50 to-yellow-100 border-yellow-200";
-          if (index === 1) return "bg-gradient-to-r from-gray-50 to-gray-100 border-gray-200";
-          if (index === 2) return "bg-gradient-to-r from-amber-50 to-amber-100 border-amber-200";
-          return "bg-gradient-to-r from-slate-50 to-slate-100 border-slate-200";
-        };
-
         return (
-          <Card className="md:col-span-2">
-            <CardHeader>
-              <CardTitle className="text-base">Podium téléphones</CardTitle>
-              <CardDescription>Téléphones les plus réparés</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {statistics.topDevices.slice(0, 10).map((device, index) => (
-                  <div 
-                    key={index}
-                    className={`flex items-center gap-4 p-3 rounded-lg border-2 transition-all ${getPodiumBg(index)}`}
-                  >
-                    <div className="flex-shrink-0">
-                      {getPodiumIcon(index)}
+          <DashboardWidgetContainer widgetId="top-devices">
+            {(stats, periodLabel) => {
+              const getPodiumIcon = (index: number) => {
+                if (index === 0) return <Trophy className="w-6 h-6 text-yellow-500" />;
+                if (index === 1) return <Medal className="w-6 h-6 text-gray-400" />;
+                if (index === 2) return <Award className="w-6 h-6 text-amber-600" />;
+                return <div className="w-6 h-6 flex items-center justify-center text-lg font-bold text-muted-foreground">{index + 1}</div>;
+              };
+
+              const getPodiumBg = (index: number) => {
+                if (index === 0) return "bg-gradient-to-r from-yellow-50 to-yellow-100 border-yellow-200";
+                if (index === 1) return "bg-gradient-to-r from-gray-50 to-gray-100 border-gray-200";
+                if (index === 2) return "bg-gradient-to-r from-amber-50 to-amber-100 border-amber-200";
+                return "bg-gradient-to-r from-slate-50 to-slate-100 border-slate-200";
+              };
+
+              return (
+                <Card className="md:col-span-2">
+                  <CardHeader>
+                    <CardTitle className="text-base">Podium téléphones</CardTitle>
+                    <CardDescription>{periodLabel}</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {stats.topDevices.slice(0, 10).map((device, index) => (
+                        <div 
+                          key={index}
+                          className={`flex items-center gap-4 p-3 rounded-lg border-2 transition-all ${getPodiumBg(index)}`}
+                        >
+                          <div className="flex-shrink-0">
+                            {getPodiumIcon(index)}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-semibold truncate">{device.brand} {device.model}</div>
+                            <div className="text-sm text-muted-foreground">{device.count} réparations</div>
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-semibold truncate">{device.brand} {device.model}</div>
-                      <div className="text-sm text-muted-foreground">{device.count} réparations</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+                  </CardContent>
+                </Card>
+              );
+            }}
+          </DashboardWidgetContainer>
         );
 
       case 'monthly-comparison':
@@ -967,27 +1046,33 @@ export function SAVDashboard() {
         );
 
       case 'revenue-breakdown':
-        const revenueSources = [
-          { name: 'Réparations', value: statistics.revenue * 0.6, percentage: 60, color: 'hsl(var(--primary))' },
-          { name: 'Remplacements', value: statistics.revenue * 0.25, percentage: 25, color: 'hsl(var(--success))' },
-          { name: 'Diagnostics', value: statistics.revenue * 0.15, percentage: 15, color: 'hsl(var(--warning))' }
-        ];
-
-        const serviceTypes = [
-          { type: 'Réparation', revenue: statistics.revenue * 0.6, count: Math.floor(statistics.savStats.total * 0.6), averageValue: (statistics.revenue * 0.6) / Math.floor(statistics.savStats.total * 0.6) },
-          { type: 'Remplacement', revenue: statistics.revenue * 0.25, count: Math.floor(statistics.savStats.total * 0.25), averageValue: (statistics.revenue * 0.25) / Math.floor(statistics.savStats.total * 0.25) },
-          { type: 'Diagnostic', revenue: statistics.revenue * 0.15, count: Math.floor(statistics.savStats.total * 0.15), averageValue: (statistics.revenue * 0.15) / Math.floor(statistics.savStats.total * 0.15) }
-        ];
-        
         return (
-          <Card className="md:col-span-2">
-            <RevenueBreakdownWidget 
-              revenueSources={revenueSources}
-              serviceTypes={serviceTypes}
-              totalRevenue={statistics.revenue}
-              topService="Réparation d'écran"
-            />
-          </Card>
+          <DashboardWidgetContainer widgetId="revenue-breakdown">
+            {(stats, periodLabel) => {
+              const revenueSources = [
+                { name: 'Réparations', value: stats.revenue * 0.6, percentage: 60, color: 'hsl(var(--primary))' },
+                { name: 'Remplacements', value: stats.revenue * 0.25, percentage: 25, color: 'hsl(var(--success))' },
+                { name: 'Diagnostics', value: stats.revenue * 0.15, percentage: 15, color: 'hsl(var(--warning))' }
+              ];
+
+              const serviceTypes = [
+                { type: 'Réparation', revenue: stats.revenue * 0.6, count: Math.floor(stats.savStats.total * 0.6), averageValue: (stats.revenue * 0.6) / Math.max(Math.floor(stats.savStats.total * 0.6), 1) },
+                { type: 'Remplacement', revenue: stats.revenue * 0.25, count: Math.floor(stats.savStats.total * 0.25), averageValue: (stats.revenue * 0.25) / Math.max(Math.floor(stats.savStats.total * 0.25), 1) },
+                { type: 'Diagnostic', revenue: stats.revenue * 0.15, count: Math.floor(stats.savStats.total * 0.15), averageValue: (stats.revenue * 0.15) / Math.max(Math.floor(stats.savStats.total * 0.15), 1) }
+              ];
+              
+              return (
+                <Card className="md:col-span-2">
+                  <RevenueBreakdownWidget 
+                    revenueSources={revenueSources}
+                    serviceTypes={serviceTypes}
+                    totalRevenue={stats.revenue}
+                    topService="Réparation d'écran"
+                  />
+                </Card>
+              );
+            }}
+          </DashboardWidgetContainer>
         );
 
       case 'customer-satisfaction':
