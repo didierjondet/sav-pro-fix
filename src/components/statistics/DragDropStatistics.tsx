@@ -515,11 +515,15 @@ export const DragDropStatistics = ({ period, onPeriodChange }: DragDropStatistic
                       <div className="flex items-center justify-between mb-2">
                         <div className="text-xs text-muted-foreground">📅 {periodLabel}</div>
                       </div>
-                      <div className="text-sm text-muted-foreground">Total SAV (hors internes)</div>
-                      <div className="text-2xl font-semibold">{savStats.total}</div>
-                      <div className="text-sm text-muted-foreground mt-2">Temps moyen de réparation</div>
-                      <div className="text-lg font-semibold">{savStats.averageTime}h</div>
-                      <div className="text-xs text-muted-foreground mt-1">Calculé sur SAV avec temps saisi</div>
+                      <div className="text-3xl font-semibold">
+                        {savStats.averageProcessingDays} jours
+                      </div>
+                      <div className="text-sm text-muted-foreground mt-2">
+                        De l'ouverture à la fermeture du SAV
+                      </div>
+                      <div className="text-xs text-muted-foreground mt-1">
+                        Basé sur {savStats.total} SAV terminés (statut "Prêt" ou "Annulé")
+                      </div>
                     </DraggableStatisticsWidget>
                   </>
                 );
