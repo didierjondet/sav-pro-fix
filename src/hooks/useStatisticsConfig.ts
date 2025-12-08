@@ -24,7 +24,7 @@ const DEFAULT_MODULES: StatisticModule[] = [
   { id: 'sav-types-grid', name: 'Types de SAV', description: 'Répartition et accès rapides', enabled: true, order: 0 },
   { id: 'finance-kpis', name: 'Indicateurs financiers (mois)', description: 'CA, coûts, marge, prises en charge', enabled: true, order: 1 },
   { id: 'storage-usage', name: 'Espace de stockage', description: 'Utilisation du stockage', enabled: true, order: 2 },
-  { id: 'monthly-profitability', name: 'Rentabilité mensuelle', description: 'CA vs Coûts vs Marge', enabled: true, order: 3 },
+  // Widget monthly-profitability supprimé
   { id: 'annual-stats', name: 'Statistiques annuelles', description: 'Évolution mensuelle (année)', enabled: true, order: 4 },
 
   // Widgets avancés combinés - Page Statistiques

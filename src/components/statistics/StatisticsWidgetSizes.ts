@@ -93,6 +93,5 @@ export const DEFAULT_MODULE_SIZES: ModuleSizeConfig = {
   'sav-types-grid': 'medium',
   'finance-kpis': 'tall',
   'storage-usage': 'medium',
-  'monthly-profitability': 'large',
   'annual-stats': 'wide'
 };

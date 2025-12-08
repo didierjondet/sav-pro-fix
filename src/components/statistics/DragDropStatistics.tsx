@@ -39,7 +39,7 @@ import { CustomerSatisfactionWidget } from './advanced/CustomerSatisfactionWidge
 import { SAVTypesGridWidget } from './widgets/SAVTypesGridWidget';
 import { FinanceKPIsWidget } from './widgets/FinanceKPIsWidget';
 import { StorageUsageWidget } from './widgets/StorageUsageWidget';
-import { MonthlyProfitabilityWidget } from './widgets/MonthlyProfitabilityWidget';
+// MonthlyProfitabilityWidget supprimé
 import { AnnualStatsWidget } from './widgets/AnnualStatsWidget';
 import { CustomWidgetRenderer } from './CustomWidgetRenderer';
 
@@ -763,30 +763,7 @@ export const DragDropStatistics = ({ period, onPeriodChange }: DragDropStatistic
         );
 
       // Widget sav-type-distribution supprimé
-
-      case 'monthly-profitability':
-        const profitabilityMonthlyData = profitabilityChart.slice(-6).map((item, index) => ({
-          month: item.date,
-          revenue: item.revenue,
-          expenses: item.expenses,
-          profit: item.profit,
-          margin: item.profit ? (item.profit / item.revenue) * 100 : 0,
-          target: item.revenue * 1.1,
-          marginTarget: 50
-        }));
-        
-        return (
-          <div className={className}>
-            <MonthlyProfitabilityWidget 
-              data={profitabilityMonthlyData}
-              averageMargin={profit ? (profit / revenue) * 100 : 0}
-              bestMonth="Avril"
-              worstMonth="Janvier"
-              targetAchieved={profit > revenue * 0.5}
-              monthsAboveTarget={4}
-            />
-          </div>
-        );
+      // Widget monthly-profitability supprimé
 
       case 'annual-stats':
         const annualMonthlyData = profitabilityChart.map((item, index) => ({
