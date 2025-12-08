@@ -85,12 +85,14 @@ export default function SAVTypesManager({ types, loading, onRefresh }: SAVTypesM
 
     try {
       const maxOrder = Math.max(...types.map(t => t.display_order), 0);
+      // Normaliser le type_key : trim + remplacer espaces par underscores
+      const normalizedTypeKey = formData.type_key.trim().replace(/\s+/g, '_');
       
         const { error } = await supabase
           .from('shop_sav_types')
           .insert({
             shop_id: profile.shop_id,
-            type_key: formData.type_key,
+            type_key: normalizedTypeKey,
             type_label: formData.type_label,
             type_color: formData.type_color,
             display_order: maxOrder + 1,
@@ -129,10 +131,13 @@ export default function SAVTypesManager({ types, loading, onRefresh }: SAVTypesM
     if (!editingType) return;
 
     try {
+      // Normaliser le type_key : trim + remplacer espaces par underscores
+      const normalizedTypeKey = formData.type_key.trim().replace(/\s+/g, '_');
+      
       const { error } = await supabase
         .from('shop_sav_types')
         .update({
-          type_key: formData.type_key,
+          type_key: normalizedTypeKey,
           type_label: formData.type_label,
           type_color: formData.type_color,
           show_customer_info: formData.show_customer_info,
@@ -289,12 +294,16 @@ export default function SAVTypesManager({ types, loading, onRefresh }: SAVTypesM
                   <Input
                     id="type_key"
                     value={formData.type_key}
-                    onChange={(e) => setFormData({ ...formData, type_key: e.target.value })}
+                    onChange={(e) => {
+                      // Convertir automatiquement les espaces en underscores
+                      const value = e.target.value.replace(/\s+/g, '_');
+                      setFormData({ ...formData, type_key: value });
+                    }}
                     placeholder="ex: reparation_ecran"
                     disabled={!!editingType?.is_default}
                   />
                   <p className="text-sm text-muted-foreground mt-1">
-                    Utilisée en interne, ne peut pas être modifiée après création.
+                    Utilisée en interne. Les espaces sont automatiquement convertis en underscores.
                   </p>
                 </div>
                 
