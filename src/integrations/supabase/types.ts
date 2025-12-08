@@ -806,6 +806,8 @@ export type Database = {
           problem_description: string | null
           quote_date: string | null
           quote_number: string
+          rejected_at: string | null
+          rejection_reason: string | null
           repair_notes: string | null
           sav_case_id: string | null
           shop_id: string
@@ -833,6 +835,8 @@ export type Database = {
           problem_description?: string | null
           quote_date?: string | null
           quote_number: string
+          rejected_at?: string | null
+          rejection_reason?: string | null
           repair_notes?: string | null
           sav_case_id?: string | null
           shop_id: string
@@ -860,6 +864,8 @@ export type Database = {
           problem_description?: string | null
           quote_date?: string | null
           quote_number?: string
+          rejected_at?: string | null
+          rejection_reason?: string | null
           repair_notes?: string | null
           sav_case_id?: string | null
           shop_id?: string

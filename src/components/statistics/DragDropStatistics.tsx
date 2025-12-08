@@ -41,6 +41,7 @@ import { FinanceKPIsWidget } from './widgets/FinanceKPIsWidget';
 import { StorageUsageWidget } from './widgets/StorageUsageWidget';
 // MonthlyProfitabilityWidget supprimé
 import { AnnualStatsWidget } from './widgets/AnnualStatsWidget';
+import { QuoteRejectionWidget } from './widgets/QuoteRejectionWidget';
 import { CustomWidgetRenderer } from './CustomWidgetRenderer';
 
 interface DragDropStatisticsProps {
@@ -669,6 +670,13 @@ export const DragDropStatistics = ({ period, onPeriodChange }: DragDropStatistic
               responseRate={satisfactionStats.responseRate}
               trend={satisfactionStats.trend}
             />
+          </div>
+        );
+
+      case 'quote-rejections':
+        return (
+          <div className={className}>
+            <QuoteRejectionWidget />
           </div>
         );
 

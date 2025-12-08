@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Download, AlertCircle, Check, X, CheckCircle, XCircle } from 'lucide-react';
+import { Download, AlertCircle, Check, X, CheckCircle, XCircle, DollarSign, Clock, ShieldOff, Calendar } from 'lucide-react';
 import { generateQuotePDF } from '@/utils/pdfGenerator';
 
 interface QuoteData {
@@ -35,12 +35,46 @@ interface ApiResponse {
   isExpired: boolean;
 }
 
+type RejectionReason = 'too_expensive' | 'too_slow' | 'no_trust' | 'postponed';
+
+const REJECTION_REASONS = [
+  {
+    key: 'too_expensive' as RejectionReason,
+    emoji: '💰',
+    label: 'Trop cher',
+    description: 'Le prix dépasse mon budget',
+    icon: DollarSign
+  },
+  {
+    key: 'too_slow' as RejectionReason,
+    emoji: '⏱️',
+    label: 'Trop lent',
+    description: 'Le délai ne me convient pas',
+    icon: Clock
+  },
+  {
+    key: 'no_trust' as RejectionReason,
+    emoji: '😕',
+    label: 'Pas confiance',
+    description: 'J\'ai des doutes sur la prestation',
+    icon: ShieldOff
+  },
+  {
+    key: 'postponed' as RejectionReason,
+    emoji: '🔄',
+    label: 'Je préfère reporter',
+    description: 'Ce n\'est pas le bon moment',
+    icon: Calendar
+  }
+];
+
 export default function QuotePublic() {
   const { id } = useParams<{ id: string }>();
   const [data, setData] = useState<ApiResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [updating, setUpdating] = useState(false);
+  const [showRejectionReasons, setShowRejectionReasons] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState<{
     type: 'success' | 'error';
     title: string;
@@ -56,7 +90,6 @@ export default function QuotePublic() {
       }
 
       try {
-        // Appeler l'edge function publique
         const supabaseUrl = 'https://jljkrthymaqxkebosqko.supabase.co';
         const response = await fetch(`${supabaseUrl}/functions/v1/quote-public/${id}`, {
           method: 'GET',
@@ -85,7 +118,6 @@ export default function QuotePublic() {
 
   const handleDownloadPDF = () => {
     if (data) {
-      // Créer un objet shop compatible
       const shopForPDF = {
         name: data.shop.name,
         logo_url: data.shop.logo_url,
@@ -97,7 +129,7 @@ export default function QuotePublic() {
     }
   };
 
-  const handleStatusUpdate = async (newStatus: 'accepted' | 'rejected' | 'sms_accepted') => {
+  const handleStatusUpdate = async (newStatus: 'accepted' | 'sms_accepted', rejectionReason?: RejectionReason) => {
     if (!id || !data) return;
 
     setUpdating(true);
@@ -116,18 +148,60 @@ export default function QuotePublic() {
         throw new Error(errorData.error || 'Erreur lors de la mise à jour');
       }
 
-      // Mettre à jour les données locales
       setData(prev => prev ? {
         ...prev,
         quote: { ...prev.quote, status: newStatus }
       } : null);
 
-      // Message de confirmation
-      const statusText = newStatus === 'accepted' ? 'accepté' : newStatus === 'sms_accepted' ? 'accepté' : 'refusé';
       setShowConfirmation({
         type: 'success',
-        title: 'Devis mis à jour',
-        message: `Votre devis a été ${statusText} avec succès. Nous vous contacterons prochainement pour la suite.`
+        title: 'Devis accepté',
+        message: 'Votre devis a été accepté avec succès. Nous vous contacterons prochainement pour la suite.'
+      });
+    } catch (error) {
+      console.error('Erreur:', error);
+      setShowConfirmation({
+        type: 'error',
+        title: 'Erreur de mise à jour',
+        message: 'Une erreur est survenue lors de la mise à jour du statut. Veuillez réessayer ou contacter le magasin.'
+      });
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const handleReject = async (reason: RejectionReason) => {
+    if (!id || !data) return;
+
+    setUpdating(true);
+    setShowRejectionReasons(false);
+    try {
+      const supabaseUrl = 'https://jljkrthymaqxkebosqko.supabase.co';
+      const response = await fetch(`${supabaseUrl}/functions/v1/quote-public/${id}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          status: 'rejected',
+          rejection_reason: reason
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Erreur lors de la mise à jour');
+      }
+
+      setData(prev => prev ? {
+        ...prev,
+        quote: { ...prev.quote, status: 'rejected' }
+      } : null);
+
+      setShowConfirmation({
+        type: 'success',
+        title: 'Devis refusé',
+        message: 'Votre retour a été enregistré. Merci pour votre réponse, nous espérons vous revoir bientôt.'
       });
     } catch (error) {
       console.error('Erreur:', error);
@@ -147,6 +221,7 @@ export default function QuotePublic() {
       case 'sent': return 'Envoyé';
       case 'viewed': return 'Consulté';
       case 'accepted': return 'Accepté';
+      case 'sms_accepted': return 'Accepté';
       case 'rejected': return 'Refusé';
       case 'expired': return 'Expiré';
       default: return status;
@@ -158,7 +233,7 @@ export default function QuotePublic() {
       case 'draft': return 'default';
       case 'sent': return 'outline';
       case 'viewed': return 'secondary';
-      case 'accepted': return 'default';
+      case 'accepted': case 'sms_accepted': return 'default';
       case 'rejected': return 'destructive';
       case 'expired': return 'outline';
       default: return 'default';
@@ -167,10 +242,10 @@ export default function QuotePublic() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Chargement du devis...</p>
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground text-sm sm:text-base">Chargement du devis...</p>
         </div>
       </div>
     );
@@ -181,14 +256,14 @@ export default function QuotePublic() {
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
-            <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-            <CardTitle className="text-red-600">Devis non accessible</CardTitle>
+            <AlertCircle className="h-10 w-10 sm:h-12 sm:w-12 text-red-500 mx-auto mb-4" />
+            <CardTitle className="text-red-600 text-lg sm:text-xl">Devis non accessible</CardTitle>
           </CardHeader>
           <CardContent className="text-center space-y-4">
-            <p className="text-muted-foreground">
+            <p className="text-muted-foreground text-sm sm:text-base">
               {error || 'Ce devis n\'existe pas ou n\'est plus disponible.'}
             </p>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-xs sm:text-sm text-muted-foreground">
               Les devis sont valides pendant 1 mois après leur création.
             </p>
           </CardContent>
@@ -200,26 +275,26 @@ export default function QuotePublic() {
   const { quote, shop, isExpired } = data;
 
   return (
-    <div className="min-h-screen bg-background p-4">
+    <div className="min-h-screen bg-background p-3 sm:p-4">
       <div className="max-w-4xl mx-auto">
-        {/* Header avec logo boutique */}
+        {/* Header avec logo boutique - Responsive */}
         {shop && (
-          <div className="text-center mb-8">
+          <div className="text-center mb-6 sm:mb-8">
             {shop.logo_url && (
               <img 
                 src={shop.logo_url} 
                 alt={shop.name} 
-                className="h-16 mx-auto mb-4 object-contain"
+                className="h-12 sm:h-16 mx-auto mb-3 sm:mb-4 object-contain"
               />
             )}
-            <h1 className="text-2xl font-bold text-primary">{shop.name}</h1>
+            <h1 className="text-xl sm:text-2xl font-bold text-primary">{shop.name}</h1>
           </div>
         )}
 
         <Card className="mb-6">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-xl">Devis {quote.quote_number}</CardTitle>
+          <CardHeader className="p-4 sm:p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <CardTitle className="text-lg sm:text-xl">Devis {quote.quote_number}</CardTitle>
               <div className="flex items-center gap-2">
                 {isExpired ? (
                   <Badge variant="destructive">Devis expiré</Badge>
@@ -232,46 +307,98 @@ export default function QuotePublic() {
             </div>
           </CardHeader>
           
-          <CardContent className="space-y-6">
+          <CardContent className="space-y-6 p-4 sm:p-6 pt-0">
             {isExpired && (
               <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
-                <AlertCircle className="h-8 w-8 text-red-500 mx-auto mb-2" />
-                <p className="text-red-600 font-medium">Ce devis a expiré</p>
-                <p className="text-red-500 text-sm">Ce devis n'est plus valide (plus d'un mois)</p>
+                <AlertCircle className="h-6 w-6 sm:h-8 sm:w-8 text-red-500 mx-auto mb-2" />
+                <p className="text-red-600 font-medium text-sm sm:text-base">Ce devis a expiré</p>
+                <p className="text-red-500 text-xs sm:text-sm">Ce devis n'est plus valide (plus d'un mois)</p>
               </div>
             )}
 
             {/* Informations client */}
             <div>
-              <h3 className="text-lg font-semibold mb-3">Informations client</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-muted/50 rounded-lg">
+              <h3 className="text-base sm:text-lg font-semibold mb-3">Informations client</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 p-3 sm:p-4 bg-muted/50 rounded-lg">
                 <div>
-                  <span className="font-medium text-sm text-muted-foreground">Nom:</span>
+                  <span className="font-medium text-xs sm:text-sm text-muted-foreground">Nom:</span>
                   <p className="text-sm">{quote.customer_name}</p>
                 </div>
                 {quote.customer_email && (
                   <div>
-                    <span className="font-medium text-sm text-muted-foreground">Email:</span>
-                    <p className="text-sm">{quote.customer_email}</p>
+                    <span className="font-medium text-xs sm:text-sm text-muted-foreground">Email:</span>
+                    <p className="text-sm break-all">{quote.customer_email}</p>
                   </div>
                 )}
                 {quote.customer_phone && (
                   <div>
-                    <span className="font-medium text-sm text-muted-foreground">Téléphone:</span>
+                    <span className="font-medium text-xs sm:text-sm text-muted-foreground">Téléphone:</span>
                     <p className="text-sm">{quote.customer_phone}</p>
                   </div>
                 )}
                 <div>
-                  <span className="font-medium text-sm text-muted-foreground">Date de création:</span>
+                  <span className="font-medium text-xs sm:text-sm text-muted-foreground">Date de création:</span>
                   <p className="text-sm">{new Date(quote.created_at).toLocaleDateString()}</p>
                 </div>
               </div>
             </div>
 
-            {/* Articles */}
+            {/* Articles - Vue mobile : cartes empilées */}
             <div>
-              <h3 className="text-lg font-semibold mb-3">Articles</h3>
-              <div className="border rounded-lg overflow-hidden">
+              <h3 className="text-base sm:text-lg font-semibold mb-3">Articles</h3>
+              
+              {/* Vue mobile : cartes empilées */}
+              <div className="block sm:hidden space-y-3">
+                {quote.items.map((item, index) => {
+                  const originalPrice = item.unit_public_price;
+                  const finalPrice = item.total_price / item.quantity;
+                  const hasDiscount = item.discount && (item.discount.type === 'percentage' || item.discount.type === 'fixed');
+                  
+                  return (
+                    <div key={index} className="bg-muted/30 border rounded-lg p-4 space-y-3">
+                      <div>
+                        <div className="font-medium">{item.part_name}</div>
+                        {item.part_reference && (
+                          <div className="text-xs text-muted-foreground">Réf: {item.part_reference}</div>
+                        )}
+                      </div>
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-muted-foreground">Quantité</span>
+                        <span>{item.quantity}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-muted-foreground">Prix unitaire</span>
+                        {hasDiscount ? (
+                          <div className="text-right">
+                            <div className="line-through text-muted-foreground text-xs">{originalPrice.toFixed(2)}€</div>
+                            <div className="font-medium">{finalPrice.toFixed(2)}€</div>
+                          </div>
+                        ) : (
+                          <span>{originalPrice.toFixed(2)}€</span>
+                        )}
+                      </div>
+                      {hasDiscount && (
+                        <div className="flex justify-between items-center text-sm">
+                          <span className="text-muted-foreground">Remise</span>
+                          <span className="text-red-600 font-medium">
+                            {item.discount?.type === 'percentage' 
+                              ? `-${item.discount.value}%`
+                              : `-${(originalPrice - finalPrice).toFixed(2)}€`
+                            }
+                          </span>
+                        </div>
+                      )}
+                      <div className="flex justify-between items-center pt-2 border-t">
+                        <span className="font-medium">Total</span>
+                        <span className="font-bold text-primary">{item.total_price.toFixed(2)}€</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Vue desktop : tableau classique */}
+              <div className="hidden sm:block border rounded-lg overflow-hidden">
                 <div className="grid grid-cols-12 gap-4 p-3 bg-muted/50 text-sm font-medium">
                   <div className="col-span-5">Article</div>
                   <div className="col-span-1 text-center">Qté</div>
@@ -321,46 +448,52 @@ export default function QuotePublic() {
                     </div>
                   );
                 })}
-                
-                <div className="border-t bg-muted/30 p-3">
-                  <div className="flex justify-end">
-                    <div className="text-right">
-                      <div className="text-lg font-bold">
-                        Total: {quote.total_amount.toFixed(2)}€
-                      </div>
+              </div>
+              
+              {/* Total */}
+              <div className="bg-muted/30 border rounded-lg sm:rounded-t-none p-4 mt-0 sm:mt-0 sm:border-t-0">
+                <div className="flex justify-end">
+                  <div className="text-right">
+                    <div className="text-lg sm:text-xl font-bold">
+                      Total: {quote.total_amount.toFixed(2)}€
                     </div>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Actions */}
-            <div className="flex justify-center gap-4">
+            {/* Actions - Responsive */}
+            <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4 pt-4">
               {!isExpired && (
                 <>
-                  <Button onClick={handleDownloadPDF} variant="outline">
-                    <Download className="h-4 w-4 mr-2" />
+                  <Button 
+                    onClick={handleDownloadPDF} 
+                    variant="outline"
+                    className="w-full sm:w-auto py-3 text-base"
+                  >
+                    <Download className="h-5 w-5 mr-2" />
                     Télécharger le PDF
                   </Button>
                   
                   {quote.status !== 'accepted' && quote.status !== 'rejected' && quote.status !== 'sms_accepted' && (
                     <>
-                       <Button 
-                         onClick={() => handleStatusUpdate('sms_accepted')}
-                         disabled={updating}
-                         className="bg-green-600 hover:bg-green-700"
-                       >
-                         <Check className="h-4 w-4 mr-2" />
-                         {updating ? 'Mise à jour...' : 'Valider'}
-                       </Button>
+                      <Button 
+                        onClick={() => handleStatusUpdate('sms_accepted')}
+                        disabled={updating}
+                        className="w-full sm:w-auto py-3 text-base bg-green-600 hover:bg-green-700"
+                      >
+                        <Check className="h-5 w-5 mr-2" />
+                        {updating ? 'Mise à jour...' : 'Valider le devis'}
+                      </Button>
                       
                       <Button 
-                        onClick={() => handleStatusUpdate('rejected')}
+                        onClick={() => setShowRejectionReasons(true)}
                         disabled={updating}
                         variant="destructive"
+                        className="w-full sm:w-auto py-3 text-base"
                       >
-                        <X className="h-4 w-4 mr-2" />
-                        {updating ? 'Mise à jour...' : 'Refuser'}
+                        <X className="h-5 w-5 mr-2" />
+                        Refuser
                       </Button>
                     </>
                   )}
@@ -370,7 +503,7 @@ export default function QuotePublic() {
 
             {/* Footer boutique */}
             {shop && (
-              <div className="text-center text-sm text-muted-foreground border-t pt-4">
+              <div className="text-center text-xs sm:text-sm text-muted-foreground border-t pt-4">
                 {shop.address && <p>{shop.address}</p>}
                 {shop.phone && <p>Tél: {shop.phone}</p>}
                 {shop.email && <p>Email: {shop.email}</p>}
@@ -382,28 +515,60 @@ export default function QuotePublic() {
           </CardContent>
         </Card>
 
+        {/* Dialog raisons de refus */}
+        <Dialog open={showRejectionReasons} onOpenChange={setShowRejectionReasons}>
+          <DialogContent className="sm:max-w-md mx-4">
+            <DialogHeader>
+              <DialogTitle className="text-center text-lg sm:text-xl">
+                Pourquoi refusez-vous ce devis ?
+              </DialogTitle>
+              <DialogDescription className="text-center text-sm">
+                Votre retour nous aide à améliorer nos services
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="grid grid-cols-1 gap-3 py-4">
+              {REJECTION_REASONS.map((reason) => (
+                <Button 
+                  key={reason.key}
+                  variant="outline" 
+                  className="h-auto min-h-[4rem] text-left justify-start px-4 py-3"
+                  onClick={() => handleReject(reason.key)}
+                  disabled={updating}
+                >
+                  <span className="text-2xl mr-3 shrink-0">{reason.emoji}</span>
+                  <div className="min-w-0">
+                    <div className="font-medium text-sm sm:text-base">{reason.label}</div>
+                    <div className="text-xs sm:text-sm text-muted-foreground">{reason.description}</div>
+                  </div>
+                </Button>
+              ))}
+            </div>
+          </DialogContent>
+        </Dialog>
+
         {/* Dialog de confirmation */}
         <Dialog open={!!showConfirmation} onOpenChange={() => setShowConfirmation(null)}>
-          <DialogContent className="sm:max-w-md">
+          <DialogContent className="sm:max-w-md mx-4">
             <DialogHeader className="text-center">
               <div className="mx-auto mb-4">
                 {showConfirmation?.type === 'success' ? (
-                  <CheckCircle className="h-16 w-16 text-green-500" />
+                  <CheckCircle className="h-12 w-12 sm:h-16 sm:w-16 text-green-500" />
                 ) : (
-                  <XCircle className="h-16 w-16 text-red-500" />
+                  <XCircle className="h-12 w-12 sm:h-16 sm:w-16 text-red-500" />
                 )}
               </div>
-              <DialogTitle className={`text-xl ${showConfirmation?.type === 'success' ? 'text-green-600' : 'text-red-600'}`}>
+              <DialogTitle className={`text-lg sm:text-xl ${showConfirmation?.type === 'success' ? 'text-green-600' : 'text-red-600'}`}>
                 {showConfirmation?.title}
               </DialogTitle>
-              <DialogDescription className="text-center text-base mt-4">
+              <DialogDescription className="text-center text-sm sm:text-base mt-4">
                 {showConfirmation?.message}
               </DialogDescription>
             </DialogHeader>
             <div className="flex justify-center mt-6">
               <Button 
                 onClick={() => setShowConfirmation(null)}
-                className={showConfirmation?.type === 'success' ? 'bg-green-600 hover:bg-green-700' : ''}
+                className={`w-full sm:w-auto ${showConfirmation?.type === 'success' ? 'bg-green-600 hover:bg-green-700' : ''}`}
               >
                 {showConfirmation?.type === 'success' ? 'Parfait !' : 'Fermer'}
               </Button>

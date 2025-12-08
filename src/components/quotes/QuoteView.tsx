@@ -3,9 +3,16 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
-import { Download, Mail, X, MessageSquare, Clock, CheckCircle, FileText } from 'lucide-react';
+import { Download, Mail, X, MessageSquare, Clock, CheckCircle, FileText, DollarSign, ShieldOff, Calendar, AlertTriangle } from 'lucide-react';
 import { useSMS } from '@/hooks/useSMS';
 import { useToast } from '@/hooks/use-toast';
+
+const REJECTION_LABELS: Record<string, { label: string; icon: React.ReactNode; color: string }> = {
+  too_expensive: { label: 'Trop cher', icon: <DollarSign className="h-4 w-4" />, color: 'text-red-600 bg-red-50' },
+  too_slow: { label: 'Trop lent', icon: <Clock className="h-4 w-4" />, color: 'text-orange-600 bg-orange-50' },
+  no_trust: { label: 'Pas confiance', icon: <ShieldOff className="h-4 w-4" />, color: 'text-purple-600 bg-purple-50' },
+  postponed: { label: 'Reporté', icon: <Calendar className="h-4 w-4" />, color: 'text-blue-600 bg-blue-50' }
+};
 
 interface QuoteViewProps {
   quote: Quote | null;
@@ -161,6 +168,23 @@ export function QuoteView({ quote, isOpen, onClose, onDownloadPDF, onSendEmail, 
                 <div className="md:col-span-2">
                   <div className="flex items-center gap-2 text-sm text-red-600">
                     <span className="font-medium">⚠️ Ce devis a expiré (plus d'un mois)</span>
+                  </div>
+                </div>
+              )}
+              {/* Affichage de la raison de refus */}
+              {quote.status === 'rejected' && (quote as any).rejection_reason && (
+                <div className="md:col-span-2">
+                  <span className="font-medium text-sm text-muted-foreground">Raison du refus:</span>
+                  <div className={`flex items-center gap-2 mt-1 px-3 py-2 rounded-lg ${REJECTION_LABELS[(quote as any).rejection_reason]?.color || 'bg-muted'}`}>
+                    {REJECTION_LABELS[(quote as any).rejection_reason]?.icon || <AlertTriangle className="h-4 w-4" />}
+                    <span className="font-medium text-sm">
+                      {REJECTION_LABELS[(quote as any).rejection_reason]?.label || (quote as any).rejection_reason}
+                    </span>
+                    {(quote as any).rejected_at && (
+                      <span className="text-xs opacity-75 ml-2">
+                        (le {new Date((quote as any).rejected_at).toLocaleDateString()})
+                      </span>
+                    )}
                   </div>
                 </div>
               )}

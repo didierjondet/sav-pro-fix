@@ -92,5 +92,6 @@ export const DEFAULT_MODULE_SIZES: ModuleSizeConfig = {
   // Nouveaux widgets spécialisés
   'finance-kpis': 'tall',
   'storage-usage': 'medium',
-  'annual-stats': 'wide'
+  'annual-stats': 'wide',
+  'quote-rejections': 'medium'
 };
