@@ -27,8 +27,11 @@ import {
   User,
   Euro,
   Phone,
-  PhoneOff
+  PhoneOff,
+  Star,
+  ExternalLink
 } from 'lucide-react';
+import { useShopSAVTypes } from '@/hooks/useShopSAVTypes';
 import { SAVCase } from '@/hooks/useSAVCases';
 import { Shop } from '@/hooks/useShop';
 import { AITextReformulator } from '@/components/sav/AITextReformulator';
@@ -71,6 +74,7 @@ export function SAVCloseUnifiedDialog({
   const [technicianComments, setTechnicianComments] = useState(savCase.technician_comments || '');
   const [privateComments, setPrivateComments] = useState(savCase.private_comments || '');
   const [sendSMS, setSendSMS] = useState(false);
+  const [sendSatisfaction, setSendSatisfaction] = useState(false);
   const [warnings, setWarnings] = useState<WarningInfo>({ noParts: false, noPurchase: false });
   const [forceClose, setForceClose] = useState(false);
   const [documentGenerated, setDocumentGenerated] = useState(false);
@@ -80,7 +84,12 @@ export function SAVCloseUnifiedDialog({
   const { profile } = useProfile();
   const { credits } = useUnifiedSMSCredits();
   const { getStatusInfo } = useShopSAVStatuses();
+  const { getTypeInfo } = useShopSAVTypes();
   const { toast } = useToast();
+
+  // Vérifier si le type SAV permet les enquêtes de satisfaction
+  const savTypeInfo = getTypeInfo(savCase.sav_type);
+  const showSatisfactionSurvey = savTypeInfo?.show_satisfaction_survey ?? true;
 
   // Vérifier les avertissements au chargement
   useEffect(() => {
@@ -212,6 +221,54 @@ export function SAVCloseUnifiedDialog({
         });
       }
 
+      // Envoyer enquête satisfaction si demandé
+      if (sendSatisfaction && canSendSMS && savCase.customer?.phone) {
+        try {
+          // Générer un token unique pour l'enquête
+          const accessToken = crypto.randomUUID();
+          const customerName = `${savCase.customer.first_name} ${savCase.customer.last_name}`;
+          
+          // Créer l'enquête dans la base de données
+          const { error: surveyError } = await supabase.from('satisfaction_surveys').insert({
+            shop_id: savCase.shop_id,
+            sav_case_id: savCase.id,
+            customer_id: savCase.customer_id,
+            access_token: accessToken,
+            sent_via: 'sms',
+            sent_at: new Date().toISOString()
+          });
+          
+          if (surveyError) throw surveyError;
+          
+          // Construire l'URL de satisfaction
+          const satisfactionUrl = `${window.location.origin}/satisfaction/${accessToken}`;
+          const satisfactionMessage = `Bonjour ${customerName}, comment s'est passée votre réparation chez ${shop?.name || 'nous'} ? Notez-nous en 30 secondes : ${satisfactionUrl}`;
+          
+          // Envoyer le SMS
+          await supabase.functions.invoke('send-sms', {
+            body: {
+              shopId: savCase.shop_id,
+              toNumber: savCase.customer.phone,
+              message: satisfactionMessage,
+              type: 'satisfaction',
+              recordId: savCase.id
+            }
+          });
+          
+          toast({
+            title: "Enquête envoyée",
+            description: "L'enquête de satisfaction a été envoyée au client",
+          });
+        } catch (error) {
+          console.error('Erreur envoi satisfaction:', error);
+          toast({
+            title: "Erreur",
+            description: "Erreur lors de l'envoi de l'enquête de satisfaction",
+            variant: "destructive",
+          });
+        }
+      }
+
       // Confirmer la clôture
       onConfirm(selectedStatus);
       
@@ -281,32 +338,46 @@ export function SAVCloseUnifiedDialog({
               </Card>
             )}
 
-            {/* Notification SMS */}
-            <Card>
+            {/* SMS de clôture + avis Google */}
+            <Card className="border-blue-200 bg-blue-50/50">
               <CardHeader className="pb-3">
                 <CardTitle className="flex items-center gap-2">
                   {canSendSMS ? (
-                    <Phone className="h-4 w-4 text-green-600" />
+                    <Phone className="h-4 w-4 text-blue-600" />
                   ) : (
                     <PhoneOff className="h-4 w-4 text-gray-400" />
                   )}
-                  Notification client
+                  SMS de clôture + avis Google
                 </CardTitle>
+                <CardDescription>
+                  Informe le client et l'invite à laisser un avis Google
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
                 {savCase.customer?.phone ? (
                   <>
-                    <div className="text-sm text-muted-foreground">
+                    <div className="text-sm text-muted-foreground space-y-1">
                       <p>Client : {savCase.customer.first_name} {savCase.customer.last_name}</p>
                       <p>Téléphone : {savCase.customer.phone}</p>
-                      {subscription && (
-                        <p className="text-xs">
-                          SMS restants : {smsCreditsRemaining}
-                        </p>
-                      )}
+                      <p className="text-xs">SMS restants : {smsCreditsRemaining}</p>
                     </div>
                     
-                    <div className="flex items-center space-x-2">
+                    {shop?.review_link ? (
+                      <div className="flex items-center gap-2 text-xs text-green-600">
+                        <CheckCircle className="h-3 w-3" />
+                        <span>Lien avis Google : configuré</span>
+                        <a href={shop.review_link} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                          <ExternalLink className="h-3 w-3" />
+                        </a>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 text-xs text-amber-600">
+                        <AlertTriangle className="h-3 w-3" />
+                        <span>Lien avis Google non configuré (Paramètres → Boutique)</span>
+                      </div>
+                    )}
+                    
+                    <div className="flex items-center space-x-2 pt-2">
                       <Switch
                         id="send-sms"
                         checked={sendSMS}
@@ -315,11 +386,64 @@ export function SAVCloseUnifiedDialog({
                       />
                       <Label htmlFor="send-sms" className="text-sm font-medium">
                         {canSendSMS ? 
-                          "Envoyer un SMS de notification" : 
+                          "Envoyer SMS de clôture et demande d'avis" : 
                           "Pas de crédit SMS disponible"
                         }
                       </Label>
                     </div>
+                  </>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    Aucun numéro de téléphone renseigné pour ce client.
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Enquête de satisfaction interne */}
+            <Card className="border-amber-200 bg-amber-50/50">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2">
+                  <Star className="h-4 w-4 text-amber-500 fill-amber-500" />
+                  Enquête de satisfaction interne
+                </CardTitle>
+                <CardDescription>
+                  Envoyez une demande de notation par étoiles (1-5) pour vos statistiques
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {savCase.customer?.phone ? (
+                  <>
+                    {!showSatisfactionSurvey && (
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <AlertTriangle className="h-3 w-3" />
+                        <span>Désactivé pour ce type de SAV</span>
+                      </div>
+                    )}
+                    
+                    <div className="flex items-center space-x-2">
+                      <Switch
+                        id="send-satisfaction"
+                        checked={sendSatisfaction}
+                        onCheckedChange={setSendSatisfaction}
+                        disabled={!canSendSMS || !showSatisfactionSurvey}
+                      />
+                      <Label htmlFor="send-satisfaction" className="text-sm font-medium">
+                        Envoyer le questionnaire de satisfaction
+                      </Label>
+                    </div>
+                    
+                    <p className="text-xs text-muted-foreground">
+                      ⭐ Le client notera de 1 à 5 étoiles et pourra laisser un commentaire.
+                      Ces données alimentent vos statistiques internes.
+                    </p>
+                    
+                    {sendSatisfaction && (
+                      <p className="text-xs text-amber-600 flex items-center gap-1">
+                        <AlertTriangle className="h-3 w-3" />
+                        Utilise 1 crédit SMS supplémentaire
+                      </p>
+                    )}
                   </>
                 ) : (
                   <p className="text-sm text-muted-foreground">
