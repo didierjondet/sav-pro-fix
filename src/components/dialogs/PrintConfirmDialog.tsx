@@ -1,6 +1,6 @@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Printer, X, MessageSquare, AlertTriangle } from 'lucide-react';
+import { Printer, Check, MessageSquare, AlertTriangle } from 'lucide-react';
 import { useSMS } from '@/hooks/useSMS';
 import { generateShortTrackingUrl } from '@/utils/trackingUtils';
 import { useToast } from '@/hooks/use-toast';
@@ -212,8 +212,8 @@ export function PrintConfirmDialog({
           </div>
           
           <Button variant="outline" onClick={handleCancel} className="w-full order-3">
-            <X className="h-4 w-4 mr-2" />
-            Non, merci
+            <Check className="h-4 w-4 mr-2" />
+            Valider
           </Button>
         </DialogFooter>
       </DialogContent>
