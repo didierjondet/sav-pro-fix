@@ -14,7 +14,7 @@ export interface DelayInfo {
 }
 
 export function useSAVDelay(savCase: SAVCase, shop: Shop | null): DelayInfo {
-  const { getStatusInfo } = useShopSAVStatuses();
+  const { getStatusInfo, isFinalStatus } = useShopSAVStatuses();
   const { getTypeInfo } = useShopSAVTypes();
   
   return useMemo(() => {
@@ -29,10 +29,13 @@ export function useSAVDelay(savCase: SAVCase, shop: Shop | null): DelayInfo {
       };
     }
 
+    // Vérifier si le statut est final (SAV clôturé)
+    const isFinal = isFinalStatus(savCase.status);
+    
     // Vérifier si le statut actuel met le timer en pause
     const currentStatusInfo = getStatusInfo(savCase.status);
     const currentStatusData = currentStatusInfo as any;
-    const isCurrentStatusPaused = currentStatusData?.pause_timer || false;
+    const isCurrentStatusPaused = currentStatusData?.pause_timer || isFinal;
 
     // Utiliser les types dynamiques pour déterminer les jours de traitement
     const typeInfo = getTypeInfo(savCase.sav_type);
@@ -59,8 +62,8 @@ export function useSAVDelay(savCase: SAVCase, shop: Shop | null): DelayInfo {
     const remainingMs = maxDate.getTime() - now.getTime();
     const totalRemainingHours = Math.floor(remainingMs / (1000 * 60 * 60));
     
-    // Si le statut actuel met le timer en pause, considérer comme non en retard
-    const isOverdue = !isCurrentStatusPaused && remainingMs <= 0;
+    // Si le statut est final ou en pause, considérer comme non en retard
+    const isOverdue = !isCurrentStatusPaused && !isFinal && remainingMs <= 0;
     const remainingDays = Math.floor(totalRemainingHours / 24);
     const remainingHours = totalRemainingHours % 24;
     
@@ -74,10 +77,10 @@ export function useSAVDelay(savCase: SAVCase, shop: Shop | null): DelayInfo {
       remainingDays: Math.max(0, remainingDays),
       remainingHours: Math.max(0, remainingHours),
       totalRemainingHours: Math.max(0, totalRemainingHours),
-      progress: isCurrentStatusPaused ? progress : progress, // On garde le même pour l'instant
-      isPaused: isCurrentStatusPaused
+      progress,
+      isPaused: isCurrentStatusPaused || isFinal
     };
-  }, [savCase.created_at, savCase.sav_type, savCase.status, getStatusInfo, getTypeInfo]);
+  }, [savCase.created_at, savCase.sav_type, savCase.status, getStatusInfo, getTypeInfo, isFinalStatus]);
 }
 
 export function calculateSAVDelay(savCase: SAVCase, shop: Shop | null, savTypes?: any[]): DelayInfo {
