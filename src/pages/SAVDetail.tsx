@@ -342,6 +342,12 @@ export default function SAVDetail() {
                       Imprimer restitution
                     </Button>}
                   
+                  {/* Bouton Partager */}
+                  <Button variant="outline" size="sm" onClick={copyTrackingUrl}>
+                    <Share className="h-4 w-4 mr-2" />
+                    Partager
+                  </Button>
+                  
                   {/* SMS Button - for types that require customer info */}
                   {getTypeInfo(savCase.sav_type).show_customer_info && <SMSButton customerPhone={savCase.customer?.phone || savCase.external_contact_phone || ''} customerName={`${savCase.customer?.first_name || ''} ${savCase.customer?.last_name || ''}`.trim() || savCase.external_contact_name || 'Contact'} caseNumber={savCase.case_number} caseId={savCase.id} size="sm" variant="outline" />}
                   <SAVPrintButton savCase={savCase} />
