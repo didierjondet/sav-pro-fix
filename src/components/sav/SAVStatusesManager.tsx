@@ -29,7 +29,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { Plus, Edit, Trash2, GripVertical } from 'lucide-react';
+import { Plus, Edit, Trash2, GripVertical, Flag } from 'lucide-react';
 
 export function SAVStatusesManager() {
   const { statuses, loading, createStatus, updateStatus, deleteStatus } = useSAVStatuses();
@@ -43,7 +43,8 @@ export function SAVStatusesManager() {
     status_label: '',
     status_color: '#6b7280',
     pause_timer: false,
-    show_in_sidebar: false
+    show_in_sidebar: false,
+    is_final_status: false
   });
 
   const resetForm = () => {
@@ -52,7 +53,8 @@ export function SAVStatusesManager() {
       status_label: '',
       status_color: '#6b7280',
       pause_timer: false,
-      show_in_sidebar: false
+      show_in_sidebar: false,
+      is_final_status: false
     });
   };
 
@@ -92,7 +94,8 @@ export function SAVStatusesManager() {
         is_default: false,
         is_active: true,
         pause_timer: formData.pause_timer,
-        show_in_sidebar: formData.show_in_sidebar
+        show_in_sidebar: formData.show_in_sidebar,
+        is_final_status: formData.is_final_status
       });
       
       setIsCreateDialogOpen(false);
@@ -110,7 +113,8 @@ export function SAVStatusesManager() {
         status_label: formData.status_label,
         status_color: formData.status_color,
         pause_timer: formData.pause_timer,
-        show_in_sidebar: formData.show_in_sidebar
+        show_in_sidebar: formData.show_in_sidebar,
+        is_final_status: formData.is_final_status
       });
       
       setEditingStatus(null);
@@ -144,7 +148,8 @@ export function SAVStatusesManager() {
       status_label: status.status_label,
       status_color: status.status_color,
       pause_timer: status.pause_timer,
-      show_in_sidebar: status.show_in_sidebar
+      show_in_sidebar: status.show_in_sidebar,
+      is_final_status: status.is_final_status
     });
   };
 
@@ -236,6 +241,24 @@ export function SAVStatusesManager() {
                     }
                   />
                 </div>
+                <div className="flex items-center justify-between pt-2 border-t">
+                  <div className="flex-1">
+                    <Label htmlFor="is_final_status" className="text-sm font-medium flex items-center gap-2">
+                      <Flag className="h-4 w-4 text-green-600" />
+                      Statut final (clôture le SAV)
+                    </Label>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Les SAV avec ce statut sont terminés. Le timer s'arrête et ils ne sont plus comptés dans les retards.
+                    </p>
+                  </div>
+                  <Switch
+                    id="is_final_status"
+                    checked={formData.is_final_status}
+                    onCheckedChange={(checked) => 
+                      setFormData(prev => ({ ...prev, is_final_status: checked }))
+                    }
+                  />
+                </div>
               </div>
               <DialogFooter>
                 <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
@@ -283,6 +306,11 @@ export function SAVStatusesManager() {
                 {status.show_in_sidebar && (
                   <Badge variant="outline" className="text-xs border-blue-500 text-blue-700">
                     👁️ Sidebar
+                  </Badge>
+                )}
+                {status.is_final_status && (
+                  <Badge variant="outline" className="text-xs border-green-500 text-green-700">
+                    🏁 Final
                   </Badge>
                 )}
               </div>
@@ -360,6 +388,24 @@ export function SAVStatusesManager() {
                           }
                         />
                       </div>
+                      <div className="flex items-center justify-between pt-2 border-t">
+                        <div className="flex-1">
+                          <Label htmlFor="edit_is_final_status" className="text-sm font-medium flex items-center gap-2">
+                            <Flag className="h-4 w-4 text-green-600" />
+                            Statut final (clôture le SAV)
+                          </Label>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Les SAV avec ce statut sont terminés. Le timer s'arrête et ils ne sont plus comptés dans les retards.
+                          </p>
+                        </div>
+                        <Switch
+                          id="edit_is_final_status"
+                          checked={formData.is_final_status}
+                          onCheckedChange={(checked) => 
+                            setFormData(prev => ({ ...prev, is_final_status: checked }))
+                          }
+                        />
+                      </div>
                     </div>
                     <DialogFooter>
                       <Button variant="outline" onClick={() => setEditingStatus(null)}>
@@ -426,6 +472,9 @@ export function SAVStatusesManager() {
           </p>
           <p className="text-sm text-muted-foreground">
             • Seuls les statuts avec "Sidebar" activé apparaissent dans la barre latérale
+          </p>
+          <p className="text-sm text-muted-foreground">
+            • Les statuts finaux (🏁) clôturent le SAV : le timer s'arrête définitivement
           </p>
         </div>
       </CardContent>

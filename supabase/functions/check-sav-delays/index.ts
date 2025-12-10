@@ -24,6 +24,7 @@ interface ShopSAVStatus {
   status_key: string;
   status_label: string;
   pause_timer: boolean;
+  is_final_status: boolean;
 }
 
 interface DelayInfo {
@@ -41,7 +42,9 @@ function calculateSAVDelay(
   const savType = savTypes.find(t => t.type_key === savCase.sav_type);
   const currentStatus = savStatuses.find(s => s.status_key === savCase.status);
   
-  const isPaused = currentStatus?.pause_timer || false;
+  // Utiliser is_final_status pour déterminer si le SAV est clôturé
+  const isFinal = currentStatus?.is_final_status || false;
+  const isPaused = currentStatus?.pause_timer || isFinal;
   const maxDays = savType?.max_processing_days || 7;
   
   const createdAt = new Date(savCase.created_at);
@@ -49,7 +52,7 @@ function calculateSAVDelay(
   const elapsedDays = (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24);
   
   const remainingDays = maxDays - elapsedDays;
-  const isOverdue = remainingDays < 0 && !isPaused;
+  const isOverdue = remainingDays < 0 && !isPaused && !isFinal;
   
   return {
     isOverdue,
@@ -112,10 +115,10 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      // Récupérer TOUS les statuts SAV du shop (avec labels pour filtrage intelligent)
+      // Récupérer TOUS les statuts SAV du shop avec is_final_status
       const { data: savStatuses, error: statusesError } = await supabase
         .from('shop_sav_statuses')
-        .select('status_key, status_label, pause_timer')
+        .select('status_key, status_label, pause_timer, is_final_status')
         .eq('shop_id', shop.id)
         .eq('is_active', true);
 
@@ -124,45 +127,32 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      // Identifier les statuts "prêt/terminé" en cherchant dans les labels
-      const readyStatuses = savStatuses
-        .filter(s => {
-          const label = s.status_label.toLowerCase();
-          return label.includes('prêt') || label.includes('pret') || 
-                 label.includes('ready') || label.includes('terminé') || 
-                 label.includes('termine') || label.includes('livré') || 
-                 label.includes('livre');
-        })
+      // Identifier les statuts finaux en utilisant le champ is_final_status
+      const finalStatuses = savStatuses
+        .filter(s => s.is_final_status)
         .map(s => s.status_key);
 
-      // Identifier les statuts "annulé"
-      const cancelledStatuses = savStatuses
-        .filter(s => {
-          const label = s.status_label.toLowerCase();
-          return label.includes('annulé') || label.includes('annule') || 
-                 label.includes('cancelled') || label.includes('abandon');
-        })
-        .map(s => s.status_key);
-
-      // Construire la liste complète d'exclusion (statuts terminés + fallback defaults)
+      // Construire la liste d'exclusion (statuts finaux + fallback defaults)
       const excludedStatuses = [
-        ...readyStatuses,
-        ...cancelledStatuses,
-        'delivered', // Fallback pour les statuts par défaut
-        'cancelled'
+        ...finalStatuses,
+        'delivered', // Fallback pour les anciens statuts par défaut
+        'cancelled',
+        'ready'
       ];
 
-      console.log(`📋 [CHECK-SAV-DELAYS] Shop ${shop.name}:`);
-      console.log(`   - Ready/Completed statuses detected: ${readyStatuses.length > 0 ? readyStatuses.join(', ') : 'none'}`);
-      console.log(`   - Cancelled statuses detected: ${cancelledStatuses.length > 0 ? cancelledStatuses.join(', ') : 'none'}`);
-      console.log(`   - Total excluded statuses: ${excludedStatuses.join(', ')}`);
+      // Dédupliquer
+      const uniqueExcludedStatuses = [...new Set(excludedStatuses)];
 
-      // Récupérer les SAV actifs (en excluant tous les statuts terminés/annulés)
+      console.log(`📋 [CHECK-SAV-DELAYS] Shop ${shop.name}:`);
+      console.log(`   - Final statuses (is_final_status=true): ${finalStatuses.length > 0 ? finalStatuses.join(', ') : 'none'}`);
+      console.log(`   - Total excluded statuses: ${uniqueExcludedStatuses.join(', ')}`);
+
+      // Récupérer les SAV actifs (en excluant tous les statuts finaux)
       const { data: savCases, error: casesError } = await supabase
         .from('sav_cases')
         .select('id, case_number, sav_type, status, created_at, shop_id')
         .eq('shop_id', shop.id)
-        .not('status', 'in', `(${excludedStatuses.join(',')})`);
+        .not('status', 'in', `(${uniqueExcludedStatuses.join(',')})`);
 
       if (casesError || !savCases) {
         console.error(`❌ [CHECK-SAV-DELAYS] Error fetching SAV cases for shop ${shop.id}:`, casesError);

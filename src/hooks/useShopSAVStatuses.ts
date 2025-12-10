@@ -14,6 +14,7 @@ export interface ShopSAVStatus {
   is_active: boolean;
   pause_timer: boolean;
   show_in_sidebar: boolean;
+  is_final_status: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -137,33 +138,47 @@ export function useShopSAVStatuses() {
     };
   };
 
-  // Fonction utilitaire pour détecter les statuts "prêt"
-  const isReadyStatus = (statusKey: string) => {
-    // Vérifier d'abord dans les statuts personnalisés
+  // Fonction utilitaire pour détecter les statuts finaux (clôture le SAV)
+  const isFinalStatus = (statusKey: string) => {
     const customStatus = statuses.find(s => s.status_key === statusKey);
     if (customStatus) {
-      // Utiliser le label pour détecter si c'est un statut "prêt"
-      const label = customStatus.status_label.toLowerCase();
-      return label.includes('prêt') || label.includes('pret') || label.includes('ready') || label.includes('terminé') || label.includes('termine');
+      return customStatus.is_final_status;
     }
-    
+    // Fallback pour les statuts par défaut connus
+    const key = (statusKey || '').toLowerCase();
+    return key === 'ready' || key === 'cancelled' || key === 'pret' || key === 'annule';
+  };
+
+  // Fonction utilitaire pour détecter les statuts "prêt" - utilise is_final_status
+  const isReadyStatus = (statusKey: string) => {
+    const customStatus = statuses.find(s => s.status_key === statusKey);
+    if (customStatus) {
+      // Utiliser is_final_status ET vérifier que ce n'est pas un statut "annulé"
+      if (customStatus.is_final_status) {
+        const label = customStatus.status_label.toLowerCase();
+        return !label.includes('annulé') && !label.includes('annule') && !label.includes('cancelled');
+      }
+      return false;
+    }
     // Fallback sur les statuts par défaut
     const key = (statusKey || '').toLowerCase();
-    return key === 'ready' || key === 'pret' || key === 'terminé' || key === 'termine';
+    return key === 'ready' || key === 'pret';
   };
 
   // Fonction utilitaire pour détecter les statuts "annulé"
   const isCancelledStatus = (statusKey: string) => {
-    // Vérifier d'abord dans les statuts personnalisés
     const customStatus = statuses.find(s => s.status_key === statusKey);
     if (customStatus) {
-      const label = customStatus.status_label.toLowerCase();
-      return label.includes('annulé') || label.includes('annule') || label.includes('cancelled') || label.includes('abandon');
+      // Utiliser is_final_status ET vérifier que c'est bien un statut "annulé"
+      if (customStatus.is_final_status) {
+        const label = customStatus.status_label.toLowerCase();
+        return label.includes('annulé') || label.includes('annule') || label.includes('cancelled') || label.includes('abandon');
+      }
+      return false;
     }
-    
     // Fallback sur les statuts par défaut
     const key = (statusKey || '').toLowerCase();
-    return key === 'cancelled' || key === 'annule' || key === 'annulé' || key === 'abandon';
+    return key === 'cancelled' || key === 'annule';
   };
 
   // Fonction utilitaire pour détecter les statuts qui pausent le timer
@@ -172,9 +187,9 @@ export function useShopSAVStatuses() {
     return customStatus ? customStatus.pause_timer : false;
   };
 
-  // Fonction utilitaire pour détecter les statuts actifs (ni prêt, ni annulé)
+  // Fonction utilitaire pour détecter les statuts actifs (non finaux)
   const isActiveStatus = (statusKey: string) => {
-    return !isReadyStatus(statusKey) && !isCancelledStatus(statusKey);
+    return !isFinalStatus(statusKey);
   };
 
   return {
@@ -183,6 +198,7 @@ export function useShopSAVStatuses() {
     getStatusInfo,
     getAllStatuses,
     getStatusStyle,
+    isFinalStatus,
     isReadyStatus,
     isCancelledStatus,
     isPauseTimerStatus,

@@ -1267,6 +1267,7 @@ export type Database = {
           id: string
           is_active: boolean
           is_default: boolean
+          is_final_status: boolean
           pause_timer: boolean
           shop_id: string
           show_in_sidebar: boolean
@@ -1281,6 +1282,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           is_default?: boolean
+          is_final_status?: boolean
           pause_timer?: boolean
           shop_id: string
           show_in_sidebar?: boolean
@@ -1295,6 +1297,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           is_default?: boolean
+          is_final_status?: boolean
           pause_timer?: boolean
           shop_id?: string
           show_in_sidebar?: boolean
