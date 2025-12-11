@@ -910,6 +910,7 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
                           Stock: {part.quantity}
                         </Badge>
                         <Button 
+                          type="button"
                           size="sm" 
                           variant={recentlyAddedParts.includes(part.id) ? "default" : "outline"}
                           className={recentlyAddedParts.includes(part.id) ? "bg-green-500 hover:bg-green-600 text-white" : ""}
