@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Trash2, Search, AlertTriangle } from 'lucide-react';
+import { Plus, Trash2, Search, AlertTriangle, Check } from 'lucide-react';
 import { Part, useParts } from '@/hooks/useParts';
 import { useNotifications } from '@/hooks/useNotifications';
 import { useOrders } from '@/hooks/useOrders';
@@ -32,6 +32,7 @@ interface PartsSelectionProps {
 export function PartsSelection({ selectedParts, onPartsChange, savCaseId }: PartsSelectionProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [showStockWarnings, setShowStockWarnings] = useState<string[]>([]);
+  const [recentlyAddedParts, setRecentlyAddedParts] = useState<string[]>([]);
   
   const { parts } = useParts();
   const { createStockAlert } = useNotifications();
@@ -67,7 +68,12 @@ export function PartsSelection({ selectedParts, onPartsChange, savCaseId }: Part
       
       // Afficher une notification pour le stock zéro
       checkStockAndCreateAlerts(part);
-      setSearchTerm('');
+      
+      // Feedback visuel - marquer comme ajouté pendant 1 seconde
+      setRecentlyAddedParts(prev => [...prev, part.id]);
+      setTimeout(() => {
+        setRecentlyAddedParts(prev => prev.filter(id => id !== part.id));
+      }, 1000);
       return;
     }
     
@@ -94,7 +100,12 @@ export function PartsSelection({ selectedParts, onPartsChange, savCaseId }: Part
 
     // Check stock and create alerts if needed
     checkStockAndCreateAlerts(part);
-    setSearchTerm('');
+    
+    // Feedback visuel - marquer comme ajouté pendant 1 seconde
+    setRecentlyAddedParts(prev => [...prev, part.id]);
+    setTimeout(() => {
+      setRecentlyAddedParts(prev => prev.filter(id => id !== part.id));
+    }, 1000);
   };
 
   const checkStockAndCreateAlerts = async (part: Part) => {
@@ -178,8 +189,7 @@ export function PartsSelection({ selectedParts, onPartsChange, savCaseId }: Part
                 filteredParts.slice(0, 10).map((part) => (
                   <div
                     key={part.id}
-                    className="flex items-center justify-between p-3 hover:bg-muted/50 cursor-pointer border-b last:border-b-0"
-                    onClick={() => addPart(part)}
+                    className="flex items-center justify-between p-3 hover:bg-muted/50 border-b last:border-b-0"
                   >
                     <div className="flex-1">
                       <div className="font-medium">{part.name}</div>
@@ -191,8 +201,16 @@ export function PartsSelection({ selectedParts, onPartsChange, savCaseId }: Part
                       <Badge variant={part.quantity === 0 ? 'destructive' : part.quantity <= 5 ? 'default' : 'secondary'}>
                         {part.quantity === 0 ? 'À commander' : `Stock: ${part.quantity}`}
                       </Badge>
-                      <Button size="sm" variant="outline">
-                        <Plus className="h-3 w-3" />
+                      <Button 
+                        size="sm" 
+                        variant={recentlyAddedParts.includes(part.id) ? "default" : "outline"}
+                        className={recentlyAddedParts.includes(part.id) ? "bg-green-500 hover:bg-green-600 text-white" : ""}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          addPart(part);
+                        }}
+                      >
+                        {recentlyAddedParts.includes(part.id) ? <Check className="h-3 w-3" /> : <Plus className="h-3 w-3" />}
                       </Button>
                     </div>
                   </div>
