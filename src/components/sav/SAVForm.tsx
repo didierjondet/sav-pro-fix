@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Separator } from '@/components/ui/separator';
-import { Plus, Trash2, Search } from 'lucide-react';
+import { Plus, Trash2, Search, Check } from 'lucide-react';
 import { useSAVCases } from '@/hooks/useSAVCases';
 import { useCustomers } from '@/hooks/useCustomers';
 import { useParts } from '@/hooks/useParts';
@@ -113,6 +113,7 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
   const [depositAmount, setDepositAmount] = useState<number>(0);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [recentlyAddedParts, setRecentlyAddedParts] = useState<string[]>([]);
   const [showPrintDialog, setShowPrintDialog] = useState(false);
   const [createdSAVCase, setCreatedSAVCase] = useState<any>(null);
   const [securityCodes, setSecurityCodes] = useState<SecurityCodes>({
@@ -173,7 +174,12 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
         },
       ]);
     }
-    setSearchTerm('');
+    
+    // Feedback visuel - marquer comme ajouté pendant 1 seconde
+    setRecentlyAddedParts(prev => [...prev, part.id]);
+    setTimeout(() => {
+      setRecentlyAddedParts(prev => prev.filter(id => id !== part.id));
+    }, 1000);
   };
 
   // Ajouter une pièce libre (champ libre)
@@ -879,8 +885,7 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
                   filteredParts.slice(0, 10).map((part) => (
                     <div
                       key={part.id}
-                      className="flex items-center justify-between p-3 hover:bg-muted/50 cursor-pointer border-b last:border-b-0"
-                      onClick={() => addPartFromStock(part)}
+                      className="flex items-center justify-between p-3 hover:bg-muted/50 border-b last:border-b-0"
                     >
                       <div className="flex-1 flex items-center gap-3">
                         {part.photo_url && (
@@ -904,8 +909,16 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
                         <Badge variant={part.quantity === 0 ? 'destructive' : part.quantity <= 5 ? 'default' : 'secondary'}>
                           Stock: {part.quantity}
                         </Badge>
-                        <Button size="sm" variant="outline">
-                          <Plus className="h-3 w-3" />
+                        <Button 
+                          size="sm" 
+                          variant={recentlyAddedParts.includes(part.id) ? "default" : "outline"}
+                          className={recentlyAddedParts.includes(part.id) ? "bg-green-500 hover:bg-green-600 text-white" : ""}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            addPartFromStock(part);
+                          }}
+                        >
+                          {recentlyAddedParts.includes(part.id) ? <Check className="h-3 w-3" /> : <Plus className="h-3 w-3" />}
                         </Button>
                       </div>
                     </div>
