@@ -416,14 +416,16 @@ export function useStatistics(
               caseRevenue += partRevenue;
             }
 
-            // Tracking des pièces les plus utilisées (toujours comptabilisé)
-            const partKey = savPart.part?.name || 'Pièce inconnue';
-            if (!partsUsage[partKey]) {
-              partsUsage[partKey] = { quantity: 0, revenue: 0, name: partKey };
-            }
-            partsUsage[partKey].quantity += savPart.quantity;
-            if (!excludeRevenue) {
-              partsUsage[partKey].revenue += partRevenue;
+            // Tracking des pièces les plus utilisées (seulement si identifiables)
+            const partKey = savPart.part?.name || savPart.custom_part_name;
+            if (partKey) {
+              if (!partsUsage[partKey]) {
+                partsUsage[partKey] = { quantity: 0, revenue: 0, name: partKey };
+              }
+              partsUsage[partKey].quantity += savPart.quantity;
+              if (!excludeRevenue) {
+                partsUsage[partKey].revenue += partRevenue;
+              }
             }
           });
 

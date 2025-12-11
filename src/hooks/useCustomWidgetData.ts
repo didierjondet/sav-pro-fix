@@ -220,9 +220,10 @@ export const useCustomWidgetData = ({ metrics, filters, groupBy }: UseCustomWidg
               savRevenue += partRevenue;
             }
             
-            // Comptabiliser l'usage des pièces (toujours)
-            if (savPart.part?.name) {
-              partsUsage[savPart.part.name] = (partsUsage[savPart.part.name] || 0) + qty;
+            // Comptabiliser l'usage des pièces (seulement si identifiables)
+            const partKey = savPart.part?.name || savPart.custom_part_name;
+            if (partKey) {
+              partsUsage[partKey] = (partsUsage[partKey] || 0) + qty;
             }
           });
           
