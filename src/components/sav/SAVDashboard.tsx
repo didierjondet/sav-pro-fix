@@ -36,6 +36,7 @@ import { PartsUsageHeatmapWidget } from '@/components/statistics/advanced/PartsU
 import { MonthlyComparisonWidget } from '@/components/statistics/advanced/MonthlyComparisonWidget';
 import { RevenueBreakdownWidget } from '@/components/statistics/advanced/RevenueBreakdownWidget';
 import { CustomerSatisfactionWidget } from '@/components/statistics/advanced/CustomerSatisfactionWidget';
+import { MonthlyLateRateChart } from '@/components/statistics/widgets/MonthlyLateRateChart';
 
 // Limite de stockage par magasin (500 MB = 0.5 GB)
 const STORAGE_LIMIT_GB = 0.5;
@@ -878,29 +879,15 @@ export function SAVDashboard() {
 
       case 'late-rate-chart':
         return (
-          <DashboardWidgetContainer widgetId="late-rate-chart">
-            {(stats, periodLabel) => (
-              <Card className="md:col-span-2">
-                <CardHeader>
-                  <CardTitle className="text-base">Évolution retards</CardTitle>
-                  <CardDescription>{periodLabel}</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <ChartContainer
-                    config={{ lateRate: { label: "Taux de retard (%)", color: "hsl(var(--destructive))" } }}
-                    className="h-72"
-                  >
-                    <LineChart data={stats.lateRateChart}>
-                      <XAxis dataKey="date" tickLine={false} axisLine={false} />
-                      <YAxis domain={[0, 100]} tickFormatter={(v) => `${Math.round(v)}%`} tickLine={false} axisLine={false} />
-                      <ChartTooltip content={<ChartTooltipContent />} />
-                      <Line type="monotone" dataKey="lateRate" stroke="var(--color-lateRate)" strokeWidth={2} dot={true} />
-                    </LineChart>
-                  </ChartContainer>
-                </CardContent>
-              </Card>
-            )}
-          </DashboardWidgetContainer>
+          <Card className="md:col-span-2">
+            <CardHeader>
+              <CardTitle className="text-base">Évolution retards</CardTitle>
+              <CardDescription>Taux de retard mensuel - {new Date().getFullYear()}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <MonthlyLateRateChart />
+            </CardContent>
+          </Card>
         );
 
       case 'top-devices':

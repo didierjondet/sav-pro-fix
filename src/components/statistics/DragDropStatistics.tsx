@@ -42,6 +42,7 @@ import { StorageUsageWidget } from './widgets/StorageUsageWidget';
 // MonthlyProfitabilityWidget supprimé
 import { AnnualStatsWidget } from './widgets/AnnualStatsWidget';
 import { QuoteRejectionWidget } from './widgets/QuoteRejectionWidget';
+import { MonthlyLateRateChart } from './widgets/MonthlyLateRateChart';
 import { CustomWidgetRenderer } from './CustomWidgetRenderer';
 
 interface DragDropStatisticsProps {
@@ -599,17 +600,7 @@ export const DragDropStatistics = ({ period, onPeriodChange }: DragDropStatistic
         return (
           <div className={className}>
             <DraggableStatisticsWidget {...baseProps}>
-              <ChartContainer
-                config={{ lateRate: { label: "Taux de retard (%)", color: "hsl(var(--destructive))" } }}
-                className="h-72"
-              >
-                <LineChart data={lateRateChart}>
-                  <XAxis dataKey="date" tickLine={false} axisLine={false} />
-                  <YAxis domain={[0, 100]} tickFormatter={(v) => `${Math.round(v)}%`} tickLine={false} axisLine={false} />
-                  <ChartTooltip content={<ChartTooltipContent />} />
-                  <Line type="monotone" dataKey="lateRate" stroke="var(--color-lateRate)" strokeWidth={2} dot={true} />
-                </LineChart>
-              </ChartContainer>
+              <MonthlyLateRateChart />
             </DraggableStatisticsWidget>
           </div>
         );
