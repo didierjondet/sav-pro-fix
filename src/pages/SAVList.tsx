@@ -358,12 +358,39 @@ export default function SAVList() {
                          <SelectItem value="all">Tous les statuts</SelectItem>
                          <SelectItem value="all-except-ready">Masquer les prêts</SelectItem>
                          <SelectItem value="overdue">En retard</SelectItem>
+                         
+                         {/* Statuts actifs (non finaux) */}
                          {statuses
-                           .filter(status => status.is_active)
+                           .filter(status => status.is_active && !status.is_final_status)
                            .sort((a, b) => a.display_order - b.display_order)
                            .map(status => (
                              <SelectItem key={status.status_key} value={status.status_key}>
                                {status.status_label}
+                             </SelectItem>
+                           ))
+                         }
+                         
+                         {/* Séparateur pour les statuts de clôture */}
+                         {statuses.some(status => status.is_active && status.is_final_status) && (
+                           <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground border-t mt-1 flex items-center gap-1">
+                             <span>🏁</span> Statuts de clôture
+                           </div>
+                         )}
+                         
+                         {/* Statuts finaux avec style distinct */}
+                         {statuses
+                           .filter(status => status.is_active && status.is_final_status)
+                           .sort((a, b) => a.display_order - b.display_order)
+                           .map(status => (
+                             <SelectItem 
+                               key={status.status_key} 
+                               value={status.status_key}
+                               className="text-muted-foreground"
+                             >
+                               <span className="flex items-center gap-1.5">
+                                 <span className="text-xs">🏁</span>
+                                 <span className="italic">{status.status_label}</span>
+                               </span>
                              </SelectItem>
                            ))
                          }
