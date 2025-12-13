@@ -74,9 +74,9 @@ export const DraggableStatisticsWidget = ({
     <div
       ref={setNodeRef}
       style={style}
-      className={`relative h-full ${className}`}
+      className={`relative ${className}`}
     >
-      <Card className={`h-full overflow-hidden ${isDragging ? 'opacity-50' : ''} transition-opacity`}>
+      <Card className={`${isDragging ? 'opacity-50' : ''} transition-opacity`}>
         <CardHeader className="relative py-3">
           <CardTitle className="flex items-center justify-between gap-2 text-sm sm:text-base">
             <span className="flex-1 truncate">{title}</span>
@@ -116,7 +116,7 @@ export const DraggableStatisticsWidget = ({
             </div>
           </CardTitle>
         </CardHeader>
-        <CardContent className="h-[calc(100%-60px)] overflow-hidden p-3 pt-0">
+        <CardContent className="p-3 pt-0">
           {children}
         </CardContent>
       </Card>

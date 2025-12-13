@@ -13,28 +13,28 @@ export const WIDGET_SIZES: Record<WidgetSize, WidgetDimensions> = {
   small: {
     size: 'small',
     cols: 1,
-    height: 'h-[160px]'
+    height: 'min-h-[180px]'
   },
   
   // 2 colonnes - Graphiques moyens
   medium: {
     size: 'medium', 
     cols: 2,
-    height: 'h-[200px]'
+    height: 'min-h-[320px]'
   },
   
   // 4 colonnes - Graphiques détaillés
   large: {
     size: 'large',
     cols: 4, 
-    height: 'h-[320px]'
+    height: 'min-h-[450px]'
   },
   
   // 4 colonnes - Dashboards complets
   full: {
     size: 'full',
     cols: 4,
-    height: 'h-[280px]'
+    height: 'min-h-[400px]'
   }
 };
 

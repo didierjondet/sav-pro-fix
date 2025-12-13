@@ -121,7 +121,7 @@ export const SortableBlock = ({ id, children, onRemove }: SortableBlockProps) =>
         </button>
       </div>
 
-      <div className="h-full w-full overflow-hidden [&>*]:h-full [&>*]:w-full">
+      <div className="w-full">
         {children}
       </div>
     </div>
