@@ -24,7 +24,7 @@ import { useStatisticsConfig, StatisticModule } from '@/hooks/useStatisticsConfi
 import { useMonthlyStatistics } from '@/hooks/useMonthlyStatistics';
 import { useSatisfactionSurveys } from '@/hooks/useSatisfactionSurveys';
 import { DraggableStatisticsWidget } from './DraggableStatisticsWidget';
-import { WIDGET_SIZES, getWidgetClasses, DEFAULT_MODULE_SIZES } from './StatisticsWidgetSizes';
+import { WIDGET_SIZES, getWidgetGridClasses, DEFAULT_MODULE_SIZES } from './StatisticsWidgetSizes';
 import { useWidgetConfiguration } from '@/hooks/useWidgetConfiguration';
 
 // Importation des widgets avancés
@@ -185,7 +185,7 @@ export const DragDropStatistics = ({ period, onPeriodChange }: DragDropStatistic
     // Gérer les widgets personnalisés créés par l'IA
     if (module.isCustom) {
       const size = DEFAULT_MODULE_SIZES[module.id] || 'medium';
-      const className = getWidgetClasses(size);
+      const className = getWidgetGridClasses(size);
       
       return (
         <div className={className}>
@@ -197,7 +197,7 @@ export const DragDropStatistics = ({ period, onPeriodChange }: DragDropStatistic
     }
 
     const size = DEFAULT_MODULE_SIZES[module.id] || 'small';
-    const className = getWidgetClasses(size);
+    const className = getWidgetGridClasses(size);
 
     switch (module.id) {
       // Widgets avancés combinés
