@@ -74,13 +74,13 @@ export const DraggableStatisticsWidget = ({
     <div
       ref={setNodeRef}
       style={style}
-      className={`relative ${className}`}
+      className={`relative h-full ${className}`}
     >
-      <Card className={`${isDragging ? 'opacity-50' : ''} transition-opacity`}>
-        <CardHeader className="relative">
-          <CardTitle className="flex items-center justify-between gap-2">
-            <span className="flex-1">{title}</span>
-            <div className="flex items-center gap-1">
+      <Card className={`h-full overflow-hidden ${isDragging ? 'opacity-50' : ''} transition-opacity`}>
+        <CardHeader className="relative py-3">
+          <CardTitle className="flex items-center justify-between gap-2 text-sm sm:text-base">
+            <span className="flex-1 truncate">{title}</span>
+            <div className="flex items-center gap-1 shrink-0">
               {config && (
                 <TooltipProvider delayDuration={200}>
                   <Tooltip>
@@ -116,7 +116,7 @@ export const DraggableStatisticsWidget = ({
             </div>
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="h-[calc(100%-60px)] overflow-hidden p-3 pt-0">
           {children}
         </CardContent>
       </Card>

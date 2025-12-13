@@ -1,60 +1,64 @@
-// Configuration des tailles de widgets pour une présentation harmonieuse
-export type WidgetSize = 'small' | 'medium' | 'large' | 'wide' | 'tall' | 'full';
+// Configuration des tailles de widgets pour un système de grille 4 colonnes harmonieux
+// Toutes les tailles sont des multiples pour un emboîtement parfait
+export type WidgetSize = 'small' | 'medium' | 'large' | 'full';
 
 export interface WidgetDimensions {
   size: WidgetSize;
-  gridClasses: string;
-  aspectRatio?: string;
-  minHeight?: string;
+  cols: 1 | 2 | 4;
+  height: string;
 }
 
 export const WIDGET_SIZES: Record<WidgetSize, WidgetDimensions> = {
-  // 1x1 - Parfait pour les KPIs simples
+  // 1 colonne - KPIs simples
   small: {
     size: 'small',
-    gridClasses: 'col-span-1 row-span-1',
-    minHeight: '140px'
+    cols: 1,
+    height: 'h-[160px]'
   },
   
-  // 2x1 - Bon pour les graphiques linéaires simples
+  // 2 colonnes - Graphiques moyens
   medium: {
     size: 'medium', 
-    gridClasses: 'col-span-2 row-span-1',
-    minHeight: '140px'
+    cols: 2,
+    height: 'h-[200px]'
   },
   
-  // 2x2 - Parfait pour les graphiques détaillés
+  // 4 colonnes - Graphiques détaillés
   large: {
     size: 'large',
-    gridClasses: 'col-span-2 row-span-2', 
-    minHeight: '320px'
+    cols: 4, 
+    height: 'h-[320px]'
   },
   
-  // 3x1 - Pour les graphiques larges mais pas très hauts
-  wide: {
-    size: 'wide',
-    gridClasses: 'col-span-3 row-span-1',
-    minHeight: '160px'
-  },
-  
-  // 1x2 - Pour les listes ou widgets verticaux
-  tall: {
-    size: 'tall',
-    gridClasses: 'col-span-1 row-span-2',
-    minHeight: '320px'
-  },
-  
-  // Pleine largeur - Pour les dashboards complexes
+  // 4 colonnes - Dashboards complets
   full: {
     size: 'full',
-    gridClasses: 'col-span-full row-span-1',
-    minHeight: '200px'
+    cols: 4,
+    height: 'h-[280px]'
   }
 };
 
-export const getWidgetClasses = (size: WidgetSize): string => {
+// Classes CSS pour chaque taille (responsive)
+export const getWidgetGridClasses = (size: WidgetSize): string => {
   const dimensions = WIDGET_SIZES[size];
-  return `${dimensions.gridClasses} ${dimensions.minHeight ? `min-h-[${dimensions.minHeight}]` : ''}`;
+  
+  // Mobile: toujours pleine largeur
+  // Tablette (sm): 2 colonnes max
+  // Desktop (lg): 4 colonnes
+  switch (dimensions.cols) {
+    case 1:
+      return 'col-span-1 sm:col-span-1 lg:col-span-1';
+    case 2:
+      return 'col-span-1 sm:col-span-1 lg:col-span-2';
+    case 4:
+      return 'col-span-1 sm:col-span-2 lg:col-span-4';
+    default:
+      return 'col-span-1';
+  }
+};
+
+export const getWidgetHeightClass = (size: WidgetSize): string => {
+  return WIDGET_SIZES[size].height;
 };
 
 // Configuration des modules avec leurs tailles
@@ -63,7 +67,7 @@ export interface ModuleSizeConfig {
 }
 
 export const DEFAULT_MODULE_SIZES: ModuleSizeConfig = {
-  // KPIs simples - petite taille
+  // KPIs simples - petite taille (1 col)
   'kpi-revenue': 'small',
   'kpi-expenses': 'small', 
   'kpi-profit': 'small',
@@ -71,27 +75,24 @@ export const DEFAULT_MODULE_SIZES: ModuleSizeConfig = {
   'sav-stats': 'small',
   'late-rate': 'small',
   
-  // Graphiques moyens
-  // 'profitability-chart' supprimé
+  // Graphiques moyens (2 cols)
   'top-parts-chart': 'medium',
   'late-rate-chart': 'medium',
-  
-  // Widgets spéciaux
-  'top-devices': 'tall',
-  'revenue-breakdown': 'wide',
-  'monthly-comparison': 'full',
-  'sav-performance': 'large',
-  'parts-usage-heatmap': 'wide',
   'customer-satisfaction': 'medium',
-  
-  // Nouveaux widgets combinés
-  'financial-overview': 'full',
-  'sav-metrics-combined': 'wide',
-  'performance-trends': 'large',
-  
-  // Nouveaux widgets spécialisés
-  'finance-kpis': 'tall',
   'storage-usage': 'medium',
-  'annual-stats': 'wide',
-  'quote-rejections': 'medium'
+  'quote-rejections': 'medium',
+  'top-devices': 'medium',
+  
+  // Widgets larges (4 cols)
+  'revenue-breakdown': 'large',
+  'monthly-comparison': 'large',
+  'sav-performance': 'large',
+  'parts-usage-heatmap': 'large',
+  'annual-stats': 'large',
+  
+  // Widgets full (4 cols)
+  'financial-overview': 'full',
+  'sav-metrics-combined': 'full',
+  'performance-trends': 'full',
+  'finance-kpis': 'medium'
 };

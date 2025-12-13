@@ -6,6 +6,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { useWidgetConfiguration } from '@/hooks/useWidgetConfiguration';
 import { useShopSAVStatuses } from '@/hooks/useShopSAVStatuses';
 import { useShopSAVTypes } from '@/hooks/useShopSAVTypes';
+import { DEFAULT_MODULE_SIZES, getWidgetGridClasses, getWidgetHeightClass } from './StatisticsWidgetSizes';
+import { cn } from '@/lib/utils';
 
 interface SortableBlockProps {
   id: string;
@@ -18,6 +20,11 @@ export const SortableBlock = ({ id, children, onRemove }: SortableBlockProps) =>
   const { config } = useWidgetConfiguration(id);
   const { statuses } = useShopSAVStatuses();
   const { types } = useShopSAVTypes();
+
+  // Récupérer la taille du widget
+  const widgetSize = DEFAULT_MODULE_SIZES[id] || 'medium';
+  const gridClasses = getWidgetGridClasses(widgetSize);
+  const heightClass = getWidgetHeightClass(widgetSize);
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -56,7 +63,16 @@ export const SortableBlock = ({ id, children, onRemove }: SortableBlockProps) =>
   };
 
   return (
-    <div ref={setNodeRef} style={style} className={`relative ${isDragging ? 'opacity-70' : ''}`}>
+    <div 
+      ref={setNodeRef} 
+      style={style} 
+      className={cn(
+        "relative overflow-hidden",
+        gridClasses,
+        heightClass,
+        isDragging && "opacity-70 z-50"
+      )}
+    >
       {onRemove && (
         <button
           onClick={onRemove}
@@ -105,7 +121,9 @@ export const SortableBlock = ({ id, children, onRemove }: SortableBlockProps) =>
         </button>
       </div>
 
-      {children}
+      <div className="h-full w-full overflow-hidden [&>*]:h-full [&>*]:w-full">
+        {children}
+      </div>
     </div>
   );
 };
