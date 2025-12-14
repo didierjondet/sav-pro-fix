@@ -88,8 +88,8 @@ export const MonthlyComparisonWidget = ({
           </div>
 
           {/* Graphique de comparaison */}
-          <div className="h-64">
-            <ChartContainer config={chartConfig} className="h-full">
+          <div className="h-64 w-full">
+            <ChartContainer config={chartConfig} className="h-full w-full !aspect-auto">
               <ComposedChart data={data}>
                 <XAxis 
                   dataKey="monthName" 
