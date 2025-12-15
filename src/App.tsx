@@ -46,6 +46,7 @@ import SubscriptionSuccess from "./pages/SubscriptionSuccess";
 import Notifications from "./pages/Notifications";
 import QuotePublic from "./pages/QuotePublic";
 import Satisfaction from "./pages/Satisfaction";
+import Reports from "./pages/Reports";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -132,6 +133,7 @@ const App = () => {
                 <Route path="/client-chats/*" element={<ClientChats />} />
                 <Route path="/chats" element={<ClientChats />} />
                 <Route path="/statistics" element={<Statistics />} />
+                <Route path="/reports" element={<Reports />} />
                 <Route path="/statistics/revenue" element={<RevenueDetails />} />
                 <Route path="/statistics/revenue/*" element={<RevenueDetails />} />
                 <Route path="/statistics/expenses" element={<ExpensesDetails />} />
