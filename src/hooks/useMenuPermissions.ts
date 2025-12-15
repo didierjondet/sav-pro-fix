@@ -14,6 +14,7 @@ interface MenuPermissions {
   sidebar_sav_statuses: boolean;
   sidebar_late_sav: boolean;
   statistics: boolean;
+  reports: boolean;
 }
 
 export function useMenuPermissions(): {
@@ -46,7 +47,8 @@ export function useMenuPermissions(): {
         sidebar_sav_types: true,
         sidebar_sav_statuses: true,
         sidebar_late_sav: true,
-        statistics: false
+        statistics: false,
+        reports: true
       };
       return defaultPerms;
     }
@@ -93,7 +95,8 @@ export function useMenuPermissions(): {
       sidebar_sav_types: forcedFeatures.sidebar_sav_types === true ? true : (basePermissions.sidebar_sav_types && shopPreferences.sidebar_sav_types),
       sidebar_sav_statuses: forcedFeatures.sidebar_sav_statuses === true ? true : (basePermissions.sidebar_sav_statuses && shopPreferences.sidebar_sav_statuses),
       sidebar_late_sav: forcedFeatures.sidebar_late_sav === true ? true : (basePermissions.sidebar_late_sav && shopPreferences.sidebar_late_sav),
-      statistics: forcedFeatures.statistics === true ? true : (basePermissions.statistics && shopPreferences.statistics)
+      statistics: forcedFeatures.statistics === true ? true : (basePermissions.statistics && shopPreferences.statistics),
+      reports: true // Reports always enabled for all users
     };
     
     // Sauvegarder les permissions valides
