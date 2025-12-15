@@ -14,6 +14,7 @@ interface MenuConfig {
   sidebar_sav_statuses: boolean;
   sidebar_late_sav: boolean;
   statistics: boolean;
+  reports?: boolean;
 }
 
 interface SubscriptionFeatures {
@@ -67,7 +68,8 @@ export function useSubscriptionFeatures(): SubscriptionFeatures {
               sidebar_sav_types: true,
               sidebar_sav_statuses: true,
               sidebar_late_sav: true,
-              statistics: false
+              statistics: false,
+              reports: true
             },
             planName: shop.subscription_tier || 'free'
           };
