@@ -126,10 +126,12 @@ export default function Reports() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      <div className="md:pl-64">
-        <Header onMenuClick={() => setSidebarOpen(true)} isMobileMenuOpen={sidebarOpen} />
-        <main className="p-4 md:p-6 space-y-6">
+      <div className="flex h-screen">
+        <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <Header onMenuClick={() => setSidebarOpen(true)} isMobileMenuOpen={sidebarOpen} />
+          <main className="flex-1 overflow-y-auto p-4 md:p-6">
+            <div className="max-w-7xl mx-auto space-y-6">
           {/* Header */}
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
@@ -348,13 +350,13 @@ export default function Reports() {
           {/* Data table grouped by type */}
           {loading ? (
             <Card>
-              <CardContent className="py-10 text-center text-muted-foreground">
+              <CardContent className="py-6 text-center text-muted-foreground">
                 Chargement des données...
               </CardContent>
             </Card>
           ) : data.items.length === 0 ? (
             <Card>
-              <CardContent className="py-10 text-center text-muted-foreground">
+              <CardContent className="py-6 text-center text-muted-foreground">
                 Aucun SAV trouvé pour les critères sélectionnés
               </CardContent>
             </Card>
@@ -487,7 +489,9 @@ export default function Reports() {
               </CardContent>
             </Card>
           )}
-        </main>
+            </div>
+          </main>
+        </div>
       </div>
     </div>
   );
