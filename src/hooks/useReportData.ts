@@ -4,6 +4,13 @@ import { useShop } from './useShop';
 import { useShopSAVTypes } from './useShopSAVTypes';
 import { startOfMonth, endOfMonth, subMonths, format } from 'date-fns';
 
+export interface ReportPartItem {
+  name: string;
+  quantity: number;
+  purchase_price: number;
+  unit_price: number;
+}
+
 export interface ReportSAVItem {
   id: string;
   case_number: string;
@@ -18,6 +25,7 @@ export interface ReportSAVItem {
   purchase_cost: number;
   selling_price: number;
   margin: number;
+  parts: ReportPartItem[];
 }
 
 export interface ReportData {
@@ -113,7 +121,9 @@ export function useReportData({
             sav_parts(
               quantity,
               unit_price,
-              purchase_price
+              purchase_price,
+              custom_part_name,
+              part:parts(name)
             )
           `)
           .eq('shop_id', shop.id)
@@ -162,6 +172,14 @@ export function useReportData({
         ? `${customer.last_name} ${customer.first_name}`.trim()
         : 'Client inconnu';
 
+      // Map parts for display
+      const mappedParts: ReportPartItem[] = parts.map((p: any) => ({
+        name: p.custom_part_name || p.part?.name || 'Pièce inconnue',
+        quantity: p.quantity || 1,
+        purchase_price: p.purchase_price || 0,
+        unit_price: p.unit_price || 0
+      }));
+
       return {
         id: sav.id,
         case_number: sav.case_number,
@@ -175,7 +193,8 @@ export function useReportData({
         device_imei: sav.device_imei,
         purchase_cost,
         selling_price,
-        margin
+        margin,
+        parts: mappedParts
       };
     });
 

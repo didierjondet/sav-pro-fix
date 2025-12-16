@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, Fragment } from 'react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import * as XLSX from 'xlsx';
@@ -410,42 +410,62 @@ export default function Reports() {
                             {items.map(item => {
                               const statusInfo = getStatusInfo(item.status);
                               return (
-                                <TableRow key={item.id}>
-                                  <TableCell className="font-medium">{item.case_number}</TableCell>
-                                  <TableCell>{format(new Date(item.created_at), 'dd/MM/yyyy', { locale: fr })}</TableCell>
-                                  <TableCell>{item.customer_name}</TableCell>
-                                  <TableCell>
-                                    <Badge 
-                                      variant="outline"
-                                      style={{
-                                        backgroundColor: `${statusInfo?.color || '#666'}20`,
-                                        color: statusInfo?.color || '#666',
-                                        borderColor: statusInfo?.color || '#666'
-                                      }}
-                                    >
-                                      {statusInfo?.label || item.status}
-                                    </Badge>
-                                  </TableCell>
-                                  <TableCell>
-                                    {item.device_brand || item.device_model 
-                                      ? `${item.device_brand || ''} ${item.device_model || ''}`.trim()
-                                      : '-'}
-                                  </TableCell>
-                                  <TableCell className="text-xs text-muted-foreground">
-                                    {item.sku || '-'}
-                                  </TableCell>
-                                  <TableCell className="text-xs text-muted-foreground font-mono">
-                                    {item.device_imei || '-'}
-                                  </TableCell>
-                                  <TableCell className="text-right">{formatCurrency(item.purchase_cost)}</TableCell>
-                                  <TableCell className="text-right">{formatCurrency(item.selling_price)}</TableCell>
-                                  <TableCell className={cn(
-                                    "text-right font-medium",
-                                    item.margin >= 0 ? "text-green-600" : "text-destructive"
-                                  )}>
-                                    {formatCurrency(item.margin)}
-                                  </TableCell>
-                                </TableRow>
+                                <Fragment key={item.id}>
+                                  <TableRow>
+                                    <TableCell className="font-medium">{item.case_number}</TableCell>
+                                    <TableCell>{format(new Date(item.created_at), 'dd/MM/yyyy', { locale: fr })}</TableCell>
+                                    <TableCell>{item.customer_name}</TableCell>
+                                    <TableCell>
+                                      <Badge 
+                                        variant="outline"
+                                        style={{
+                                          backgroundColor: `${statusInfo?.color || '#666'}20`,
+                                          color: statusInfo?.color || '#666',
+                                          borderColor: statusInfo?.color || '#666'
+                                        }}
+                                      >
+                                        {statusInfo?.label || item.status}
+                                      </Badge>
+                                    </TableCell>
+                                    <TableCell>
+                                      {item.device_brand || item.device_model 
+                                        ? `${item.device_brand || ''} ${item.device_model || ''}`.trim()
+                                        : '-'}
+                                    </TableCell>
+                                    <TableCell className="text-xs text-muted-foreground">
+                                      {item.sku || '-'}
+                                    </TableCell>
+                                    <TableCell className="text-xs text-muted-foreground font-mono">
+                                      {item.device_imei || '-'}
+                                    </TableCell>
+                                    <TableCell className="text-right">{formatCurrency(item.purchase_cost)}</TableCell>
+                                    <TableCell className="text-right">{formatCurrency(item.selling_price)}</TableCell>
+                                    <TableCell className={cn(
+                                      "text-right font-medium",
+                                      item.margin >= 0 ? "text-green-600" : "text-destructive"
+                                    )}>
+                                      {formatCurrency(item.margin)}
+                                    </TableCell>
+                                  </TableRow>
+                                  {item.parts.length > 0 && (
+                                    <TableRow className="bg-muted/30 hover:bg-muted/40">
+                                      <TableCell colSpan={10} className="py-2 px-4">
+                                        <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                                          <span className="font-medium">Pièces :</span>
+                                          {item.parts.map((part, idx) => (
+                                            <span key={idx} className="inline-flex items-center gap-1 bg-background px-2 py-0.5 rounded border">
+                                              {part.name}
+                                              {part.quantity > 1 && <span className="text-primary">×{part.quantity}</span>}
+                                              <span className="text-muted-foreground/70">
+                                                ({formatCurrency(part.purchase_price)} → {formatCurrency(part.unit_price)})
+                                              </span>
+                                            </span>
+                                          ))}
+                                        </div>
+                                      </TableCell>
+                                    </TableRow>
+                                  )}
+                                </Fragment>
                               );
                             })}
                             {/* Subtotal row */}
