@@ -70,6 +70,8 @@ export default function Reports() {
         'Client': item.customer_name,
         'Statut': getStatusInfo(item.status)?.label || item.status,
         'Appareil': `${item.device_brand || ''} ${item.device_model || ''}`.trim() || '-',
+        'SKU': item.sku || '-',
+        'IMEI': item.device_imei || '-',
         'Coût achat (€)': item.purchase_cost,
         'Prix vente (€)': item.selling_price,
         'Marge (€)': item.margin
@@ -83,6 +85,8 @@ export default function Reports() {
         'Client': `${subtotal.count} SAV`,
         'Statut': '',
         'Appareil': '',
+        'SKU': '',
+        'IMEI': '',
         'Coût achat (€)': subtotal.costs,
         'Prix vente (€)': subtotal.revenue,
         'Marge (€)': subtotal.margin
@@ -161,7 +165,7 @@ export default function Reports() {
                     <SelectTrigger className="w-[200px]">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="z-50">
                       <SelectItem value="current_month">Mois en cours</SelectItem>
                       <SelectItem value="last_month">Mois précédent</SelectItem>
                       <SelectItem value="custom">Dates personnalisées</SelectItem>
@@ -228,7 +232,7 @@ export default function Reports() {
                       <ChevronDown className="ml-2 h-4 w-4" />
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-[250px] p-3">
+                  <PopoverContent className="w-[250px] p-3 z-50">
                     <ScrollArea className="max-h-[200px]">
                       <div className="space-y-2">
                         {allTypes.map(type => (
@@ -266,7 +270,7 @@ export default function Reports() {
                       <ChevronDown className="ml-2 h-4 w-4" />
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-[250px] p-3">
+                  <PopoverContent className="w-[250px] p-3 z-50">
                     <ScrollArea className="max-h-[200px]">
                       <div className="space-y-2">
                         {allStatuses.map(status => (
@@ -395,6 +399,8 @@ export default function Reports() {
                               <TableHead>Client</TableHead>
                               <TableHead>Statut</TableHead>
                               <TableHead>Appareil</TableHead>
+                              <TableHead>SKU</TableHead>
+                              <TableHead>IMEI</TableHead>
                               <TableHead className="text-right">Coût achat</TableHead>
                               <TableHead className="text-right">Prix vente</TableHead>
                               <TableHead className="text-right">Marge</TableHead>
@@ -425,6 +431,12 @@ export default function Reports() {
                                       ? `${item.device_brand || ''} ${item.device_model || ''}`.trim()
                                       : '-'}
                                   </TableCell>
+                                  <TableCell className="text-xs text-muted-foreground">
+                                    {item.sku || '-'}
+                                  </TableCell>
+                                  <TableCell className="text-xs text-muted-foreground font-mono">
+                                    {item.device_imei || '-'}
+                                  </TableCell>
                                   <TableCell className="text-right">{formatCurrency(item.purchase_cost)}</TableCell>
                                   <TableCell className="text-right">{formatCurrency(item.selling_price)}</TableCell>
                                   <TableCell className={cn(
@@ -438,7 +450,7 @@ export default function Reports() {
                             })}
                             {/* Subtotal row */}
                             <TableRow className="bg-muted/50 font-medium">
-                              <TableCell colSpan={5}>
+                              <TableCell colSpan={7}>
                                 Sous-total {typeInfo.label}
                               </TableCell>
                               <TableCell className="text-right">{formatCurrency(subtotal.costs)}</TableCell>

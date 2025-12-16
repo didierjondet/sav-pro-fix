@@ -13,6 +13,8 @@ export interface ReportSAVItem {
   status: string;
   device_brand: string | null;
   device_model: string | null;
+  sku: string | null;
+  device_imei: string | null;
   purchase_cost: number;
   selling_price: number;
   margin: number;
@@ -105,6 +107,8 @@ export function useReportData({
             status,
             device_brand,
             device_model,
+            sku,
+            device_imei,
             customer:customers(first_name, last_name),
             sav_parts(
               quantity,
@@ -167,6 +171,8 @@ export function useReportData({
         status: sav.status,
         device_brand: sav.device_brand,
         device_model: sav.device_model,
+        sku: sav.sku,
+        device_imei: sav.device_imei,
         purchase_cost,
         selling_price,
         margin
