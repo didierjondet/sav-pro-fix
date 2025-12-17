@@ -74,9 +74,9 @@ export function useSAVDelay(savCase: SAVCase, shop: Shop | null): DelayInfo {
 
     return {
       isOverdue,
-      remainingDays: Math.max(0, remainingDays),
-      remainingHours: Math.max(0, remainingHours),
-      totalRemainingHours: Math.max(0, totalRemainingHours),
+      remainingDays: isOverdue ? remainingDays : Math.max(0, remainingDays), // Garder la valeur négative si en retard
+      remainingHours: isOverdue ? Math.abs(remainingHours) : Math.max(0, remainingHours),
+      totalRemainingHours: isOverdue ? totalRemainingHours : Math.max(0, totalRemainingHours),
       progress,
       isPaused: isCurrentStatusPaused || isFinal
     };
@@ -142,9 +142,9 @@ export function calculateSAVDelay(savCase: SAVCase, shop: Shop | null, savTypes?
 
   return {
     isOverdue,
-    remainingDays: Math.max(0, remainingDays),
-    remainingHours: Math.max(0, remainingHours),
-    totalRemainingHours: Math.max(0, totalRemainingHours),
+    remainingDays: isOverdue ? remainingDays : Math.max(0, remainingDays), // Garder la valeur négative si en retard
+    remainingHours: isOverdue ? Math.abs(remainingHours) : Math.max(0, remainingHours),
+    totalRemainingHours: isOverdue ? totalRemainingHours : Math.max(0, totalRemainingHours),
     progress,
     isPaused: false
   };
