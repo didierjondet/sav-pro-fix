@@ -14,7 +14,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { CalendarIcon, Download, FileSpreadsheet, Filter, TrendingUp, TrendingDown, DollarSign, ChevronDown } from 'lucide-react';
+import { CalendarIcon, Download, FileSpreadsheet, FileText, Filter, TrendingUp, TrendingDown, DollarSign, ChevronDown } from 'lucide-react';
 import { useReportData, PeriodType } from '@/hooks/useReportData';
 import { useShopSAVTypes } from '@/hooks/useShopSAVTypes';
 import { useShopSAVStatuses } from '@/hooks/useShopSAVStatuses';
@@ -125,6 +125,163 @@ export default function Reports() {
     XLSX.writeFile(wb, `rapport_sav_${dateStr}.xlsx`);
   };
 
+  const exportToPDF = () => {
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>Rapport SAV - ${periodLabel}</title>
+        <style>
+          body { font-family: Arial, sans-serif; margin: 20px; color: #333; font-size: 11px; }
+          h1 { color: #0066cc; font-size: 20px; margin-bottom: 5px; }
+          h2 { color: #0066cc; font-size: 14px; margin: 15px 0 8px 0; border-bottom: 1px solid #0066cc; padding-bottom: 3px; }
+          .period { color: #666; font-size: 12px; margin-bottom: 15px; }
+          .synthesis { display: flex; gap: 15px; margin-bottom: 20px; }
+          .synthesis-card { flex: 1; padding: 12px; border-radius: 6px; text-align: center; }
+          .synthesis-card.revenue { background: #e6f2ff; border: 1px solid #0066cc; }
+          .synthesis-card.costs { background: #fee2e2; border: 1px solid #dc2626; }
+          .synthesis-card.margin { background: #dcfce7; border: 1px solid #16a34a; }
+          .synthesis-label { font-size: 10px; color: #666; margin-bottom: 3px; }
+          .synthesis-value { font-size: 18px; font-weight: bold; }
+          .synthesis-value.revenue { color: #0066cc; }
+          .synthesis-value.costs { color: #dc2626; }
+          .synthesis-value.margin { color: #16a34a; }
+          .type-section { margin-bottom: 20px; page-break-inside: avoid; }
+          .type-header { padding: 8px 12px; border-radius: 4px 4px 0 0; display: flex; justify-content: space-between; align-items: center; }
+          .type-title { font-weight: bold; font-size: 13px; }
+          .type-count { background: #f0f0f0; padding: 2px 8px; border-radius: 10px; font-size: 10px; }
+          table { width: 100%; border-collapse: collapse; font-size: 10px; }
+          th { background: #f5f5f5; padding: 6px; text-align: left; border: 1px solid #ddd; font-weight: bold; }
+          td { padding: 5px 6px; border: 1px solid #ddd; }
+          .text-right { text-align: right; }
+          .text-center { text-align: center; }
+          .subtotal td { background: #f9f9f9; font-weight: bold; }
+          .parts-row td { background: #fafafa; font-size: 9px; color: #666; }
+          .positive { color: #16a34a; }
+          .negative { color: #dc2626; }
+          .footer { margin-top: 20px; text-align: center; font-size: 9px; color: #999; border-top: 1px solid #ddd; padding-top: 10px; }
+          @media print { body { margin: 10px; } .type-section { page-break-inside: avoid; } }
+        </style>
+      </head>
+      <body>
+        <h1>Rapport SAV</h1>
+        <p class="period">Période : ${periodLabel}</p>
+        
+        <div class="synthesis">
+          <div class="synthesis-card revenue">
+            <div class="synthesis-label">Chiffre d'affaires</div>
+            <div class="synthesis-value revenue">${formatCurrency(data.totals.revenue)}</div>
+          </div>
+          <div class="synthesis-card costs">
+            <div class="synthesis-label">Coûts d'achat</div>
+            <div class="synthesis-value costs">${formatCurrency(data.totals.costs)}</div>
+          </div>
+          <div class="synthesis-card margin">
+            <div class="synthesis-label">Marge</div>
+            <div class="synthesis-value margin">${formatCurrency(data.totals.margin)}</div>
+          </div>
+        </div>
+
+        ${Object.entries(data.groupedByType).map(([typeKey, items]) => {
+          const typeInfo = getTypeInfo(typeKey);
+          const subtotal = data.subtotals[typeKey];
+          return `
+            <div class="type-section">
+              <div class="type-header" style="background: ${typeInfo.color}20; border-left: 3px solid ${typeInfo.color};">
+                <span class="type-title" style="color: ${typeInfo.color};">● ${typeInfo.label}</span>
+                <span class="type-count">${items.length} SAV</span>
+              </div>
+              <table>
+                <thead>
+                  <tr>
+                    <th>N° SAV</th>
+                    <th>Date</th>
+                    <th>Client</th>
+                    <th>Statut</th>
+                    <th>Appareil</th>
+                    <th>SKU</th>
+                    <th>IMEI</th>
+                    <th class="text-right">Coût achat</th>
+                    <th class="text-right">Prix vente</th>
+                    <th class="text-right">Marge</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${items.map(item => {
+                    const statusInfo = getStatusInfo(item.status);
+                    return `
+                      <tr>
+                        <td>${item.case_number}</td>
+                        <td>${format(new Date(item.created_at), 'dd/MM/yyyy', { locale: fr })}</td>
+                        <td>${item.customer_name}</td>
+                        <td>${statusInfo?.label || item.status}</td>
+                        <td>${item.device_brand || item.device_model ? `${item.device_brand || ''} ${item.device_model || ''}`.trim() : '-'}</td>
+                        <td>${item.sku || '-'}</td>
+                        <td style="font-family: monospace;">${item.device_imei || '-'}</td>
+                        <td class="text-right">${formatCurrency(item.purchase_cost)}</td>
+                        <td class="text-right">${formatCurrency(item.selling_price)}</td>
+                        <td class="text-right ${item.margin >= 0 ? 'positive' : 'negative'}">${formatCurrency(item.margin)}</td>
+                      </tr>
+                      ${item.parts.length > 0 ? `
+                        <tr class="parts-row">
+                          <td colspan="10">
+                            <strong>Pièces :</strong> ${item.parts.map(p => `${p.name} (×${p.quantity}) - Achat: ${formatCurrency(p.purchase_price)}, Vente: ${formatCurrency(p.unit_price)}`).join(' | ')}
+                          </td>
+                        </tr>
+                      ` : ''}
+                    `;
+                  }).join('')}
+                  <tr class="subtotal">
+                    <td colspan="7">SOUS-TOTAL ${typeInfo.label} (${subtotal.count} SAV)</td>
+                    <td class="text-right">${formatCurrency(subtotal.costs)}</td>
+                    <td class="text-right">${formatCurrency(subtotal.revenue)}</td>
+                    <td class="text-right ${subtotal.margin >= 0 ? 'positive' : 'negative'}">${formatCurrency(subtotal.margin)}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          `;
+        }).join('')}
+
+        <div class="footer">
+          Rapport généré le ${format(new Date(), 'dd/MM/yyyy à HH:mm', { locale: fr })} • FixWay Pro
+        </div>
+      </body>
+      </html>
+    `;
+
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'absolute';
+    iframe.style.top = '-9999px';
+    iframe.style.left = '-9999px';
+    document.body.appendChild(iframe);
+
+    const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+    if (iframeDoc) {
+      iframeDoc.open();
+      iframeDoc.write(htmlContent);
+      iframeDoc.close();
+
+      setTimeout(() => {
+        try {
+          iframe.contentWindow?.focus();
+          iframe.contentWindow?.print();
+          setTimeout(() => document.body.removeChild(iframe), 1000);
+        } catch (error) {
+          console.error('Erreur impression:', error);
+          document.body.removeChild(iframe);
+          const newWindow = window.open('', '_blank');
+          if (newWindow) {
+            newWindow.document.write(htmlContent);
+            newWindow.document.close();
+            newWindow.print();
+          }
+        }
+      }, 300);
+    }
+  };
+
   const periodLabel = useMemo(() => {
     return `${format(dateRange.start, 'd MMM yyyy', { locale: fr })} - ${format(dateRange.end, 'd MMM yyyy', { locale: fr })}`;
   }, [dateRange]);
@@ -143,10 +300,16 @@ export default function Reports() {
               <h1 className="text-2xl font-bold text-foreground">Rapports</h1>
               <p className="text-muted-foreground">Analyse détaillée de vos SAV</p>
             </div>
-            <Button onClick={exportToExcel} disabled={loading || data.items.length === 0}>
-              <FileSpreadsheet className="mr-2 h-4 w-4" />
-              Exporter Excel
-            </Button>
+            <div className="flex gap-2">
+              <Button onClick={exportToPDF} disabled={loading || data.items.length === 0} variant="outline">
+                <FileText className="mr-2 h-4 w-4" />
+                Exporter PDF
+              </Button>
+              <Button onClick={exportToExcel} disabled={loading || data.items.length === 0}>
+                <FileSpreadsheet className="mr-2 h-4 w-4" />
+                Exporter Excel
+              </Button>
+            </div>
           </div>
 
           {/* Filters */}
