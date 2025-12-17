@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ScrollArea } from '@/components/ui/scroll-area';
+
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { CalendarIcon, Download, FileSpreadsheet, FileText, Filter, TrendingUp, TrendingDown, DollarSign, ChevronDown } from 'lucide-react';
 import { useReportData, PeriodType } from '@/hooks/useReportData';
@@ -329,7 +329,7 @@ export default function Reports() {
                     <SelectTrigger className="w-[200px]">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="z-50">
+                    <SelectContent className="z-[100]" position="popper" sideOffset={5}>
                       <SelectItem value="current_month">Mois en cours</SelectItem>
                       <SelectItem value="last_month">Mois précédent</SelectItem>
                       <SelectItem value="custom">Dates personnalisées</SelectItem>
@@ -396,11 +396,11 @@ export default function Reports() {
                       <ChevronDown className="ml-2 h-4 w-4" />
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-[250px] p-3 z-50">
-                    <ScrollArea className="max-h-[200px]">
+                  <PopoverContent className="w-[250px] p-0 z-[100]" align="start" sideOffset={5}>
+                    <div className="max-h-[250px] overflow-y-auto p-3">
                       <div className="space-y-2">
                         {allTypes.map(type => (
-                          <label key={type.type_key} className="flex items-center gap-2 cursor-pointer hover:bg-accent p-1 rounded">
+                          <label key={type.type_key} className="flex items-center gap-2 cursor-pointer hover:bg-accent p-2 rounded">
                             <Checkbox
                               checked={selectedTypes.includes(type.type_key)}
                               onCheckedChange={() => handleTypeToggle(type.type_key)}
@@ -409,16 +409,18 @@ export default function Reports() {
                           </label>
                         ))}
                       </div>
-                    </ScrollArea>
+                    </div>
                     {selectedTypes.length > 0 && (
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="w-full mt-2"
-                        onClick={() => setSelectedTypes([])}
-                      >
-                        Effacer les filtres
-                      </Button>
+                      <div className="border-t p-2">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="w-full"
+                          onClick={() => setSelectedTypes([])}
+                        >
+                          Effacer les filtres
+                        </Button>
+                      </div>
                     )}
                   </PopoverContent>
                 </Popover>
@@ -434,11 +436,11 @@ export default function Reports() {
                       <ChevronDown className="ml-2 h-4 w-4" />
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-[250px] p-3 z-50">
-                    <ScrollArea className="max-h-[200px]">
+                  <PopoverContent className="w-[250px] p-0 z-[100]" align="start" sideOffset={5}>
+                    <div className="max-h-[250px] overflow-y-auto p-3">
                       <div className="space-y-2">
                         {allStatuses.map(status => (
-                          <label key={status.status_key} className="flex items-center gap-2 cursor-pointer hover:bg-accent p-1 rounded">
+                          <label key={status.status_key} className="flex items-center gap-2 cursor-pointer hover:bg-accent p-2 rounded">
                             <Checkbox
                               checked={selectedStatuses.includes(status.status_key)}
                               onCheckedChange={() => handleStatusToggle(status.status_key)}
@@ -447,16 +449,18 @@ export default function Reports() {
                           </label>
                         ))}
                       </div>
-                    </ScrollArea>
+                    </div>
                     {selectedStatuses.length > 0 && (
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="w-full mt-2"
-                        onClick={() => setSelectedStatuses([])}
-                      >
-                        Effacer les filtres
-                      </Button>
+                      <div className="border-t p-2">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="w-full"
+                          onClick={() => setSelectedStatuses([])}
+                        >
+                          Effacer les filtres
+                        </Button>
+                      </div>
                     )}
                   </PopoverContent>
                 </Popover>
