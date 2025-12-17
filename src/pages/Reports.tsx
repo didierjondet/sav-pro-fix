@@ -1,4 +1,5 @@
 import { useState, useMemo, Fragment } from 'react';
+import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import * as XLSX from 'xlsx';
@@ -412,7 +413,14 @@ export default function Reports() {
                               return (
                                 <Fragment key={item.id}>
                                   <TableRow>
-                                    <TableCell className="font-medium">{item.case_number}</TableCell>
+                                    <TableCell className="font-medium">
+                                      <Link 
+                                        to={`/sav/${item.id}`}
+                                        className="text-primary hover:underline"
+                                      >
+                                        {item.case_number}
+                                      </Link>
+                                    </TableCell>
                                     <TableCell>{format(new Date(item.created_at), 'dd/MM/yyyy', { locale: fr })}</TableCell>
                                     <TableCell>{item.customer_name}</TableCell>
                                     <TableCell>
