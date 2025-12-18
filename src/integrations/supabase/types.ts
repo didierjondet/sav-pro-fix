@@ -677,6 +677,7 @@ export type Database = {
       }
       parts: {
         Row: {
+          color: string | null
           created_at: string
           id: string
           min_stock: number | null
@@ -696,6 +697,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          color?: string | null
           created_at?: string
           id?: string
           min_stock?: number | null
@@ -715,6 +717,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          color?: string | null
           created_at?: string
           id?: string
           min_stock?: number | null
