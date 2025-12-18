@@ -41,6 +41,7 @@ export function SAVPartsRequirements({ savCaseId, onPartsUpdated }: SAVPartsRequ
         .select(`
           id,
           part_id,
+          custom_part_name,
           quantity,
           unit_price,
           purchase_price,
@@ -66,7 +67,7 @@ export function SAVPartsRequirements({ savCaseId, onPartsUpdated }: SAVPartsRequ
           return {
             id: savPart.id,
             part_id: savPart.part_id,
-            part_name: part?.name || `Pièce personnalisée`,
+            part_name: part?.name || savPart.custom_part_name || `Pièce personnalisée`,
             part_reference: part?.reference,
             quantity: neededQuantity,
             unit_price: savPart.unit_price,
