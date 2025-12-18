@@ -9,6 +9,24 @@ import { Switch } from '@/components/ui/switch';
 import { Part } from '@/hooks/useParts';
 import { SimilarPartsAlert } from './SimilarPartsAlert';
 import { PartPhotoUpload } from './PartPhotoUpload';
+import { cn } from '@/lib/utils';
+
+const PART_COLORS = [
+  { value: 'black', label: 'Noir', color: '#000000' },
+  { value: 'white', label: 'Blanc', color: '#FFFFFF' },
+  { value: 'grey', label: 'Gris', color: '#6B7280' },
+  { value: 'silver', label: 'Argent', color: '#C0C0C0' },
+  { value: 'gold', label: 'Or', color: '#FFD700' },
+  { value: 'rose_gold', label: 'Or Rose', color: '#B76E79' },
+  { value: 'blue', label: 'Bleu', color: '#3B82F6' },
+  { value: 'red', label: 'Rouge', color: '#EF4444' },
+  { value: 'green', label: 'Vert', color: '#22C55E' },
+  { value: 'pink', label: 'Rose', color: '#EC4899' },
+  { value: 'purple', label: 'Violet', color: '#8B5CF6' },
+  { value: 'orange', label: 'Orange', color: '#F97316' },
+  { value: 'yellow', label: 'Jaune', color: '#EAB308' },
+  { value: 'other', label: 'Autre', color: '#9CA3AF' },
+];
 
 interface PartFormProps {
   initialData?: Partial<Part>;
@@ -24,6 +42,7 @@ export function PartForm({ initialData, onSubmit, onCancel, isEdit = false, find
   const [similarParts, setSimilarParts] = useState<Part[]>([]);
   const [pendingData, setPendingData] = useState<any>(null);
   const [photoUrl, setPhotoUrl] = useState<string | null>(initialData?.photo_url || null);
+  const [selectedColor, setSelectedColor] = useState<string | null>((initialData as any)?.color || null);
   
   const {
     register,
@@ -86,10 +105,11 @@ export function PartForm({ initialData, onSubmit, onCancel, isEdit = false, find
   const submitPart = async (data: any) => {
     setLoading(true);
     try {
-      // Ajouter l'URL de la photo aux données
+      // Ajouter l'URL de la photo et la couleur aux données
       const partData = {
         ...data,
-        photo_url: photoUrl
+        photo_url: photoUrl,
+        color: selectedColor
       };
       
       const { error } = await onSubmit(partData);
@@ -182,6 +202,33 @@ export function PartForm({ initialData, onSubmit, onCancel, isEdit = false, find
                 placeholder="Ex: Fournisseur ABC"
               />
             </div>
+          </div>
+
+          {/* Sélecteur de couleur */}
+          <div>
+            <Label className="mb-2 block">Couleur de la pièce</Label>
+            <div className="flex flex-wrap gap-2">
+              {PART_COLORS.map((colorOption) => (
+                <button
+                  key={colorOption.value}
+                  type="button"
+                  onClick={() => setSelectedColor(selectedColor === colorOption.value ? null : colorOption.value)}
+                  className={cn(
+                    "w-8 h-8 rounded-md border-2 transition-all duration-200 hover:scale-110",
+                    selectedColor === colorOption.value
+                      ? "border-primary ring-2 ring-primary ring-offset-2"
+                      : "border-muted-foreground/30 hover:border-muted-foreground/50"
+                  )}
+                  style={{ backgroundColor: colorOption.color }}
+                  title={colorOption.label}
+                />
+              ))}
+            </div>
+            {selectedColor && (
+              <p className="text-sm text-muted-foreground mt-2">
+                Couleur sélectionnée : {PART_COLORS.find(c => c.value === selectedColor)?.label}
+              </p>
+            )}
           </div>
 
           <div className="flex items-center gap-3">

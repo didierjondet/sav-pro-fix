@@ -17,6 +17,7 @@ export interface Part {
   time_minutes?: number;
   notes?: string;
   photo_url?: string;
+  color?: string;
   shop_id: string;
   created_at: string;
   updated_at: string;
