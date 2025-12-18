@@ -325,6 +325,7 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
           const partsToInsert = selectedParts.map(part => ({
             sav_case_id: newCase.id,
             part_id: part.isCustom ? null : part.part_id,
+            custom_part_name: part.isCustom ? part.name : null,
             quantity: part.quantity,
             unit_price: part.unitPrice,
             time_minutes: 0,
