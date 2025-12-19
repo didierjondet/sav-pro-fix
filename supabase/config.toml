@@ -86,3 +86,6 @@ verify_jwt = true
 
 [functions.get-market-prices]
 verify_jwt = true
+
+[functions.ai-data-assistant]
+verify_jwt = true

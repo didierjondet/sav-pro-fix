@@ -151,7 +151,8 @@ export default function Settings() {
     sidebar_sav_statuses_visible: true,
     sidebar_late_sav_visible: true,
     ai_market_prices_enabled: false,
-    ai_daily_assistant_enabled: true
+    ai_daily_assistant_enabled: true,
+    ai_assistant_enabled: true
   });
   const [profileForm, setProfileForm] = useState({
     first_name: '',
@@ -202,7 +203,8 @@ export default function Settings() {
         sidebar_sav_statuses_visible: (shop as any).sidebar_sav_statuses_visible ?? true,
         sidebar_late_sav_visible: (shop as any).sidebar_late_sav_visible ?? true,
         ai_market_prices_enabled: (shop as any).ai_market_prices_enabled ?? false,
-        ai_daily_assistant_enabled: aiModulesConfig.daily_assistant_enabled ?? true
+        ai_daily_assistant_enabled: aiModulesConfig.daily_assistant_enabled ?? true,
+        ai_assistant_enabled: aiModulesConfig.assistant_enabled ?? true
       });
     }
   }, [shop, savTypes]);
@@ -253,13 +255,14 @@ export default function Settings() {
   const handleSaveShop = async () => {
     setSaving(true);
     try {
-      // Exclure sav_alert_days et ai_daily_assistant_enabled de la sauvegarde directe
-      const { sav_alert_days, ai_daily_assistant_enabled, ...shopDataToSave } = shopForm;
+      // Exclure sav_alert_days et les paramètres IA de la sauvegarde directe
+      const { sav_alert_days, ai_daily_assistant_enabled, ai_assistant_enabled, ...shopDataToSave } = shopForm;
       
       // Construire ai_modules_config
       const aiModulesConfig = {
         ...(shop as any)?.ai_modules_config,
-        daily_assistant_enabled: ai_daily_assistant_enabled
+        daily_assistant_enabled: ai_daily_assistant_enabled,
+        assistant_enabled: ai_assistant_enabled
       };
       
       // Sauvegarder les données du shop avec ai_modules_config
@@ -1447,6 +1450,31 @@ export default function Settings() {
                         checked={shopForm.ai_daily_assistant_enabled}
                         onCheckedChange={(checked) => 
                           setShopForm(prev => ({ ...prev, ai_daily_assistant_enabled: checked }))
+                        }
+                      />
+                    </div>
+                  </div>
+
+                  {/* Module: Assistant IA */}
+                  <div className="p-4 border rounded-lg space-y-3">
+                    <div className="flex items-start justify-between">
+                      <div className="space-y-1 flex-1">
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-semibold">Assistant IA</h4>
+                          <Badge variant="default" className="text-xs">Nouveau</Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          Un assistant intelligent pour interroger vos données Fixway. Posez des questions comme 
+                          "Liste des SAV avec prise en charge du mois dernier" ou "Mon taux de rentabilité en décembre".
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-2">
+                          💬 L'assistant a accès à vos SAV, pièces, clients et devis pour répondre à vos questions.
+                        </p>
+                      </div>
+                      <Switch
+                        checked={shopForm.ai_assistant_enabled}
+                        onCheckedChange={(checked) => 
+                          setShopForm(prev => ({ ...prev, ai_assistant_enabled: checked }))
                         }
                       />
                     </div>
