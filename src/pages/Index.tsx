@@ -74,6 +74,10 @@ const Index = () => {
   const handleMenuClick = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
   };
+  // Vérifier si l'assistant quotidien est activé
+  const aiModulesConfig = (shop as any)?.ai_modules_config || {};
+  const isDailyAssistantEnabled = aiModulesConfig.daily_assistant_enabled !== false;
+
   const renderContent = () => {
     switch (currentView) {
       case 'new-sav':
@@ -85,7 +89,7 @@ const Index = () => {
           </div>;
       default:
         return <div className="space-y-6">
-            <DailyAssistant />
+            {isDailyAssistantEnabled && <DailyAssistant />}
             <SAVDashboard />
           </div>;
     }
