@@ -150,7 +150,8 @@ export default function Settings() {
     sidebar_sav_types_visible: true,
     sidebar_sav_statuses_visible: true,
     sidebar_late_sav_visible: true,
-    ai_market_prices_enabled: false
+    ai_market_prices_enabled: false,
+    ai_daily_assistant_enabled: true
   });
   const [profileForm, setProfileForm] = useState({
     first_name: '',
@@ -177,6 +178,9 @@ export default function Settings() {
         savAlertDays[type.type_key] = type.alert_days || 2;
       });
       
+      // Parse ai_modules_config pour récupérer les préférences
+      const aiModulesConfig = (shop as any).ai_modules_config || {};
+      
       setShopForm({
         name: shop.name || '',
         email: shop.email || '',
@@ -197,7 +201,8 @@ export default function Settings() {
         sidebar_sav_types_visible: (shop as any).sidebar_sav_types_visible ?? true,
         sidebar_sav_statuses_visible: (shop as any).sidebar_sav_statuses_visible ?? true,
         sidebar_late_sav_visible: (shop as any).sidebar_late_sav_visible ?? true,
-        ai_market_prices_enabled: (shop as any).ai_market_prices_enabled ?? false
+        ai_market_prices_enabled: (shop as any).ai_market_prices_enabled ?? false,
+        ai_daily_assistant_enabled: aiModulesConfig.daily_assistant_enabled ?? true
       });
     }
   }, [shop, savTypes]);
@@ -248,11 +253,17 @@ export default function Settings() {
   const handleSaveShop = async () => {
     setSaving(true);
     try {
-      // Exclure sav_alert_days de la sauvegarde car géré séparément
-      const { sav_alert_days, ...shopDataToSave } = shopForm;
+      // Exclure sav_alert_days et ai_daily_assistant_enabled de la sauvegarde directe
+      const { sav_alert_days, ai_daily_assistant_enabled, ...shopDataToSave } = shopForm;
       
-      // Sauvegarder les données du shop
-      await updateShopData(shopDataToSave);
+      // Construire ai_modules_config
+      const aiModulesConfig = {
+        ...(shop as any)?.ai_modules_config,
+        daily_assistant_enabled: ai_daily_assistant_enabled
+      };
+      
+      // Sauvegarder les données du shop avec ai_modules_config
+      await updateShopData({ ...shopDataToSave, ai_modules_config: aiModulesConfig });
       
       // Sauvegarder les délais d'alerte dans shop_sav_types
       for (const [typeKey, alertDays] of Object.entries(sav_alert_days)) {
@@ -1420,6 +1431,27 @@ export default function Settings() {
                   </p>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                  {/* Module 0: Assistant quotidien */}
+                  <div className="p-4 border rounded-lg space-y-3">
+                    <div className="flex items-start justify-between">
+                      <div className="space-y-1 flex-1">
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-semibold">Assistant quotidien IA</h4>
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          Affiche l'assistant quotidien sur le tableau de bord avec des recommandations personnalisées 
+                          pour optimiser votre journée de travail.
+                        </p>
+                      </div>
+                      <Switch
+                        checked={shopForm.ai_daily_assistant_enabled}
+                        onCheckedChange={(checked) => 
+                          setShopForm(prev => ({ ...prev, ai_daily_assistant_enabled: checked }))
+                        }
+                      />
+                    </div>
+                  </div>
+
                   {/* Module 1: Prix du marché */}
                   <div className="p-4 border rounded-lg space-y-3">
                     <div className="flex items-start justify-between">
