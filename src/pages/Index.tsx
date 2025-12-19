@@ -10,6 +10,7 @@ import { SAVDashboard } from '@/components/sav/SAVDashboard';
 import { SAVForm } from '@/components/sav/SAVForm';
 import { ProfileSetup } from '@/components/auth/ProfileSetup';
 import { DailyAssistant } from '@/components/statistics/DailyAssistant';
+import { DataAssistant } from '@/components/statistics/DataAssistant';
 import { Loader2 } from 'lucide-react';
 const Index = () => {
   const {
@@ -74,9 +75,10 @@ const Index = () => {
   const handleMenuClick = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
   };
-  // Vérifier si l'assistant quotidien est activé
+  // Vérifier si les modules IA sont activés
   const aiModulesConfig = (shop as any)?.ai_modules_config || {};
   const isDailyAssistantEnabled = aiModulesConfig.daily_assistant_enabled !== false;
+  const isAssistantEnabled = aiModulesConfig.assistant_enabled !== false;
 
   const renderContent = () => {
     switch (currentView) {
@@ -89,6 +91,7 @@ const Index = () => {
           </div>;
       default:
         return <div className="space-y-6">
+            {isAssistantEnabled && <DataAssistant />}
             {isDailyAssistantEnabled && <DailyAssistant />}
             <SAVDashboard />
           </div>;
