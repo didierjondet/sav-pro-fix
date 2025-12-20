@@ -1,9 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSubscription } from './useSubscription';
+import { useUnifiedSMSCredits } from './useUnifiedSMSCredits';
 import { useToast } from './use-toast';
 
 export function useProactiveLimits() {
   const { subscription } = useSubscription();
+  const { credits: unifiedSmsCredits } = useUnifiedSMSCredits();
   const { toast } = useToast();
   const [hasShownWarning, setHasShownWarning] = useState<{
     sav: boolean;
@@ -27,21 +29,16 @@ export function useProactiveLimits() {
     return { remaining, total: savLimit, usagePercent };
   }, [subscription]);
 
+  // Utiliser useUnifiedSMSCredits pour des calculs corrects
   const getSMSLimits = useCallback(() => {
-    if (!subscription) return { remaining: 0, total: 0, usagePercent: 0 };
+    if (!unifiedSmsCredits) return { remaining: 0, total: 0, usagePercent: 0 };
     
-    const smsTotal = subscription.custom_sms_limit || subscription.sms_credits_allocated || 0;
-    const purchasedSmsAvailable = Math.max(0, (subscription.purchased_sms_credits || 0));
-    
-    // Calculer les SMS restants du plan mensuel + SMS achetés
-    const monthlyRemaining = Math.max(0, smsTotal - subscription.monthly_sms_used);
-    const totalRemaining = monthlyRemaining + purchasedSmsAvailable;
-    
-    const usagePercent = subscription.monthly_sms_used >= smsTotal && purchasedSmsAvailable <= 0 ? 100 :
-                         (subscription.monthly_sms_used / smsTotal) * 100;
-    
-    return { remaining: totalRemaining, total: smsTotal, usagePercent };
-  }, [subscription]);
+    return {
+      remaining: unifiedSmsCredits.total_remaining,
+      total: unifiedSmsCredits.total_available,
+      usagePercent: unifiedSmsCredits.overall_usage_percent
+    };
+  }, [unifiedSmsCredits]);
 
   const checkProactiveLimits = useCallback(() => {
     if (!subscription || subscription.forced) return;
@@ -60,7 +57,7 @@ export function useProactiveLimits() {
       setHasShownWarning(prev => ({ ...prev, sav: true }));
     }
 
-    // Vérification SMS - Avertissement à 90%
+    // Vérification SMS - Avertissement à 90% (basé sur useUnifiedSMSCredits)
     if (smsLimits.usagePercent >= 90 && smsLimits.remaining > 0 && !hasShownWarning.sms) {
       toast({
         title: "⚠️ Crédits SMS bientôt épuisés",
@@ -80,7 +77,7 @@ export function useProactiveLimits() {
     }
   }, [subscription, getSAVLimits, getSMSLimits, hasShownWarning, toast]);
 
-  // Vérifier les limites à chaque changement de subscription
+  // Vérifier les limites à chaque changement de subscription ou SMS credits
   useEffect(() => {
     checkProactiveLimits();
   }, [checkProactiveLimits]);
