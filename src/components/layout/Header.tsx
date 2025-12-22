@@ -132,20 +132,18 @@ const Header = ({
       showAlert: false
     };
     
-    // Vérifier si l'alerte SMS est activée
-    const alertEnabled = (shop as any).sms_alert_enabled ?? true;
-    const alertThreshold = (shop as any).sms_alert_threshold ?? 20;
-    
     const totalUsed = smsCredits.monthly_used + smsCredits.purchasable_used;
-    const showAlert = alertEnabled && smsCredits.total_remaining <= alertThreshold;
+    const remaining = smsCredits.total_remaining;
     
+    // Bandeau orange: ≤ 10 SMS et > 3
+    // Critique (rouge): ≤ 3 SMS
     return {
-      remaining: smsCredits.total_remaining,
+      remaining,
       total: smsCredits.total_available,
       used: totalUsed,
-      isWarning: showAlert && smsCredits.total_remaining > 0,
-      isCritical: smsCredits.total_remaining <= 0,
-      showAlert
+      isWarning: remaining <= 10 && remaining > 3,
+      isCritical: remaining <= 3,
+      showAlert: remaining <= 10
     };
   };
   const savLimits = getSAVLimits();
