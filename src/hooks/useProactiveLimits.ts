@@ -57,22 +57,23 @@ export function useProactiveLimits() {
       setHasShownWarning(prev => ({ ...prev, sav: true }));
     }
 
-    // Vérification SMS - Avertissement à 90% (basé sur useUnifiedSMSCredits)
-    if (smsLimits.usagePercent >= 90 && smsLimits.remaining > 0 && !hasShownWarning.sms) {
+    // Vérification SMS - Fenêtre rouge UNIQUEMENT si ≤ 3 SMS restants
+    if (smsLimits.remaining <= 3 && smsLimits.remaining > 0 && !hasShownWarning.sms) {
       toast({
-        title: "⚠️ Crédits SMS bientôt épuisés",
-        description: `Attention : ${smsLimits.remaining} SMS restant(s) sur ${smsLimits.total}. Pensez à acheter des crédits supplémentaires.`,
+        title: "⚠️ Crédits SMS critiques",
+        description: `Attention : seulement ${smsLimits.remaining} SMS restant(s). Achetez des crédits supplémentaires.`,
         variant: "destructive",
-        duration: 8000,
+        duration: 10000,
       });
       setHasShownWarning(prev => ({ ...prev, sms: true }));
     }
 
-    // Reset des warnings si on descend en dessous de 80%
+    // Reset des warnings si on repasse au-dessus des seuils
     if (savLimits.usagePercent < 80 && hasShownWarning.sav) {
       setHasShownWarning(prev => ({ ...prev, sav: false }));
     }
-    if (smsLimits.usagePercent < 80 && hasShownWarning.sms) {
+    // Reset SMS warning si on repasse au-dessus de 5 SMS
+    if (smsLimits.remaining > 5 && hasShownWarning.sms) {
       setHasShownWarning(prev => ({ ...prev, sms: false }));
     }
   }, [subscription, getSAVLimits, getSMSLimits, hasShownWarning, toast]);
