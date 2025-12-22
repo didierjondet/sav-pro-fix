@@ -11,6 +11,7 @@ export interface SubscriptionInfo {
   sms_credits_used: number; // Total SMS utilisés (gardé pour compatibilité)
   monthly_sms_used: number; // SMS du plan utilisés ce mois-ci
   purchased_sms_credits?: number; // SMS achetés déjà utilisés
+  admin_added_sms_credits?: number; // SMS ajoutés manuellement par super admin
   active_sav_count: number; // Total SAV actifs (gardé pour compatibilité)  
   monthly_sav_count: number; // SAV créés ce mois-ci
   forced?: boolean;
@@ -40,7 +41,7 @@ export function useSubscription() {
           // Charger les infos du shop avec les nouvelles colonnes mensuelles
           const shopRes = await (supabase as any)
             .from('shops')
-            .select('subscription_tier, sms_credits_allocated, sms_credits_used, monthly_sms_used, purchased_sms_credits, active_sav_count, monthly_sav_count, subscription_plan_id, subscription_forced, custom_sav_limit, custom_sms_limit')
+            .select('subscription_tier, sms_credits_allocated, sms_credits_used, monthly_sms_used, purchased_sms_credits, admin_added_sms_credits, active_sav_count, monthly_sav_count, subscription_plan_id, subscription_forced, custom_sav_limit, custom_sms_limit')
             .eq('id', profileData.shop_id)
             .single();
           const shopData: any = shopRes.data;
@@ -66,6 +67,7 @@ export function useSubscription() {
               sms_credits_used: shopData?.sms_credits_used ?? 0,
               monthly_sms_used: shopData?.monthly_sms_used ?? 0,
               purchased_sms_credits: shopData?.purchased_sms_credits ?? 0,
+              admin_added_sms_credits: shopData?.admin_added_sms_credits ?? 0,
               active_sav_count: shopData?.active_sav_count ?? 0,
               monthly_sav_count: shopData?.monthly_sav_count ?? 0,
               forced: !!shopData?.subscription_forced,
@@ -95,6 +97,7 @@ export function useSubscription() {
               sms_credits_used: shopData?.sms_credits_used ?? 0,
               monthly_sms_used: shopData?.monthly_sms_used ?? 0,
               purchased_sms_credits: shopData?.purchased_sms_credits ?? 0,
+              admin_added_sms_credits: shopData?.admin_added_sms_credits ?? 0,
               active_sav_count: shopData?.active_sav_count ?? 0,
               monthly_sav_count: shopData?.monthly_sav_count ?? 0,
               forced: false,
@@ -173,10 +176,10 @@ export function useSubscription() {
       return { allowed: true, reason: 'Abonnement forcé - vérifications désactivées', action: null };
     }
 
-    const { subscription_tier, monthly_sms_used, sms_credits_allocated, monthly_sav_count, custom_sav_limit, custom_sms_limit, purchased_sms_credits } = subscription;
+    const { subscription_tier, monthly_sms_used, sms_credits_allocated, monthly_sav_count, custom_sav_limit, custom_sms_limit, purchased_sms_credits, admin_added_sms_credits } = subscription;
 
-    // Calculer les SMS achetés disponibles
-    const purchasedSmsAvailable = Math.max(0, (purchased_sms_credits || 0));
+    // Calculer les SMS achetés + admin disponibles
+    const purchasedAndAdminSmsAvailable = Math.max(0, (purchased_sms_credits || 0) + (admin_added_sms_credits || 0));
 
     // Vérification des limites SAV mensuelles
     if (action === 'sav' || !action) {
@@ -211,11 +214,11 @@ export function useSubscription() {
     if (action === 'sms' || !action) {
       const monthlyLimit = custom_sms_limit || sms_credits_allocated || 0;
       
-      // Vérifier d'abord les SMS du plan mensuel, puis les SMS achetés
-      if (monthly_sms_used >= monthlyLimit && purchasedSmsAvailable <= 0) {
+      // Vérifier d'abord les SMS du plan mensuel, puis les SMS achetés + admin
+      if (monthly_sms_used >= monthlyLimit && purchasedAndAdminSmsAvailable <= 0) {
         const message = custom_sms_limit
           ? `Limite SMS mensuelle personnalisée atteinte (${monthly_sms_used}/${monthlyLimit}). Contactez le support.`
-          : `Crédits SMS mensuels épuisés (${monthly_sms_used}/${monthlyLimit}). SMS achetés : ${purchasedSmsAvailable} disponibles.`;
+          : `Crédits SMS mensuels épuisés (${monthly_sms_used}/${monthlyLimit}). SMS disponibles : ${purchasedAndAdminSmsAvailable}.`;
           
         return { 
           allowed: false, 
