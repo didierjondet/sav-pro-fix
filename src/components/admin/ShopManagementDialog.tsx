@@ -70,6 +70,7 @@ interface Shop {
   is_blocked?: boolean;
   custom_sav_limit?: number;
   custom_sms_limit?: number;
+  admin_added_sms_credits?: number;
 }
 
 interface ShopManagementDialogProps {
@@ -350,10 +351,13 @@ export default function ShopManagementDialog({ shop, isOpen, onClose, onUpdate }
 
     setLoading(true);
     try {
+      // Ajouter les crédits dans admin_added_sms_credits (crédits permanents du plan)
+      const currentAdminCredits = shop.admin_added_sms_credits || 0;
+      
       const { error } = await supabase
         .from('shops')
         .update({
-          sms_credits_allocated: shop.sms_credits_allocated + creditsToAdd
+          admin_added_sms_credits: currentAdminCredits + creditsToAdd
         })
         .eq('id', shop.id);
 
@@ -361,7 +365,7 @@ export default function ShopManagementDialog({ shop, isOpen, onClose, onUpdate }
 
       toast({
         title: "Succès",
-        description: `${creditsToAdd} crédits SMS ajoutés`,
+        description: `${creditsToAdd} crédits SMS ajoutés au plan`,
       });
       
       setSmsCreditsToAdd('');
