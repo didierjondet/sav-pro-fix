@@ -25,6 +25,7 @@ import {
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
+import { SMSCreditsTab } from './SMSCreditsTab';
 import {
   Crown,
   CreditCard,
@@ -801,56 +802,15 @@ export default function ShopManagementDialog({ shop, isOpen, onClose, onUpdate }
           </TabsContent>
 
           <TabsContent value="sms" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <MessageSquare className="h-5 w-5" />
-                  Gestion des crédits SMS
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label>Crédits alloués</Label>
-                    <div className="text-2xl font-bold text-green-600">
-                      {shop.sms_credits_allocated}
-                    </div>
-                  </div>
-                  <div>
-                    <Label>Crédits utilisés</Label>
-                    <div className="text-2xl font-bold text-red-600">
-                      {shop.sms_credits_used}
-                    </div>
-                  </div>
-                </div>
-
-                <Separator />
-
-                <div className="space-y-2">
-                  <Label>Ajouter des crédits SMS</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      type="number"
-                      placeholder="Nombre de crédits"
-                      value={smsCreditsToAdd}
-                      onChange={(e) => setSmsCreditsToAdd(e.target.value)}
-                    />
-                    <Button onClick={handleAddSmsCredits} disabled={loading || !smsCreditsToAdd}>
-                      Ajouter
-                    </Button>
-                  </div>
-                </div>
-
-                <Button
-                  variant="outline"
-                  onClick={handleResetSmsUsage}
-                  disabled={loading}
-                  className="w-full"
-                >
-                  Réinitialiser l'utilisation SMS
-                </Button>
-              </CardContent>
-            </Card>
+            <SMSCreditsTab 
+              shop={shop} 
+              loading={loading}
+              smsCreditsToAdd={smsCreditsToAdd}
+              setSmsCreditsToAdd={setSmsCreditsToAdd}
+              handleAddSmsCredits={handleAddSmsCredits}
+              handleResetSmsUsage={handleResetSmsUsage}
+              onUpdate={onUpdate}
+            />
           </TabsContent>
 
           <TabsContent value="users" className="space-y-4">

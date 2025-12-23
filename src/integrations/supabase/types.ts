@@ -14,6 +14,44 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_sms_credits_history: {
+        Row: {
+          admin_name: string | null
+          admin_user_id: string | null
+          created_at: string
+          credits_added: number
+          id: string
+          note: string | null
+          shop_id: string
+        }
+        Insert: {
+          admin_name?: string | null
+          admin_user_id?: string | null
+          created_at?: string
+          credits_added: number
+          id?: string
+          note?: string | null
+          shop_id: string
+        }
+        Update: {
+          admin_name?: string | null
+          admin_user_id?: string | null
+          created_at?: string
+          credits_added?: number
+          id?: string
+          note?: string | null
+          shop_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_sms_credits_history_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       alert_history: {
         Row: {
           alert_id: string
