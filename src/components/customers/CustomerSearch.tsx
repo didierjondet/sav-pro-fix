@@ -26,8 +26,17 @@ export function CustomerSearch({ customerInfo, setCustomerInfo, onCustomerSelect
   const [searchTerm, setSearchTerm] = useState('');
   const [showResults, setShowResults] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [isHighlighted, setIsHighlighted] = useState(true);
   
   const { customers } = useAllCustomers();
+
+  // Arrêter l'animation après 5 secondes
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsHighlighted(false);
+    }, 5000);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Filtrer les clients en fonction de la recherche
   const filteredCustomers = customers.filter(customer =>
@@ -81,6 +90,7 @@ export function CustomerSearch({ customerInfo, setCustomerInfo, onCustomerSelect
   };
 
   const handleInputFocus = () => {
+    setIsHighlighted(false);
     if (searchTerm.length > 2 && filteredCustomers.length > 0) {
       setShowResults(true);
     }
@@ -99,7 +109,7 @@ export function CustomerSearch({ customerInfo, setCustomerInfo, onCustomerSelect
     <div className="space-y-4">
       <div className="relative">
         <Label htmlFor="customer-search">Rechercher un client existant</Label>
-        <div className="relative border-2 border-blue-200 rounded-lg shadow-sm bg-blue-50/30 dark:bg-blue-950/30 dark:border-blue-800 transition-all duration-200 focus-within:border-blue-400 focus-within:shadow-md">
+        <div className={`relative border-2 border-blue-200 rounded-lg shadow-sm bg-blue-50/30 dark:bg-blue-950/30 dark:border-blue-800 transition-all duration-200 focus-within:border-blue-400 focus-within:shadow-md ${isHighlighted ? 'animate-pulse-border' : ''}`}>
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-blue-500 h-4 w-4" />
           <Input
             id="customer-search"
