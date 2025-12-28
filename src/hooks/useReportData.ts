@@ -161,10 +161,24 @@ export function useReportData({
   const reportData = useMemo<ReportData>(() => {
     const items: ReportSAVItem[] = rawData.map(sav => {
       const parts = sav.sav_parts || [];
-      const purchase_cost = parts.reduce((sum: number, p: any) => 
+      
+      // Récupérer les informations du type de SAV pour les exclusions
+      const typeInfo = getTypeInfo(sav.sav_type);
+      
+      // Calculer les coûts bruts
+      let purchase_cost = parts.reduce((sum: number, p: any) => 
         sum + ((p.purchase_price || 0) * (p.quantity || 1)), 0);
-      const selling_price = parts.reduce((sum: number, p: any) => 
+      let selling_price = parts.reduce((sum: number, p: any) => 
         sum + ((p.unit_price || 0) * (p.quantity || 1)), 0);
+      
+      // Appliquer les exclusions configurées dans le type de SAV
+      if (typeInfo.exclude_purchase_costs) {
+        purchase_cost = 0;
+      }
+      if (typeInfo.exclude_sales_revenue) {
+        selling_price = 0;
+      }
+      
       const margin = selling_price - purchase_cost;
 
       const customer = sav.customer;
@@ -228,7 +242,7 @@ export function useReportData({
       totals,
       subtotals
     };
-  }, [rawData]);
+  }, [rawData, getTypeInfo]);
 
   return {
     data: reportData,
