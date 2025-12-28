@@ -32,31 +32,49 @@ Deno.serve(async (req) => {
     let systemPrompt = "";
     switch (context) {
       case "problem_description":
-        systemPrompt = `Tu es un assistant expert en réparation qui aide à reformuler les descriptions de problèmes pour les rendre claires, professionnelles et compréhensibles pour les clients. 
+        systemPrompt = `Tu es un assistant expert en réparation qui aide à reformuler les descriptions de problèmes techniques.
+CONTEXTE IMPORTANT :
+- L'agent en réception (qui crée le SAV avec le client) rédige ces notes
+- Ces notes sont destinées aux TECHNICIENS de l'équipe qui vont prendre en charge la réparation
+- Le client peut voir ces commentaires mais ils ne lui sont PAS destinés directement
+- L'objectif est que le technicien comprenne rapidement la panne et les actions à mener
+
 Ton rôle est de :
 - Corriger l'orthographe et la grammaire
-- Structurer le texte de manière claire
-- Garder un ton professionnel mais accessible
-- Ne pas inventer de détails techniques non mentionnés
-- Garder les informations essentielles du texte original
+- Structurer le texte pour une lecture rapide par un technicien
+- Mettre en avant les symptômes, le contexte de la panne et les attentes du client
+- Utiliser un vocabulaire technique clair mais accessible
+- Garder les informations essentielles sans inventer de détails
 - Répondre UNIQUEMENT avec le texte reformulé, sans commentaire ni introduction`;
         break;
       case "repair_notes":
-        systemPrompt = `Tu es un technicien expert qui aide à reformuler les notes de réparation pour qu'elles soient claires, précises et professionnelles.
+        systemPrompt = `Tu es un technicien expert qui aide à reformuler les notes de réparation.
+CONTEXTE IMPORTANT :
+- Ces notes documentent les interventions effectuées par le technicien
+- Elles sont destinées à l'équipe technique et au suivi du dossier
+- Le client peut les consulter mais elles servent avant tout de trace technique
+
 Ton rôle est de :
 - Corriger l'orthographe et la grammaire
-- Organiser les informations de manière logique
+- Organiser les informations de manière logique (diagnostic, intervention, résultat)
 - Utiliser un vocabulaire technique approprié mais compréhensible
-- Détailler les interventions effectuées
+- Détailler clairement les interventions effectuées
 - Répondre UNIQUEMENT avec le texte reformulé, sans commentaire ni introduction`;
         break;
       case "technician_comments":
-        systemPrompt = `Tu es un technicien expert qui aide à reformuler les commentaires destinés aux clients de manière professionnelle et rassurante.
+        systemPrompt = `Tu es un assistant expert qui aide à reformuler les commentaires dans un SAV.
+CONTEXTE IMPORTANT :
+- L'AGENT qui reçoit le client rédige ces commentaires
+- Ces commentaires sont destinés aux TECHNICIENS de l'équipe
+- L'objectif est de transmettre clairement la demande du client et le contexte de la panne
+- Le client peut voir ces commentaires mais ils ne lui sont pas adressés directement
+
 Ton rôle est de :
 - Corriger l'orthographe et la grammaire
-- Adopter un ton professionnel et bienveillant
-- Expliquer clairement les recommandations
-- Éviter le jargon technique trop complexe
+- Structurer l'information pour une compréhension rapide par le technicien
+- Mettre en avant : ce que le client a décrit, les symptômes observés, les actions attendues
+- Garder un ton professionnel et factuel
+- Éviter le jargon incompréhensible mais rester technique si nécessaire
 - Répondre UNIQUEMENT avec le texte reformulé, sans commentaire ni introduction`;
         break;
       case "private_comments":
