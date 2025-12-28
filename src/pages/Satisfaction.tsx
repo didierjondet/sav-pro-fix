@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
+import { createClient } from '@supabase/supabase-js';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -22,6 +22,10 @@ interface SurveyData {
   };
 }
 
+// Client Supabase anonyme sans session persistée pour les enquêtes publiques
+const SUPABASE_URL = "https://jljkrthymaqxkebosqko.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpsamtydGh5bWFxeGtlYm9zcWtvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM1MzIyNzAsImV4cCI6MjA2OTEwODI3MH0._0zuhHNvENoU0vpuOTT8OmksA59xLG-KaaTg9SU0OxA";
+
 export default function Satisfaction() {
   const { token } = useParams<{ token: string }>();
   const [survey, setSurvey] = useState<SurveyData | null>(null);
@@ -34,6 +38,16 @@ export default function Satisfaction() {
   const [hoveredRating, setHoveredRating] = useState<number>(0);
   const [comment, setComment] = useState('');
 
+  // Client anonyme sans session pour éviter les problèmes de RLS avec auth.uid()
+  const anonClient = useMemo(() => {
+    return createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+      }
+    });
+  }, []);
+
   useEffect(() => {
     const fetchSurvey = async () => {
       if (!token) {
@@ -42,7 +56,7 @@ export default function Satisfaction() {
         return;
       }
 
-      const { data, error: fetchError } = await supabase
+      const { data, error: fetchError } = await anonClient
         .from('satisfaction_surveys')
         .select(`
           id,
@@ -65,7 +79,7 @@ export default function Satisfaction() {
       }
 
       // Récupérer les infos du shop
-      const { data: shopData } = await supabase
+      const { data: shopData } = await anonClient
         .from('shops')
         .select('name, logo_url')
         .eq('id', data.shop_id)
@@ -74,7 +88,7 @@ export default function Satisfaction() {
       // Récupérer les infos du SAV si disponible
       let savData = null;
       if (data.sav_case_id) {
-        const { data: sav } = await supabase
+        const { data: sav } = await anonClient
           .from('sav_cases')
           .select('case_number, device_brand, device_model')
           .eq('id', data.sav_case_id)
@@ -91,7 +105,7 @@ export default function Satisfaction() {
     };
 
     fetchSurvey();
-  }, [token]);
+  }, [token, anonClient]);
 
   const handleSubmit = async () => {
     if (rating === 0) {
@@ -102,7 +116,7 @@ export default function Satisfaction() {
     setSubmitting(true);
     setError(null);
 
-    const { error: updateError } = await supabase
+    const { error: updateError } = await anonClient
       .from('satisfaction_surveys')
       .update({
         rating,
