@@ -84,11 +84,22 @@ export default {
 					to: {
 						height: '0'
 					}
+				},
+				'pulse-border': {
+					'0%, 100%': {
+						borderColor: 'hsl(213, 94%, 87%)',
+						boxShadow: '0 0 0 0 hsla(217, 91%, 60%, 0.4)'
+					},
+					'50%': {
+						borderColor: 'hsl(217, 91%, 60%)',
+						boxShadow: '0 0 12px 3px hsla(217, 91%, 60%, 0.5)'
+					}
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out'
+				'accordion-up': 'accordion-up 0.2s ease-out',
+				'pulse-border': 'pulse-border 1.5s ease-in-out 3'
 			}
 		}
 	},
