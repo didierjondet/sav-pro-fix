@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Header from '@/components/layout/Header';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -31,6 +31,12 @@ import {
   DialogTitle,
   DialogClose,
 } from '@/components/ui/dialog';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { 
   FileText,
   Plus,
@@ -44,7 +50,8 @@ import {
   Clock,
   CheckCircle,
   Archive,
-  RotateCcw
+  RotateCcw,
+  RefreshCw
 } from 'lucide-react';
 
 import { supabase } from '@/integrations/supabase/client';
@@ -569,24 +576,6 @@ export default function Quotes() {
                   {getStatusText(quote.status)}
                 </Badge>
               )}
-              {quote.status !== 'rejected' && (
-                <Select
-                  value={quote.status}
-                  onValueChange={(value) => handleStatusChange(quote, value as Quote['status'])}
-                >
-                  <SelectTrigger className="w-40">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="draft">Brouillon</SelectItem>
-                    <SelectItem value="sent">Envoyé</SelectItem>
-                    <SelectItem value="viewed">Consulté</SelectItem>
-                    <SelectItem value="accepted">Accepté</SelectItem>
-                    <SelectItem value="rejected">Refusé</SelectItem>
-                    <SelectItem value="expired">Expiré</SelectItem>
-                  </SelectContent>
-                </Select>
-              )}
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-5 gap-4 text-sm text-muted-foreground">
@@ -646,6 +635,35 @@ export default function Quotes() {
           </div>
           
           <div className="flex items-center gap-2 ml-4">
+            {/* Dropdown de changement de statut - mis en évidence */}
+            {quote.status !== 'rejected' && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Select
+                      value={quote.status}
+                      onValueChange={(value) => handleStatusChange(quote, value as Quote['status'])}
+                    >
+                      <SelectTrigger className="w-44 border-2 border-blue-500 bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium shadow-sm dark:bg-blue-950 dark:text-blue-300 dark:hover:bg-blue-900 animate-pulse-border">
+                        <RefreshCw className="h-4 w-4 mr-2" />
+                        <SelectValue placeholder="Changer statut" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-white dark:bg-gray-800 z-50">
+                        <SelectItem value="draft">📝 Brouillon</SelectItem>
+                        <SelectItem value="sent">📤 Envoyé</SelectItem>
+                        <SelectItem value="viewed">👁️ Consulté</SelectItem>
+                        <SelectItem value="accepted">✅ Accepté</SelectItem>
+                        <SelectItem value="rejected">❌ Refusé</SelectItem>
+                        <SelectItem value="expired">⏰ Expiré</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Cliquez ici pour valider ou changer le statut du devis</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
             {/* Bouton de conversion en SAV pour les devis acceptés */}
             {quote.status === 'accepted' && (
               <Button 
