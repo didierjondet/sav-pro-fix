@@ -19,6 +19,7 @@ import { useReportData, PeriodType } from '@/hooks/useReportData';
 import { useShopSAVTypes } from '@/hooks/useShopSAVTypes';
 import { useShopSAVStatuses } from '@/hooks/useShopSAVStatuses';
 import { cn } from '@/lib/utils';
+import { ReportChartsSection } from '@/components/reports/ReportChartsSection';
 
 export default function Reports() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -27,6 +28,11 @@ export default function Reports() {
   const [endDate, setEndDate] = useState<Date | null>(null);
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
+  const [chartOptions, setChartOptions] = useState({
+    monthlyComparison: true,
+    financialOverview: false,
+    savPerformance: false
+  });
 
   const { types: allTypes } = useShopSAVTypes();
   const { statuses: allStatuses, getStatusInfo } = useShopSAVStatuses();
@@ -518,6 +524,13 @@ export default function Reports() {
               </CardContent>
             </Card>
           </div>
+
+          {/* Charts Section */}
+          <ReportChartsSection 
+            chartOptions={chartOptions}
+            onChartOptionsChange={setChartOptions}
+            dateRange={dateRange}
+          />
 
           {/* Data table grouped by type */}
           {loading ? (
