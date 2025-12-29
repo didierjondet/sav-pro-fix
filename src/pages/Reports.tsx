@@ -19,7 +19,8 @@ import { useReportData, PeriodType } from '@/hooks/useReportData';
 import { useShopSAVTypes } from '@/hooks/useShopSAVTypes';
 import { useShopSAVStatuses } from '@/hooks/useShopSAVStatuses';
 import { cn } from '@/lib/utils';
-import { ReportChartsSection } from '@/components/reports/ReportChartsSection';
+import { ReportChartsSection, AVAILABLE_REPORT_WIDGETS } from '@/components/reports/ReportChartsSection';
+import { Label } from '@/components/ui/label';
 
 export default function Reports() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -28,11 +29,15 @@ export default function Reports() {
   const [endDate, setEndDate] = useState<Date | null>(null);
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
-  const [chartOptions, setChartOptions] = useState({
-    monthlyComparison: true,
-    financialOverview: false,
-    savPerformance: false
-  });
+  const [selectedWidgets, setSelectedWidgets] = useState<string[]>(['monthly-comparison']);
+
+  const toggleWidget = (widgetId: string) => {
+    setSelectedWidgets(prev => 
+      prev.includes(widgetId) 
+        ? prev.filter(id => id !== widgetId)
+        : [...prev, widgetId]
+    );
+  };
 
   const { types: allTypes } = useShopSAVTypes();
   const { statuses: allStatuses, getStatusInfo } = useShopSAVStatuses();
@@ -132,160 +137,59 @@ export default function Reports() {
   };
 
   const exportToPDF = () => {
-    const htmlContent = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="UTF-8">
-        <title>Rapport SAV - ${periodLabel}</title>
-        <style>
-          body { font-family: Arial, sans-serif; margin: 20px; color: #333; font-size: 11px; }
-          h1 { color: #0066cc; font-size: 20px; margin-bottom: 5px; }
-          h2 { color: #0066cc; font-size: 14px; margin: 15px 0 8px 0; border-bottom: 1px solid #0066cc; padding-bottom: 3px; }
-          .period { color: #666; font-size: 12px; margin-bottom: 15px; }
-          .synthesis { display: flex; gap: 15px; margin-bottom: 20px; }
-          .synthesis-card { flex: 1; padding: 12px; border-radius: 6px; text-align: center; }
-          .synthesis-card.revenue { background: #e6f2ff; border: 1px solid #0066cc; }
-          .synthesis-card.costs { background: #fee2e2; border: 1px solid #dc2626; }
-          .synthesis-card.margin { background: #dcfce7; border: 1px solid #16a34a; }
-          .synthesis-label { font-size: 10px; color: #666; margin-bottom: 3px; }
-          .synthesis-value { font-size: 18px; font-weight: bold; }
-          .synthesis-value.revenue { color: #0066cc; }
-          .synthesis-value.costs { color: #dc2626; }
-          .synthesis-value.margin { color: #16a34a; }
-          .type-section { margin-bottom: 20px; page-break-inside: avoid; }
-          .type-header { padding: 8px 12px; border-radius: 4px 4px 0 0; display: flex; justify-content: space-between; align-items: center; }
-          .type-title { font-weight: bold; font-size: 13px; }
-          .type-count { background: #f0f0f0; padding: 2px 8px; border-radius: 10px; font-size: 10px; }
-          table { width: 100%; border-collapse: collapse; font-size: 10px; }
-          th { background: #f5f5f5; padding: 6px; text-align: left; border: 1px solid #ddd; font-weight: bold; }
-          td { padding: 5px 6px; border: 1px solid #ddd; }
-          .text-right { text-align: right; }
-          .text-center { text-align: center; }
-          .subtotal td { background: #f9f9f9; font-weight: bold; }
-          .parts-row td { background: #fafafa; font-size: 9px; color: #666; }
-          .positive { color: #16a34a; }
-          .negative { color: #dc2626; }
-          .footer { margin-top: 20px; text-align: center; font-size: 9px; color: #999; border-top: 1px solid #ddd; padding-top: 10px; }
-          @media print { body { margin: 10px; } .type-section { page-break-inside: avoid; } }
-        </style>
-      </head>
-      <body>
-        <h1>Rapport SAV</h1>
-        <p class="period">Période : ${periodLabel}</p>
-        
-        <div class="synthesis">
-          <div class="synthesis-card revenue">
-            <div class="synthesis-label">Chiffre d'affaires</div>
-            <div class="synthesis-value revenue">${formatCurrency(data.totals.revenue)}</div>
-          </div>
-          <div class="synthesis-card costs">
-            <div class="synthesis-label">Coûts d'achat</div>
-            <div class="synthesis-value costs">${formatCurrency(data.totals.costs)}</div>
-          </div>
-          <div class="synthesis-card margin">
-            <div class="synthesis-label">Marge</div>
-            <div class="synthesis-value margin">${formatCurrency(data.totals.margin)}</div>
-          </div>
-        </div>
-
-        ${Object.entries(data.groupedByType).map(([typeKey, items]) => {
-          const typeInfo = getTypeInfo(typeKey);
-          const subtotal = data.subtotals[typeKey];
-          return `
-            <div class="type-section">
-              <div class="type-header" style="background: ${typeInfo.color}20; border-left: 3px solid ${typeInfo.color};">
-                <span class="type-title" style="color: ${typeInfo.color};">● ${typeInfo.label}</span>
-                <span class="type-count">${items.length} SAV</span>
-              </div>
-              <table>
-                <thead>
-                  <tr>
-                    <th>N° SAV</th>
-                    <th>Date</th>
-                    <th>Client</th>
-                    <th>Statut</th>
-                    <th>Appareil</th>
-                    <th>SKU</th>
-                    <th>IMEI</th>
-                    <th class="text-right">Coût achat</th>
-                    <th class="text-right">Prix vente</th>
-                    <th class="text-right">Marge</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${items.map(item => {
-                    const statusInfo = getStatusInfo(item.status);
-                    return `
-                      <tr>
-                        <td>${item.case_number}</td>
-                        <td>${format(new Date(item.created_at), 'dd/MM/yyyy', { locale: fr })}</td>
-                        <td>${item.customer_name}</td>
-                        <td>${statusInfo?.label || item.status}</td>
-                        <td>${item.device_brand || item.device_model ? `${item.device_brand || ''} ${item.device_model || ''}`.trim() : '-'}</td>
-                        <td>${item.sku || '-'}</td>
-                        <td style="font-family: monospace;">${item.device_imei || '-'}</td>
-                        <td class="text-right">${formatCurrency(item.purchase_cost)}</td>
-                        <td class="text-right">${formatCurrency(item.selling_price)}</td>
-                        <td class="text-right ${item.margin >= 0 ? 'positive' : 'negative'}">${formatCurrency(item.margin)}</td>
-                      </tr>
-                      ${item.parts.length > 0 ? `
-                        <tr class="parts-row">
-                          <td colspan="10">
-                            <strong>Pièces :</strong> ${item.parts.map(p => `${p.name} (×${p.quantity}) - Achat: ${formatCurrency(p.purchase_price)}, Vente: ${formatCurrency(p.unit_price)}`).join(' | ')}
-                          </td>
-                        </tr>
-                      ` : ''}
-                    `;
-                  }).join('')}
-                  <tr class="subtotal">
-                    <td colspan="7">SOUS-TOTAL ${typeInfo.label} (${subtotal.count} SAV)</td>
-                    <td class="text-right">${formatCurrency(subtotal.costs)}</td>
-                    <td class="text-right">${formatCurrency(subtotal.revenue)}</td>
-                    <td class="text-right ${subtotal.margin >= 0 ? 'positive' : 'negative'}">${formatCurrency(subtotal.margin)}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          `;
-        }).join('')}
-
-        <div class="footer">
-          Rapport généré le ${format(new Date(), 'dd/MM/yyyy à HH:mm', { locale: fr })} • FixWay Pro
-        </div>
-      </body>
-      </html>
-    `;
-
-    const iframe = document.createElement('iframe');
-    iframe.style.position = 'absolute';
-    iframe.style.top = '-9999px';
-    iframe.style.left = '-9999px';
-    document.body.appendChild(iframe);
-
-    const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
-    if (iframeDoc) {
-      iframeDoc.open();
-      iframeDoc.write(htmlContent);
-      iframeDoc.close();
-
-      setTimeout(() => {
-        try {
-          iframe.contentWindow?.focus();
-          iframe.contentWindow?.print();
-          setTimeout(() => document.body.removeChild(iframe), 1000);
-        } catch (error) {
-          console.error('Erreur impression:', error);
-          document.body.removeChild(iframe);
-          const newWindow = window.open('', '_blank');
-          if (newWindow) {
-            newWindow.document.write(htmlContent);
-            newWindow.document.close();
-            newWindow.print();
-          }
-        }
-      }, 300);
+    // Add print-specific styles temporarily
+    const printStyleId = 'report-print-styles';
+    let printStyle = document.getElementById(printStyleId) as HTMLStyleElement | null;
+    
+    if (!printStyle) {
+      printStyle = document.createElement('style');
+      printStyle.id = printStyleId;
+      document.head.appendChild(printStyle);
     }
+    
+    printStyle.textContent = `
+      @media print {
+        body * {
+          visibility: hidden;
+        }
+        .print-report-area, .print-report-area * {
+          visibility: visible;
+        }
+        .print-report-area {
+          position: absolute;
+          left: 0;
+          top: 0;
+          width: 100%;
+        }
+        .no-print, header, nav, .sidebar, button, [data-sidebar] {
+          display: none !important;
+        }
+        .print-report-area .print:break-inside-avoid {
+          break-inside: avoid;
+          page-break-inside: avoid;
+        }
+        @page {
+          margin: 15mm;
+          size: A4 portrait;
+        }
+      }
+    `;
+    
+    // Add class to the main content area
+    const mainContent = document.querySelector('main');
+    if (mainContent) {
+      mainContent.classList.add('print-report-area');
+    }
+    
+    // Trigger print
+    window.print();
+    
+    // Remove class after printing
+    setTimeout(() => {
+      if (mainContent) {
+        mainContent.classList.remove('print-report-area');
+      }
+    }, 1000);
   };
 
   const periodLabel = useMemo(() => {
@@ -472,6 +376,40 @@ export default function Reports() {
                 </Popover>
               </div>
 
+              {/* Widgets to include */}
+              <div className="pt-4 border-t">
+                <Label className="text-sm font-medium mb-3 block">Graphiques à inclure dans le rapport</Label>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+                  {AVAILABLE_REPORT_WIDGETS.map(widget => (
+                    <label key={widget.id} className="flex items-center gap-2 cursor-pointer hover:bg-accent p-2 rounded">
+                      <Checkbox
+                        checked={selectedWidgets.includes(widget.id)}
+                        onCheckedChange={() => toggleWidget(widget.id)}
+                      />
+                      <span className="text-sm">{widget.name}</span>
+                    </label>
+                  ))}
+                </div>
+                {selectedWidgets.length > 0 && (
+                  <div className="mt-3 flex gap-2">
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => setSelectedWidgets([])}
+                    >
+                      Tout désélectionner
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => setSelectedWidgets(AVAILABLE_REPORT_WIDGETS.map(w => w.id))}
+                    >
+                      Tout sélectionner
+                    </Button>
+                  </div>
+                )}
+              </div>
+
               {/* Period indicator */}
               <div className="text-sm text-muted-foreground">
                 Période sélectionnée : <span className="font-medium text-foreground">{periodLabel}</span>
@@ -526,11 +464,12 @@ export default function Reports() {
           </div>
 
           {/* Charts Section */}
-          <ReportChartsSection 
-            chartOptions={chartOptions}
-            onChartOptionsChange={setChartOptions}
-            dateRange={dateRange}
-          />
+          {selectedWidgets.length > 0 && (
+            <ReportChartsSection 
+              selectedWidgets={selectedWidgets}
+              dateRange={dateRange}
+            />
+          )}
 
           {/* Data table grouped by type */}
           {loading ? (
