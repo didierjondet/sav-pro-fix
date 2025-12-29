@@ -160,16 +160,27 @@ export default function Reports() {
           left: 0;
           top: 0;
           width: 100%;
+          padding: 0 !important;
         }
         .no-print, header, nav, .sidebar, button, [data-sidebar] {
           display: none !important;
         }
-        .print-report-area .print:break-inside-avoid {
+        .print-only {
+          display: block !important;
+        }
+        .print-report-area .print\\:break-inside-avoid {
           break-inside: avoid;
           page-break-inside: avoid;
         }
+        /* Force recharts to be visible */
+        .recharts-wrapper, .recharts-surface, svg {
+          overflow: visible !important;
+        }
+        .recharts-wrapper {
+          width: 100% !important;
+        }
         @page {
-          margin: 15mm;
+          margin: 10mm;
           size: A4 portrait;
         }
       }
@@ -205,7 +216,7 @@ export default function Reports() {
           <main className="flex-1 overflow-y-auto p-4 md:p-6">
             <div className="max-w-7xl mx-auto space-y-6">
           {/* Header */}
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 no-print">
             <div>
               <h1 className="text-2xl font-bold text-foreground">Rapports</h1>
               <p className="text-muted-foreground">Analyse détaillée de vos SAV</p>
@@ -222,8 +233,21 @@ export default function Reports() {
             </div>
           </div>
 
+          {/* Print header - visible only when printing */}
+          <div className="hidden print-only mb-6">
+            <h1 className="text-2xl font-bold mb-4">Rapport SAV</h1>
+            <div className="border rounded-lg p-4 bg-muted/30 space-y-2 text-sm">
+              <p><strong>Période :</strong> {periodLabel}</p>
+              <p><strong>Types SAV :</strong> {selectedTypes.length > 0 ? selectedTypes.map(t => getTypeInfo(t).label).join(', ') : 'Tous les types'}</p>
+              <p><strong>Statuts :</strong> {selectedStatuses.length > 0 ? selectedStatuses.map(s => getStatusInfo(s)?.label).join(', ') : 'Tous les statuts'}</p>
+              {selectedWidgets.length > 0 && (
+                <p><strong>Graphiques inclus :</strong> {selectedWidgets.map(w => AVAILABLE_REPORT_WIDGETS.find(aw => aw.id === w)?.name).join(', ')}</p>
+              )}
+            </div>
+          </div>
+
           {/* Filters */}
-          <Card>
+          <Card className="no-print">
             <CardHeader className="pb-3">
               <CardTitle className="text-lg flex items-center gap-2">
                 <Filter className="h-5 w-5" />
