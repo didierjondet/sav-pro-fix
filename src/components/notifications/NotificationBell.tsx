@@ -28,12 +28,13 @@ export function NotificationBell() {
   const { profile } = useProfile();
   const navigate = useNavigate();
 
-  // 🔥 REALTIME pour les messages SAV et Support (crée des notifications dans la table)
+  // 🔥 REALTIME pour les messages SAV, Support et création de nouveaux SAV
   useEffect(() => {
     if (!user || !profile?.shop_id) return;
 
     let savChannel: any;
     let supportChannel: any;
+    let savCreationChannel: any;
 
     // Écouter les nouveaux messages SAV clients
     savChannel = supabase
@@ -70,6 +71,24 @@ export function NotificationBell() {
               console.error('Error creating SAV notification:', error);
             }
           }
+        }
+      )
+      .subscribe();
+
+    // 🆕 Écouter les nouveaux SAV créés
+    savCreationChannel = supabase
+      .channel('sav-creation-bell')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'sav_cases',
+          filter: `shop_id=eq.${profile.shop_id}`
+        },
+        async (payload) => {
+          console.log('🆕 New SAV created:', payload.new.case_number);
+          triggerNotificationEffect();
         }
       )
       .subscribe();
@@ -127,6 +146,7 @@ export function NotificationBell() {
       console.log('🔔 Cleanup message listeners');
       if (savChannel) supabase.removeChannel(savChannel);
       if (supportChannel) supabase.removeChannel(supportChannel);
+      if (savCreationChannel) supabase.removeChannel(savCreationChannel);
     };
   }, [user, profile?.shop_id, createSAVMessageNotification, createSupportMessageNotification]);
 
