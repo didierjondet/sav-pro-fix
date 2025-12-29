@@ -41,7 +41,26 @@ export function useSAVUnreadMessages() {
         return [];
       }
 
-      // Get all SAV cases that have client messages and are not closed (ready/delivered/cancelled)
+      // Récupérer les statuts personnalisés du shop pour identifier les statuts finaux
+      const { data: shopStatuses } = await supabase
+        .from('shop_sav_statuses')
+        .select('status_key, is_final_status')
+        .eq('shop_id', profile.shop_id)
+        .eq('is_active', true);
+
+      // Construire la liste des statuts finaux à exclure
+      const defaultFinalStatuses = ['ready', 'delivered', 'cancelled', 'closed', 'completed'];
+      const customFinalStatuses = (shopStatuses || [])
+        .filter(s => s.is_final_status)
+        .map(s => s.status_key);
+
+      // Fusionner et dédupliquer
+      const allFinalStatuses = [...new Set([...defaultFinalStatuses, ...customFinalStatuses])];
+      const statusesString = allFinalStatuses.map(s => `"${s}"`).join(',');
+
+      console.log('🚫 Final statuses to exclude:', allFinalStatuses);
+
+      // Get all SAV cases that have client messages and are not in final status
       const { data: savCases, error: savError } = await supabase
         .from('sav_cases')
         .select(`
@@ -54,7 +73,7 @@ export function useSAVUnreadMessages() {
           customer:customers(first_name, last_name)
         `)
         .eq('shop_id', profile.shop_id)
-        .not('status', 'in', '("ready","delivered","cancelled","closed","completed")');
+        .not('status', 'in', `(${statusesString})`);
 
       console.log('🏪 All open SAV cases:', { savCases, savError });
 
