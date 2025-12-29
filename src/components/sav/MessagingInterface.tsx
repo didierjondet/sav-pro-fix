@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { MessageSquare, Send, X, AlertCircle, Camera, Eye, Download } from 'lucide-react';
+import { MessageSquare, Send, X, AlertCircle, Camera, Eye, Download, Check, CheckCheck } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useMessaging, Message } from '@/hooks/useMessaging';
@@ -389,13 +389,38 @@ export function MessagingInterface({
                         </div>
                       )}
                       
-                      <div className="text-xs opacity-70 mt-1">
-                        {formatTime(message.created_at)}
+                      <div className="text-xs opacity-70 mt-1 flex items-center gap-1 flex-wrap">
+                        <span>{formatTime(message.created_at)}</span>
+                        {/* Accusé de lecture pour les messages du shop (côté boutique) */}
                         {userType === 'shop' && 
                          message.sender_type === 'shop' && 
-                         !message.read_by_client && 
                          !message.sender_name.includes('📱 SMS') && (
-                          <span className="ml-2">• Non lu</span>
+                          message.read_by_client ? (
+                            <span className="ml-1 flex items-center gap-0.5 text-green-500">
+                              <CheckCheck className="h-3 w-3" />
+                              <span>Lu</span>
+                            </span>
+                          ) : (
+                            <span className="ml-1 flex items-center gap-0.5 text-muted-foreground">
+                              <Check className="h-3 w-3" />
+                              <span>Non lu</span>
+                            </span>
+                          )
+                        )}
+                        {/* Accusé de lecture pour les messages du client (côté client) */}
+                        {userType === 'client' && 
+                         message.sender_type === 'client' && (
+                          message.read_by_shop ? (
+                            <span className="ml-1 flex items-center gap-0.5 text-green-500">
+                              <CheckCheck className="h-3 w-3" />
+                              <span>Lu</span>
+                            </span>
+                          ) : (
+                            <span className="ml-1 flex items-center gap-0.5 text-muted-foreground">
+                              <Check className="h-3 w-3" />
+                              <span>Non lu</span>
+                            </span>
+                          )
                         )}
                       </div>
                     </div>
