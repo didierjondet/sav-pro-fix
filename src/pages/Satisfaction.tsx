@@ -32,6 +32,7 @@ export default function Satisfaction() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [alreadyCompleted, setAlreadyCompleted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
   const [rating, setRating] = useState<number>(0);
@@ -75,6 +76,7 @@ export default function Satisfaction() {
 
       // Vérifier si déjà complété
       if (data.completed_at) {
+        setAlreadyCompleted(true);
         setSubmitted(true);
       }
 
@@ -116,6 +118,19 @@ export default function Satisfaction() {
     setSubmitting(true);
     setError(null);
 
+    // Vérifier d'abord si l'enquête n'a pas déjà été soumise (double-clic, etc.)
+    const { data: currentSurvey } = await anonClient
+      .from('satisfaction_surveys')
+      .select('completed_at')
+      .eq('access_token', token)
+      .maybeSingle();
+
+    if (currentSurvey?.completed_at) {
+      setError('Vous avez déjà répondu à cette enquête de satisfaction. Merci !');
+      setSubmitting(false);
+      return;
+    }
+
     const { error: updateError } = await anonClient
       .from('satisfaction_surveys')
       .update({
@@ -126,7 +141,12 @@ export default function Satisfaction() {
       .eq('access_token', token);
 
     if (updateError) {
-      setError('Erreur lors de l\'envoi. Veuillez réessayer.');
+      // Message d'erreur plus informatif selon le type d'erreur
+      if (updateError.code === '42501' || updateError.message?.includes('policy')) {
+        setError('Vous avez déjà répondu à cette enquête de satisfaction.');
+      } else {
+        setError('Erreur lors de l\'envoi. Veuillez réessayer plus tard.');
+      }
       setSubmitting(false);
       return;
     }
@@ -155,10 +175,21 @@ export default function Satisfaction() {
             <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
               <CheckCircle className="h-8 w-8 text-green-600" />
             </div>
-            <h2 className="text-2xl font-bold text-foreground">Merci !</h2>
-            <p className="text-muted-foreground">
-              Votre avis a bien été enregistré. Il nous aidera à améliorer nos services.
-            </p>
+            {alreadyCompleted ? (
+              <>
+                <h2 className="text-2xl font-bold text-foreground">Déjà répondu</h2>
+                <p className="text-muted-foreground">
+                  Vous avez déjà donné votre avis sur cette prestation. Merci pour votre retour !
+                </p>
+              </>
+            ) : (
+              <>
+                <h2 className="text-2xl font-bold text-foreground">Merci !</h2>
+                <p className="text-muted-foreground">
+                  Votre avis a bien été enregistré. Il nous aidera à améliorer nos services.
+                </p>
+              </>
+            )}
             {survey?.shop?.name && (
               <p className="text-sm text-muted-foreground mt-4">
                 — L'équipe {survey.shop.name}
