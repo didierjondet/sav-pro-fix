@@ -35,6 +35,7 @@ export function NotificationBell() {
     let savChannel: any;
     let supportChannel: any;
     let savCreationChannel: any;
+    let quoteCreationChannel: any;
 
     // Écouter les nouveaux messages SAV clients
     savChannel = supabase
@@ -88,6 +89,24 @@ export function NotificationBell() {
         },
         async (payload) => {
           console.log('🆕 New SAV created:', payload.new.case_number);
+          triggerNotificationEffect();
+        }
+      )
+      .subscribe();
+
+    // 📋 Écouter les nouveaux devis créés
+    quoteCreationChannel = supabase
+      .channel('quote-creation-bell')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'quotes',
+          filter: `shop_id=eq.${profile.shop_id}`
+        },
+        async (payload) => {
+          console.log('📋 New quote created:', payload.new.quote_number);
           triggerNotificationEffect();
         }
       )
@@ -147,6 +166,7 @@ export function NotificationBell() {
       if (savChannel) supabase.removeChannel(savChannel);
       if (supportChannel) supabase.removeChannel(supportChannel);
       if (savCreationChannel) supabase.removeChannel(savCreationChannel);
+      if (quoteCreationChannel) supabase.removeChannel(quoteCreationChannel);
     };
   }, [user, profile?.shop_id, createSAVMessageNotification, createSupportMessageNotification]);
 
