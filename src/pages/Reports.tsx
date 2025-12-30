@@ -28,7 +28,7 @@ export default function Reports() {
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
-  const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
+  const [selectedStatuses, setSelectedStatuses] = useState<string[]>(['ready']);
   const [selectedWidgets, setSelectedWidgets] = useState<string[]>(['monthly-comparison']);
 
   const toggleWidget = (widgetId: string) => {
@@ -373,7 +373,13 @@ export default function Reports() {
                   <PopoverContent className="w-[250px] p-0 z-[100]" align="start" sideOffset={5}>
                     <div className="max-h-[250px] overflow-y-auto p-3">
                       <div className="space-y-2">
-                        {allStatuses.map(status => (
+                        {[...allStatuses].sort((a, b) => {
+                          const aIsReady = a.status_key === 'ready' || a.status_label.toLowerCase() === 'prêt';
+                          const bIsReady = b.status_key === 'ready' || b.status_label.toLowerCase() === 'prêt';
+                          if (aIsReady && !bIsReady) return -1;
+                          if (!aIsReady && bIsReady) return 1;
+                          return 0;
+                        }).map(status => (
                           <label key={status.status_key} className="flex items-center gap-2 cursor-pointer hover:bg-accent p-2 rounded">
                             <Checkbox
                               checked={selectedStatuses.includes(status.status_key)}
