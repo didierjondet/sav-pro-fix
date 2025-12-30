@@ -161,6 +161,7 @@ export default function Reports() {
           top: 0;
           width: 100%;
           padding: 0 !important;
+          font-size: 9px !important;
         }
         .no-print, header, nav, .sidebar, button, [data-sidebar] {
           display: none !important;
@@ -168,20 +169,104 @@ export default function Reports() {
         .print-only {
           display: block !important;
         }
-        .print-report-area .print\\:break-inside-avoid {
-          break-inside: avoid;
-          page-break-inside: avoid;
+        
+        /* Tableau - mise en page optimisée */
+        .print-report-area table {
+          width: 100% !important;
+          table-layout: fixed !important;
+          font-size: 8px !important;
+          border-collapse: collapse !important;
         }
-        /* Force recharts to be visible */
+        .print-report-area th,
+        .print-report-area td {
+          padding: 3px 4px !important;
+          font-size: 8px !important;
+          word-wrap: break-word !important;
+          word-break: break-word !important;
+          white-space: normal !important;
+          overflow-wrap: break-word !important;
+          vertical-align: top !important;
+        }
+        
+        /* Largeurs fixes des colonnes */
+        .print-report-area th:nth-child(1),
+        .print-report-area td:nth-child(1) { width: 8% !important; } /* N° SAV */
+        .print-report-area th:nth-child(2),
+        .print-report-area td:nth-child(2) { width: 7% !important; } /* Date */
+        .print-report-area th:nth-child(3),
+        .print-report-area td:nth-child(3) { width: 12% !important; } /* Client */
+        .print-report-area th:nth-child(4),
+        .print-report-area td:nth-child(4) { width: 8% !important; } /* Statut */
+        .print-report-area th:nth-child(5),
+        .print-report-area td:nth-child(5) { width: 14% !important; } /* Appareil */
+        .print-report-area th:nth-child(6),
+        .print-report-area td:nth-child(6) { width: 10% !important; } /* SKU */
+        .print-report-area th:nth-child(7),
+        .print-report-area td:nth-child(7) { width: 13% !important; } /* IMEI */
+        .print-report-area th:nth-child(8),
+        .print-report-area td:nth-child(8) { width: 9% !important; } /* Coût */
+        .print-report-area th:nth-child(9),
+        .print-report-area td:nth-child(9) { width: 9% !important; } /* Prix */
+        .print-report-area th:nth-child(10),
+        .print-report-area td:nth-child(10) { width: 10% !important; } /* Marge */
+        
+        /* Ligne des pièces - retour à la ligne */
+        .print-report-area td[colspan] {
+          width: 100% !important;
+        }
+        .print-report-area .flex-wrap,
+        .print-report-area .flex.flex-wrap {
+          flex-wrap: wrap !important;
+          display: flex !important;
+        }
+        .print-report-area .flex-wrap > span,
+        .print-report-area .flex.flex-wrap > span {
+          margin-bottom: 2px !important;
+          white-space: normal !important;
+          word-break: break-word !important;
+        }
+        
+        /* Éviter les coupures */
+        .print-report-area tr {
+          page-break-inside: avoid !important;
+          break-inside: avoid !important;
+        }
+        .print-report-area .card,
+        .print-report-area [class*="Card"] {
+          page-break-inside: avoid !important;
+          break-inside: avoid !important;
+        }
+        
+        /* En-têtes de sections */
+        .print-report-area [class*="CardHeader"] {
+          padding: 6px 8px !important;
+          font-size: 10px !important;
+        }
+        
+        /* Graphiques */
         .recharts-wrapper, .recharts-surface, svg {
           overflow: visible !important;
         }
         .recharts-wrapper {
           width: 100% !important;
+          max-width: 100% !important;
         }
+        
+        /* Badges et éléments inline */
+        .print-report-area [class*="Badge"] {
+          font-size: 7px !important;
+          padding: 1px 4px !important;
+        }
+        
+        /* Liens */
+        .print-report-area a {
+          text-decoration: none !important;
+          color: inherit !important;
+        }
+        
         @page {
-          margin: 10mm;
-          size: A4 portrait;
+          margin: 8mm;
+          size: A4 landscape;
         }
       }
     `;
