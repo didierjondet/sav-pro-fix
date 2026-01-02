@@ -35,13 +35,37 @@ interface ReportChartsSectionProps {
 }
 
 export function ReportChartsSection({ selectedWidgets, dateRange }: ReportChartsSectionProps) {
-  const currentYear = new Date().getFullYear();
-  const previousYear = currentYear - 1;
+  // Extraire l'année depuis la plage de dates sélectionnée
+  const selectedYear = dateRange.start.getFullYear();
+  const selectedPreviousYear = selectedYear - 1;
+  const selectedMonthIndex = dateRange.start.getMonth();
   
-  const { data: currentYearData, loading: loadingCurrent } = useMonthlyStatistics(currentYear);
-  const { data: previousYearData, loading: loadingPrevious } = useMonthlyStatistics(previousYear);
-  const statistics = useStatistics('30d');
+  // Calculer la durée en jours pour déterminer la période
+  const periodDays = Math.ceil((dateRange.end.getTime() - dateRange.start.getTime()) / (1000 * 60 * 60 * 24));
+  const statisticsPeriod = periodDays <= 7 ? '7d' : 
+                           periodDays <= 31 ? '30d' : 
+                           periodDays <= 90 ? '3m' : 
+                           periodDays <= 180 ? '6m' : '1y';
+  
+  const { data: currentYearData, loading: loadingCurrent } = useMonthlyStatistics(selectedYear);
+  const { data: previousYearData, loading: loadingPrevious } = useMonthlyStatistics(selectedPreviousYear);
+  const statistics = useStatistics(statisticsPeriod);
   const loadingStats = statistics.loading;
+
+  // Filtrer les données mensuelles selon la plage sélectionnée
+  const filteredMonthlyData = useMemo(() => {
+    const startMonth = dateRange.start.getMonth();
+    const endMonth = dateRange.end.getMonth();
+    const startYear = dateRange.start.getFullYear();
+    const endYear = dateRange.end.getFullYear();
+    
+    // Si même année, filtrer les mois dans la plage
+    if (startYear === endYear && startYear === selectedYear) {
+      return currentYearData.filter((_, index) => index >= startMonth && index <= endMonth);
+    }
+    
+    return currentYearData;
+  }, [currentYearData, dateRange, selectedYear]);
 
   // Prepare monthly comparison data
   const monthlyComparisonData = useMemo(() => {
@@ -65,7 +89,7 @@ export function ReportChartsSection({ selectedWidgets, dateRange }: ReportCharts
         growth
       };
     });
-  }, [currentYearData, previousYearData]);
+  }, [currentYearData, previousYearData, dateRange]);
 
   const totalGrowth = useMemo(() => {
     const currentTotal = currentYearData.reduce((sum, m) => sum + m.revenue, 0);
@@ -85,9 +109,9 @@ export function ReportChartsSection({ selectedWidgets, dateRange }: ReportCharts
     return worst.monthName;
   }, [monthlyComparisonData]);
 
-  // Prepare financial overview data
+  // Prepare financial overview data - utiliser les données filtrées
   const financialData = useMemo(() => {
-    return currentYearData.map(m => ({
+    return filteredMonthlyData.map(m => ({
       date: MONTHS_FR[m.month - 1].slice(0, 3),
       revenue: m.revenue,
       expenses: m.costs,
@@ -95,13 +119,14 @@ export function ReportChartsSection({ selectedWidgets, dateRange }: ReportCharts
       margin: m.revenue > 0 ? (m.profit / m.revenue) * 100 : 0,
       savCount: m.savCount
     }));
-  }, [currentYearData]);
+  }, [filteredMonthlyData]);
 
-  const totalRevenue = currentYearData.reduce((sum, m) => sum + m.revenue, 0);
-  const totalExpenses = currentYearData.reduce((sum, m) => sum + m.costs, 0);
-  const totalProfit = currentYearData.reduce((sum, m) => sum + m.profit, 0);
+  // Totaux basés sur les données filtrées
+  const totalRevenue = filteredMonthlyData.reduce((sum, m) => sum + m.revenue, 0);
+  const totalExpenses = filteredMonthlyData.reduce((sum, m) => sum + m.costs, 0);
+  const totalProfit = filteredMonthlyData.reduce((sum, m) => sum + m.profit, 0);
   const averageMargin = totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0;
-  const totalSAV = currentYearData.reduce((sum, m) => sum + m.savCount, 0);
+  const totalSAV = filteredMonthlyData.reduce((sum, m) => sum + m.savCount, 0);
 
   // Prepare SAV performance data
   const performanceData = useMemo(() => {
@@ -131,9 +156,9 @@ export function ReportChartsSection({ selectedWidgets, dateRange }: ReportCharts
     }));
   }, [statistics]);
 
-  // Annual stats data
+  // Annual stats data - utiliser les données filtrées
   const annualStatsData = useMemo(() => {
-    return currentYearData.map(m => ({
+    return filteredMonthlyData.map(m => ({
       month: MONTHS_FR[m.month - 1].slice(0, 3),
       revenue: m.revenue,
       savCount: m.savCount,
@@ -143,13 +168,16 @@ export function ReportChartsSection({ selectedWidgets, dateRange }: ReportCharts
       efficiency: 80,
       profit: m.profit
     }));
-  }, [currentYearData]);
+  }, [filteredMonthlyData]);
 
-  // Finance KPIs data
+  // Finance KPIs data - basé sur le mois sélectionné
   const currentMonthData = useMemo(() => {
-    const currentMonthIndex = new Date().getMonth();
-    const data = currentYearData[currentMonthIndex] || { revenue: 0, costs: 0, profit: 0, savCount: 0 };
-    const prevData = currentYearData[currentMonthIndex - 1] || { revenue: 0, costs: 0, profit: 0, savCount: 0 };
+    // Utiliser le mois de la date de début sélectionnée
+    const data = currentYearData[selectedMonthIndex] || { revenue: 0, costs: 0, profit: 0, savCount: 0 };
+    // Mois précédent (avec gestion du passage à l'année précédente)
+    const prevMonthIndex = selectedMonthIndex === 0 ? 11 : selectedMonthIndex - 1;
+    const prevDataSource = selectedMonthIndex === 0 ? previousYearData : currentYearData;
+    const prevData = prevDataSource[prevMonthIndex] || { revenue: 0, costs: 0, profit: 0, savCount: 0 };
     const growth = prevData.revenue > 0 ? ((data.revenue - prevData.revenue) / prevData.revenue) * 100 : 0;
     
     return {
@@ -162,12 +190,18 @@ export function ReportChartsSection({ selectedWidgets, dateRange }: ReportCharts
       growth,
       target: data.revenue * 1.1
     };
-  }, [currentYearData]);
+  }, [currentYearData, previousYearData, selectedMonthIndex]);
 
   const previousMonthData = useMemo(() => {
-    const currentMonthIndex = new Date().getMonth();
-    const data = currentYearData[currentMonthIndex - 1] || { revenue: 0, costs: 0, profit: 0, savCount: 0 };
-    const prevData = currentYearData[currentMonthIndex - 2] || { revenue: 0, costs: 0, profit: 0, savCount: 0 };
+    // Mois précédent celui sélectionné
+    const prevMonthIndex = selectedMonthIndex === 0 ? 11 : selectedMonthIndex - 1;
+    const dataSource = selectedMonthIndex === 0 ? previousYearData : currentYearData;
+    const data = dataSource[prevMonthIndex] || { revenue: 0, costs: 0, profit: 0, savCount: 0 };
+    
+    // Mois encore avant
+    const prevPrevMonthIndex = prevMonthIndex === 0 ? 11 : prevMonthIndex - 1;
+    const prevDataSource = prevMonthIndex === 0 ? previousYearData : dataSource;
+    const prevData = prevDataSource[prevPrevMonthIndex] || { revenue: 0, costs: 0, profit: 0, savCount: 0 };
     const growth = prevData.revenue > 0 ? ((data.revenue - prevData.revenue) / prevData.revenue) * 100 : 0;
     
     return {
@@ -180,7 +214,7 @@ export function ReportChartsSection({ selectedWidgets, dateRange }: ReportCharts
       growth,
       target: data.revenue * 1.1
     };
-  }, [currentYearData]);
+  }, [currentYearData, previousYearData, selectedMonthIndex]);
 
   // Revenue breakdown data
   const revenueSources = useMemo(() => {
@@ -209,15 +243,16 @@ export function ReportChartsSection({ selectedWidgets, dateRange }: ReportCharts
     { name: 'Caméra', value: 15, cost: totalExpenses * 0.08, frequency: 15, trend: 'up' as const, category: 'Caméras' },
   ], [totalExpenses]);
 
-  // Customer satisfaction data
+  // Customer satisfaction data - basé sur les données filtrées
   const satisfactionData = useMemo(() => {
-    return currentYearData.slice(-6).map(m => ({
+    const dataToUse = filteredMonthlyData.length > 0 ? filteredMonthlyData : currentYearData.slice(-6);
+    return dataToUse.map(m => ({
       period: MONTHS_FR[m.month - 1].slice(0, 3),
       rating: 4 + Math.random() * 0.8,
       reviews: Math.floor(10 + Math.random() * 20),
       response_rate: 70 + Math.random() * 20
     }));
-  }, [currentYearData]);
+  }, [filteredMonthlyData, currentYearData]);
 
   const satisfactionBreakdown = useMemo(() => [
     { stars: 5, count: 45, percentage: 45, color: 'hsl(var(--success))' },
@@ -281,7 +316,7 @@ export function ReportChartsSection({ selectedWidgets, dateRange }: ReportCharts
         return annualStatsData.length > 0 ? (
           <AnnualStatsWidget
             monthlyData={annualStatsData}
-            currentYear={currentYear}
+            currentYear={selectedYear}
             totalRevenue={totalRevenue}
             totalSAV={totalSAV}
             averageEfficiency={80}
