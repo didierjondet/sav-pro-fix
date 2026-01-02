@@ -106,12 +106,12 @@ export function useMonthlyStatistics(year: number) {
 
           // Ajuster le revenu selon la prise en charge
           if (savCase.partial_takeover && savCase.takeover_amount) {
-            const denom = Number(savCase.total_cost) || 1;
-            const rawRatio = Number(savCase.takeover_amount) / denom;
-            const ratio = Math.min(1, Math.max(0, rawRatio));
-            caseRevenue = caseCost + (caseRevenue - caseCost) * (1 - ratio);
+            // Prise en charge partielle : le client paie la différence
+            const takeoverAmt = Number(savCase.takeover_amount) || 0;
+            caseRevenue = Math.max(0, caseRevenue - takeoverAmt);
           } else if (savCase.taken_over) {
-            caseRevenue = caseCost;
+            // Prise en charge totale : le client ne paie rien
+            caseRevenue = 0;
           }
 
           // Ajouter aux données mensuelles
