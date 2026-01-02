@@ -33,9 +33,49 @@ const MONTHS_FR = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juill
 interface ReportChartsSectionProps {
   selectedWidgets: string[];
   dateRange: { start: Date; end: Date };
+  reportData?: {
+    items: Array<{
+      device_brand: string | null;
+      device_model: string | null;
+      selling_price: number;
+      purchase_cost: number;
+    }>;
+    totals: { revenue: number };
+  };
 }
 
-export function ReportChartsSection({ selectedWidgets, dateRange }: ReportChartsSectionProps) {
+// Fonction utilitaire pour catégoriser les appareils
+const categorizeDevice = (brand: string | null, model: string | null): string => {
+  const combined = `${brand || ''} ${model || ''}`.toLowerCase();
+  
+  if (combined.includes('iphone') || combined.includes('samsung') || combined.includes('huawei') || 
+      combined.includes('xiaomi') || combined.includes('oppo') || combined.includes('pixel') ||
+      combined.includes('oneplus') || combined.includes('phone') || combined.includes('téléphone')) {
+    return 'Téléphones';
+  }
+  if (combined.includes('ipad') || combined.includes('tablette') || combined.includes('tab') || 
+      combined.includes('galaxy tab')) {
+    return 'Tablettes';
+  }
+  if (combined.includes('macbook') || combined.includes('laptop') || combined.includes('pc') || 
+      combined.includes('ordinateur') || combined.includes('dell') || combined.includes('hp') ||
+      combined.includes('asus') || combined.includes('lenovo') || combined.includes('acer')) {
+    return 'Ordinateurs';
+  }
+  if (combined.includes('playstation') || combined.includes('xbox') || combined.includes('nintendo') || 
+      combined.includes('switch') || combined.includes('ps4') || combined.includes('ps5') ||
+      combined.includes('console')) {
+    return 'Consoles';
+  }
+  if (combined.includes('watch') || combined.includes('montre') || combined.includes('airpods') ||
+      combined.includes('écouteurs') || combined.includes('accessoire')) {
+    return 'Accessoires';
+  }
+  
+  return 'Autres';
+};
+
+export function ReportChartsSection({ selectedWidgets, dateRange, reportData }: ReportChartsSectionProps) {
   // Extraire l'année depuis la plage de dates sélectionnée
   const selectedYear = dateRange.start.getFullYear();
   const selectedPreviousYear = selectedYear - 1;
@@ -232,41 +272,70 @@ export function ReportChartsSection({ selectedWidgets, dateRange }: ReportCharts
     };
   }, [currentYearData, previousYearData, selectedMonthIndex]);
 
-  // Revenue breakdown data - utiliser les vraies données des catégories
+  // Revenue breakdown data - calculer depuis reportData pour respecter la période sélectionnée
   const revenueSources = useMemo(() => {
-    const categoryRevenue = statistics?.revenueByProductCategory || [];
-    const total = totalRevenue || 1;
-    
-    if (categoryRevenue.length > 0) {
-      return categoryRevenue.slice(0, 5).map((cat) => ({
-        name: cat.category,
-        value: cat.revenue,
-        percentage: cat.percentage,
-        color: cat.color
-      }));
+    // Utiliser reportData qui respecte le dateRange
+    if (reportData && reportData.items.length > 0) {
+      const categoryRevenue: Record<string, { revenue: number; count: number }> = {};
+      
+      reportData.items.forEach(item => {
+        const category = categorizeDevice(item.device_brand, item.device_model);
+        
+        if (!categoryRevenue[category]) {
+          categoryRevenue[category] = { revenue: 0, count: 0 };
+        }
+        categoryRevenue[category].revenue += item.selling_price;
+        categoryRevenue[category].count += 1;
+      });
+      
+      const totalRev = reportData.totals.revenue || 1;
+      const colors = ['hsl(var(--chart-1))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))', 'hsl(var(--chart-4))', 'hsl(var(--chart-5))'];
+      
+      return Object.entries(categoryRevenue)
+        .sort((a, b) => b[1].revenue - a[1].revenue)
+        .slice(0, 5)
+        .map(([category, data], index) => ({
+          name: category,
+          value: data.revenue,
+          percentage: (data.revenue / totalRev) * 100,
+          color: colors[index % colors.length]
+        }));
     }
     
     // Fallback si pas de données
     return [
       { name: 'Aucune donnée', value: 0, percentage: 0, color: 'hsl(var(--muted))' },
     ];
-  }, [totalRevenue, statistics?.revenueByProductCategory]);
+  }, [reportData]);
 
-  // Service types - utiliser les vrais appareils
+  // Service types - utiliser reportData pour respecter la période
   const serviceTypes = useMemo(() => {
-    const topDevices = statistics?.topDevices || [];
-    
-    if (topDevices.length > 0) {
-      return topDevices.slice(0, 4).map((device) => ({
-        type: `${device.brand} ${device.model}`,
-        revenue: 0,
-        count: device.count,
-        averageValue: 0
-      }));
+    if (reportData && reportData.items.length > 0) {
+      const deviceRevenue: Record<string, { type: string; revenue: number; count: number }> = {};
+      
+      reportData.items.forEach(item => {
+        const deviceKey = `${item.device_brand || 'Inconnu'} ${item.device_model || ''}`.trim();
+        
+        if (!deviceRevenue[deviceKey]) {
+          deviceRevenue[deviceKey] = { type: deviceKey, revenue: 0, count: 0 };
+        }
+        deviceRevenue[deviceKey].revenue += item.selling_price;
+        deviceRevenue[deviceKey].count += 1;
+      });
+      
+      return Object.values(deviceRevenue)
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 4)
+        .map(device => ({
+          type: device.type,
+          revenue: device.revenue,
+          count: device.count,
+          averageValue: device.count > 0 ? device.revenue / device.count : 0
+        }));
     }
     
     return [];
-  }, [statistics?.topDevices]);
+  }, [reportData]);
 
   // Parts usage data - utiliser les vraies pièces
   const partsData = useMemo(() => {

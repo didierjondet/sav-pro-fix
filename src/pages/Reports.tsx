@@ -583,6 +583,7 @@ export default function Reports() {
             <ReportChartsSection 
               selectedWidgets={selectedWidgets}
               dateRange={dateRange}
+              reportData={data}
             />
           )}
 
