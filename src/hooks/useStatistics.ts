@@ -438,9 +438,11 @@ export function useStatistics(
               const takeoverRatio = Math.min(1, Math.max(0, rawRatio));
               caseRevenue = caseCost + (caseRevenue - caseCost) * (1 - takeoverRatio);
             } else if (savCase.taken_over) {
-              takeoverAmount += caseCost;
+              // Prise en charge totale : le magasin absorbe tout le coût
+              // Le montant pris en charge = prix de vente original (ce que le client aurait payé)
+              takeoverAmount += caseRevenue;
               takeoverCount++;
-              caseRevenue = caseCost; // Pas de marge si pris en charge totalement
+              caseRevenue = 0; // Le client ne paie rien, donc CA = 0
             }
           }
 

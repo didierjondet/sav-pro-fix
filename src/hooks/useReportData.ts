@@ -117,6 +117,10 @@ export function useReportData({
             device_model,
             sku,
             device_imei,
+            taken_over,
+            partial_takeover,
+            takeover_amount,
+            total_cost,
             customer:customers(first_name, last_name),
             sav_parts(
               quantity,
@@ -170,6 +174,16 @@ export function useReportData({
         sum + ((p.purchase_price || 0) * (p.quantity || 1)), 0);
       let selling_price = parts.reduce((sum: number, p: any) => 
         sum + ((p.unit_price || 0) * (p.quantity || 1)), 0);
+      
+      // Ajuster le CA selon la prise en charge
+      if (sav.taken_over && !sav.partial_takeover) {
+        // Prise en charge totale : le client ne paie rien
+        selling_price = 0;
+      } else if (sav.partial_takeover && sav.takeover_amount) {
+        // Prise en charge partielle : soustraire le montant pris en charge
+        const takeoverAmt = Number(sav.takeover_amount) || 0;
+        selling_price = Math.max(0, selling_price - takeoverAmt);
+      }
       
       // Appliquer les exclusions configurées dans le type de SAV
       if (typeInfo.exclude_purchase_costs) {

@@ -90,12 +90,14 @@ export function useSAVPartsCosts() {
           if (savCase.status === 'ready' && savCase.sav_type !== 'internal') {
             let revenuePart = partRevenue;
             if (savCase.partial_takeover && savCase.takeover_amount) {
-              const denom = Number(savCase.total_cost) || 1;
-              const rawRatio = Number(savCase.takeover_amount) / denom;
-              const ratio = Math.min(1, Math.max(0, rawRatio));
-              revenuePart = partCost + (partRevenue - partCost) * (1 - ratio);
+              // Prise en charge partielle : calculer la part payée par le client
+              const totalRevenue = Number(savCase.total_cost) || 1;
+              const takeoverAmt = Number(savCase.takeover_amount) || 0;
+              const clientPaysRatio = Math.max(0, 1 - (takeoverAmt / totalRevenue));
+              revenuePart = partRevenue * clientPaysRatio;
             } else if (savCase.taken_over) {
-              revenuePart = partCost; // pas de marge en cas de prise en charge totale
+              // Prise en charge totale : le client ne paie rien
+              revenuePart = 0;
             }
             monthly_revenue += revenuePart;
           }
