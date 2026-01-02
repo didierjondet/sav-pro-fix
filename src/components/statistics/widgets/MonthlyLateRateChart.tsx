@@ -3,12 +3,20 @@ import { ChartContainer, ChartTooltip } from '@/components/ui/chart';
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, TooltipProps } from 'recharts';
 import { Loader2 } from 'lucide-react';
 
-const CustomTooltip = ({ active, payload, label }: TooltipProps<number, string>) => {
+interface MonthlyLateRateChartProps {
+  year?: number;
+}
+
+interface CustomTooltipProps extends TooltipProps<number, string> {
+  displayYear: number;
+}
+
+const CustomTooltip = ({ active, payload, displayYear }: CustomTooltipProps) => {
   if (active && payload && payload.length) {
     const data = payload[0].payload;
     return (
       <div className="bg-background border rounded-lg shadow-lg p-3">
-        <p className="font-semibold capitalize">{data.monthLabel} {new Date().getFullYear()}</p>
+        <p className="font-semibold capitalize">{data.monthLabel} {displayYear}</p>
         <div className="border-t my-2" />
         <p className="text-sm">
           <span className="text-muted-foreground">Taux de retard: </span>
@@ -24,8 +32,8 @@ const CustomTooltip = ({ active, payload, label }: TooltipProps<number, string>)
   return null;
 };
 
-export function MonthlyLateRateChart() {
-  const { data, loading, year } = useMonthlyLateRate();
+export function MonthlyLateRateChart({ year }: MonthlyLateRateChartProps) {
+  const { data, loading, year: displayYear } = useMonthlyLateRate(year);
 
   if (loading) {
     return (
@@ -38,7 +46,7 @@ export function MonthlyLateRateChart() {
   if (data.length === 0) {
     return (
       <div className="h-72 flex items-center justify-center text-muted-foreground">
-        Aucune donnée disponible pour {year}
+        Aucune donnée disponible pour {displayYear}
       </div>
     );
   }
@@ -62,7 +70,7 @@ export function MonthlyLateRateChart() {
           axisLine={false}
           tick={{ fontSize: 12 }}
         />
-        <ChartTooltip content={<CustomTooltip />} />
+        <ChartTooltip content={<CustomTooltip displayYear={displayYear} />} />
         <Line 
           type="monotone" 
           dataKey="lateRate" 

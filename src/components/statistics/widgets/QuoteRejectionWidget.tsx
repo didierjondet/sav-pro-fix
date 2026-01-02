@@ -27,20 +27,33 @@ interface RejectionStats {
   total: number;
 }
 
-export function QuoteRejectionWidget() {
+interface QuoteRejectionWidgetProps {
+  dateRange?: { start: Date; end: Date };
+}
+
+export function QuoteRejectionWidget({ dateRange }: QuoteRejectionWidgetProps) {
   const { shop } = useShop();
 
   const { data: stats, isLoading } = useQuery({
-    queryKey: ['quote-rejections', shop?.id],
+    queryKey: ['quote-rejections', shop?.id, dateRange?.start?.toISOString(), dateRange?.end?.toISOString()],
     queryFn: async (): Promise<RejectionStats> => {
       if (!shop?.id) return { too_expensive: 0, too_slow: 0, no_trust: 0, postponed: 0, total: 0 };
 
-      const { data, error } = await supabase
+      let query = supabase
         .from('quotes')
         .select('rejection_reason')
         .eq('shop_id', shop.id)
         .eq('status', 'rejected')
         .not('rejection_reason', 'is', null);
+
+      // Filtrer par période si fournie
+      if (dateRange) {
+        query = query
+          .gte('created_at', dateRange.start.toISOString())
+          .lte('created_at', dateRange.end.toISOString());
+      }
+
+      const { data, error } = await query;
 
       if (error) {
         console.error('Error fetching rejection stats:', error);
