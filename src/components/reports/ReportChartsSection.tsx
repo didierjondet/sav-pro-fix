@@ -11,6 +11,7 @@ import { QuoteRejectionWidget } from '@/components/statistics/widgets/QuoteRejec
 import { MonthlyLateRateChart } from '@/components/statistics/widgets/MonthlyLateRateChart';
 import { useMonthlyStatistics } from '@/hooks/useMonthlyStatistics';
 import { useStatistics } from '@/hooks/useStatistics';
+import { useSatisfactionSurveys } from '@/hooks/useSatisfactionSurveys';
 import { Loader2 } from 'lucide-react';
 
 // Liste des widgets disponibles pour les rapports
@@ -51,6 +52,9 @@ export function ReportChartsSection({ selectedWidgets, dateRange }: ReportCharts
   const { data: previousYearData, loading: loadingPrevious } = useMonthlyStatistics(selectedPreviousYear);
   const statistics = useStatistics(statisticsPeriod);
   const loadingStats = statistics.loading;
+  
+  // Récupérer les vraies données de satisfaction
+  const satisfactionStats = useSatisfactionSurveys();
 
   // Filtrer les données mensuelles selon la plage sélectionnée
   const filteredMonthlyData = useMemo(() => {
@@ -128,21 +132,26 @@ export function ReportChartsSection({ selectedWidgets, dateRange }: ReportCharts
   const averageMargin = totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0;
   const totalSAV = filteredMonthlyData.reduce((sum, m) => sum + m.savCount, 0);
 
-  // Prepare SAV performance data
+  // Prepare SAV performance data - utiliser vraies données de satisfaction
   const performanceData = useMemo(() => {
     if (!statistics) return [];
     const avgTime = statistics.savStats?.averageTime || 0;
     const lateRate = statistics.savStats?.lateRate || 0;
     const total = statistics.savStats?.total || 0;
     
+    // Utiliser la vraie note de satisfaction (convertie en pourcentage)
+    const realSatisfaction = satisfactionStats.averageRating > 0 
+      ? (satisfactionStats.averageRating / 5) * 100 
+      : 0;
+    
     return [
       { metric: 'Rapidité', value: Math.min(100, 100 - (avgTime / 24) * 10), maxValue: 100, fullMark: 100 },
       { metric: 'Ponctualité', value: Math.max(0, 100 - lateRate), maxValue: 100, fullMark: 100 },
       { metric: 'Volume', value: Math.min(100, total > 0 ? 80 : 0), maxValue: 100, fullMark: 100 },
       { metric: 'Rentabilité', value: Math.min(100, Math.max(0, averageMargin * 2)), maxValue: 100, fullMark: 100 },
-      { metric: 'Satisfaction', value: 85, maxValue: 100, fullMark: 100 }
+      { metric: 'Satisfaction', value: realSatisfaction, maxValue: 100, fullMark: 100 }
     ];
-  }, [statistics, averageMargin]);
+  }, [statistics, averageMargin, satisfactionStats.averageRating]);
 
   const statusData = useMemo(() => {
     if (!statistics) return [];
@@ -156,19 +165,26 @@ export function ReportChartsSection({ selectedWidgets, dateRange }: ReportCharts
     }));
   }, [statistics]);
 
-  // Annual stats data - utiliser les données filtrées
+  // Annual stats data - utiliser les données filtrées avec vraies données satisfaction
   const annualStatsData = useMemo(() => {
+    const realSatisfaction = satisfactionStats.averageRating > 0 
+      ? (satisfactionStats.averageRating / 5) * 100 
+      : 0;
+    const realEfficiency = statistics?.savStats?.lateRate !== undefined 
+      ? Math.max(0, 100 - statistics.savStats.lateRate) 
+      : 0;
+    
     return filteredMonthlyData.map(m => ({
       month: MONTHS_FR[m.month - 1].slice(0, 3),
       revenue: m.revenue,
       savCount: m.savCount,
       averageTime: 0,
-      customerSatisfaction: 85,
+      customerSatisfaction: realSatisfaction,
       partsUsed: 0,
-      efficiency: 80,
+      efficiency: realEfficiency,
       profit: m.profit
     }));
-  }, [filteredMonthlyData]);
+  }, [filteredMonthlyData, satisfactionStats.averageRating, statistics?.savStats?.lateRate]);
 
   // Finance KPIs data - basé sur le mois sélectionné
   const currentMonthData = useMemo(() => {
@@ -216,51 +232,87 @@ export function ReportChartsSection({ selectedWidgets, dateRange }: ReportCharts
     };
   }, [currentYearData, previousYearData, selectedMonthIndex]);
 
-  // Revenue breakdown data
+  // Revenue breakdown data - utiliser les vraies données des catégories
   const revenueSources = useMemo(() => {
+    const categoryRevenue = statistics?.revenueByProductCategory || [];
     const total = totalRevenue || 1;
+    
+    if (categoryRevenue.length > 0) {
+      return categoryRevenue.slice(0, 5).map((cat) => ({
+        name: cat.category,
+        value: cat.revenue,
+        percentage: cat.percentage,
+        color: cat.color
+      }));
+    }
+    
+    // Fallback si pas de données
     return [
-      { name: 'Réparations', value: total * 0.6, percentage: 60, color: 'hsl(var(--primary))' },
-      { name: 'Pièces', value: total * 0.25, percentage: 25, color: 'hsl(var(--chart-2))' },
-      { name: 'Services', value: total * 0.15, percentage: 15, color: 'hsl(var(--chart-3))' },
+      { name: 'Aucune donnée', value: 0, percentage: 0, color: 'hsl(var(--muted))' },
     ];
-  }, [totalRevenue]);
+  }, [totalRevenue, statistics?.revenueByProductCategory]);
 
-  const serviceTypes = useMemo(() => [
-    { type: 'Écran', revenue: totalRevenue * 0.4, count: Math.floor(totalSAV * 0.4), averageValue: 89 },
-    { type: 'Batterie', revenue: totalRevenue * 0.3, count: Math.floor(totalSAV * 0.3), averageValue: 45 },
-    { type: 'Connecteur', revenue: totalRevenue * 0.2, count: Math.floor(totalSAV * 0.2), averageValue: 35 },
-    { type: 'Autres', revenue: totalRevenue * 0.1, count: Math.floor(totalSAV * 0.1), averageValue: 55 },
-  ], [totalRevenue, totalSAV]);
+  // Service types - utiliser les vrais appareils
+  const serviceTypes = useMemo(() => {
+    const topDevices = statistics?.topDevices || [];
+    
+    if (topDevices.length > 0) {
+      return topDevices.slice(0, 4).map((device) => ({
+        type: `${device.brand} ${device.model}`,
+        revenue: 0,
+        count: device.count,
+        averageValue: 0
+      }));
+    }
+    
+    return [];
+  }, [statistics?.topDevices]);
 
-  // Parts usage data
-  const partsData = useMemo(() => [
-    { name: 'Écran iPhone', value: 45, cost: totalExpenses * 0.3, frequency: 45, trend: 'up' as const, category: 'Écrans' },
-    { name: 'Batterie Samsung', value: 32, cost: totalExpenses * 0.2, frequency: 32, trend: 'stable' as const, category: 'Batteries' },
-    { name: 'Connecteur USB-C', value: 28, cost: totalExpenses * 0.15, frequency: 28, trend: 'up' as const, category: 'Connecteurs' },
-    { name: 'Vitre arrière', value: 22, cost: totalExpenses * 0.12, frequency: 22, trend: 'down' as const, category: 'Vitres' },
-    { name: 'Haut-parleur', value: 18, cost: totalExpenses * 0.1, frequency: 18, trend: 'stable' as const, category: 'Audio' },
-    { name: 'Caméra', value: 15, cost: totalExpenses * 0.08, frequency: 15, trend: 'up' as const, category: 'Caméras' },
-  ], [totalExpenses]);
+  // Parts usage data - utiliser les vraies pièces
+  const partsData = useMemo(() => {
+    const topParts = statistics?.topParts || [];
+    
+    if (topParts.length > 0) {
+      return topParts.slice(0, 6).map((part) => ({
+        name: part.name,
+        value: part.quantity,
+        cost: part.revenue,
+        frequency: part.quantity,
+        trend: 'stable' as const,
+        category: 'Pièces'
+      }));
+    }
+    
+    return [];
+  }, [statistics?.topParts]);
 
-  // Customer satisfaction data - basé sur les données filtrées
+  // Customer satisfaction data - utiliser les vraies données de satisfaction
   const satisfactionData = useMemo(() => {
-    const dataToUse = filteredMonthlyData.length > 0 ? filteredMonthlyData : currentYearData.slice(-6);
-    return dataToUse.map(m => ({
-      period: MONTHS_FR[m.month - 1].slice(0, 3),
-      rating: 4 + Math.random() * 0.8,
-      reviews: Math.floor(10 + Math.random() * 20),
-      response_rate: 70 + Math.random() * 20
-    }));
-  }, [filteredMonthlyData, currentYearData]);
+    // Utiliser les vraies données mensuelles de satisfaction
+    if (satisfactionStats.monthlyData && satisfactionStats.monthlyData.length > 0) {
+      return satisfactionStats.monthlyData;
+    }
+    
+    // Retourner tableau vide si pas de données
+    return [];
+  }, [satisfactionStats.monthlyData]);
 
-  const satisfactionBreakdown = useMemo(() => [
-    { stars: 5, count: 45, percentage: 45, color: 'hsl(var(--success))' },
-    { stars: 4, count: 30, percentage: 30, color: 'hsl(var(--primary))' },
-    { stars: 3, count: 15, percentage: 15, color: 'hsl(var(--warning))' },
-    { stars: 2, count: 7, percentage: 7, color: 'hsl(var(--destructive))' },
-    { stars: 1, count: 3, percentage: 3, color: 'hsl(var(--muted-foreground))' },
-  ], []);
+  // Satisfaction breakdown - utiliser les vraies données
+  const satisfactionBreakdown = useMemo(() => {
+    if (satisfactionStats.satisfactionBreakdown && satisfactionStats.satisfactionBreakdown.length > 0) {
+      return satisfactionStats.satisfactionBreakdown.map(item => ({
+        ...item,
+        color: item.stars === 5 ? 'hsl(var(--success))' : 
+               item.stars === 4 ? 'hsl(var(--primary))' : 
+               item.stars === 3 ? 'hsl(var(--warning))' : 
+               item.stars === 2 ? 'hsl(var(--destructive))' : 
+               'hsl(var(--muted-foreground))'
+      }));
+    }
+    
+    return [];
+  }, [satisfactionStats.satisfactionBreakdown]);
+
 
   const loading = loadingCurrent || loadingPrevious || loadingStats;
 
@@ -301,25 +353,38 @@ export function ReportChartsSection({ selectedWidgets, dateRange }: ReportCharts
         ) : null;
       
       case 'performance-trends':
+        // Calculer les vrais taux depuis les données
+        const realCompletionRate = statistics?.savStats?.total > 0 
+          ? Math.max(0, 100 - (statistics.savStats.lateRate || 0)) 
+          : 0;
+        const realCustomerSat = satisfactionStats.averageRating > 0 
+          ? (satisfactionStats.averageRating / 5) * 100 
+          : 0;
+        
         return statistics ? (
           <SAVPerformanceWidget
             performanceData={performanceData}
             statusData={statusData}
             totalSAV={statistics.savStats?.total || 0}
             averageTime={Math.round(statistics.savStats?.averageTime || 0)}
-            completionRate={80}
-            customerSatisfaction={85}
+            completionRate={Math.round(realCompletionRate)}
+            customerSatisfaction={Math.round(realCustomerSat)}
           />
         ) : null;
       
       case 'annual-stats':
+        // Calculer la vraie efficacité moyenne
+        const realAvgEfficiency = statistics?.savStats?.lateRate !== undefined 
+          ? Math.max(0, 100 - statistics.savStats.lateRate) 
+          : 0;
+        
         return annualStatsData.length > 0 ? (
           <AnnualStatsWidget
             monthlyData={annualStatsData}
             currentYear={selectedYear}
             totalRevenue={totalRevenue}
             totalSAV={totalSAV}
-            averageEfficiency={80}
+            averageEfficiency={Math.round(realAvgEfficiency)}
             yearOverYearGrowth={totalGrowth}
             bestPerformanceMonth={bestMonth}
             worstPerformanceMonth={worstMonth}
@@ -337,28 +402,34 @@ export function ReportChartsSection({ selectedWidgets, dateRange }: ReportCharts
         );
       
       case 'quote-rejections':
-        return <QuoteRejectionWidget />;
+        return <QuoteRejectionWidget dateRange={dateRange} />;
       
       case 'late-rate-chart':
-        return <MonthlyLateRateChart />;
+        return <MonthlyLateRateChart year={selectedYear} />;
       
       case 'revenue-breakdown':
+        // Trouver le top service depuis les vraies données
+        const topServiceName = serviceTypes.length > 0 ? serviceTypes[0].type : 'N/A';
+        
         return (
           <RevenueBreakdownWidget
             revenueSources={revenueSources}
             serviceTypes={serviceTypes}
             totalRevenue={totalRevenue}
-            topService="Réparation écran"
+            topService={topServiceName}
           />
         );
       
       case 'parts-usage-heatmap':
+        // Trouver la top catégorie depuis les vraies données
+        const topCategoryName = partsData.length > 0 ? partsData[0].name : 'N/A';
+        
         return (
           <PartsUsageHeatmapWidget
             partsData={partsData}
             totalParts={partsData.reduce((sum, p) => sum + p.value, 0)}
             totalCost={totalExpenses}
-            topCategory="Écrans"
+            topCategory={topCategoryName}
           />
         );
       
@@ -367,10 +438,10 @@ export function ReportChartsSection({ selectedWidgets, dateRange }: ReportCharts
           <CustomerSatisfactionWidget
             satisfactionData={satisfactionData}
             satisfactionBreakdown={satisfactionBreakdown}
-            averageRating={4.5}
-            totalReviews={156}
-            responseRate={78}
-            trend="up"
+            averageRating={satisfactionStats.averageRating || 0}
+            totalReviews={satisfactionStats.totalReviews || 0}
+            responseRate={satisfactionStats.responseRate || 0}
+            trend={satisfactionStats.trend || 'stable'}
           />
         );
       
