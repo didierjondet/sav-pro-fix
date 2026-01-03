@@ -136,9 +136,9 @@ export const RevenueBreakdownWidget = ({
             {/* Graphique en barres - Types de services */}
             <div className="space-y-4">
               <h4 className="text-sm font-medium text-center">Revenus par type de service</h4>
-              <div className="h-48">
+            <div className="h-48">
                 <ChartContainer config={chartConfig} className="h-full">
-                  <BarChart data={serviceTypes}>
+                  <BarChart data={serviceTypes.filter(s => s.revenue > 0)}>
                     <XAxis 
                       dataKey="type" 
                       tickLine={false} 
@@ -149,10 +149,16 @@ export const RevenueBreakdownWidget = ({
                       className="text-xs"
                     />
                     <YAxis 
-                      tickFormatter={(v) => `${Math.round(v/1000)}k€`}
+                      tickFormatter={(v) => {
+                        if (v >= 1000) {
+                          return `${Math.round(v/1000)}k€`;
+                        }
+                        return `${Math.round(v)}€`;
+                      }}
                       tickLine={false} 
                       axisLine={false}
                       className="text-xs"
+                      width={50}
                     />
                     <ChartTooltip 
                       content={<ChartTooltipContent />}

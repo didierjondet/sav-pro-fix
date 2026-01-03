@@ -477,8 +477,10 @@ export function ReportChartsSection({ selectedWidgets, dateRange, reportData }: 
         return <MonthlyLateRateChart year={selectedYear} />;
       
       case 'revenue-breakdown':
-        // Trouver le top service depuis les vraies données
-        const topServiceName = serviceTypes.length > 0 ? serviceTypes[0].type : 'N/A';
+        // Trouver le top service basé sur le revenu le plus élevé
+        const topServiceName = serviceTypes.length > 0 
+          ? serviceTypes.reduce((a, b) => a.revenue > b.revenue ? a : b).type 
+          : 'N/A';
         
         return (
           <RevenueBreakdownWidget
