@@ -40,6 +40,7 @@ export interface Quote {
   accepted_by?: 'shop' | 'client' | null;
   accepted_at?: string | null;
   sav_case_id?: string | null;
+  sav_type?: string | null;
 }
 
 export function useQuotes() {

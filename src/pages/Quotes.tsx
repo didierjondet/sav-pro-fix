@@ -10,6 +10,7 @@ import { useQuotes, Quote } from '@/hooks/useQuotes';
 import { useShop } from '@/hooks/useShop';
 import { useSMS } from '@/hooks/useSMS';
 import { useSAVCases } from '@/hooks/useSAVCases';
+import { useShopSAVTypes } from '@/hooks/useShopSAVTypes';
 import { QuoteForm } from '@/components/quotes/QuoteForm';
 import { QuoteView } from '@/components/quotes/QuoteView';
 import { QuoteActionDialog } from '@/components/dialogs/QuoteActionDialog';
@@ -65,11 +66,13 @@ export default function Quotes() {
   const [quoteToConvert, setQuoteToConvert] = useState<Quote | null>(null);
   const [editingQuote, setEditingQuote] = useState<Quote | null>(null);
   const [showQuoteActionDialog, setShowQuoteActionDialog] = useState<Quote | null>(null);
+  const [selectedSAVType, setSelectedSAVType] = useState<string>('');
   const { quotes, loading, createQuote, deleteQuote, updateQuote, archiveQuote, reactivateQuote } = useQuotes();
   const { createCase } = useSAVCases();
   const { sendQuoteNotification, sendSMS } = useSMS();
   const { shop } = useShop();
   const { toast } = useToast();
+  const { getAllTypes, getTypeInfo } = useShopSAVTypes();
 
   const formatCustomerDisplay = (name: string) => {
     if (!name) return '';
@@ -296,7 +299,7 @@ export default function Quotes() {
     }
   };
 
-  const convertQuoteToSAV = async (type: 'client' | 'external') => {
+  const convertQuoteToSAV = async (type: string) => {
     if (!quoteToConvert) return;
     try {
       // 0) Nettoyer les IDs invalides du devis AVANT toute opération
@@ -387,9 +390,10 @@ export default function Quotes() {
 
       const savCaseId = savResult.data.id;
 
-      // 4) Lier le SAV créé au devis original
+      // 4) Lier le SAV créé au devis original avec le type choisi
       await updateQuote(quoteToConvert.id, { 
-        sav_case_id: savCaseId 
+        sav_case_id: savCaseId,
+        sav_type: type
       });
 
       // 4) Traitement intelligent des pièces avec gestion du stock
@@ -546,11 +550,13 @@ export default function Quotes() {
       const { error: deleteErr } = await deleteQuote(quoteToConvert.id);
       if (deleteErr) throw deleteErr;
 
+      const typeInfo = getTypeInfo(type);
       toast({
         title: 'Conversion réussie',
-        description: `Devis ${quoteToConvert.quote_number} converti en SAV ${type} avec informations client.${cleanQuote.customer_phone ? ' SMS de suivi envoyé.' : ''}`,
+        description: `Devis ${quoteToConvert.quote_number} converti en ${typeInfo.label}.${cleanQuote.customer_phone ? ' SMS de suivi envoyé.' : ''}`,
       });
       setQuoteToConvert(null);
+      setSelectedSAVType('');
     } catch (error: any) {
       console.error('Erreur conversion devis -> SAV:', error);
       toast({ title: 'Erreur', description: error.message ?? 'Conversion impossible', variant: 'destructive' });
@@ -905,29 +911,36 @@ export default function Quotes() {
                                        PDF
                                      </Button>
                                      
-                                     {/* Bouton pour convertir en SAV */}
-                                     <Button 
-                                       variant="default" 
-                                       size="sm"
-                                       onClick={() => setQuoteToConvert(quote)}
-                                       className="bg-green-600 hover:bg-green-700"
-                                     >
-                                       <Plus className="h-4 w-4 mr-1" />
-                                       Convertir en SAV
-                                     </Button>
-                                      
-                                      {/* Plus besoin du bouton spécial car tous les acceptés utilisent maintenant le même statut */}
-                                      {quote.status === 'accepted' && !quote.sav_case_id && (
-                                        <div className="text-sm text-muted-foreground px-3 py-1 rounded bg-muted">
-                                          En attente de validation...
-                                        </div>
-                                      )}
-                                      
-                                      {quote.sav_case_id && (
-                                        <div className="text-sm text-muted-foreground px-3 py-1 rounded bg-muted">
-                                          SAV en cours...
-                                        </div>
-                                      )}
+                                     {/* Affichage conditionnel : Devis transformé ou bouton de conversion */}
+                                     {quote.sav_case_id ? (
+                                       <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-green-50 border border-green-200 dark:bg-green-950 dark:border-green-800">
+                                         <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
+                                         <span className="text-sm font-medium text-green-700 dark:text-green-300">
+                                           Devis transformé
+                                         </span>
+                                         <Badge 
+                                           variant="outline" 
+                                           className="ml-1"
+                                           style={{
+                                             backgroundColor: `${getTypeInfo(quote.sav_type || 'external').color}20`,
+                                             borderColor: getTypeInfo(quote.sav_type || 'external').color,
+                                             color: getTypeInfo(quote.sav_type || 'external').color
+                                           }}
+                                         >
+                                           {getTypeInfo(quote.sav_type || 'external').label}
+                                         </Badge>
+                                       </div>
+                                     ) : (
+                                       <Button 
+                                         variant="default" 
+                                         size="sm"
+                                         onClick={() => setQuoteToConvert(quote)}
+                                         className="bg-green-600 hover:bg-green-700"
+                                       >
+                                         <Plus className="h-4 w-4 mr-1" />
+                                         Convertir en SAV
+                                       </Button>
+                                     )}
                                       
                                       {/* Bouton d'archivage */}
                                       <Button 
@@ -1156,8 +1169,16 @@ export default function Quotes() {
                 hasPhone={!!showQuoteActionDialog?.customer_phone}
               />
 
-              {/* Dialog de conversion en SAV */}
-              <Dialog open={!!quoteToConvert} onOpenChange={(open) => { if (!open) setQuoteToConvert(null); }}>
+              {/* Dialog de conversion en SAV avec sélection du type */}
+              <Dialog 
+                open={!!quoteToConvert} 
+                onOpenChange={(open) => { 
+                  if (!open) {
+                    setQuoteToConvert(null);
+                    setSelectedSAVType('');
+                  }
+                }}
+              >
                 <DialogContent>
                   <DialogHeader>
                     <DialogTitle>Convertir en SAV</DialogTitle>
@@ -1165,11 +1186,49 @@ export default function Quotes() {
                       Choisissez le type de SAV à créer pour le devis "{quoteToConvert?.quote_number}".
                     </DialogDescription>
                   </DialogHeader>
-                  <div className="flex gap-3 justify-end">
-                    <Button variant="outline" onClick={() => setQuoteToConvert(null)}>Annuler</Button>
-                    <Button onClick={() => convertQuoteToSAV('client')} aria-describedby="convert-sav-desc">SAV Client</Button>
-                    <Button onClick={() => convertQuoteToSAV('external')} aria-describedby="convert-sav-desc">SAV Externe</Button>
+                  
+                  <div className="py-4">
+                    <label className="text-sm font-medium mb-2 block">Type de SAV</label>
+                    <Select value={selectedSAVType} onValueChange={setSelectedSAVType}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Sélectionnez un type de SAV..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {getAllTypes().map((type) => (
+                          <SelectItem key={type.value} value={type.value}>
+                            <div className="flex items-center gap-2">
+                              <div 
+                                className="w-3 h-3 rounded-full" 
+                                style={{ backgroundColor: type.color }}
+                              />
+                              {type.label}
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
+                  
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => {
+                      setQuoteToConvert(null);
+                      setSelectedSAVType('');
+                    }}>
+                      Annuler
+                    </Button>
+                    <Button 
+                      onClick={() => {
+                        if (selectedSAVType) {
+                          convertQuoteToSAV(selectedSAVType);
+                        }
+                      }}
+                      disabled={!selectedSAVType}
+                      className="bg-green-600 hover:bg-green-700"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Créer le SAV
+                    </Button>
+                  </DialogFooter>
                 </DialogContent>
               </Dialog>
             </div>
