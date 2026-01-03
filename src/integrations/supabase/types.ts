@@ -851,6 +851,7 @@ export type Database = {
           rejection_reason: string | null
           repair_notes: string | null
           sav_case_id: string | null
+          sav_type: string | null
           shop_id: string
           sku: string | null
           sms_sent_at: string | null
@@ -880,6 +881,7 @@ export type Database = {
           rejection_reason?: string | null
           repair_notes?: string | null
           sav_case_id?: string | null
+          sav_type?: string | null
           shop_id: string
           sku?: string | null
           sms_sent_at?: string | null
@@ -909,6 +911,7 @@ export type Database = {
           rejection_reason?: string | null
           repair_notes?: string | null
           sav_case_id?: string | null
+          sav_type?: string | null
           shop_id?: string
           sku?: string | null
           sms_sent_at?: string | null
