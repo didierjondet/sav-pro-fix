@@ -323,7 +323,7 @@ export function Sidebar({
                               }}
                               className="flex items-center justify-between p-1 text-sm hover:bg-accent hover:text-accent-foreground rounded-md transition-colors w-full cursor-pointer"
                             >
-                              <span className="text-muted-foreground">
+                              <span className="text-muted-foreground truncate flex-1 text-left">
                                 {typeInfo.label}
                               </span>
                               <Badge variant="secondary" className="ml-2" style={{
