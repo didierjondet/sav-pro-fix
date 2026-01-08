@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useShop } from './useShop';
 import { format, subDays, subMonths, startOfDay, endOfDay, startOfMonth } from 'date-fns';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface ProductCategoryRevenue {
   category: string;
@@ -106,58 +107,73 @@ export function useStatistics(
     const modelUpper = (model || '').toUpperCase().trim();
     const combined = `${brandUpper} ${modelUpper}`;
     
-    // Consoles de jeux
-    if (brandUpper === 'SONY' && (modelUpper.includes('PS') || modelUpper.includes('PLAYSTATION'))) {
+    // ===== CONSOLES DE JEUX =====
+    if (['MICROSOFT', 'XBOX', 'NINTENDO'].includes(brandUpper)) return 'Consoles';
+    if (brandUpper === 'SONY' && (modelUpper.includes('PS') || modelUpper.includes('PLAYSTATION') || modelUpper.includes('DUALSENSE') || modelUpper.includes('DUALSHOCK'))) {
       return 'Consoles';
     }
-    if (['MICROSOFT', 'XBOX', 'NINTENDO'].includes(brandUpper)) {
-      return 'Consoles';
-    }
-    if (combined.includes('PS4') || combined.includes('PS5') || combined.includes('PS3') || 
-        combined.includes('XBOX') || combined.includes('SWITCH') || combined.includes('NINTENDO') ||
-        combined.includes('PLAYSTATION') || modelUpper.includes('CONSOLE')) {
+    if (combined.match(/PS[345]|XBOX|SWITCH|NINTENDO|PLAYSTATION|CONSOLE|MANETTE|DUALSENSE|DUALSHOCK|JOY-?CON/i)) {
       return 'Consoles';
     }
     
-    // Informatique (PC, laptops, MacBooks)
-    if (['TOSHIBA', 'HP', 'LENOVO', 'DELL', 'ASUS', 'ACER', 'MSI', 'GIGABYTE', 'RAZER'].includes(brandUpper)) {
-      return 'Informatique';
-    }
-    if (modelUpper.includes('MACBOOK') || modelUpper.includes('IMAC') || modelUpper.includes('MAC MINI')) {
-      return 'Informatique';
-    }
-    if (combined.includes('PC') || combined.includes('LAPTOP') || combined.includes('NOTEBOOK') ||
-        combined.includes('PROBOOK') || combined.includes('IDEAPAD') || combined.includes('VIVOBOOK') ||
-        combined.includes('THINKPAD') || combined.includes('PAVILION') || combined.includes('INSPIRON') ||
-        combined.includes('ORDINATEUR')) {
+    // ===== INFORMATIQUE (PC, Laptops, Tours, Accessoires PC) =====
+    // Marques informatique pures
+    const pcBrands = ['TOSHIBA', 'HP', 'LENOVO', 'DELL', 'ASUS', 'ACER', 'MSI', 'GIGABYTE', 'RAZER', 
+                      'CORSAIR', 'LOGITECH', 'COOLER MASTER', 'NZXT', 'THERMALTAKE', 'OMEN', 'ALIENWARE',
+                      'PREDATOR', 'REPUBLIC OF GAMERS', 'ROG', 'STEELSERIES', 'HYPERX', 'ROCCAT',
+                      'EVGA', 'ZOTAC', 'SAPPHIRE', 'ASROCK', 'BIOSTAR', 'PALIT', 'PNY', 'INNO3D'];
+    if (pcBrands.includes(brandUpper)) {
       return 'Informatique';
     }
     
-    // Tablettes
-    if (modelUpper.includes('IPAD') || modelUpper.includes('TAB') || modelUpper.includes('TABLETTE') ||
-        modelUpper.includes('GALAXY TAB') || modelUpper.includes('SURFACE')) {
-      return 'Tablettes';
+    // Modèles Mac (informatique)
+    if (modelUpper.match(/MACBOOK|IMAC|MAC MINI|MAC PRO|MAC STUDIO/)) return 'Informatique';
+    
+    // Mots-clés informatique génériques
+    if (combined.match(/PC|LAPTOP|NOTEBOOK|TOUR|GAMER|PROBOOK|IDEAPAD|VIVOBOOK|THINKPAD|PAVILION|INSPIRON|ORDINATEUR|DESKTOP|CLAVIER|SOURIS|ECRAN|MONITEUR|CARTE GRAPHIQUE|GPU|CPU|PROCESSEUR|RAM|SSD|HDD|DISQUE DUR|ALIMENTATION|BOITIER|VENTILATEUR|WATERCOOLING|GAMING PC|TOUR GAMER|STATION|WORKSTATION/i)) {
+      return 'Informatique';
     }
     
-    // Téléphones (par défaut pour les marques connues de smartphones)
-    if (['APPLE', 'SAMSUNG', 'HUAWEI', 'XIAOMI', 'OPPO', 'GOOGLE', 'ONEPLUS', 'HONOR', 
-         'REALME', 'VIVO', 'MOTOROLA', 'NOKIA', 'LG', 'SONY', 'ASUS', 'ZTE', 'WIKO'].includes(brandUpper)) {
-      // Si c'est ASUS mais pas un PC, vérifier si c'est un téléphone
-      if (brandUpper === 'ASUS' && !modelUpper.includes('PHONE') && !modelUpper.includes('ROG PHONE')) {
-        // Pourrait être un PC, laisser passer pour autre vérification
-      } else if (brandUpper === 'SONY' && !modelUpper.includes('XPERIA')) {
-        // Pourrait être autre chose (PS, etc.)
-      } else {
-        return 'Téléphones';
-      }
-    }
-    if (modelUpper.includes('IPHONE') || modelUpper.includes('GALAXY') || modelUpper.includes('REDMI') ||
-        modelUpper.includes('PIXEL') || modelUpper.includes('MATE') || modelUpper.includes('XPERIA') ||
-        modelUpper.includes('PHONE') || modelUpper.includes('SMARTPHONE')) {
+    // ===== TABLETTES =====
+    if (modelUpper.match(/IPAD|GALAXY TAB|TAB S\d|TAB A\d|SURFACE|TABLETTE|MEDIAPAD|MATEPAD/i)) return 'Tablettes';
+    
+    // ===== TÉLÉPHONES =====
+    // Marques téléphones
+    const phoneBrands = ['APPLE', 'SAMSUNG', 'HUAWEI', 'XIAOMI', 'OPPO', 'GOOGLE', 'ONEPLUS', 
+                         'HONOR', 'REALME', 'VIVO', 'MOTOROLA', 'NOKIA', 'LG', 'WIKO', 'FAIRPHONE',
+                         'NOTHING', 'POCO', 'REDMI', 'INFINIX', 'TECNO', 'ZTE', 'ALCATEL', 'DORO',
+                         'CROSSCALL', 'BLACKVIEW', 'CUBOT', 'UMIDIGI', 'OUKITEL'];
+    
+    // OnePlus (marque "ONE" ou "ONEPLUS")
+    if (brandUpper === 'ONE' || brandUpper === 'ONEPLUS' || combined.includes('ONEPLUS')) {
       return 'Téléphones';
     }
     
-    // Autres (tout ce qui n'est pas identifié)
+    // iPhones - Patterns courants
+    if (modelUpper.match(/IPHONE|^[0-9]+ PRO|^XS|^XR|^X$|^SE$|^MINI$|^PRO MAX$/i)) {
+      if (brandUpper === 'APPLE' || brandUpper === '') return 'Téléphones';
+    }
+    
+    // Samsung - distinguer téléphones des tablettes
+    if (brandUpper === 'SAMSUNG') {
+      if (modelUpper.match(/TAB|TABLETTE/i)) return 'Tablettes';
+      if (modelUpper.match(/GALAXY|^S\d|^A\d|^M\d|^F\d|^Z FOLD|^Z FLIP|NOTE|ULTRA/i)) return 'Téléphones';
+    }
+    
+    // Autres marques téléphones
+    if (phoneBrands.includes(brandUpper)) {
+      // Vérifier que ce n'est pas un PC ou tablette
+      if (!modelUpper.match(/MACBOOK|IMAC|IPAD|TAB|PC|LAPTOP/i)) {
+        return 'Téléphones';
+      }
+    }
+    
+    // Mots-clés téléphones génériques
+    if (modelUpper.match(/GALAXY S|GALAXY A|GALAXY M|GALAXY Z|REDMI|PIXEL|MATE|XPERIA|PHONE|SMARTPHONE|POCO|FIND X|RENO|MI \d|NOTE \d/i)) {
+      return 'Téléphones';
+    }
+    
+    // ===== AUTRES =====
     return 'Autres';
   };
 
@@ -613,6 +629,39 @@ export function useStatistics(
 
     fetchStatistics();
   }, [shop?.id, period, filters?.savStatuses?.join(','), filters?.savTypes?.join(',')]);
+
+  // Abonnement temps réel pour rafraîchir automatiquement les statistiques
+  const queryClient = useQueryClient();
+  
+  useEffect(() => {
+    if (!shop?.id) return;
+    
+    const channel = supabase
+      .channel(`statistics-refresh-${shop.id}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'sav_cases', filter: `shop_id=eq.${shop.id}` },
+        () => {
+          console.log('🔄 SAV changed, refreshing statistics...');
+          // Invalider les queries liées aux statistiques
+          queryClient.invalidateQueries({ queryKey: ['statistics'] });
+          queryClient.invalidateQueries({ queryKey: ['monthly-statistics'] });
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'sav_parts' },
+        () => {
+          console.log('🔄 SAV parts changed, refreshing statistics...');
+          queryClient.invalidateQueries({ queryKey: ['statistics'] });
+        }
+      )
+      .subscribe();
+      
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [shop?.id, queryClient]);
 
   return { ...data, loading };
 }

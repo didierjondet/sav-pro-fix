@@ -326,31 +326,40 @@ export const DragDropStatistics = ({ period, onPeriodChange }: DragDropStatistic
         );
 
       case 'revenue-breakdown':
-        // Utiliser les vraies données de catégorisation des produits
-        const realRevenueSources = revenueByProductCategory.map(cat => ({
-          name: cat.category,
-          value: cat.revenue,
-          percentage: cat.percentage,
-          color: cat.color
-        }));
-
-        const realServiceTypes = revenueByProductCategory.map(cat => ({
-          type: cat.category,
-          revenue: cat.revenue,
-          count: cat.count,
-          averageValue: cat.count > 0 ? cat.revenue / cat.count : 0
-        }));
-
-        const topCategory = revenueByProductCategory[0]?.category || 'N/A';
-        
         return (
           <div className={className}>
-            <RevenueBreakdownWidget 
-              revenueSources={realRevenueSources}
-              serviceTypes={realServiceTypes}
-              totalRevenue={revenue}
-              topService={topCategory}
-            />
+            <StatisticsWidgetContainer module={module} period={period}>
+              {({ stats }) => {
+                const { revenueByProductCategory: catData, revenue: totalRev } = stats;
+                
+                const realRevenueSources = catData.map(cat => ({
+                  name: cat.category,
+                  value: cat.revenue,
+                  percentage: cat.percentage,
+                  color: cat.color
+                }));
+
+                const realServiceTypes = catData.map(cat => ({
+                  type: cat.category,
+                  revenue: cat.revenue,
+                  count: cat.count,
+                  averageValue: cat.count > 0 ? cat.revenue / cat.count : 0
+                }));
+
+                const topCategory = catData.length > 0 
+                  ? catData.reduce((a, b) => a.revenue > b.revenue ? a : b).category 
+                  : 'N/A';
+                
+                return (
+                  <RevenueBreakdownWidget 
+                    revenueSources={realRevenueSources}
+                    serviceTypes={realServiceTypes}
+                    totalRevenue={totalRev}
+                    topService={topCategory}
+                  />
+                );
+              }}
+            </StatisticsWidgetContainer>
           </div>
         );
 
