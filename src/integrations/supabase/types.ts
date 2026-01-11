@@ -1625,6 +1625,56 @@ export type Database = {
         }
         Relationships: []
       }
+      shop_suppliers: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_enabled: boolean | null
+          last_sync_at: string | null
+          password_encrypted: string | null
+          price_coefficient: number | null
+          shop_id: string
+          supplier_name: string
+          supplier_url: string
+          updated_at: string | null
+          username: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_enabled?: boolean | null
+          last_sync_at?: string | null
+          password_encrypted?: string | null
+          price_coefficient?: number | null
+          shop_id: string
+          supplier_name: string
+          supplier_url: string
+          updated_at?: string | null
+          username?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_enabled?: boolean | null
+          last_sync_at?: string | null
+          password_encrypted?: string | null
+          price_coefficient?: number | null
+          shop_id?: string
+          supplier_name?: string
+          supplier_url?: string
+          updated_at?: string | null
+          username?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shop_suppliers_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       shops: {
         Row: {
           active_sav_count: number | null
