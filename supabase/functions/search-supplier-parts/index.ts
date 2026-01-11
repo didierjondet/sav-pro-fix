@@ -34,17 +34,17 @@ function roundPrice(price: number): number {
   return Math.ceil(price / 10) * 10;
 }
 
-// Scrape Mobilax using Firecrawl
-async function scrapeMobilax(
-  query: string,
+// Extract products from scraped content using LLM-style extraction via JSON format
+async function scrapeWithJsonExtraction(
+  searchUrl: string,
+  supplierName: string,
   config: SupplierConfig,
   firecrawlApiKey: string
 ): Promise<SupplierPart[]> {
-  const searchUrl = `https://www.mobilax.fr/recherche?controller=search&s=${encodeURIComponent(query)}`;
-  
-  console.log('Scraping Mobilax:', searchUrl);
+  console.log(`Scraping ${supplierName}:`, searchUrl);
   
   try {
+    // Use Firecrawl with JSON extraction for structured data
     const response = await fetch('https://api.firecrawl.dev/v1/scrape', {
       method: 'POST',
       headers: {
@@ -53,181 +53,199 @@ async function scrapeMobilax(
       },
       body: JSON.stringify({
         url: searchUrl,
-        formats: ['markdown', 'html'],
-        onlyMainContent: true,
-        waitFor: 2000,
+        formats: [
+          'markdown',
+          {
+            type: 'json',
+            prompt: `Extract all products from this page. For each product, extract:
+- name: the product name/title
+- price: the price in euros (as a number, without € symbol)
+- reference: the product reference/SKU if available
+- availability: whether it's in stock or not
+- imageUrl: the product image URL if available
+- url: the product page URL if available
+
+Return an array of products. Include ALL products visible on the page, even partial matches.`
+          }
+        ],
+        onlyMainContent: false,
+        waitFor: 3000,
       }),
     });
 
     const data = await response.json();
     
     if (!response.ok || !data.success) {
-      console.error('Firecrawl error for Mobilax:', data);
-      return [];
+      console.error(`Firecrawl error for ${supplierName}:`, data);
+      // Fallback to markdown parsing
+      return parseMarkdownResults(data.data?.markdown || '', supplierName, config);
     }
 
-    // Parse the HTML/markdown to extract products
-    const parts = parseMobilaxResults(data.data?.html || data.data?.markdown || '', config);
-    return parts;
+    // Try to use JSON extraction first
+    const jsonData = data.data?.json;
+    if (jsonData) {
+      console.log(`JSON extraction successful for ${supplierName}:`, JSON.stringify(jsonData).substring(0, 500));
+      return parseJsonResults(jsonData, supplierName, config);
+    }
+
+    // Fallback to markdown parsing
+    console.log(`Falling back to markdown parsing for ${supplierName}`);
+    return parseMarkdownResults(data.data?.markdown || '', supplierName, config);
   } catch (error) {
-    console.error('Error scraping Mobilax:', error);
+    console.error(`Error scraping ${supplierName}:`, error);
     return [];
   }
 }
 
-// Parse Mobilax results from HTML
-function parseMobilaxResults(content: string, config: SupplierConfig): SupplierPart[] {
+// Parse JSON extraction results
+function parseJsonResults(jsonData: any, supplierName: string, config: SupplierConfig): SupplierPart[] {
   const parts: SupplierPart[] = [];
   
-  // Simple regex-based extraction (adjust based on actual HTML structure)
-  // This is a simplified approach - in production, you'd use a proper HTML parser
-  const productPattern = /<div[^>]*class="[^"]*product[^"]*"[^>]*>([\s\S]*?)<\/div>/gi;
-  const pricePattern = /(\d+[.,]\d{2})\s*€/g;
-  const titlePattern = /<h[23][^>]*>(.*?)<\/h[23]>/gi;
+  // Handle various JSON structures
+  let products: any[] = [];
   
-  // Extract products from content
-  const products = content.match(productPattern) || [];
-  
-  // If no structured products found, try to extract from markdown
-  if (products.length === 0) {
-    // Parse markdown format
-    const lines = content.split('\n');
-    let currentProduct: Partial<SupplierPart> | null = null;
-    
-    for (const line of lines) {
-      // Look for product names (usually headers or bold text)
-      if (line.match(/^#+\s+(.+)/) || line.match(/\*\*(.+)\*\*/)) {
-        if (currentProduct?.name && currentProduct?.purchasePrice) {
-          parts.push(currentProduct as SupplierPart);
-        }
-        const name = line.replace(/^#+\s+/, '').replace(/\*\*/g, '').trim();
-        if (name && !name.includes('Résultat') && !name.includes('recherche')) {
-          currentProduct = {
-            name,
-            reference: '',
-            supplier: 'mobilax',
-            purchasePrice: 0,
-            publicPrice: 0,
-            availability: 'En stock',
-          };
-        }
+  if (Array.isArray(jsonData)) {
+    products = jsonData;
+  } else if (jsonData?.products && Array.isArray(jsonData.products)) {
+    products = jsonData.products;
+  } else if (jsonData?.items && Array.isArray(jsonData.items)) {
+    products = jsonData.items;
+  } else if (typeof jsonData === 'object') {
+    // Try to find an array in the object
+    for (const key of Object.keys(jsonData)) {
+      if (Array.isArray(jsonData[key]) && jsonData[key].length > 0) {
+        products = jsonData[key];
+        break;
       }
-      
-      // Look for prices
-      const priceMatch = line.match(/(\d+)[.,](\d{2})\s*€/);
-      if (priceMatch && currentProduct) {
-        const price = parseFloat(`${priceMatch[1]}.${priceMatch[2]}`);
-        if (!currentProduct.purchasePrice) {
-          currentProduct.purchasePrice = price;
-          currentProduct.publicPrice = roundPrice(price * config.price_coefficient);
-        }
-      }
-      
-      // Look for references
-      const refMatch = line.match(/[Rr]éf(?:érence)?\.?\s*:?\s*([A-Z0-9-]+)/);
-      if (refMatch && currentProduct) {
-        currentProduct.reference = refMatch[1];
-      }
-    }
-    
-    if (currentProduct?.name && currentProduct?.purchasePrice) {
-      parts.push(currentProduct as SupplierPart);
     }
   }
   
-  return parts.slice(0, 10); // Limit to 10 results
-}
-
-// Scrape Utopya using Firecrawl
-async function scrapeUtopya(
-  query: string,
-  config: SupplierConfig,
-  firecrawlApiKey: string
-): Promise<SupplierPart[]> {
-  const searchUrl = `https://www.utopya.fr/recherche?controller=search&s=${encodeURIComponent(query)}`;
-  
-  console.log('Scraping Utopya:', searchUrl);
-  
-  try {
-    const response = await fetch('https://api.firecrawl.dev/v1/scrape', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${firecrawlApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        url: searchUrl,
-        formats: ['markdown', 'html'],
-        onlyMainContent: true,
-        waitFor: 2000,
-      }),
+  for (const product of products) {
+    if (!product || typeof product !== 'object') continue;
+    
+    const name = product.name || product.title || product.productName || '';
+    if (!name) continue;
+    
+    // Parse price from various formats
+    let price = 0;
+    const rawPrice = product.price || product.prix || product.cost || 0;
+    if (typeof rawPrice === 'number') {
+      price = rawPrice;
+    } else if (typeof rawPrice === 'string') {
+      const priceMatch = rawPrice.match(/(\d+)[.,]?(\d*)/);
+      if (priceMatch) {
+        price = parseFloat(`${priceMatch[1]}.${priceMatch[2] || '00'}`);
+      }
+    }
+    
+    if (price <= 0) continue; // Skip products without valid price
+    
+    parts.push({
+      name: name.trim(),
+      reference: (product.reference || product.ref || product.sku || '').toString(),
+      supplier: supplierName,
+      purchasePrice: price,
+      publicPrice: roundPrice(price * config.price_coefficient),
+      availability: product.availability || product.stock || 'En stock',
+      imageUrl: product.imageUrl || product.image || undefined,
+      url: product.url || product.link || undefined,
     });
-
-    const data = await response.json();
-    
-    if (!response.ok || !data.success) {
-      console.error('Firecrawl error for Utopya:', data);
-      return [];
-    }
-
-    // Parse the HTML/markdown to extract products
-    const parts = parseUtopyaResults(data.data?.html || data.data?.markdown || '', config);
-    return parts;
-  } catch (error) {
-    console.error('Error scraping Utopya:', error);
-    return [];
   }
+  
+  return parts.slice(0, 20);
 }
 
-// Parse Utopya results from HTML
-function parseUtopyaResults(content: string, config: SupplierConfig): SupplierPart[] {
+// Parse markdown results (fallback method)
+function parseMarkdownResults(content: string, supplierName: string, config: SupplierConfig): SupplierPart[] {
   const parts: SupplierPart[] = [];
   
-  // Parse markdown format similar to Mobilax
-  const lines = content.split('\n');
-  let currentProduct: Partial<SupplierPart> | null = null;
+  if (!content || content.trim() === '') {
+    console.log(`No markdown content for ${supplierName}`);
+    return parts;
+  }
   
-  for (const line of lines) {
-    // Look for product names
-    if (line.match(/^#+\s+(.+)/) || line.match(/\*\*(.+)\*\*/)) {
-      if (currentProduct?.name && currentProduct?.purchasePrice) {
-        parts.push(currentProduct as SupplierPart);
-      }
-      const name = line.replace(/^#+\s+/, '').replace(/\*\*/g, '').trim();
-      if (name && !name.includes('Résultat') && !name.includes('recherche')) {
-        currentProduct = {
-          name,
-          reference: '',
-          supplier: 'utopya',
-          purchasePrice: 0,
-          publicPrice: 0,
-          availability: 'En stock',
-        };
+  console.log(`Parsing markdown for ${supplierName}, content length: ${content.length}`);
+  
+  // Split content into potential product blocks
+  const blocks = content.split(/\n{2,}/);
+  
+  for (const block of blocks) {
+    // Skip navigation, headers, footers
+    if (block.includes('Menu') || block.includes('Panier') || block.includes('Connexion') ||
+        block.includes('©') || block.includes('Cookie') || block.includes('newsletter')) {
+      continue;
+    }
+    
+    // Look for price pattern
+    const priceMatches = block.match(/(\d+)[.,](\d{2})\s*€/g);
+    if (!priceMatches || priceMatches.length === 0) continue;
+    
+    // Extract price
+    const priceMatch = priceMatches[0].match(/(\d+)[.,](\d{2})/);
+    if (!priceMatch) continue;
+    
+    const price = parseFloat(`${priceMatch[1]}.${priceMatch[2]}`);
+    if (price <= 0 || price > 2000) continue; // Sanity check
+    
+    // Extract product name - look for bold text, headers, or first significant line
+    let name = '';
+    
+    // Try to find product name from headers or bold
+    const headerMatch = block.match(/^#+\s*(.+)/m);
+    const boldMatch = block.match(/\*\*([^*]+)\*\*/);
+    const linkMatch = block.match(/\[([^\]]+)\]/);
+    
+    if (headerMatch) {
+      name = headerMatch[1].trim();
+    } else if (boldMatch) {
+      name = boldMatch[1].trim();
+    } else if (linkMatch) {
+      name = linkMatch[1].trim();
+    } else {
+      // Take first line that looks like a product name
+      const lines = block.split('\n');
+      for (const line of lines) {
+        const cleanLine = line.replace(/[#*\[\]]/g, '').trim();
+        if (cleanLine.length > 10 && cleanLine.length < 200 && 
+            !cleanLine.includes('€') && !cleanLine.match(/^\d+$/)) {
+          name = cleanLine;
+          break;
+        }
       }
     }
     
-    // Look for prices
-    const priceMatch = line.match(/(\d+)[.,](\d{2})\s*€/);
-    if (priceMatch && currentProduct) {
-      const price = parseFloat(`${priceMatch[1]}.${priceMatch[2]}`);
-      if (!currentProduct.purchasePrice) {
-        currentProduct.purchasePrice = price;
-        currentProduct.publicPrice = roundPrice(price * config.price_coefficient);
-      }
+    if (!name || name.length < 5) continue;
+    
+    // Clean up name
+    name = name.replace(/\s+/g, ' ').trim();
+    
+    // Skip if it looks like navigation or generic text
+    if (name.toLowerCase().includes('résultat') || 
+        name.toLowerCase().includes('recherche') ||
+        name.toLowerCase().includes('ajouter') ||
+        name.toLowerCase().includes('voir plus')) {
+      continue;
     }
     
-    // Look for references
-    const refMatch = line.match(/[Rr]éf(?:érence)?\.?\s*:?\s*([A-Z0-9-]+)/);
-    if (refMatch && currentProduct) {
-      currentProduct.reference = refMatch[1];
+    // Extract reference if present
+    let reference = '';
+    const refMatch = block.match(/[Rr]éf(?:érence)?\.?\s*:?\s*([A-Z0-9-]+)/i);
+    if (refMatch) {
+      reference = refMatch[1];
     }
+    
+    parts.push({
+      name,
+      reference,
+      supplier: supplierName,
+      purchasePrice: price,
+      publicPrice: roundPrice(price * config.price_coefficient),
+      availability: block.toLowerCase().includes('rupture') ? 'Rupture de stock' : 'En stock',
+    });
   }
   
-  if (currentProduct?.name && currentProduct?.purchasePrice) {
-    parts.push(currentProduct as SupplierPart);
-  }
-  
-  return parts.slice(0, 10); // Limit to 10 results
+  console.log(`Found ${parts.length} products from markdown for ${supplierName}`);
+  return parts.slice(0, 20);
 }
 
 Deno.serve(async (req) => {
@@ -283,33 +301,34 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Search across suppliers
-    const allParts: SupplierPart[] = [];
+    // Search across suppliers in parallel
+    const searchPromises: Promise<SupplierPart[]>[] = [];
+    
+    const supplierUrls: Record<string, string> = {
+      mobilax: 'https://www.mobilax.fr/recherche?controller=search&s=',
+      utopya: 'https://www.utopya.fr/recherche?controller=search&s=',
+    };
 
     for (const supplierName of suppliers) {
       const config = supplierConfigs?.find(c => c.supplier_name === supplierName) || {
+        id: '',
         supplier_name: supplierName,
+        supplier_url: supplierUrls[supplierName] || '',
+        username: null,
+        password_encrypted: null,
         price_coefficient: 1.5,
         is_enabled: true,
       } as SupplierConfig;
 
       if (!config.is_enabled) continue;
 
-      let parts: SupplierPart[] = [];
-
-      switch (supplierName) {
-        case 'mobilax':
-          parts = await scrapeMobilax(searchQuery, config, firecrawlApiKey);
-          break;
-        case 'utopya':
-          parts = await scrapeUtopya(searchQuery, config, firecrawlApiKey);
-          break;
-        default:
-          console.log(`Unknown supplier: ${supplierName}`);
-      }
-
-      allParts.push(...parts);
+      const searchUrl = `${supplierUrls[supplierName]}${encodeURIComponent(searchQuery)}`;
+      searchPromises.push(scrapeWithJsonExtraction(searchUrl, supplierName, config, firecrawlApiKey));
     }
+
+    // Wait for all searches to complete
+    const results = await Promise.all(searchPromises);
+    const allParts = results.flat();
 
     console.log(`Found ${allParts.length} parts for query: ${searchQuery}`);
 

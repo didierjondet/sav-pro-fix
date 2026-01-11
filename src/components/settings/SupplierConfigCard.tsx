@@ -54,6 +54,18 @@ export function SupplierConfigCard({
   };
 
   const handleTest = async () => {
+    // Sauvegarder d'abord avant de tester
+    if (hasChanges) {
+      onSave({
+        supplier_name: name,
+        supplier_url: url,
+        username: username || null,
+        password_encrypted: password || null,
+        price_coefficient: coefficient,
+        is_enabled: isEnabled,
+      });
+    }
+    
     setIsTesting(true);
     await onTestConnection(name);
     setIsTesting(false);
