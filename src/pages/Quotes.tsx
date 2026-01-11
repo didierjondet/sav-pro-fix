@@ -12,6 +12,7 @@ import { useSMS } from '@/hooks/useSMS';
 import { useSAVCases } from '@/hooks/useSAVCases';
 import { useShopSAVTypes } from '@/hooks/useShopSAVTypes';
 import { QuoteForm } from '@/components/quotes/QuoteForm';
+import { SupplierPartsSearch } from '@/components/quotes/SupplierPartsSearch';
 import { QuoteView } from '@/components/quotes/QuoteView';
 import { QuoteActionDialog } from '@/components/dialogs/QuoteActionDialog';
 import { generateQuotePDF } from '@/utils/pdfGenerator';
@@ -785,6 +786,9 @@ export default function Quotes() {
                       Nouveau devis
                     </Button>
                   </div>
+
+                  {/* Zone de recherche fournisseurs */}
+                  <SupplierPartsSearch />
 
                   {/* Barre de recherche */}
                   <div className="mb-6">

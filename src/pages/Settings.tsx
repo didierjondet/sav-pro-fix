@@ -29,6 +29,7 @@ import {
   MessageSquare,
   Monitor,
   Mail,
+  Truck,
   Upload,
   Tag,
   Package,
@@ -67,6 +68,8 @@ import { useMenuPermissions } from '@/hooks/useMenuPermissions';
 import { useNotificationSound } from '@/hooks/useNotificationSound';
 import { supabase } from '@/integrations/supabase/client';
 import * as XLSX from 'xlsx';
+import { SupplierConfigCard } from '@/components/settings/SupplierConfigCard';
+import { useSuppliers } from '@/hooks/useSuppliers';
 
 interface Profile {
   id: string;
@@ -120,6 +123,13 @@ export default function Settings() {
   const { statuses, loading: statusesLoading, refetch: refetchStatuses } = useShopSAVStatuses();
   const { types: savTypes, loading: savTypesLoading, refetch: refetchSavTypes } = useShopSAVTypes();
   const menuPermissions = useMenuPermissions();
+  const { 
+    defaultSuppliers, 
+    getSupplierConfig, 
+    saveSupplier, 
+    isSaving: isSavingSupplier,
+    testConnection 
+  } = useSuppliers();
   const { 
     testSound, 
     uploadCustomSound, 
@@ -696,6 +706,10 @@ export default function Settings() {
               <TabsTrigger value="billing" className="flex items-center gap-2 px-3 py-2 shrink-0">
                 <FileText className="h-4 w-4 shrink-0" />
                 <span className="hidden sm:inline">Facturation</span>
+              </TabsTrigger>
+              <TabsTrigger value="suppliers" className="flex items-center gap-2 px-3 py-2 shrink-0">
+                <Truck className="h-4 w-4 shrink-0" />
+                <span className="hidden sm:inline">Fournisseurs</span>
               </TabsTrigger>
               <TabsTrigger value="ai" className="flex items-center gap-2 px-3 py-2 shrink-0">
                 <Sparkles className="h-4 w-4 shrink-0" />
@@ -1779,6 +1793,34 @@ export default function Settings() {
 
             <TabsContent value="billing" className="space-y-6">
               <BillingInvoices />
+            </TabsContent>
+
+            <TabsContent value="suppliers" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Truck className="h-5 w-5" />
+                    Configuration des fournisseurs
+                  </CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    Configurez vos identifiants pour rechercher des pièces chez vos fournisseurs et définissez les coefficients de marge
+                  </p>
+                </CardHeader>
+                <CardContent>
+                  {defaultSuppliers.map((supplier) => (
+                    <SupplierConfigCard
+                      key={supplier.name}
+                      name={supplier.name}
+                      label={supplier.label}
+                      url={supplier.url}
+                      config={getSupplierConfig(supplier.name)}
+                      onSave={saveSupplier}
+                      onTestConnection={testConnection}
+                      isSaving={isSavingSupplier}
+                    />
+                  ))}
+                </CardContent>
+              </Card>
             </TabsContent>
 
           </Tabs>
