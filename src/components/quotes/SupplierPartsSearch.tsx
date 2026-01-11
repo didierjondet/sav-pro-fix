@@ -170,10 +170,46 @@ export function SupplierPartsSearch({ onSelectPart }: SupplierPartsSearchProps) 
           {hasSearched && (
             <div className="border rounded-lg">
               {results.length === 0 ? (
-                <div className="p-6 text-center text-muted-foreground">
-                  <AlertCircle className="h-8 w-8 mx-auto mb-2" />
-                  <p>Aucun résultat trouvé</p>
-                  <p className="text-sm">Essayez avec d'autres termes de recherche</p>
+                <div className="p-6 space-y-4">
+                  <div className="text-center text-muted-foreground">
+                    <AlertCircle className="h-8 w-8 mx-auto mb-2" />
+                    <p className="font-medium">Les sites fournisseurs bloquent les requêtes automatiques</p>
+                  </div>
+                  
+                  <div className="bg-blue-50 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                    <div className="flex items-start gap-3">
+                      <div className="flex-shrink-0 mt-0.5">
+                        <svg className="h-5 w-5 text-blue-600" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M12 0C8.21 0 4.831 1.757 2.632 4.501l3.953 3.032C7.455 5.65 9.572 4.5 12 4.5c2.012 0 3.827.736 5.233 1.94l3.035-3.035C18.205 1.407 15.27 0 12 0z"/>
+                          <path d="M23.4 12.2c0-.72-.063-1.418-.182-2.093H12v4.148h6.413c-.284 1.422-1.127 2.627-2.378 3.432l3.663 2.844c2.139-1.972 3.702-4.877 3.702-8.33z"/>
+                          <path d="M5.033 14.418c-.267-.723-.418-1.5-.418-2.318s.151-1.595.418-2.318L1.08 6.75C.393 8.085 0 9.586 0 11.2c0 1.615.393 3.115 1.08 4.45l3.953-3.032z"/>
+                          <path d="M12 22.4c3.117 0 5.736-1.034 7.646-2.804l-3.663-2.844c-1.028.685-2.343 1.09-3.983 1.09-2.554 0-4.717-1.722-5.493-4.036L1.08 16.65C2.868 20.143 7.198 22.4 12 22.4z"/>
+                        </svg>
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="font-medium text-blue-800 dark:text-blue-200 mb-1">
+                          Solution : Extension Chrome
+                        </h4>
+                        <p className="text-sm text-blue-700 dark:text-blue-300 mb-3">
+                          Téléchargez notre extension Chrome pour rechercher sur Mobilax et Utopya directement depuis votre navigateur, avec votre compte connecté.
+                        </p>
+                        <a 
+                          href="/chrome-extension" 
+                          download
+                          className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
+                        >
+                          <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 16l-6-6h4V4h4v6h4l-6 6z"/>
+                            <path d="M20 18H4v2h16v-2z"/>
+                          </svg>
+                          Télécharger l'extension
+                        </a>
+                        <p className="text-xs text-blue-600 dark:text-blue-400 mt-2">
+                          Allez sur chrome://extensions, activez le mode développeur, puis "Charger l'extension non empaquetée"
+                        </p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               ) : (
                 <ScrollArea className="max-h-80">
