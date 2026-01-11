@@ -34,8 +34,8 @@ function roundPrice(price: number): number {
   return Math.ceil(price / 10) * 10;
 }
 
-// Extract products from scraped content using LLM-style extraction via JSON format
-async function scrapeWithJsonExtraction(
+// Scrape supplier website
+async function scrapeSupplier(
   searchUrl: string,
   supplierName: string,
   config: SupplierConfig,
@@ -44,7 +44,6 @@ async function scrapeWithJsonExtraction(
   console.log(`Scraping ${supplierName}:`, searchUrl);
   
   try {
-    // Use Firecrawl with JSON extraction for structured data
     const response = await fetch('https://api.firecrawl.dev/v1/scrape', {
       method: 'POST',
       headers: {
@@ -53,21 +52,7 @@ async function scrapeWithJsonExtraction(
       },
       body: JSON.stringify({
         url: searchUrl,
-        formats: [
-          'markdown',
-          {
-            type: 'json',
-            prompt: `Extract all products from this page. For each product, extract:
-- name: the product name/title
-- price: the price in euros (as a number, without € symbol)
-- reference: the product reference/SKU if available
-- availability: whether it's in stock or not
-- imageUrl: the product image URL if available
-- url: the product page URL if available
-
-Return an array of products. Include ALL products visible on the page, even partial matches.`
-          }
-        ],
+        formats: ['markdown', 'html'],
         onlyMainContent: false,
         waitFor: 3000,
       }),
@@ -76,176 +61,281 @@ Return an array of products. Include ALL products visible on the page, even part
     const data = await response.json();
     
     if (!response.ok || !data.success) {
-      console.error(`Firecrawl error for ${supplierName}:`, data);
-      // Fallback to markdown parsing
-      return parseMarkdownResults(data.data?.markdown || '', supplierName, config);
+      console.error(`Firecrawl error for ${supplierName}:`, JSON.stringify(data));
+      return [];
     }
 
-    // Try to use JSON extraction first
-    const jsonData = data.data?.json;
-    if (jsonData) {
-      console.log(`JSON extraction successful for ${supplierName}:`, JSON.stringify(jsonData).substring(0, 500));
-      return parseJsonResults(jsonData, supplierName, config);
-    }
+    const html = data.data?.html || '';
+    const markdown = data.data?.markdown || '';
+    
+    console.log(`Got content for ${supplierName}: HTML=${html.length} chars, MD=${markdown.length} chars`);
 
-    // Fallback to markdown parsing
-    console.log(`Falling back to markdown parsing for ${supplierName}`);
-    return parseMarkdownResults(data.data?.markdown || '', supplierName, config);
+    // Parse based on supplier
+    if (supplierName === 'mobilax') {
+      return parseMobilaxHtml(html, markdown, config);
+    } else if (supplierName === 'utopya') {
+      return parseUtopyaHtml(html, markdown, config);
+    }
+    
+    return parseGenericContent(html, markdown, supplierName, config);
   } catch (error) {
     console.error(`Error scraping ${supplierName}:`, error);
     return [];
   }
 }
 
-// Parse JSON extraction results
-function parseJsonResults(jsonData: any, supplierName: string, config: SupplierConfig): SupplierPart[] {
+// Parse Mobilax HTML - specific parsing for their product structure
+function parseMobilaxHtml(html: string, markdown: string, config: SupplierConfig): SupplierPart[] {
   const parts: SupplierPart[] = [];
   
-  // Handle various JSON structures
-  let products: any[] = [];
+  // Try to find product blocks in HTML
+  // Mobilax uses product cards with specific classes
+  const productPatterns = [
+    /<article[^>]*class="[^"]*product[^"]*"[^>]*>([\s\S]*?)<\/article>/gi,
+    /<div[^>]*class="[^"]*product-miniature[^"]*"[^>]*>([\s\S]*?)<\/div>\s*<\/div>/gi,
+    /<li[^>]*class="[^"]*product[^"]*"[^>]*>([\s\S]*?)<\/li>/gi,
+  ];
   
-  if (Array.isArray(jsonData)) {
-    products = jsonData;
-  } else if (jsonData?.products && Array.isArray(jsonData.products)) {
-    products = jsonData.products;
-  } else if (jsonData?.items && Array.isArray(jsonData.items)) {
-    products = jsonData.items;
-  } else if (typeof jsonData === 'object') {
-    // Try to find an array in the object
-    for (const key of Object.keys(jsonData)) {
-      if (Array.isArray(jsonData[key]) && jsonData[key].length > 0) {
-        products = jsonData[key];
-        break;
-      }
+  let products: string[] = [];
+  for (const pattern of productPatterns) {
+    const matches = html.match(pattern);
+    if (matches && matches.length > 0) {
+      products = matches;
+      console.log(`Found ${products.length} products with pattern in Mobilax HTML`);
+      break;
     }
   }
   
-  for (const product of products) {
-    if (!product || typeof product !== 'object') continue;
-    
-    const name = product.name || product.title || product.productName || '';
-    if (!name) continue;
-    
-    // Parse price from various formats
-    let price = 0;
-    const rawPrice = product.price || product.prix || product.cost || 0;
-    if (typeof rawPrice === 'number') {
-      price = rawPrice;
-    } else if (typeof rawPrice === 'string') {
-      const priceMatch = rawPrice.match(/(\d+)[.,]?(\d*)/);
-      if (priceMatch) {
-        price = parseFloat(`${priceMatch[1]}.${priceMatch[2] || '00'}`);
-      }
+  // Parse each product block
+  for (const productHtml of products) {
+    const part = extractProductFromHtml(productHtml, 'mobilax', config);
+    if (part) {
+      parts.push(part);
     }
-    
-    if (price <= 0) continue; // Skip products without valid price
-    
-    parts.push({
-      name: name.trim(),
-      reference: (product.reference || product.ref || product.sku || '').toString(),
-      supplier: supplierName,
-      purchasePrice: price,
-      publicPrice: roundPrice(price * config.price_coefficient),
-      availability: product.availability || product.stock || 'En stock',
-      imageUrl: product.imageUrl || product.image || undefined,
-      url: product.url || product.link || undefined,
-    });
   }
   
+  // If HTML parsing didn't work, try markdown
+  if (parts.length === 0) {
+    console.log('No products found in HTML, trying markdown for Mobilax');
+    return parseMarkdownProducts(markdown, 'mobilax', config);
+  }
+  
+  console.log(`Parsed ${parts.length} products from Mobilax`);
   return parts.slice(0, 20);
 }
 
-// Parse markdown results (fallback method)
-function parseMarkdownResults(content: string, supplierName: string, config: SupplierConfig): SupplierPart[] {
+// Parse Utopya HTML
+function parseUtopyaHtml(html: string, markdown: string, config: SupplierConfig): SupplierPart[] {
   const parts: SupplierPart[] = [];
   
-  if (!content || content.trim() === '') {
-    console.log(`No markdown content for ${supplierName}`);
+  // Utopya product patterns
+  const productPatterns = [
+    /<div[^>]*class="[^"]*product-container[^"]*"[^>]*>([\s\S]*?)<\/div>\s*<\/div>\s*<\/div>/gi,
+    /<article[^>]*class="[^"]*product[^"]*"[^>]*>([\s\S]*?)<\/article>/gi,
+    /<div[^>]*class="[^"]*thumbnail-container[^"]*"[^>]*>([\s\S]*?)<\/div>\s*<\/div>/gi,
+  ];
+  
+  let products: string[] = [];
+  for (const pattern of productPatterns) {
+    const matches = html.match(pattern);
+    if (matches && matches.length > 0) {
+      products = matches;
+      console.log(`Found ${products.length} products with pattern in Utopya HTML`);
+      break;
+    }
+  }
+  
+  for (const productHtml of products) {
+    const part = extractProductFromHtml(productHtml, 'utopya', config);
+    if (part) {
+      parts.push(part);
+    }
+  }
+  
+  if (parts.length === 0) {
+    console.log('No products found in HTML, trying markdown for Utopya');
+    return parseMarkdownProducts(markdown, 'utopya', config);
+  }
+  
+  console.log(`Parsed ${parts.length} products from Utopya`);
+  return parts.slice(0, 20);
+}
+
+// Extract product info from HTML block
+function extractProductFromHtml(html: string, supplier: string, config: SupplierConfig): SupplierPart | null {
+  // Extract product name
+  const namePatterns = [
+    /<h[1-6][^>]*class="[^"]*product-title[^"]*"[^>]*>[\s\S]*?<a[^>]*>([\s\S]*?)<\/a>/i,
+    /<a[^>]*class="[^"]*product-name[^"]*"[^>]*>([\s\S]*?)<\/a>/i,
+    /<span[^>]*class="[^"]*product-title[^"]*"[^>]*>([\s\S]*?)<\/span>/i,
+    /<h[1-6][^>]*>([\s\S]*?)<\/h[1-6]>/i,
+    /title="([^"]+)"/i,
+    /alt="([^"]+)"/i,
+  ];
+  
+  let name = '';
+  for (const pattern of namePatterns) {
+    const match = html.match(pattern);
+    if (match && match[1]) {
+      name = match[1].replace(/<[^>]*>/g, '').trim();
+      if (name.length > 5 && name.length < 200) break;
+    }
+  }
+  
+  if (!name || name.length < 5) return null;
+  
+  // Extract price
+  const pricePatterns = [
+    /class="[^"]*price[^"]*"[^>]*>[\s\S]*?(\d+)[,.](\d{2})\s*€/i,
+    /(\d+)[,.](\d{2})\s*€\s*TTC/i,
+    /(\d+)[,.](\d{2})\s*€/g,
+  ];
+  
+  let price = 0;
+  for (const pattern of pricePatterns) {
+    const match = html.match(pattern);
+    if (match) {
+      price = parseFloat(`${match[1]}.${match[2]}`);
+      if (price > 0 && price < 2000) break;
+    }
+  }
+  
+  if (price <= 0) return null;
+  
+  // Extract reference
+  let reference = '';
+  const refMatch = html.match(/(?:ref|référence|sku)[^>]*>?\s*:?\s*([A-Z0-9-]+)/i);
+  if (refMatch) {
+    reference = refMatch[1];
+  }
+  
+  // Extract URL
+  let url = '';
+  const urlMatch = html.match(/href="(https?:\/\/[^"]+)"/i) || html.match(/href="(\/[^"]+)"/i);
+  if (urlMatch) {
+    url = urlMatch[1];
+    if (url.startsWith('/')) {
+      url = supplier === 'mobilax' ? `https://www.mobilax.fr${url}` : `https://www.utopya.fr${url}`;
+    }
+  }
+  
+  // Extract image
+  let imageUrl = '';
+  const imgMatch = html.match(/src="(https?:\/\/[^"]+\.(jpg|jpeg|png|webp)[^"]*)"/i);
+  if (imgMatch) {
+    imageUrl = imgMatch[1];
+  }
+  
+  // Check availability
+  const outOfStock = html.toLowerCase().includes('rupture') || 
+                     html.toLowerCase().includes('indisponible') ||
+                     html.toLowerCase().includes('out of stock');
+  
+  return {
+    name: cleanProductName(name),
+    reference,
+    supplier,
+    purchasePrice: price,
+    publicPrice: roundPrice(price * config.price_coefficient),
+    availability: outOfStock ? 'Rupture de stock' : 'En stock',
+    imageUrl: imageUrl || undefined,
+    url: url || undefined,
+  };
+}
+
+// Clean product name
+function cleanProductName(name: string): string {
+  return name
+    .replace(/\s+/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .trim();
+}
+
+// Parse markdown as fallback
+function parseMarkdownProducts(markdown: string, supplier: string, config: SupplierConfig): SupplierPart[] {
+  const parts: SupplierPart[] = [];
+  
+  if (!markdown || markdown.length < 100) {
+    console.log(`Markdown too short for ${supplier}: ${markdown.length} chars`);
     return parts;
   }
   
-  console.log(`Parsing markdown for ${supplierName}, content length: ${content.length}`);
+  // Split by lines and look for product patterns
+  const lines = markdown.split('\n');
+  let currentName = '';
+  let currentPrice = 0;
   
-  // Split content into potential product blocks
-  const blocks = content.split(/\n{2,}/);
-  
-  for (const block of blocks) {
-    // Skip navigation, headers, footers
-    if (block.includes('Menu') || block.includes('Panier') || block.includes('Connexion') ||
-        block.includes('©') || block.includes('Cookie') || block.includes('newsletter')) {
-      continue;
-    }
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
     
-    // Look for price pattern
-    const priceMatches = block.match(/(\d+)[.,](\d{2})\s*€/g);
-    if (!priceMatches || priceMatches.length === 0) continue;
+    // Skip empty lines and navigation elements
+    if (!line || line.length < 3) continue;
+    if (line.includes('Menu') || line.includes('Panier') || line.includes('Connexion')) continue;
+    if (line.includes('©') || line.includes('Cookie') || line.includes('newsletter')) continue;
     
-    // Extract price
-    const priceMatch = priceMatches[0].match(/(\d+)[.,](\d{2})/);
-    if (!priceMatch) continue;
-    
-    const price = parseFloat(`${priceMatch[1]}.${priceMatch[2]}`);
-    if (price <= 0 || price > 2000) continue; // Sanity check
-    
-    // Extract product name - look for bold text, headers, or first significant line
-    let name = '';
-    
-    // Try to find product name from headers or bold
-    const headerMatch = block.match(/^#+\s*(.+)/m);
-    const boldMatch = block.match(/\*\*([^*]+)\*\*/);
-    const linkMatch = block.match(/\[([^\]]+)\]/);
-    
-    if (headerMatch) {
-      name = headerMatch[1].trim();
-    } else if (boldMatch) {
-      name = boldMatch[1].trim();
-    } else if (linkMatch) {
-      name = linkMatch[1].trim();
+    // Look for prices
+    const priceMatch = line.match(/(\d+)[,.](\d{2})\s*€/);
+    if (priceMatch) {
+      currentPrice = parseFloat(`${priceMatch[1]}.${priceMatch[2]}`);
+      
+      // If we have both name and price, create product
+      if (currentName && currentPrice > 0 && currentPrice < 2000) {
+        // Check if it looks like a real product name (contains iPhone, Samsung, ecran, etc.)
+        const lowerName = currentName.toLowerCase();
+        const isProduct = lowerName.includes('iphone') || 
+                         lowerName.includes('samsung') ||
+                         lowerName.includes('écran') ||
+                         lowerName.includes('ecran') ||
+                         lowerName.includes('batterie') ||
+                         lowerName.includes('vitre') ||
+                         lowerName.includes('lcd') ||
+                         lowerName.includes('oled') ||
+                         lowerName.includes('apple') ||
+                         lowerName.includes('huawei') ||
+                         lowerName.includes('xiaomi');
+        
+        if (isProduct) {
+          parts.push({
+            name: cleanProductName(currentName),
+            reference: '',
+            supplier,
+            purchasePrice: currentPrice,
+            publicPrice: roundPrice(currentPrice * config.price_coefficient),
+            availability: 'En stock',
+          });
+        }
+        
+        currentName = '';
+        currentPrice = 0;
+      }
     } else {
-      // Take first line that looks like a product name
-      const lines = block.split('\n');
-      for (const line of lines) {
-        const cleanLine = line.replace(/[#*\[\]]/g, '').trim();
-        if (cleanLine.length > 10 && cleanLine.length < 200 && 
-            !cleanLine.includes('€') && !cleanLine.match(/^\d+$/)) {
-          name = cleanLine;
-          break;
+      // This might be a product name
+      // Check if it's a header or bold text or a substantial line
+      const isHeader = line.startsWith('#') || line.startsWith('**');
+      const isSubstantial = line.length > 15 && line.length < 150;
+      
+      if (isHeader || isSubstantial) {
+        const cleanedLine = line.replace(/^#+\s*/, '').replace(/\*\*/g, '').trim();
+        if (cleanedLine.length > 10) {
+          currentName = cleanedLine;
         }
       }
     }
-    
-    if (!name || name.length < 5) continue;
-    
-    // Clean up name
-    name = name.replace(/\s+/g, ' ').trim();
-    
-    // Skip if it looks like navigation or generic text
-    if (name.toLowerCase().includes('résultat') || 
-        name.toLowerCase().includes('recherche') ||
-        name.toLowerCase().includes('ajouter') ||
-        name.toLowerCase().includes('voir plus')) {
-      continue;
-    }
-    
-    // Extract reference if present
-    let reference = '';
-    const refMatch = block.match(/[Rr]éf(?:érence)?\.?\s*:?\s*([A-Z0-9-]+)/i);
-    if (refMatch) {
-      reference = refMatch[1];
-    }
-    
-    parts.push({
-      name,
-      reference,
-      supplier: supplierName,
-      purchasePrice: price,
-      publicPrice: roundPrice(price * config.price_coefficient),
-      availability: block.toLowerCase().includes('rupture') ? 'Rupture de stock' : 'En stock',
-    });
   }
   
-  console.log(`Found ${parts.length} products from markdown for ${supplierName}`);
+  console.log(`Parsed ${parts.length} products from markdown for ${supplier}`);
   return parts.slice(0, 20);
+}
+
+// Generic content parser
+function parseGenericContent(html: string, markdown: string, supplier: string, config: SupplierConfig): SupplierPart[] {
+  // Try HTML first, then markdown
+  const htmlParts = parseMarkdownProducts(markdown, supplier, config);
+  return htmlParts;
 }
 
 Deno.serve(async (req) => {
@@ -323,7 +413,7 @@ Deno.serve(async (req) => {
       if (!config.is_enabled) continue;
 
       const searchUrl = `${supplierUrls[supplierName]}${encodeURIComponent(searchQuery)}`;
-      searchPromises.push(scrapeWithJsonExtraction(searchUrl, supplierName, config, firecrawlApiKey));
+      searchPromises.push(scrapeSupplier(searchUrl, supplierName, config, firecrawlApiKey));
     }
 
     // Wait for all searches to complete
