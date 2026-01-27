@@ -194,8 +194,7 @@ export function SupplierPartsSearch({ onSelectPart }: SupplierPartsSearchProps) 
                           Téléchargez notre extension Chrome pour rechercher sur Mobilax et Utopya directement depuis votre navigateur, avec votre compte connecté.
                         </p>
                         <a 
-                          href="/chrome-extension" 
-                          download
+                          href="/chrome-extension-download" 
                           className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
                         >
                           <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
