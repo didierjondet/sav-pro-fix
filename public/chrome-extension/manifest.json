@@ -1,15 +1,18 @@
 {
   "manifest_version": 3,
   "name": "SAV Parts Search",
-  "version": "1.0.0",
-  "description": "Recherche de pièces chez les fournisseurs Mobilax et Utopya",
+  "version": "1.1.0",
+  "description": "Recherche de pièces détachées sur Mobilax et Utopya",
   "permissions": [
     "activeTab",
-    "scripting"
+    "scripting",
+    "tabs"
   ],
   "host_permissions": [
     "https://www.mobilax.fr/*",
-    "https://www.utopya.fr/*"
+    "https://mobilax.fr/*",
+    "https://www.utopya.fr/*",
+    "https://utopya.fr/*"
   ],
   "action": {
     "default_popup": "popup.html",
@@ -24,13 +27,19 @@
     "48": "icon48.png",
     "128": "icon128.png"
   },
-  "content_scripts": [
-    {
-      "matches": ["https://www.mobilax.fr/*", "https://www.utopya.fr/*"],
-      "js": ["content.js"]
-    }
-  ],
   "background": {
     "service_worker": "background.js"
-  }
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://www.mobilax.fr/*", "https://mobilax.fr/*"],
+      "js": ["content-mobilax.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["https://www.utopya.fr/*", "https://utopya.fr/*"],
+      "js": ["content-utopya.js"],
+      "run_at": "document_idle"
+    }
+  ]
 }
