@@ -1355,8 +1355,14 @@ export default function Settings() {
                                 <SelectContent>
                                   <SelectItem value="technician">Technicien</SelectItem>
                                   <SelectItem value="admin">Administrateur</SelectItem>
+                                  <SelectItem value="shop_admin">Admin Magasin</SelectItem>
                                 </SelectContent>
                               </Select>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                • Technicien : accès limité aux SAV et stock<br/>
+                                • Administrateur : accès complet sauf paramètres avancés<br/>
+                                • Admin Magasin : accès complet au magasin
+                              </p>
                             </div>
                           </div>
                           <DialogFooter>
@@ -1402,7 +1408,7 @@ export default function Settings() {
                       </Dialog>
                     </div>
                   </CardHeader>
-                  <CardContent>
+                <CardContent>
                     <div className="space-y-4">
                       {profiles.map(profile => <div key={profile.id} className="flex items-center justify-between p-4 border rounded-lg">
                           <div className="flex items-center gap-3">
@@ -1416,12 +1422,49 @@ export default function Settings() {
                                 <span className="font-medium">
                                   {profile.first_name} {profile.last_name}
                                 </span>
-                                {profile.role === 'admin' && <Crown className="h-4 w-4 text-yellow-500" />}
+                                {(profile.role === 'admin' || profile.role === 'shop_admin') && <Crown className="h-4 w-4 text-yellow-500" />}
                               </div>
-                              <div className="text-sm text-muted-foreground">
-                                <Badge variant={profile.role === 'admin' ? 'default' : 'secondary'}>
-                                  {profile.role === 'admin' ? 'Administrateur' : 'Technicien'}
-                                </Badge>
+                              <div className="text-sm text-muted-foreground flex items-center gap-2">
+                                {profile.user_id !== user?.id ? (
+                                  <Select 
+                                    value={profile.role} 
+                                    onValueChange={async (newRole: 'admin' | 'technician' | 'shop_admin') => {
+                                      try {
+                                        const { error } = await supabase
+                                          .from('profiles')
+                                          .update({ role: newRole })
+                                          .eq('id', profile.id);
+                                        
+                                        if (error) throw error;
+                                        
+                                        fetchProfiles();
+                                        toast({
+                                          title: "Succès",
+                                          description: `Rôle de ${profile.first_name} ${profile.last_name} mis à jour`
+                                        });
+                                      } catch (error: any) {
+                                        toast({
+                                          title: "Erreur",
+                                          description: error.message,
+                                          variant: "destructive"
+                                        });
+                                      }
+                                    }}
+                                  >
+                                    <SelectTrigger className="w-40 h-8">
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="technician">Technicien</SelectItem>
+                                      <SelectItem value="admin">Administrateur</SelectItem>
+                                      <SelectItem value="shop_admin">Admin Magasin</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                ) : (
+                                  <Badge variant={profile.role === 'admin' || profile.role === 'shop_admin' ? 'default' : 'secondary'}>
+                                    {profile.role === 'admin' ? 'Administrateur' : profile.role === 'shop_admin' ? 'Admin Magasin' : 'Technicien'}
+                                  </Badge>
+                                )}
                               </div>
                             </div>
                           </div>
