@@ -1,4 +1,4 @@
-// Content script for Utopya - runs directly on the page (v1.1)
+// Content script for Utopya - runs directly on the page
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === 'extractProducts') {
@@ -13,55 +13,47 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 function extractUtopyaProducts() {
   const products = [];
   
-  // Utopya uses custom Magento theme with specific classes
-  // Main product container: .item.product.product-item.listing-item
-  const productElements = document.querySelectorAll('.item.product.product-item.listing-item, .product-item.listing-item');
+  // Try multiple selectors for Magento
+  const selectors = [
+    '.product-item',
+    '.product-item-info',
+    '.products-grid .item',
+    '.products.list .item',
+    'li.product-item',
+    '.product.photo'
+  ];
   
-  console.log('Utopya: Found', productElements.length, 'product elements');
+  let productElements = [];
+  for (const selector of selectors) {
+    productElements = document.querySelectorAll(selector);
+    if (productElements.length > 0) {
+      console.log('Utopya: Using selector:', selector, 'found:', productElements.length);
+      break;
+    }
+  }
   
-  productElements.forEach((el, index) => {
+  productElements.forEach(el => {
     try {
-      // Get SKU from data attribute
-      const sku = el.getAttribute('data-sku') || '';
-      
-      // Get product name from .product-item-link.name
-      const nameEl = el.querySelector('.product-item-link.name') || 
+      // Get product name
+      const nameEl = el.querySelector('.product-item-link') || 
                      el.querySelector('a.product-item-link') ||
-                     el.querySelector('.product-item-details a');
+                     el.querySelector('.product-name a') ||
+                     el.querySelector('a[title]');
       
-      // Clean up name (remove highlight spans)
-      let name = '';
-      if (nameEl) {
-        // Get text content but handle highlight spans
-        name = nameEl.textContent?.trim() || '';
-        // Remove extra whitespace from spans
-        name = name.replace(/\s+/g, ' ').trim();
-      }
+      const name = nameEl?.textContent?.trim() || nameEl?.getAttribute('title') || '';
+      if (!name || name.length < 3) return;
       
-      if (!name || name.length < 3) {
-        console.log('Utopya: Skipping product', index, '- no name');
-        return;
-      }
+      // Get price
+      const priceEl = el.querySelector('[data-price-amount]') ||
+                      el.querySelector('.price') ||
+                      el.querySelector('.special-price .price');
       
-      // Get price - try multiple approaches
       let price = 0;
-      
-      // Method 1: Look for price with data-price-amount attribute
-      const priceAttrEl = el.querySelector('[data-price-amount]');
-      if (priceAttrEl) {
-        const priceAmount = priceAttrEl.getAttribute('data-price-amount');
+      if (priceEl) {
+        const priceAmount = priceEl.getAttribute('data-price-amount');
         if (priceAmount) {
           price = parseFloat(priceAmount);
-        }
-      }
-      
-      // Method 2: Look for .price element with text
-      if (price <= 0) {
-        const priceEl = el.querySelector('.price-wrapper .price') || 
-                        el.querySelector('.price-box .price') ||
-                        el.querySelector('.special-price .price') ||
-                        el.querySelector('.price');
-        if (priceEl) {
+        } else {
           const priceText = priceEl.textContent || '';
           const priceMatch = priceText.match(/(\d+)[,.](\d{2})/);
           if (priceMatch) {
@@ -70,44 +62,37 @@ function extractUtopyaProducts() {
         }
       }
       
-      // Note: If user is not logged in, price will be 0 (shows "S'identifier pour voir le prix")
-      // We still add the product but with price 0
+      if (price <= 0 || price > 5000) return;
+      
+      // Get reference/SKU
+      const refEl = el.querySelector('[data-product-sku]') || el.querySelector('.sku');
+      const reference = refEl?.getAttribute('data-product-sku') || refEl?.textContent?.trim() || '';
       
       // Get URL
-      const linkEl = el.querySelector('a.product-item-link') || 
-                     el.querySelector('a.product.photo') ||
-                     el.querySelector('a[href*="utopya.fr"]');
+      const linkEl = el.querySelector('a[href*="utopya"]') || el.querySelector('a[href]');
       const url = linkEl?.getAttribute('href') || '';
       
       // Get image
       const imgEl = el.querySelector('img.product-image-photo') || el.querySelector('img');
-      const imageUrl = imgEl?.getAttribute('src') || imgEl?.getAttribute('data-src') || '';
+      const imageUrl = imgEl?.src || imgEl?.getAttribute('data-src') || '';
       
       // Check availability
-      const text = el.textContent?.toLowerCase() || '';
+      const text = el.textContent.toLowerCase();
       const isOutOfStock = text.includes('rupture') || 
-                          text.includes('indisponible') ||
-                          el.classList.contains('out-of-stock');
+                          el.classList.contains('out-of-stock') ||
+                          text.includes('indisponible');
       
-      // Check if price is hidden (need to login)
-      const needsLogin = el.querySelector('.log-to-see-price') !== null;
-      
-      const product = {
+      products.push({
         name,
-        reference: sku,
+        reference,
         supplier: 'Utopya',
         price,
-        availability: isOutOfStock ? 'Rupture' : (needsLogin ? 'Connectez-vous' : 'En stock'),
+        availability: isOutOfStock ? 'Rupture' : 'En stock',
         url,
-        imageUrl,
-        needsLogin
-      };
-      
-      console.log('Utopya: Product', index, ':', name, '- Price:', price, '- SKU:', sku);
-      products.push(product);
-      
+        imageUrl
+      });
     } catch (e) {
-      console.error('Utopya: Error parsing product', index, ':', e);
+      console.error('Utopya: Error parsing product:', e);
     }
   });
   
