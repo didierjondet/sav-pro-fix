@@ -53,16 +53,19 @@ Deno.serve(async (req) => {
       throw new Error('Invalid token')
     }
 
-    // Verify user is super admin
+    // Verify user has appropriate permissions
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('role')
+      .select('role, shop_id')
       .eq('user_id', user.id)
       .single()
 
-    if (profileError || !profile || profile.role !== 'super_admin') {
-      throw new Error('Access denied: Super admin privileges required')
+    if (profileError || !profile) {
+      throw new Error('Access denied: Profile not found')
     }
+
+    const isSuperAdmin = profile.role === 'super_admin'
+    const isShopAdmin = profile.role === 'admin' || profile.role === 'shop_admin'
 
     const { action, email, password, new_password, first_name, last_name, phone, role, shop_id, user_id, profile_id }: UserRequest = await req.json()
 
@@ -70,8 +73,19 @@ Deno.serve(async (req) => {
 
     switch (action) {
       case 'create': {
-        if (!email || !password || !first_name || !last_name || !role || !shop_id) {
+        if (!email || !password || !role || !shop_id) {
           throw new Error('Missing required fields for user creation')
+        }
+
+        // Vérifier les permissions
+        if (!isSuperAdmin) {
+          if (!isShopAdmin) {
+            throw new Error('Access denied: Admin privileges required')
+          }
+          // Les admins de boutique ne peuvent créer des utilisateurs que dans leur propre boutique
+          if (profile.shop_id !== shop_id) {
+            throw new Error('Access denied: You can only invite users to your own shop')
+          }
         }
 
         console.log('Creating user with email:', email)
@@ -197,6 +211,11 @@ Deno.serve(async (req) => {
           throw new Error('Missing user_id or profile_id for deletion')
         }
 
+        // Seul super_admin peut supprimer des utilisateurs
+        if (!isSuperAdmin) {
+          throw new Error('Access denied: Super admin privileges required for deletion')
+        }
+
         console.log('Deleting user:', user_id)
 
         // Delete profile first
@@ -232,6 +251,11 @@ Deno.serve(async (req) => {
       case 'update_password': {
         if (!user_id || !new_password) {
           throw new Error('Missing user_id or new_password for password update')
+        }
+
+        // Seul super_admin peut changer les mots de passe
+        if (!isSuperAdmin) {
+          throw new Error('Access denied: Super admin privileges required for password update')
         }
 
         console.log('Updating password for user:', user_id)
