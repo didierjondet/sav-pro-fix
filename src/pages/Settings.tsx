@@ -1372,23 +1372,23 @@ export default function Settings() {
                             <Button onClick={async () => {
                               if (!inviteEmail || !shop) return;
                               try {
-                                const {
-                                  data,
-                                  error
-                                } = await supabase.rpc('create_real_user_for_shop', {
-                                  p_email: inviteEmail,
-                                  p_password: 'motdepasse123',
-                                  // Mot de passe temporaire
-                                  p_first_name: '',
-                                  p_last_name: '',
-                                  p_phone: '',
-                                  p_role: inviteRole,
-                                  p_shop_id: shop.id
+                                const { data, error } = await supabase.functions.invoke('admin-user-management', {
+                                  body: {
+                                    action: 'create',
+                                    email: inviteEmail,
+                                    password: 'FixwayTemp2024!',
+                                    first_name: '',
+                                    last_name: '',
+                                    phone: '',
+                                    role: inviteRole,
+                                    shop_id: shop.id
+                                  }
                                 });
                                 if (error) throw error;
+                                if (data?.error) throw new Error(data.error);
                                 toast({
                                   title: "Succès",
-                                  description: "Profil utilisateur créé. L'utilisateur pourra se connecter quand il s'inscrira avec cet email."
+                                  description: "Utilisateur créé avec succès. Il peut se connecter avec son email et le mot de passe temporaire: FixwayTemp2024!"
                                 });
                                 setInviteEmail('');
                                 setIsInviteDialogOpen(false);
