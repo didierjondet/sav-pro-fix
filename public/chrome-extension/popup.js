@@ -97,19 +97,26 @@ function displayResults() {
     return;
   }
 
+  // Filter products with price > 0 first, then those without price
+  const withPrice = allResults.filter(p => p.price > 0);
+  const withoutPrice = allResults.filter(p => p.price <= 0);
+  
+  // Sort by price (those with price first)
+  withPrice.sort((a, b) => a.price - b.price);
+  allResults = [...withPrice, ...withoutPrice];
+
   showStatus(`${allResults.length} produit(s) trouvé(s)`, 'success');
   
-  // Sort by price
-  allResults.sort((a, b) => a.price - b.price);
-  
   resultsDiv.innerHTML = allResults.map((product, index) => `
-    <div class="product">
+    <div class="product ${product.needsLogin ? 'needs-login' : ''}">
       <div class="product-name">${escapeHtml(product.name)}</div>
-      <div class="product-price">${product.price.toFixed(2)} €</div>
+      <div class="product-price">
+        ${product.price > 0 ? `${product.price.toFixed(2)} €` : '<span class="no-price">Prix non visible</span>'}
+      </div>
       <div class="product-supplier">
         <span class="supplier-badge ${product.supplier.toLowerCase()}">${product.supplier}</span>
         ${product.reference ? `<span class="reference">Réf: ${escapeHtml(product.reference)}</span>` : ''}
-        <span class="availability ${product.availability === 'En stock' ? 'in-stock' : 'out-stock'}">${product.availability}</span>
+        <span class="availability ${product.availability === 'En stock' ? 'in-stock' : (product.availability === 'Connectez-vous' ? 'login-required' : 'out-stock')}">${product.availability}</span>
       </div>
       <div class="product-actions">
         <button class="btn-copy" onclick="copyToClipboard(${index})">📋 Copier</button>
@@ -132,7 +139,8 @@ function escapeHtml(text) {
 // Copy product data to clipboard
 window.copyToClipboard = function(index) {
   const product = allResults[index];
-  const data = `${product.name}\nPrix: ${product.price.toFixed(2)} €\nFournisseur: ${product.supplier}\n${product.reference ? `Réf: ${product.reference}\n` : ''}${product.url || ''}`;
+  const priceText = product.price > 0 ? `${product.price.toFixed(2)} €` : 'Prix non visible';
+  const data = `${product.name}\nPrix: ${priceText}\nFournisseur: ${product.supplier}\n${product.reference ? `Réf: ${product.reference}\n` : ''}${product.url || ''}`;
   navigator.clipboard.writeText(data).then(() => {
     showStatus('✅ Données copiées !', 'success');
   });
