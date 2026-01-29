@@ -1,4 +1,4 @@
-// SAV Parts Search - Background Service Worker v1.1
+// SAV Parts Search - Background Service Worker v1.2
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === 'search') {
@@ -13,8 +13,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 });
 
 async function handleSearch(supplier, query) {
+  // Updated URLs for each supplier
   const urls = {
-    mobilax: `https://www.mobilax.fr/recherche?controller=search&s=${encodeURIComponent(query)}`,
+    // Mobilax now uses a different search URL structure
+    mobilax: `https://www.mobilax.fr/rechercher?q=${encodeURIComponent(query)}`,
     utopya: `https://www.utopya.fr/catalogsearch/result/?q=${encodeURIComponent(query)}`
   };
 
@@ -23,7 +25,7 @@ async function handleSearch(supplier, query) {
     throw new Error(`Unknown supplier: ${supplier}`);
   }
 
-  console.log(`Searching ${supplier} for: ${query}`);
+  console.log(`Searching ${supplier} for: ${query} at ${url}`);
 
   // Find existing tab for this supplier
   const tabs = await chrome.tabs.query({});
@@ -50,8 +52,8 @@ async function handleSearch(supplier, query) {
     await waitForTabLoad(supplierTab.id);
   }
 
-  // Give the page a moment to render
-  await sleep(1500);
+  // Give the page more time to render (especially for React/Next.js sites)
+  await sleep(2500);
 
   // Extract products from the tab using content script
   try {
@@ -69,7 +71,7 @@ async function handleSearch(supplier, query) {
         files: [scriptFile]
       });
       
-      await sleep(500);
+      await sleep(1000);
       
       const retryResponse = await chrome.tabs.sendMessage(supplierTab.id, { action: 'extractProducts' });
       console.log(`${supplier} retry returned ${retryResponse?.products?.length || 0} products`);
@@ -91,11 +93,11 @@ function waitForTabLoad(tabId) {
     };
     chrome.tabs.onUpdated.addListener(listener);
     
-    // Timeout after 10 seconds
+    // Timeout after 15 seconds
     setTimeout(() => {
       chrome.tabs.onUpdated.removeListener(listener);
       resolve();
-    }, 10000);
+    }, 15000);
   });
 }
 
