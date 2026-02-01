@@ -1,73 +1,139 @@
 
-# Plan de correction : Invitation d'utilisateurs
+# Plan de correction : Statistiques faussées par les conversions devis → SAV
 
-## Problème identifié
+## Diagnostic confirmé
 
-L'erreur "function extensions.http_post(unknown, text, unknown, jsonb) does not exist" se produit car la fonction PostgreSQL `create_real_user_for_shop` essaie d'utiliser l'extension `http` de PostgreSQL pour faire des appels HTTP vers l'API Admin de Supabase.
+### Problèmes identifiés
 
-Cette extension n'est pas activée dans votre projet Supabase, et ce n'est pas la meilleure approche de toute facon.
+**1. Pièces non transférées quand stock = 0**
 
-## Solution
+Dans `src/pages/Quotes.tsx` (lignes 445-472), quand une pièce du devis n'a pas de stock disponible :
+- Le code crée une commande dans `order_items`
+- Mais il ne crée **PAS** d'entrée dans `sav_parts`
+- Résultat : le SAV a un `total_cost` mais aucune pièce, donc aucun coût d'achat traçable
 
-Utiliser l'edge function `admin-user-management` qui existe deja dans le projet. Cette fonction utilise correctement le `SUPABASE_SERVICE_ROLE_KEY` cote serveur pour creer des utilisateurs via l'API Admin de Supabase.
+Exemples concrets dans la base :
+- SAV `2026-01-02-008` : total_cost = 189.99€, 0 pièces dans sav_parts
+- SAV `2026-01-26-003` : converti depuis devis DEV-2026-01-20-001, 0 pièces
 
-## Fichier a modifier
+**2. Mauvaise source pour les prix d'achat dans les statistiques**
 
-**`src/pages/Settings.tsx`** - Modifier la logique d'invitation pour appeler l'edge function au lieu de la fonction RPC
-
-### Changements dans Settings.tsx
-
-1. Remplacer l'appel `supabase.rpc('create_real_user_for_shop', ...)` par `supabase.functions.invoke('admin-user-management', ...)`
-
-2. Adapter les parametres pour correspondre a l'interface de l'edge function :
-   - `action: 'create'`
-   - `email: inviteEmail`
-   - `password: motdepasse123` (mot de passe temporaire)
-   - `first_name`, `last_name`, `phone`
-   - `role: inviteRole`
-   - `shop_id: shop.id`
-
-### Code actuel (ligne 1372-1402)
+`useStatistics.ts` (ligne 422) :
 ```typescript
-const { data, error } = await supabase.rpc('create_real_user_for_shop', {
-  p_email: inviteEmail,
-  p_password: 'motdepasse123',
-  p_first_name: '',
-  p_last_name: '',
-  p_phone: '',
-  p_role: inviteRole,
-  p_shop_id: shop.id
-});
+const partCost = (savPart.part?.purchase_price || 0) * savPart.quantity;
 ```
+Problème : utilise le prix actuel du catalogue (`parts.purchase_price`) au lieu du prix stocké dans `sav_parts.purchase_price`
 
-### Nouveau code
+`useMonthlyStatistics.ts` (ligne 79) :
+```typescript  
+const purchase = Number(savPart.parts?.purchase_price) || 0;
+```
+Même problème : utilise `parts.purchase_price` au lieu de `sav_parts.purchase_price`
+
+**3. Le hook `useSAVPartsCosts` est correct**
+
+Il utilise bien `item.purchase_price` directement depuis `sav_parts`.
+
+---
+
+## Corrections à apporter
+
+### Fichier 1 : `src/pages/Quotes.tsx`
+
+**Objectif** : Toujours créer une entrée `sav_parts` même quand le stock est insuffisant
+
+**Modification** (lignes 445-472) :
+
+Avant :
 ```typescript
-const { data, error } = await supabase.functions.invoke('admin-user-management', {
-  body: {
-    action: 'create',
-    email: inviteEmail,
-    password: 'FixwayTemp2024!',
-    first_name: '',
-    last_name: '',
-    phone: '',
-    role: inviteRole,
-    shop_id: shop.id
+if (availableStock >= requestedQuantity) {
+  // Stock suffisant - insérer dans sav_parts
+  partsToInsert.push({...});
+} else {
+  // Stock insuffisant - créer commande SEULEMENT
+  if (availableStock > 0) {
+    partsToInsert.push({...}); // Stock partiel
   }
-});
-if (error) throw error;
-if (data?.error) throw new Error(data.error);
+  ordersToInsert.push({...}); // Commande
+}
 ```
 
-## Note importante
+Après :
+```typescript
+// TOUJOURS créer l'entrée sav_parts pour tracer les coûts
+partsToInsert.push({
+  sav_case_id: savCaseId,
+  part_id: item.part_id!,
+  quantity: requestedQuantity,
+  time_minutes: 0,
+  unit_price: item.unit_public_price || 0,
+  purchase_price: item.unit_purchase_price ?? null,
+});
 
-L'edge function `admin-user-management` requiert que l'utilisateur appelant soit **super_admin**. Si l'utilisateur actuel est un admin de boutique (shop_admin ou admin), il faudra soit :
-1. Modifier l'edge function pour permettre aux admins de boutique de creer des utilisateurs dans leur propre boutique
-2. Ou creer une nouvelle edge function dediee aux invitations de boutique
+if (availableStock < requestedQuantity) {
+  // Créer commande pour pièces manquantes
+  ordersToInsert.push({...});
+}
+```
 
-Je vais verifier et adapter l'edge function si necessaire pour permettre aux admins de boutique d'inviter des utilisateurs.
+### Fichier 2 : `src/hooks/useStatistics.ts`
 
-## Ameliorations supplementaires
+**Objectif** : Utiliser le `purchase_price` stocké dans `sav_parts` en priorité
 
-1. Ajouter des champs pour le prenom, nom et telephone dans le dialog d'invitation
-2. Utiliser un mot de passe plus securise genere aleatoirement
-3. Afficher un message demandant a l'utilisateur invite de changer son mot de passe a la premiere connexion
+**Modification** (ligne 422) :
+
+Avant :
+```typescript
+const partCost = (savPart.part?.purchase_price || 0) * savPart.quantity;
+```
+
+Après :
+```typescript
+const partCost = (savPart.purchase_price ?? savPart.part?.purchase_price ?? 0) * savPart.quantity;
+```
+
+### Fichier 3 : `src/hooks/useMonthlyStatistics.ts`
+
+**Objectif** : Utiliser le `purchase_price` stocké dans `sav_parts` en priorité
+
+**Modification** (ligne 79) :
+
+Avant :
+```typescript
+const purchase = Number(savPart.parts?.purchase_price) || 0;
+```
+
+Après :
+```typescript
+const purchase = Number(savPart.purchase_price ?? savPart.parts?.purchase_price) || 0;
+```
+
+---
+
+## Impact des corrections
+
+| Avant | Après |
+|-------|-------|
+| Pièces perdues si stock = 0 | Toujours tracées dans sav_parts |
+| Coûts = prix catalogue actuel | Coûts = prix au moment du devis |
+| Statistiques sous-estimées | Statistiques précises |
+| Marges gonflées artificiellement | Marges réelles |
+
+---
+
+## Données historiques
+
+Les SAV déjà convertis avec le bug (sans pièces) resteront sans pièces dans `sav_parts`. Pour les récupérer, il faudrait un script de migration qui :
+1. Retrouve les devis archivés liés à un SAV (`sav_case_id` non null)
+2. Vérifie si le SAV a des pièces
+3. Si non, recrée les entrées `sav_parts` depuis les `items` du devis
+
+Cette migration optionnelle peut être faite ultérieurement si nécessaire.
+
+---
+
+## Fichiers modifiés
+
+1. **`src/pages/Quotes.tsx`** - Correction de la logique de transfert des pièces
+2. **`src/hooks/useStatistics.ts`** - Utilisation de `sav_parts.purchase_price` en priorité
+3. **`src/hooks/useMonthlyStatistics.ts`** - Utilisation de `sav_parts.purchase_price` en priorité
