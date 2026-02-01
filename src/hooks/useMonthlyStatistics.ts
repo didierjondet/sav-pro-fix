@@ -76,7 +76,8 @@ export function useMonthlyStatistics(year: number) {
           // Calculer les coûts des pièces
           (savCase.sav_parts || []).forEach((savPart: any) => {
             const qty = Number(savPart.quantity) || 0;
-            const purchase = Number(savPart.parts?.purchase_price) || 0;
+            // Utiliser le purchase_price stocké dans sav_parts en priorité, sinon fallback sur le catalogue
+            const purchase = Number(savPart.purchase_price ?? savPart.parts?.purchase_price) || 0;
             const selling = Number(savPart.parts?.selling_price) || 0;
             const unit = Number(savPart.unit_price ?? selling) || 0;
 

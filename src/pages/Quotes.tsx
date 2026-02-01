@@ -432,39 +432,25 @@ export default function Quotes() {
           const availableStock = stockInfo ? (stockInfo.quantity - stockInfo.reserved_quantity) : 0;
           const requestedQuantity = item.quantity || 0;
 
-          if (availableStock >= requestedQuantity) {
-            // Stock suffisant - insérer directement dans sav_parts
-            partsToInsert.push({
-              sav_case_id: savCaseId,
-              part_id: item.part_id!,
-              quantity: requestedQuantity,
-              time_minutes: 0,
-              unit_price: item.unit_public_price || 0,
-              purchase_price: item.unit_purchase_price ?? null,
-            });
-          } else {
-            // Stock insuffisant - créer une commande pour la quantité manquante
-            const missingQuantity = requestedQuantity - Math.max(0, availableStock);
-            
-            // Si il y a du stock partiel, l'ajouter au SAV
-            if (availableStock > 0) {
-              partsToInsert.push({
-                sav_case_id: savCaseId,
-                part_id: item.part_id!,
-                quantity: availableStock,
-                time_minutes: 0,
-                unit_price: item.unit_public_price || 0,
-                purchase_price: item.unit_purchase_price ?? null,
-              });
-            }
+          // TOUJOURS créer l'entrée sav_parts pour tracer les coûts (même si stock = 0)
+          partsToInsert.push({
+            sav_case_id: savCaseId,
+            part_id: item.part_id!,
+            quantity: requestedQuantity,
+            time_minutes: 0,
+            unit_price: item.unit_public_price || 0,
+            purchase_price: item.unit_purchase_price ?? null,
+          });
 
-            // Créer la commande pour la quantité manquante
+          // Si stock insuffisant, créer une commande pour la quantité manquante
+          if (availableStock < requestedQuantity) {
+            const missingQuantity = requestedQuantity - Math.max(0, availableStock);
             ordersToInsert.push({
               shop_id: shop?.id,
               sav_case_id: savCaseId,
               part_id: item.part_id!,
-               part_name: item.part_name || 'Pièce du devis',
-               part_reference: item.part_reference || '',
+              part_name: item.part_name || 'Pièce du devis',
+              part_reference: item.part_reference || '',
               quantity_needed: missingQuantity,
               reason: 'sav_from_quote_stock_insufficient',
               priority: 'high'

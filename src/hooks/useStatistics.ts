@@ -419,7 +419,8 @@ export function useStatistics(
           const excludeRevenue = excludeFromSalesRevenue.includes(savCase.sav_type);
 
           savCase.sav_parts?.forEach((savPart: any) => {
-            const partCost = (savPart.part?.purchase_price || 0) * savPart.quantity;
+            // Utiliser le purchase_price stocké dans sav_parts en priorité, sinon fallback sur le catalogue
+            const partCost = (savPart.purchase_price ?? savPart.part?.purchase_price ?? 0) * savPart.quantity;
             const partRevenue = (savPart.unit_price || savPart.part?.selling_price || 0) * savPart.quantity;
             
             // Ajouter les coûts seulement si non exclus
