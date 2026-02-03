@@ -9,6 +9,7 @@ import { Progress } from '@/components/ui/progress';
 import { useShopSAVStatuses } from '@/hooks/useShopSAVStatuses';
 import { SAVTimeline } from '@/components/sav/SAVTimeline';
 import { MessagingInterface } from '@/components/sav/MessagingInterface';
+import { AppointmentDisplay } from '@/components/agenda/AppointmentDisplay';
 import { 
   Smartphone,
   CheckCircle,
@@ -443,6 +444,14 @@ export default function TrackSAV() {
             )}
           </CardContent>
         </Card>
+
+        {/* Rendez-vous proposés */}
+        {savCase && (
+          <AppointmentDisplay 
+            savCaseId={savCase.id} 
+            trackingSlug={slug}
+          />
+        )}
 
         {/* Section Chat */}
         {savCase && slug && (

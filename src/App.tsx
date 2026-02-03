@@ -49,6 +49,7 @@ import Satisfaction from "./pages/Satisfaction";
 import Reports from "./pages/Reports";
 import ChromeExtensionDownload from "./pages/ChromeExtensionDownload";
 import Agenda from "./pages/Agenda";
+import AppointmentConfirm from "./pages/AppointmentConfirm";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -137,6 +138,7 @@ const App = () => {
                 <Route path="/statistics" element={<Statistics />} />
                 <Route path="/reports" element={<Reports />} />
                 <Route path="/agenda" element={<Agenda />} />
+                <Route path="/rdv/:token" element={<AppointmentConfirm />} />
                 <Route path="/statistics/revenue" element={<RevenueDetails />} />
                 <Route path="/statistics/revenue/*" element={<RevenueDetails />} />
                 <Route path="/statistics/expenses" element={<ExpensesDetails />} />
