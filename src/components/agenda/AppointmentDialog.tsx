@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,9 +7,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { CalendarIcon, Trash2, Check, X, Clock } from 'lucide-react';
+import { CalendarIcon, Trash2, Check, X, Clock, ChevronsUpDown, User } from 'lucide-react';
 import { useAppointments, Appointment, AppointmentType, CreateAppointmentData, UpdateAppointmentData } from '@/hooks/useAppointments';
 import { useWorkingHours } from '@/hooks/useWorkingHours';
 import { useCustomers } from '@/hooks/useCustomers';
@@ -50,10 +51,29 @@ export function AppointmentDialog({ open, onClose, appointment, defaultDate, sav
   const [duration, setDuration] = useState<number>(30);
   const [appointmentType, setAppointmentType] = useState<AppointmentType>('deposit');
   const [customerId, setCustomerId] = useState<string>('');
+  const [customerSearch, setCustomerSearch] = useState<string>('');
+  const [customerPopoverOpen, setCustomerPopoverOpen] = useState(false);
   const [notes, setNotes] = useState<string>('');
 
   const isEditing = !!appointment;
   const availableSlots = getAvailableSlots(selectedDate, 30);
+
+  // Filter customers based on search
+  const filteredCustomers = useMemo(() => {
+    if (!customerSearch.trim()) return customers;
+    const search = customerSearch.toLowerCase();
+    return customers.filter(customer => 
+      customer.first_name?.toLowerCase().includes(search) ||
+      customer.last_name?.toLowerCase().includes(search) ||
+      customer.phone?.toLowerCase().includes(search) ||
+      customer.email?.toLowerCase().includes(search)
+    );
+  }, [customers, customerSearch]);
+
+  // Get selected customer info
+  const selectedCustomer = useMemo(() => {
+    return customers.find(c => c.id === customerId);
+  }, [customers, customerId]);
 
   useEffect(() => {
     if (appointment) {
@@ -63,6 +83,7 @@ export function AppointmentDialog({ open, onClose, appointment, defaultDate, sav
       setDuration(appointment.duration_minutes);
       setAppointmentType(appointment.appointment_type);
       setCustomerId(appointment.customer_id || '');
+      setCustomerSearch('');
       setNotes(appointment.notes || '');
     } else {
       setSelectedDate(defaultDate || new Date());
@@ -70,6 +91,7 @@ export function AppointmentDialog({ open, onClose, appointment, defaultDate, sav
       setDuration(30);
       setAppointmentType('deposit');
       setCustomerId('');
+      setCustomerSearch('');
       setNotes('');
     }
   }, [appointment, defaultDate, open]);
@@ -227,23 +249,83 @@ export function AppointmentDialog({ open, onClose, appointment, defaultDate, sav
             </Select>
           </div>
 
-          {/* Customer (only for new appointments) */}
+          {/* Customer search (only for new appointments) */}
           {!isEditing && (
             <div className="space-y-2">
-              <Label>Client (optionnel)</Label>
-            <Select value={customerId || "none"} onValueChange={(v) => setCustomerId(v === "none" ? "" : v)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Sélectionner un client" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">Aucun client</SelectItem>
-                {customers.map(customer => (
-                  <SelectItem key={customer.id} value={customer.id}>
-                    {customer.first_name} {customer.last_name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              <Label className="flex items-center gap-2">
+                <User className="h-4 w-4" />
+                Client (optionnel)
+              </Label>
+              <Popover open={customerPopoverOpen} onOpenChange={setCustomerPopoverOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={customerPopoverOpen}
+                    className="w-full justify-between font-normal"
+                  >
+                    {selectedCustomer 
+                      ? `${selectedCustomer.first_name} ${selectedCustomer.last_name}`
+                      : "Rechercher un client..."
+                    }
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-full p-0 z-50" align="start">
+                  <Command shouldFilter={false}>
+                    <CommandInput 
+                      placeholder="Rechercher par nom, téléphone, email..." 
+                      value={customerSearch}
+                      onValueChange={setCustomerSearch}
+                    />
+                    <CommandList>
+                      <CommandEmpty>Aucun client trouvé.</CommandEmpty>
+                      <CommandGroup>
+                        <CommandItem
+                          value="none"
+                          onSelect={() => {
+                            setCustomerId('');
+                            setCustomerSearch('');
+                            setCustomerPopoverOpen(false);
+                          }}
+                        >
+                          <Check
+                            className={cn(
+                              "mr-2 h-4 w-4",
+                              !customerId ? "opacity-100" : "opacity-0"
+                            )}
+                          />
+                          <span className="text-muted-foreground">Aucun client</span>
+                        </CommandItem>
+                        {filteredCustomers.map(customer => (
+                          <CommandItem
+                            key={customer.id}
+                            value={customer.id}
+                            onSelect={() => {
+                              setCustomerId(customer.id);
+                              setCustomerSearch('');
+                              setCustomerPopoverOpen(false);
+                            }}
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                customerId === customer.id ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                            <div className="flex flex-col">
+                              <span>{customer.first_name} {customer.last_name}</span>
+                              {customer.phone && (
+                                <span className="text-xs text-muted-foreground">{customer.phone}</span>
+                              )}
+                            </div>
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
             </div>
           )}
 
