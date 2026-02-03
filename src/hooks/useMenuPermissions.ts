@@ -10,6 +10,7 @@ interface MenuPermissions {
   orders: boolean;
   customers: boolean;
   chats: boolean;
+  agenda: boolean;
   sidebar_sav_types: boolean;
   sidebar_sav_statuses: boolean;
   sidebar_late_sav: boolean;
@@ -44,6 +45,7 @@ export function useMenuPermissions(): {
         orders: false,
         customers: true,
         chats: false,
+        agenda: true,
         sidebar_sav_types: true,
         sidebar_sav_statuses: true,
         sidebar_late_sav: true,
@@ -75,6 +77,7 @@ export function useMenuPermissions(): {
       orders: shop.menu_orders_visible ?? true,
       customers: shop.menu_customers_visible ?? true,
       chats: shop.menu_chats_visible ?? true,
+      agenda: (shop as any).menu_agenda_visible ?? true,
       statistics: shop.menu_statistics_visible ?? true,
       sidebar_sav_types: shop.sidebar_sav_types_visible ?? true,
       sidebar_sav_statuses: shop.sidebar_sav_statuses_visible ?? true,
@@ -92,6 +95,7 @@ export function useMenuPermissions(): {
       orders: forcedFeatures.orders === true ? true : (basePermissions.orders && shopPreferences.orders),
       customers: forcedFeatures.customers === true ? true : (basePermissions.customers && shopPreferences.customers),
       chats: forcedFeatures.chats === true ? true : (basePermissions.chats && shopPreferences.chats),
+      agenda: forcedFeatures.agenda === true ? true : ((basePermissions as any).agenda !== false && shopPreferences.agenda),
       sidebar_sav_types: forcedFeatures.sidebar_sav_types === true ? true : (basePermissions.sidebar_sav_types && shopPreferences.sidebar_sav_types),
       sidebar_sav_statuses: forcedFeatures.sidebar_sav_statuses === true ? true : (basePermissions.sidebar_sav_statuses && shopPreferences.sidebar_sav_statuses),
       sidebar_late_sav: forcedFeatures.sidebar_late_sav === true ? true : (basePermissions.sidebar_late_sav && shopPreferences.sidebar_late_sav),

@@ -48,6 +48,7 @@ import QuotePublic from "./pages/QuotePublic";
 import Satisfaction from "./pages/Satisfaction";
 import Reports from "./pages/Reports";
 import ChromeExtensionDownload from "./pages/ChromeExtensionDownload";
+import Agenda from "./pages/Agenda";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -135,6 +136,7 @@ const App = () => {
                 <Route path="/chats" element={<ClientChats />} />
                 <Route path="/statistics" element={<Statistics />} />
                 <Route path="/reports" element={<Reports />} />
+                <Route path="/agenda" element={<Agenda />} />
                 <Route path="/statistics/revenue" element={<RevenueDetails />} />
                 <Route path="/statistics/revenue/*" element={<RevenueDetails />} />
                 <Route path="/statistics/expenses" element={<ExpensesDetails />} />
