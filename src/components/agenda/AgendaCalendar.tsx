@@ -7,6 +7,7 @@ import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from 'lucide-reac
 import { format, addDays, addWeeks, addMonths, startOfWeek, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isToday } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Appointment, AppointmentStatus } from '@/hooks/useAppointments';
+import { useWorkingHours, WorkingHours } from '@/hooks/useWorkingHours';
 import { cn } from '@/lib/utils';
 
 interface AgendaCalendarProps {
@@ -20,7 +21,7 @@ interface AgendaCalendarProps {
   onAppointmentClick: (appointment: Appointment) => void;
 }
 
-const HOURS = Array.from({ length: 12 }, (_, i) => i + 8); // 8h - 19h
+const HOURS = Array.from({ length: 14 }, (_, i) => i + 7); // 7h - 20h
 
 const STATUS_COLORS: Record<AppointmentStatus, string> = {
   proposed: 'bg-amber-500',
@@ -57,6 +58,7 @@ export function AgendaCalendar({
   onSlotClick,
   onAppointmentClick,
 }: AgendaCalendarProps) {
+  const { workingHours, getWorkingHoursForDay, hasWorkingHours } = useWorkingHours();
   
   const navigatePrevious = () => {
     switch (viewType) {
@@ -88,6 +90,38 @@ export function AgendaCalendar({
 
   const goToToday = () => {
     onDateChange(new Date());
+  };
+
+  // Check if a day is closed (shop not open)
+  const isDayClosed = (date: Date): boolean => {
+    if (!hasWorkingHours) return false;
+    const dayOfWeek = date.getDay();
+    const hours = getWorkingHoursForDay(dayOfWeek);
+    return !hours || !hours.is_open;
+  };
+
+  // Check if a specific hour is outside working hours or in break
+  const isHourOff = (date: Date, hour: number): boolean => {
+    if (!hasWorkingHours) return false;
+    const dayOfWeek = date.getDay();
+    const hours = getWorkingHoursForDay(dayOfWeek);
+    
+    if (!hours || !hours.is_open) return true;
+    
+    const [startHour] = hours.start_time.split(':').map(Number);
+    const [endHour] = hours.end_time.split(':').map(Number);
+    
+    // Outside working hours
+    if (hour < startHour || hour >= endHour) return true;
+    
+    // During break
+    if (hours.break_start && hours.break_end) {
+      const [breakStartH] = hours.break_start.split(':').map(Number);
+      const [breakEndH] = hours.break_end.split(':').map(Number);
+      if (hour >= breakStartH && hour < breakEndH) return true;
+    }
+    
+    return false;
   };
 
   const weekDays = useMemo(() => {
@@ -166,31 +200,61 @@ export function AgendaCalendar({
     </div>
   );
 
-  const renderDayView = () => (
-    <div className="space-y-1">
-      {HOURS.map(hour => {
-        const hourAppointments = getAppointmentsForHour(selectedDate, hour);
-        return (
-          <div 
-            key={hour} 
-            className="flex border-b border-border hover:bg-accent/50 cursor-pointer min-h-[60px]"
-            onClick={() => {
-              const slotDate = new Date(selectedDate);
-              slotDate.setHours(hour, 0, 0, 0);
-              onSlotClick(slotDate);
-            }}
-          >
-            <div className="w-16 flex-shrink-0 p-2 text-sm text-muted-foreground border-r">
-              {hour}:00
-            </div>
-            <div className="flex-1 p-1 space-y-1">
-              {hourAppointments.map(apt => renderAppointmentCard(apt))}
-            </div>
+  const renderDayView = () => {
+    const dayIsClosed = isDayClosed(selectedDate);
+    
+    if (dayIsClosed) {
+      return (
+        <div className="flex items-center justify-center h-64 bg-muted/50 rounded-lg">
+          <div className="text-center text-muted-foreground">
+            <CalendarIcon className="h-12 w-12 mx-auto mb-2 opacity-50" />
+            <p className="text-lg font-medium">Fermé</p>
+            <p className="text-sm">La boutique est fermée ce jour</p>
           </div>
-        );
-      })}
-    </div>
-  );
+        </div>
+      );
+    }
+    
+    return (
+      <div className="space-y-1">
+        {HOURS.map(hour => {
+          const hourAppointments = getAppointmentsForHour(selectedDate, hour);
+          const hourIsOff = isHourOff(selectedDate, hour);
+          
+          return (
+            <div 
+              key={hour} 
+              className={cn(
+                "flex border-b border-border min-h-[60px]",
+                hourIsOff 
+                  ? "bg-muted/40 cursor-not-allowed" 
+                  : "hover:bg-accent/50 cursor-pointer"
+              )}
+              onClick={() => {
+                if (hourIsOff) return;
+                const slotDate = new Date(selectedDate);
+                slotDate.setHours(hour, 0, 0, 0);
+                onSlotClick(slotDate);
+              }}
+            >
+              <div className={cn(
+                "w-16 flex-shrink-0 p-2 text-sm border-r",
+                hourIsOff ? "text-muted-foreground/50" : "text-muted-foreground"
+              )}>
+                {hour}:00
+              </div>
+              <div className="flex-1 p-1 space-y-1">
+                {hourIsOff && hourAppointments.length === 0 && (
+                  <span className="text-xs text-muted-foreground/50 italic">Fermé</span>
+                )}
+                {hourAppointments.map(apt => renderAppointmentCard(apt))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
 
   const renderWeekView = () => (
     <div className="overflow-x-auto">
@@ -198,25 +262,36 @@ export function AgendaCalendar({
         {/* Header row with days */}
         <div className="flex border-b">
           <div className="w-16 flex-shrink-0" />
-          {weekDays.map(day => (
-            <div 
-              key={day.toISOString()} 
-              className={cn(
-                "flex-1 p-2 text-center border-l",
-                isToday(day) && "bg-primary/10"
-              )}
-            >
-              <div className="text-sm font-medium">
-                {format(day, 'EEE', { locale: fr })}
+          {weekDays.map(day => {
+            const dayIsClosed = isDayClosed(day);
+            return (
+              <div 
+                key={day.toISOString()} 
+                className={cn(
+                  "flex-1 p-2 text-center border-l",
+                  isToday(day) && "bg-primary/10",
+                  dayIsClosed && "bg-muted/50"
+                )}
+              >
+                <div className={cn(
+                  "text-sm font-medium",
+                  dayIsClosed && "text-muted-foreground/70"
+                )}>
+                  {format(day, 'EEE', { locale: fr })}
+                </div>
+                <div className={cn(
+                  "text-lg",
+                  isToday(day) && "text-primary font-bold",
+                  dayIsClosed && "text-muted-foreground/70"
+                )}>
+                  {format(day, 'd')}
+                </div>
+                {dayIsClosed && (
+                  <div className="text-xs text-muted-foreground/50">Fermé</div>
+                )}
               </div>
-              <div className={cn(
-                "text-lg",
-                isToday(day) && "text-primary font-bold"
-              )}>
-                {format(day, 'd')}
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Time grid */}
@@ -227,14 +302,20 @@ export function AgendaCalendar({
             </div>
             {weekDays.map(day => {
               const hourAppointments = getAppointmentsForHour(day, hour);
+              const hourIsOff = isHourOff(day, hour);
+              
               return (
                 <div 
                   key={day.toISOString()}
                   className={cn(
-                    "flex-1 p-1 border-l hover:bg-accent/50 cursor-pointer",
-                    isToday(day) && "bg-primary/5"
+                    "flex-1 p-1 border-l",
+                    isToday(day) && !hourIsOff && "bg-primary/5",
+                    hourIsOff 
+                      ? "bg-muted/40 cursor-not-allowed" 
+                      : "hover:bg-accent/50 cursor-pointer"
                   )}
                   onClick={() => {
+                    if (hourIsOff) return;
                     const slotDate = new Date(day);
                     slotDate.setHours(hour, 0, 0, 0);
                     onSlotClick(slotDate);
@@ -278,21 +359,28 @@ export function AgendaCalendar({
               const dayAppointments = getAppointmentsForDay(day);
               const isCurrentMonth = day.getMonth() === selectedDate.getMonth();
               
+              const dayIsClosed = isDayClosed(day);
+              
               return (
                 <div 
                   key={day.toISOString()}
                   className={cn(
-                    "min-h-[100px] p-1 border-l first:border-l-0 hover:bg-accent/50 cursor-pointer",
+                    "min-h-[100px] p-1 border-l first:border-l-0",
                     !isCurrentMonth && "bg-muted/30 text-muted-foreground",
-                    isToday(day) && "bg-primary/10"
+                    isToday(day) && !dayIsClosed && "bg-primary/10",
+                    dayIsClosed 
+                      ? "bg-muted/50 cursor-not-allowed" 
+                      : "hover:bg-accent/50 cursor-pointer"
                   )}
-                  onClick={() => onSlotClick(day)}
+                  onClick={() => !dayIsClosed && onSlotClick(day)}
                 >
                   <div className={cn(
-                    "text-sm mb-1",
-                    isToday(day) && "font-bold text-primary"
+                    "text-sm mb-1 flex items-center gap-1",
+                    isToday(day) && "font-bold text-primary",
+                    dayIsClosed && "text-muted-foreground/70"
                   )}>
                     {format(day, 'd')}
+                    {dayIsClosed && <span className="text-xs font-normal">(Fermé)</span>}
                   </div>
                   <div className="space-y-1">
                     {dayAppointments.slice(0, 3).map(apt => (
