@@ -13,7 +13,7 @@ import { fr } from 'date-fns/locale';
 import { CalendarIcon, Trash2, Check, X, Clock, ChevronsUpDown, User } from 'lucide-react';
 import { useAppointments, Appointment, AppointmentType, CreateAppointmentData, UpdateAppointmentData } from '@/hooks/useAppointments';
 import { useWorkingHours } from '@/hooks/useWorkingHours';
-import { useCustomers } from '@/hooks/useCustomers';
+import { useAllCustomers } from '@/hooks/useAllCustomers';
 import { cn } from '@/lib/utils';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
@@ -44,7 +44,7 @@ const DURATIONS = [
 export function AppointmentDialog({ open, onClose, appointment, defaultDate, savCaseId }: AppointmentDialogProps) {
   const { createAppointment, updateAppointment, deleteAppointment, confirmAppointment, cancelAppointment, isCreating, isUpdating, isDeleting } = useAppointments();
   const { getAvailableSlots } = useWorkingHours();
-  const { customers } = useCustomers();
+  const { customers } = useAllCustomers();
 
   const [selectedDate, setSelectedDate] = useState<Date>(defaultDate || new Date());
   const [selectedTime, setSelectedTime] = useState<string>('09:00');
