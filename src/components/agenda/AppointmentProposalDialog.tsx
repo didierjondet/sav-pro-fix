@@ -14,6 +14,7 @@ import { useAppointments } from '@/hooks/useAppointments';
 import { useSMS } from '@/hooks/useSMS';
 import { useWorkingHours } from '@/hooks/useWorkingHours';
 import { supabase } from '@/integrations/supabase/client';
+import { AITextReformulator } from '@/components/sav/AITextReformulator';
 import type { Database } from '@/integrations/supabase/types';
 
 type AppointmentType = Database['public']['Enums']['appointment_type'];
@@ -266,7 +267,14 @@ Confirmez votre RDV via le lien dans votre espace de suivi.`;
 
           {/* Notes */}
           <div className="space-y-2">
-            <Label>Notes (optionnel)</Label>
+            <div className="flex items-center justify-between">
+              <Label>Notes (optionnel)</Label>
+              <AITextReformulator
+                text={notes}
+                context="technician_comments"
+                onReformulated={setNotes}
+              />
+            </div>
             <Textarea
               placeholder="Informations supplémentaires pour le client..."
               value={notes}
