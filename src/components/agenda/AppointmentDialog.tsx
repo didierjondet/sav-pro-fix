@@ -231,19 +231,19 @@ export function AppointmentDialog({ open, onClose, appointment, defaultDate, sav
           {!isEditing && (
             <div className="space-y-2">
               <Label>Client (optionnel)</Label>
-              <Select value={customerId} onValueChange={setCustomerId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Sélectionner un client" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">Aucun client</SelectItem>
-                  {customers.map(customer => (
-                    <SelectItem key={customer.id} value={customer.id}>
-                      {customer.first_name} {customer.last_name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <Select value={customerId || "none"} onValueChange={(v) => setCustomerId(v === "none" ? "" : v)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Sélectionner un client" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Aucun client</SelectItem>
+                {customers.map(customer => (
+                  <SelectItem key={customer.id} value={customer.id}>
+                    {customer.first_name} {customer.last_name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             </div>
           )}
 
