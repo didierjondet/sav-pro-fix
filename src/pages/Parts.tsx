@@ -164,7 +164,19 @@ export default function Parts() {
                   </div>
 
                    {/* Statistiques */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                    <Card>
+                      <CardContent className="p-6">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm text-muted-foreground">Nombre d'articles</p>
+                            <p className="text-2xl font-bold">{parts.length}</p>
+                          </div>
+                          <Package className="h-8 w-8 text-blue-600" />
+                        </div>
+                      </CardContent>
+                    </Card>
+
                     <Card>
                       <CardContent className="p-6">
                         <div className="flex items-center justify-between">
