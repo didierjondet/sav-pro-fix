@@ -90,6 +90,95 @@ export type Database = {
           },
         ]
       }
+      appointments: {
+        Row: {
+          appointment_type: Database["public"]["Enums"]["appointment_type"]
+          confirmation_token: string
+          counter_proposal_datetime: string | null
+          counter_proposal_message: string | null
+          created_at: string
+          customer_id: string | null
+          device_info: Json | null
+          duration_minutes: number
+          id: string
+          notes: string | null
+          proposed_by: string
+          sav_case_id: string | null
+          shop_id: string
+          start_datetime: string
+          status: Database["public"]["Enums"]["appointment_status"]
+          technician_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          appointment_type?: Database["public"]["Enums"]["appointment_type"]
+          confirmation_token?: string
+          counter_proposal_datetime?: string | null
+          counter_proposal_message?: string | null
+          created_at?: string
+          customer_id?: string | null
+          device_info?: Json | null
+          duration_minutes?: number
+          id?: string
+          notes?: string | null
+          proposed_by?: string
+          sav_case_id?: string | null
+          shop_id: string
+          start_datetime: string
+          status?: Database["public"]["Enums"]["appointment_status"]
+          technician_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          appointment_type?: Database["public"]["Enums"]["appointment_type"]
+          confirmation_token?: string
+          counter_proposal_datetime?: string | null
+          counter_proposal_message?: string | null
+          created_at?: string
+          customer_id?: string | null
+          device_info?: Json | null
+          duration_minutes?: number
+          id?: string
+          notes?: string | null
+          proposed_by?: string
+          sav_case_id?: string | null
+          shop_id?: string
+          start_datetime?: string
+          status?: Database["public"]["Enums"]["appointment_status"]
+          technician_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "appointments_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointments_sav_case_id_fkey"
+            columns: ["sav_case_id"]
+            isOneToOne: false
+            referencedRelation: "sav_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointments_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointments_technician_id_fkey"
+            columns: ["technician_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       carousel_items: {
         Row: {
           created_at: string | null
@@ -1304,6 +1393,54 @@ export type Database = {
         }
         Relationships: []
       }
+      shop_blocked_slots: {
+        Row: {
+          created_at: string
+          end_datetime: string
+          id: string
+          reason: string | null
+          shop_id: string
+          start_datetime: string
+          technician_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          end_datetime: string
+          id?: string
+          reason?: string | null
+          shop_id: string
+          start_datetime: string
+          technician_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          end_datetime?: string
+          id?: string
+          reason?: string | null
+          shop_id?: string
+          start_datetime?: string
+          technician_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shop_blocked_slots_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shop_blocked_slots_technician_id_fkey"
+            columns: ["technician_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       shop_sav_statuses: {
         Row: {
           created_at: string
@@ -1668,6 +1805,53 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "shop_suppliers_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shop_working_hours: {
+        Row: {
+          break_end: string | null
+          break_start: string | null
+          created_at: string
+          day_of_week: number
+          end_time: string
+          id: string
+          is_open: boolean
+          shop_id: string
+          start_time: string
+          updated_at: string
+        }
+        Insert: {
+          break_end?: string | null
+          break_start?: string | null
+          created_at?: string
+          day_of_week: number
+          end_time?: string
+          id?: string
+          is_open?: boolean
+          shop_id: string
+          start_time?: string
+          updated_at?: string
+        }
+        Update: {
+          break_end?: string | null
+          break_start?: string | null
+          created_at?: string
+          day_of_week?: number
+          end_time?: string
+          id?: string
+          is_open?: boolean
+          shop_id?: string
+          start_time?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shop_working_hours_shop_id_fkey"
             columns: ["shop_id"]
             isOneToOne: false
             referencedRelation: "shops"
@@ -2624,6 +2808,14 @@ export type Database = {
       }
     }
     Enums: {
+      appointment_status:
+        | "proposed"
+        | "confirmed"
+        | "counter_proposed"
+        | "cancelled"
+        | "completed"
+        | "no_show"
+      appointment_type: "deposit" | "pickup" | "diagnostic" | "repair"
       sav_status:
         | "pending"
         | "in_progress"
@@ -2761,6 +2953,15 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      appointment_status: [
+        "proposed",
+        "confirmed",
+        "counter_proposed",
+        "cancelled",
+        "completed",
+        "no_show",
+      ],
+      appointment_type: ["deposit", "pickup", "diagnostic", "repair"],
       sav_status: [
         "pending",
         "in_progress",

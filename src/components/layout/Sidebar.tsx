@@ -15,7 +15,7 @@ import { useShopSAVTypes } from '@/hooks/useShopSAVTypes';
 import { useShopSettings } from '@/hooks/useShopSettings';
 import { calculateSAVDelay } from '@/hooks/useSAVDelay';
 import { useMenuPermissions } from '@/hooks/useMenuPermissions';
-import { MessageSquare, Package, Users, BarChart3, FileText, Settings, X, Plus, Shield, CreditCard, HelpCircle, Info, FileBarChart } from 'lucide-react';
+import { MessageSquare, Package, Users, BarChart3, FileText, Settings, X, Plus, Shield, CreditCard, HelpCircle, Info, FileBarChart, Calendar } from 'lucide-react';
 import { useQuotes } from '@/hooks/useQuotes';
 interface SidebarProps {
   isOpen: boolean;
@@ -45,6 +45,10 @@ const baseNavigation = [{
   name: 'Clients',
   href: '/customers',
   icon: Users
+}, {
+  name: 'Agenda',
+  href: '/agenda',
+  icon: Calendar
 }, {
   name: 'Chat clients',
   href: '/client-chats',
@@ -126,6 +130,8 @@ export function Sidebar({
         return permissions.orders;
       case '/customers':
         return permissions.customers;
+      case '/agenda':
+        return permissions.agenda;
       case '/client-chats':
         return permissions.chats;
       case '/reports':
