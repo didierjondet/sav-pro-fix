@@ -52,9 +52,11 @@ export interface CreateAppointmentData {
   technician_id?: string;
   start_datetime: string;
   duration_minutes: number;
+  status?: AppointmentStatus;
   appointment_type: AppointmentType;
   notes?: string;
   device_info?: Record<string, any>;
+  proposed_by?: 'shop' | 'client';
 }
 
 export interface UpdateAppointmentData {

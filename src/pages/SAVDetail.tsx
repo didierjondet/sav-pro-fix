@@ -16,7 +16,7 @@ import { useShopSAVTypes } from '@/hooks/useShopSAVTypes';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { QrCode, ExternalLink, ArrowLeft, Copy, Share, Save, Lock, User, Mail, Phone, MapPin, CheckCircle, X, MessageSquare, Edit, Clock } from 'lucide-react';
+import { QrCode, ExternalLink, ArrowLeft, Copy, Share, Save, Lock, User, Mail, Phone, MapPin, CheckCircle, X, MessageSquare, Edit, Clock, CalendarPlus } from 'lucide-react';
 import { SMSButton } from '@/components/sav/SMSButton';
 import { useNavigate } from 'react-router-dom';
 import { SAVPartsEditor } from '@/components/sav/SAVPartsEditor';
@@ -33,6 +33,7 @@ import { fr } from 'date-fns/locale';
 import { AITextReformulator } from '@/components/sav/AITextReformulator';
 import { EditSAVCustomerDialog } from '@/components/sav/EditSAVCustomerDialog';
 import { EditSAVDetailsDialog } from '@/components/sav/EditSAVDetailsDialog';
+import { AppointmentProposalDialog } from '@/components/agenda/AppointmentProposalDialog';
 export default function SAVDetail() {
   const {
     id
@@ -350,6 +351,28 @@ export default function SAVDetail() {
                   
                   {/* SMS Button - for types that require customer info */}
                   {getTypeInfo(savCase.sav_type).show_customer_info && <SMSButton customerPhone={savCase.customer?.phone || savCase.external_contact_phone || ''} customerName={`${savCase.customer?.first_name || ''} ${savCase.customer?.last_name || ''}`.trim() || savCase.external_contact_name || 'Contact'} caseNumber={savCase.case_number} caseId={savCase.id} size="sm" variant="outline" />}
+                  
+                  {/* Bouton Proposer RDV - for types with customer info */}
+                  {getTypeInfo(savCase.sav_type).show_customer_info && (
+                    <AppointmentProposalDialog
+                      savCaseId={savCase.id}
+                      customerId={savCase.customer_id}
+                      customerName={`${savCase.customer?.first_name || ''} ${savCase.customer?.last_name || ''}`.trim() || 'Client'}
+                      customerPhone={savCase.customer?.phone}
+                      caseNumber={savCase.case_number}
+                      deviceInfo={{
+                        brand: savCase.device_brand,
+                        model: savCase.device_model
+                      }}
+                      trigger={
+                        <Button variant="outline" size="sm">
+                          <CalendarPlus className="h-4 w-4 mr-2" />
+                          Proposer RDV
+                        </Button>
+                      }
+                    />
+                  )}
+                  
                   <SAVPrintButton savCase={savCase} />
                   <SAVPartsEditor savCaseId={savCase.id} onPartsUpdated={() => {}} />
                 </div>

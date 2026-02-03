@@ -4,11 +4,13 @@ import { useToast } from '@/hooks/use-toast';
 import { generateShortTrackingUrl } from '@/utils/trackingUtils';
 import { useProfile } from '@/hooks/useProfile';
 import { useSubscription } from '@/hooks/useSubscription';
+import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
 
 interface SendSMSRequest {
   toNumber: string;
   message: string;
-  type: 'sav_notification' | 'quote_notification' | 'manual' | 'review_request';
+  type: 'sav_notification' | 'quote_notification' | 'manual' | 'review_request' | 'appointment_proposal';
   recordId?: string;
 }
 
@@ -169,11 +171,40 @@ export function useSMS() {
     });
   };
 
+  const sendAppointmentSMS = async (
+    customerPhone: string,
+    customerName: string,
+    appointmentDateTime: Date,
+    appointmentType: string,
+    durationMinutes: number,
+    confirmUrl: string,
+    savCaseId?: string
+  ): Promise<boolean> => {
+    const formattedDate = format(appointmentDateTime, "EEEE d MMMM", { locale: fr });
+    const formattedTime = format(appointmentDateTime, "HH'h'mm", { locale: fr });
+    
+    const message = `Bonjour ${customerName},
+
+Nous vous proposons un RDV le ${formattedDate} à ${formattedTime} pour votre ${appointmentType.toLowerCase()} (durée: ${durationMinutes}min).
+
+Confirmez ici : ${confirmUrl}
+
+⚠️ Ne répondez pas à ce SMS.`;
+
+    return await sendSMS({
+      toNumber: customerPhone,
+      message,
+      type: 'appointment_proposal',
+      recordId: savCaseId,
+    });
+  };
+
   return {
     sendSMS,
     sendSAVNotification,
     sendQuoteNotification,
     sendReviewRequestSMS,
+    sendAppointmentSMS,
     loading,
   };
 }
