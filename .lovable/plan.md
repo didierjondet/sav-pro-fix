@@ -1,139 +1,249 @@
 
-# Plan de correction : Statistiques faussées par les conversions devis → SAV
+# Plan : Module Agenda pour la prise de rendez-vous
 
-## Diagnostic confirmé
+## Vue d'ensemble
 
-### Problèmes identifiés
-
-**1. Pièces non transférées quand stock = 0**
-
-Dans `src/pages/Quotes.tsx` (lignes 445-472), quand une pièce du devis n'a pas de stock disponible :
-- Le code crée une commande dans `order_items`
-- Mais il ne crée **PAS** d'entrée dans `sav_parts`
-- Résultat : le SAV a un `total_cost` mais aucune pièce, donc aucun coût d'achat traçable
-
-Exemples concrets dans la base :
-- SAV `2026-01-02-008` : total_cost = 189.99€, 0 pièces dans sav_parts
-- SAV `2026-01-26-003` : converti depuis devis DEV-2026-01-20-001, 0 pièces
-
-**2. Mauvaise source pour les prix d'achat dans les statistiques**
-
-`useStatistics.ts` (ligne 422) :
-```typescript
-const partCost = (savPart.part?.purchase_price || 0) * savPart.quantity;
-```
-Problème : utilise le prix actuel du catalogue (`parts.purchase_price`) au lieu du prix stocké dans `sav_parts.purchase_price`
-
-`useMonthlyStatistics.ts` (ligne 79) :
-```typescript  
-const purchase = Number(savPart.parts?.purchase_price) || 0;
-```
-Même problème : utilise `parts.purchase_price` au lieu de `sav_parts.purchase_price`
-
-**3. Le hook `useSAVPartsCosts` est correct**
-
-Il utilise bien `item.purchase_price` directement depuis `sav_parts`.
+Création d'un système complet de gestion de rendez-vous permettant :
+- Aux **techniciens** : ouvrir des créneaux, gérer leur planning
+- Aux **clients** : recevoir des propositions de RDV et confirmer/proposer un autre créneau
+- **Communication** : via SAV (chat), SMS ou les deux
 
 ---
 
-## Corrections à apporter
+## Architecture technique
 
-### Fichier 1 : `src/pages/Quotes.tsx`
+### 1. Nouvelles tables de base de données
 
-**Objectif** : Toujours créer une entrée `sav_parts` même quand le stock est insuffisant
+```text
+┌─────────────────────────────────────────┐
+│        shop_working_hours               │
+├─────────────────────────────────────────┤
+│ id (uuid)                               │
+│ shop_id (fk → shops)                    │
+│ day_of_week (0-6, dimanche=0)           │
+│ start_time (time)                       │
+│ end_time (time)                         │
+│ is_open (boolean)                       │
+│ break_start (time, nullable)            │
+│ break_end (time, nullable)              │
+└─────────────────────────────────────────┘
 
-**Modification** (lignes 445-472) :
+┌─────────────────────────────────────────┐
+│        appointments                     │
+├─────────────────────────────────────────┤
+│ id (uuid)                               │
+│ shop_id (fk → shops)                    │
+│ sav_case_id (fk → sav_cases, nullable)  │
+│ customer_id (fk → customers)            │
+│ technician_id (fk → profiles, nullable) │
+│ start_datetime (timestamptz)            │
+│ duration_minutes (integer)              │
+│ status (enum: proposed, confirmed,      │
+│         counter_proposed, cancelled,    │
+│         completed, no_show)             │
+│ appointment_type (enum: deposit,        │
+│         pickup, diagnostic)             │
+│ notes (text)                            │
+│ device_info (jsonb)                     │
+│ proposed_by (shop ou client)            │
+│ confirmation_token (uuid, unique)       │
+│ counter_proposal_datetime (timestamptz) │
+│ counter_proposal_message (text)         │
+│ created_at, updated_at                  │
+└─────────────────────────────────────────┘
 
-Avant :
-```typescript
-if (availableStock >= requestedQuantity) {
-  // Stock suffisant - insérer dans sav_parts
-  partsToInsert.push({...});
-} else {
-  // Stock insuffisant - créer commande SEULEMENT
-  if (availableStock > 0) {
-    partsToInsert.push({...}); // Stock partiel
-  }
-  ordersToInsert.push({...}); // Commande
-}
+┌─────────────────────────────────────────┐
+│     shop_blocked_slots                  │
+├─────────────────────────────────────────┤
+│ id (uuid)                               │
+│ shop_id (fk → shops)                    │
+│ start_datetime (timestamptz)            │
+│ end_datetime (timestamptz)              │
+│ reason (text)                           │
+│ technician_id (fk → profiles, nullable) │
+└─────────────────────────────────────────┘
 ```
 
-Après :
-```typescript
-// TOUJOURS créer l'entrée sav_parts pour tracer les coûts
-partsToInsert.push({
-  sav_case_id: savCaseId,
-  part_id: item.part_id!,
-  quantity: requestedQuantity,
-  time_minutes: 0,
-  unit_price: item.unit_public_price || 0,
-  purchase_price: item.unit_purchase_price ?? null,
-});
+### 2. Nouveaux fichiers frontend
 
-if (availableStock < requestedQuantity) {
-  // Créer commande pour pièces manquantes
-  ordersToInsert.push({...});
-}
-```
+| Fichier | Description |
+|---------|-------------|
+| `src/pages/Agenda.tsx` | Page principale de l'agenda avec vue calendrier |
+| `src/components/agenda/AgendaCalendar.tsx` | Composant calendrier interactif |
+| `src/components/agenda/AppointmentDialog.tsx` | Dialog pour creer/modifier un RDV |
+| `src/components/agenda/WorkingHoursConfig.tsx` | Configuration des horaires d'ouverture |
+| `src/components/agenda/AppointmentProposal.tsx` | Composant pour proposer un RDV depuis un SAV |
+| `src/components/agenda/SlotBlocker.tsx` | Bloquer des creneaux |
+| `src/components/agenda/ClientAppointmentResponse.tsx` | Interface client pour repondre a un RDV |
+| `src/hooks/useAppointments.ts` | Hook de gestion des RDV |
+| `src/hooks/useWorkingHours.ts` | Hook pour les horaires |
+| `src/pages/AppointmentConfirm.tsx` | Page publique de confirmation RDV |
 
-### Fichier 2 : `src/hooks/useStatistics.ts`
+### 3. Modifications de fichiers existants
 
-**Objectif** : Utiliser le `purchase_price` stocké dans `sav_parts` en priorité
+| Fichier | Modification |
+|---------|--------------|
+| `src/App.tsx` | Ajouter routes `/agenda` et `/rdv/:token` |
+| `src/components/layout/Sidebar.tsx` | Ajouter menu "Agenda" avec icone Calendar |
+| `src/hooks/useMenuPermissions.ts` | Ajouter permission `agenda` |
+| `src/pages/SAVDetail.tsx` | Bouton "Proposer un RDV" |
+| `src/components/sav/MessagingInterface.tsx` | Bouton rapide pour proposer RDV |
+| `src/pages/TrackSAV.tsx` | Afficher les RDV proposes au client |
+| `src/hooks/useSMS.ts` | Nouvelle fonction `sendAppointmentSMS` |
 
-**Modification** (ligne 422) :
+---
 
-Avant :
-```typescript
-const partCost = (savPart.part?.purchase_price || 0) * savPart.quantity;
-```
+## Fonctionnalites detaillees
 
-Après :
-```typescript
-const partCost = (savPart.purchase_price ?? savPart.part?.purchase_price ?? 0) * savPart.quantity;
-```
+### Cote magasin (technicien/admin)
 
-### Fichier 3 : `src/hooks/useMonthlyStatistics.ts`
+1. **Vue calendrier** :
+   - Vue jour / semaine / mois
+   - Affichage des RDV par couleur selon statut
+   - Glisser-deposer pour deplacer un RDV
+   - Clic sur un creneau vide pour creer un RDV
 
-**Objectif** : Utiliser le `purchase_price` stocké dans `sav_parts` en priorité
+2. **Configuration des horaires** :
+   - Definir les heures d'ouverture par jour
+   - Pauses dejeuner configurables
+   - Jours feries / fermetures exceptionnelles
 
-**Modification** (ligne 79) :
+3. **Gestion des RDV** :
+   - Creer un RDV manuel (avec ou sans SAV)
+   - Proposer un RDV depuis un dossier SAV
+   - Definir la duree estimee de reparation
+   - Assigner un technicien
+   - Voir les contre-propositions clients
 
-Avant :
-```typescript
-const purchase = Number(savPart.parts?.purchase_price) || 0;
-```
+4. **Blocage de creneaux** :
+   - Bloquer des plages horaires (reunion, absence)
+   - Option par technicien ou pour tout le magasin
 
-Après :
-```typescript
-const purchase = Number(savPart.purchase_price ?? savPart.parts?.purchase_price) || 0;
+### Cote client
+
+1. **Reception de proposition** :
+   - Notification dans le chat SAV
+   - SMS optionnel avec lien de confirmation
+   - Email optionnel (future)
+
+2. **Reponse du client** :
+   - Accepter le creneau propose
+   - Proposer un autre creneau parmi les disponibilites
+   - Ajouter un message
+
+3. **Page de confirmation publique** :
+   - URL unique avec token (`/rdv/{token}`)
+   - Vue des creneaux disponibles
+   - Confirmation en 1 clic
+
+### Integration SAV
+
+1. **Depuis la page SAVDetail** :
+   - Bouton "Proposer un RDV"
+   - Selection du creneau dans un calendrier popup
+   - Choix du canal (chat seul, SMS, les deux)
+   - Duree estimee de reparation
+
+2. **Dans le chat** :
+   - Message automatique avec le RDV propose
+   - Bouton de confirmation inline
+   - Affichage du statut (en attente, confirme, modifie)
+
+---
+
+## Flux de communication
+
+```text
+1. Technicien propose RDV depuis SAV
+           │
+           ▼
+2. Message auto dans chat SAV
+   + SMS optionnel avec lien
+           │
+           ▼
+3. Client recoit la proposition
+           │
+           ├──→ Accepte → RDV confirme
+           │              Notification au magasin
+           │
+           └──→ Contre-propose
+                     │
+                     ▼
+              4. Magasin recoit notification
+                 Nouveau creneau propose
+                       │
+                       ▼
+              5. Magasin confirme ou reprend contact
 ```
 
 ---
 
-## Impact des corrections
+## Details techniques
 
-| Avant | Après |
-|-------|-------|
-| Pièces perdues si stock = 0 | Toujours tracées dans sav_parts |
-| Coûts = prix catalogue actuel | Coûts = prix au moment du devis |
-| Statistiques sous-estimées | Statistiques précises |
-| Marges gonflées artificiellement | Marges réelles |
+### Structure du message SMS
+
+```text
+Bonjour {nom},
+
+Nous vous proposons un RDV le {date} a {heure} 
+pour votre {type} (duree estimee: {duree}).
+
+Confirmez ici : {lien_court}
+
+{nom_magasin}
+```
+
+### Structure du message chat
+
+```text
+📅 Proposition de rendez-vous
+
+Date : Lundi 3 fevrier 2026
+Heure : 14h00 - 15h00
+Type : Depot pour reparation
+Duree estimee : 60 minutes
+
+[Confirmer] [Proposer un autre creneau]
+```
+
+### Permissions
+
+- `agenda` : Acces au menu Agenda
+- Les plans gratuits pourraient avoir un nombre limite de RDV/mois
+- Option dans `subscription_plans` pour activer/desactiver
 
 ---
 
-## Données historiques
+## Phases d'implementation
 
-Les SAV déjà convertis avec le bug (sans pièces) resteront sans pièces dans `sav_parts`. Pour les récupérer, il faudrait un script de migration qui :
-1. Retrouve les devis archivés liés à un SAV (`sav_case_id` non null)
-2. Vérifie si le SAV a des pièces
-3. Si non, recrée les entrées `sav_parts` depuis les `items` du devis
+### Phase 1 : Base (prioritaire)
+1. Creation des tables SQL
+2. Page Agenda avec calendrier basique
+3. CRUD des rendez-vous
+4. Integration dans la sidebar
 
-Cette migration optionnelle peut être faite ultérieurement si nécessaire.
+### Phase 2 : Integration SAV
+1. Bouton proposition RDV dans SAVDetail
+2. Affichage dans le chat
+3. Page publique de confirmation
+
+### Phase 3 : Notifications
+1. Envoi SMS pour propositions
+2. Notifications en temps reel
+3. Rappels automatiques (optionnel)
+
+### Phase 4 : Ameliorations
+1. Vue multi-techniciens
+2. Statistiques des RDV
+3. Export calendrier (iCal)
 
 ---
 
-## Fichiers modifiés
+## Estimation
 
-1. **`src/pages/Quotes.tsx`** - Correction de la logique de transfert des pièces
-2. **`src/hooks/useStatistics.ts`** - Utilisation de `sav_parts.purchase_price` en priorité
-3. **`src/hooks/useMonthlyStatistics.ts`** - Utilisation de `sav_parts.purchase_price` en priorité
+- **Phase 1** : Base structurelle
+- **Phase 2** : Integration complete SAV + client
+- **Phase 3** : Notifications et SMS
+- **Phase 4** : Ameliorations futures
+
+Le systeme sera concu pour etre extensible et permettre des evolutions futures comme la reservation en ligne depuis le site web de la boutique.
