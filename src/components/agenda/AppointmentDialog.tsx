@@ -192,14 +192,14 @@ export function AppointmentDialog({ open, onClose, appointment, defaultDate, sav
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>
             {isEditing ? 'Modifier le rendez-vous' : 'Nouveau rendez-vous'}
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="flex-1 overflow-y-auto space-y-4 py-2 pr-2">
           {/* Date picker */}
           <div className="space-y-2">
             <Label>Date</Label>
@@ -216,7 +216,7 @@ export function AppointmentDialog({ open, onClose, appointment, defaultDate, sav
                   {selectedDate ? format(selectedDate, 'PPP', { locale: fr }) : 'Sélectionner une date'}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
+              <PopoverContent className="w-auto p-0 z-[100]" align="start">
                 <Calendar
                   mode="single"
                   selected={selectedDate}
@@ -235,7 +235,7 @@ export function AppointmentDialog({ open, onClose, appointment, defaultDate, sav
               <SelectTrigger>
                 <SelectValue placeholder="Sélectionner l'heure" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="z-[100]">
                 {availableSlots.length > 0 ? (
                   availableSlots.map(slot => (
                     <SelectItem key={slot} value={slot}>
@@ -268,7 +268,7 @@ export function AppointmentDialog({ open, onClose, appointment, defaultDate, sav
               <SelectTrigger>
                 <SelectValue placeholder="Durée du RDV" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="z-[100]">
                 {DURATIONS.map(d => (
                   <SelectItem key={d.value} value={d.value.toString()}>
                     {d.label}
@@ -285,7 +285,7 @@ export function AppointmentDialog({ open, onClose, appointment, defaultDate, sav
               <SelectTrigger>
                 <SelectValue placeholder="Type de RDV" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="z-[100]">
                 {APPOINTMENT_TYPES.map(type => (
                   <SelectItem key={type.value} value={type.value}>
                     {type.label}
@@ -317,7 +317,7 @@ export function AppointmentDialog({ open, onClose, appointment, defaultDate, sav
                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-full p-0 z-50" align="start">
+                <PopoverContent className="w-full p-0 z-[100]" align="start">
                   <Command shouldFilter={false}>
                     <CommandInput 
                       placeholder="Rechercher par nom, téléphone, email..." 
@@ -417,63 +417,67 @@ export function AppointmentDialog({ open, onClose, appointment, defaultDate, sav
           )}
         </div>
 
-        <DialogFooter className="flex flex-col sm:flex-row gap-2">
-          {isEditing && appointment && (
-            <div className="flex gap-2 mr-auto">
-              {appointment.status === 'proposed' && (
-                <Button 
-                  variant="default" 
-                  size="sm"
-                  onClick={handleConfirm}
-                  disabled={isUpdating}
-                >
-                  <Check className="h-4 w-4 mr-1" />
-                  Confirmer
-                </Button>
-              )}
-              {appointment.status !== 'cancelled' && appointment.status !== 'completed' && (
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={handleCancel}
-                  disabled={isUpdating}
-                >
-                  <X className="h-4 w-4 mr-1" />
-                  Annuler RDV
-                </Button>
-              )}
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button variant="destructive" size="sm" disabled={isDeleting}>
-                    <Trash2 className="h-4 w-4" />
+        <DialogFooter className="flex-shrink-0 border-t pt-4 mt-2">
+          <div className="flex flex-col w-full gap-3">
+            {/* Action buttons for existing appointments */}
+            {isEditing && appointment && (
+              <div className="flex flex-wrap gap-2">
+                {appointment.status === 'proposed' && (
+                  <Button 
+                    variant="default" 
+                    size="sm"
+                    onClick={handleConfirm}
+                    disabled={isUpdating}
+                  >
+                    <Check className="h-4 w-4 mr-1" />
+                    Confirmer
                   </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Supprimer le rendez-vous ?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Cette action est irréversible. Le rendez-vous sera définitivement supprimé.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Annuler</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleDelete}>Supprimer</AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
+                )}
+                {appointment.status !== 'cancelled' && appointment.status !== 'completed' && (
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={handleCancel}
+                    disabled={isUpdating}
+                  >
+                    <X className="h-4 w-4 mr-1" />
+                    Annuler RDV
+                  </Button>
+                )}
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="destructive" size="sm" disabled={isDeleting}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Supprimer le rendez-vous ?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Cette action est irréversible. Le rendez-vous sera définitivement supprimé.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Annuler</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleDelete}>Supprimer</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
+            )}
+            
+            {/* Main action buttons */}
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={onClose}>
+                Fermer
+              </Button>
+              <Button 
+                onClick={handleSubmit} 
+                disabled={isCreating || isUpdating}
+              >
+                {isEditing ? 'Enregistrer' : 'Créer le RDV'}
+              </Button>
             </div>
-          )}
-          
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={onClose}>
-              Fermer
-            </Button>
-            <Button 
-              onClick={handleSubmit} 
-              disabled={isCreating || isUpdating}
-            >
-              {isEditing ? 'Enregistrer' : 'Créer le RDV'}
-            </Button>
           </div>
         </DialogFooter>
       </DialogContent>
