@@ -5,10 +5,13 @@ import { Footer } from '@/components/layout/Footer';
 import { AgendaCalendar } from '@/components/agenda/AgendaCalendar';
 import { AppointmentDialog } from '@/components/agenda/AppointmentDialog';
 import { WorkingHoursConfig } from '@/components/agenda/WorkingHoursConfig';
+import { PendingAppointmentsCard } from '@/components/agenda/PendingAppointmentsCard';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Plus, Settings, Calendar as CalendarIcon } from 'lucide-react';
 import { useAppointments, Appointment } from '@/hooks/useAppointments';
+import { usePendingAppointments } from '@/hooks/usePendingAppointments';
+import { useAppointmentNotifications } from '@/hooks/useAppointmentNotifications';
 
 export default function Agenda() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -18,6 +21,10 @@ export default function Agenda() {
   const [viewType, setViewType] = useState<'day' | 'week' | 'month'>('week');
 
   const { appointments, loading } = useAppointments(viewType, selectedDate);
+  const { pendingCount } = usePendingAppointments();
+  
+  // Listen for appointment notifications (realtime)
+  useAppointmentNotifications();
 
   const handleNewAppointment = (date?: Date) => {
     setSelectedAppointment(null);
@@ -63,6 +70,9 @@ export default function Agenda() {
                 Nouveau RDV
               </Button>
             </div>
+
+            {/* Pending counter-proposals */}
+            <PendingAppointmentsCard />
 
             {/* Main content */}
             <Tabs defaultValue="calendar" className="space-y-4">
