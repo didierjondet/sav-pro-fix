@@ -8,9 +8,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { CalendarIcon, Trash2, Check, X, Clock, ChevronsUpDown, User } from 'lucide-react';
+import { CalendarIcon, Trash2, Check, X, Clock, ChevronsUpDown, User, AlertTriangle } from 'lucide-react';
 import { useAppointments, Appointment, AppointmentType, CreateAppointmentData, UpdateAppointmentData } from '@/hooks/useAppointments';
 import { useWorkingHours } from '@/hooks/useWorkingHours';
 import { useAllCustomers } from '@/hooks/useAllCustomers';
@@ -43,7 +44,7 @@ const DURATIONS = [
 
 export function AppointmentDialog({ open, onClose, appointment, defaultDate, savCaseId }: AppointmentDialogProps) {
   const { createAppointment, updateAppointment, deleteAppointment, confirmAppointment, cancelAppointment, isCreating, isUpdating, isDeleting } = useAppointments();
-  const { getAvailableSlots } = useWorkingHours();
+  const { getAvailableSlots, getWorkingHoursForDay, hasWorkingHours } = useWorkingHours();
   const { customers } = useAllCustomers();
 
   const [selectedDate, setSelectedDate] = useState<Date>(defaultDate || new Date());
@@ -57,6 +58,51 @@ export function AppointmentDialog({ open, onClose, appointment, defaultDate, sav
 
   const isEditing = !!appointment;
   const availableSlots = getAvailableSlots(selectedDate, 30);
+
+  // Check if the selected slot is during closed hours
+  const isClosedPeriodWarning = useMemo(() => {
+    if (!hasWorkingHours) return false;
+    
+    const dayOfWeek = selectedDate.getDay();
+    const hours = getWorkingHoursForDay(dayOfWeek);
+    
+    if (!hours || !hours.is_open) {
+      return { type: 'day_closed', message: 'La boutique est fermée ce jour' };
+    }
+    
+    const [selectedHour, selectedMin] = selectedTime.split(':').map(Number);
+    const selectedMinutes = selectedHour * 60 + selectedMin;
+    
+    const [startHour, startMin] = hours.start_time.split(':').map(Number);
+    const [endHour, endMin] = hours.end_time.split(':').map(Number);
+    const startMinutes = startHour * 60 + startMin;
+    const endMinutes = endHour * 60 + endMin;
+    
+    // Outside working hours
+    if (selectedMinutes < startMinutes || selectedMinutes >= endMinutes) {
+      return { 
+        type: 'outside_hours', 
+        message: `Ce créneau est en dehors des horaires d'ouverture (${hours.start_time} - ${hours.end_time})` 
+      };
+    }
+    
+    // During break
+    if (hours.break_start && hours.break_end) {
+      const [breakStartH, breakStartM] = hours.break_start.split(':').map(Number);
+      const [breakEndH, breakEndM] = hours.break_end.split(':').map(Number);
+      const breakStartMinutes = breakStartH * 60 + breakStartM;
+      const breakEndMinutes = breakEndH * 60 + breakEndM;
+      
+      if (selectedMinutes >= breakStartMinutes && selectedMinutes < breakEndMinutes) {
+        return { 
+          type: 'during_break', 
+          message: `Ce créneau est pendant la pause (${hours.break_start} - ${hours.break_end})` 
+        };
+      }
+    }
+    
+    return false;
+  }, [selectedDate, selectedTime, hasWorkingHours, getWorkingHoursForDay]);
 
   // Filter customers based on search
   const filteredCustomers = useMemo(() => {
@@ -339,6 +385,18 @@ export function AppointmentDialog({ open, onClose, appointment, defaultDate, sav
               rows={3}
             />
           </div>
+
+          {/* Warning for closed period */}
+          {isClosedPeriodWarning && (
+            <Alert variant="destructive" className="border-orange-500 bg-orange-500/10">
+              <AlertTriangle className="h-4 w-4 text-orange-500" />
+              <AlertDescription className="text-orange-600">
+                <strong>Attention :</strong> {isClosedPeriodWarning.message}.
+                <br />
+                <span className="text-sm">Le RDV sera créé malgré tout si vous confirmez.</span>
+              </AlertDescription>
+            </Alert>
+          )}
 
           {/* Status info for existing appointments */}
           {appointment && (

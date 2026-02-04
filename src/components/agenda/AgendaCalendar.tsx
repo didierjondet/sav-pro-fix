@@ -269,25 +269,27 @@ export function AgendaCalendar({
                 key={day.toISOString()} 
                 className={cn(
                   "flex-1 p-2 text-center border-l",
-                  isToday(day) && "bg-primary/10",
-                  dayIsClosed && "bg-muted/50"
+                  isToday(day) && !dayIsClosed && "bg-primary/10",
+                  dayIsClosed && "bg-destructive/10 border-destructive/20"
                 )}
               >
                 <div className={cn(
                   "text-sm font-medium",
-                  dayIsClosed && "text-muted-foreground/70"
+                  dayIsClosed && "text-destructive/70"
                 )}>
                   {format(day, 'EEE', { locale: fr })}
                 </div>
                 <div className={cn(
                   "text-lg",
-                  isToday(day) && "text-primary font-bold",
-                  dayIsClosed && "text-muted-foreground/70"
+                  isToday(day) && !dayIsClosed && "text-primary font-bold",
+                  dayIsClosed && "text-destructive/70"
                 )}>
                   {format(day, 'd')}
                 </div>
                 {dayIsClosed && (
-                  <div className="text-xs text-muted-foreground/50">Fermé</div>
+                  <div className="text-xs font-medium text-destructive bg-destructive/20 rounded px-1 py-0.5 mt-1">
+                    FERMÉ
+                  </div>
                 )}
               </div>
             );
@@ -303,16 +305,24 @@ export function AgendaCalendar({
             {weekDays.map(day => {
               const hourAppointments = getAppointmentsForHour(day, hour);
               const hourIsOff = isHourOff(day, hour);
+              const dayIsClosed = isDayClosed(day);
+              
+              // Check if this hour is during a break
+              const hours = getWorkingHoursForDay(day.getDay());
+              const isDuringBreak = hours && hours.break_start && hours.break_end && 
+                hour >= parseInt(hours.break_start.split(':')[0]) && 
+                hour < parseInt(hours.break_end.split(':')[0]);
               
               return (
                 <div 
                   key={day.toISOString()}
                   className={cn(
-                    "flex-1 p-1 border-l",
+                    "flex-1 p-1 border-l relative",
                     isToday(day) && !hourIsOff && "bg-primary/5",
-                    hourIsOff 
-                      ? "bg-muted/40 cursor-not-allowed" 
-                      : "hover:bg-accent/50 cursor-pointer"
+                    hourIsOff && dayIsClosed && "bg-destructive/10",
+                    hourIsOff && !dayIsClosed && isDuringBreak && "bg-orange-500/15 border-l-2 border-l-orange-400",
+                    hourIsOff && !dayIsClosed && !isDuringBreak && "bg-muted/60",
+                    hourIsOff ? "cursor-not-allowed" : "hover:bg-accent/50 cursor-pointer"
                   )}
                   onClick={() => {
                     if (hourIsOff) return;
@@ -321,6 +331,21 @@ export function AgendaCalendar({
                     onSlotClick(slotDate);
                   }}
                 >
+                  {/* Visual indicator for closed/break periods */}
+                  {hourIsOff && hourAppointments.length === 0 && (
+                    <div className={cn(
+                      "absolute inset-0 flex items-center justify-center",
+                      "text-xs font-medium opacity-60"
+                    )}>
+                      {dayIsClosed ? (
+                        <span className="text-destructive/50">✕</span>
+                      ) : isDuringBreak ? (
+                        <span className="text-orange-500/70 text-[10px]">PAUSE</span>
+                      ) : (
+                        <span className="text-muted-foreground/50 text-[10px]">—</span>
+                      )}
+                    </div>
+                  )}
                   {hourAppointments.map(apt => renderAppointmentCard(apt, true))}
                 </div>
               );
