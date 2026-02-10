@@ -25,7 +25,7 @@ import { SAVPrintButton } from '@/components/sav/SAVPrint';
 import { ReviewRequestButton } from '@/components/sav/ReviewRequestButton';
 import { SAVDocuments } from '@/components/sav/SAVDocuments';
 import { PatternLock } from '@/components/sav/PatternLock';
-import { SecurityCodesSection } from '@/components/sav/SecurityCodesSection';
+import { SecurityCodesDisplay } from '@/components/sav/SecurityCodesDisplay';
 import { generateFullTrackingUrl } from '@/utils/trackingUtils';
 import { generateSAVRestitutionPDF } from '@/utils/pdfGenerator';
 import { format } from 'date-fns';
@@ -606,54 +606,16 @@ export default function SAVDetail() {
                 </div>}
 
               {/* Codes de sécurité - Visible seulement si le SAV n'est pas terminé */}
-              {savCase.security_codes && savCase.status !== 'ready' && savCase.status !== 'cancelled' && (
-                <Card className="border-orange-200 bg-orange-50/30">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Lock className="h-5 w-5 text-orange-600" />
-                      Codes de sécurité
-                    </CardTitle>
-                    <div className="mt-2 p-3 rounded-lg border border-orange-300 bg-orange-50">
-                      <p className="text-sm text-orange-800 flex items-center gap-2">
-                        <Lock className="h-4 w-4" />
-                        Ces codes seront automatiquement supprimés lors de la livraison ou annulation du SAV.
-                      </p>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    {savCase.security_codes.unlock_code && (
-                      <div>
-                        <Label className="text-sm text-muted-foreground">Code de déverrouillage</Label>
-                        <p className="font-mono text-lg font-semibold">{savCase.security_codes.unlock_code}</p>
-                      </div>
-                    )}
-                    
-                    {(savCase.security_codes.icloud_id || savCase.security_codes.icloud_password) && (
-                      <div className="space-y-2">
-                        <Label className="font-semibold text-base">Compte iCloud</Label>
-                        {savCase.security_codes.icloud_id && (
-                          <div className="pl-4">
-                            <Label className="text-xs text-muted-foreground">Identifiant</Label>
-                            <p className="font-mono">{savCase.security_codes.icloud_id}</p>
-                          </div>
-                        )}
-                        {savCase.security_codes.icloud_password && (
-                          <div className="pl-4">
-                            <Label className="text-xs text-muted-foreground">Mot de passe</Label>
-                            <p className="font-mono text-lg font-semibold">{savCase.security_codes.icloud_password}</p>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                    
-                    {savCase.security_codes.sim_pin && (
-                      <div>
-                        <Label className="text-sm text-muted-foreground">Code PIN SIM</Label>
-                        <p className="font-mono text-lg font-semibold">{savCase.security_codes.sim_pin}</p>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
+              {savCase.status !== 'ready' && savCase.status !== 'cancelled' && (
+                <SecurityCodesDisplay 
+                  savCase={savCase}
+                  onUpdate={async (codes) => {
+                    await supabase.from('sav_cases').update({ 
+                      security_codes: (codes.unlock_code || codes.icloud_id || codes.icloud_password || codes.sim_pin) ? codes as any : null 
+                    }).eq('id', savCase.id);
+                    // Le realtime se charge de la mise à jour
+                  }}
+                />
               )}
 
               {/* Technician Comments - Visible to all */}
