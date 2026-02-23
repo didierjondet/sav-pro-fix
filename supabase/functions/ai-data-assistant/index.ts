@@ -7,7 +7,23 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const AI_GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
+async function getAIConfig(supabaseClient: any) {
+  try {
+    const { data } = await supabaseClient.from("ai_engine_config").select("*").eq("is_active", true).maybeSingle();
+    if (!data || data.provider === "lovable") {
+      return { url: "https://ai.gateway.lovable.dev/v1/chat/completions", apiKey: Deno.env.get("LOVABLE_API_KEY"), model: data?.model || "google/gemini-2.5-flash" };
+    }
+    const apiKey = Deno.env.get(data.api_key_name);
+    if (!apiKey) return { url: "https://ai.gateway.lovable.dev/v1/chat/completions", apiKey: Deno.env.get("LOVABLE_API_KEY"), model: "google/gemini-2.5-flash" };
+    switch (data.provider) {
+      case "openai": return { url: "https://api.openai.com/v1/chat/completions", apiKey, model: data.model };
+      case "gemini": return { url: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", apiKey, model: data.model };
+      default: return { url: "https://ai.gateway.lovable.dev/v1/chat/completions", apiKey: Deno.env.get("LOVABLE_API_KEY"), model: data.model };
+    }
+  } catch (e) {
+    return { url: "https://ai.gateway.lovable.dev/v1/chat/completions", apiKey: Deno.env.get("LOVABLE_API_KEY"), model: "google/gemini-2.5-flash" };
+  }
+}
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -25,18 +41,20 @@ serve(async (req) => {
     }
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      console.error("LOVABLE_API_KEY not configured");
-      return new Response(
-        JSON.stringify({ error: "Configuration IA manquante" }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
 
     // Créer le client Supabase
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // Get AI config
+    const aiConfig = await getAIConfig(supabase);
+    if (!aiConfig.apiKey) {
+      return new Response(
+        JSON.stringify({ error: "Clé API IA non configurée" }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     console.log(`Fetching data for shop: ${shopId}`);
 
@@ -129,14 +147,14 @@ INSTRUCTIONS IMPORTANTES:
 Aujourd'hui nous sommes le ${new Date().toLocaleDateString('fr-FR')}.`;
 
     // Appel à l'API IA
-    const response = await fetch(AI_GATEWAY_URL, {
+    const response = await fetch(aiConfig.url, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        Authorization: `Bearer ${aiConfig.apiKey}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: aiConfig.model,
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: question }

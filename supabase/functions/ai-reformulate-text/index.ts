@@ -1,9 +1,54 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
+
+async function getAIConfig(supabaseClient: any) {
+  try {
+    const { data } = await supabaseClient
+      .from("ai_engine_config")
+      .select("*")
+      .eq("is_active", true)
+      .maybeSingle();
+
+    if (!data || data.provider === "lovable") {
+      return {
+        url: "https://ai.gateway.lovable.dev/v1/chat/completions",
+        apiKey: Deno.env.get("LOVABLE_API_KEY"),
+        model: data?.model || "google/gemini-2.5-flash",
+      };
+    }
+
+    const apiKey = Deno.env.get(data.api_key_name);
+    if (!apiKey) {
+      console.warn(`API key ${data.api_key_name} not found, falling back to Lovable AI`);
+      return {
+        url: "https://ai.gateway.lovable.dev/v1/chat/completions",
+        apiKey: Deno.env.get("LOVABLE_API_KEY"),
+        model: "google/gemini-2.5-flash",
+      };
+    }
+
+    switch (data.provider) {
+      case "openai":
+        return { url: "https://api.openai.com/v1/chat/completions", apiKey, model: data.model };
+      case "gemini":
+        return { url: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", apiKey, model: data.model };
+      default:
+        return { url: "https://ai.gateway.lovable.dev/v1/chat/completions", apiKey: Deno.env.get("LOVABLE_API_KEY"), model: data.model };
+    }
+  } catch (e) {
+    console.error("Error fetching AI config, using fallback:", e);
+    return {
+      url: "https://ai.gateway.lovable.dev/v1/chat/completions",
+      apiKey: Deno.env.get("LOVABLE_API_KEY"),
+      model: "google/gemini-2.5-flash",
+    };
+  }
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -12,23 +57,26 @@ Deno.serve(async (req) => {
 
   try {
     const { text, context } = await req.json();
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
+    const supabaseClient = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+      { auth: { persistSession: false } }
+    );
+
+    const aiConfig = await getAIConfig(supabaseClient);
+
+    if (!aiConfig.apiKey) {
+      throw new Error("Clé API IA non configurée");
     }
 
     if (!text || text.trim() === "") {
       return new Response(
         JSON.stringify({ error: "Le texte ne peut pas être vide" }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Définir le prompt système selon le contexte
     let systemPrompt = "";
     switch (context) {
       case "problem_description":
@@ -113,14 +161,14 @@ Corrige l'orthographe, la grammaire et améliore la clarté.
 Réponds UNIQUEMENT avec le texte reformulé, sans commentaire ni introduction.`;
     }
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const response = await fetch(aiConfig.url, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        Authorization: `Bearer ${aiConfig.apiKey}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: aiConfig.model,
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: text }
@@ -132,29 +180,20 @@ Réponds UNIQUEMENT avec le texte reformulé, sans commentaire ni introduction.`
       if (response.status === 429) {
         return new Response(
           JSON.stringify({ error: "Limite de requêtes atteinte. Veuillez réessayer dans quelques instants." }),
-          {
-            status: 429,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          }
+          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
       if (response.status === 402) {
         return new Response(
           JSON.stringify({ error: "Crédits IA insuffisants. Veuillez recharger votre compte." }),
-          {
-            status: 402,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          }
+          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
       const errorText = await response.text();
-      console.error("AI gateway error:", response.status, errorText);
+      console.error("AI error:", response.status, errorText);
       return new Response(
         JSON.stringify({ error: "Erreur lors de la reformulation" }),
-        {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -167,18 +206,13 @@ Réponds UNIQUEMENT avec le texte reformulé, sans commentaire ni introduction.`
 
     return new Response(
       JSON.stringify({ reformulatedText }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
     console.error("Error in ai-reformulate-text function:", error);
     return new Response(
       JSON.stringify({ error: error instanceof Error ? error.message : "Erreur inconnue" }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });

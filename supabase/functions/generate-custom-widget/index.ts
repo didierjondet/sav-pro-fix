@@ -5,8 +5,23 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-const AI_GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
+async function getAIConfig(supabaseClient: any) {
+  try {
+    const { data } = await supabaseClient.from("ai_engine_config").select("*").eq("is_active", true).maybeSingle();
+    if (!data || data.provider === "lovable") {
+      return { url: "https://ai.gateway.lovable.dev/v1/chat/completions", apiKey: Deno.env.get("LOVABLE_API_KEY"), model: data?.model || "google/gemini-2.5-flash" };
+    }
+    const apiKey = Deno.env.get(data.api_key_name);
+    if (!apiKey) return { url: "https://ai.gateway.lovable.dev/v1/chat/completions", apiKey: Deno.env.get("LOVABLE_API_KEY"), model: "google/gemini-2.5-flash" };
+    switch (data.provider) {
+      case "openai": return { url: "https://api.openai.com/v1/chat/completions", apiKey, model: data.model };
+      case "gemini": return { url: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", apiKey, model: data.model };
+      default: return { url: "https://ai.gateway.lovable.dev/v1/chat/completions", apiKey: Deno.env.get("LOVABLE_API_KEY"), model: data.model };
+    }
+  } catch (e) {
+    return { url: "https://ai.gateway.lovable.dev/v1/chat/completions", apiKey: Deno.env.get("LOVABLE_API_KEY"), model: "google/gemini-2.5-flash" };
+  }
+}
 
 const SYSTEM_PROMPT = `Tu es un expert en création de widgets de statistiques pour une application de gestion SAV.
 
@@ -156,14 +171,16 @@ Deno.serve(async (req) => {
 
     console.log("Generating widget suggestions for prompt:", prompt);
 
-    const aiResponse = await fetch(AI_GATEWAY_URL, {
+    const aiConfig = await getAIConfig(supabaseClient);
+
+    const aiResponse = await fetch(aiConfig.url, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        Authorization: `Bearer ${aiConfig.apiKey}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: aiConfig.model,
         messages: [
           { role: "system", content: SYSTEM_PROMPT },
           { role: "user", content: prompt }

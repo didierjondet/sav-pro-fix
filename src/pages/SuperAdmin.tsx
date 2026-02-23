@@ -26,6 +26,7 @@ import { LandingPageManager } from '@/components/admin/LandingPageManager';
 import { SMSPackagesManager } from '@/components/admin/SMSPackagesManager';
 import { SystemAlertsManager } from '@/components/admin/SystemAlertsManager';
 import { InvoiceManagement } from '@/components/admin/InvoiceManagement';
+import { AIEngineManager } from '@/components/admin/AIEngineManager';
 import { useStorageUsage } from '@/hooks/useStorageUsage';
 import { Shop } from '@/hooks/useShop';
 
@@ -300,6 +301,8 @@ export default function SuperAdmin() {
         return <SMSPackagesManager />;
       case 'alerts':
         return <SystemAlertsManager />;
+      case 'ai-engine':
+        return <AIEngineManager />;
       default:
         return <DashboardOverview shops={shops} profiles={profiles} activeSupportCount={activeSupportCount} />;
     }

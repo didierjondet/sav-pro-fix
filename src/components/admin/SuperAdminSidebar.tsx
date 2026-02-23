@@ -26,6 +26,7 @@ import {
   TrendingUp,
   Bell,
   Receipt,
+  Brain,
 } from "lucide-react";
 
 interface SuperAdminSidebarProps {
@@ -64,6 +65,7 @@ const menuItems = [
       { id: "branding", title: "Charte graphique", icon: Palette },
       { id: "landing", title: "Landing Page", icon: FileText },
       { id: "sms-packages", title: "Packs SMS", icon: Zap },
+      { id: "ai-engine", title: "Moteur IA", icon: Brain },
       { id: "alerts", title: "Alertes", icon: Bell },
     ]
   },
