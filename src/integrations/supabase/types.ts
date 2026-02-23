@@ -2397,6 +2397,7 @@ export type Database = {
           name: string
           sav_limit: number | null
           sms_limit: number
+          storage_limit_gb: number
           stripe_price_id: string | null
           updated_at: string
         }
@@ -2413,6 +2414,7 @@ export type Database = {
           name: string
           sav_limit?: number | null
           sms_limit?: number
+          storage_limit_gb?: number
           stripe_price_id?: string | null
           updated_at?: string
         }
@@ -2429,6 +2431,7 @@ export type Database = {
           name?: string
           sav_limit?: number | null
           sms_limit?: number
+          storage_limit_gb?: number
           stripe_price_id?: string | null
           updated_at?: string
         }

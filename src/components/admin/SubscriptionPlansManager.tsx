@@ -47,7 +47,8 @@ import {
   Activity,
   ExternalLink,
   Menu,
-  Sidebar
+  Sidebar,
+  HardDrive
 } from 'lucide-react';
 
 interface SubscriptionPlan {
@@ -58,6 +59,7 @@ interface SubscriptionPlan {
   billing_interval: 'month' | 'year';
   sav_limit: number | null;
   sms_limit: number;
+  storage_limit_gb: number;
   features: string[];
   stripe_price_id: string | null;
   contact_only: boolean;
@@ -82,6 +84,7 @@ export default function SubscriptionPlansManager() {
     billing_interval: 'month' as 'month' | 'year',
     sav_limit: null as number | null,
     sms_limit: 15,
+    storage_limit_gb: 1,
     features: '',
     stripe_price_id: '',
     contact_only: false,
@@ -157,6 +160,7 @@ export default function SubscriptionPlansManager() {
       billing_interval: 'month',
       sav_limit: null,
       sms_limit: 15,
+      storage_limit_gb: 1,
       features: '',
       stripe_price_id: '',
       contact_only: false,
@@ -190,6 +194,7 @@ export default function SubscriptionPlansManager() {
           billing_interval: formData.billing_interval,
           sav_limit: formData.sav_limit,
           sms_limit: formData.sms_limit,
+          storage_limit_gb: formData.storage_limit_gb,
           features: formData.features.split('\n').filter(f => f.trim()),
           stripe_price_id: formData.stripe_price_id || null,
           contact_only: formData.contact_only,
@@ -269,6 +274,7 @@ export default function SubscriptionPlansManager() {
         billing_interval: formData.billing_interval,
         sav_limit: formData.sav_limit,
         sms_limit: formData.sms_limit,
+        storage_limit_gb: formData.storage_limit_gb,
         features: formData.features.split('\n').filter(f => f.trim()),
         stripe_price_id: formData.stripe_price_id || null,
         contact_only: formData.contact_only,
@@ -506,6 +512,16 @@ export default function SubscriptionPlansManager() {
                     value={formData.sms_limit}
                     onChange={(e) => setFormData({ ...formData, sms_limit: parseInt(e.target.value) || 0 })}
                     placeholder="ex: 100"
+                  />
+                </div>
+                <div>
+                  <Label>Stockage alloué (GB)</Label>
+                  <Input
+                    type="number"
+                    step="0.5"
+                    value={formData.storage_limit_gb}
+                    onChange={(e) => setFormData({ ...formData, storage_limit_gb: parseFloat(e.target.value) || 1 })}
+                    placeholder="ex: 5"
                   />
                 </div>
               </div>
@@ -767,6 +783,10 @@ export default function SubscriptionPlansManager() {
                   <MessageSquare className="h-4 w-4" />
                   SMS: {plan.sms_limit} par mois
                 </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <HardDrive className="h-4 w-4" />
+                  Stockage: {plan.storage_limit_gb} GB
+                </div>
               </div>
               
               <Separator />
@@ -866,8 +886,17 @@ export default function SubscriptionPlansManager() {
                   value={formData.sms_limit}
                   onChange={(e) => setFormData({ ...formData, sms_limit: parseInt(e.target.value) || 0 })}
                 />
+                </div>
+                <div>
+                  <Label>Stockage alloué (GB)</Label>
+                  <Input
+                    type="number"
+                    step="0.5"
+                    value={formData.storage_limit_gb}
+                    onChange={(e) => setFormData({ ...formData, storage_limit_gb: parseFloat(e.target.value) || 1 })}
+                  />
+                </div>
               </div>
-            </div>
             
             <div>
               <Label>Fonctionnalités (une par ligne)</Label>
