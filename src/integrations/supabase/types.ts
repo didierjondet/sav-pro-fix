@@ -52,6 +52,36 @@ export type Database = {
           },
         ]
       }
+      ai_engine_config: {
+        Row: {
+          api_key_name: string
+          created_at: string
+          id: string
+          is_active: boolean
+          model: string
+          provider: string
+          updated_at: string
+        }
+        Insert: {
+          api_key_name?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          model?: string
+          provider?: string
+          updated_at?: string
+        }
+        Update: {
+          api_key_name?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          model?: string
+          provider?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       alert_history: {
         Row: {
           alert_id: string

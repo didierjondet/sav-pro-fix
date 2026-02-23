@@ -7,6 +7,37 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+async function getAIConfig(supabaseClient: any) {
+  try {
+    const { data } = await supabaseClient
+      .from("ai_engine_config")
+      .select("*")
+      .eq("is_active", true)
+      .maybeSingle();
+
+    if (!data || data.provider === "lovable") {
+      return {
+        url: "https://ai.gateway.lovable.dev/v1/chat/completions",
+        apiKey: Deno.env.get("LOVABLE_API_KEY"),
+        model: data?.model || "google/gemini-2.5-flash",
+      };
+    }
+
+    const apiKey = Deno.env.get(data.api_key_name);
+    if (!apiKey) {
+      return { url: "https://ai.gateway.lovable.dev/v1/chat/completions", apiKey: Deno.env.get("LOVABLE_API_KEY"), model: "google/gemini-2.5-flash" };
+    }
+
+    switch (data.provider) {
+      case "openai": return { url: "https://api.openai.com/v1/chat/completions", apiKey, model: data.model };
+      case "gemini": return { url: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", apiKey, model: data.model };
+      default: return { url: "https://ai.gateway.lovable.dev/v1/chat/completions", apiKey: Deno.env.get("LOVABLE_API_KEY"), model: data.model };
+    }
+  } catch (e) {
+    return { url: "https://ai.gateway.lovable.dev/v1/chat/completions", apiKey: Deno.env.get("LOVABLE_API_KEY"), model: "google/gemini-2.5-flash" };
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -15,21 +46,6 @@ serve(async (req) => {
   console.log('🚀 [DAILY-ASSISTANT] Fonction démarrée');
 
   try {
-    // Test de la clé API au démarrage
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    console.log('🔑 [DAILY-ASSISTANT] LOVABLE_API_KEY présente:', !!LOVABLE_API_KEY);
-    
-    if (!LOVABLE_API_KEY) {
-      console.error('❌ [DAILY-ASSISTANT] LOVABLE_API_KEY manquante');
-      return new Response(
-        JSON.stringify({ error: 'Configuration manquante: LOVABLE_API_KEY non définie' }),
-        {
-          status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      );
-    }
-
     const authHeader = req.headers.get('Authorization')!;
     console.log('🔐 [DAILY-ASSISTANT] Authorization header présent:', !!authHeader);
     
@@ -38,6 +54,21 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
       { global: { headers: { Authorization: authHeader } } }
     );
+
+    // Get AI config
+    const serviceClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      { auth: { persistSession: false } }
+    );
+    const aiConfig = await getAIConfig(serviceClient);
+
+    if (!aiConfig.apiKey) {
+      return new Response(
+        JSON.stringify({ error: 'Clé API IA non configurée' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     // Get current user's shop_id
     console.log('👤 [DAILY-ASSISTANT] Récupération de l\'utilisateur...');
@@ -268,14 +299,14 @@ ${readySavs.length > 0 ? `\nSAV PRÊTS À RÉPARER (TOP ${topN}) :\n${analysisDa
 Fournis maintenant :
 ${sections.join('\n')}`;
 
-    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    const aiResponse = await fetch(aiConfig.url, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+        'Authorization': `Bearer ${aiConfig.apiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: aiConfig.model,
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
