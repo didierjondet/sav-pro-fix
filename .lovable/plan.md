@@ -1,249 +1,148 @@
 
-# Plan : Module Agenda pour la prise de rendez-vous
+# Plan : Moteur IA configurable depuis le Super Admin
+
+## Objectif
+Permettre au super administrateur de choisir le moteur IA (Lovable AI, OpenAI ChatGPT, Google Gemini) pour l'ensemble des fonctionnalites du site, et que toutes les edge functions utilisent dynamiquement le moteur configure.
 
 ## Vue d'ensemble
 
-Création d'un système complet de gestion de rendez-vous permettant :
-- Aux **techniciens** : ouvrir des créneaux, gérer leur planning
-- Aux **clients** : recevoir des propositions de RDV et confirmer/proposer un autre créneau
-- **Communication** : via SAV (chat), SMS ou les deux
+Actuellement, 6 edge functions utilisent toutes le gateway Lovable AI avec le modele `google/gemini-2.5-flash` en dur :
+- `ai-reformulate-text` (reformulation de texte)
+- `daily-assistant` (assistant quotidien)
+- `ai-data-assistant` (assistant donnees)
+- `generate-custom-widget` (generation widgets)
+- `update-custom-widget` (mise a jour widgets)
+- `get-market-prices` (prix du marche)
+
+Le plan consiste a :
+1. Stocker la configuration du moteur IA dans une table Supabase
+2. Creer une interface de gestion dans le Super Admin
+3. Creer une edge function utilitaire partagee pour centraliser la logique d'appel IA
+4. Modifier les 6 edge functions pour lire la config et utiliser le bon provider
 
 ---
 
-## Architecture technique
+## Etape 1 : Migration base de donnees
 
-### 1. Nouvelles tables de base de données
+Creer une table `ai_engine_config` :
 
 ```text
-┌─────────────────────────────────────────┐
-│        shop_working_hours               │
-├─────────────────────────────────────────┤
-│ id (uuid)                               │
-│ shop_id (fk → shops)                    │
-│ day_of_week (0-6, dimanche=0)           │
-│ start_time (time)                       │
-│ end_time (time)                         │
-│ is_open (boolean)                       │
-│ break_start (time, nullable)            │
-│ break_end (time, nullable)              │
-└─────────────────────────────────────────┘
-
-┌─────────────────────────────────────────┐
-│        appointments                     │
-├─────────────────────────────────────────┤
-│ id (uuid)                               │
-│ shop_id (fk → shops)                    │
-│ sav_case_id (fk → sav_cases, nullable)  │
-│ customer_id (fk → customers)            │
-│ technician_id (fk → profiles, nullable) │
-│ start_datetime (timestamptz)            │
-│ duration_minutes (integer)              │
-│ status (enum: proposed, confirmed,      │
-│         counter_proposed, cancelled,    │
-│         completed, no_show)             │
-│ appointment_type (enum: deposit,        │
-│         pickup, diagnostic)             │
-│ notes (text)                            │
-│ device_info (jsonb)                     │
-│ proposed_by (shop ou client)            │
-│ confirmation_token (uuid, unique)       │
-│ counter_proposal_datetime (timestamptz) │
-│ counter_proposal_message (text)         │
-│ created_at, updated_at                  │
-└─────────────────────────────────────────┘
-
-┌─────────────────────────────────────────┐
-│     shop_blocked_slots                  │
-├─────────────────────────────────────────┤
-│ id (uuid)                               │
-│ shop_id (fk → shops)                    │
-│ start_datetime (timestamptz)            │
-│ end_datetime (timestamptz)              │
-│ reason (text)                           │
-│ technician_id (fk → profiles, nullable) │
-└─────────────────────────────────────────┘
+ai_engine_config
+- id (uuid, PK)
+- provider: text ('lovable' | 'openai' | 'gemini')
+- model: text (ex: 'google/gemini-2.5-flash', 'gpt-4o', 'gemini-2.5-pro')
+- api_key_name: text (nom du secret Supabase a utiliser, ex: 'LOVABLE_API_KEY', 'OPENAI_API_KEY', 'GEMINI_API_KEY')
+- is_active: boolean (default true)
+- created_at, updated_at
 ```
 
-### 2. Nouveaux fichiers frontend
+Un seul enregistrement actif a la fois (le moteur choisi globalement).
+
+RLS : accessible uniquement par les super admins en lecture/ecriture.
+
+## Etape 2 : Gestion des secrets API
+
+- Pour Lovable AI : `LOVABLE_API_KEY` est deja present (auto-provisionne)
+- Pour OpenAI : demander `OPENAI_API_KEY` via l'interface
+- Pour Gemini : demander `GEMINI_API_KEY` via l'interface
+
+L'interface Super Admin affichera un champ pour saisir la cle API selon le provider choisi. La cle sera stockee via Supabase secrets (edge function dediee).
+
+## Etape 3 : Nouveau menu Super Admin "Moteur IA"
+
+Ajouter dans la section "Configuration" du sidebar :
+- Icone : `Brain` (lucide-react)
+- ID : `ai-engine`
+- Titre : "Moteur IA"
+
+### Interface du composant `AIEngineManager.tsx` :
+
+- **Selection du provider** : 3 cartes radio (Lovable AI, OpenAI, Google Gemini)
+  - Chaque carte affiche le nom, une description, les modeles disponibles
+- **Selection du modele** : dropdown des modeles disponibles pour le provider choisi
+  - Lovable : gemini-2.5-flash, gemini-2.5-pro, gpt-5, gpt-5-mini
+  - OpenAI : gpt-4o, gpt-4o-mini, gpt-3.5-turbo
+  - Gemini : gemini-2.5-flash, gemini-2.5-pro, gemini-1.5-flash
+- **Cle API** : champ pour saisir/modifier la cle API (masque apres saisie)
+  - Lovable : afficher "Pre-configure automatiquement"
+  - OpenAI/Gemini : champ de saisie + bouton sauvegarder
+- **Bouton de test** : envoyer une requete de test pour verifier que la config fonctionne
+- **Statut** : indicateur vert/rouge du dernier test
+
+## Etape 4 : Edge function `save-ai-config`
+
+Nouvelle edge function pour :
+- Sauvegarder la configuration du moteur IA dans la table
+- Stocker les cles API en tant que secrets Supabase (via `SUPABASE_SERVICE_ROLE_KEY`)
+- Tester la connexion au provider choisi
+
+## Etape 5 : Modification des 6 edge functions existantes
+
+Chaque edge function sera modifiee pour :
+
+1. Lire la config depuis `ai_engine_config` (WHERE is_active = true)
+2. Determiner l'URL et la cle API selon le provider :
+   - `lovable` : URL = `https://ai.gateway.lovable.dev/v1/chat/completions`, key = `LOVABLE_API_KEY`
+   - `openai` : URL = `https://api.openai.com/v1/chat/completions`, key = `OPENAI_API_KEY`
+   - `gemini` : URL = `https://generativelanguage.googleapis.com/v1beta/openai/chat/completions`, key = `GEMINI_API_KEY`
+3. Utiliser le modele configure
+
+Le code commun sera une fonction helper au debut de chaque edge function (pas de sous-dossiers dans les edge functions) :
+
+```text
+async function getAIConfig(supabase) {
+  const { data } = await supabase
+    .from('ai_engine_config')
+    .select('*')
+    .eq('is_active', true)
+    .single();
+
+  if (!data) {
+    // Fallback sur Lovable AI
+    return {
+      url: 'https://ai.gateway.lovable.dev/v1/chat/completions',
+      apiKey: Deno.env.get('LOVABLE_API_KEY'),
+      model: 'google/gemini-2.5-flash'
+    };
+  }
+
+  const apiKey = Deno.env.get(data.api_key_name);
+  // ... retourner url, apiKey, model selon provider
+}
+```
+
+## Etape 6 : Integration dans SuperAdmin.tsx
+
+- Ajouter le cas `ai-engine` dans `renderActiveSection()`
+- Importer et afficher `AIEngineManager`
+
+---
+
+## Fichiers a creer
 
 | Fichier | Description |
 |---------|-------------|
-| `src/pages/Agenda.tsx` | Page principale de l'agenda avec vue calendrier |
-| `src/components/agenda/AgendaCalendar.tsx` | Composant calendrier interactif |
-| `src/components/agenda/AppointmentDialog.tsx` | Dialog pour creer/modifier un RDV |
-| `src/components/agenda/WorkingHoursConfig.tsx` | Configuration des horaires d'ouverture |
-| `src/components/agenda/AppointmentProposal.tsx` | Composant pour proposer un RDV depuis un SAV |
-| `src/components/agenda/SlotBlocker.tsx` | Bloquer des creneaux |
-| `src/components/agenda/ClientAppointmentResponse.tsx` | Interface client pour repondre a un RDV |
-| `src/hooks/useAppointments.ts` | Hook de gestion des RDV |
-| `src/hooks/useWorkingHours.ts` | Hook pour les horaires |
-| `src/pages/AppointmentConfirm.tsx` | Page publique de confirmation RDV |
+| `src/components/admin/AIEngineManager.tsx` | Interface de configuration du moteur IA |
+| `supabase/functions/save-ai-config/index.ts` | Edge function pour sauvegarder config + secrets |
+| Migration SQL | Table `ai_engine_config` + RLS |
 
-### 3. Modifications de fichiers existants
+## Fichiers a modifier
 
 | Fichier | Modification |
-|---------|--------------|
-| `src/App.tsx` | Ajouter routes `/agenda` et `/rdv/:token` |
-| `src/components/layout/Sidebar.tsx` | Ajouter menu "Agenda" avec icone Calendar |
-| `src/hooks/useMenuPermissions.ts` | Ajouter permission `agenda` |
-| `src/pages/SAVDetail.tsx` | Bouton "Proposer un RDV" |
-| `src/components/sav/MessagingInterface.tsx` | Bouton rapide pour proposer RDV |
-| `src/pages/TrackSAV.tsx` | Afficher les RDV proposes au client |
-| `src/hooks/useSMS.ts` | Nouvelle fonction `sendAppointmentSMS` |
+|---------|-------------|
+| `src/components/admin/SuperAdminSidebar.tsx` | Ajouter menu "Moteur IA" dans Configuration |
+| `src/pages/SuperAdmin.tsx` | Ajouter le case `ai-engine` |
+| `supabase/config.toml` | Ajouter config pour `save-ai-config` |
+| `supabase/functions/ai-reformulate-text/index.ts` | Utiliser config dynamique |
+| `supabase/functions/daily-assistant/index.ts` | Utiliser config dynamique |
+| `supabase/functions/ai-data-assistant/index.ts` | Utiliser config dynamique |
+| `supabase/functions/generate-custom-widget/index.ts` | Utiliser config dynamique |
+| `supabase/functions/update-custom-widget/index.ts` | Utiliser config dynamique |
+| `supabase/functions/get-market-prices/index.ts` | Utiliser config dynamique |
 
----
+## Points d'attention
 
-## Fonctionnalites detaillees
-
-### Cote magasin (technicien/admin)
-
-1. **Vue calendrier** :
-   - Vue jour / semaine / mois
-   - Affichage des RDV par couleur selon statut
-   - Glisser-deposer pour deplacer un RDV
-   - Clic sur un creneau vide pour creer un RDV
-
-2. **Configuration des horaires** :
-   - Definir les heures d'ouverture par jour
-   - Pauses dejeuner configurables
-   - Jours feries / fermetures exceptionnelles
-
-3. **Gestion des RDV** :
-   - Creer un RDV manuel (avec ou sans SAV)
-   - Proposer un RDV depuis un dossier SAV
-   - Definir la duree estimee de reparation
-   - Assigner un technicien
-   - Voir les contre-propositions clients
-
-4. **Blocage de creneaux** :
-   - Bloquer des plages horaires (reunion, absence)
-   - Option par technicien ou pour tout le magasin
-
-### Cote client
-
-1. **Reception de proposition** :
-   - Notification dans le chat SAV
-   - SMS optionnel avec lien de confirmation
-   - Email optionnel (future)
-
-2. **Reponse du client** :
-   - Accepter le creneau propose
-   - Proposer un autre creneau parmi les disponibilites
-   - Ajouter un message
-
-3. **Page de confirmation publique** :
-   - URL unique avec token (`/rdv/{token}`)
-   - Vue des creneaux disponibles
-   - Confirmation en 1 clic
-
-### Integration SAV
-
-1. **Depuis la page SAVDetail** :
-   - Bouton "Proposer un RDV"
-   - Selection du creneau dans un calendrier popup
-   - Choix du canal (chat seul, SMS, les deux)
-   - Duree estimee de reparation
-
-2. **Dans le chat** :
-   - Message automatique avec le RDV propose
-   - Bouton de confirmation inline
-   - Affichage du statut (en attente, confirme, modifie)
-
----
-
-## Flux de communication
-
-```text
-1. Technicien propose RDV depuis SAV
-           │
-           ▼
-2. Message auto dans chat SAV
-   + SMS optionnel avec lien
-           │
-           ▼
-3. Client recoit la proposition
-           │
-           ├──→ Accepte → RDV confirme
-           │              Notification au magasin
-           │
-           └──→ Contre-propose
-                     │
-                     ▼
-              4. Magasin recoit notification
-                 Nouveau creneau propose
-                       │
-                       ▼
-              5. Magasin confirme ou reprend contact
-```
-
----
-
-## Details techniques
-
-### Structure du message SMS
-
-```text
-Bonjour {nom},
-
-Nous vous proposons un RDV le {date} a {heure} 
-pour votre {type} (duree estimee: {duree}).
-
-Confirmez ici : {lien_court}
-
-{nom_magasin}
-```
-
-### Structure du message chat
-
-```text
-📅 Proposition de rendez-vous
-
-Date : Lundi 3 fevrier 2026
-Heure : 14h00 - 15h00
-Type : Depot pour reparation
-Duree estimee : 60 minutes
-
-[Confirmer] [Proposer un autre creneau]
-```
-
-### Permissions
-
-- `agenda` : Acces au menu Agenda
-- Les plans gratuits pourraient avoir un nombre limite de RDV/mois
-- Option dans `subscription_plans` pour activer/desactiver
-
----
-
-## Phases d'implementation
-
-### Phase 1 : Base (prioritaire)
-1. Creation des tables SQL
-2. Page Agenda avec calendrier basique
-3. CRUD des rendez-vous
-4. Integration dans la sidebar
-
-### Phase 2 : Integration SAV
-1. Bouton proposition RDV dans SAVDetail
-2. Affichage dans le chat
-3. Page publique de confirmation
-
-### Phase 3 : Notifications
-1. Envoi SMS pour propositions
-2. Notifications en temps reel
-3. Rappels automatiques (optionnel)
-
-### Phase 4 : Ameliorations
-1. Vue multi-techniciens
-2. Statistiques des RDV
-3. Export calendrier (iCal)
-
----
-
-## Estimation
-
-- **Phase 1** : Base structurelle
-- **Phase 2** : Integration complete SAV + client
-- **Phase 3** : Notifications et SMS
-- **Phase 4** : Ameliorations futures
-
-Le systeme sera concu pour etre extensible et permettre des evolutions futures comme la reservation en ligne depuis le site web de la boutique.
+- **Fallback** : si aucune config n'est definie ou si la cle API est absente, le systeme utilisera Lovable AI par defaut (comportement actuel preserve)
+- **Pas de regression** : les prompts systeme et la logique metier de chaque edge function restent identiques, seul le point d'appel IA change
+- **Compatibilite API** : OpenAI et Gemini (via endpoint compatible OpenAI) utilisent le meme format de requete/reponse que le gateway Lovable, donc les modifications sont minimales
+- **Securite** : les cles API sont stockees en tant que secrets Supabase, jamais exposees cote client
