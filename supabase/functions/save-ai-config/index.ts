@@ -58,6 +58,12 @@ Deno.serve(async (req) => {
     // Test connection if requested
     if (test_only) {
       if (!testApiKey) {
+        if (provider === "lovable") {
+          return new Response(JSON.stringify({ error: "La clé LOVABLE_API_KEY n'est pas configurée dans les secrets Supabase. Ajoutez-la dans les paramètres Edge Functions." }), {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+            status: 400,
+          });
+        }
         return new Response(JSON.stringify({ error: "Clé API manquante. Veuillez saisir une clé API." }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
           status: 400,
