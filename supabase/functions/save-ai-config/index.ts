@@ -45,25 +45,25 @@ Deno.serve(async (req) => {
 
     const { provider, model, api_key_name, api_key, test_only } = await req.json();
 
-    // Determine the API key to use for testing
+    // Lovable AI is always pre-configured - handle early for both test and save
+    if (test_only && provider === "lovable") {
+      return new Response(JSON.stringify({ success: true, message: "Lovable AI est pré-configuré et prêt à l'emploi." }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Determine the API key to use for testing (non-lovable providers only)
     let testApiKey: string | undefined;
-    if (provider === "lovable") {
-      testApiKey = Deno.env.get("LOVABLE_API_KEY");
-    } else if (api_key) {
-      testApiKey = api_key;
-    } else {
-      testApiKey = Deno.env.get(api_key_name);
+    if (provider !== "lovable") {
+      if (api_key) {
+        testApiKey = api_key;
+      } else if (api_key_name) {
+        testApiKey = Deno.env.get(api_key_name);
+      }
     }
 
     // Test connection if requested
     if (test_only) {
-      // Lovable AI is pre-configured, skip actual API test
-      if (provider === "lovable") {
-        return new Response(JSON.stringify({ success: true, message: "Lovable AI est pré-configuré et prêt à l'emploi." }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
       if (!testApiKey) {
         return new Response(JSON.stringify({ error: "Clé API manquante. Veuillez saisir une clé API." }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
