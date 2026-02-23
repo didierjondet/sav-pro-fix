@@ -22,9 +22,9 @@ async function getAIConfig(supabaseClient: any) {
       };
     }
 
-    const apiKey = Deno.env.get(data.api_key_name);
+    const apiKey = data.encrypted_api_key || Deno.env.get(data.api_key_name);
     if (!apiKey) {
-      console.warn(`API key ${data.api_key_name} not found, falling back to Lovable AI`);
+      console.warn(`API key for ${data.provider} not found, falling back to Lovable AI`);
       return {
         url: "https://ai.gateway.lovable.dev/v1/chat/completions",
         apiKey: Deno.env.get("LOVABLE_API_KEY"),

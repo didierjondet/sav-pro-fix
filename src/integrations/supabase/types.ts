@@ -56,6 +56,7 @@ export type Database = {
         Row: {
           api_key_name: string
           created_at: string
+          encrypted_api_key: string | null
           id: string
           is_active: boolean
           model: string
@@ -65,6 +66,7 @@ export type Database = {
         Insert: {
           api_key_name?: string
           created_at?: string
+          encrypted_api_key?: string | null
           id?: string
           is_active?: boolean
           model?: string
@@ -74,6 +76,7 @@ export type Database = {
         Update: {
           api_key_name?: string
           created_at?: string
+          encrypted_api_key?: string | null
           id?: string
           is_active?: boolean
           model?: string

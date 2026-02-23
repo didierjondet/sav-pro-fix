@@ -45,33 +45,58 @@ Deno.serve(async (req) => {
 
     const { provider, model, api_key_name, api_key, test_only } = await req.json();
 
-    // Lovable AI is always pre-configured - handle early for both test and save
-    if (test_only && provider === "lovable") {
-      return new Response(JSON.stringify({ success: true, message: "Lovable AI est pré-configuré et prêt à l'emploi." }), {
+    // === LOVABLE PROVIDER: always pre-configured, no key needed ===
+    if (provider === "lovable") {
+      if (test_only) {
+        return new Response(JSON.stringify({ success: true, message: "Lovable AI est pré-configuré et prêt à l'emploi." }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // Save config without API key
+      await supabaseClient
+        .from("ai_engine_config")
+        .update({ is_active: false })
+        .eq("is_active", true);
+
+      const { error: insertError } = await supabaseClient
+        .from("ai_engine_config")
+        .insert({ provider, model, api_key_name, is_active: true });
+
+      if (insertError) throw insertError;
+
+      return new Response(JSON.stringify({ success: true }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Determine the API key to use for testing (non-lovable providers only)
-    let testApiKey: string | undefined;
-    if (provider !== "lovable") {
-      if (api_key) {
-        testApiKey = api_key;
-      } else if (api_key_name) {
-        testApiKey = Deno.env.get(api_key_name);
-      }
+    // === NON-LOVABLE PROVIDERS (OpenAI, Gemini, etc.) ===
+
+    // Resolve the API key: use provided key, or fall back to stored key in DB
+    let resolvedApiKey: string | undefined = api_key || undefined;
+
+    if (!resolvedApiKey) {
+      // Try to get the stored key from the active config in DB
+      const { data: existingConfig } = await supabaseClient
+        .from("ai_engine_config")
+        .select("encrypted_api_key")
+        .eq("provider", provider)
+        .eq("is_active", true)
+        .maybeSingle();
+
+      resolvedApiKey = existingConfig?.encrypted_api_key || undefined;
     }
 
-    // Test connection if requested
+    // Test connection
     if (test_only) {
-      if (!testApiKey) {
+      if (!resolvedApiKey) {
         return new Response(JSON.stringify({ error: "Clé API manquante. Veuillez saisir une clé API." }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
           status: 400,
         });
       }
 
-      const testResult = await testAIConnection(provider, model, testApiKey);
+      const testResult = await testAIConnection(provider, model, resolvedApiKey);
       if (!testResult.success) {
         return new Response(JSON.stringify({ error: testResult.error }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -84,18 +109,12 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Save API key as secret if provided (for non-lovable providers)
-    if (api_key && provider !== "lovable") {
-      // Store the API key using Supabase vault
-      // First check if secret already exists
-      const { data: existingSecrets } = await supabaseClient.rpc('get_secret_names' as any);
-      
-      // Use a simple approach: store in a config table field or environment
-      // Since we can't directly set Deno.env from here, we'll store encrypted in the config
-      console.log(`Storing API key for ${api_key_name}`);
-      
-      // For now, we store the key in the ai_engine_config table as a separate encrypted field
-      // In production, you'd use Supabase Vault or edge function secrets
+    // Save config
+    if (!resolvedApiKey) {
+      return new Response(JSON.stringify({ error: "Clé API manquante pour ce fournisseur." }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400,
+      });
     }
 
     // Deactivate all existing configs
@@ -104,7 +123,7 @@ Deno.serve(async (req) => {
       .update({ is_active: false })
       .eq("is_active", true);
 
-    // Insert or update the config
+    // Insert new config WITH the API key stored
     const { error: insertError } = await supabaseClient
       .from("ai_engine_config")
       .insert({
@@ -112,6 +131,7 @@ Deno.serve(async (req) => {
         model,
         api_key_name,
         is_active: true,
+        encrypted_api_key: resolvedApiKey,
       });
 
     if (insertError) {
@@ -140,13 +160,6 @@ async function testAIConnection(provider: string, model: string, apiKey: string)
     let headers: Record<string, string>;
 
     switch (provider) {
-      case "lovable":
-        url = "https://ai.gateway.lovable.dev/v1/chat/completions";
-        headers = {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-        };
-        break;
       case "openai":
         url = "https://api.openai.com/v1/chat/completions";
         headers = {
