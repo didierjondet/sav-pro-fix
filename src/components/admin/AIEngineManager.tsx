@@ -83,7 +83,7 @@ export function AIEngineManager() {
       if (data) {
         setSelectedProvider(data.provider);
         setSelectedModel(data.model);
-        setHasExistingKey(data.provider !== 'lovable');
+        setHasExistingKey(data.provider !== 'lovable' && !!data.encrypted_api_key);
       }
     } catch (error: any) {
       console.error('Error fetching AI config:', error);
