@@ -141,11 +141,16 @@ export function AIEngineManager() {
   };
 
   const handleTest = async () => {
+    const provider = PROVIDERS.find(p => p.id === selectedProvider)!;
+
+    if (provider.needsApiKey && !apiKey && !hasExistingKey) {
+      toast({ title: "Erreur", description: "Veuillez saisir la clé API avant de tester.", variant: "destructive" });
+      return;
+    }
+
     setTesting(true);
     setTestResult(null);
     try {
-      const provider = PROVIDERS.find(p => p.id === selectedProvider)!;
-
       const { data, error } = await supabase.functions.invoke('save-ai-config', {
         body: {
           provider: selectedProvider,
