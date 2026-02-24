@@ -6,6 +6,34 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// === AES-GCM Decryption Helper ===
+async function getDecryptionKey(): Promise<CryptoKey> {
+  const secret = Deno.env.get("AI_ENCRYPTION_KEY") || "default-fallback-key-change-me";
+  const keyMaterial = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(secret.padEnd(32, "0").slice(0, 32)),
+    { name: "PBKDF2" },
+    false,
+    ["deriveKey"]
+  );
+  return crypto.subtle.deriveKey(
+    { name: "PBKDF2", salt: new TextEncoder().encode("ai-config-salt"), iterations: 100000, hash: "SHA-256" },
+    keyMaterial,
+    { name: "AES-GCM", length: 256 },
+    false,
+    ["decrypt"]
+  );
+}
+
+async function decryptApiKey(encrypted: string): Promise<string> {
+  const key = await getDecryptionKey();
+  const combined = Uint8Array.from(atob(encrypted), c => c.charCodeAt(0));
+  const iv = combined.slice(0, 12);
+  const ciphertext = combined.slice(12);
+  const decrypted = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, ciphertext);
+  return new TextDecoder().decode(decrypted);
+}
+
 async function getAIConfig(supabaseClient: any) {
   try {
     const { data } = await supabaseClient
@@ -22,9 +50,19 @@ async function getAIConfig(supabaseClient: any) {
       };
     }
 
-    const apiKey = data.encrypted_api_key || Deno.env.get(data.api_key_name);
+    let apiKey: string | undefined;
+    if (data.encrypted_api_key) {
+      try {
+        apiKey = await decryptApiKey(data.encrypted_api_key);
+      } catch (e) {
+        console.error("Failed to decrypt API key, may be legacy plaintext:", e);
+        apiKey = undefined;
+      }
+    }
     if (!apiKey) {
-      console.error(`API key for ${data.provider} not found and not stored in DB. User must re-enter key in Super Admin.`);
+      apiKey = Deno.env.get(data.api_key_name);
+    }
+    if (!apiKey) {
       return {
         error: `Clé API ${data.provider} non configurée. Allez dans Super Admin > Moteur IA pour saisir votre clé API.`,
       };
