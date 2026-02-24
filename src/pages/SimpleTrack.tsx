@@ -168,20 +168,9 @@ export default function SimpleTrack() {
         return;
       }
 
-      // Récupérer les informations de la boutique (accès authentifié)
-      const { data: shopData, error: shopError } = await supabase
-        .from('sav_cases')
-        .select(`
-          id,
-          sav_type,
-          shops (name, phone, email, address, logo_url)
-        `)
-        .eq('tracking_slug', slug)
-        .maybeSingle();
-
       const trackingInfo = trackingData[0];
       const savCaseData: SAVCaseData = {
-        id: shopData?.id || '',
+        id: trackingInfo.sav_case_id || '',
         case_number: trackingInfo.case_number,
         status: trackingInfo.status as any,
         device_brand: trackingInfo.device_brand,
@@ -189,14 +178,14 @@ export default function SimpleTrack() {
         created_at: trackingInfo.created_at,
         total_cost: trackingInfo.total_cost,
         total_time_minutes: 0,
-        shop_id: shopData?.id || '',
+        shop_id: trackingInfo.sav_case_id || '',
         tracking_slug: slug!,
         device_imei: undefined,
         sku: undefined,
         problem_description: 'Informations non disponibles en mode public',
         repair_notes: undefined,
         updated_at: trackingInfo.created_at,
-        sav_type: (shopData?.sav_type) || 'client',
+        sav_type: trackingInfo.sav_type || 'client',
         customer: {
           first_name: trackingInfo.customer_first_name || '',
           last_name: '',
@@ -204,7 +193,11 @@ export default function SimpleTrack() {
           phone: undefined
         },
         shop: {
-          name: shopData?.shops?.name || 'Magasin'
+          name: trackingInfo.shop_name || 'Magasin',
+          phone: trackingInfo.shop_phone || undefined,
+          email: trackingInfo.shop_email || undefined,
+          address: trackingInfo.shop_address || undefined,
+          logo_url: trackingInfo.shop_logo_url || undefined
         }
       };
 
