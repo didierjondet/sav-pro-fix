@@ -12,7 +12,9 @@ async function getAIConfig(supabaseClient: any) {
       return { url: "https://ai.gateway.lovable.dev/v1/chat/completions", apiKey: Deno.env.get("LOVABLE_API_KEY"), model: data?.model || "google/gemini-2.5-flash" };
     }
     const apiKey = data.encrypted_api_key || Deno.env.get(data.api_key_name);
-    if (!apiKey) return { url: "https://ai.gateway.lovable.dev/v1/chat/completions", apiKey: Deno.env.get("LOVABLE_API_KEY"), model: "google/gemini-2.5-flash" };
+    if (!apiKey) {
+      return { error: `Clé API ${data.provider} non configurée. Allez dans Super Admin > Moteur IA pour saisir votre clé API.` };
+    }
     switch (data.provider) {
       case "openai": return { url: "https://api.openai.com/v1/chat/completions", apiKey, model: data.model };
       case "gemini": return { url: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", apiKey, model: data.model };
