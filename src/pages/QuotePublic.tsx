@@ -117,15 +117,106 @@ export default function QuotePublic() {
   }, [id]);
 
   const handleDownloadPDF = () => {
-    if (data) {
-      const shopForPDF = {
-        name: data.shop.name,
-        logo_url: data.shop.logo_url,
-        address: data.shop.address,
-        phone: data.shop.phone,
-        email: data.shop.email
-      };
-      generateQuotePDF(data.quote as any, shopForPDF as any);
+    if (!data) return;
+    
+    try {
+      const { quote: q, shop: s } = data;
+      
+      const htmlContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8">
+          <title>Devis ${q.quote_number}</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 0; padding: 20px; color: #333; }
+            .shop-header { text-align: left; margin-bottom: 30px; }
+            .shop-logo { max-height: 80px; max-width: 200px; object-fit: contain; margin-bottom: 10px; }
+            .shop-name { font-size: 24px; font-weight: bold; color: #0066cc; margin: 0; }
+            .header { text-align: center; border-bottom: 2px solid #0066cc; padding-bottom: 20px; margin-bottom: 30px; }
+            .quote-number { font-size: 24px; font-weight: bold; color: #0066cc; }
+            .customer-info { background-color: #f5f5f5; padding: 15px; border-radius: 5px; margin-bottom: 30px; }
+            .customer-info h3 { margin-top: 0; color: #0066cc; }
+            .items-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+            .items-table th, .items-table td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+            .items-table th { background-color: #0066cc; color: white; }
+            .text-center { text-align: center; }
+            .text-right { text-align: right; }
+            .total-section { text-align: right; font-size: 18px; font-weight: bold; margin-top: 20px; padding: 15px; background-color: #f5f5f5; border-radius: 5px; }
+            .footer { margin-top: 40px; text-align: center; font-size: 12px; color: #666; border-top: 1px solid #ddd; padding-top: 20px; }
+            @media print { body { margin: 0; } }
+          </style>
+        </head>
+        <body>
+          ${s ? `
+            <div class="shop-header">
+              ${s.logo_url ? `<img src="${s.logo_url}" alt="${s.name}" class="shop-logo">` : ''}
+              <h1 class="shop-name">${s.name}</h1>
+            </div>
+          ` : ''}
+          <div class="header">
+            <div class="quote-number">DEVIS ${q.quote_number}</div>
+            <p>Date: ${new Date(q.created_at).toLocaleDateString('fr-FR')}</p>
+            <p><strong>Validité: 1 mois à compter de la date de création</strong></p>
+          </div>
+          <div class="customer-info">
+            <h3>Informations client</h3>
+            <p><strong>Nom:</strong> ${q.customer_name}</p>
+            ${q.customer_email ? `<p><strong>Email:</strong> ${q.customer_email}</p>` : ''}
+            ${q.customer_phone ? `<p><strong>Téléphone:</strong> ${q.customer_phone}</p>` : ''}
+          </div>
+          <h3>Détail des articles</h3>
+          <table class="items-table">
+            <thead>
+              <tr>
+                <th>Article</th>
+                <th class="text-center">Qté</th>
+                <th class="text-right">Prix unitaire</th>
+                <th class="text-right">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${q.items.map((item: any) => `
+                <tr>
+                  <td>${item.part_name || 'Article'}${item.part_reference ? `<br><small>Réf: ${item.part_reference}</small>` : ''}</td>
+                  <td class="text-center">${item.quantity}</td>
+                  <td class="text-right">${((item.total_price || 0) / (item.quantity || 1)).toFixed(2)}€</td>
+                  <td class="text-right"><strong>${(item.total_price || 0).toFixed(2)}€</strong></td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+          <div class="total-section">TOTAL: ${q.total_amount.toFixed(2)}€</div>
+          <div class="footer">
+            ${s?.address ? `<p><strong>Adresse:</strong> ${s.address}</p>` : ''}
+            ${s?.phone ? `<p><strong>Téléphone:</strong> ${s.phone}</p>` : ''}
+            ${s?.email ? `<p><strong>Email:</strong> ${s.email}</p>` : ''}
+            <p>Devis généré le ${new Date().toLocaleDateString('fr-FR')}</p>
+          </div>
+        </body>
+        </html>
+      `;
+
+      // Ouvrir dans un nouvel onglet pour permettre impression/sauvegarde PDF
+      const newWindow = window.open('', '_blank');
+      if (newWindow) {
+        newWindow.document.write(htmlContent);
+        newWindow.document.close();
+      } else {
+        // Fallback si popup bloquée : télécharger en HTML
+        const blob = new Blob([htmlContent], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `devis-${q.quote_number}.html`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
+    } catch (error) {
+      console.error('Erreur lors du téléchargement du PDF:', error);
+      alert('Une erreur est survenue lors du téléchargement. Veuillez réessayer.');
     }
   };
 
