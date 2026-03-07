@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,12 +10,15 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { CalendarIcon, Trash2, Check, X, Clock, ChevronsUpDown, User, AlertTriangle } from 'lucide-react';
+import { CalendarIcon, Trash2, Check, X, Clock, ChevronsUpDown, User, AlertTriangle, ExternalLink, Smartphone, Wrench } from 'lucide-react';
 import { useAppointments, Appointment, AppointmentType, CreateAppointmentData, UpdateAppointmentData } from '@/hooks/useAppointments';
 import { useWorkingHours } from '@/hooks/useWorkingHours';
 import { useAllCustomers } from '@/hooks/useAllCustomers';
+import { supabase } from '@/integrations/supabase/client';
+import { useQuery } from '@tanstack/react-query';
 import { cn } from '@/lib/utils';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
