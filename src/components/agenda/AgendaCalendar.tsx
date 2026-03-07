@@ -167,6 +167,27 @@ export function AgendaCalendar({
     return dateText.charAt(0).toUpperCase() + dateText.slice(1);
   };
 
+  // Calculate top position and height for an appointment based on time
+  const getAppointmentPosition = (appointment: Appointment) => {
+    const startDate = new Date(appointment.start_datetime);
+    const startHour = startDate.getHours();
+    const startMinutes = startDate.getMinutes();
+    const firstHour = HOURS[0];
+    
+    const topMinutes = (startHour - firstHour) * 60 + startMinutes;
+    const top = (topMinutes / 60) * HOUR_HEIGHT;
+    const height = Math.max((appointment.duration_minutes / 60) * HOUR_HEIGHT, 24); // min 24px
+    
+    return { top, height };
+  };
+
+  // Calculate end time string
+  const getEndTime = (appointment: Appointment) => {
+    const startDate = new Date(appointment.start_datetime);
+    const endDate = new Date(startDate.getTime() + appointment.duration_minutes * 60000);
+    return format(endDate, 'HH:mm');
+  };
+
   const renderAppointmentCard = (appointment: Appointment, compact = false) => (
     <div
       key={appointment.id}
@@ -175,24 +196,26 @@ export function AgendaCalendar({
         onAppointmentClick(appointment);
       }}
       className={cn(
-        "rounded-md p-2 cursor-pointer transition-opacity hover:opacity-80",
+        "rounded-md p-1.5 cursor-pointer transition-opacity hover:opacity-80 overflow-hidden",
         STATUS_COLORS[appointment.status],
         "text-white"
       )}
     >
-      <div className="font-medium text-sm truncate">
+      <div className="font-medium text-xs truncate">
         {appointment.customer 
           ? `${appointment.customer.first_name} ${appointment.customer.last_name}`
           : 'Client inconnu'}
       </div>
       {!compact && (
         <>
-          <div className="text-xs opacity-90">
-            {format(new Date(appointment.start_datetime), 'HH:mm')} - 
+          <div className="text-[11px] opacity-90">
+            {format(new Date(appointment.start_datetime), 'HH:mm')} - {getEndTime(appointment)}
+          </div>
+          <div className="text-[11px] opacity-90">
             {TYPE_LABELS[appointment.appointment_type] || appointment.appointment_type}
           </div>
           {appointment.sav_case && (
-            <div className="text-xs opacity-75 truncate">
+            <div className="text-[10px] opacity-75 truncate">
               SAV: {appointment.sav_case.case_number}
             </div>
           )}
