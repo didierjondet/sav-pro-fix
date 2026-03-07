@@ -104,7 +104,7 @@ export function useAppointments(viewType: ViewType = 'week', date: Date = new Da
         .select(`
           *,
           customer:customers(id, first_name, last_name, phone, email),
-          sav_case:sav_cases(id, case_number, device_brand, device_model),
+          sav_case:sav_cases(id, case_number, device_brand, device_model, device_color),
           technician:profiles(id, first_name, last_name)
         `)
         .eq('shop_id', profile.shop_id)
