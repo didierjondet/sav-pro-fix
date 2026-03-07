@@ -47,9 +47,26 @@ const DURATIONS = [
 ];
 
 export function AppointmentDialog({ open, onClose, appointment, defaultDate, savCaseId }: AppointmentDialogProps) {
+  const navigate = useNavigate();
   const { createAppointment, updateAppointment, deleteAppointment, confirmAppointment, cancelAppointment, isCreating, isUpdating, isDeleting } = useAppointments();
   const { getAvailableSlots, getWorkingHoursForDay, hasWorkingHours } = useWorkingHours();
   const { customers } = useAllCustomers();
+
+  // Fetch SAV parts when viewing an appointment linked to a SAV
+  const savCaseIdForQuery = appointment?.sav_case_id;
+  const { data: savParts = [] } = useQuery({
+    queryKey: ['sav-parts-appointment', savCaseIdForQuery],
+    queryFn: async () => {
+      if (!savCaseIdForQuery) return [];
+      const { data, error } = await supabase
+        .from('sav_parts')
+        .select('*, part:parts(name, reference)')
+        .eq('sav_case_id', savCaseIdForQuery);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!savCaseIdForQuery && open,
+  });
 
   const [selectedDate, setSelectedDate] = useState<Date>(defaultDate || new Date());
   const [selectedTime, setSelectedTime] = useState<string>('09:00');
