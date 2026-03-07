@@ -22,6 +22,7 @@ interface AgendaCalendarProps {
 }
 
 const HOURS = Array.from({ length: 14 }, (_, i) => i + 7); // 7h - 20h
+const HOUR_HEIGHT = 80; // pixels per hour - increased for better precision
 
 const STATUS_COLORS: Record<AppointmentStatus, string> = {
   proposed: 'bg-amber-500',
@@ -166,6 +167,27 @@ export function AgendaCalendar({
     return dateText.charAt(0).toUpperCase() + dateText.slice(1);
   };
 
+  // Calculate top position and height for an appointment based on time
+  const getAppointmentPosition = (appointment: Appointment) => {
+    const startDate = new Date(appointment.start_datetime);
+    const startHour = startDate.getHours();
+    const startMinutes = startDate.getMinutes();
+    const firstHour = HOURS[0];
+    
+    const topMinutes = (startHour - firstHour) * 60 + startMinutes;
+    const top = (topMinutes / 60) * HOUR_HEIGHT;
+    const height = Math.max((appointment.duration_minutes / 60) * HOUR_HEIGHT, 24); // min 24px
+    
+    return { top, height };
+  };
+
+  // Calculate end time string
+  const getEndTime = (appointment: Appointment) => {
+    const startDate = new Date(appointment.start_datetime);
+    const endDate = new Date(startDate.getTime() + appointment.duration_minutes * 60000);
+    return format(endDate, 'HH:mm');
+  };
+
   const renderAppointmentCard = (appointment: Appointment, compact = false) => (
     <div
       key={appointment.id}
@@ -174,24 +196,26 @@ export function AgendaCalendar({
         onAppointmentClick(appointment);
       }}
       className={cn(
-        "rounded-md p-2 cursor-pointer transition-opacity hover:opacity-80",
+        "rounded-md p-1.5 cursor-pointer transition-opacity hover:opacity-80 overflow-hidden h-full",
         STATUS_COLORS[appointment.status],
-        "text-white"
+        "text-white shadow-sm border border-white/20"
       )}
     >
-      <div className="font-medium text-sm truncate">
+      <div className="font-medium text-xs truncate">
         {appointment.customer 
           ? `${appointment.customer.first_name} ${appointment.customer.last_name}`
           : 'Client inconnu'}
       </div>
       {!compact && (
         <>
-          <div className="text-xs opacity-90">
-            {format(new Date(appointment.start_datetime), 'HH:mm')} - 
+          <div className="text-[11px] opacity-90">
+            {format(new Date(appointment.start_datetime), 'HH:mm')} - {getEndTime(appointment)}
+          </div>
+          <div className="text-[11px] opacity-90">
             {TYPE_LABELS[appointment.appointment_type] || appointment.appointment_type}
           </div>
           {appointment.sav_case && (
-            <div className="text-xs opacity-75 truncate">
+            <div className="text-[10px] opacity-75 truncate">
               SAV: {appointment.sav_case.case_number}
             </div>
           )}
@@ -215,43 +239,69 @@ export function AgendaCalendar({
       );
     }
     
+    const dayAppointments = getAppointmentsForDay(selectedDate);
+    
     return (
-      <div className="space-y-1">
-        {HOURS.map(hour => {
-          const hourAppointments = getAppointmentsForHour(selectedDate, hour);
-          const hourIsOff = isHourOff(selectedDate, hour);
-          
-          return (
-            <div 
-              key={hour} 
-              className={cn(
-                "flex border-b border-border min-h-[60px]",
-                hourIsOff 
-                  ? "bg-muted/40 cursor-not-allowed" 
-                  : "hover:bg-accent/50 cursor-pointer"
-              )}
-              onClick={() => {
-                if (hourIsOff) return;
-                const slotDate = new Date(selectedDate);
-                slotDate.setHours(hour, 0, 0, 0);
-                onSlotClick(slotDate);
-              }}
-            >
-              <div className={cn(
-                "w-16 flex-shrink-0 p-2 text-sm border-r",
-                hourIsOff ? "text-muted-foreground/50" : "text-muted-foreground"
+      <div className="flex">
+        {/* Time labels column */}
+        <div className="w-16 flex-shrink-0">
+          {HOURS.map(hour => (
+            <div key={hour} style={{ height: HOUR_HEIGHT }} className="relative border-b border-border">
+              <span className={cn(
+                "absolute -top-2.5 right-2 text-xs",
+                isHourOff(selectedDate, hour) ? "text-muted-foreground/50" : "text-muted-foreground"
               )}>
                 {hour}:00
-              </div>
-              <div className="flex-1 p-1 space-y-1">
-                {hourIsOff && hourAppointments.length === 0 && (
-                  <span className="text-xs text-muted-foreground/50 italic">Fermé</span>
-                )}
-                {hourAppointments.map(apt => renderAppointmentCard(apt))}
-              </div>
+              </span>
             </div>
-          );
-        })}
+          ))}
+        </div>
+
+        {/* Day column with proportional appointments */}
+        <div className="flex-1 relative border-l">
+          {/* Hour rows background */}
+          {HOURS.map(hour => {
+            const hourIsOff = isHourOff(selectedDate, hour);
+            return (
+              <div 
+                key={hour} 
+                style={{ height: HOUR_HEIGHT }}
+                className={cn(
+                  "border-b border-border relative",
+                  hourIsOff ? "bg-muted/40 cursor-not-allowed" : "hover:bg-accent/50 cursor-pointer"
+                )}
+                onClick={() => {
+                  if (hourIsOff) return;
+                  const slotDate = new Date(selectedDate);
+                  slotDate.setHours(hour, 0, 0, 0);
+                  onSlotClick(slotDate);
+                }}
+              >
+                {/* Half-hour line */}
+                <div className="absolute left-0 right-0 border-b border-dashed border-border/50" style={{ top: HOUR_HEIGHT / 2 }} />
+                {hourIsOff && (
+                  <span className="absolute inset-0 flex items-center justify-center text-xs text-muted-foreground/50 italic">Fermé</span>
+                )}
+              </div>
+            );
+          })}
+          
+          {/* Appointments overlaid with absolute positioning */}
+          {dayAppointments.map(apt => {
+            const { top, height } = getAppointmentPosition(apt);
+            return (
+              <div 
+                key={apt.id}
+                className="absolute left-1 right-1 z-10"
+                style={{ top, height }}
+              >
+                <div className="h-full">
+                  {renderAppointmentCard(apt, height < 40)}
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
     );
   };
@@ -263,30 +313,30 @@ export function AgendaCalendar({
         <div className="flex border-b">
           <div className="w-16 flex-shrink-0" />
           {weekDays.map(day => {
-            const dayIsClosed = isDayClosed(day);
+            const dayClosed = isDayClosed(day);
             return (
               <div 
                 key={day.toISOString()} 
                 className={cn(
                   "flex-1 p-2 text-center border-l",
-                  isToday(day) && !dayIsClosed && "bg-primary/10",
-                  dayIsClosed && "bg-destructive/10 border-destructive/20"
+                  isToday(day) && !dayClosed && "bg-primary/10",
+                  dayClosed && "bg-destructive/10 border-destructive/20"
                 )}
               >
                 <div className={cn(
                   "text-sm font-medium",
-                  dayIsClosed && "text-destructive/70"
+                  dayClosed && "text-destructive/70"
                 )}>
                   {format(day, 'EEE', { locale: fr })}
                 </div>
                 <div className={cn(
                   "text-lg",
-                  isToday(day) && !dayIsClosed && "text-primary font-bold",
-                  dayIsClosed && "text-destructive/70"
+                  isToday(day) && !dayClosed && "text-primary font-bold",
+                  dayClosed && "text-destructive/70"
                 )}>
                   {format(day, 'd')}
                 </div>
-                {dayIsClosed && (
+                {dayClosed && (
                   <div className="text-xs font-medium text-destructive bg-destructive/20 rounded px-1 py-0.5 mt-1">
                     FERMÉ
                   </div>
@@ -296,62 +346,90 @@ export function AgendaCalendar({
           })}
         </div>
 
-        {/* Time grid */}
-        {HOURS.map(hour => (
-          <div key={hour} className="flex border-b min-h-[60px]">
-            <div className="w-16 flex-shrink-0 p-2 text-sm text-muted-foreground border-r">
-              {hour}:00
-            </div>
-            {weekDays.map(day => {
-              const hourAppointments = getAppointmentsForHour(day, hour);
-              const hourIsOff = isHourOff(day, hour);
-              const dayIsClosed = isDayClosed(day);
-              
-              // Check if this hour is during a break
-              const hours = getWorkingHoursForDay(day.getDay());
-              const isDuringBreak = hours && hours.break_start && hours.break_end && 
-                hour >= parseInt(hours.break_start.split(':')[0]) && 
-                hour < parseInt(hours.break_end.split(':')[0]);
-              
-              return (
-                <div 
-                  key={day.toISOString()}
-                  className={cn(
-                    "flex-1 p-1 border-l relative",
-                    isToday(day) && !hourIsOff && "bg-primary/5",
-                    hourIsOff && dayIsClosed && "bg-destructive/10",
-                    hourIsOff && !dayIsClosed && isDuringBreak && "bg-orange-500/15 border-l-2 border-l-orange-400",
-                    hourIsOff && !dayIsClosed && !isDuringBreak && "bg-muted/60",
-                    hourIsOff ? "cursor-not-allowed" : "hover:bg-accent/50 cursor-pointer"
-                  )}
-                  onClick={() => {
-                    if (hourIsOff) return;
-                    const slotDate = new Date(day);
-                    slotDate.setHours(hour, 0, 0, 0);
-                    onSlotClick(slotDate);
-                  }}
-                >
-                  {/* Visual indicator for closed/break periods */}
-                  {hourIsOff && hourAppointments.length === 0 && (
-                    <div className={cn(
-                      "absolute inset-0 flex items-center justify-center",
-                      "text-xs font-medium opacity-60"
-                    )}>
-                      {dayIsClosed ? (
-                        <span className="text-destructive/50">✕</span>
-                      ) : isDuringBreak ? (
-                        <span className="text-orange-500/70 text-[10px]">PAUSE</span>
-                      ) : (
-                        <span className="text-muted-foreground/50 text-[10px]">—</span>
+        {/* Time grid with proportional appointments */}
+        <div className="flex">
+          {/* Time labels */}
+          <div className="w-16 flex-shrink-0">
+            {HOURS.map(hour => (
+              <div key={hour} style={{ height: HOUR_HEIGHT }} className="relative border-b border-border border-r">
+                <span className="absolute -top-2.5 right-2 text-xs text-muted-foreground">
+                  {hour}:00
+                </span>
+              </div>
+            ))}
+          </div>
+
+          {/* Day columns */}
+          {weekDays.map(day => {
+            const dayAppointments = getAppointmentsForDay(day);
+            
+            return (
+              <div key={day.toISOString()} className="flex-1 relative border-l">
+                {/* Hour rows background */}
+                {HOURS.map(hour => {
+                  const hourIsOff = isHourOff(day, hour);
+                  const dayClosed = isDayClosed(day);
+                  const hours = getWorkingHoursForDay(day.getDay());
+                  const isDuringBreak = hours && hours.break_start && hours.break_end && 
+                    hour >= parseInt(hours.break_start.split(':')[0]) && 
+                    hour < parseInt(hours.break_end.split(':')[0]);
+                  
+                  return (
+                    <div 
+                      key={hour}
+                      style={{ height: HOUR_HEIGHT }}
+                      className={cn(
+                        "border-b border-border relative",
+                        isToday(day) && !hourIsOff && "bg-primary/5",
+                        hourIsOff && dayClosed && "bg-destructive/10",
+                        hourIsOff && !dayClosed && isDuringBreak && "bg-orange-500/15",
+                        hourIsOff && !dayClosed && !isDuringBreak && "bg-muted/60",
+                        hourIsOff ? "cursor-not-allowed" : "hover:bg-accent/50 cursor-pointer"
+                      )}
+                      onClick={() => {
+                        if (hourIsOff) return;
+                        const slotDate = new Date(day);
+                        slotDate.setHours(hour, 0, 0, 0);
+                        onSlotClick(slotDate);
+                      }}
+                    >
+                      {/* Half-hour dashed line */}
+                      <div className="absolute left-0 right-0 border-b border-dashed border-border/40" style={{ top: HOUR_HEIGHT / 2 }} />
+                      
+                      {hourIsOff && (
+                        <div className="absolute inset-0 flex items-center justify-center text-xs font-medium opacity-60">
+                          {dayClosed ? (
+                            <span className="text-destructive/50">✕</span>
+                          ) : isDuringBreak ? (
+                            <span className="text-orange-500/70 text-[10px]">PAUSE</span>
+                          ) : (
+                            <span className="text-muted-foreground/50 text-[10px]">—</span>
+                          )}
+                        </div>
                       )}
                     </div>
-                  )}
-                  {hourAppointments.map(apt => renderAppointmentCard(apt, true))}
-                </div>
-              );
-            })}
-          </div>
-        ))}
+                  );
+                })}
+                
+                {/* Appointments overlaid with proportional sizing */}
+                {dayAppointments.map(apt => {
+                  const { top, height } = getAppointmentPosition(apt);
+                  return (
+                    <div 
+                      key={apt.id}
+                      className="absolute left-0.5 right-0.5 z-10"
+                      style={{ top, height }}
+                    >
+                      <div className="h-full">
+                        {renderAppointmentCard(apt, height < 40)}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
