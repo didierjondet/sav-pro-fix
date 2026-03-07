@@ -313,30 +313,30 @@ export function AgendaCalendar({
         <div className="flex border-b">
           <div className="w-16 flex-shrink-0" />
           {weekDays.map(day => {
-            const dayIsClosed = isDayClosed(day);
+            const dayClosed = isDayClosed(day);
             return (
               <div 
                 key={day.toISOString()} 
                 className={cn(
                   "flex-1 p-2 text-center border-l",
-                  isToday(day) && !dayIsClosed && "bg-primary/10",
-                  dayIsClosed && "bg-destructive/10 border-destructive/20"
+                  isToday(day) && !dayClosed && "bg-primary/10",
+                  dayClosed && "bg-destructive/10 border-destructive/20"
                 )}
               >
                 <div className={cn(
                   "text-sm font-medium",
-                  dayIsClosed && "text-destructive/70"
+                  dayClosed && "text-destructive/70"
                 )}>
                   {format(day, 'EEE', { locale: fr })}
                 </div>
                 <div className={cn(
                   "text-lg",
-                  isToday(day) && !dayIsClosed && "text-primary font-bold",
-                  dayIsClosed && "text-destructive/70"
+                  isToday(day) && !dayClosed && "text-primary font-bold",
+                  dayClosed && "text-destructive/70"
                 )}>
                   {format(day, 'd')}
                 </div>
-                {dayIsClosed && (
+                {dayClosed && (
                   <div className="text-xs font-medium text-destructive bg-destructive/20 rounded px-1 py-0.5 mt-1">
                     FERMÉ
                   </div>
@@ -346,62 +346,90 @@ export function AgendaCalendar({
           })}
         </div>
 
-        {/* Time grid */}
-        {HOURS.map(hour => (
-          <div key={hour} className="flex border-b min-h-[60px]">
-            <div className="w-16 flex-shrink-0 p-2 text-sm text-muted-foreground border-r">
-              {hour}:00
-            </div>
-            {weekDays.map(day => {
-              const hourAppointments = getAppointmentsForHour(day, hour);
-              const hourIsOff = isHourOff(day, hour);
-              const dayIsClosed = isDayClosed(day);
-              
-              // Check if this hour is during a break
-              const hours = getWorkingHoursForDay(day.getDay());
-              const isDuringBreak = hours && hours.break_start && hours.break_end && 
-                hour >= parseInt(hours.break_start.split(':')[0]) && 
-                hour < parseInt(hours.break_end.split(':')[0]);
-              
-              return (
-                <div 
-                  key={day.toISOString()}
-                  className={cn(
-                    "flex-1 p-1 border-l relative",
-                    isToday(day) && !hourIsOff && "bg-primary/5",
-                    hourIsOff && dayIsClosed && "bg-destructive/10",
-                    hourIsOff && !dayIsClosed && isDuringBreak && "bg-orange-500/15 border-l-2 border-l-orange-400",
-                    hourIsOff && !dayIsClosed && !isDuringBreak && "bg-muted/60",
-                    hourIsOff ? "cursor-not-allowed" : "hover:bg-accent/50 cursor-pointer"
-                  )}
-                  onClick={() => {
-                    if (hourIsOff) return;
-                    const slotDate = new Date(day);
-                    slotDate.setHours(hour, 0, 0, 0);
-                    onSlotClick(slotDate);
-                  }}
-                >
-                  {/* Visual indicator for closed/break periods */}
-                  {hourIsOff && hourAppointments.length === 0 && (
-                    <div className={cn(
-                      "absolute inset-0 flex items-center justify-center",
-                      "text-xs font-medium opacity-60"
-                    )}>
-                      {dayIsClosed ? (
-                        <span className="text-destructive/50">✕</span>
-                      ) : isDuringBreak ? (
-                        <span className="text-orange-500/70 text-[10px]">PAUSE</span>
-                      ) : (
-                        <span className="text-muted-foreground/50 text-[10px]">—</span>
+        {/* Time grid with proportional appointments */}
+        <div className="flex">
+          {/* Time labels */}
+          <div className="w-16 flex-shrink-0">
+            {HOURS.map(hour => (
+              <div key={hour} style={{ height: HOUR_HEIGHT }} className="relative border-b border-border border-r">
+                <span className="absolute -top-2.5 right-2 text-xs text-muted-foreground">
+                  {hour}:00
+                </span>
+              </div>
+            ))}
+          </div>
+
+          {/* Day columns */}
+          {weekDays.map(day => {
+            const dayAppointments = getAppointmentsForDay(day);
+            
+            return (
+              <div key={day.toISOString()} className="flex-1 relative border-l">
+                {/* Hour rows background */}
+                {HOURS.map(hour => {
+                  const hourIsOff = isHourOff(day, hour);
+                  const dayClosed = isDayClosed(day);
+                  const hours = getWorkingHoursForDay(day.getDay());
+                  const isDuringBreak = hours && hours.break_start && hours.break_end && 
+                    hour >= parseInt(hours.break_start.split(':')[0]) && 
+                    hour < parseInt(hours.break_end.split(':')[0]);
+                  
+                  return (
+                    <div 
+                      key={hour}
+                      style={{ height: HOUR_HEIGHT }}
+                      className={cn(
+                        "border-b border-border relative",
+                        isToday(day) && !hourIsOff && "bg-primary/5",
+                        hourIsOff && dayClosed && "bg-destructive/10",
+                        hourIsOff && !dayClosed && isDuringBreak && "bg-orange-500/15",
+                        hourIsOff && !dayClosed && !isDuringBreak && "bg-muted/60",
+                        hourIsOff ? "cursor-not-allowed" : "hover:bg-accent/50 cursor-pointer"
+                      )}
+                      onClick={() => {
+                        if (hourIsOff) return;
+                        const slotDate = new Date(day);
+                        slotDate.setHours(hour, 0, 0, 0);
+                        onSlotClick(slotDate);
+                      }}
+                    >
+                      {/* Half-hour dashed line */}
+                      <div className="absolute left-0 right-0 border-b border-dashed border-border/40" style={{ top: HOUR_HEIGHT / 2 }} />
+                      
+                      {hourIsOff && (
+                        <div className="absolute inset-0 flex items-center justify-center text-xs font-medium opacity-60">
+                          {dayClosed ? (
+                            <span className="text-destructive/50">✕</span>
+                          ) : isDuringBreak ? (
+                            <span className="text-orange-500/70 text-[10px]">PAUSE</span>
+                          ) : (
+                            <span className="text-muted-foreground/50 text-[10px]">—</span>
+                          )}
+                        </div>
                       )}
                     </div>
-                  )}
-                  {hourAppointments.map(apt => renderAppointmentCard(apt, true))}
-                </div>
-              );
-            })}
-          </div>
-        ))}
+                  );
+                })}
+                
+                {/* Appointments overlaid with proportional sizing */}
+                {dayAppointments.map(apt => {
+                  const { top, height } = getAppointmentPosition(apt);
+                  return (
+                    <div 
+                      key={apt.id}
+                      className="absolute left-0.5 right-0.5 z-10"
+                      style={{ top, height }}
+                    >
+                      <div className="h-full">
+                        {renderAppointmentCard(apt, height < 40)}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
