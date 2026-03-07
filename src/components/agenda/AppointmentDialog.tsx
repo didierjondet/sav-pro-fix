@@ -221,6 +221,56 @@ export function AppointmentDialog({ open, onClose, appointment, defaultDate, sav
         </DialogHeader>
 
         <div className="flex-1 overflow-y-auto space-y-4 py-2 pr-2">
+          {/* Customer contact card */}
+          {appointment?.customer && (
+            <div className="p-3 border rounded-lg bg-muted/50 space-y-2">
+              <h4 className="font-semibold text-sm flex items-center gap-2">
+                <User className="h-4 w-4 text-primary" />
+                {appointment.customer.first_name} {appointment.customer.last_name}
+              </h4>
+              <div className="flex flex-wrap gap-2">
+                {appointment.customer.phone && (
+                  <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 text-xs"
+                      onClick={() => window.open(`tel:${appointment.customer!.phone}`, '_self')}
+                    >
+                      <Phone className="h-3.5 w-3.5 mr-1" />
+                      {appointment.customer.phone}
+                    </Button>
+                    {appointment.sav_case && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-8 text-xs"
+                        onClick={() => {
+                          onClose();
+                          navigate(`/sav/${appointment.sav_case!.id}?tab=messages`);
+                        }}
+                      >
+                        <MessageSquare className="h-3.5 w-3.5 mr-1" />
+                        SMS / Messages
+                      </Button>
+                    )}
+                  </>
+                )}
+                {appointment.customer.email && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 text-xs"
+                    onClick={() => window.open(`mailto:${appointment.customer!.email}`, '_blank')}
+                  >
+                    <Mail className="h-3.5 w-3.5 mr-1" />
+                    Email
+                  </Button>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Date picker */}
           <div className="space-y-2">
             <Label>Date</Label>
