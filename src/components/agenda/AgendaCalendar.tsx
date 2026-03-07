@@ -22,6 +22,7 @@ interface AgendaCalendarProps {
 }
 
 const HOURS = Array.from({ length: 14 }, (_, i) => i + 7); // 7h - 20h
+const HOUR_HEIGHT = 80; // pixels per hour - increased for better precision
 
 const STATUS_COLORS: Record<AppointmentStatus, string> = {
   proposed: 'bg-amber-500',
