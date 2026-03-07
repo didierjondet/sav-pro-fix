@@ -215,9 +215,14 @@ export function AgendaCalendar({
             {TYPE_LABELS[appointment.appointment_type] || appointment.appointment_type}
           </div>
           {appointment.sav_case && (
-            <div className="text-[10px] opacity-75 truncate">
-              SAV: {appointment.sav_case.case_number}
-            </div>
+            <>
+              <div className="text-[11px] opacity-90 truncate font-medium">
+                {[appointment.sav_case.device_brand, appointment.sav_case.device_model, appointment.sav_case.device_color].filter(Boolean).join(' ') || 'Appareil inconnu'}
+              </div>
+              <div className="text-[10px] opacity-75 truncate">
+                SAV: {appointment.sav_case.case_number}
+              </div>
+            </>
           )}
         </>
       )}
