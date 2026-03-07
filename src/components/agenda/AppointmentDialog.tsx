@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,12 +10,15 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { CalendarIcon, Trash2, Check, X, Clock, ChevronsUpDown, User, AlertTriangle } from 'lucide-react';
+import { CalendarIcon, Trash2, Check, X, Clock, ChevronsUpDown, User, AlertTriangle, ExternalLink, Smartphone, Wrench } from 'lucide-react';
 import { useAppointments, Appointment, AppointmentType, CreateAppointmentData, UpdateAppointmentData } from '@/hooks/useAppointments';
 import { useWorkingHours } from '@/hooks/useWorkingHours';
 import { useAllCustomers } from '@/hooks/useAllCustomers';
+import { supabase } from '@/integrations/supabase/client';
+import { useQuery } from '@tanstack/react-query';
 import { cn } from '@/lib/utils';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
@@ -43,9 +47,26 @@ const DURATIONS = [
 ];
 
 export function AppointmentDialog({ open, onClose, appointment, defaultDate, savCaseId }: AppointmentDialogProps) {
+  const navigate = useNavigate();
   const { createAppointment, updateAppointment, deleteAppointment, confirmAppointment, cancelAppointment, isCreating, isUpdating, isDeleting } = useAppointments();
   const { getAvailableSlots, getWorkingHoursForDay, hasWorkingHours } = useWorkingHours();
   const { customers } = useAllCustomers();
+
+  // Fetch SAV parts when viewing an appointment linked to a SAV
+  const savCaseIdForQuery = appointment?.sav_case_id;
+  const { data: savParts = [] } = useQuery({
+    queryKey: ['sav-parts-appointment', savCaseIdForQuery],
+    queryFn: async () => {
+      if (!savCaseIdForQuery) return [];
+      const { data, error } = await supabase
+        .from('sav_parts')
+        .select('*, part:parts(name, reference)')
+        .eq('sav_case_id', savCaseIdForQuery);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!savCaseIdForQuery && open,
+  });
 
   const [selectedDate, setSelectedDate] = useState<Date>(defaultDate || new Date());
   const [selectedTime, setSelectedTime] = useState<string>('09:00');
@@ -400,19 +421,72 @@ export function AppointmentDialog({ open, onClose, appointment, defaultDate, sav
 
           {/* Status info for existing appointments */}
           {appointment && (
-            <div className="p-3 bg-muted rounded-lg text-sm">
+            <div className="p-3 bg-muted rounded-lg text-sm space-y-2">
               <p><strong>Statut :</strong> {appointment.status}</p>
               {appointment.counter_proposal_datetime && (
-                <p className="mt-1">
+                <p>
                   <strong>Contre-proposition :</strong>{' '}
                   {format(new Date(appointment.counter_proposal_datetime), 'PPP à HH:mm', { locale: fr })}
                 </p>
               )}
               {appointment.counter_proposal_message && (
-                <p className="mt-1 text-muted-foreground">
+                <p className="text-muted-foreground">
                   "{appointment.counter_proposal_message}"
                 </p>
               )}
+            </div>
+          )}
+
+          {/* SAV Details section */}
+          {appointment?.sav_case && (
+            <div className="p-3 border rounded-lg space-y-3">
+              <div className="flex items-center justify-between">
+                <h4 className="font-semibold text-sm flex items-center gap-2">
+                  <Smartphone className="h-4 w-4 text-primary" />
+                  Dossier SAV
+                </h4>
+                <Badge variant="outline" className="text-xs">
+                  {appointment.sav_case.case_number}
+                </Badge>
+              </div>
+              
+              {/* Device info */}
+              <div className="text-sm">
+                <span className="font-medium">Appareil : </span>
+                {[appointment.sav_case.device_brand, appointment.sav_case.device_model, appointment.sav_case.device_color].filter(Boolean).join(' ') || 'Non renseigné'}
+              </div>
+
+              {/* Parts */}
+              {savParts.length > 0 && (
+                <div className="text-sm space-y-1">
+                  <span className="font-medium flex items-center gap-1">
+                    <Wrench className="h-3.5 w-3.5" />
+                    Pièces ({savParts.length}) :
+                  </span>
+                  <ul className="ml-5 space-y-0.5 list-disc text-muted-foreground">
+                    {savParts.map((sp: any) => (
+                      <li key={sp.id}>
+                        {sp.part?.name || sp.custom_part_name || 'Pièce'} 
+                        {sp.quantity > 1 && ` x${sp.quantity}`}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Link to SAV */}
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full"
+                onClick={() => {
+                  onClose();
+                  navigate(`/sav/${appointment.sav_case!.id}`);
+                }}
+              >
+                <ExternalLink className="h-4 w-4 mr-2" />
+                Ouvrir le dossier SAV
+              </Button>
             </div>
           )}
         </div>
