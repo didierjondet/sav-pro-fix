@@ -239,43 +239,69 @@ export function AgendaCalendar({
       );
     }
     
+    const dayAppointments = getAppointmentsForDay(selectedDate);
+    
     return (
-      <div className="space-y-1">
-        {HOURS.map(hour => {
-          const hourAppointments = getAppointmentsForHour(selectedDate, hour);
-          const hourIsOff = isHourOff(selectedDate, hour);
-          
-          return (
-            <div 
-              key={hour} 
-              className={cn(
-                "flex border-b border-border min-h-[60px]",
-                hourIsOff 
-                  ? "bg-muted/40 cursor-not-allowed" 
-                  : "hover:bg-accent/50 cursor-pointer"
-              )}
-              onClick={() => {
-                if (hourIsOff) return;
-                const slotDate = new Date(selectedDate);
-                slotDate.setHours(hour, 0, 0, 0);
-                onSlotClick(slotDate);
-              }}
-            >
-              <div className={cn(
-                "w-16 flex-shrink-0 p-2 text-sm border-r",
-                hourIsOff ? "text-muted-foreground/50" : "text-muted-foreground"
+      <div className="flex">
+        {/* Time labels column */}
+        <div className="w-16 flex-shrink-0">
+          {HOURS.map(hour => (
+            <div key={hour} style={{ height: HOUR_HEIGHT }} className="relative border-b border-border">
+              <span className={cn(
+                "absolute -top-2.5 right-2 text-xs",
+                isHourOff(selectedDate, hour) ? "text-muted-foreground/50" : "text-muted-foreground"
               )}>
                 {hour}:00
-              </div>
-              <div className="flex-1 p-1 space-y-1">
-                {hourIsOff && hourAppointments.length === 0 && (
-                  <span className="text-xs text-muted-foreground/50 italic">Fermé</span>
-                )}
-                {hourAppointments.map(apt => renderAppointmentCard(apt))}
-              </div>
+              </span>
             </div>
-          );
-        })}
+          ))}
+        </div>
+
+        {/* Day column with proportional appointments */}
+        <div className="flex-1 relative border-l">
+          {/* Hour rows background */}
+          {HOURS.map(hour => {
+            const hourIsOff = isHourOff(selectedDate, hour);
+            return (
+              <div 
+                key={hour} 
+                style={{ height: HOUR_HEIGHT }}
+                className={cn(
+                  "border-b border-border relative",
+                  hourIsOff ? "bg-muted/40 cursor-not-allowed" : "hover:bg-accent/50 cursor-pointer"
+                )}
+                onClick={() => {
+                  if (hourIsOff) return;
+                  const slotDate = new Date(selectedDate);
+                  slotDate.setHours(hour, 0, 0, 0);
+                  onSlotClick(slotDate);
+                }}
+              >
+                {/* Half-hour line */}
+                <div className="absolute left-0 right-0 border-b border-dashed border-border/50" style={{ top: HOUR_HEIGHT / 2 }} />
+                {hourIsOff && (
+                  <span className="absolute inset-0 flex items-center justify-center text-xs text-muted-foreground/50 italic">Fermé</span>
+                )}
+              </div>
+            );
+          })}
+          
+          {/* Appointments overlaid with absolute positioning */}
+          {dayAppointments.map(apt => {
+            const { top, height } = getAppointmentPosition(apt);
+            return (
+              <div 
+                key={apt.id}
+                className="absolute left-1 right-1 z-10"
+                style={{ top, height }}
+              >
+                <div className="h-full">
+                  {renderAppointmentCard(apt, height < 40)}
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
     );
   };
