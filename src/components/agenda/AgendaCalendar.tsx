@@ -196,9 +196,9 @@ export function AgendaCalendar({
         onAppointmentClick(appointment);
       }}
       className={cn(
-        "rounded-md p-1.5 cursor-pointer transition-opacity hover:opacity-80 overflow-hidden",
+        "rounded-md p-1.5 cursor-pointer transition-opacity hover:opacity-80 overflow-hidden h-full",
         STATUS_COLORS[appointment.status],
-        "text-white"
+        "text-white shadow-sm border border-white/20"
       )}
     >
       <div className="font-medium text-xs truncate">
