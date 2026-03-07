@@ -38,6 +38,7 @@ export interface Appointment {
     case_number: string;
     device_brand: string | null;
     device_model: string | null;
+    device_color: string | null;
   };
   technician?: {
     id: string;
