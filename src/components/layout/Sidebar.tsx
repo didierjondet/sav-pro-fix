@@ -393,7 +393,7 @@ export function Sidebar({
                 </div>}
 
               {/* Statuts SAV */}
-              {permissions.sidebar_sav_statuses && <div className="mt-4 p-3 bg-muted rounded-lg">
+              {permissions.sidebar_sav_statuses && !isSimplifiedView && <div className="mt-4 p-3 bg-muted rounded-lg">
                   <h3 className="text-base font-semibold text-foreground mb-1 pl-1">
                     Statuts SAV
                   </h3>
