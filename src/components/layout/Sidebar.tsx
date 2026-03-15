@@ -134,8 +134,12 @@ export function Sidebar({
     rejected: 0
   });
 
-  // Filter navigation based on permissions
+  // Filter navigation based on permissions and simplified view
   const navigation = baseNavigation.filter(item => {
+    // Simplified view filter
+    if (isSimplifiedView && !simplifiedPaths.includes(item.href)) {
+      return false;
+    }
     switch (item.href) {
       case '/dashboard':
         return permissions.dashboard;
