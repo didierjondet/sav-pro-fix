@@ -34,6 +34,10 @@ const Index = () => {
     if (!authLoading && !user) {
       navigate('/auth');
     }
+    // Redirect to /sav if simplified view is enabled
+    if (!authLoading && user && localStorage.getItem('fixway_simplified_view') === 'true') {
+      navigate('/sav');
+    }
   }, [user, authLoading, navigate]);
 
   // Rediriger les super admins vers /super-admin

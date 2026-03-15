@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -98,6 +98,21 @@ export function Sidebar({
     pendingCount: pendingAppointmentsCount
   } = usePendingAppointments();
   const totalUnread = (savWithUnreadMessages || []).reduce((sum, s) => sum + s.unread_count, 0);
+
+  // Simplified view state
+  const [isSimplifiedView, setIsSimplifiedView] = useState(() => {
+    return localStorage.getItem('fixway_simplified_view') === 'true';
+  });
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      setIsSimplifiedView((e as CustomEvent).detail);
+    };
+    window.addEventListener('simplifiedViewChanged', handler);
+    return () => window.removeEventListener('simplifiedViewChanged', handler);
+  }, []);
+
+  const simplifiedPaths = ['/sav', '/quotes', '/agenda', '/client-chats'];
   const openConversationsCount = (savWithUnreadMessages || []).length;
   const {
     quotes
@@ -119,8 +134,12 @@ export function Sidebar({
     rejected: 0
   });
 
-  // Filter navigation based on permissions
+  // Filter navigation based on permissions and simplified view
   const navigation = baseNavigation.filter(item => {
+    // Simplified view filter
+    if (isSimplifiedView && !simplifiedPaths.includes(item.href)) {
+      return false;
+    }
     switch (item.href) {
       case '/dashboard':
         return permissions.dashboard;
@@ -374,7 +393,7 @@ export function Sidebar({
                 </div>}
 
               {/* Statuts SAV */}
-              {permissions.sidebar_sav_statuses && <div className="mt-4 p-3 bg-muted rounded-lg">
+              {permissions.sidebar_sav_statuses && !isSimplifiedView && <div className="mt-4 p-3 bg-muted rounded-lg">
                   <h3 className="text-base font-semibold text-foreground mb-1 pl-1">
                     Statuts SAV
                   </h3>

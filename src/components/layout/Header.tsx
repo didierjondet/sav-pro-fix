@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { Menu, Settings, User, Bell, LogOut, HardDrive, AlertTriangle, MessageSquare, FileCheck, RefreshCw, Loader2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
@@ -50,6 +52,18 @@ const Header = ({
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isSimplifiedView, setIsSimplifiedView] = useState(() => {
+    return localStorage.getItem('fixway_simplified_view') === 'true';
+  });
+
+  const handleSimplifiedToggle = (checked: boolean) => {
+    setIsSimplifiedView(checked);
+    localStorage.setItem('fixway_simplified_view', String(checked));
+    window.dispatchEvent(new CustomEvent('simplifiedViewChanged', { detail: checked }));
+    if (checked) {
+      navigate('/sav');
+    }
+  };
 
   const handleClearCache = async () => {
     try {
@@ -210,6 +224,16 @@ const Header = ({
         <div className="flex items-center space-x-4">
           {/* Affichage des limites en permanence */}
           <div className="hidden md:flex items-center space-x-4 text-sm text-muted-foreground">
+            <div className="flex items-center space-x-2 border-r border-border pr-4">
+              <Switch
+                id="simplified-view"
+                checked={isSimplifiedView}
+                onCheckedChange={handleSimplifiedToggle}
+              />
+              <Label htmlFor="simplified-view" className="text-xs cursor-pointer whitespace-nowrap">
+                Vue simplifiée
+              </Label>
+            </div>
             <Button
               variant="ghost"
               size="sm"
