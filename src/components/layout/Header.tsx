@@ -52,6 +52,18 @@ const Header = ({
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isSimplifiedView, setIsSimplifiedView] = useState(() => {
+    return localStorage.getItem('fixway_simplified_view') === 'true';
+  });
+
+  const handleSimplifiedToggle = (checked: boolean) => {
+    setIsSimplifiedView(checked);
+    localStorage.setItem('fixway_simplified_view', String(checked));
+    window.dispatchEvent(new CustomEvent('simplifiedViewChanged', { detail: checked }));
+    if (checked) {
+      navigate('/sav');
+    }
+  };
 
   const handleClearCache = async () => {
     try {
