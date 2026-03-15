@@ -98,6 +98,21 @@ export function Sidebar({
     pendingCount: pendingAppointmentsCount
   } = usePendingAppointments();
   const totalUnread = (savWithUnreadMessages || []).reduce((sum, s) => sum + s.unread_count, 0);
+
+  // Simplified view state
+  const [isSimplifiedView, setIsSimplifiedView] = useState(() => {
+    return localStorage.getItem('fixway_simplified_view') === 'true';
+  });
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      setIsSimplifiedView((e as CustomEvent).detail);
+    };
+    window.addEventListener('simplifiedViewChanged', handler);
+    return () => window.removeEventListener('simplifiedViewChanged', handler);
+  }, []);
+
+  const simplifiedPaths = ['/sav', '/quotes', '/agenda', '/client-chats'];
   const openConversationsCount = (savWithUnreadMessages || []).length;
   const {
     quotes
