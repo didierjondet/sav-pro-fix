@@ -92,3 +92,12 @@ verify_jwt = true
 
 [functions.save-ai-config]
 verify_jwt = true
+
+[functions.twilio-balance]
+verify_jwt = false
+
+[functions.sync-twilio-credits]
+verify_jwt = false
+
+[functions.twilio-purchase-credits]
+verify_jwt = false
