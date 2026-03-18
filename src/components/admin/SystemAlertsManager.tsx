@@ -100,7 +100,7 @@ export function SystemAlertsManager() {
                   Vérifiez que vos identifiants Twilio sont correctement configurés
                 </p>
               </div>
-              <Button onClick={testTwilioAuth} variant="outline" size="sm">
+              <Button onClick={fetchTwilioBalance} variant="outline" size="sm">
                 Tester Twilio
               </Button>
             </div>
