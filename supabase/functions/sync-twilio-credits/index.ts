@@ -5,40 +5,37 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+const GATEWAY_URL = 'https://connector-gateway.lovable.dev/twilio';
+
 Deno.serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    // Créer le client Supabase avec la clé de service
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Récupérer les clés Twilio depuis les secrets
-    const accountSid = Deno.env.get('ACCOUNT_SID');
-    const authToken = Deno.env.get('AUTH_TOKEN');
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    if (!LOVABLE_API_KEY) throw new Error('LOVABLE_API_KEY is not configured');
 
-    if (!accountSid || !authToken) {
-      throw new Error('Configuration Twilio manquante');
-    }
+    const TWILIO_API_KEY = Deno.env.get('TWILIO_API_KEY');
+    if (!TWILIO_API_KEY) throw new Error('TWILIO_API_KEY is not configured');
 
-    console.log('[SYNC-TWILIO] Début de la synchronisation');
+    console.log('[SYNC-TWILIO] Début de la synchronisation via gateway');
 
-    // Récupérer le solde Twilio
-    const auth = btoa(`${accountSid}:${authToken}`);
-    const response = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Balance.json`, {
+    const response = await fetch(`${GATEWAY_URL}/Balance.json`, {
       method: 'GET',
       headers: {
-        'Authorization': `Basic ${auth}`,
-        'Content-Type': 'application/x-www-form-urlencoded',
+        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+        'X-Connection-Api-Key': TWILIO_API_KEY,
       },
     });
 
     if (!response.ok) {
-      throw new Error(`Erreur API Twilio: ${response.status}`);
+      const errorText = await response.text();
+      throw new Error(`Erreur Twilio gateway: ${response.status} - ${errorText}`);
     }
 
     const twilioData = await response.json();
@@ -46,8 +43,8 @@ Deno.serve(async (req) => {
     
     console.log('[SYNC-TWILIO] Solde Twilio récupéré:', twilioBalance);
 
-    // Convertir le solde USD en crédits SMS (approximatif: 1 USD = 100 SMS)
-    const totalSmsCredits = Math.floor(twilioBalance * 100);
+    // Convertir le solde USD en crédits SMS (approximatif: 1 SMS ≈ $0.08)
+    const totalSmsCredits = Math.floor(twilioBalance / 0.08);
 
     // Récupérer tous les magasins actifs
     const { data: shops, error: shopsError } = await supabase
@@ -70,13 +67,13 @@ Deno.serve(async (req) => {
       
       switch (shop.subscription_tier) {
         case 'free':
-          allocation = Math.min(15, totalSmsCredits * 0.1); // 10% max, limité à 15
+          allocation = Math.min(15, totalSmsCredits * 0.1);
           break;
         case 'premium':
-          allocation = Math.min(100, totalSmsCredits * 0.2); // 20% max, limité à 100
+          allocation = Math.min(100, totalSmsCredits * 0.2);
           break;
         case 'enterprise':
-          allocation = Math.min(400, totalSmsCredits * 0.4); // 40% max, limité à 400
+          allocation = Math.min(400, totalSmsCredits * 0.4);
           break;
         default:
           allocation = 15;
@@ -86,7 +83,7 @@ Deno.serve(async (req) => {
       totalAllocated += Math.floor(allocation);
     }
 
-    // Mettre à jour les allocations dans la base de données
+    // Mettre à jour les allocations
     const updatePromises = allocations.map(({ id, allocated }) => 
       supabase
         .from('shops')
@@ -96,11 +93,11 @@ Deno.serve(async (req) => {
 
     await Promise.all(updatePromises);
 
-    // Mettre à jour ou créer l'entrée des crédits globaux
+    // Mettre à jour les crédits globaux
     const { error: globalError } = await supabase
       .from('global_sms_credits')
       .upsert({
-        id: '00000000-0000-0000-0000-000000000001', // ID fixe pour l'enregistrement global
+        id: '00000000-0000-0000-0000-000000000001',
         total_credits: totalSmsCredits,
         used_credits: totalAllocated,
         twilio_balance_usd: twilioBalance,
@@ -120,35 +117,21 @@ Deno.serve(async (req) => {
       allocated_credits: totalAllocated,
       remaining_credits: totalSmsCredits - totalAllocated,
       shops_updated: allocations.length,
-      allocations: allocations
+      allocations
     };
 
     console.log('[SYNC-TWILIO] Synchronisation terminée:', syncResult);
 
     return new Response(
       JSON.stringify(syncResult),
-      { 
-        headers: { 
-          ...corsHeaders, 
-          'Content-Type': 'application/json' 
-        } 
-      }
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {
     console.error('[SYNC-TWILIO] Erreur:', error.message);
     return new Response(
-      JSON.stringify({ 
-        error: error.message,
-        details: 'Impossible de synchroniser les crédits'
-      }),
-      { 
-        status: 500,
-        headers: { 
-          ...corsHeaders, 
-          'Content-Type': 'application/json' 
-        } 
-      }
+      JSON.stringify({ error: error.message, details: 'Impossible de synchroniser les crédits' }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 })

@@ -3,37 +3,34 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+const GATEWAY_URL = 'https://connector-gateway.lovable.dev/twilio';
+
 Deno.serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    // Récupérer les clés Twilio depuis les secrets
-    const accountSid = Deno.env.get('ACCOUNT_SID');
-    const authToken = Deno.env.get('AUTH_TOKEN');
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    if (!LOVABLE_API_KEY) throw new Error('LOVABLE_API_KEY is not configured');
 
-    if (!accountSid || !authToken) {
-      throw new Error('Configuration Twilio manquante');
-    }
+    const TWILIO_API_KEY = Deno.env.get('TWILIO_API_KEY');
+    if (!TWILIO_API_KEY) throw new Error('TWILIO_API_KEY is not configured');
 
-    console.log('[TWILIO-BALANCE] Récupération du solde Twilio');
+    console.log('[TWILIO-BALANCE] Récupération du solde via gateway');
 
-    // Appel à l'API Twilio pour récupérer le solde du compte
-    const auth = btoa(`${accountSid}:${authToken}`);
-    const response = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Balance.json`, {
+    const response = await fetch(`${GATEWAY_URL}/Balance.json`, {
       method: 'GET',
       headers: {
-        'Authorization': `Basic ${auth}`,
-        'Content-Type': 'application/x-www-form-urlencoded',
+        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+        'X-Connection-Api-Key': TWILIO_API_KEY,
       },
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('[TWILIO-BALANCE] Erreur API Twilio:', errorText);
-      throw new Error(`Erreur API Twilio: ${response.status} - ${errorText}`);
+      console.error('[TWILIO-BALANCE] Erreur gateway:', errorText);
+      throw new Error(`Erreur Twilio gateway: ${response.status} - ${errorText}`);
     }
 
     const data = await response.json();
@@ -47,28 +44,14 @@ Deno.serve(async (req) => {
 
     return new Response(
       JSON.stringify(balanceData),
-      { 
-        headers: { 
-          ...corsHeaders, 
-          'Content-Type': 'application/json' 
-        } 
-      }
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {
     console.error('[TWILIO-BALANCE] Erreur:', error.message);
     return new Response(
-      JSON.stringify({ 
-        error: error.message,
-        details: 'Impossible de récupérer le solde Twilio'
-      }),
-      { 
-        status: 500,
-        headers: { 
-          ...corsHeaders, 
-          'Content-Type': 'application/json' 
-        } 
-      }
+      JSON.stringify({ error: error.message, details: 'Impossible de récupérer le solde Twilio' }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 })
