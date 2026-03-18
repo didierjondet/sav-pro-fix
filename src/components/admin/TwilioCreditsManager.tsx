@@ -103,7 +103,7 @@ export function TwilioCreditsManager() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => window.open('https://console.twilio.com/us1/billing/manage-billing/billing/balance', '_blank')}
+                onClick={() => window.open('https://console.twilio.com/us1/billing/manage-billing/add-funds', '_blank')}
               >
                 <ExternalLink className="h-4 w-4 mr-2" />
                 Recharger sur Twilio
