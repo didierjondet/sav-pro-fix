@@ -13,7 +13,7 @@ import { useTwilioCredits } from '@/hooks/useTwilioCredits';
 
 export function SystemAlertsManager() {
   const { alerts, loading, updateAlert } = useSystemAlerts();
-  const { testTwilioAuth } = useTwilioCredits();
+  const { fetchTwilioBalance } = useTwilioCredits();
   const [editingAlert, setEditingAlert] = useState<string | null>(null);
   const [formData, setFormData] = useState<any>({});
 
