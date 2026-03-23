@@ -12,3 +12,15 @@ Allow: /
 
 User-agent: *
 Allow: /
+Disallow: /dashboard
+Disallow: /sav/
+Disallow: /settings
+Disallow: /super-admin
+Disallow: /statistics
+Disallow: /parts
+Disallow: /orders
+Disallow: /customers
+Disallow: /reports
+Disallow: /notifications
+
+Sitemap: https://www.fixwaypro.com/sitemap.xml
