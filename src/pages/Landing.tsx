@@ -14,6 +14,7 @@ import { FinalCTA } from '@/components/landing/FinalCTA';
 import { PricingSection } from '@/components/landing/PricingSection';
 import { LandingHeader } from '@/components/landing/LandingHeader';
 import { LandingFooter } from '@/components/landing/LandingFooter';
+import { FAQSection } from '@/components/landing/FAQSection';
 
 interface SubscriptionPlan {
   id: string;
