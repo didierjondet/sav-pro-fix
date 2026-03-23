@@ -45,6 +45,15 @@ export default function PublicLanding() {
   });
   const { content: landingContent } = useLandingContent();
   
+  // Dynamic SEO injection
+  useEffect(() => {
+    document.title = 'FixwayPro — Logiciel SAV Gratuit pour Réparateurs | Gestion SAV Smartphone & High-Tech';
+    const metaDesc = document.querySelector('meta[name="description"]');
+    if (metaDesc) {
+      metaDesc.setAttribute('content', 'FixwayPro est le logiciel SAV gratuit n°1 pour les réparateurs de smartphones, consoles et high-tech. Gestion complète des réparations, suivi client en temps réel, devis, stock de pièces détachées et statistiques.');
+    }
+  }, []);
+
   useEffect(() => {
     // Check if user is already authenticated and redirect
     const checkAuth = async () => {
