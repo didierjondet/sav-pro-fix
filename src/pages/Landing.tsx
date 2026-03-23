@@ -14,6 +14,7 @@ import { FinalCTA } from '@/components/landing/FinalCTA';
 import { PricingSection } from '@/components/landing/PricingSection';
 import { LandingHeader } from '@/components/landing/LandingHeader';
 import { LandingFooter } from '@/components/landing/LandingFooter';
+import { FAQSection } from '@/components/landing/FAQSection';
 
 interface SubscriptionPlan {
   id: string;
@@ -42,6 +43,15 @@ export default function Landing() {
   });
   const navigate = useNavigate();
   const { content: landingContent } = useLandingContent();
+
+  // Dynamic SEO injection
+  useEffect(() => {
+    document.title = 'FixwayPro — Logiciel SAV Gratuit pour Réparateurs | Gestion SAV Smartphone & High-Tech';
+    const metaDesc = document.querySelector('meta[name="description"]');
+    if (metaDesc) {
+      metaDesc.setAttribute('content', 'FixwayPro est le logiciel SAV gratuit n°1 pour les réparateurs de smartphones, consoles et high-tech. Gestion complète des réparations, suivi client en temps réel, devis, stock de pièces détachées et statistiques.');
+    }
+  }, []);
   
   useEffect(() => {
     fetchSubscriptionPlans();
@@ -110,6 +120,9 @@ export default function Landing() {
 
       {/* Testimonials */}
       <TestimonialSection />
+
+      {/* FAQ SEO */}
+      <FAQSection />
 
       {/* Pricing */}
       <PricingSection 
