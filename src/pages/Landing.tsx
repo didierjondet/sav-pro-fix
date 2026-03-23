@@ -121,6 +121,9 @@ export default function Landing() {
       {/* Testimonials */}
       <TestimonialSection />
 
+      {/* FAQ SEO */}
+      <FAQSection />
+
       {/* Pricing */}
       <PricingSection 
         plans={subscriptionPlans} 

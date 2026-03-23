@@ -24,6 +24,14 @@ export function LandingFooter({ onLegalClick, onAdminClick }: LandingFooterProps
           </p>
         </div>
         
+        {/* Internal SEO links */}
+        <div className="flex flex-wrap justify-center gap-8 mb-8 text-sm">
+          <a href="/features" className="text-gray-400 hover:text-white transition-colors">Fonctionnalités</a>
+          <a href="/about" className="text-gray-400 hover:text-white transition-colors">À propos</a>
+          <a href="/contact" className="text-gray-400 hover:text-white transition-colors">Contact</a>
+          <a href="#faq" className="text-gray-400 hover:text-white transition-colors">FAQ</a>
+        </div>
+
         {/* Legal links */}
         <div className="flex flex-wrap justify-center gap-8 mb-12 text-sm">
           <button 

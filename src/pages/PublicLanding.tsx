@@ -120,6 +120,9 @@ export default function PublicLanding() {
       {/* Testimonials */}
       <TestimonialSection />
 
+      {/* FAQ SEO */}
+      <FAQSection />
+
       {/* Pricing */}
       <PricingSection 
         plans={subscriptionPlans} 
