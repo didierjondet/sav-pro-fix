@@ -134,17 +134,35 @@ export default function SAVList() {
     }
   };
 
-  const printSAVList = async () => {
-    if (filteredAndSortedCases.length === 0) {
-      toast.error("Aucun dossier SAV à imprimer selon les filtres appliqués");
+  const handlePrintWithFilters = useCallback(async (selectedTypes: string[], printStatusFilter: string) => {
+    // Recalculate filtered cases based on dialog selections
+    const casesWithDelay = cases.map((case_) => ({
+      ...case_,
+      delayInfo: calculateSAVDelay(case_, shop, types)
+    }));
+
+    let filtered = casesWithDelay.filter(c => selectedTypes.includes(c.sav_type));
+
+    if (printStatusFilter === 'all-except-ready') {
+      filtered = filtered.filter(c => !isReadyStatus(c.status));
+    } else if (printStatusFilter === 'overdue') {
+      filtered = filtered.filter(c => c.delayInfo.isOverdue && c.status !== 'cancelled' && !isReadyStatus(c.status));
+    } else if (printStatusFilter !== 'all') {
+      filtered = filtered.filter(c => c.status === printStatusFilter);
+    }
+
+    filtered.sort((a, b) => a.delayInfo.totalRemainingHours - b.delayInfo.totalRemainingHours);
+
+    if (filtered.length === 0) {
+      toast.error("Aucun dossier SAV à imprimer avec ces critères");
       return;
     }
 
     try {
-      const result = await generateSAVListPDF(filteredAndSortedCases, shop, {
-        searchTerm,
-        filterType,
-        statusFilter,
+      const result = await generateSAVListPDF(filtered, shop, {
+        searchTerm: '',
+        filterType: selectedTypes.length === types.length ? 'all' : selectedTypes.join(', '),
+        statusFilter: printStatusFilter,
         sortOrder
       }, statuses, types);
       if (result) {
@@ -154,7 +172,7 @@ export default function SAVList() {
       console.error('Erreur lors de la génération de la liste:', error);
       toast.error("Erreur lors de la génération du document");
     }
-  };
+  }, [cases, shop, types, statuses, sortOrder, isReadyStatus]);
 
   // Calculer les informations de délai et appliquer filtres et tri
   const filteredAndSortedCases = useMemo(() => {
