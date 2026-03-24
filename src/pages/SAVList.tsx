@@ -620,6 +620,11 @@ export default function SAVList() {
           </main>
         </div>
       </div>
+      <SAVPrintFilterDialog
+        isOpen={showPrintDialog}
+        onClose={() => setShowPrintDialog(false)}
+        onPrint={handlePrintWithFilters}
+      />
     </div>
   );
 }
