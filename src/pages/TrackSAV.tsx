@@ -21,7 +21,7 @@ interface SAVCaseData {
   id: string;
   case_number: string;
   sav_type: string;
-  status: "pending" | "in_progress" | "testing" | "ready" | "cancelled" | "parts_ordered" | "parts_received" | "delivered";
+  status: "pending" | "in_progress" | "testing" | "ready" | "cancelled" | "parts_to_order" | "parts_ordered" | "parts_received" | "delivered";
   device_brand: string;
   device_model: string;
   device_imei?: string;
@@ -124,7 +124,7 @@ export default function TrackSAV() {
       const savCaseData: SAVCaseData = {
         id: String(trackingInfo.sav_case_id || ''),
         case_number: String(trackingInfo.case_number || ''),
-        status: trackingInfo.status as "pending" | "in_progress" | "testing" | "ready" | "cancelled" | "parts_ordered" | "parts_received" | "delivered",
+        status: trackingInfo.status as "pending" | "in_progress" | "testing" | "ready" | "cancelled" | "parts_to_order" | "parts_ordered" | "parts_received" | "delivered",
         device_brand: String(trackingInfo.device_brand || ''),
         device_model: String(trackingInfo.device_model || ''),
         created_at: trackingInfo.created_at || new Date().toISOString(),
@@ -387,6 +387,7 @@ export default function TrackSAV() {
                    savCase.status === 'cancelled' ? 'Ce dossier a été annulé' :
                    savCase.status === 'in_progress' ? 'Nous travaillons actuellement sur votre appareil' :
                    savCase.status === 'testing' ? 'Votre appareil est en phase de test' :
+                   savCase.status === 'parts_to_order' ? 'Des pièces sont nécessaires et doivent être commandées' :
                    savCase.status === 'parts_ordered' ? 'Les pièces nécessaires ont été commandées' :
                    'Votre dossier est en attente de prise en charge'}
                 </p>

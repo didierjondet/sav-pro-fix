@@ -110,7 +110,7 @@ export function useOrders() {
         `)
         .eq('parts.quantity', 0)
         .eq('parts.shop_id', profile.shop_id)
-        .in('sav_cases.status', ['pending', 'in_progress', 'parts_ordered', 'testing']);
+        .in('sav_cases.status', ['pending', 'in_progress', 'parts_to_order', 'parts_ordered', 'testing']);
 
       if (savError) throw savError;
 

@@ -24,6 +24,7 @@ const defaultStatusConfig = {
   pending: { label: 'En attente', color: '#6b7280', variant: 'secondary' as const },
   in_progress: { label: 'En cours', color: '#3b82f6', variant: 'default' as const },
   testing: { label: 'Tests', color: '#8b5cf6', variant: 'default' as const },
+  parts_to_order: { label: 'Pièce(s) à commander', color: '#f97316', variant: 'outline' as const },
   parts_ordered: { label: 'Pièces commandées', color: '#f59e0b', variant: 'outline' as const },
   parts_received: { label: 'Pièces réceptionnées', color: '#22c55e', variant: 'default' as const },
   ready: { label: 'Prêt', color: '#10b981', variant: 'default' as const },

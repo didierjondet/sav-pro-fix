@@ -18,7 +18,7 @@ interface SAVCaseData {
   case_number: string;
   tracking_slug: string;
   sav_type: string;
-  status: "pending" | "in_progress" | "testing" | "ready" | "cancelled" | "parts_ordered" | "parts_received";
+  status: "pending" | "in_progress" | "testing" | "ready" | "cancelled" | "parts_to_order" | "parts_ordered" | "parts_received";
   device_brand: string;
   device_model: string;
   device_imei?: string;
@@ -75,6 +75,12 @@ const statusConfig = {
     variant: 'destructive' as const,
     description: 'Ce dossier a été annulé',
     icon: AlertCircle
+  },
+  parts_to_order: { 
+    label: 'Pièce(s) à commander', 
+    variant: 'default' as const,
+    description: 'Des pièces sont nécessaires et doivent être commandées',
+    icon: Package
   },
   parts_ordered: { 
     label: 'Pièces commandées', 

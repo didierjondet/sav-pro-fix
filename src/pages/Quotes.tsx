@@ -469,10 +469,10 @@ export default function Quotes() {
           const { error: ordersError } = await supabase.from('order_items').insert(ordersToInsert);
           if (ordersError) throw ordersError;
 
-          // Changer le statut du SAV à "parts_ordered" si des pièces sont en commande
+          // Changer le statut du SAV à "parts_to_order" (pièces à commander, pas encore commandées)
           const { error: statusError } = await supabase
             .from('sav_cases')
-            .update({ status: 'parts_ordered' })
+            .update({ status: 'parts_to_order' })
             .eq('id', savCaseId);
           
           if (statusError) throw statusError;
