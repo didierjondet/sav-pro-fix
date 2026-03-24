@@ -901,6 +901,71 @@ export const generateSAVListPDF = async (savCases: SAVCase[], shop?: Shop, filte
     }
   };
 
+  // Grouper les SAV par type
+  const grouped: Record<string, typeof filteredCases> = {};
+  for (const c of filteredCases) {
+    if (!grouped[c.sav_type]) grouped[c.sav_type] = [];
+    grouped[c.sav_type].push(c);
+  }
+
+  // Générer les sections HTML par type
+  const typeSectionsHTML: string[] = [];
+  for (const typeKey of Object.keys(grouped)) {
+    const casesForType = grouped[typeKey];
+    const typeLabel = getTypeText(typeKey);
+    const typeColor = types?.find(t => t.type_key === typeKey)?.type_color || '#0066cc';
+
+    const rowsHTML = await Promise.all(casesForType.map(async (savCase) => {
+      const realCost = await calculateRealCost(savCase.id);
+      const customerHTML = savCase.customer
+        ? `<strong>${savCase.customer.first_name} ${savCase.customer.last_name}</strong><br>${savCase.customer.phone || ''}`
+        : 'Non renseigné';
+      const imeiHTML = savCase.device_imei ? `<br><small>IMEI: ${savCase.device_imei.substring(0, 8)}...</small>` : '';
+      const costHTML = realCost > 0 ? `${realCost.toFixed(2)}€` : '-';
+
+      return `
+        <tr>
+          <td class="case-number">${savCase.case_number}</td>
+          <td class="text-center">${new Date(savCase.created_at).toLocaleDateString('fr-FR')}</td>
+          <td class="customer-info">${customerHTML}</td>
+          <td class="device-info"><strong>${savCase.device_brand}</strong><br>${savCase.device_model}${imeiHTML}</td>
+          <td class="problem-desc" title="${savCase.problem_description || ''}">${savCase.problem_description || 'Non renseigné'}</td>
+          <td class="text-center"><span class="status-badge ${getStatusClass(savCase.status)}">${getStatusText(savCase.status)}</span></td>
+          <td class="text-center">${costHTML}</td>
+          <td class="text-center">${new Date(savCase.updated_at).toLocaleDateString('fr-FR')}</td>
+        </tr>
+      `;
+    }));
+
+    typeSectionsHTML.push(`
+      <div style="margin-bottom: 25px;">
+        <div style="background-color: ${typeColor}; color: white; padding: 8px 14px; border-radius: 6px 6px 0 0; font-size: 13px; font-weight: bold; display: flex; justify-content: space-between; align-items: center;">
+          <span>${typeLabel}</span>
+          <span style="font-size: 11px; opacity: 0.9;">${casesForType.length} dossier(s)</span>
+        </div>
+        <table class="sav-table" style="margin-bottom: 0;">
+          <thead>
+            <tr>
+              <th style="width: 12%;">N° Dossier</th>
+              <th style="width: 8%;">Date</th>
+              <th style="width: 15%;">Client</th>
+              <th style="width: 15%;">Appareil</th>
+              <th style="width: 20%;">Problème</th>
+              <th style="width: 12%;">Statut</th>
+              <th style="width: 8%;">Coût</th>
+              <th style="width: 10%;">Dernière MAJ</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rowsHTML.join('')}
+          </tbody>
+        </table>
+      </div>
+    `);
+  }
+
+  const allSectionsHTML = typeSectionsHTML.join('');
+
   // Créer le contenu HTML de la liste des SAV
   const htmlContent = `
     <!DOCTYPE html>
@@ -972,8 +1037,8 @@ export const generateSAVListPDF = async (savCases: SAVCase[], shop?: Shop, filte
           vertical-align: top;
         }
         .sav-table th {
-          background-color: #0066cc;
-          color: white;
+          background-color: #f0f0f0;
+          color: #333;
           font-weight: bold;
           font-size: 9px;
           text-align: center;
@@ -1063,62 +1128,7 @@ export const generateSAVListPDF = async (savCases: SAVCase[], shop?: Shop, filte
         <strong>${filteredCases.length} dossier(s) trouvé(s)</strong>
       </div>
 
-      <table class="sav-table">
-        <thead>
-          <tr>
-            <th style="width: 11%;">N° Dossier</th>
-            <th style="width: 7%;">Date</th>
-            <th style="width: 10%;">Type</th>
-            <th style="width: 14%;">Client</th>
-            <th style="width: 14%;">Appareil</th>
-            <th style="width: 18%;">Problème</th>
-            <th style="width: 11%;">Statut</th>
-            <th style="width: 7%;">Coût</th>
-            <th style="width: 8%;">Dernière MAJ</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${await Promise.all(filteredCases.map(async (savCase) => {
-            const realCost = await calculateRealCost(savCase.id);
-            return `
-              <tr>
-                <td class="case-number">${savCase.case_number}</td>
-                <td class="text-center">${new Date(savCase.created_at).toLocaleDateString('fr-FR')}</td>
-                <td class="text-center">
-                  <span style="font-size: 8px; font-weight: bold; color: #0066cc;">
-                    ${getTypeText(savCase.sav_type)}
-                  </span>
-                </td>
-                <td class="customer-info">
-                  ${savCase.customer ? 
-                    `<strong>${savCase.customer.first_name} ${savCase.customer.last_name}</strong><br>
-                     ${savCase.customer.phone ? `${savCase.customer.phone}` : ''}` : 
-                    'Non renseigné'}
-                </td>
-                <td class="device-info">
-                  <strong>${savCase.device_brand}</strong><br>
-                  ${savCase.device_model}
-                  ${savCase.device_imei ? `<br><small>IMEI: ${savCase.device_imei.substring(0, 8)}...</small>` : ''}
-                </td>
-                <td class="problem-desc" title="${savCase.problem_description || ''}">
-                  ${savCase.problem_description || 'Non renseigné'}
-                </td>
-                <td class="text-center">
-                  <span class="status-badge ${getStatusClass(savCase.status)}">
-                    ${getStatusText(savCase.status)}
-                  </span>
-                </td>
-                <td class="text-center">
-                  ${realCost > 0 ? `${realCost.toFixed(2)}€` : '-'}
-                </td>
-                <td class="text-center">
-                  ${new Date(savCase.updated_at).toLocaleDateString('fr-FR')}
-                </td>
-              </tr>
-            `;
-          })).then(rows => rows.join(''))}
-        </tbody>
-      </table>
+      ${allSectionsHTML}
 
       <div class="footer">
         <p>Liste générée le ${new Date().toLocaleDateString('fr-FR')} à ${new Date().toLocaleTimeString('fr-FR')}</p>
