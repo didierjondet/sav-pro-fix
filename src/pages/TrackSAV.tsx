@@ -21,7 +21,7 @@ interface SAVCaseData {
   id: string;
   case_number: string;
   sav_type: string;
-  status: "pending" | "in_progress" | "testing" | "ready" | "cancelled" | "parts_ordered" | "parts_received" | "delivered";
+  status: "pending" | "in_progress" | "testing" | "ready" | "cancelled" | "parts_to_order" | "parts_ordered" | "parts_received" | "delivered";
   device_brand: string;
   device_model: string;
   device_imei?: string;
