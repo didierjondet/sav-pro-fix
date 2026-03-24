@@ -124,7 +124,7 @@ export default function TrackSAV() {
       const savCaseData: SAVCaseData = {
         id: String(trackingInfo.sav_case_id || ''),
         case_number: String(trackingInfo.case_number || ''),
-        status: trackingInfo.status as "pending" | "in_progress" | "testing" | "ready" | "cancelled" | "parts_ordered" | "parts_received" | "delivered",
+        status: trackingInfo.status as "pending" | "in_progress" | "testing" | "ready" | "cancelled" | "parts_to_order" | "parts_ordered" | "parts_received" | "delivered",
         device_brand: String(trackingInfo.device_brand || ''),
         device_model: String(trackingInfo.device_model || ''),
         created_at: trackingInfo.created_at || new Date().toISOString(),
