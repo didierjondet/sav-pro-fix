@@ -278,10 +278,10 @@ const partsToInsert = savParts.map(part => ({
           }
         }
 
-        // Changer automatiquement le statut du SAV à "parts_ordered"
+        // Changer automatiquement le statut du SAV à "parts_to_order" (pièces à commander)
         await supabase
           .from('sav_cases')
-          .update({ status: 'parts_ordered' })
+          .update({ status: 'parts_to_order' })
           .eq('id', savCaseId);
       }
 

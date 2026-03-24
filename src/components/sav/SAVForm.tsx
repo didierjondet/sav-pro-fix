@@ -367,15 +367,15 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
               console.error('Error creating orders:', ordersError);
             }
 
-            // Changer le statut du SAV à "parts_ordered"
+            // Changer le statut du SAV à "parts_to_order" (pièces à commander, pas encore commandées)
             await supabase
               .from('sav_cases')
-              .update({ status: 'parts_ordered' })
+              .update({ status: 'parts_to_order' })
               .eq('id', newCase.id);
 
             toast({
               title: "Pièces à commander détectées",
-              description: `${partsWithInsufficientStock.length} pièce(s) ajoutée(s) aux commandes. Statut changé en "Pièces commandées".`,
+              description: `${partsWithInsufficientStock.length} pièce(s) ajoutée(s) aux commandes. Statut changé en "Pièce(s) à commander".`,
             });
           }
         }
