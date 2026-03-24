@@ -387,6 +387,7 @@ export default function TrackSAV() {
                    savCase.status === 'cancelled' ? 'Ce dossier a été annulé' :
                    savCase.status === 'in_progress' ? 'Nous travaillons actuellement sur votre appareil' :
                    savCase.status === 'testing' ? 'Votre appareil est en phase de test' :
+                   savCase.status === 'parts_to_order' ? 'Des pièces sont nécessaires et doivent être commandées' :
                    savCase.status === 'parts_ordered' ? 'Les pièces nécessaires ont été commandées' :
                    'Votre dossier est en attente de prise en charge'}
                 </p>

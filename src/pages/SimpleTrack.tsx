@@ -76,6 +76,12 @@ const statusConfig = {
     description: 'Ce dossier a été annulé',
     icon: AlertCircle
   },
+  parts_to_order: { 
+    label: 'Pièce(s) à commander', 
+    variant: 'default' as const,
+    description: 'Des pièces sont nécessaires et doivent être commandées',
+    icon: Package
+  },
   parts_ordered: { 
     label: 'Pièces commandées', 
     variant: 'default' as const,
