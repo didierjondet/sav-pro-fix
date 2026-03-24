@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { Printer } from 'lucide-react';
 import { useShopSAVTypes } from '@/hooks/useShopSAVTypes';
 import { useShopSAVStatuses } from '@/hooks/useShopSAVStatuses';
@@ -18,7 +19,9 @@ export function SAVPrintFilterDialog({ isOpen, onClose, onPrint }: SAVPrintFilte
   const { statuses } = useShopSAVStatuses();
   const allTypes = getAllTypes();
 
-  const [selectedTypes, setSelectedTypes] = useState<string[]>(allTypes.map(t => t.value));
+  const [selectedTypes, setSelectedTypes] = useState<string[]>(
+    allTypes.length > 0 ? [allTypes[0].value] : []
+  );
   const [statusFilter, setStatusFilter] = useState('all-except-ready');
 
   const toggleType = (typeValue: string) => {
@@ -40,72 +43,74 @@ export function SAVPrintFilterDialog({ isOpen, onClose, onPrint }: SAVPrintFilte
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
+      <DialogContent className="max-w-md max-h-[90vh] flex flex-col">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center gap-2">
             <Printer className="h-5 w-5" />
             Imprimer la liste SAV
           </DialogTitle>
           <DialogDescription>
-            Sélectionnez les types de SAV et le statut à inclure dans l'impression.
+            Sélectionnez les types de SAV et le statut à inclure.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-5">
-          {/* Types de SAV */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-semibold">Types de SAV</span>
-              <div className="flex gap-2">
-                <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={selectAllTypes}>
-                  Tout
-                </Button>
-                <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={deselectAllTypes}>
-                  Aucun
-                </Button>
+        <ScrollArea className="flex-1 min-h-0 pr-3">
+          <div className="space-y-5 pb-2">
+            {/* Types de SAV */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-semibold">Types de SAV</span>
+                <div className="flex gap-2">
+                  <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={selectAllTypes}>
+                    Tout
+                  </Button>
+                  <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={deselectAllTypes}>
+                    Aucun
+                  </Button>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                {allTypes.map(type => (
+                  <label
+                    key={type.value}
+                    className="flex items-center gap-2 rounded-md border p-2.5 cursor-pointer hover:bg-accent/50 transition-colors"
+                  >
+                    <Checkbox
+                      checked={selectedTypes.includes(type.value)}
+                      onCheckedChange={() => toggleType(type.value)}
+                    />
+                    <span className="text-sm">{type.label}</span>
+                  </label>
+                ))}
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-2">
-              {allTypes.map(type => (
-                <label
-                  key={type.value}
-                  className="flex items-center gap-2 rounded-md border p-2.5 cursor-pointer hover:bg-accent/50 transition-colors"
-                >
-                  <Checkbox
-                    checked={selectedTypes.includes(type.value)}
-                    onCheckedChange={() => toggleType(type.value)}
-                  />
-                  <span className="text-sm">{type.label}</span>
-                </label>
-              ))}
+
+            {/* Filtre statut */}
+            <div className="space-y-2">
+              <span className="text-sm font-semibold">Statut</span>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tous les statuts</SelectItem>
+                  <SelectItem value="all-except-ready">Masquer les prêts</SelectItem>
+                  <SelectItem value="overdue">En retard</SelectItem>
+                  {statuses
+                    .filter(s => s.is_active)
+                    .sort((a, b) => a.display_order - b.display_order)
+                    .map(s => (
+                      <SelectItem key={s.status_key} value={s.status_key}>
+                        {s.status_label}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
+        </ScrollArea>
 
-          {/* Filtre statut */}
-          <div className="space-y-2">
-            <span className="text-sm font-semibold">Statut</span>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tous les statuts</SelectItem>
-                <SelectItem value="all-except-ready">Masquer les prêts</SelectItem>
-                <SelectItem value="overdue">En retard</SelectItem>
-                {statuses
-                  .filter(s => s.is_active)
-                  .sort((a, b) => a.display_order - b.display_order)
-                  .map(s => (
-                    <SelectItem key={s.status_key} value={s.status_key}>
-                      {s.status_label}
-                    </SelectItem>
-                  ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-
-        <DialogFooter className="gap-2 pt-2">
+        <DialogFooter className="flex-shrink-0 gap-2 pt-2">
           <Button variant="outline" onClick={onClose}>Annuler</Button>
           <Button onClick={handlePrint} disabled={selectedTypes.length === 0}>
             <Printer className="h-4 w-4 mr-2" />
