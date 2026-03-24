@@ -56,6 +56,7 @@ export default function SAVList() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(20);
   const [qrCodeCase, setQrCodeCase] = useState(null);
+  const [showPrintDialog, setShowPrintDialog] = useState(false);
   const { cases, loading, deleteCase, refetch, updateCaseStatus } = useSAVCases();
   const { shop } = useShop();
   const { savWithUnreadMessages } = useSAVUnreadMessages();
