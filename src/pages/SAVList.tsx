@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { multiWordSearch } from '@/utils/searchUtils';
 import Header from '@/components/layout/Header';
@@ -26,6 +26,7 @@ import { useLimitDialogContext } from '@/contexts/LimitDialogContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useShopSAVStatuses } from '@/hooks/useShopSAVStatuses';
 import { SAVPrintButton } from '@/components/sav/SAVPrint';
+import { SAVPrintFilterDialog } from '@/components/sav/SAVPrintFilterDialog';
 import { PartStatusIcon } from '@/components/sav/PartStatusIcon';
 import { SAVStatusDropdown } from '@/components/sav/SAVStatusDropdown';
 import { 
@@ -55,6 +56,7 @@ export default function SAVList() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(20);
   const [qrCodeCase, setQrCodeCase] = useState(null);
+  const [showPrintDialog, setShowPrintDialog] = useState(false);
   const { cases, loading, deleteCase, refetch, updateCaseStatus } = useSAVCases();
   const { shop } = useShop();
   const { savWithUnreadMessages } = useSAVUnreadMessages();
@@ -132,17 +134,35 @@ export default function SAVList() {
     }
   };
 
-  const printSAVList = async () => {
-    if (filteredAndSortedCases.length === 0) {
-      toast.error("Aucun dossier SAV à imprimer selon les filtres appliqués");
+  const handlePrintWithFilters = useCallback(async (selectedTypes: string[], printStatusFilter: string) => {
+    // Recalculate filtered cases based on dialog selections
+    const casesWithDelay = cases.map((case_) => ({
+      ...case_,
+      delayInfo: calculateSAVDelay(case_, shop, types)
+    }));
+
+    let filtered = casesWithDelay.filter(c => selectedTypes.includes(c.sav_type));
+
+    if (printStatusFilter === 'all-except-ready') {
+      filtered = filtered.filter(c => !isReadyStatus(c.status));
+    } else if (printStatusFilter === 'overdue') {
+      filtered = filtered.filter(c => c.delayInfo.isOverdue && c.status !== 'cancelled' && !isReadyStatus(c.status));
+    } else if (printStatusFilter !== 'all') {
+      filtered = filtered.filter(c => c.status === printStatusFilter);
+    }
+
+    filtered.sort((a, b) => a.delayInfo.totalRemainingHours - b.delayInfo.totalRemainingHours);
+
+    if (filtered.length === 0) {
+      toast.error("Aucun dossier SAV à imprimer avec ces critères");
       return;
     }
 
     try {
-      const result = await generateSAVListPDF(filteredAndSortedCases, shop, {
-        searchTerm,
-        filterType,
-        statusFilter,
+      const result = await generateSAVListPDF(filtered, shop, {
+        searchTerm: '',
+        filterType: selectedTypes.length === types.length ? 'all' : selectedTypes.join(', '),
+        statusFilter: printStatusFilter,
         sortOrder
       }, statuses, types);
       if (result) {
@@ -152,7 +172,7 @@ export default function SAVList() {
       console.error('Erreur lors de la génération de la liste:', error);
       toast.error("Erreur lors de la génération du document");
     }
-  };
+  }, [cases, shop, types, statuses, sortOrder, isReadyStatus]);
 
   // Calculer les informations de délai et appliquer filtres et tri
   const filteredAndSortedCases = useMemo(() => {
@@ -272,7 +292,7 @@ export default function SAVList() {
               <div className="flex justify-between items-center mb-6">
                 <h1 className="text-2xl font-bold">Dossiers SAV</h1>
                 <div className="flex gap-2">
-                  <Button variant="outline" onClick={printSAVList}>
+                  <Button variant="outline" onClick={() => setShowPrintDialog(true)}>
                     <Printer className="h-4 w-4 mr-2" />
                     Imprimer liste
                   </Button>
@@ -600,6 +620,11 @@ export default function SAVList() {
           </main>
         </div>
       </div>
+      <SAVPrintFilterDialog
+        isOpen={showPrintDialog}
+        onClose={() => setShowPrintDialog(false)}
+        onPrint={handlePrintWithFilters}
+      />
     </div>
   );
 }
