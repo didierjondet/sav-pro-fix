@@ -4,7 +4,6 @@ const corsHeaders = {
 }
 
 Deno.serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -16,46 +15,24 @@ Deno.serve(async (req) => {
       throw new Error('Montant invalide');
     }
 
-    // Récupérer les clés Twilio depuis les secrets
-    const accountSid = Deno.env.get('ACCOUNT_SID');
-    const authToken = Deno.env.get('AUTH_TOKEN');
+    console.log(`[TWILIO-PURCHASE] Demande d'achat de ${amount} USD de crédits`);
 
-    if (!accountSid || !authToken) {
-      throw new Error('Configuration Twilio manquante');
-    }
-
-    console.log(`[TWILIO-PURCHASE] Tentative d'achat de ${amount} USD de crédits`);
-
-    // Note: Twilio ne permet pas l'achat direct de crédits via API
-    // Cette fonction simule l'achat en ajoutant le montant au solde global
-    // Dans un vrai environnement, vous devriez utiliser l'API de facturation Twilio
-    // ou rediriger vers leur interface de paiement
-
-    // Pour l'instant, nous allons simuler l'ajout en créant une entrée dans notre table
-    // et en informant l'utilisateur qu'il doit effectuer l'achat manuellement
-
+    // Twilio ne permet pas l'achat direct de crédits via API
+    // Rediriger vers l'interface Twilio
     const purchaseData = {
       amount: amount,
       currency: 'USD',
       timestamp: new Date().toISOString(),
       status: 'manual_required',
       message: 'Veuillez ajouter des crédits manuellement sur le tableau de bord Twilio',
-      twilio_dashboard_url: 'https://console.twilio.com/billing/balance'
+      twilio_dashboard_url: 'https://console.twilio.com/us1/billing/manage-billing/add-funds'
     };
 
-    // En attendant une vraie intégration, nous retournons les informations
-    // pour que l'utilisateur puisse procéder manuellement
-    
-    console.log('[TWILIO-PURCHASE] Simulation d\'achat créée:', purchaseData);
+    console.log('[TWILIO-PURCHASE] Redirection vers Twilio dashboard');
 
     return new Response(
       JSON.stringify(purchaseData),
-      { 
-        headers: { 
-          ...corsHeaders, 
-          'Content-Type': 'application/json' 
-        } 
-      }
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {
@@ -67,10 +44,7 @@ Deno.serve(async (req) => {
       }),
       { 
         status: 500,
-        headers: { 
-          ...corsHeaders, 
-          'Content-Type': 'application/json' 
-        } 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
       }
     );
   }
