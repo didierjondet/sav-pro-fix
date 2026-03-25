@@ -5,8 +5,9 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+const TWILIO_GATEWAY_URL = 'https://connector-gateway.lovable.dev/twilio';
+
 Deno.serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -14,17 +15,18 @@ Deno.serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    const accountSid = Deno.env.get('ACCOUNT_SID')
-    const authToken = Deno.env.get('AUTH_TOKEN')
+    const supabase = createClient(supabaseUrl, supabaseServiceKey)
+
+    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY')
+    if (!lovableApiKey) throw new Error('LOVABLE_API_KEY is not configured')
+
+    const twilioApiKey = Deno.env.get('TWILIO_API_KEY')
+    if (!twilioApiKey) throw new Error('TWILIO_API_KEY is not configured')
+
     const twilioPhoneNumber = Deno.env.get('TWILIO_PHONE_NUMBER')
+    if (!twilioPhoneNumber) throw new Error('TWILIO_PHONE_NUMBER is not configured')
 
     console.log('[CHECK-SMS-CREDITS] Vérification des crédits SMS programmée')
-
-    if (!accountSid || !authToken || !twilioPhoneNumber) {
-      throw new Error('Configuration Twilio manquante')
-    }
-
-    const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
     // 1. Récupérer les alertes SMS activées
     const { data: alerts, error: alertsError } = await supabase
@@ -48,13 +50,12 @@ Deno.serve(async (req) => {
 
     console.log(`[CHECK-SMS-CREDITS] ${alerts.length} alerte(s) SMS trouvée(s)`)
 
-    // 2. Récupérer le solde Twilio
-    const auth = btoa(`${accountSid}:${authToken}`)
-    const twilioResponse = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Balance.json`, {
+    // 2. Récupérer le solde Twilio via la gateway
+    const twilioResponse = await fetch(`${TWILIO_GATEWAY_URL}/Balance.json`, {
       method: 'GET',
       headers: {
-        'Authorization': `Basic ${auth}`,
-        'Content-Type': 'application/x-www-form-urlencoded',
+        'Authorization': `Bearer ${lovableApiKey}`,
+        'X-Connection-Api-Key': twilioApiKey,
       },
     })
 
@@ -67,36 +68,33 @@ Deno.serve(async (req) => {
     const twilioData = await twilioResponse.json()
     const currentBalance = parseFloat(twilioData.balance)
     
-    // Estimer les crédits SMS (1 SMS ≈ $0.0075)
-    const estimatedSMSCredits = Math.floor(currentBalance / 0.0075)
+    // Estimer les crédits SMS (1 SMS ≈ $0.08)
+    const estimatedSMSCredits = Math.floor(currentBalance / 0.08)
 
     console.log(`[CHECK-SMS-CREDITS] Solde Twilio: $${currentBalance} (≈${estimatedSMSCredits} SMS)`)
 
     // 3. Vérifier chaque alerte
     for (const alert of alerts) {
       const threshold = alert.threshold_value || 100
-      const lastCheck = alert.last_check_at ? new Date(alert.last_check_at) : null
       const lastAlert = alert.last_alert_sent_at ? new Date(alert.last_alert_sent_at) : null
       const now = new Date()
 
-      // Vérifier si on doit envoyer une alerte
       const shouldAlert = estimatedSMSCredits <= threshold
       
       // Éviter de spammer - ne pas envoyer plus d'une alerte par jour
-      const alertCooldown = 24 * 60 * 60 * 1000 // 24 heures
+      const alertCooldown = 24 * 60 * 60 * 1000
       const canSendAlert = !lastAlert || (now.getTime() - lastAlert.getTime()) > alertCooldown
 
       console.log(`[CHECK-SMS-CREDITS] Alerte ${alert.id}: seuil=${threshold}, crédits=${estimatedSMSCredits}, shouldAlert=${shouldAlert}, canSendAlert=${canSendAlert}`)
 
       if (shouldAlert && canSendAlert) {
-        // Déterminer quel message utiliser selon la criticité
         let messageTemplate = alert.sms_message_1
         const criticalityRatio = estimatedSMSCredits / threshold
 
         if (criticalityRatio <= 0.3 && alert.sms_message_3) {
-          messageTemplate = alert.sms_message_3 // Critique
+          messageTemplate = alert.sms_message_3
         } else if (criticalityRatio <= 0.6 && alert.sms_message_2) {
-          messageTemplate = alert.sms_message_2 // Urgent
+          messageTemplate = alert.sms_message_2
         }
 
         if (!messageTemplate) {
@@ -104,25 +102,25 @@ Deno.serve(async (req) => {
           continue
         }
 
-        // Remplacer les variables dans le message
         const finalMessage = messageTemplate
           .replace(/\$\{threshold\}/g, threshold.toString())
           .replace(/\$\{remaining\}/g, estimatedSMSCredits.toString())
 
         console.log(`[CHECK-SMS-CREDITS] Envoi alerte SMS: "${finalMessage}"`)
 
-        // Envoyer le SMS via Twilio
+        // Envoyer le SMS via la gateway Twilio
         try {
           const smsBody = new URLSearchParams({
             From: twilioPhoneNumber,
-            To: twilioPhoneNumber, // Pour l'instant, envoyer à soi-même
+            To: twilioPhoneNumber,
             Body: finalMessage,
           })
 
-          const smsResponse = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`, {
+          const smsResponse = await fetch(`${TWILIO_GATEWAY_URL}/Messages.json`, {
             method: 'POST',
             headers: {
-              'Authorization': `Basic ${auth}`,
+              'Authorization': `Bearer ${lovableApiKey}`,
+              'X-Connection-Api-Key': twilioApiKey,
               'Content-Type': 'application/x-www-form-urlencoded',
             },
             body: smsBody,
@@ -132,7 +130,6 @@ Deno.serve(async (req) => {
             const smsData = await smsResponse.json()
             console.log(`[CHECK-SMS-CREDITS] SMS envoyé avec succès: ${smsData.sid}`)
 
-            // Enregistrer l'envoi dans l'historique
             await supabase
               .from('alert_history')
               .insert({
@@ -143,7 +140,6 @@ Deno.serve(async (req) => {
                 phone_number: twilioPhoneNumber,
               })
 
-            // Mettre à jour la dernière alerte envoyée
             await supabase
               .from('system_alerts')
               .update({
@@ -160,7 +156,6 @@ Deno.serve(async (req) => {
           console.error(`[CHECK-SMS-CREDITS] Erreur lors de l'envoi du SMS:`, smsError)
         }
       } else {
-        // Mettre à jour seulement la dernière vérification
         await supabase
           .from('system_alerts')
           .update({ last_check_at: now.toISOString() })
