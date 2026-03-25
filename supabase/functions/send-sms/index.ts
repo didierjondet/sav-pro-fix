@@ -2,8 +2,10 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.52.1';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 }
+
+const TWILIO_GATEWAY_URL = 'https://connector-gateway.lovable.dev/twilio';
 
 Deno.serve(async (req) => {
   // Handle CORS preflight requests
@@ -15,15 +17,15 @@ Deno.serve(async (req) => {
   const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
   const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-  const accountSid = Deno.env.get('ACCOUNT_SID');
-  const authToken = Deno.env.get('AUTH_TOKEN');
+  const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
+  const twilioApiKey = Deno.env.get('TWILIO_API_KEY');
   const twilioPhoneNumber = Deno.env.get('TWILIO_PHONE_NUMBER');
 
   interface SMSRequest {
     shopId: string;
     toNumber: string;
     message: string;
-    type: 'sav_notification' | 'quote_notification' | 'manual' | 'status_change' | 'review_request';
+    type: 'sav_notification' | 'quote_notification' | 'manual' | 'status_change' | 'review_request' | 'appointment_proposal' | 'satisfaction';
     recordId?: string;
   }
 
@@ -62,9 +64,19 @@ Deno.serve(async (req) => {
   try {
     console.log('🔥 NOUVELLE REQUÊTE SMS REÇUE');
     
-    if (!accountSid || !authToken || !twilioPhoneNumber) {
+    if (!lovableApiKey) {
+      console.error('❌ LOVABLE_API_KEY manquante');
+      throw new Error('Configuration passerelle Twilio manquante (LOVABLE_API_KEY)');
+    }
+
+    if (!twilioApiKey) {
+      console.error('❌ TWILIO_API_KEY manquante');
+      throw new Error('Configuration passerelle Twilio manquante (TWILIO_API_KEY)');
+    }
+
+    if (!twilioPhoneNumber) {
       console.error('❌ Configuration Twilio manquante');
-      throw new Error('Configuration Twilio manquante');
+      throw new Error('Numéro Twilio manquant');
     }
 
     const requestData: SMSRequest = await req.json();
@@ -134,7 +146,6 @@ Deno.serve(async (req) => {
     console.log('📱 Numéro formaté pour Twilio:', formattedNumber);
 
     // Préparer la requête Twilio
-    const auth = btoa(`${accountSid}:${authToken}`);
     const body = new URLSearchParams({
       From: twilioPhoneNumber,
       To: formattedNumber,
@@ -146,11 +157,12 @@ Deno.serve(async (req) => {
     console.log('To:', formattedNumber);
     console.log('Body:', message);
 
-    // Envoyer le SMS via Twilio
-    const response = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`, {
+    // Envoyer le SMS via la passerelle Twilio Lovable
+    const response = await fetch(`${TWILIO_GATEWAY_URL}/Messages.json`, {
       method: 'POST',
       headers: {
-        'Authorization': `Basic ${auth}`,
+        'Authorization': `Bearer ${lovableApiKey}`,
+        'X-Connection-Api-Key': twilioApiKey,
         'Content-Type': 'application/x-www-form-urlencoded',
       },
       body: body,
@@ -284,7 +296,7 @@ Deno.serve(async (req) => {
           record_id: recordId || null,
         });
 
-      throw new Error(`Erreur Twilio: ${responseData.message || 'Erreur inconnue'}`);
+      throw new Error(`Erreur Twilio [${response.status}]: ${responseData.message || JSON.stringify(responseData) || 'Erreur inconnue'}`);
     }
 
   } catch (error: any) {
