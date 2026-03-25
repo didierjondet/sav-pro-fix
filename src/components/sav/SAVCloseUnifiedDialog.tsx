@@ -210,7 +210,7 @@ export function SAVCloseUnifiedDialog({
           message = `Bonjour ${customerName}, votre dossier de réparation ${savCase.case_number} a été mis à jour : ${statusInfo.label}. Suivez l'évolution : ${shortTrackingUrl}`;
         }
         
-        await supabase.functions.invoke('send-sms', {
+        const { data: smsData, error: smsError } = await supabase.functions.invoke('send-sms', {
           body: {
             shopId: savCase.shop_id,
             toNumber: savCase.customer.phone,
@@ -219,6 +219,10 @@ export function SAVCloseUnifiedDialog({
             recordId: savCase.id
           }
         });
+
+        if (smsError || !smsData?.success) {
+          throw new Error(smsError?.message || smsData?.error || 'Erreur lors de l\'envoi du SMS de clôture');
+        }
       }
 
       // Envoyer enquête satisfaction si demandé
@@ -245,7 +249,7 @@ export function SAVCloseUnifiedDialog({
           const satisfactionMessage = `Bonjour ${customerName}, comment s'est passée votre réparation chez ${shop?.name || 'nous'} ? Notez-nous en 30 secondes : ${satisfactionUrl}`;
           
           // Envoyer le SMS
-          await supabase.functions.invoke('send-sms', {
+          const { data: satisfactionSmsData, error: satisfactionSmsError } = await supabase.functions.invoke('send-sms', {
             body: {
               shopId: savCase.shop_id,
               toNumber: savCase.customer.phone,
@@ -254,6 +258,10 @@ export function SAVCloseUnifiedDialog({
               recordId: savCase.id
             }
           });
+
+          if (satisfactionSmsError || !satisfactionSmsData?.success) {
+            throw new Error(satisfactionSmsError?.message || satisfactionSmsData?.error || 'Erreur lors de l\'envoi du SMS de satisfaction');
+          }
           
           toast({
             title: "Enquête envoyée",
