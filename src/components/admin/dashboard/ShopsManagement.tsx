@@ -422,18 +422,29 @@ export function ShopsManagement({ shops, onUpdate }: ShopsManagementProps) {
             </Dialog>
           </div>
 
-          {/* Search field */}
-          <div className="mt-4 relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search className="h-5 w-5 text-gray-400" />
+          {/* Search and sort */}
+          <div className="mt-4 flex items-center gap-3">
+            <div className="relative flex-1 max-w-md">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Search className="h-5 w-5 text-muted-foreground" />
+              </div>
+              <Input
+                type="text"
+                placeholder="Rechercher par nom, code postal ou email..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
             </div>
-            <Input
-              type="text"
-              placeholder="Rechercher par nom, code postal ou administrateur..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 max-w-md"
-            />
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setSortOrder(prev => prev === 'newest' ? 'oldest' : 'newest')}
+              className="flex items-center gap-1"
+            >
+              <ArrowUpDown className="h-4 w-4" />
+              {sortOrder === 'newest' ? 'Plus récent' : 'Plus ancien'}
+            </Button>
           </div>
         </CardHeader>
 
