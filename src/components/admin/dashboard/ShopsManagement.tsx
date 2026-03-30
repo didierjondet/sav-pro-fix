@@ -475,6 +475,10 @@ export function ShopsManagement({ shops, onUpdate }: ShopsManagementProps) {
                             {shop.storage_gb} GB
                           </Badge>
                         )}
+                        <Badge variant="outline" className="border-orange-600 text-orange-700">
+                          <LogIn className="h-3 w-3 mr-1" />
+                          {shop.total_logins ?? 0} connexion(s)
+                        </Badge>
                       </div>
                       
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm mb-2">
