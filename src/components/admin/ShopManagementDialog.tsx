@@ -1062,85 +1062,138 @@ export default function ShopManagementDialog({ shop, isOpen, onClose, onUpdate }
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Unlock className="h-5 w-5" />
-                Forcer l'activation de fonctionnalités
+                Accès aux fonctionnalités
               </CardTitle>
               <p className="text-sm text-muted-foreground">
-                Permettre à ce magasin d'accéder à des fonctionnalités même si son plan ne l'autorise pas
+                État effectif de chaque fonctionnalité. Le forçage permet d'activer une feature non incluse dans le plan.
               </p>
             </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-3">
-                  <Label className="text-sm font-medium">Menus principaux</Label>
-                  
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      checked={forcedFeatures?.quotes === true}
-                      onCheckedChange={(checked) => handleToggleForcedFeature('quotes', checked)}
-                      disabled={loading}
-                    />
-                    <Label className="text-sm">Forcer Devis</Label>
-                  </div>
-                  
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      checked={forcedFeatures?.orders === true}
-                      onCheckedChange={(checked) => handleToggleForcedFeature('orders', checked)}
-                      disabled={loading}
-                    />
-                    <Label className="text-sm">Forcer Commandes</Label>
-                  </div>
-                  
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      checked={forcedFeatures?.chats === true}
-                      onCheckedChange={(checked) => handleToggleForcedFeature('chats', checked)}
-                      disabled={loading}
-                    />
-                    <Label className="text-sm">Forcer Chat clients</Label>
-                  </div>
-                  
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      checked={forcedFeatures?.statistics === true}
-                      onCheckedChange={(checked) => handleToggleForcedFeature('statistics', checked)}
-                      disabled={loading}
-                    />
-                    <Label className="text-sm">Forcer Statistiques</Label>
-                  </div>
-                </div>
+            <CardContent className="space-y-6">
+              {(() => {
+                const planMenuConfig = currentTier?.menu_config || {};
                 
-                <div className="space-y-3">
-                  <Label className="text-sm font-medium">Zones sidebar</Label>
-                  
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      checked={forcedFeatures?.sidebar_late_sav === true}
-                      onCheckedChange={(checked) => handleToggleForcedFeature('sidebar_late_sav', checked)}
+                const allFeatures = [
+                  { key: 'dashboard', label: 'Tableau de bord', group: 'menu' },
+                  { key: 'sav', label: 'Dossiers SAV', group: 'menu' },
+                  { key: 'parts', label: 'Stock pièces', group: 'menu' },
+                  { key: 'quotes', label: 'Devis', group: 'menu' },
+                  { key: 'orders', label: 'Commandes', group: 'menu' },
+                  { key: 'customers', label: 'Clients', group: 'menu' },
+                  { key: 'chats', label: 'Chat clients', group: 'menu' },
+                  { key: 'statistics', label: 'Statistiques', group: 'menu' },
+                  { key: 'sidebar_late_sav', label: 'SAV en retard', group: 'sidebar' },
+                  { key: 'sidebar_sav_types', label: 'Types de SAV', group: 'sidebar' },
+                  { key: 'sidebar_sav_statuses', label: 'Statuts SAV', group: 'sidebar' },
+                ];
+
+                const menuFeatures = allFeatures.filter(f => f.group === 'menu');
+                const sidebarFeatures = allFeatures.filter(f => f.group === 'sidebar');
+
+                const renderFeatureRow = (feature: { key: string; label: string }) => {
+                  const includedInPlan = planMenuConfig[feature.key] === true;
+                  const isForced = forcedFeatures[feature.key] === true;
+                  const effectivelyActive = includedInPlan || isForced;
+
+                  return (
+                    <div key={feature.key} className="flex items-center justify-between py-2 px-3 border rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-2 h-2 rounded-full ${effectivelyActive ? 'bg-green-500' : 'bg-red-500'}`} />
+                        <span className="text-sm font-medium">{feature.label}</span>
+                        {includedInPlan ? (
+                          <Badge className="bg-green-100 text-green-800 hover:bg-green-100 text-xs">
+                            Inclus dans le plan
+                          </Badge>
+                        ) : (
+                          <Badge variant="destructive" className="text-xs">
+                            Non inclus
+                          </Badge>
+                        )}
+                        {isForced && (
+                          <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100 text-xs">
+                            Forcé
+                          </Badge>
+                        )}
+                      </div>
+                      <Switch
+                        checked={isForced}
+                        onCheckedChange={(checked) => handleToggleForcedFeature(feature.key, checked)}
+                        disabled={loading || includedInPlan}
+                      />
+                    </div>
+                  );
+                };
+
+                return (
+                  <>
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">Menus principaux</Label>
+                      <div className="space-y-2">
+                        {menuFeatures.map(renderFeatureRow)}
+                      </div>
+                    </div>
+                    
+                    <Separator />
+
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">Zones sidebar</Label>
+                      <div className="space-y-2">
+                        {sidebarFeatures.map(renderFeatureRow)}
+                      </div>
+                    </div>
+
+                    <Separator />
+
+                    <div className="text-sm text-muted-foreground space-y-1">
+                      <p className="flex items-center gap-2">
+                        <span className="w-2 h-2 bg-green-500 rounded-full inline-block" />
+                        Vert = fonctionnalité active (incluse dans le plan ou forcée)
+                      </p>
+                      <p className="flex items-center gap-2">
+                        <span className="w-2 h-2 bg-red-500 rounded-full inline-block" />
+                        Rouge = fonctionnalité inactive (non incluse et non forcée)
+                      </p>
+                      <p className="flex items-center gap-2">
+                        <Badge className="bg-green-100 text-green-800 hover:bg-green-100 text-xs">Inclus</Badge>
+                        = le switch est grisé car déjà actif via le plan
+                      </p>
+                    </div>
+
+                    <Button
+                      variant="outline"
+                      onClick={async () => {
+                        if (!shop || !currentTier) return;
+                        setLoading(true);
+                        try {
+                          const cleanedForced: Record<string, boolean> = {};
+                          Object.keys(forcedFeatures).forEach(key => {
+                            if (!planMenuConfig[key]) {
+                              cleanedForced[key] = true;
+                            }
+                          });
+                          const { error } = await supabase
+                            .from('shops')
+                            .update({ forced_features: cleanedForced })
+                            .eq('id', shop.id);
+                          if (error) throw error;
+                          setForcedFeatures(cleanedForced);
+                          queryClient.invalidateQueries({ queryKey: ['shop'] });
+                          toast({ title: "Succès", description: "Forçages synchronisés avec le plan" });
+                          onUpdate();
+                        } catch (error: any) {
+                          toast({ title: "Erreur", description: error.message, variant: "destructive" });
+                        } finally {
+                          setLoading(false);
+                        }
+                      }}
                       disabled={loading}
-                    />
-                    <Label className="text-sm">Forcer SAV en retard</Label>
-                  </div>
-                  
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      checked={forcedFeatures?.sidebar_sav_types === true}
-                      onCheckedChange={(checked) => handleToggleForcedFeature('sidebar_sav_types', checked)}
-                      disabled={loading}
-                    />
-                    <Label className="text-sm">Forcer Types de SAV</Label>
-                  </div>
-                  
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      checked={forcedFeatures?.sidebar_sav_statuses === true}
-                      onCheckedChange={(checked) => handleToggleForcedFeature('sidebar_sav_statuses', checked)}
-                      disabled={loading}
-                    />
-                    <Label className="text-sm">Forcer Statuts SAV</Label>
-                  </div>
-                </div>
-              </div>
+                      className="w-full"
+                    >
+                      <Zap className="h-4 w-4 mr-2" />
+                      Synchroniser les forçages avec le plan
+                    </Button>
+                  </>
+                );
+              })()}
             </CardContent>
           </Card>
         </TabsContent>

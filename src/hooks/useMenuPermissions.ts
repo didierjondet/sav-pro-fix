@@ -41,15 +41,15 @@ export function useMenuPermissions(): {
         dashboard: true,
         sav: true,
         parts: true,
-        quotes: false,
-        orders: false,
+        quotes: true,
+        orders: true,
         customers: true,
-        chats: false,
+        chats: true,
         agenda: true,
         sidebar_sav_types: true,
         sidebar_sav_statuses: true,
         sidebar_late_sav: true,
-        statistics: false,
+        statistics: true,
         reports: true
       };
       return defaultPerms;
