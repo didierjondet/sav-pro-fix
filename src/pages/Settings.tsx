@@ -1734,7 +1734,7 @@ export default function Settings() {
                     <div className="p-4 bg-muted rounded-lg">
                       <h3 className="font-medium mb-1">Plan actuel</h3>
                       <div className="text-2xl font-bold capitalize">
-                        {subscription?.subscription_tier || 'Gratuit'}
+                        {planName || subscription?.subscription_tier || 'Découverte'}
                       </div>
                       <p className="text-sm text-muted-foreground">Votre abonnement</p>
                     </div>

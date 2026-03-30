@@ -38,15 +38,15 @@ export function useSubscriptionFeatures(): SubscriptionFeatures {
         if (shop.subscription_plan_id) {
           planQuery = supabase
             .from('subscription_plans')
-            .select('menu_config, name')
+            .select('menu_config, name, tier_key')
             .eq('id', shop.subscription_plan_id)
             .single();
         } else {
-          // Sinon, chercher le plan par défaut basé sur le tier
+          // Sinon, chercher le plan par tier_key correspondant au subscription_tier
           planQuery = supabase
             .from('subscription_plans')
-            .select('menu_config, name')
-            .ilike('name', shop.subscription_tier || 'free')
+            .select('menu_config, name, tier_key')
+            .eq('tier_key', shop.subscription_tier || 'free')
             .eq('is_active', true)
             .single();
         }
@@ -55,23 +55,23 @@ export function useSubscriptionFeatures(): SubscriptionFeatures {
 
         if (error) {
           console.error('Error fetching subscription plan:', error);
-          // Plan par défaut en cas d'erreur
+          // Fallback PERMISSIF : tout activé pour ne pas bloquer l'utilisateur
           return {
             menuConfig: {
               dashboard: true,
               sav: true,
               parts: true,
-              quotes: false,
-              orders: false,
+              quotes: true,
+              orders: true,
               customers: true,
-              chats: false,
+              chats: true,
               sidebar_sav_types: true,
               sidebar_sav_statuses: true,
               sidebar_late_sav: true,
-              statistics: false,
+              statistics: true,
               reports: true
             },
-            planName: shop.subscription_tier || 'free'
+            planName: shop.subscription_tier || 'Découverte'
           };
         }
 
