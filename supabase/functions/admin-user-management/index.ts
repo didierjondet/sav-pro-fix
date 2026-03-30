@@ -6,7 +6,7 @@ const corsHeaders = {
 }
 
 interface UserRequest {
-  action: 'create' | 'delete' | 'update_password'
+  action: 'create' | 'delete' | 'update_password' | 'get_shop_auth_stats'
   email?: string
   password?: string
   new_password?: string
@@ -17,6 +17,7 @@ interface UserRequest {
   shop_id?: string
   user_id?: string
   profile_id?: string
+  shop_ids?: string[]
 }
 
 Deno.serve(async (req) => {
