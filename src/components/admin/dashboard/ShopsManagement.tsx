@@ -102,16 +102,17 @@ export function ShopsManagement({ shops, onUpdate }: ShopsManagementProps) {
     
     const searchLower = searchTerm.toLowerCase();
     
-    // Search in shop name
     if (shop.name.toLowerCase().includes(searchLower)) return true;
-    
-    // Search in address (for postal code)
     if (shop.address?.toLowerCase().includes(searchLower)) return true;
-    
-    // Search in email
     if (shop.email?.toLowerCase().includes(searchLower)) return true;
     
     return false;
+  });
+
+  const sortedShops = [...filteredShops].sort((a, b) => {
+    const dateA = new Date(a.created_at).getTime();
+    const dateB = new Date(b.created_at).getTime();
+    return sortOrder === 'newest' ? dateB - dateA : dateA - dateB;
   });
 
   const createShop = async () => {
