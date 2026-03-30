@@ -496,35 +496,6 @@ export function ShopsManagement({ shops, onUpdate }: ShopsManagementProps) {
                         </div>
                       </div>
                       
-                      {shop.slug && (
-                        <div className="flex items-center gap-2 bg-slate-100 p-3 rounded-lg">
-                          <div className="flex-1">
-                            <span className="font-medium text-sm text-slate-700">URL du magasin: </span>
-                            <a 
-                              href={`${window.location.origin}/${shop.slug}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-primary hover:text-primary/80 font-mono text-sm"
-                            >
-                              {window.location.origin}/{shop.slug}
-                            </a>
-                          </div>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            className="border-slate-300 text-slate-700 hover:bg-slate-100"
-                            onClick={() => {
-                              navigator.clipboard.writeText(`${window.location.origin}/${shop.slug}`);
-                              toast({
-                                title: "Copié !",
-                                description: "L'URL a été copiée dans le presse-papiers",
-                              });
-                            }}
-                          >
-                            Copier
-                          </Button>
-                        </div>
-                      )}
                     </div>
                     
                      <div className="flex items-center gap-2 ml-4">
