@@ -450,7 +450,7 @@ export function ShopsManagement({ shops, onUpdate }: ShopsManagementProps) {
 
         <CardContent>
           <div className="space-y-4">
-            {filteredShops.length === 0 && searchTerm ? (
+            {sortedShops.length === 0 && searchTerm ? (
               <div className="text-center py-8 text-muted-foreground">
                 <Search className="h-12 w-12 mx-auto mb-4 opacity-50" />
                 <p>Aucun magasin trouvé pour "{searchTerm}"</p>
