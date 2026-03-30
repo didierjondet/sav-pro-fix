@@ -42,7 +42,8 @@ import {
   Trash2,
   Key,
   Mail,
-  Shield
+  Shield,
+  Clock
 } from 'lucide-react';
 
 interface Shop {
