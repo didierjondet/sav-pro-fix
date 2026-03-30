@@ -170,6 +170,18 @@ export default function ShopManagementDialog({ shop, isOpen, onClose, onUpdate }
 
       if (error) throw error;
       setUsers(data || []);
+
+      // Fetch auth stats for this shop's users
+      try {
+        const { data: authData, error: authError } = await supabase.functions.invoke('admin-user-management', {
+          body: { action: 'get_shop_auth_stats' }
+        });
+        if (!authError && authData?.shop_stats?.[shop.id]?.users) {
+          setUserAuthStats(authData.shop_stats[shop.id].users);
+        }
+      } catch (e) {
+        console.warn('Could not fetch user auth stats:', e);
+      }
     } catch (error: any) {
       toast({
         title: "Erreur",
