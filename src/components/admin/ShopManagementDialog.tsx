@@ -92,6 +92,7 @@ export default function ShopManagementDialog({ shop, isOpen, onClose, onUpdate }
   const [isBlocked, setIsBlocked] = useState(shop?.is_blocked || false);
   const [subscriptionMenuVisible, setSubscriptionMenuVisible] = useState(shop?.subscription_menu_visible ?? true);
   const [users, setUsers] = useState<any[]>([]);
+  const [userAuthStats, setUserAuthStats] = useState<Record<string, string | null>>({});
   const [newUserEmail, setNewUserEmail] = useState('');
   const [newUserPassword, setNewUserPassword] = useState('');
   const [newUserRole, setNewUserRole] = useState<'admin' | 'technician'>('technician');
