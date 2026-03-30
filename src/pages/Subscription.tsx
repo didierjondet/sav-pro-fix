@@ -41,7 +41,7 @@ export default function Subscription() {
         // Requête directe sans cache avec headers spécifiques
         const { data: dbPlans, error } = await supabase
           .from('subscription_plans')
-          .select('id, name, monthly_price, sms_limit, sav_limit, features, billing_interval, stripe_price_id, contact_only, is_active')
+          .select('id, name, monthly_price, sms_limit, sav_limit, features, billing_interval, stripe_price_id, contact_only, is_active, tier_key')
           .eq('is_active', true)
           .order('monthly_price')
         
@@ -67,7 +67,8 @@ export default function Subscription() {
             }
 
             return {
-              id: planNameLower.replace(/\s+/g, '-'), // Normaliser l'ID
+              id: plan.tier_key || planNameLower.replace(/\s+/g, '-'),
+              tier_key: plan.tier_key,
               name: plan.name,
               price: plan.monthly_price === 0 ? 'Gratuit' : `${Number(plan.monthly_price).toFixed(0)}€`,
               period: plan.monthly_price > 0 ? (plan.billing_interval === 'year' ? '/an HT' : '/mois HT') : '',
@@ -79,9 +80,9 @@ export default function Subscription() {
               },
               contact_only: plan.contact_only || false,
               stripe_price_id: plan.stripe_price_id,
-              original_name: plan.name, // Garder le nom original pour Stripe
+              original_name: plan.name,
               db_id: plan.id,
-              real_price: plan.monthly_price // Ajouter le prix brut pour debug
+              real_price: plan.monthly_price
             };
           });
           
@@ -124,22 +125,23 @@ export default function Subscription() {
   const getCurrentPlan = () => {
     if (!subscription || !plans.length) return null;
     
-    // Essayer de trouver par nom d'abord, puis par ID
+    // Matcher par tier_key qui correspond à subscription_tier
     let currentPlan = plans.find(plan => 
-      plan.original_name?.toLowerCase() === subscription.subscription_tier?.toLowerCase() ||
-      plan.name?.toLowerCase() === subscription.subscription_tier?.toLowerCase() ||
-      plan.id === subscription.subscription_tier
+      plan.tier_key === subscription.subscription_tier
     );
+    
+    // Fallback : chercher par nom
+    if (!currentPlan) {
+      currentPlan = plans.find(plan => 
+        plan.original_name?.toLowerCase() === subscription.subscription_tier?.toLowerCase() ||
+        plan.name?.toLowerCase() === subscription.subscription_tier?.toLowerCase()
+      );
+    }
     
     // Si pas trouvé, prendre le premier (gratuit)
     if (!currentPlan) {
       currentPlan = plans[0];
     }
-    
-    console.log('🔍 Plan actuel identifié:', { 
-      subscription_tier: subscription.subscription_tier, 
-      found_plan: currentPlan?.name 
-    });
     
     return currentPlan;
   };
@@ -147,7 +149,7 @@ export default function Subscription() {
   const isCurrentPlan = (planId: string) => {
     if (!subscription) return false;
     const current = getCurrentPlan();
-    return current?.id === planId || current?.original_name?.toLowerCase() === planId.toLowerCase();
+    return current?.id === planId || current?.tier_key === planId;
   };
   const canUpgrade = (planId: string) => {
     if (!subscription) return false;

@@ -62,6 +62,7 @@ import SAVTypesManager from '@/components/sav/SAVTypesManager';
 import { useShop } from '@/hooks/useShop';
 import { useProfile } from '@/hooks/useProfile';
 import { useSubscription } from '@/hooks/useSubscription';
+import { useSubscriptionFeatures } from '@/hooks/useSubscriptionFeatures';
 import { useShopSAVStatuses } from '@/hooks/useShopSAVStatuses';
 import { useShopSAVTypes } from '@/hooks/useShopSAVTypes';
 import { useMenuPermissions } from '@/hooks/useMenuPermissions';
@@ -110,6 +111,7 @@ export default function Settings() {
     createCheckout,
     openCustomerPortal
   } = useSubscription();
+  const { planName } = useSubscriptionFeatures();
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
@@ -1734,7 +1736,7 @@ export default function Settings() {
                     <div className="p-4 bg-muted rounded-lg">
                       <h3 className="font-medium mb-1">Plan actuel</h3>
                       <div className="text-2xl font-bold capitalize">
-                        {subscription?.subscription_tier || 'Gratuit'}
+                        {planName || subscription?.subscription_tier || 'Découverte'}
                       </div>
                       <p className="text-sm text-muted-foreground">Votre abonnement</p>
                     </div>
