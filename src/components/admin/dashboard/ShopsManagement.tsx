@@ -456,7 +456,7 @@ export function ShopsManagement({ shops, onUpdate }: ShopsManagementProps) {
                 <p>Aucun magasin trouvé pour "{searchTerm}"</p>
               </div>
             ) : (
-              filteredShops.map((shop) => (
+              sortedShops.map((shop) => (
               <Card key={shop.id} className="bg-white border-slate-200 hover:shadow-md transition-all duration-200">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
