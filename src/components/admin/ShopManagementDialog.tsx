@@ -924,6 +924,12 @@ export default function ShopManagementDialog({ shop, isOpen, onClose, onUpdate }
                             <div className="text-sm text-muted-foreground">
                               ID: {user.user_id}
                             </div>
+                            <div className="text-xs text-muted-foreground flex items-center gap-1">
+                              <Clock className="h-3 w-3" />
+                              {userAuthStats[user.user_id] 
+                                ? `Dernière connexion : ${new Date(userAuthStats[user.user_id]!).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}`
+                                : 'Jamais connecté'}
+                            </div>
                           </div>
                           <div className="flex items-center gap-2">
                             <Select 
