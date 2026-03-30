@@ -125,22 +125,23 @@ export default function Subscription() {
   const getCurrentPlan = () => {
     if (!subscription || !plans.length) return null;
     
-    // Essayer de trouver par nom d'abord, puis par ID
+    // Matcher par tier_key qui correspond à subscription_tier
     let currentPlan = plans.find(plan => 
-      plan.original_name?.toLowerCase() === subscription.subscription_tier?.toLowerCase() ||
-      plan.name?.toLowerCase() === subscription.subscription_tier?.toLowerCase() ||
-      plan.id === subscription.subscription_tier
+      plan.tier_key === subscription.subscription_tier
     );
+    
+    // Fallback : chercher par nom
+    if (!currentPlan) {
+      currentPlan = plans.find(plan => 
+        plan.original_name?.toLowerCase() === subscription.subscription_tier?.toLowerCase() ||
+        plan.name?.toLowerCase() === subscription.subscription_tier?.toLowerCase()
+      );
+    }
     
     // Si pas trouvé, prendre le premier (gratuit)
     if (!currentPlan) {
       currentPlan = plans[0];
     }
-    
-    console.log('🔍 Plan actuel identifié:', { 
-      subscription_tier: subscription.subscription_tier, 
-      found_plan: currentPlan?.name 
-    });
     
     return currentPlan;
   };
@@ -148,7 +149,7 @@ export default function Subscription() {
   const isCurrentPlan = (planId: string) => {
     if (!subscription) return false;
     const current = getCurrentPlan();
-    return current?.id === planId || current?.original_name?.toLowerCase() === planId.toLowerCase();
+    return current?.id === planId || current?.tier_key === planId;
   };
   const canUpgrade = (planId: string) => {
     if (!subscription) return false;
