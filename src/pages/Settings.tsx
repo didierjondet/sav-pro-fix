@@ -62,6 +62,7 @@ import SAVTypesManager from '@/components/sav/SAVTypesManager';
 import { useShop } from '@/hooks/useShop';
 import { useProfile } from '@/hooks/useProfile';
 import { useSubscription } from '@/hooks/useSubscription';
+import { useSubscriptionFeatures } from '@/hooks/useSubscriptionFeatures';
 import { useShopSAVStatuses } from '@/hooks/useShopSAVStatuses';
 import { useShopSAVTypes } from '@/hooks/useShopSAVTypes';
 import { useMenuPermissions } from '@/hooks/useMenuPermissions';
