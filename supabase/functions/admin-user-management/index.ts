@@ -283,6 +283,63 @@ Deno.serve(async (req) => {
         )
       }
 
+      case 'get_shop_auth_stats': {
+        // Seul super_admin peut récupérer les stats d'auth
+        if (!isSuperAdmin) {
+          throw new Error('Access denied: Super admin privileges required')
+        }
+
+        console.log('Fetching auth stats for shops')
+
+        // Récupérer tous les profils avec leur shop_id
+        const { data: allProfiles, error: allProfilesError } = await supabase
+          .from('profiles')
+          .select('user_id, shop_id')
+          .not('shop_id', 'is', null)
+
+        if (allProfilesError) throw allProfilesError
+
+        // Récupérer tous les utilisateurs auth
+        const { data: authUsers, error: authUsersError } = await supabase.auth.admin.listUsers({
+          perPage: 1000
+        })
+
+        if (authUsersError) throw authUsersError
+
+        // Créer un map user_id -> last_sign_in_at
+        const authMap: Record<string, string | null> = {}
+        for (const u of authUsers.users) {
+          authMap[u.id] = u.last_sign_in_at || null
+        }
+
+        // Compter les connexions par shop et mapper last_sign_in par user
+        const shopStats: Record<string, { total_logins: number; users: Record<string, string | null> }> = {}
+        
+        for (const p of allProfiles || []) {
+          if (!p.shop_id || !p.user_id) continue
+          
+          if (!shopStats[p.shop_id]) {
+            shopStats[p.shop_id] = { total_logins: 0, users: {} }
+          }
+          
+          const lastSignIn = authMap[p.user_id] || null
+          shopStats[p.shop_id].users[p.user_id] = lastSignIn
+          
+          // Compter comme "connexion" si l'utilisateur s'est déjà connecté
+          if (lastSignIn) {
+            shopStats[p.shop_id].total_logins += 1
+          }
+        }
+
+        return new Response(
+          JSON.stringify({ success: true, shop_stats: shopStats }),
+          { 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 200 
+          }
+        )
+      }
+
       default:
         throw new Error('Invalid action')
     }
