@@ -2402,6 +2402,7 @@ export type Database = {
           sms_limit: number
           storage_limit_gb: number
           stripe_price_id: string | null
+          tier_key: string | null
           updated_at: string
         }
         Insert: {
@@ -2419,6 +2420,7 @@ export type Database = {
           sms_limit?: number
           storage_limit_gb?: number
           stripe_price_id?: string | null
+          tier_key?: string | null
           updated_at?: string
         }
         Update: {
@@ -2436,6 +2438,7 @@ export type Database = {
           sms_limit?: number
           storage_limit_gb?: number
           stripe_price_id?: string | null
+          tier_key?: string | null
           updated_at?: string
         }
         Relationships: []
