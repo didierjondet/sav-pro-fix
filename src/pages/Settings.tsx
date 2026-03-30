@@ -111,6 +111,7 @@ export default function Settings() {
     createCheckout,
     openCustomerPortal
   } = useSubscription();
+  const { planName } = useSubscriptionFeatures();
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
