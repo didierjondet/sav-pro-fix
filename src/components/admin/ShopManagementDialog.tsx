@@ -42,7 +42,8 @@ import {
   Trash2,
   Key,
   Mail,
-  Shield
+  Shield,
+  Clock
 } from 'lucide-react';
 
 interface Shop {
@@ -91,6 +92,7 @@ export default function ShopManagementDialog({ shop, isOpen, onClose, onUpdate }
   const [isBlocked, setIsBlocked] = useState(shop?.is_blocked || false);
   const [subscriptionMenuVisible, setSubscriptionMenuVisible] = useState(shop?.subscription_menu_visible ?? true);
   const [users, setUsers] = useState<any[]>([]);
+  const [userAuthStats, setUserAuthStats] = useState<Record<string, string | null>>({});
   const [newUserEmail, setNewUserEmail] = useState('');
   const [newUserPassword, setNewUserPassword] = useState('');
   const [newUserRole, setNewUserRole] = useState<'admin' | 'technician'>('technician');
@@ -168,6 +170,18 @@ export default function ShopManagementDialog({ shop, isOpen, onClose, onUpdate }
 
       if (error) throw error;
       setUsers(data || []);
+
+      // Fetch auth stats for this shop's users
+      try {
+        const { data: authData, error: authError } = await supabase.functions.invoke('admin-user-management', {
+          body: { action: 'get_shop_auth_stats' }
+        });
+        if (!authError && authData?.shop_stats?.[shop.id]?.users) {
+          setUserAuthStats(authData.shop_stats[shop.id].users);
+        }
+      } catch (e) {
+        console.warn('Could not fetch user auth stats:', e);
+      }
     } catch (error: any) {
       toast({
         title: "Erreur",
@@ -909,6 +923,12 @@ export default function ShopManagementDialog({ shop, isOpen, onClose, onUpdate }
                             </div>
                             <div className="text-sm text-muted-foreground">
                               ID: {user.user_id}
+                            </div>
+                            <div className="text-xs text-muted-foreground flex items-center gap-1">
+                              <Clock className="h-3 w-3" />
+                              {userAuthStats[user.user_id] 
+                                ? `Dernière connexion : ${new Date(userAuthStats[user.user_id]!).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}`
+                                : 'Jamais connecté'}
                             </div>
                           </div>
                           <div className="flex items-center gap-2">

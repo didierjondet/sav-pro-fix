@@ -16,6 +16,8 @@ import {
   AlertTriangle,
   Search,
   HardDrive,
+  ArrowUpDown,
+  LogIn,
 } from 'lucide-react';
 import {
   Dialog,
@@ -69,6 +71,7 @@ interface Shop {
   average_case_value?: number;
   is_blocked?: boolean;
   storage_gb?: number;
+  total_logins?: number;
 }
 
 interface ShopsManagementProps {
@@ -79,6 +82,7 @@ interface ShopsManagementProps {
 export function ShopsManagement({ shops, onUpdate }: ShopsManagementProps) {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
+  const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
   const [isCreateShopOpen, setIsCreateShopOpen] = useState(false);
   const [isEditShopOpen, setIsEditShopOpen] = useState(false);
   const [editingShop, setEditingShop] = useState<Shop | null>(null);
@@ -98,16 +102,17 @@ export function ShopsManagement({ shops, onUpdate }: ShopsManagementProps) {
     
     const searchLower = searchTerm.toLowerCase();
     
-    // Search in shop name
     if (shop.name.toLowerCase().includes(searchLower)) return true;
-    
-    // Search in address (for postal code)
     if (shop.address?.toLowerCase().includes(searchLower)) return true;
-    
-    // Search in email
     if (shop.email?.toLowerCase().includes(searchLower)) return true;
     
     return false;
+  });
+
+  const sortedShops = [...filteredShops].sort((a, b) => {
+    const dateA = new Date(a.created_at).getTime();
+    const dateB = new Date(b.created_at).getTime();
+    return sortOrder === 'newest' ? dateB - dateA : dateA - dateB;
   });
 
   const createShop = async () => {
@@ -417,30 +422,41 @@ export function ShopsManagement({ shops, onUpdate }: ShopsManagementProps) {
             </Dialog>
           </div>
 
-          {/* Search field */}
-          <div className="mt-4 relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search className="h-5 w-5 text-gray-400" />
+          {/* Search and sort */}
+          <div className="mt-4 flex items-center gap-3">
+            <div className="relative flex-1 max-w-md">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Search className="h-5 w-5 text-muted-foreground" />
+              </div>
+              <Input
+                type="text"
+                placeholder="Rechercher par nom, code postal ou email..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
             </div>
-            <Input
-              type="text"
-              placeholder="Rechercher par nom, code postal ou administrateur..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 max-w-md"
-            />
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setSortOrder(prev => prev === 'newest' ? 'oldest' : 'newest')}
+              className="flex items-center gap-1"
+            >
+              <ArrowUpDown className="h-4 w-4" />
+              {sortOrder === 'newest' ? 'Plus récent' : 'Plus ancien'}
+            </Button>
           </div>
         </CardHeader>
 
         <CardContent>
           <div className="space-y-4">
-            {filteredShops.length === 0 && searchTerm ? (
+            {sortedShops.length === 0 && searchTerm ? (
               <div className="text-center py-8 text-muted-foreground">
                 <Search className="h-12 w-12 mx-auto mb-4 opacity-50" />
                 <p>Aucun magasin trouvé pour "{searchTerm}"</p>
               </div>
             ) : (
-              filteredShops.map((shop) => (
+              sortedShops.map((shop) => (
               <Card key={shop.id} className="bg-white border-slate-200 hover:shadow-md transition-all duration-200">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
@@ -459,6 +475,10 @@ export function ShopsManagement({ shops, onUpdate }: ShopsManagementProps) {
                             {shop.storage_gb} GB
                           </Badge>
                         )}
+                        <Badge variant="outline" className="border-orange-600 text-orange-700">
+                          <LogIn className="h-3 w-3 mr-1" />
+                          {shop.total_logins ?? 0} connexion(s)
+                        </Badge>
                       </div>
                       
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm mb-2">
@@ -476,35 +496,6 @@ export function ShopsManagement({ shops, onUpdate }: ShopsManagementProps) {
                         </div>
                       </div>
                       
-                      {shop.slug && (
-                        <div className="flex items-center gap-2 bg-slate-100 p-3 rounded-lg">
-                          <div className="flex-1">
-                            <span className="font-medium text-sm text-slate-700">URL du magasin: </span>
-                            <a 
-                              href={`${window.location.origin}/${shop.slug}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-primary hover:text-primary/80 font-mono text-sm"
-                            >
-                              {window.location.origin}/{shop.slug}
-                            </a>
-                          </div>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            className="border-slate-300 text-slate-700 hover:bg-slate-100"
-                            onClick={() => {
-                              navigator.clipboard.writeText(`${window.location.origin}/${shop.slug}`);
-                              toast({
-                                title: "Copié !",
-                                description: "L'URL a été copiée dans le presse-papiers",
-                              });
-                            }}
-                          >
-                            Copier
-                          </Button>
-                        </div>
-                      )}
                     </div>
                     
                      <div className="flex items-center gap-2 ml-4">
