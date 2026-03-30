@@ -71,6 +71,7 @@ interface Shop {
   average_case_value?: number;
   is_blocked?: boolean;
   storage_gb?: number;
+  total_logins?: number;
 }
 
 interface ShopsManagementProps {
