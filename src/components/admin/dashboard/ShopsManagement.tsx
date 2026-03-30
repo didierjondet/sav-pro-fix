@@ -82,6 +82,7 @@ interface ShopsManagementProps {
 export function ShopsManagement({ shops, onUpdate }: ShopsManagementProps) {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
+  const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
   const [isCreateShopOpen, setIsCreateShopOpen] = useState(false);
   const [isEditShopOpen, setIsEditShopOpen] = useState(false);
   const [editingShop, setEditingShop] = useState<Shop | null>(null);
