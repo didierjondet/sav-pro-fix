@@ -41,7 +41,7 @@ export default function Subscription() {
         // Requête directe sans cache avec headers spécifiques
         const { data: dbPlans, error } = await supabase
           .from('subscription_plans')
-          .select('id, name, monthly_price, sms_limit, sav_limit, features, billing_interval, stripe_price_id, contact_only, is_active')
+          .select('id, name, monthly_price, sms_limit, sav_limit, features, billing_interval, stripe_price_id, contact_only, is_active, tier_key')
           .eq('is_active', true)
           .order('monthly_price')
         
