@@ -67,7 +67,8 @@ export default function Subscription() {
             }
 
             return {
-              id: planNameLower.replace(/\s+/g, '-'), // Normaliser l'ID
+              id: plan.tier_key || planNameLower.replace(/\s+/g, '-'),
+              tier_key: plan.tier_key,
               name: plan.name,
               price: plan.monthly_price === 0 ? 'Gratuit' : `${Number(plan.monthly_price).toFixed(0)}€`,
               period: plan.monthly_price > 0 ? (plan.billing_interval === 'year' ? '/an HT' : '/mois HT') : '',
@@ -79,9 +80,9 @@ export default function Subscription() {
               },
               contact_only: plan.contact_only || false,
               stripe_price_id: plan.stripe_price_id,
-              original_name: plan.name, // Garder le nom original pour Stripe
+              original_name: plan.name,
               db_id: plan.id,
-              real_price: plan.monthly_price // Ajouter le prix brut pour debug
+              real_price: plan.monthly_price
             };
           });
           
