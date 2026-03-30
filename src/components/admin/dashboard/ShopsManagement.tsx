@@ -16,6 +16,8 @@ import {
   AlertTriangle,
   Search,
   HardDrive,
+  ArrowUpDown,
+  LogIn,
 } from 'lucide-react';
 import {
   Dialog,
