@@ -1,96 +1,48 @@
 
 
-## Audit SEO : Diagnostic et Plan d'Amelioration
+## Diagnostic
 
-### Diagnostic des problemes actuels
+Le systeme fonctionne en 3 couches :
 
-**1. L'outil SEO du Super Admin ne sert a RIEN actuellement**
-La config SEO est sauvegardee en base de donnees mais jamais injectee dans le HTML. Les meta tags dans `index.html` sont statiques et jamais mis a jour. C'est un formulaire decoratif.
+```text
+Plan (menu_config)     →  Base : ce que le plan autorise
+Forced Features        →  Override super admin : force ON meme si plan dit NON  
+Shop Preferences       →  Choix boutique : peut masquer ce que le plan autorise
+```
 
-**2. Problemes critiques dans `index.html`**
-- `<html lang="en">` au lieu de `<html lang="fr">` (signal negatif pour Google FR)
-- Title : `fixway.fr` — pas de mots-cles
-- Description : `"Logiciel SAV, Application SAV smartphone, consoles, highttech. gratuit."` — faute de frappe, trop court, mal optimise
-- OG image pointe vers `lovable.dev` au lieu d'une image propre a FixwayPro
-- Twitter site pointe vers `@lovable_dev`
-- Aucun JSON-LD / structured data
-- Aucun sitemap.xml
-- robots.txt basique sans sitemap reference
+**Pour le plan gratuit** : si toutes les options sont cochees dans `menu_config` du plan, alors tout est deja actif. L'onglet "Forcer l'acces" montre tout dechoche car `forced_features` est vide — ce qui est **normal** puisqu'il n'y a rien a forcer (le plan autorise deja tout).
 
-**3. Problemes SPA (Single Page Application)**
-Google a du mal a indexer les SPA React. Le contenu de la landing page est rendu cote client, invisible au crawl initial.
+**Le vrai probleme** : l'interface est confuse. On voit des switches OFF et on pense que les menus sont desactives. Il manque un affichage clair de l'etat effectif.
 
-**4. Pas de pages SEO dedicees**
-Les pages `/features`, `/about`, `/contact` existent mais ne sont pas referencees dans un sitemap et n'ont pas de canonical URLs.
+## Plan de correction
 
----
+### 1. Refondre l'onglet "Forcer l'acces" dans ShopManagementDialog
 
-### Plan d'implementation
+Transformer l'onglet pour afficher l'etat reel de chaque menu :
 
-#### Etape 1 : Optimiser `index.html` en dur (impact immediat)
-- Changer `lang="en"` → `lang="fr"`
-- Title : `FixwayPro — Logiciel SAV Gratuit pour Réparateurs | Gestion SAV Smartphone & High-Tech`
-- Meta description optimisee avec mots-cles cibles : "logiciel sav", "application sav", "logiciel sav gratuit", "gestion sav smartphone"
-- OG/Twitter tags avec image et descriptions propres a FixwayPro
-- Ajouter les mots-cles meta (meme si moins important, ca ne coute rien)
-- Ajouter un lien canonical
-- Ajouter le JSON-LD `SoftwareApplication` + `Organization` directement dans le HTML
+- Afficher pour chaque feature : un badge "Plan" (vert si autorise, rouge sinon) + le switch de forçage
+- Si le plan autorise deja la feature, afficher un badge vert "Inclus dans le plan" et griser le switch (pas besoin de forcer)
+- Le switch ne s'active que si le plan n'autorise PAS la feature, permettant de forcer l'acces
+- Ajouter un bouton "Synchroniser avec le plan" qui remet `forced_features` en coherence
 
-#### Etape 2 : Creer un vrai `sitemap.xml` statique dans `/public`
-Pages indexables : `/`, `/features`, `/about`, `/contact`, `/landing`
-Mettre a jour `robots.txt` avec reference au sitemap.
+### 2. Corriger les permissions par defaut dans useMenuPermissions
 
-#### Etape 3 : Enrichir le contenu semantique de la landing page
-- Ajouter des balises `<h1>`, `<h2>`, `<h3>` avec des mots-cles strategiques dans les composants
-- Ajouter une section FAQ (schema.org FAQPage) — tres puissant pour le SEO "logiciel sav gratuit"
-- Ajouter des `alt` text sur toutes les images
-- Ajouter un breadcrumb schema
+Les valeurs par defaut (quand `menuConfig` est null, lignes 40-55) ont `quotes: false`, `orders: false`, `chats: false`, `statistics: false`. Pendant le chargement du plan, ces menus disparaissent brievement. Mettre tout a `true` par defaut pour eviter le flash.
 
-#### Etape 4 : Rendre l'outil SEO du Super Admin fonctionnel
-- Injecter dynamiquement les meta tags depuis la config DB dans la landing page via `document.title` et meta tags dynamiques au montage du composant Landing
-- Appliquer le Google Analytics ID et Google Site Verification depuis la config
+### 3. Ajouter la synchronisation automatique plan → forced_features
 
----
+Quand le super admin change le plan d'un magasin, nettoyer automatiquement les `forced_features` qui sont deja incluses dans le nouveau plan (pour eviter la confusion).
 
 ### Details techniques
 
-**Fichiers modifies :**
+**ShopManagementDialog.tsx** — Onglet overrides :
+- Charger le `menu_config` du plan actuel du magasin
+- Pour chaque feature : afficher l'etat du plan + le switch de forçage conditionnel
+- Badge vert "Inclus" / rouge "Non inclus" selon le plan
 
-1. **`index.html`** — Refonte complete des meta tags, ajout JSON-LD, lang="fr", canonical, keywords
-2. **`public/sitemap.xml`** — Nouveau fichier avec les URLs publiques
-3. **`public/robots.txt`** — Ajouter `Sitemap: https://www.fixwaypro.com/sitemap.xml`
-4. **`src/pages/Landing.tsx`** — Injecter dynamiquement title/description depuis la config SEO DB au montage + fallback sur les valeurs en dur optimisees
-5. **`src/components/landing/HeroSection.tsx`** — Ameliorer la semantique HTML (h1 avec mots-cles)
-6. **`src/components/landing/LandingFooter.tsx`** — Ajouter des liens internes vers /features, /about, /contact
-7. **Nouveau : `src/components/landing/FAQSection.tsx`** — Section FAQ avec schema.org FAQPage JSON-LD integre (cible les requetes "logiciel sav gratuit", "application sav")
+**useMenuPermissions.ts** — Defaults :
+- Changer les valeurs par defaut (fallback) pour que tout soit `true` au lieu d'avoir des `false` sur quotes/orders/chats/statistics
 
-**JSON-LD dans index.html :**
-```text
-SoftwareApplication:
-  name: FixwayPro
-  applicationCategory: BusinessApplication
-  operatingSystem: Web
-  offers: { price: 0, priceCurrency: EUR }
-
-Organization:
-  name: FixwayPro
-  url: https://www.fixwaypro.com
-  description: ...
-
-FAQPage (dans le composant FAQ):
-  Questions cibles:
-  - "Qu'est-ce qu'un logiciel SAV ?"
-  - "FixwayPro est-il vraiment gratuit ?"
-  - "Quelle est la difference entre un logiciel SAV et un tableur ?"
-  - "Comment suivre une reparation en ligne ?"
-```
-
-**Mots-cles cibles pour la description et le contenu :**
-- logiciel sav
-- application sav
-- logiciel sav gratuit
-- gestion sav smartphone
-- logiciel reparation telephone
-- suivi sav en ligne
-- logiciel sav high-tech
+**ShopManagementDialog.tsx** — Changement de plan :
+- Lors du changement de tier, nettoyer les forced_features redondantes
 
