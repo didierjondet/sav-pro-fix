@@ -195,6 +195,19 @@ export default function SuperAdmin() {
 
       if (savCasesError) throw savCasesError;
 
+      // Fetch auth stats from edge function
+      let shopAuthStats: Record<string, { total_logins: number }> = {};
+      try {
+        const { data: authStatsData, error: authStatsError } = await supabase.functions.invoke('admin-user-management', {
+          body: { action: 'get_shop_auth_stats' }
+        });
+        if (!authStatsError && authStatsData?.shop_stats) {
+          shopAuthStats = authStatsData.shop_stats;
+        }
+      } catch (e) {
+        console.warn('Could not fetch auth stats:', e);
+      }
+
       // Process shop statistics
       const shopsWithStats = shopsData?.map(shop => {
         const shopProfiles = profilesCount?.filter(p => p.shop_id === shop.id) || [];
@@ -202,6 +215,7 @@ export default function SuperAdmin() {
         const shopSMSPurchases = smsPurchases?.filter(sp => sp.shop_id === shop.id) || [];
         const purchasedSMS = shopSMSPurchases.reduce((sum, purchase) => sum + purchase.sms_count, 0);
         const shopStorage = getShopStorageUsage(shop.id);
+        const authStats = shopAuthStats[shop.id];
         
         return {
           ...shop,
@@ -216,7 +230,8 @@ export default function SuperAdmin() {
           average_case_value: shopSavCases.length > 0 
             ? shopSavCases.filter(c => c.sav_type !== 'internal').reduce((sum, c) => sum + (c.total_cost || 0), 0) / shopSavCases.filter(c => c.sav_type !== 'internal').length
             : 0,
-          storage_gb: shopStorage?.storage_gb || 0
+          storage_gb: shopStorage?.storage_gb || 0,
+          total_logins: authStats?.total_logins || 0,
         };
       }) || [];
 
