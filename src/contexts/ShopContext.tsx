@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { getImpersonatedShopId } from '@/hooks/useProfile';
 
 export interface Shop {
   id: string;
@@ -71,29 +72,40 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // Check impersonation state
+  const impersonatedShopId = getImpersonatedShopId();
+
   const { data: shop, isLoading: loading, error, refetch } = useQuery({
-    queryKey: ['shop', user?.id],
+    queryKey: ['shop', user?.id, impersonatedShopId],
     queryFn: async () => {
       if (!user) return null;
 
-      // Récupérer le shop_id depuis le profil
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('shop_id')
-        .eq('user_id', user.id)
-        .maybeSingle();
+      let shopId = impersonatedShopId;
 
-      if (profileError) throw profileError;
-      if (!profileData?.shop_id) {
-        console.warn('⚠️ ShopContext: No shop_id found for user');
-        return null;
+      // If not impersonating, get shop_id from profile
+      if (!shopId) {
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('shop_id, role')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        if (profileError) throw profileError;
+
+        // Only use impersonation for super_admin
+        if (!profileData?.shop_id && !impersonatedShopId) {
+          console.warn('⚠️ ShopContext: No shop_id found for user');
+          return null;
+        }
+        shopId = profileData?.shop_id;
       }
 
-      // Récupérer les données du shop
+      if (!shopId) return null;
+
       const { data: shopData, error: shopError } = await supabase
         .from('shops')
         .select('*')
-        .eq('id', profileData.shop_id)
+        .eq('id', shopId)
         .single();
 
       if (shopError) throw shopError;

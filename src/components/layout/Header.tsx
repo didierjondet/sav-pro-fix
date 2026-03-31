@@ -9,7 +9,7 @@ import { useShop } from '@/contexts/ShopContext';
 import { useShopStorageUsage } from '@/hooks/useStorageUsage';
 import { useUnifiedSMSCredits } from '@/hooks/useUnifiedSMSCredits';
 import { useSubscription } from '@/hooks/useSubscription';
-import { useProfile } from '@/hooks/useProfile';
+import { useProfile, clearImpersonation } from '@/hooks/useProfile';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useNavigate } from 'react-router-dom';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -36,7 +36,8 @@ const Header = ({
     refetch: refetchShop
   } = useShop();
   const {
-    profile
+    profile,
+    isImpersonating: isInImpersonationMode
   } = useProfile();
   const {
     storageGB
@@ -163,7 +164,28 @@ const Header = ({
   const savLimits = getSAVLimits();
   const smsLimits = getSMSLimits();
   const hasWarning = savLimits.isWarning || savLimits.isCritical || smsLimits.showAlert;
+
+  const handleExitImpersonation = () => {
+    clearImpersonation();
+    window.location.href = '/super-admin';
+  };
+
   return <header className="bg-card border-b border-border shadow-sm">
+      {isInImpersonationMode && (
+        <div className="bg-indigo-600 text-white px-4 py-2 flex items-center justify-between">
+          <span className="text-sm font-medium">
+            🔧 Mode prise en main — Vous naviguez en tant qu&apos;admin de <strong>{shop?.name}</strong>
+          </span>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="border-white text-white hover:bg-indigo-700 h-7 text-xs"
+            onClick={handleExitImpersonation}
+          >
+            Quitter la boutique
+          </Button>
+        </div>
+      )}
       {hasWarning && <Alert className="rounded-none border-x-0 border-t-0 bg-orange-50 border-orange-200">
           <AlertTriangle className="h-4 w-4 text-orange-600" />
           <AlertDescription className="text-orange-800">
