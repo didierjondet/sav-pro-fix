@@ -583,6 +583,12 @@ export const generateSAVRestitutionPDF = async (savCase: SAVCase, shop?: Shop) =
               <span class="info-label">Client</span>
               <span class="info-value">${savCase.customer ? `${savCase.customer.first_name} ${savCase.customer.last_name}` : 'Non renseigné'}</span>
             </div>
+            ${savCase.customer?.phone ? `
+            <div class="info-item">
+              <span class="info-label">Téléphone client</span>
+              <span class="info-value" style="font-size: 13px; font-weight: bold; color: #0066cc;">📞 ${savCase.customer.phone}</span>
+            </div>
+            ` : ''}
             <div class="info-item">
               <span class="info-label">Appareil</span>
               <span class="info-value">${savCase.device_brand} ${savCase.device_model}</span>
