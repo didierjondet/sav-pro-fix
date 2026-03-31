@@ -666,7 +666,7 @@ export default function Settings() {
                 return p;
               });
             }} className="space-y-6">
-            <TabsList className="flex w-full overflow-x-auto gap-1 h-auto p-1">
+            <TabsList className="flex flex-wrap w-full gap-1 h-auto p-1">
               <TabsTrigger value="shop" className="flex items-center gap-2 px-3 py-2 shrink-0">
                 <Store className="h-4 w-4 shrink-0" />
                 <span className="hidden sm:inline">Magasin</span>
