@@ -1,41 +1,34 @@
 
 
-## Plan : 3 corrections dans les Paramètres
+## Plan : comprendre et corriger les profils "fantômes" sans nom
 
-### 1. Supprimer l'onglet Fournisseurs des paramètres
+### Diagnostic
 
-**Fichier : `src/pages/Settings.tsx`**
-- Retirer l'import de `SupplierConfigCard` et `useSuppliers`
-- Retirer l'import de l'icône `Truck`
-- Retirer le `TabsTrigger value="suppliers"` (lignes 712-715)
-- Retirer le `TabsContent value="suppliers"` (lignes 1843-1868)
-- Retirer la déstructuration de `useSuppliers()` (lignes 128-134)
+La boutique "Easycash Agde" contient bien 4 profils distincts (4 `user_id` différents) :
 
-Les fichiers `useSuppliers.ts`, `SupplierConfigCard.tsx` et `SupplierPartsSearch.tsx` restent intacts car la recherche fournisseur dans les devis en dépend encore.
+| Profil | Nom | Role | Créé le |
+|--------|-----|------|---------|
+| Tristan C | admin | 2025-07-29 |
+| fifi fifi | technician | 2025-07-30 |
+| *(vide)* | technician | 2026-01-29 |
+| *(vide)* | admin | 2026-03-25 |
 
-### 2. Améliorer la barre d'onglets responsive
+Les 2 profils sans nom ne sont pas des "doublons" de Tristan ou fifi. Ce sont des comptes utilisateurs séparés qui ont été créés via le système d'invitation (`admin-user-management` Edge Function) ou via le trigger `handle_new_user` lors d'une inscription, sans que les noms aient été renseignés.
 
-**Fichier : `src/pages/Settings.tsx`**
-- Remplacer la `TabsList` actuelle (simple `flex overflow-x-auto`) par une barre avec scroll horizontal visible et indicateurs visuels (gradient/ombre) sur les bords quand il y a du contenu masqué
-- Sur mobile : afficher uniquement les icônes (déjà en place via `hidden sm:inline`) + s'assurer que le scroll fonctionne bien avec `-webkit-overflow-scrolling: touch`
-- Sur desktop : ajouter des ombres/fade sur les bords gauche/droit pour signaler qu'il y a d'autres onglets à faire défiler, ou bien passer les onglets sur 2 lignes avec `flex-wrap`
+Ce sont probablement des comptes de test ou des invitations inachevées. Ils correspondent à de vrais comptes auth Supabase.
 
-Approche retenue : `flex-wrap` pour que tous les onglets soient visibles sans scroll caché.
+### Correction proposée
 
-### 3. Filtrer les utilisateurs par boutique
+#### 1. Nettoyer les profils orphelins via migration SQL
+Supprimer les 2 profils sans nom de cette boutique, car ils n'ont aucune utilité et polluent l'interface. Si les comptes auth correspondants existent, ils seront aussi nettoyés via l'Edge Function `admin-user-management`.
 
-**Fichier : `src/pages/Settings.tsx`** — fonction `fetchProfiles`
-- Ajouter `.eq('shop_id', profile?.shop_id)` à la requête pour ne charger que les utilisateurs de la boutique courante
-- Cela corrige aussi le cas du super admin en mode impersonation, car `profile?.shop_id` renvoie le shop_id effectif (celui de la boutique impersonnée)
-- S'assurer que `fetchProfiles` ne s'exécute que quand `profile?.shop_id` est disponible
+#### 2. Améliorer la robustesse de l'affichage dans Settings.tsx
+Dans la section "Gestion des Utilisateurs", afficher clairement quand un profil n'a pas de nom (ex: "Utilisateur sans nom") au lieu d'afficher une carte vide, pour que ce cas soit visible et identifiable à l'avenir.
 
-### Fichiers modifiés
+#### 3. Ajouter une validation au système d'invitation
+Dans la logique d'invitation (Settings.tsx), vérifier que `first_name` et `last_name` sont obligatoires avant de créer un profil, pour éviter de recréer des profils fantômes.
 
-- `src/pages/Settings.tsx` uniquement (les 3 corrections sont dans ce fichier)
-
-### Aucun risque de casse
-
-- `useSuppliers` et `SupplierConfigCard` ne sont pas supprimés, ils restent utilisés dans `SupplierPartsSearch.tsx`
-- Les autres onglets et fonctionnalités ne sont pas touchés
-- Le filtrage par `shop_id` s'appuie sur la valeur effective du profil déjà en place
+### Fichiers concernés
+- Migration SQL : supprimer les 2 profils vides
+- `src/pages/Settings.tsx` : affichage fallback pour les noms vides + validation obligatoire des noms à l'invitation
 
