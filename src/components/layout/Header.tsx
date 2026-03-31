@@ -36,7 +36,8 @@ const Header = ({
     refetch: refetchShop
   } = useShop();
   const {
-    profile
+    profile,
+    isImpersonating: isInImpersonationMode
   } = useProfile();
   const {
     storageGB
