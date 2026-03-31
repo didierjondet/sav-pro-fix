@@ -90,7 +90,8 @@ export function useSAVCases() {
         ...item,
         status: item.status === 'delivered' ? 'ready' : item.status,
         accessories: item.accessories as SAVCase['accessories'],
-        unlock_pattern: item.unlock_pattern as number[]
+        unlock_pattern: item.unlock_pattern as number[],
+        closure_history: item.closure_history as SAVCase['closure_history'],
       })) as SAVCase[];
       
       return mappedData || [];
