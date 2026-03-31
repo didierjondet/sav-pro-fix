@@ -25,7 +25,8 @@ const Index = () => {
   } = useProfile();
   const {
     shop,
-    loading: shopLoading
+    loading: shopLoading,
+    refetch: refetchShop
   } = useShop();
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
