@@ -121,7 +121,7 @@ export default function Auth() {
       type: 'signup',
       email: email,
       options: {
-        emailRedirectTo: `${window.location.origin}/auth`
+        emailRedirectTo: 'https://sav-pro-fix.lovable.app/auth'
       }
     });
     if (error) {
