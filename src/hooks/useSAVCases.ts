@@ -158,12 +158,21 @@ export function useSAVCases() {
         return;
       }
 
-      // Vérifier si le nouveau statut est un statut final
+      // Récupérer le SAV actuel (shop_id + closure_history en une seule requête)
+      const { data: currentCase } = await supabase
+        .from('sav_cases')
+        .select('shop_id, closure_history')
+        .eq('id', caseId)
+        .single();
+
+      if (!currentCase) throw new Error('Dossier SAV introuvable');
+
+      // Vérifier si le nouveau statut est un statut final avec le bon shop_id
       const { data: statusData } = await supabase
         .from('shop_sav_statuses')
         .select('is_final_status, status_label')
         .eq('status_key', status)
-        .limit(1)
+        .eq('shop_id', currentCase.shop_id)
         .maybeSingle();
 
       const updatePayload: any = { status, repair_notes: notes };
@@ -177,14 +186,7 @@ export function useSAVCases() {
           .eq('user_id', user!.id)
           .single();
 
-        // Récupérer le closure_history actuel
-        const { data: currentCase } = await supabase
-          .from('sav_cases')
-          .select('closure_history')
-          .eq('id', caseId)
-          .single();
-
-        const existingHistory = (currentCase?.closure_history as any[] || []);
+        const existingHistory = (currentCase.closure_history as any[] || []);
         const newEntry = {
           closed_at: new Date().toISOString(),
           status,
