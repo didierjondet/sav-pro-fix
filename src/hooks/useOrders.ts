@@ -91,7 +91,7 @@ export function useOrders() {
         return;
       }
 
-      // Récupérer les pièces utilisées dans les SAV en cours qui ne sont pas en stock
+      // Récupérer les pièces utilisées dans les SAV en cours
       const { data: savParts, error: savError } = await supabase
         .from('sav_parts')
         .select(`
@@ -108,7 +108,6 @@ export function useOrders() {
             customers(first_name, last_name)
           )
         `)
-        .eq('parts.quantity', 0)
         .eq('parts.shop_id', profile.shop_id)
         .in('sav_cases.status', ['pending', 'in_progress', 'parts_to_order', 'parts_ordered', 'testing']);
 
@@ -127,11 +126,15 @@ export function useOrders() {
       const { data: existingOrders } = await supabase
         .from('order_items')
         .select('part_id, sav_case_id, ordered')
-        .eq('reason', 'sav_stock_zero')
+        .in('reason', ['sav_stock_zero', 'sav_stock_insufficient'])
         .eq('ordered', true)
         .eq('shop_id', profile.shop_id);
 
       const formattedSavParts = savParts?.filter(item => {
+        // Ne montrer que les pièces avec stock insuffisant
+        const availableStock = Math.max(0, (item.parts.quantity || 0) - (item.parts.reserved_quantity || 0));
+        if (availableStock >= item.quantity) return false;
+
         // Vérifier si cette combinaison part_id + sav_case_id n'a pas déjà été commandée
         const alreadyOrdered = existingOrders?.some(order => 
           order.part_id === item.part_id && 
@@ -209,6 +212,9 @@ export function useOrders() {
         const items = typeof quote.items === 'string' ? JSON.parse(quote.items) : quote.items;
         
         for (const item of items) {
+          // Ignorer les pièces personnalisées sans part_id
+          if (!item.part_id) continue;
+
           // Vérifier si cette combinaison part_id + quote_id n'a pas déjà été commandée
           const alreadyOrdered = existingOrders?.some(order => 
             order.part_id === item.part_id && 
@@ -224,13 +230,14 @@ export function useOrders() {
               .eq('id', item.part_id)
               .maybeSingle();
 
-            if (!partError && part && part.quantity < item.quantity) {
+            const availableStock = Math.max(0, (part?.quantity || 0) - (part?.reserved_quantity || 0));
+            if (!partError && part && availableStock < item.quantity) {
               neededParts.push({
                 id: `quote-needed-${item.part_id}-${quote.id}`,
                 part_id: item.part_id,
-                part_name: item.part_name,
-                part_reference: item.part_reference,
-                quantity_needed: item.quantity - part.quantity,
+                part_name: item.part_name || part.name,
+                part_reference: item.part_reference || part.reference,
+                quantity_needed: item.quantity - availableStock,
                 quote_id: quote.id,
                 reason: 'quote_needed',
                 priority: 'medium',

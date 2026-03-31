@@ -248,6 +248,13 @@ const partsToInsert = savParts.map(part => ({
         if (insertError) throw insertError;
       }
 
+      // Nettoyer les anciens order_items non commandés pour ce SAV
+      await supabase
+        .from('order_items')
+        .delete()
+        .eq('sav_case_id', savCaseId)
+        .eq('ordered', false);
+
       // Créer automatiquement des commandes pour les pièces à stock insuffisant
       if (partsWithZeroStock.length > 0) {
         const { data: shopData } = await supabase
