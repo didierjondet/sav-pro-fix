@@ -83,6 +83,8 @@ interface ShopsManagementProps {
 
 export function ShopsManagement({ shops, onUpdate }: ShopsManagementProps) {
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const { impersonateShop } = useShop();
   const [searchTerm, setSearchTerm] = useState('');
   const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
   const [isCreateShopOpen, setIsCreateShopOpen] = useState(false);
@@ -90,6 +92,15 @@ export function ShopsManagement({ shops, onUpdate }: ShopsManagementProps) {
   const [editingShop, setEditingShop] = useState<Shop | null>(null);
   const [isShopManagementOpen, setIsShopManagementOpen] = useState(false);
   const [selectedShop, setSelectedShop] = useState<Shop | null>(null);
+
+  const handleImpersonate = (shop: Shop) => {
+    impersonateShop(shop.id);
+    toast({
+      title: "Prise en main",
+      description: `Vous consultez maintenant la boutique "${shop.name}"`,
+    });
+    navigate('/dashboard');
+  };
   
   const [newShop, setNewShop] = useState({
     name: '',
