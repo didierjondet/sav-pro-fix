@@ -1,50 +1,29 @@
 
 
-## Diagnostic confirme
+## Plan : Ajouter la localisation de derniere connexion (simplifie)
 
-La table `subscription_plans` contient : **Découverte**, **Premium**, **Enterprise**, **Sur mesure**.
-La colonne `subscription_tier` des shops contient : **free**, **premium**, **enterprise**.
+### Approche
 
-Le hook `useSubscriptionFeatures.ts` fait `.ilike('name', 'free')` → aucun plan trouvé → fallback restrictif avec `quotes: false`, `orders: false`, `chats: false`, `statistics: false`.
-
-## Plan de correction
-
-### 1. Migration SQL : ajouter une colonne `tier_key` a `subscription_plans`
-
-Ajouter une colonne `tier_key` (text, unique) qui fait la correspondance directe avec `subscription_tier` des shops :
-
-| Plan name   | tier_key    |
-|-------------|-------------|
-| Découverte  | free        |
-| Premium     | premium     |
-| Enterprise  | enterprise  |
-| Sur mesure  | custom      |
-
-Migration :
-- `ALTER TABLE subscription_plans ADD COLUMN tier_key text`
-- `UPDATE` pour assigner les valeurs
-- `CREATE UNIQUE INDEX` sur `tier_key`
-
-### 2. Migration SQL : assigner `subscription_plan_id` aux shops orphelins
-
-Mettre a jour tous les shops qui ont `subscription_plan_id IS NULL` en leur assignant le plan correspondant a leur `subscription_tier` via la nouvelle colonne `tier_key`.
-
-### 3. Corriger `useSubscriptionFeatures.ts`
-
-- Quand `subscription_plan_id` est NULL, chercher par `tier_key` au lieu de `name`
-- Rendre le fallback d'erreur **permissif** : tout a `true`
-
-### 4. Harmoniser l'affichage du nom de plan partout
-
-- `Settings.tsx` ligne 1737 : afficher `planName` du hook au lieu de `subscription_tier` brut
-- `SMSPackagesDisplay.tsx` : idem
-- `Subscription.tsx` : matcher par `tier_key` au lieu de comparer `name.toLowerCase()` avec `subscription_tier`
+Pas de nouvelle table. Juste 2 colonnes sur `profiles` : `last_login_city` et `last_login_country`. Mises a jour a chaque login via un appel simple a `https://ipapi.co/json/`.
 
 ### Fichiers modifies
 
-- **Migration SQL** (nouvelle)
-- **`src/hooks/useSubscriptionFeatures.ts`** : lookup par `tier_key`, fallback permissif
-- **`src/pages/Settings.tsx`** : afficher "Découverte" au lieu de "free"
-- **`src/pages/Subscription.tsx`** : matcher plans via `tier_key`
-- **`src/components/subscription/SMSPackagesDisplay.tsx`** : afficher le vrai nom du plan
+**Migration SQL** :
+- `ALTER TABLE profiles ADD COLUMN last_login_city text`
+- `ALTER TABLE profiles ADD COLUMN last_login_country text`
+
+**`src/contexts/AuthContext.tsx`** :
+- Apres un `signIn` reussi, appeler `https://ipapi.co/json/` (gratuit, sans cle API, 1000 req/jour)
+- Mettre a jour `profiles` avec `last_login_city` et `last_login_country`
+- Pas de blocage : si l'appel echoue, on ignore silencieusement
+
+**`src/components/admin/ShopManagementDialog.tsx`** :
+- Dans l'onglet Utilisateurs, afficher sous la date de derniere connexion : icone MapPin + "Paris, France" (ou "Localisation inconnue")
+- Les colonnes sont deja dans le SELECT des profiles, pas de requete supplementaire
+
+### Volume de code
+
+- ~10 lignes SQL
+- ~15 lignes dans AuthContext (fetch geo + update profile)
+- ~5 lignes dans ShopManagementDialog (affichage)
 
