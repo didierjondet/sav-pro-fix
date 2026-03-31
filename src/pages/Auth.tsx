@@ -90,7 +90,7 @@ export default function Auth() {
     const {
       error
     } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/auth`
+      redirectTo: 'https://sav-pro-fix.lovable.app/auth'
     });
     if (error) {
       toast({
@@ -121,7 +121,7 @@ export default function Auth() {
       type: 'signup',
       email: email,
       options: {
-        emailRedirectTo: `${window.location.origin}/auth`
+        emailRedirectTo: 'https://sav-pro-fix.lovable.app/auth'
       }
     });
     if (error) {
@@ -145,7 +145,7 @@ export default function Auth() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/dashboard`
+        redirectTo: 'https://sav-pro-fix.lovable.app/dashboard'
       }
     });
     if (error) {
