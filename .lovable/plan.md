@@ -1,47 +1,115 @@
 
+## Plan : corriger "Se connecter" pour ouvrir la vraie boutique en utilisateur normal
 
-## Plan : Mode "Prise en main" — Impersonation de boutique pour le Super Admin
+### Diagnostic confirmé
 
-### Principe
+Le comportement actuel est logique par rapport au code en place, mais ce n’est pas ce que vous voulez :
 
-Ajouter un mécanisme d'impersonation purement frontend. Le super admin clique sur "Se connecter" sur une carte magasin et bascule dans le contexte de cette boutique. Toutes les pages (SAV, pièces, clients, stats...) affichent alors les données de cette boutique. Un bandeau visible en haut permet de quitter ce mode.
+- le bouton de `ShopsManagement.tsx` appelle seulement `impersonateShop(shop.id)`
+- cela change `ShopContext`, mais ne change pas l’utilisateur connecté
+- le profil reste `super_admin`
+- sur `/dashboard`, `src/pages/Index.tsx` détecte `profile?.role === 'super_admin'` et renvoie vers `/super-admin`
 
-Aucune modification de base de données nécessaire : les politiques RLS `is_super_admin()` autorisent déjà l'accès à toutes les tables.
+Donc aujourd’hui ce n’est pas une vraie connexion à la boutique, juste une vue forcée dans le contexte admin.
 
-### Comment ça marche
+### Ce qu’il faut faire
 
-Le ShopContext vérifie si un `impersonatedShopId` est stocké (dans un state + localStorage pour persister au refresh). Si oui et que l'utilisateur est super_admin, il charge ce shop au lieu de celui du profil. Toutes les requêtes frontend utilisent déjà `shop.id` depuis le contexte, donc tout bascule automatiquement.
+Remplacer ce faux mode d’impersonation par une vraie prise de session sur la boutique cible, côté site publié FixwayPro.
 
-### Fichiers modifiés
+### Implémentation proposée
 
-**1. `src/contexts/ShopContext.tsx`**
-- Ajouter `impersonatedShopId` au state (initialisé depuis localStorage)
-- Ajouter `impersonateShop(shopId)` et `stopImpersonation()` au contexte
-- Dans la queryFn : si `impersonatedShopId` est défini et user est super_admin, charger ce shop au lieu du shop du profil
-- Exporter les nouvelles fonctions dans le type du contexte
+#### 1. Créer un Edge Function de connexion sécurisée "super admin -> boutique"
+Créer une fonction Supabase dédiée qui :
 
-**2. `src/components/admin/dashboard/ShopsManagement.tsx`**
-- Ajouter un bouton "Se connecter" (icône LogIn, déjà importée) sur chaque carte magasin
-- Au clic : appeler `impersonateShop(shop.id)` puis naviguer vers `/dashboard`
+- vérifie le JWT appelant
+- vérifie que l’utilisateur connecté est bien `super_admin`
+- reçoit `shop_id`
+- cherche un utilisateur admin normal de cette boutique
+- génère un lien de connexion temporaire / session de connexion pour cet utilisateur
+- retourne l’URL de redirection vers le site publié `https://sav-pro-fix.lovable.app/dashboard`
 
-**3. `src/components/layout/Header.tsx`** (ou composant dédié)
-- Afficher un bandeau d'alerte en haut quand l'impersonation est active : "Vous consultez la boutique [nom] — Quitter"
-- Le bouton "Quitter" appelle `stopImpersonation()` et redirige vers `/super-admin`
+But :
+- ouvrir une vraie session boutique
+- ne plus rester connecté comme super admin dans l’interface super admin
 
-**4. `src/hooks/useProfile.ts`**
-- Vérifier que le profil super_admin ne bloque pas l'affichage quand on est en mode impersonation (le rôle reste super_admin, seul le shop change)
+#### 2. Définir clairement quel utilisateur boutique utiliser
+Comme vous voulez “comme si j’étais un utilisateur lambda du magasin”, il faut une règle simple et stable :
+
+priorité recommandée :
+- admin de la boutique
+- sinon `shop_admin`
+- sinon premier utilisateur disponible de la boutique
+
+Si la boutique n’a aucun utilisateur exploitable :
+- afficher une erreur claire dans le super admin
+- éventuellement proposer ensuite un fallback, mais pas dans cette première correction
+
+#### 3. Modifier `src/components/admin/dashboard/ShopsManagement.tsx`
+Changer le bouton "Se connecter" pour :
+
+- ne plus appeler `impersonateShop`
+- appeler la nouvelle Edge Function
+- récupérer l’URL de connexion
+- rediriger avec `window.location.href` vers cette URL
+
+Résultat attendu :
+- en cliquant, vous quittez vraiment l’espace super admin
+- vous arrivez sur FixwayPro avec une session boutique normale
+
+#### 4. Désactiver l’ancien faux mode d’impersonation
+Le code actuel de `ShopContext.tsx` et le bandeau du `Header.tsx` ne correspondent plus au besoin.
+
+Je prévois donc de :
+- retirer l’usage du bouton actuel basé sur `impersonateShop`
+- supprimer ou neutraliser le bandeau “Mode prise en main”
+- conserver éventuellement le code de contexte seulement si vous voulez garder un mode support interne séparé, sinon le nettoyer
+
+#### 5. Vérifier les redirections qui bloquent aujourd’hui
+Le point bloquant principal est ici :
+
+- `src/pages/Index.tsx` redirige les `super_admin` vers `/super-admin`
+
+Après correction, ce ne sera plus un problème si la nouvelle session est bien celle d’un vrai compte boutique, car `useProfile()` remontera alors un rôle normal (`admin` ou `shop_admin`) et non `super_admin`.
+
+### Fichiers concernés
+
+- `src/components/admin/dashboard/ShopsManagement.tsx`
+- `src/contexts/ShopContext.tsx`
+- `src/components/layout/Header.tsx`
+- `src/pages/Index.tsx` (vérification)
+- nouveau fichier Edge Function, par exemple :
+  - `supabase/functions/super-admin-login-as-shop/index.ts`
 
 ### Sécurité
 
-- L'impersonation est contrôlée côté frontend uniquement pour le super_admin
-- Côté base de données, le RLS `is_super_admin()` donne déjà accès total — aucune élévation de privilège
-- Le `localStorage` stocke juste un `shopId` temporaire, pas de token sensible
-- Si un utilisateur non-super_admin tente de mettre un shopId en localStorage, les politiques RLS bloqueront toutes les requêtes
+La bonne approche est obligatoirement côté backend / edge function, pas seulement frontend.
 
-### Résultat attendu
+Pourquoi :
+- il faut vérifier côté serveur que l’appelant est bien super admin
+- il faut générer une connexion temporaire sécurisée
+- il ne faut jamais exposer un “pass universel” côté client
+- il ne faut pas stocker de mot de passe admin de boutique côté front
 
-- Bouton "Se connecter" sur chaque carte magasin dans le super admin
-- Clic → redirection vers le dashboard de cette boutique avec toutes ses données
-- Bandeau visible permanent rappelant le mode impersonation
-- Bouton pour revenir au super admin à tout moment
+### Résultat attendu après correction
 
+Quand vous cliquez sur "Se connecter" depuis une card magasin :
+
+- vous quittez réellement l’interface super admin
+- vous êtes redirigé vers le site FixwayPro publié
+- vous arrivez comme un vrai utilisateur de la boutique choisie
+- vous voyez ses SAV, pouvez en créer, utiliser les menus normaux, comme un compte classique
+- vous ne restez plus sur `/super-admin`
+
+### Détail technique
+
+```text
+Aujourd’hui
+Super admin -> bouton "Se connecter" -> ShopContext forcé -> /dashboard -> profil toujours super_admin -> retour /super-admin
+
+Après correction
+Super admin -> Edge Function sécurisée -> génération d’un login temporaire pour un vrai user de la boutique -> redirection FixwayPro -> session boutique normale -> /dashboard boutique
+```
+
+### Point important
+
+Cette correction ne doit pas réutiliser l’ancien système d’impersonation frontend pour ce bouton, car c’est précisément la cause du problème actuel.
