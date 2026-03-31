@@ -113,6 +113,8 @@ export default function Settings() {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteFirstName, setInviteFirstName] = useState('');
+  const [inviteLastName, setInviteLastName] = useState('');
   const [inviteRole, setInviteRole] = useState<'admin' | 'technician' | 'super_admin' | 'shop_admin'>('technician');
   const [logoUploading, setLogoUploading] = useState(false);
   const [importDialog, setImportDialog] = useState<{
@@ -1334,8 +1336,18 @@ export default function Settings() {
                             </DialogDescription>
                           </DialogHeader>
                           <div className="space-y-4">
+                            <div className="grid grid-cols-2 gap-3">
+                              <div>
+                                <Label htmlFor="invite-first-name">Prénom *</Label>
+                                <Input id="invite-first-name" value={inviteFirstName} onChange={e => setInviteFirstName(e.target.value)} placeholder="Jean" />
+                              </div>
+                              <div>
+                                <Label htmlFor="invite-last-name">Nom *</Label>
+                                <Input id="invite-last-name" value={inviteLastName} onChange={e => setInviteLastName(e.target.value)} placeholder="Dupont" />
+                              </div>
+                            </div>
                             <div>
-                              <Label htmlFor="invite-email">Email</Label>
+                              <Label htmlFor="invite-email">Email *</Label>
                               <Input id="invite-email" type="email" value={inviteEmail} onChange={e => setInviteEmail(e.target.value)} placeholder="utilisateur@example.com" />
                             </div>
                             <div>
@@ -1362,15 +1374,22 @@ export default function Settings() {
                               Annuler
                             </Button>
                             <Button onClick={async () => {
-                              if (!inviteEmail || !shop) return;
+                              if (!inviteEmail || !inviteFirstName.trim() || !inviteLastName.trim() || !shop) {
+                                toast({
+                                  title: "Champs requis",
+                                  description: "Veuillez renseigner le prénom, le nom et l'email",
+                                  variant: "destructive"
+                                });
+                                return;
+                              }
                               try {
                                 const { data, error } = await supabase.functions.invoke('admin-user-management', {
                                   body: {
                                     action: 'create',
                                     email: inviteEmail,
                                     password: 'FixwayTemp2024!',
-                                    first_name: '',
-                                    last_name: '',
+                                    first_name: inviteFirstName.trim(),
+                                    last_name: inviteLastName.trim(),
                                     phone: '',
                                     role: inviteRole,
                                     shop_id: shop.id
@@ -1383,6 +1402,8 @@ export default function Settings() {
                                   description: "Utilisateur créé avec succès. Il peut se connecter avec son email et le mot de passe temporaire: FixwayTemp2024!"
                                 });
                                 setInviteEmail('');
+                                setInviteFirstName('');
+                                setInviteLastName('');
                                 setIsInviteDialogOpen(false);
                                 fetchProfiles();
                               } catch (error: any) {
@@ -1406,13 +1427,13 @@ export default function Settings() {
                           <div className="flex items-center gap-3">
                             <Avatar>
                               <AvatarFallback>
-                                {profile.first_name?.[0]}{profile.last_name?.[0]}
+                                {(profile.first_name?.[0] || '?')}{(profile.last_name?.[0] || '')}
                               </AvatarFallback>
                             </Avatar>
                             <div>
                               <div className="flex items-center gap-2">
                                 <span className="font-medium">
-                                  {profile.first_name} {profile.last_name}
+                                  {(profile.first_name && profile.last_name) ? `${profile.first_name} ${profile.last_name}` : <span className="text-muted-foreground italic">Utilisateur sans nom</span>}
                                 </span>
                                 {(profile.role === 'admin' || profile.role === 'shop_admin') && <Crown className="h-4 w-4 text-yellow-500" />}
                               </div>
