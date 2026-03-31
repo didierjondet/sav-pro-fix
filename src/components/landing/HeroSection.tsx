@@ -48,15 +48,6 @@ export function HeroSection({ onAuthClick }: HeroSectionProps) {
               Essayer gratuitement
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
-            <Button 
-              size="lg" 
-              variant="outline"
-              className="bg-white/10 border-white/30 text-white hover:bg-white/20 backdrop-blur-sm text-lg px-8 py-6"
-              onClick={onAuthClick}
-            >
-              <Play className="mr-2 h-5 w-5" />
-              Voir la démo en 2 min
-            </Button>
           </div>
           
           {/* Animated KPIs */}
