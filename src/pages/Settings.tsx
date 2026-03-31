@@ -1484,7 +1484,7 @@ export default function Settings() {
                             </div>
                           </div>
                           <div className="flex items-center gap-2">
-                            {profile.user_id !== user?.id && <Button variant="outline" size="sm" onClick={() => deleteUser(profile.id)} className="text-destructive hover:text-destructive">
+                            {profile.user_id !== user?.id && <Button variant="outline" size="sm" onClick={() => setDeleteConfirmProfile(profile)} className="text-destructive hover:text-destructive">
                                 <Trash2 className="h-4 w-4" />
                               </Button>}
                           </div>
