@@ -515,6 +515,15 @@ export function ShopsManagement({ shops, onUpdate }: ShopsManagementProps) {
                       <Button 
                         variant="outline" 
                         size="sm" 
+                        className="border-indigo-300 text-indigo-700 hover:bg-indigo-50"
+                        onClick={() => handleImpersonate(shop)}
+                      >
+                        <LogIn className="h-4 w-4 mr-1" />
+                        Se connecter
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
                         className="border-slate-300 text-slate-700 hover:bg-slate-100"
                         onClick={() => openShopManagement(shop)}
                       >
