@@ -163,30 +163,7 @@ const Header = ({
   const savLimits = getSAVLimits();
   const smsLimits = getSMSLimits();
   const hasWarning = savLimits.isWarning || savLimits.isCritical || smsLimits.showAlert;
-  const { isImpersonating, shop: impersonatedShopRef, stopImpersonation } = useShop();
-
-  const handleStopImpersonation = () => {
-    stopImpersonation();
-    navigate('/super-admin');
-  };
-
   return <header className="bg-card border-b border-border shadow-sm">
-      {isImpersonating && (
-        <div className="bg-indigo-600 text-white px-4 py-2 flex items-center justify-between">
-          <span className="text-sm font-medium">
-            🔑 Mode prise en main — Vous consultez la boutique <strong>{impersonatedShopRef?.name}</strong>
-          </span>
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={handleStopImpersonation}
-            className="text-white hover:bg-indigo-700 h-7"
-          >
-            <LogOut className="h-4 w-4 mr-1" />
-            Quitter
-          </Button>
-        </div>
-      )}
       {hasWarning && <Alert className="rounded-none border-x-0 border-t-0 bg-orange-50 border-orange-200">
           <AlertTriangle className="h-4 w-4 text-orange-600" />
           <AlertDescription className="text-orange-800">
