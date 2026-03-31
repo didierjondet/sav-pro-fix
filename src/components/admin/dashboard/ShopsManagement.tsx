@@ -20,6 +20,7 @@ import {
   HardDrive,
   ArrowUpDown,
   LogIn,
+  Loader2,
 } from 'lucide-react';
 import {
   Dialog,
