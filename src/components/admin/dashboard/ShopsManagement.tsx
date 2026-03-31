@@ -1,5 +1,7 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useShop } from '@/contexts/ShopContext';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -81,6 +83,8 @@ interface ShopsManagementProps {
 
 export function ShopsManagement({ shops, onUpdate }: ShopsManagementProps) {
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const { impersonateShop } = useShop();
   const [searchTerm, setSearchTerm] = useState('');
   const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
   const [isCreateShopOpen, setIsCreateShopOpen] = useState(false);
@@ -88,6 +92,15 @@ export function ShopsManagement({ shops, onUpdate }: ShopsManagementProps) {
   const [editingShop, setEditingShop] = useState<Shop | null>(null);
   const [isShopManagementOpen, setIsShopManagementOpen] = useState(false);
   const [selectedShop, setSelectedShop] = useState<Shop | null>(null);
+
+  const handleImpersonate = (shop: Shop) => {
+    impersonateShop(shop.id);
+    toast({
+      title: "Prise en main",
+      description: `Vous consultez maintenant la boutique "${shop.name}"`,
+    });
+    navigate('/dashboard');
+  };
   
   const [newShop, setNewShop] = useState({
     name: '',
@@ -499,6 +512,15 @@ export function ShopsManagement({ shops, onUpdate }: ShopsManagementProps) {
                     </div>
                     
                      <div className="flex items-center gap-2 ml-4">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="border-indigo-300 text-indigo-700 hover:bg-indigo-50"
+                        onClick={() => handleImpersonate(shop)}
+                      >
+                        <LogIn className="h-4 w-4 mr-1" />
+                        Se connecter
+                      </Button>
                       <Button 
                         variant="outline" 
                         size="sm" 
