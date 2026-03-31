@@ -171,7 +171,7 @@ export default function Settings() {
         getCustomSoundUrl(shop.id);
       }
     }
-  }, [user, shop?.id]);
+  }, [user, shop?.id, profile?.shop_id]);
   useEffect(() => {
     if (shop && savTypes.length > 0) {
       // Construire l'objet des alertes de retard pour chaque type SAV à partir des types SAV existants
