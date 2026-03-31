@@ -303,6 +303,7 @@ export const SAVPrintButton = React.forwardRef<SAVPrintButtonRef, SAVPrintButton
     ${repairNotesBlock}
     ${technicianCommentsBlock}
     ${partsTable}
+    ${closureHistoryBlock}
     
   </div>
 </div>
