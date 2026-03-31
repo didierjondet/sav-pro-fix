@@ -69,8 +69,6 @@ import { useMenuPermissions } from '@/hooks/useMenuPermissions';
 import { useNotificationSound } from '@/hooks/useNotificationSound';
 import { supabase } from '@/integrations/supabase/client';
 import * as XLSX from 'xlsx';
-import { SupplierConfigCard } from '@/components/settings/SupplierConfigCard';
-import { useSuppliers } from '@/hooks/useSuppliers';
 
 interface Profile {
   id: string;
