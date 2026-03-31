@@ -1336,8 +1336,18 @@ export default function Settings() {
                             </DialogDescription>
                           </DialogHeader>
                           <div className="space-y-4">
+                            <div className="grid grid-cols-2 gap-3">
+                              <div>
+                                <Label htmlFor="invite-first-name">Prénom *</Label>
+                                <Input id="invite-first-name" value={inviteFirstName} onChange={e => setInviteFirstName(e.target.value)} placeholder="Jean" />
+                              </div>
+                              <div>
+                                <Label htmlFor="invite-last-name">Nom *</Label>
+                                <Input id="invite-last-name" value={inviteLastName} onChange={e => setInviteLastName(e.target.value)} placeholder="Dupont" />
+                              </div>
+                            </div>
                             <div>
-                              <Label htmlFor="invite-email">Email</Label>
+                              <Label htmlFor="invite-email">Email *</Label>
                               <Input id="invite-email" type="email" value={inviteEmail} onChange={e => setInviteEmail(e.target.value)} placeholder="utilisateur@example.com" />
                             </div>
                             <div>
