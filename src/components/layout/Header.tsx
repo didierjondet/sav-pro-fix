@@ -164,7 +164,28 @@ const Header = ({
   const savLimits = getSAVLimits();
   const smsLimits = getSMSLimits();
   const hasWarning = savLimits.isWarning || savLimits.isCritical || smsLimits.showAlert;
+
+  const handleExitImpersonation = () => {
+    clearImpersonation();
+    window.location.href = '/super-admin';
+  };
+
   return <header className="bg-card border-b border-border shadow-sm">
+      {isInImpersonationMode && (
+        <div className="bg-indigo-600 text-white px-4 py-2 flex items-center justify-between">
+          <span className="text-sm font-medium">
+            🔧 Mode prise en main — Vous naviguez en tant qu&apos;admin de <strong>{shop?.name}</strong>
+          </span>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="border-white text-white hover:bg-indigo-700 h-7 text-xs"
+            onClick={handleExitImpersonation}
+          >
+            Quitter la boutique
+          </Button>
+        </div>
+      )}
       {hasWarning && <Alert className="rounded-none border-x-0 border-t-0 bg-orange-50 border-orange-200">
           <AlertTriangle className="h-4 w-4 text-orange-600" />
           <AlertDescription className="text-orange-800">
