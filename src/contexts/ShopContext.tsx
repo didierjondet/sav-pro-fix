@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -62,10 +62,6 @@ interface ShopContextType {
   error: Error | null;
   updateShop: (shopId: string, updates: Partial<Shop>) => Promise<void>;
   refetch: () => Promise<void>;
-  impersonatedShopId: string | null;
-  impersonateShop: (shopId: string) => void;
-  stopImpersonation: () => void;
-  isImpersonating: boolean;
 }
 
 const ShopContext = createContext<ShopContextType | undefined>(undefined);
@@ -75,39 +71,10 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const [impersonatedShopId, setImpersonatedShopId] = useState<string | null>(() => {
-    return localStorage.getItem('impersonated_shop_id');
-  });
-
-  const impersonateShop = useCallback((shopId: string) => {
-    localStorage.setItem('impersonated_shop_id', shopId);
-    setImpersonatedShopId(shopId);
-    queryClient.invalidateQueries({ queryKey: ['shop'] });
-  }, [queryClient]);
-
-  const stopImpersonation = useCallback(() => {
-    localStorage.removeItem('impersonated_shop_id');
-    setImpersonatedShopId(null);
-    queryClient.invalidateQueries({ queryKey: ['shop'] });
-  }, [queryClient]);
-
   const { data: shop, isLoading: loading, error, refetch } = useQuery({
-    queryKey: ['shop', user?.id, impersonatedShopId],
+    queryKey: ['shop', user?.id],
     queryFn: async () => {
       if (!user) return null;
-
-      // Si on est en mode impersonation, charger directement ce shop
-      if (impersonatedShopId) {
-        const { data: shopData, error: shopError } = await supabase
-          .from('shops')
-          .select('*')
-          .eq('id', impersonatedShopId)
-          .single();
-
-        if (shopError) throw shopError;
-        console.log('✅ ShopContext: Impersonating shop:', shopData.name);
-        return shopData as Shop;
-      }
 
       // Récupérer le shop_id depuis le profil
       const { data: profileData, error: profileError } = await supabase
@@ -176,10 +143,6 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
       error: error as Error | null, 
       updateShop, 
       refetch: wrappedRefetch,
-      impersonatedShopId,
-      impersonateShop,
-      stopImpersonation,
-      isImpersonating: !!impersonatedShopId,
     }}>
       {children}
     </ShopContext.Provider>
