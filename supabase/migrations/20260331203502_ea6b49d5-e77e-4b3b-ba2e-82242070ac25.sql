@@ -1,0 +1,1 @@
+ALTER TABLE sav_cases ADD COLUMN closure_history jsonb DEFAULT '[]'::jsonb;

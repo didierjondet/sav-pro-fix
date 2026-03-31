@@ -157,9 +157,47 @@ export function useSAVCases() {
         return;
       }
 
+      // Vérifier si le nouveau statut est un statut final
+      const { data: statusData } = await supabase
+        .from('shop_sav_statuses')
+        .select('is_final_status, status_label')
+        .eq('status_key', status)
+        .limit(1)
+        .maybeSingle();
+
+      const updatePayload: any = { status, repair_notes: notes };
+
+      // Si statut final, ajouter une entrée à closure_history
+      if (statusData?.is_final_status) {
+        // Récupérer le profil de l'utilisateur courant
+        const { data: currentProfile } = await supabase
+          .from('profiles')
+          .select('first_name, last_name')
+          .eq('user_id', user!.id)
+          .single();
+
+        // Récupérer le closure_history actuel
+        const { data: currentCase } = await supabase
+          .from('sav_cases')
+          .select('closure_history')
+          .eq('id', caseId)
+          .single();
+
+        const existingHistory = (currentCase?.closure_history as any[] || []);
+        const newEntry = {
+          closed_at: new Date().toISOString(),
+          status,
+          status_label: statusData.status_label || status,
+          closed_by_user_id: user!.id,
+          closed_by_name: `${currentProfile?.first_name || ''} ${currentProfile?.last_name || ''}`.trim() || 'Utilisateur inconnu',
+        };
+
+        updatePayload.closure_history = [...existingHistory, newEntry];
+      }
+
       const { error } = await supabase
         .from('sav_cases')
-        .update({ status, repair_notes: notes })
+        .update(updatePayload)
         .eq('id', caseId);
 
       if (error) throw error;

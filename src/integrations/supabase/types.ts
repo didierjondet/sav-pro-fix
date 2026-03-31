@@ -1136,6 +1136,7 @@ export type Database = {
           accessories: Json | null
           attachments: Json | null
           case_number: string
+          closure_history: Json | null
           created_at: string
           customer_id: string | null
           deposit_amount: number | null
@@ -1172,6 +1173,7 @@ export type Database = {
           accessories?: Json | null
           attachments?: Json | null
           case_number: string
+          closure_history?: Json | null
           created_at?: string
           customer_id?: string | null
           deposit_amount?: number | null
@@ -1208,6 +1210,7 @@ export type Database = {
           accessories?: Json | null
           attachments?: Json | null
           case_number?: string
+          closure_history?: Json | null
           created_at?: string
           customer_id?: string | null
           deposit_amount?: number | null
