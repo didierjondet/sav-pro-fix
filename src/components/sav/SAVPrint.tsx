@@ -148,6 +148,22 @@ export const SAVPrintButton = React.forwardRef<SAVPrintButtonRef, SAVPrintButton
         </div>`
         : "";
 
+      const closureHistoryBlock = (savCase.closure_history && savCase.closure_history.length > 0)
+        ? `
+        <div class="block">
+          <div class="block-title">Historique de clôture</div>
+          <div class="closure-history">
+            ${savCase.closure_history.map((entry) => `
+              <div class="closure-entry">
+                <span class="closure-date">${new Date(entry.closed_at).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                — <span class="closure-status">${entry.status_label}</span>
+                — <span class="closure-by">par ${entry.closed_by_name}</span>
+              </div>
+            `).join('')}
+          </div>
+        </div>`
+        : "";
+
       const partsRows = parts
         .map(
           (p) => `
@@ -240,6 +256,12 @@ export const SAVPrintButton = React.forwardRef<SAVPrintButtonRef, SAVPrintButton
     .cut-line { margin: 15px 0; display: flex; align-items: center; justify-content: center; position: relative; }
     .cut-line::before { content: ''; position: absolute; left: 0; right: 0; height: 1px; background: repeating-linear-gradient(to right, #666 0, #666 5px, transparent 5px, transparent 10px); }
     .cut-line .scissors { background: white; padding: 0 8px; color: #666; font-size: 12px; }
+    .closure-history { border: 1px solid #e5e7eb; border-radius: 4px; padding: 4px 6px; background: #f0fdf4; }
+    .closure-entry { font-size: 8px; padding: 2px 0; border-bottom: 1px solid #e5e7eb; }
+    .closure-entry:last-child { border-bottom: none; }
+    .closure-date { font-weight: 600; }
+    .closure-status { color: #16a34a; font-weight: 600; }
+    .closure-by { color: #555; }
     @media print { body { -webkit-print-color-adjust: exact; } }
   </style>
 </head>
@@ -260,6 +282,7 @@ export const SAVPrintButton = React.forwardRef<SAVPrintButtonRef, SAVPrintButton
     ${repairNotesBlock}
     ${technicianCommentsBlock}
     ${partsTable}
+    ${closureHistoryBlock}
     ${qrBlock}
   </div>
   <div class="cut-line">
@@ -280,6 +303,7 @@ export const SAVPrintButton = React.forwardRef<SAVPrintButtonRef, SAVPrintButton
     ${repairNotesBlock}
     ${technicianCommentsBlock}
     ${partsTable}
+    ${closureHistoryBlock}
     
   </div>
 </div>

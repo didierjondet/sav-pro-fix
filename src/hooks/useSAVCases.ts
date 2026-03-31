@@ -36,6 +36,13 @@ export interface SAVCase {
     screen_protector: boolean;
   };
   unlock_pattern?: number[];
+  closure_history?: Array<{
+    closed_at: string;
+    status: string;
+    status_label: string;
+    closed_by_user_id: string;
+    closed_by_name: string;
+  }>;
   customer?: {
     first_name: string;
     last_name: string;
@@ -83,7 +90,8 @@ export function useSAVCases() {
         ...item,
         status: item.status === 'delivered' ? 'ready' : item.status,
         accessories: item.accessories as SAVCase['accessories'],
-        unlock_pattern: item.unlock_pattern as number[]
+        unlock_pattern: item.unlock_pattern as number[],
+        closure_history: item.closure_history as SAVCase['closure_history'],
       })) as SAVCase[];
       
       return mappedData || [];
@@ -150,9 +158,47 @@ export function useSAVCases() {
         return;
       }
 
+      // Vérifier si le nouveau statut est un statut final
+      const { data: statusData } = await supabase
+        .from('shop_sav_statuses')
+        .select('is_final_status, status_label')
+        .eq('status_key', status)
+        .limit(1)
+        .maybeSingle();
+
+      const updatePayload: any = { status, repair_notes: notes };
+
+      // Si statut final, ajouter une entrée à closure_history
+      if (statusData?.is_final_status) {
+        // Récupérer le profil de l'utilisateur courant
+        const { data: currentProfile } = await supabase
+          .from('profiles')
+          .select('first_name, last_name')
+          .eq('user_id', user!.id)
+          .single();
+
+        // Récupérer le closure_history actuel
+        const { data: currentCase } = await supabase
+          .from('sav_cases')
+          .select('closure_history')
+          .eq('id', caseId)
+          .single();
+
+        const existingHistory = (currentCase?.closure_history as any[] || []);
+        const newEntry = {
+          closed_at: new Date().toISOString(),
+          status,
+          status_label: statusData.status_label || status,
+          closed_by_user_id: user!.id,
+          closed_by_name: `${currentProfile?.first_name || ''} ${currentProfile?.last_name || ''}`.trim() || 'Utilisateur inconnu',
+        };
+
+        updatePayload.closure_history = [...existingHistory, newEntry];
+      }
+
       const { error } = await supabase
         .from('sav_cases')
-        .update({ status, repair_notes: notes })
+        .update(updatePayload)
         .eq('id', caseId);
 
       if (error) throw error;
