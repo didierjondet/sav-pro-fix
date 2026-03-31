@@ -216,6 +216,9 @@ export function ProfileSetup({ onComplete }: ProfileSetupProps) {
                   onChange={(e) => setFormData({ ...formData, shopName: e.target.value })}
                   placeholder="Nom de votre magasin"
                 />
+                <p className="text-xs text-muted-foreground">
+                  Ce nom identifie votre magasin. Vous pourrez le modifier plus tard dans les paramètres.
+                </p>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="shopEmail">Email du magasin</Label>

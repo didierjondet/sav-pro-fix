@@ -11,6 +11,7 @@ import { SAVForm } from '@/components/sav/SAVForm';
 import { ProfileSetup } from '@/components/auth/ProfileSetup';
 import { DailyAssistant } from '@/components/statistics/DailyAssistant';
 import { DataAssistant } from '@/components/statistics/DataAssistant';
+import { ShopNamePromptDialog } from '@/components/dialogs/ShopNamePromptDialog';
 import { Loader2 } from 'lucide-react';
 const Index = () => {
   const {
@@ -24,7 +25,8 @@ const Index = () => {
   } = useProfile();
   const {
     shop,
-    loading: shopLoading
+    loading: shopLoading,
+    refetch: refetchShop
   } = useShop();
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -84,6 +86,8 @@ const Index = () => {
   const isDailyAssistantEnabled = aiModulesConfig.daily_assistant_enabled !== false;
   const isAssistantEnabled = aiModulesConfig.assistant_enabled !== false;
 
+  const showShopNamePrompt = profile?.role === 'admin' && shop?.name === 'Mon Magasin';
+
   const renderContent = () => {
     switch (currentView) {
       case 'new-sav':
@@ -111,6 +115,10 @@ const Index = () => {
           
           <main className="flex-1 overflow-y-auto p-6">
             {renderContent()}
+
+            {showShopNamePrompt && (
+              <ShopNamePromptDialog shopId={shop!.id} onSaved={() => refetchShop()} />
+            )}
             
             {/* Lien discret pour super admin */}
             {profile?.role === 'super_admin' && (
