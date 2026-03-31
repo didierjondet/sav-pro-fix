@@ -325,12 +325,14 @@ export default function Settings() {
       setSaving(false);
     }
   };
+  const [deleteConfirmProfile, setDeleteConfirmProfile] = useState<Profile | null>(null);
   const deleteUser = async (profileId: string) => {
     try {
       const {
         error
       } = await supabase.from('profiles').delete().eq('id', profileId);
       if (error) throw error;
+      setDeleteConfirmProfile(null);
       fetchProfiles();
       toast({
         title: "Succès",
@@ -1482,7 +1484,7 @@ export default function Settings() {
                             </div>
                           </div>
                           <div className="flex items-center gap-2">
-                            {profile.user_id !== user?.id && <Button variant="outline" size="sm" onClick={() => deleteUser(profile.id)} className="text-destructive hover:text-destructive">
+                            {profile.user_id !== user?.id && <Button variant="outline" size="sm" onClick={() => setDeleteConfirmProfile(profile)} className="text-destructive hover:text-destructive">
                                 <Trash2 className="h-4 w-4" />
                               </Button>}
                           </div>
@@ -1490,6 +1492,32 @@ export default function Settings() {
                     </div>
                   </CardContent>
                 </Card>
+
+                {/* Dialog de confirmation de suppression */}
+                <Dialog open={!!deleteConfirmProfile} onOpenChange={(open) => !open && setDeleteConfirmProfile(null)}>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Confirmer la suppression</DialogTitle>
+                      <DialogDescription>
+                        Êtes-vous sûr de vouloir supprimer l'utilisateur{' '}
+                        <strong>
+                          {deleteConfirmProfile?.first_name && deleteConfirmProfile?.last_name
+                            ? `${deleteConfirmProfile.first_name} ${deleteConfirmProfile.last_name}`
+                            : 'sans nom'}
+                        </strong>{' '}
+                        ? Cette action est irréversible.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                      <Button variant="outline" onClick={() => setDeleteConfirmProfile(null)}>
+                        Annuler
+                      </Button>
+                      <Button variant="destructive" onClick={() => deleteConfirmProfile && deleteUser(deleteConfirmProfile.id)}>
+                        Supprimer
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
               </TabsContent>}
 
             <TabsContent value="ai" className="space-y-6">
