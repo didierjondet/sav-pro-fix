@@ -1830,33 +1830,6 @@ export default function Settings() {
               <BillingInvoices />
             </TabsContent>
 
-            <TabsContent value="suppliers" className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Truck className="h-5 w-5" />
-                    Configuration des fournisseurs
-                  </CardTitle>
-                  <p className="text-sm text-muted-foreground">
-                    Configurez vos identifiants pour rechercher des pièces chez vos fournisseurs et définissez les coefficients de marge
-                  </p>
-                </CardHeader>
-                <CardContent>
-                  {defaultSuppliers.map((supplier) => (
-                    <SupplierConfigCard
-                      key={supplier.name}
-                      name={supplier.name}
-                      label={supplier.label}
-                      url={supplier.url}
-                      config={getSupplierConfig(supplier.name)}
-                      onSave={saveSupplier}
-                      onTestConnection={testConnection}
-                      isSaving={isSavingSupplier}
-                    />
-                  ))}
-                </CardContent>
-              </Card>
-            </TabsContent>
 
           </Tabs>
             </div>
