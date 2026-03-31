@@ -212,6 +212,9 @@ export function useOrders() {
         const items = typeof quote.items === 'string' ? JSON.parse(quote.items) : quote.items;
         
         for (const item of items) {
+          // Ignorer les pièces personnalisées sans part_id
+          if (!item.part_id) continue;
+
           // Vérifier si cette combinaison part_id + quote_id n'a pas déjà été commandée
           const alreadyOrdered = existingOrders?.some(order => 
             order.part_id === item.part_id && 
