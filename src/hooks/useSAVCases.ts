@@ -36,6 +36,13 @@ export interface SAVCase {
     screen_protector: boolean;
   };
   unlock_pattern?: number[];
+  closure_history?: Array<{
+    closed_at: string;
+    status: string;
+    status_label: string;
+    closed_by_user_id: string;
+    closed_by_name: string;
+  }>;
   customer?: {
     first_name: string;
     last_name: string;
