@@ -931,6 +931,12 @@ export default function ShopManagementDialog({ shop, isOpen, onClose, onUpdate }
                                 ? `Dernière connexion : ${new Date(userAuthStats[user.user_id]!).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}`
                                 : 'Jamais connecté'}
                             </div>
+                            <div className="text-xs text-muted-foreground flex items-center gap-1">
+                              <MapPin className="h-3 w-3" />
+                              {user.last_login_city || user.last_login_country
+                                ? `${user.last_login_city || ''}${user.last_login_city && user.last_login_country ? ', ' : ''}${user.last_login_country || ''}`
+                                : 'Localisation inconnue'}
+                            </div>
                           </div>
                           <div className="flex items-center gap-2">
                             <Select 
