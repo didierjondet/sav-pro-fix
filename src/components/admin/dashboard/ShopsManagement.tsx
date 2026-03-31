@@ -84,7 +84,6 @@ interface ShopsManagementProps {
 export function ShopsManagement({ shops, onUpdate }: ShopsManagementProps) {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { impersonateShop } = useShop();
   const [searchTerm, setSearchTerm] = useState('');
   const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
   const [isCreateShopOpen, setIsCreateShopOpen] = useState(false);
@@ -92,14 +91,32 @@ export function ShopsManagement({ shops, onUpdate }: ShopsManagementProps) {
   const [editingShop, setEditingShop] = useState<Shop | null>(null);
   const [isShopManagementOpen, setIsShopManagementOpen] = useState(false);
   const [selectedShop, setSelectedShop] = useState<Shop | null>(null);
+  const [loginLoading, setLoginLoading] = useState<string | null>(null);
 
-  const handleImpersonate = (shop: Shop) => {
-    impersonateShop(shop.id);
-    toast({
-      title: "Prise en main",
-      description: `Vous consultez maintenant la boutique "${shop.name}"`,
-    });
-    navigate('/dashboard');
+  const handleLoginAsShop = async (shop: Shop) => {
+    setLoginLoading(shop.id);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('Non connecté');
+
+      const { data, error } = await supabase.functions.invoke('super-admin-login-as-shop', {
+        body: { shop_id: shop.id },
+      });
+
+      if (error) throw error;
+      if (!data?.url) throw new Error('Aucun lien de connexion reçu');
+
+      // Redirect to the magic link URL on the production site
+      window.location.href = data.url;
+    } catch (error: any) {
+      console.error('Login as shop error:', error);
+      toast({
+        title: "Erreur",
+        description: error.message || "Impossible de se connecter à cette boutique",
+        variant: "destructive",
+      });
+      setLoginLoading(null);
+    }
   };
   
   const [newShop, setNewShop] = useState({
