@@ -11,6 +11,7 @@ import { SAVForm } from '@/components/sav/SAVForm';
 import { ProfileSetup } from '@/components/auth/ProfileSetup';
 import { DailyAssistant } from '@/components/statistics/DailyAssistant';
 import { DataAssistant } from '@/components/statistics/DataAssistant';
+import { ShopNamePromptDialog } from '@/components/dialogs/ShopNamePromptDialog';
 import { Loader2 } from 'lucide-react';
 const Index = () => {
   const {
