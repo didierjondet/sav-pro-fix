@@ -282,6 +282,7 @@ export const SAVPrintButton = React.forwardRef<SAVPrintButtonRef, SAVPrintButton
     ${repairNotesBlock}
     ${technicianCommentsBlock}
     ${partsTable}
+    ${closureHistoryBlock}
     ${qrBlock}
   </div>
   <div class="cut-line">
