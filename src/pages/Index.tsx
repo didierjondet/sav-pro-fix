@@ -86,6 +86,8 @@ const Index = () => {
   const isDailyAssistantEnabled = aiModulesConfig.daily_assistant_enabled !== false;
   const isAssistantEnabled = aiModulesConfig.assistant_enabled !== false;
 
+  const showShopNamePrompt = profile?.role === 'admin' && shop?.name === 'Mon Magasin';
+
   const renderContent = () => {
     switch (currentView) {
       case 'new-sav':
