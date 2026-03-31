@@ -148,6 +148,22 @@ export const SAVPrintButton = React.forwardRef<SAVPrintButtonRef, SAVPrintButton
         </div>`
         : "";
 
+      const closureHistoryBlock = (savCase.closure_history && savCase.closure_history.length > 0)
+        ? `
+        <div class="block">
+          <div class="block-title">Historique de clôture</div>
+          <div class="closure-history">
+            ${savCase.closure_history.map((entry) => `
+              <div class="closure-entry">
+                <span class="closure-date">${new Date(entry.closed_at).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                — <span class="closure-status">${entry.status_label}</span>
+                — <span class="closure-by">par ${entry.closed_by_name}</span>
+              </div>
+            `).join('')}
+          </div>
+        </div>`
+        : "";
+
       const partsRows = parts
         .map(
           (p) => `
