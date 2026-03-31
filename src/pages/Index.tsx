@@ -42,9 +42,10 @@ const Index = () => {
     }
   }, [user, authLoading, navigate]);
 
-  // Rediriger les super admins vers /super-admin
+  // Rediriger les super admins vers /super-admin SAUF s'ils sont en mode impersonation
   useEffect(() => {
     if (profile?.role === 'super_admin') {
+      // profile here is the effective profile, so if impersonating it will be 'admin'
       navigate('/super-admin');
     }
   }, [profile, navigate]);

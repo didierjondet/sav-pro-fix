@@ -94,30 +94,15 @@ export function ShopsManagement({ shops, onUpdate }: ShopsManagementProps) {
   const [selectedShop, setSelectedShop] = useState<Shop | null>(null);
   const [loginLoading, setLoginLoading] = useState<string | null>(null);
 
-  const handleLoginAsShop = async (shop: Shop) => {
-    setLoginLoading(shop.id);
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error('Non connecté');
-
-      const { data, error } = await supabase.functions.invoke('super-admin-login-as-shop', {
-        body: { shop_id: shop.id },
-      });
-
-      if (error) throw error;
-      if (!data?.url) throw new Error('Aucun lien de connexion reçu');
-
-      // Redirect to the magic link URL on the production site
-      window.location.href = data.url;
-    } catch (error: any) {
-      console.error('Login as shop error:', error);
-      toast({
-        title: "Erreur",
-        description: error.message || "Impossible de se connecter à cette boutique",
-        variant: "destructive",
-      });
-      setLoginLoading(null);
-    }
+  const handleLoginAsShop = (shop: Shop) => {
+    // Store impersonated shop id and redirect to dashboard
+    localStorage.setItem('fixway_impersonated_shop_id', shop.id);
+    toast({
+      title: "Mode prise en main activé",
+      description: `Vous allez être redirigé vers ${shop.name}`,
+    });
+    // Navigate to dashboard - the effective profile will now return admin role + this shop_id
+    window.location.href = '/';
   };
   
   const [newShop, setNewShop] = useState({
