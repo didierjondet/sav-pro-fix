@@ -43,7 +43,8 @@ import {
   Key,
   Mail,
   Shield,
-  Clock
+  Clock,
+  MapPin
 } from 'lucide-react';
 
 interface Shop {

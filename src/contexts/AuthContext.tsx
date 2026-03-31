@@ -95,10 +95,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
+    const { error, data } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
+    
+    // Enregistrer la localisation après connexion réussie
+    if (!error && data?.user) {
+      try {
+        const geoRes = await fetch('https://ipapi.co/json/');
+        if (geoRes.ok) {
+          const geo = await geoRes.json();
+          await supabase
+            .from('profiles')
+            .update({
+              last_login_city: geo.city || null,
+              last_login_country: geo.country_name || null,
+            })
+            .eq('user_id', data.user.id);
+        }
+      } catch (e) {
+        // Silencieux : pas bloquant
+        console.warn('Geo lookup failed:', e);
+      }
+    }
+    
     return { error };
   };
 
