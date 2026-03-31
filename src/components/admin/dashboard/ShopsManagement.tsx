@@ -533,9 +533,14 @@ export function ShopsManagement({ shops, onUpdate }: ShopsManagementProps) {
                         variant="outline" 
                         size="sm" 
                         className="border-indigo-300 text-indigo-700 hover:bg-indigo-50"
-                        onClick={() => handleImpersonate(shop)}
+                        onClick={() => handleLoginAsShop(shop)}
+                        disabled={loginLoading === shop.id}
                       >
-                        <LogIn className="h-4 w-4 mr-1" />
+                        {loginLoading === shop.id ? (
+                          <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                        ) : (
+                          <LogIn className="h-4 w-4 mr-1" />
+                        )}
                         Se connecter
                       </Button>
                       <Button 
