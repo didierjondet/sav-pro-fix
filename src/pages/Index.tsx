@@ -115,6 +115,10 @@ const Index = () => {
           
           <main className="flex-1 overflow-y-auto p-6">
             {renderContent()}
+
+            {showShopNamePrompt && (
+              <ShopNamePromptDialog shopId={shop!.id} onSaved={() => refetchShop()} />
+            )}
             
             {/* Lien discret pour super admin */}
             {profile?.role === 'super_admin' && (
