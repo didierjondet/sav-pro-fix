@@ -325,12 +325,14 @@ export default function Settings() {
       setSaving(false);
     }
   };
+  const [deleteConfirmProfile, setDeleteConfirmProfile] = useState<Profile | null>(null);
   const deleteUser = async (profileId: string) => {
     try {
       const {
         error
       } = await supabase.from('profiles').delete().eq('id', profileId);
       if (error) throw error;
+      setDeleteConfirmProfile(null);
       fetchProfiles();
       toast({
         title: "Succès",
