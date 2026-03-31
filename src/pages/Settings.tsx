@@ -29,7 +29,7 @@ import {
   MessageSquare,
   Monitor,
   Mail,
-  Truck,
+  
   Upload,
   Tag,
   Package,
