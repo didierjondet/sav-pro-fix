@@ -1492,6 +1492,32 @@ export default function Settings() {
                     </div>
                   </CardContent>
                 </Card>
+
+                {/* Dialog de confirmation de suppression */}
+                <Dialog open={!!deleteConfirmProfile} onOpenChange={(open) => !open && setDeleteConfirmProfile(null)}>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Confirmer la suppression</DialogTitle>
+                      <DialogDescription>
+                        Êtes-vous sûr de vouloir supprimer l'utilisateur{' '}
+                        <strong>
+                          {deleteConfirmProfile?.first_name && deleteConfirmProfile?.last_name
+                            ? `${deleteConfirmProfile.first_name} ${deleteConfirmProfile.last_name}`
+                            : 'sans nom'}
+                        </strong>{' '}
+                        ? Cette action est irréversible.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                      <Button variant="outline" onClick={() => setDeleteConfirmProfile(null)}>
+                        Annuler
+                      </Button>
+                      <Button variant="destructive" onClick={() => deleteConfirmProfile && deleteUser(deleteConfirmProfile.id)}>
+                        Supprimer
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
               </TabsContent>}
 
             <TabsContent value="ai" className="space-y-6">
