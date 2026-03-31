@@ -703,10 +703,6 @@ export default function Settings() {
                 <FileText className="h-4 w-4 shrink-0" />
                 <span className="hidden sm:inline">Facturation</span>
               </TabsTrigger>
-              <TabsTrigger value="suppliers" className="flex items-center gap-2 px-3 py-2 shrink-0">
-                <Truck className="h-4 w-4 shrink-0" />
-                <span className="hidden sm:inline">Fournisseurs</span>
-              </TabsTrigger>
               <TabsTrigger value="ai" className="flex items-center gap-2 px-3 py-2 shrink-0">
                 <Sparkles className="h-4 w-4 shrink-0" />
                 <span className="hidden sm:inline">IA</span>
