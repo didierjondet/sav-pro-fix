@@ -92,7 +92,7 @@ export function ShopsManagement({ shops, onUpdate }: ShopsManagementProps) {
   const [editingShop, setEditingShop] = useState<Shop | null>(null);
   const [isShopManagementOpen, setIsShopManagementOpen] = useState(false);
   const [selectedShop, setSelectedShop] = useState<Shop | null>(null);
-  const [loginLoading, setLoginLoading] = useState<string | null>(null);
+  
 
   const handleLoginAsShop = (shop: Shop) => {
     // Store impersonated shop id and redirect to dashboard
