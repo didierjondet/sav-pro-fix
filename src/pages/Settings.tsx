@@ -124,13 +124,6 @@ export default function Settings() {
   const { types: savTypes, loading: savTypesLoading, refetch: refetchSavTypes } = useShopSAVTypes();
   const menuPermissions = useMenuPermissions();
   const { 
-    defaultSuppliers, 
-    getSupplierConfig, 
-    saveSupplier, 
-    isSaving: isSavingSupplier,
-    testConnection 
-  } = useSuppliers();
-  const { 
     testSound, 
     uploadCustomSound, 
     deleteCustomSound, 
