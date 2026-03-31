@@ -1374,15 +1374,22 @@ export default function Settings() {
                               Annuler
                             </Button>
                             <Button onClick={async () => {
-                              if (!inviteEmail || !shop) return;
+                              if (!inviteEmail || !inviteFirstName.trim() || !inviteLastName.trim() || !shop) {
+                                toast({
+                                  title: "Champs requis",
+                                  description: "Veuillez renseigner le prénom, le nom et l'email",
+                                  variant: "destructive"
+                                });
+                                return;
+                              }
                               try {
                                 const { data, error } = await supabase.functions.invoke('admin-user-management', {
                                   body: {
                                     action: 'create',
                                     email: inviteEmail,
                                     password: 'FixwayTemp2024!',
-                                    first_name: '',
-                                    last_name: '',
+                                    first_name: inviteFirstName.trim(),
+                                    last_name: inviteLastName.trim(),
                                     phone: '',
                                     role: inviteRole,
                                     shop_id: shop.id
@@ -1395,6 +1402,8 @@ export default function Settings() {
                                   description: "Utilisateur créé avec succès. Il peut se connecter avec son email et le mot de passe temporaire: FixwayTemp2024!"
                                 });
                                 setInviteEmail('');
+                                setInviteFirstName('');
+                                setInviteLastName('');
                                 setIsInviteDialogOpen(false);
                                 fetchProfiles();
                               } catch (error: any) {
