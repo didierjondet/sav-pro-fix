@@ -1,103 +1,47 @@
 
-## Plan : faire fonctionner l’inscription et la connexion Google directement sur FixwayPro
 
-### Diagnostic confirmé
+## Plan : Mode "Prise en main" — Impersonation de boutique pour le Super Admin
 
-Le problème vient du fait que l’auth Google part actuellement avec `window.location.origin`, donc depuis la preview Lovable cela renvoie vers l’URL preview au lieu du vrai site publié `https://sav-pro-fix.lovable.app`.
+### Principe
 
-Les logs confirment :
-- des callbacks Google lancés depuis la preview
-- un `access_denied` sur `/callback`
-- puis parfois un signup/login Google qui aboutit côté Supabase, mais pas avec la bonne expérience utilisateur
+Ajouter un mécanisme d'impersonation purement frontend. Le super admin clique sur "Se connecter" sur une carte magasin et bascule dans le contexte de cette boutique. Toutes les pages (SAV, pièces, clients, stats...) affichent alors les données de cette boutique. Un bandeau visible en haut permet de quitter ce mode.
 
-Il y a aussi un problème secondaire dans le code récent :
-- `ShopNamePromptDialog.tsx` utilise `Dialog` avec `open/onOpenChange`
-- si le composant `Dialog` importé n’accepte pas correctement ce pattern dans ce contexte, cela peut expliquer le build cassé à vérifier/fixer en même temps
+Aucune modification de base de données nécessaire : les politiques RLS `is_super_admin()` autorisent déjà l'accès à toutes les tables.
 
-### Changements à faire
+### Comment ça marche
 
-#### 1. Centraliser l’URL publique du site
-Créer une constante simple côté front pour le domaine publié FixwayPro, par exemple :
-- `https://sav-pro-fix.lovable.app`
+Le ShopContext vérifie si un `impersonatedShopId` est stocké (dans un state + localStorage pour persister au refresh). Si oui et que l'utilisateur est super_admin, il charge ce shop au lieu de celui du profil. Toutes les requêtes frontend utilisent déjà `shop.id` depuis le contexte, donc tout bascule automatiquement.
 
-Elle servira pour tous les flux d’auth sensibles :
-- Google OAuth
-- email de confirmation
-- renvoi d’email de confirmation
-- reset password
+### Fichiers modifiés
 
-Objectif :
-- ne plus dépendre de `window.location.origin` pour l’auth
-- toujours renvoyer l’utilisateur vers le vrai site FixwayPro
+**1. `src/contexts/ShopContext.tsx`**
+- Ajouter `impersonatedShopId` au state (initialisé depuis localStorage)
+- Ajouter `impersonateShop(shopId)` et `stopImpersonation()` au contexte
+- Dans la queryFn : si `impersonatedShopId` est défini et user est super_admin, charger ce shop au lieu du shop du profil
+- Exporter les nouvelles fonctions dans le type du contexte
 
-#### 2. Corriger `src/pages/Auth.tsx`
-Remplacer les URLs dynamiques actuelles par l’URL publique FixwayPro :
-- `resetPasswordForEmail(... redirectTo: "https://sav-pro-fix.lovable.app/auth")`
-- `supabase.auth.resend(... emailRedirectTo: "https://sav-pro-fix.lovable.app/auth")`
-- `signInWithOAuth({ provider: 'google', options: { redirectTo: "https://sav-pro-fix.lovable.app/dashboard" } })`
+**2. `src/components/admin/dashboard/ShopsManagement.tsx`**
+- Ajouter un bouton "Se connecter" (icône LogIn, déjà importée) sur chaque carte magasin
+- Au clic : appeler `impersonateShop(shop.id)` puis naviguer vers `/dashboard`
 
-Résultat attendu :
-- connexion Google depuis l’écran Auth redirigée vers le vrai site
-- inscription Google idem
-- plus de retour sur lovable preview pour ce flux
+**3. `src/components/layout/Header.tsx`** (ou composant dédié)
+- Afficher un bandeau d'alerte en haut quand l'impersonation est active : "Vous consultez la boutique [nom] — Quitter"
+- Le bouton "Quitter" appelle `stopImpersonation()` et redirige vers `/super-admin`
 
-#### 3. Corriger `src/contexts/AuthContext.tsx`
-Le `signUp` email/password utilise aussi `window.location.origin`.
-Il faut le remplacer par l’URL publique FixwayPro :
-- `emailRedirectTo: "https://sav-pro-fix.lovable.app/"` ou `/auth` selon le flux voulu
+**4. `src/hooks/useProfile.ts`**
+- Vérifier que le profil super_admin ne bloque pas l'affichage quand on est en mode impersonation (le rôle reste super_admin, seul le shop change)
 
-Je garderai une logique cohérente avec l’écran existant :
-- confirmation email vers le site FixwayPro
-- puis retour sur une page gérée par l’app
+### Sécurité
 
-#### 4. Vérifier/fixer le build cassé lié aux derniers changements
-Relire le composant :
-- `src/components/dialogs/ShopNamePromptDialog.tsx`
-
-Point probable à sécuriser :
-- s’assurer qu’il respecte bien les imports/types attendus
-- si besoin, rendre le dialog non fermable par fermeture externe ou ajuster la structure pour éviter l’erreur de build
-
-Comme l’erreur précise n’est pas fournie, je prévois de corriger le point le plus suspect sans alourdir la logique.
-
-### Vérifications externes indispensables
-
-Même avec le bon code, Google OAuth ne fonctionnera correctement que si la configuration externe est cohérente.
-
-#### Supabase Dashboard
-Dans Authentication > URL Configuration :
-- Site URL : `https://sav-pro-fix.lovable.app`
-- Redirect URLs : inclure au minimum le domaine publié FixwayPro
-
-#### Google Cloud Console
-Dans l’OAuth client web :
-- Authorized JavaScript origins : `https://sav-pro-fix.lovable.app`
-- Authorized redirect URI : utiliser exactement l’URL callback affichée dans Supabase pour Google provider
-
-Important :
-- il ne faut pas compter sur la preview Lovable pour valider Google OAuth
-- le test final doit se faire sur le site publié FixwayPro
-
-### Fichiers concernés
-
-- `src/pages/Auth.tsx`
-- `src/contexts/AuthContext.tsx`
-- `src/components/dialogs/ShopNamePromptDialog.tsx` si nécessaire pour corriger le build
+- L'impersonation est contrôlée côté frontend uniquement pour le super_admin
+- Côté base de données, le RLS `is_super_admin()` donne déjà accès total — aucune élévation de privilège
+- Le `localStorage` stocke juste un `shopId` temporaire, pas de token sensible
+- Si un utilisateur non-super_admin tente de mettre un shopId en localStorage, les politiques RLS bloqueront toutes les requêtes
 
 ### Résultat attendu
 
-Après correction :
-- “Continuer avec Google” ouvre et termine le flux sur le vrai site FixwayPro
-- l’inscription Google et la connexion Google arrivent bien sur `/dashboard` du site publié
-- les emails de confirmation/réinitialisation renvoient aussi vers FixwayPro
-- le build repasse correctement
+- Bouton "Se connecter" sur chaque carte magasin dans le super admin
+- Clic → redirection vers le dashboard de cette boutique avec toutes ses données
+- Bandeau visible permanent rappelant le mode impersonation
+- Bouton pour revenir au super admin à tout moment
 
-### Détail technique
-
-```text
-Aujourd’hui
-Preview Lovable -> Google OAuth -> callback Supabase -> retour preview / comportement instable
-
-Après correction
-Auth Fixway/FixwayPro -> Google OAuth -> callback Supabase -> retour https://sav-pro-fix.lovable.app/dashboard
-```
