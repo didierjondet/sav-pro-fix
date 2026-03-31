@@ -1427,13 +1427,13 @@ export default function Settings() {
                           <div className="flex items-center gap-3">
                             <Avatar>
                               <AvatarFallback>
-                                {profile.first_name?.[0]}{profile.last_name?.[0]}
+                                {(profile.first_name?.[0] || '?')}{(profile.last_name?.[0] || '')}
                               </AvatarFallback>
                             </Avatar>
                             <div>
                               <div className="flex items-center gap-2">
                                 <span className="font-medium">
-                                  {profile.first_name} {profile.last_name}
+                                  {(profile.first_name && profile.last_name) ? `${profile.first_name} ${profile.last_name}` : <span className="text-muted-foreground italic">Utilisateur sans nom</span>}
                                 </span>
                                 {(profile.role === 'admin' || profile.role === 'shop_admin') && <Crown className="h-4 w-4 text-yellow-500" />}
                               </div>
