@@ -230,13 +230,14 @@ export function useOrders() {
               .eq('id', item.part_id)
               .maybeSingle();
 
-            if (!partError && part && part.quantity < item.quantity) {
+            const availableStock = Math.max(0, (part?.quantity || 0) - (part?.reserved_quantity || 0));
+            if (!partError && part && availableStock < item.quantity) {
               neededParts.push({
                 id: `quote-needed-${item.part_id}-${quote.id}`,
                 part_id: item.part_id,
-                part_name: item.part_name,
-                part_reference: item.part_reference,
-                quantity_needed: item.quantity - part.quantity,
+                part_name: item.part_name || part.name,
+                part_reference: item.part_reference || part.reference,
+                quantity_needed: item.quantity - availableStock,
                 quote_id: quote.id,
                 reason: 'quote_needed',
                 priority: 'medium',
