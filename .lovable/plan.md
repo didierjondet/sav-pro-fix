@@ -1,34 +1,71 @@
 
 
-## Plan : comprendre et corriger les profils "fantômes" sans nom
+## Plan : Horodatage de clôture SAV immutable + affichage sur le bon de restitution
 
-### Diagnostic
+### Objectif
 
-La boutique "Easycash Agde" contient bien 4 profils distincts (4 `user_id` différents) :
+Quand un SAV passe sur un statut final (`is_final_status = true`), enregistrer automatiquement : la date/heure, le statut utilisé, et l'utilisateur qui a clôturé. Ces informations sont **immutables** et **cumulatives** (si le SAV est rouvert puis re-clôturé, on ajoute une nouvelle entrée sans effacer les précédentes). Elles apparaissent sur le document de restitution.
 
-| Profil | Nom | Role | Créé le |
-|--------|-----|------|---------|
-| Tristan C | admin | 2025-07-29 |
-| fifi fifi | technician | 2025-07-30 |
-| *(vide)* | technician | 2026-01-29 |
-| *(vide)* | admin | 2026-03-25 |
+### 1. Migration SQL — ajouter une colonne `closure_history` sur `sav_cases`
 
-Les 2 profils sans nom ne sont pas des "doublons" de Tristan ou fifi. Ce sont des comptes utilisateurs séparés qui ont été créés via le système d'invitation (`admin-user-management` Edge Function) ou via le trigger `handle_new_user` lors d'une inscription, sans que les noms aient été renseignés.
+Ajouter un champ JSONB `closure_history` à la table `sav_cases` qui stocke un tableau d'objets :
 
-Ce sont probablement des comptes de test ou des invitations inachevées. Ils correspondent à de vrais comptes auth Supabase.
+```json
+[
+  {
+    "closed_at": "2026-03-31T22:30:00Z",
+    "status": "ready",
+    "status_label": "Prêt",
+    "closed_by_user_id": "uuid...",
+    "closed_by_name": "Tristan C"
+  }
+]
+```
 
-### Correction proposée
+```sql
+ALTER TABLE sav_cases ADD COLUMN closure_history jsonb DEFAULT '[]'::jsonb;
+```
 
-#### 1. Nettoyer les profils orphelins via migration SQL
-Supprimer les 2 profils sans nom de cette boutique, car ils n'ont aucune utilité et polluent l'interface. Si les comptes auth correspondants existent, ils seront aussi nettoyés via l'Edge Function `admin-user-management`.
+### 2. Modifier `useSAVCases.ts` — `updateCaseStatus`
 
-#### 2. Améliorer la robustesse de l'affichage dans Settings.tsx
-Dans la section "Gestion des Utilisateurs", afficher clairement quand un profil n'a pas de nom (ex: "Utilisateur sans nom") au lieu d'afficher une carte vide, pour que ce cas soit visible et identifiable à l'avenir.
+Quand le nouveau statut correspond à un statut final :
+- Récupérer le profil de l'utilisateur courant (nom + prénom)
+- Récupérer le libellé du statut depuis `shop_sav_statuses`
+- Lire le `closure_history` actuel du SAV
+- Y ajouter une nouvelle entrée avec `closed_at`, `status`, `status_label`, `closed_by_user_id`, `closed_by_name`
+- Sauvegarder le tout dans le champ `closure_history` en même temps que le changement de statut
 
-#### 3. Ajouter une validation au système d'invitation
-Dans la logique d'invitation (Settings.tsx), vérifier que `first_name` et `last_name` sont obligatoires avant de créer un profil, pour éviter de recréer des profils fantômes.
+Le code doit vérifier `is_final_status` en interrogeant `shop_sav_statuses` pour le statut cible.
 
-### Fichiers concernés
-- Migration SQL : supprimer les 2 profils vides
-- `src/pages/Settings.tsx` : affichage fallback pour les noms vides + validation obligatoire des noms à l'invitation
+### 3. Modifier `SAVPrint.tsx` — afficher les clôtures sur le bon de restitution
+
+Ajouter un bloc "Historique de clôture" dans le HTML d'impression, après les notes de réparation :
+- Pour chaque entrée de `closure_history`, afficher : date/heure formatée, statut utilisé, nom de la personne
+- Style distinct (encadré, police légèrement différente)
+
+### 4. Mettre à jour le type `SAVCase`
+
+Dans `useSAVCases.ts`, ajouter au type `SAVCase` :
+
+```typescript
+closure_history?: Array<{
+  closed_at: string;
+  status: string;
+  status_label: string;
+  closed_by_user_id: string;
+  closed_by_name: string;
+}>;
+```
+
+### Fichiers modifiés
+
+| Fichier | Modification |
+|---------|-------------|
+| Migration SQL | Ajout colonne `closure_history` |
+| `src/hooks/useSAVCases.ts` | Type SAVCase + logique d'append dans `updateCaseStatus` |
+| `src/components/sav/SAVPrint.tsx` | Bloc d'affichage de l'historique de clôture |
+
+### Immutabilité
+
+L'immutabilité est garantie côté applicatif : on ne fait que des **append** au tableau, jamais de suppression ou modification d'entrées existantes. Le champ `closure_history` n'est jamais écrasé, seulement étendu.
 
