@@ -113,6 +113,8 @@ export default function Settings() {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteFirstName, setInviteFirstName] = useState('');
+  const [inviteLastName, setInviteLastName] = useState('');
   const [inviteRole, setInviteRole] = useState<'admin' | 'technician' | 'super_admin' | 'shop_admin'>('technician');
   const [logoUploading, setLogoUploading] = useState(false);
   const [importDialog, setImportDialog] = useState<{
