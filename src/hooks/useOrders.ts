@@ -91,7 +91,7 @@ export function useOrders() {
         return;
       }
 
-      // Récupérer les pièces utilisées dans les SAV en cours qui ne sont pas en stock
+      // Récupérer les pièces utilisées dans les SAV en cours
       const { data: savParts, error: savError } = await supabase
         .from('sav_parts')
         .select(`
@@ -108,7 +108,6 @@ export function useOrders() {
             customers(first_name, last_name)
           )
         `)
-        .eq('parts.quantity', 0)
         .eq('parts.shop_id', profile.shop_id)
         .in('sav_cases.status', ['pending', 'in_progress', 'parts_to_order', 'parts_ordered', 'testing']);
 
