@@ -221,11 +221,14 @@ export default function Settings() {
     }
   }, [profile]);
   const fetchProfiles = async () => {
+    if (!profile?.shop_id) return;
     try {
       const {
         data: profilesData,
         error: profilesError
-      } = await supabase.from('profiles').select('*').neq('role', 'super_admin') // Filtrer les super admins
+      } = await supabase.from('profiles').select('*')
+      .eq('shop_id', profile.shop_id)
+      .neq('role', 'super_admin')
       .order('created_at', {
         ascending: false
       });
