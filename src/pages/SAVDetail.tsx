@@ -411,6 +411,7 @@ export default function SAVDetail() {
                       </div>
                       <EditSAVCustomerDialog
                         savCaseId={savCase.id}
+                        shopId={savCase.shop_id}
                         currentCustomerId={savCase.customer_id}
                         currentCustomerName={savCase.customer ? `${savCase.customer.first_name} ${savCase.customer.last_name}` : undefined}
                         onCustomerUpdated={() => {
