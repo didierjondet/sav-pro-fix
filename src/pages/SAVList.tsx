@@ -522,12 +522,12 @@ export default function SAVList() {
                           <Badge 
                             variant="outline" 
                             className="text-[10px] px-1.5 py-0 shrink-0"
-                            style={statusInfo?.status_color ? { 
-                              borderColor: statusInfo.status_color, 
-                              color: statusInfo.status_color 
+                            style={statusInfo?.color ? { 
+                              borderColor: statusInfo.color, 
+                              color: statusInfo.color 
                             } : undefined}
                           >
-                            {statusInfo?.status_label || savCase.status}
+                            {statusInfo?.label || savCase.status}
                           </Badge>
                         </div>
 
