@@ -1,60 +1,68 @@
 
-Objectif: corriger vraiment le compteur de visites des dossiers SAV pour que le dossier JAYMES incrémente bien après un scan/accès QR.
+Plan corrigé après vraie vérification du flux.
 
-Constat après lecture du code
-- L’enregistrement de visite existe bien dans `src/pages/TrackSAV.tsx` et aussi dans `src/pages/SimpleTrack.tsx` via `supabase.rpc('record_sav_visit', ...)`.
-- Mais la route active du tracking public est `src/App.tsx` → `/track/:slug` vers `TrackSAV`, pas `SimpleTrack`.
-- Le compteur affiché sur la page SAV vient de `src/hooks/useSAVVisits.ts`, qui lit `sav_tracking_visits` une seule fois au chargement.
-- La liste SAV (`src/pages/SAVList.tsx`) se met en temps réel uniquement sur `sav_cases`, jamais sur `sav_tracking_visits`.
-- Donc même si la visite est bien enregistrée, l’œil peut rester à `0` tant que la liste n’est pas rechargée.
-- Deuxième point à sécuriser: `record_sav_visit` déduplique sur `visitor_ip`, mais le front envoie toujours `null`. Avec cette logique, plusieurs visites récentes anonymes peuvent être mal comptées. Il faut fiabiliser le mécanisme.
+Diagnostic confirmé
+- Le QR code et la page publique fonctionnent bien.
+- La base contient déjà des visites pour le dossier JAYMES :
+  - dossier `a63a4538-cede-4e81-9ddd-2b108672d5ba`
+  - slug `thomasjaym7913`
+  - compteur réel en base: `3`
+- Donc le problème n’est plus l’enregistrement de visite.
+- Le problème restant est l’affichage du compteur dans `/sav`.
 
-Plan de correction
-1. Fiabiliser la source du problème côté affichage
-- Modifier `src/pages/SAVList.tsx` pour écouter aussi les insertions sur `public.sav_tracking_visits`.
-- Au lieu de ne refetch que sur `sav_cases`, déclencher aussi un refresh des visites quand une visite est insérée.
-- Si possible, utiliser directement `refetch` du hook `useSAVVisits` pour éviter de recharger toute la liste des SAV.
+Pourquoi l’affichage est faux
+- La liste SAV lit les visites directement depuis `sav_tracking_visits` côté client via `useSAVVisits`.
+- Ce hook fait un `select('sav_case_id')` puis recompte en JavaScript.
+- En cas de souci de RLS, de cache, de requête vide, ou de lecture partielle, le hook remplace silencieusement tout par `0`.
+- Résultat: même quand la base contient bien des lignes, l’œil peut rester à `0`.
 
-2. Rendre le hook de visites plus robuste
-- Mettre à jour `src/hooks/useSAVVisits.ts` pour exposer clairement `refetch`.
-- Ajouter une garde pour éviter les faux `0` pendant le chargement.
-- Option recommandée: remplacer le comptage côté front par une requête agrégée ou un RPC dédié si le schéma actuel/RLS rend certains résultats instables.
+Ce que je vais changer
+1. Remplacer la lecture directe par une vraie fonction SQL dédiée
+- Créer une RPC `get_sav_visit_counts(p_sav_case_ids uuid[])`
+- Fonction `SECURITY DEFINER`
+- Elle retournera directement:
+  - `sav_case_id`
+  - `visit_count`
+- Elle filtrera uniquement les dossiers du shop de l’utilisateur connecté (et super admin si besoin).
+- Le comptage sera fait en SQL (`count(*) group by`) au lieu du front.
 
-3. Corriger la logique de déduplication des visites
-- Vérifier la migration/table `sav_tracking_visits` et la fonction SQL `record_sav_visit`.
-- Problème actuel probable: comme `p_visitor_ip` vaut `null`, la déduplication par IP devient incohérente pour le cas public.
-- Corriger la fonction pour dédupliquer sur une combinaison plus fiable, par exemple:
-  - `visitor_ip` si disponible
-  - sinon `visitor_user_agent` + `tracking_slug` + fenêtre de temps
-- Cela évite qu’une visite publique valide ne soit ignorée ou mal comptée.
+2. Corriger le hook `useSAVVisits`
+- Ne plus lire `sav_tracking_visits` directement.
+- Appeler la RPC `get_sav_visit_counts`.
+- Retourner un vrai état d’erreur au lieu de masquer automatiquement par des zéros.
+- Si la requête échoue: afficher une valeur neutre/placeholder plutôt qu’un faux `0`.
 
-4. Vérifier le lien QR réellement utilisé
-- Harmoniser le tracking pour que le QR imprimé, le QR affiché et la page publique pointent tous vers la même route publique fonctionnelle.
-- Conserver `TrackSAV` comme source principale si c’est la route réellement branchée.
-- Éviter d’avoir deux pages de tracking parallèles si une seule est utilisée en production.
+3. Garder la mise à jour temps réel
+- Conserver l’écoute `INSERT` sur `sav_tracking_visits` dans `SAVList.tsx`
+- Au nouvel événement, relancer `refetchVisits()`
+- Cette fois le refetch ira vers la RPC agrégée, donc sur la bonne source.
 
-5. Résultat attendu
-- Quand un client scanne le QR code du dossier JAYMES et ouvre la page de suivi, une ligne est bien enregistrée dans `sav_tracking_visits`.
-- La liste SAV se met à jour sans rechargement manuel, et l’icône œil passe de `0` à `1`.
-- Les visites suivantes sont comptées de façon cohérente, sans doublons abusifs ni blocage lié au `null` IP.
+4. Ne plus retoucher au tracking public
+- Je ne modifierai plus `TrackSAV` ni les QR codes pour ce correctif.
+- Les visites sont bien enregistrées; la preuve est déjà en base pour JAYMES.
+
+Vérification prévue
+- Ouvrir le dossier JAYMES comme cas test.
+- Vérifier que la RPC retourne bien `3` pour `a63a4538-cede-4e81-9ddd-2b108672d5ba`.
+- Vérifier que la card `/sav` affiche enfin `3`.
+- Refaire un accès au lien public, puis vérifier que l’œil passe à `4` si une nouvelle visite est créée.
 
 Fichiers concernés
-- `src/pages/SAVList.tsx`
-- `src/hooks/useSAVVisits.ts`
-- `src/pages/TrackSAV.tsx` (vérification légère / harmonisation)
-- `src/pages/SimpleTrack.tsx` (soit alignement, soit nettoyage de doublon)
-- `supabase/migrations/...` pour ajuster `record_sav_visit` si nécessaire
+- `supabase/migrations/...` : nouvelle RPC `get_sav_visit_counts`
+- `src/hooks/useSAVVisits.ts` : migration du hook vers la RPC
+- `src/pages/SAVList.tsx` : conserver le realtime mais refetch sur la nouvelle source
 
 Détail technique
 ```text
-QR code -> /track/:slug -> TrackSAV
-                    -> RPC record_sav_visit()
-                    -> INSERT sav_tracking_visits
-                    -> SAVList écoute sav_tracking_visits
-                    -> useSAVVisits.refetch()
-                    -> compteur œil mis à jour
+QR code -> /track/:slug -> record_sav_visit()
+                         -> INSERT sav_tracking_visits   (déjà OK)
+
+Page /sav -> useSAVVisits()
+          -> rpc(get_sav_visit_counts, [ids affichés])
+          -> counts SQL fiables
+          -> œil = vraie valeur
 ```
 
 Point important
-- Vu votre symptôme précis (“je me connecte avec le QR code mais l’œil reste à 0”), la correction la plus probable et la plus urgente est l’absence de rafraîchissement temps réel du compteur dans `SAVList`.
-- Mais je prévois aussi la correction SQL de `record_sav_visit` pour éviter que le problème revienne selon les appareils ou sessions publiques.
+- J’ai vérifié la logique avant de proposer: il y a bien des visites en base pour JAYMES.
+- Le prochain correctif doit donc viser uniquement la couche de lecture/affichage du compteur, pas la génération du QR ni la route publique.
