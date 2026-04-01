@@ -285,9 +285,9 @@ export const DragDropStatistics = ({ period, onPeriodChange }: DragDropStatistic
         const currentMonth = new Date().getMonth();
         const comparisonData = currentYearData.slice(0, currentMonth + 1).map((current, index) => {
           const previous = previousYearData[index];
-          const growth = previous?.revenue 
+          const growth = previous?.revenue && previous.revenue > 0
             ? ((current.revenue - previous.revenue) / previous.revenue) * 100 
-            : 0;
+            : null;
           
           return {
             month: current.month,
@@ -302,15 +302,15 @@ export const DragDropStatistics = ({ period, onPeriodChange }: DragDropStatistic
           };
         });
 
-        // Croissance globale = moyenne des croissances mensuelles (excluant le premier mois)
-        const growthValuesComp = comparisonData.slice(1).filter(m => m.previousRevenue > 0).map(m => m.growth);
+        // Croissance globale = moyenne des croissances mensuelles (seulement ceux avec référence N-1)
+        const growthValuesComp = comparisonData.filter(m => m.growth !== null).map(m => m.growth as number);
         const realTotalGrowth = growthValuesComp.length > 0 
           ? growthValuesComp.reduce((sum, g) => sum + g, 0) / growthValuesComp.length
-          : 0;
+          : null;
 
-        // Trouver le vrai meilleur et pire mois (par croissance) - exclure le premier mois
-        const monthsWithGrowthComp = comparisonData.slice(1).filter(m => m.previousRevenue > 0);
-        const sortedByGrowth = [...monthsWithGrowthComp].sort((a, b) => b.growth - a.growth);
+        // Trouver le vrai meilleur et pire mois (par croissance) - seulement ceux avec référence
+        const monthsWithGrowthComp = comparisonData.filter(m => m.growth !== null);
+        const sortedByGrowth = [...monthsWithGrowthComp].sort((a, b) => (b.growth as number) - (a.growth as number));
         const realBestMonth = sortedByGrowth[0]?.monthName || 'N/A';
         const realWorstMonth = sortedByGrowth[sortedByGrowth.length - 1]?.monthName || 'N/A';
         

@@ -117,7 +117,7 @@ export function ReportChartsSection({ selectedWidgets, dateRange, reportData }: 
       const previous = previousYearData[index];
       const growth = previous?.revenue > 0 
         ? ((current.revenue - previous.revenue) / previous.revenue) * 100 
-        : 0;
+        : null;
       
       return {
         month: current.month,
@@ -136,7 +136,7 @@ export function ReportChartsSection({ selectedWidgets, dateRange, reportData }: 
   const totalGrowth = useMemo(() => {
     const currentTotal = currentYearData.reduce((sum, m) => sum + m.revenue, 0);
     const previousTotal = previousYearData.reduce((sum, m) => sum + m.revenue, 0);
-    return previousTotal > 0 ? ((currentTotal - previousTotal) / previousTotal) * 100 : 0;
+    return previousTotal > 0 ? ((currentTotal - previousTotal) / previousTotal) * 100 : null;
   }, [currentYearData, previousYearData]);
 
   const bestMonth = useMemo(() => {

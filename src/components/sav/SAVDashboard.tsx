@@ -86,6 +86,7 @@ export function SAVDashboard() {
   const { costs, loading: costsLoading } = useSAVPartsCosts();
   const { storageGB, loading: storageLoading } = useShopStorageUsage(shop?.id);
   const { data: monthlyData, loading: monthlyLoading } = useMonthlyStatistics(selectedYear);
+  const { data: previousYearMonthlyData } = useMonthlyStatistics(selectedYear - 1);
   const { getAllTypes, getTypeInfo, types } = useShopSAVTypes();
   const navigate = useNavigate();
 
@@ -951,10 +952,10 @@ export function SAVDashboard() {
         const relevantMonthlyData = monthlyData.slice(0, currentMonthIndex + 1);
         
         const monthlyComparisonData = relevantMonthlyData.map((current, index) => {
-          const previous = index > 0 ? relevantMonthlyData[index - 1] : null;
+          const previous = previousYearMonthlyData[index];
           const growth = previous?.revenue && previous.revenue > 0
             ? ((current.revenue - previous.revenue) / previous.revenue) * 100 
-            : 0;
+            : null;
           
           return {
             month: current.month,
@@ -969,22 +970,22 @@ export function SAVDashboard() {
           };
         });
         
-        // Croissance globale = moyenne des croissances mensuelles (excluant le premier mois sans référence)
-        const growthValues = monthlyComparisonData.slice(1).map(m => m.growth);
+        // Croissance globale = moyenne des croissances mensuelles (seulement ceux avec référence N-1)
+        const growthValues = monthlyComparisonData.filter(m => m.growth !== null).map(m => m.growth as number);
         const calculatedTotalGrowth = growthValues.length > 0 
           ? growthValues.reduce((sum, g) => sum + g, 0) / growthValues.length
-          : 0;
+          : null;
         
-        // Trouver le meilleur mois (plus haute croissance) - exclure le premier mois
-        const monthsWithGrowth = monthlyComparisonData.slice(1);
+        // Trouver le meilleur mois (plus haute croissance) - seulement ceux avec référence
+        const monthsWithGrowth = monthlyComparisonData.filter(m => m.growth !== null);
         const bestMonthData = monthsWithGrowth.length > 0 
-          ? monthsWithGrowth.reduce((best, current) => current.growth > best.growth ? current : best, monthsWithGrowth[0])
+          ? monthsWithGrowth.reduce((best, current) => (current.growth as number) > (best.growth as number) ? current : best, monthsWithGrowth[0])
           : null;
         const calculatedBestMonth = bestMonthData?.monthName || 'N/A';
         
         // Trouver le pire mois (plus basse croissance)
         const worstMonthData = monthsWithGrowth.length > 0 
-          ? monthsWithGrowth.reduce((worst, current) => current.growth < worst.growth ? current : worst, monthsWithGrowth[0])
+          ? monthsWithGrowth.reduce((worst, current) => (current.growth as number) < (worst.growth as number) ? current : worst, monthsWithGrowth[0])
           : null;
         const calculatedWorstMonth = worstMonthData?.monthName || 'N/A';
         

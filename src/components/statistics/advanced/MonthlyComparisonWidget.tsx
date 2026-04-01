@@ -13,12 +13,12 @@ interface MonthlyData {
   previousSavCount: number;
   currentProfit: number;
   previousProfit: number;
-  growth: number;
+  growth: number | null;
 }
 
 interface MonthlyComparisonWidgetProps {
   data: MonthlyData[];
-  totalGrowth: number;
+  totalGrowth: number | null;
   bestMonth: string;
   worstMonth: string;
 }
@@ -32,7 +32,14 @@ export const MonthlyComparisonWidget = ({
   const formatCurrency = (value: number) => 
     new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(value || 0);
 
-  const formatPercentWithSign = (value: number) => `${value >= 0 ? '+' : ''}${Math.round(value)}%`;
+  const formatPercentWithSign = (value: number | null) => {
+    if (value === null) return 'Nouveau';
+    return `${value >= 0 ? '+' : ''}${Math.round(value)}%`;
+  };
+
+  // Filter months that have a valid N-1 reference for KPI calculations
+  const monthsWithReference = data.filter(d => d.growth !== null);
+  const positiveMonths = monthsWithReference.filter(d => (d.growth as number) > 0).length;
 
   const chartConfig = {
     currentRevenue: { label: "CA actuel", color: "hsl(var(--primary))" },
@@ -52,11 +59,23 @@ export const MonthlyComparisonWidget = ({
         {/* KPI row - responsive */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <div className="rounded-lg border bg-card p-3 text-center">
-            <div className={`flex items-center justify-center gap-1 ${totalGrowth >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              {totalGrowth >= 0 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
-              <span className="text-lg font-bold">{formatPercentWithSign(totalGrowth)}</span>
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">Croissance</p>
+            {totalGrowth === null ? (
+              <>
+                <div className="flex items-center justify-center gap-1 text-blue-500">
+                  <BarChart3 className="h-4 w-4" />
+                  <span className="text-sm font-bold">Nouveau</span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">Pas de réf. N-1</p>
+              </>
+            ) : (
+              <>
+                <div className={`flex items-center justify-center gap-1 ${totalGrowth >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {totalGrowth >= 0 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
+                  <span className="text-lg font-bold">{formatPercentWithSign(totalGrowth)}</span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">Croissance</p>
+              </>
+            )}
           </div>
           
           <div className="rounded-lg border bg-card p-3 text-center">
@@ -77,7 +96,7 @@ export const MonthlyComparisonWidget = ({
 
           <div className="rounded-lg border bg-card p-3 text-center">
             <span className="text-lg font-bold text-primary">
-              {data.filter(d => d.growth > 0).length}<span className="text-muted-foreground font-normal text-sm">/{data.length}</span>
+              {positiveMonths}<span className="text-muted-foreground font-normal text-sm">/{monthsWithReference.length || data.length}</span>
             </span>
             <p className="text-xs text-muted-foreground mt-1">Mois positifs</p>
           </div>
@@ -145,7 +164,10 @@ export const MonthlyComparisonWidget = ({
                     <span className="text-muted-foreground">SAV:</span>
                     <span className="font-semibold">{month.currentSavCount}</span>
                   </div>
-                  <Badge variant={month.growth >= 0 ? "default" : "destructive"} className="text-[10px] h-5 px-1.5">
+                  <Badge 
+                    variant={month.growth === null ? "secondary" : month.growth >= 0 ? "default" : "destructive"} 
+                    className="text-[10px] h-5 px-1.5"
+                  >
                     {formatPercentWithSign(month.growth)}
                   </Badge>
                 </div>
