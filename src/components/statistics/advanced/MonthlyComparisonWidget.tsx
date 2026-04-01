@@ -1,8 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
-import { ComposedChart, Line, Bar, XAxis, YAxis, ResponsiveContainer, Legend } from 'recharts';
+import { ComposedChart, Line, Bar, XAxis, YAxis, Legend } from 'recharts';
 import { Badge } from '@/components/ui/badge';
-import { TrendingUp, TrendingDown, Calendar, BarChart3 } from 'lucide-react';
+import { TrendingUp, TrendingDown, Calendar, BarChart3, Trophy, AlertTriangle } from 'lucide-react';
 
 interface MonthlyData {
   month: number;
@@ -30,150 +30,124 @@ export const MonthlyComparisonWidget = ({
   worstMonth
 }: MonthlyComparisonWidgetProps) => {
   const formatCurrency = (value: number) => 
-    new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(value || 0);
+    new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(value || 0);
 
-  const formatPercent = (value: number) => `${Math.round(value >= 0 ? value : -value)}%`;
   const formatPercentWithSign = (value: number) => `${value >= 0 ? '+' : ''}${Math.round(value)}%`;
 
   const chartConfig = {
     currentRevenue: { label: "CA actuel", color: "hsl(var(--primary))" },
     previousRevenue: { label: "CA précédent", color: "hsl(var(--muted-foreground))" },
     growth: { label: "Croissance (%)", color: "hsl(var(--success))" },
-    currentSavCount: { label: "SAV actuels", color: "hsl(var(--info))" },
-    previousSavCount: { label: "SAV précédents", color: "hsl(var(--secondary))" }
   };
 
   return (
-    <Card className="h-full">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Calendar className="h-5 w-5" />
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center gap-2 text-base">
+          <Calendar className="h-5 w-5 text-primary" />
           Comparaison mensuelle
         </CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="space-y-6">
-          {/* Indicateurs de performance */}
-          <div className="grid grid-cols-4 gap-4">
-            <div className="text-center">
-              <div className={`flex items-center justify-center gap-1 ${totalGrowth > 0 ? 'text-success' : 'text-destructive'}`}>
-                {totalGrowth > 0 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
-                <span className="text-xl font-bold">{formatPercentWithSign(totalGrowth)}</span>
-              </div>
-              <p className="text-sm text-muted-foreground">Croissance globale</p>
+      <CardContent className="space-y-4">
+        {/* KPI row - responsive */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="rounded-lg border bg-card p-3 text-center">
+            <div className={`flex items-center justify-center gap-1 ${totalGrowth >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              {totalGrowth >= 0 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
+              <span className="text-lg font-bold">{formatPercentWithSign(totalGrowth)}</span>
             </div>
-            
-            <div className="text-center">
-              <Badge variant="secondary" className="text-success border-success">
-                <BarChart3 className="h-3 w-3 mr-1" />
-                {bestMonth}
-              </Badge>
-              <p className="text-sm text-muted-foreground mt-1">Meilleur mois</p>
+            <p className="text-xs text-muted-foreground mt-1">Croissance</p>
+          </div>
+          
+          <div className="rounded-lg border bg-card p-3 text-center">
+            <div className="flex items-center justify-center gap-1 text-green-600">
+              <Trophy className="h-4 w-4" />
+              <span className="text-sm font-semibold truncate">{bestMonth}</span>
             </div>
-            
-            <div className="text-center">
-              <Badge variant="outline" className="text-destructive border-destructive">
-                <BarChart3 className="h-3 w-3 mr-1" />
-                {worstMonth}
-              </Badge>
-              <p className="text-sm text-muted-foreground mt-1">Mois difficile</p>
+            <p className="text-xs text-muted-foreground mt-1">Meilleur mois</p>
+          </div>
+          
+          <div className="rounded-lg border bg-card p-3 text-center">
+            <div className="flex items-center justify-center gap-1 text-orange-500">
+              <AlertTriangle className="h-4 w-4" />
+              <span className="text-sm font-semibold truncate">{worstMonth}</span>
             </div>
-
-            <div className="text-center">
-              <div className="text-xl font-bold">
-                {data.filter(d => d.growth > 0).length}/{data.length}
-              </div>
-              <p className="text-sm text-muted-foreground">Mois positifs</p>
-            </div>
+            <p className="text-xs text-muted-foreground mt-1">Mois difficile</p>
           </div>
 
-          {/* Graphique de comparaison */}
-          <div className="h-64 w-full">
-            <ChartContainer config={chartConfig} className="h-full w-full !aspect-auto">
-              <ComposedChart data={data}>
-                <XAxis 
-                  dataKey="monthName" 
-                  tickFormatter={(value) => value ? value.slice(0, 3) : ''}
-                  tickLine={false} 
-                  axisLine={false} 
-                  className="text-xs"
-                />
-                <YAxis 
-                  yAxisId="currency"
-                  orientation="left"
-                  tickFormatter={(v) => `${Math.round(v/1000)}k€`}
-                  tickLine={false} 
-                  axisLine={false}
-                  className="text-xs"
-                />
-                <YAxis 
-                  yAxisId="percent"
-                  orientation="right"
-                  tickFormatter={(v) => `${Math.round(v)}%`}
-                  tickLine={false} 
-                  axisLine={false}
-                  className="text-xs"
-                />
-                
-                  <ChartTooltip 
-                    content={<ChartTooltipContent />}
-                    formatter={(value, name) => {
-                      if (name === 'growth') return [formatPercentWithSign(value as number), 'Croissance'];
-                      if (String(name).includes('SavCount')) return [value, String(name).includes('current') ? 'SAV actuels' : 'SAV précédents'];
-                      return [formatCurrency(value as number), String(name).includes('current') ? 'CA actuel' : 'CA précédent'];
-                    }}
-                  />
-                <Legend />
-                
-                {/* Barres pour les revenus actuels et précédents */}
-                <Bar
-                  yAxisId="currency"
-                  dataKey="currentRevenue"
-                  fill="var(--color-currentRevenue)"
-                  radius={[2, 2, 0, 0]}
-                  maxBarSize={40}
-                />
-                <Bar
-                  yAxisId="currency"
-                  dataKey="previousRevenue"
-                  fill="var(--color-previousRevenue)"
-                  radius={[2, 2, 0, 0]}
-                  maxBarSize={40}
-                />
-                
-                {/* Ligne pour la croissance */}
-                <Line
-                  yAxisId="percent"
-                  type="monotone"
-                  dataKey="growth"
-                  stroke="var(--color-growth)"
-                  strokeWidth={3}
-                  dot={{ fill: "var(--color-growth)", strokeWidth: 2, r: 4 }}
-                />
-              </ComposedChart>
-            </ChartContainer>
+          <div className="rounded-lg border bg-card p-3 text-center">
+            <span className="text-lg font-bold text-primary">
+              {data.filter(d => d.growth > 0).length}<span className="text-muted-foreground font-normal text-sm">/{data.length}</span>
+            </span>
+            <p className="text-xs text-muted-foreground mt-1">Mois positifs</p>
           </div>
+        </div>
 
-          {/* Tableau récapitulatif des 3 derniers mois */}
-          <div className="grid grid-cols-3 gap-4 pt-4 border-t">
+        {/* Chart */}
+        <div className="h-56 sm:h-64 w-full">
+          <ChartContainer config={chartConfig} className="h-full w-full !aspect-auto">
+            <ComposedChart data={data}>
+              <XAxis 
+                dataKey="monthName" 
+                tickFormatter={(value) => value ? value.slice(0, 3) : ''}
+                tickLine={false} 
+                axisLine={false} 
+                className="text-xs"
+                interval={0}
+                tick={{ fontSize: 11 }}
+              />
+              <YAxis 
+                yAxisId="currency"
+                orientation="left"
+                tickFormatter={(v) => `${Math.round(v/1000)}k`}
+                tickLine={false} 
+                axisLine={false}
+                width={35}
+                tick={{ fontSize: 10 }}
+              />
+              <YAxis 
+                yAxisId="percent"
+                orientation="right"
+                tickFormatter={(v) => `${Math.round(v)}%`}
+                tickLine={false} 
+                axisLine={false}
+                width={35}
+                tick={{ fontSize: 10 }}
+              />
+              <ChartTooltip 
+                content={<ChartTooltipContent />}
+                formatter={(value, name) => {
+                  if (name === 'growth') return [formatPercentWithSign(value as number), 'Croissance'];
+                  return [formatCurrency(value as number), String(name).includes('current') ? 'CA actuel' : 'CA précédent'];
+                }}
+              />
+              <Legend wrapperStyle={{ fontSize: 11 }} />
+              <Bar yAxisId="currency" dataKey="currentRevenue" fill="var(--color-currentRevenue)" radius={[3, 3, 0, 0]} maxBarSize={32} />
+              <Bar yAxisId="currency" dataKey="previousRevenue" fill="var(--color-previousRevenue)" radius={[3, 3, 0, 0]} maxBarSize={32} />
+              <Line yAxisId="percent" type="monotone" dataKey="growth" stroke="var(--color-growth)" strokeWidth={2} dot={{ fill: "var(--color-growth)", strokeWidth: 2, r: 3 }} />
+            </ComposedChart>
+          </ChartContainer>
+        </div>
+
+        {/* Monthly recap - scrollable on mobile */}
+        <div className="border-t pt-3">
+          <h4 className="text-xs font-medium text-muted-foreground mb-2">Récapitulatif des 3 derniers mois</h4>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             {data.slice(-3).map((month) => (
-              <div key={month.month} className="text-center space-y-2">
-                <h4 className="font-medium capitalize">{month.monthName}</h4>
-                <div className="space-y-1 text-sm">
-                  <div className="flex justify-between">
-                    <span>CA:</span>
-                    <span className="font-medium">{formatCurrency(month.currentRevenue)}</span>
+              <div key={month.month} className="flex sm:flex-col items-center sm:items-stretch justify-between gap-2 rounded-lg border p-2.5">
+                <span className="font-medium text-sm capitalize sm:text-center">{month.monthName}</span>
+                <div className="flex sm:flex-col gap-3 sm:gap-1 text-xs">
+                  <div className="flex items-center gap-1">
+                    <span className="text-muted-foreground">CA:</span>
+                    <span className="font-semibold">{formatCurrency(month.currentRevenue)}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span>SAV:</span>
-                    <span className="font-medium">{month.currentSavCount}</span>
+                  <div className="flex items-center gap-1">
+                    <span className="text-muted-foreground">SAV:</span>
+                    <span className="font-semibold">{month.currentSavCount}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span>Évolution:</span>
-                    <span className={`font-medium ${month.growth > 0 ? 'text-success' : 'text-destructive'}`}>
-                      {formatPercentWithSign(month.growth)}
-                    </span>
-                  </div>
+                  <Badge variant={month.growth >= 0 ? "default" : "destructive"} className="text-[10px] h-5 px-1.5">
+                    {formatPercentWithSign(month.growth)}
+                  </Badge>
                 </div>
               </div>
             ))}
