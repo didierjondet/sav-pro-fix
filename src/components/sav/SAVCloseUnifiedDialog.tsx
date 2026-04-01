@@ -314,7 +314,7 @@ export function SAVCloseUnifiedDialog({
           .eq('id', savCase.id)
           .single();
 
-        const caseForPDF = freshCase ? { ...savCase, closure_history: (freshCase.closure_history || []) as any, customer: (freshCase as any).customers || savCase.customer } as SAVCase : savCase;
+        const caseForPDF = freshCase ? { ...savCase, closure_history: (freshCase.closure_history || []) as any, customer: (freshCase as any).customers || savCase.customer, technician_comments: technicianComments, private_comments: privateComments } as SAVCase : { ...savCase, technician_comments: technicianComments, private_comments: privateComments };
 
         await generateSAVRestitutionPDF(caseForPDF, shop);
         
