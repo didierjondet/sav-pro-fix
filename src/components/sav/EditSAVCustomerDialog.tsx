@@ -12,6 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { multiWordSearch } from '@/utils/searchUtils';
 import { validateFrenchPhoneNumber, formatPhoneInput } from '@/utils/phoneValidation';
+import { logSAVChange, getCurrentUserName } from '@/hooks/useSAVAuditLog';
 
 interface EditSAVCustomerDialogProps {
   savCaseId: string;
