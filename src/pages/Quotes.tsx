@@ -552,188 +552,113 @@ export default function Quotes() {
 
   const renderQuoteCard = (quote: Quote) => (
     <Card key={quote.id} className="hover:shadow-md transition-shadow">
-      <CardContent className="p-6">
-        <div className="flex items-center justify-between">
-          <div className="flex-1">
-            <div className="flex items-center gap-4 mb-2">
-              <h3 className="font-semibold text-lg">{formatCustomerDisplay(quote.customer_name)}</h3>
-              <Badge variant="outline">
-                {quote.quote_number}
-              </Badge>
-              {isQuoteExpired(quote.created_at) ? (
-                <Badge variant="destructive">
-                  Devis expiré
-                </Badge>
-              ) : (
-                <Badge variant={getStatusColor(quote.status)}>
-                  {getStatusText(quote.status)}
-                </Badge>
-              )}
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-4 text-sm text-muted-foreground">
-              <div>
-                <span className="font-medium">Total: </span>
-                <span className="text-lg font-bold text-foreground">
-                  {quote.total_amount.toFixed(2)}€
-                </span>
-              </div>
-              
-              {quote.customer_email && (
-                <div>
-                  <span className="font-medium">Email: </span>
-                  <span>{quote.customer_email}</span>
-                </div>
-              )}
-              
-              {quote.customer_phone && (
-                <div>
-                  <span className="font-medium">Téléphone: </span>
-                  <span>{quote.customer_phone}</span>
-                </div>
-              )}
-              
-              <div>
-                <span className="font-medium">Créé le: </span>
-                <span>{new Date(quote.created_at).toLocaleDateString()}</span>
-              </div>
+      <CardContent className="p-4 md:p-5 space-y-3">
+        {/* Header: nom + badges */}
+        <div className="flex flex-wrap items-center gap-2">
+          <h3 className="font-semibold text-base">{formatCustomerDisplay(quote.customer_name)}</h3>
+          <Badge variant="outline" className="text-xs">{quote.quote_number}</Badge>
+          {isQuoteExpired(quote.created_at) ? (
+            <Badge variant="destructive" className="text-xs">Expiré</Badge>
+          ) : (
+            <Badge variant={getStatusColor(quote.status)} className="text-xs">{getStatusText(quote.status)}</Badge>
+          )}
+        </div>
 
-              {/* Affichage de qui a accepté le devis */}
-              {quote.status === 'accepted' && quote.accepted_by && quote.accepted_at && (
-                <div className="flex items-center gap-1 text-green-600">
-                  <CheckCircle className="h-3 w-3" />
-                  <div className="flex flex-col">
-                    <span className="font-medium text-xs">
-                      Accepté par {quote.accepted_by === 'shop' ? 'le magasin' : 'le client'}
-                    </span>
-                    <span className="text-xs">
-                      {new Date(quote.accepted_at).toLocaleDateString('fr-FR')} à {new Date(quote.accepted_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
-                    </span>
-                  </div>
-                </div>
-              )}
-              
-              {quote.status === 'sent' && quote.sms_sent_at && (
-                <div className="flex items-center gap-1 text-green-600">
-                  <CheckCircle className="h-3 w-3" />
-                  <div className="flex flex-col">
-                    <span className="font-medium text-xs">PDF envoyé par SMS</span>
-                    <span className="text-xs">
-                      {new Date(quote.sms_sent_at).toLocaleDateString('fr-FR')} à {new Date(quote.sms_sent_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
-                    </span>
-                  </div>
-                </div>
-              )}
+        {/* Infos: grille responsive */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-1 text-sm">
+          <div>
+            <span className="text-muted-foreground">Total : </span>
+            <span className="font-bold text-foreground">{quote.total_amount.toFixed(2)}€</span>
+          </div>
+          {quote.customer_phone && (
+            <div className="truncate">
+              <span className="text-muted-foreground">Tél : </span>
+              <span>{quote.customer_phone}</span>
             </div>
+          )}
+          {quote.customer_email && (
+            <div className="truncate">
+              <span className="text-muted-foreground">Email : </span>
+              <span>{quote.customer_email}</span>
+            </div>
+          )}
+          <div>
+            <span className="text-muted-foreground">Créé : </span>
+            <span>{new Date(quote.created_at).toLocaleDateString('fr-FR')}</span>
           </div>
-          
-          <div className="flex items-center gap-2 ml-4">
-            {/* Dropdown de changement de statut - mis en évidence */}
-            {quote.status !== 'rejected' && (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Select
-                      value={quote.status}
-                      onValueChange={(value) => handleStatusChange(quote, value as Quote['status'])}
-                    >
-                      <SelectTrigger className="w-44 border-2 border-blue-500 bg-blue-50 hover:bg-blue-100 text-blue-700 font-medium shadow-sm dark:bg-blue-950 dark:text-blue-300 dark:hover:bg-blue-900 animate-pulse-border">
-                        <RefreshCw className="h-4 w-4 mr-2" />
-                        <SelectValue placeholder="Changer statut" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-white dark:bg-gray-800 z-50">
-                        <SelectItem value="draft">📝 Brouillon</SelectItem>
-                        <SelectItem value="sent">📤 Envoyé</SelectItem>
-                        <SelectItem value="viewed">👁️ Consulté</SelectItem>
-                        <SelectItem value="accepted">✅ Accepté</SelectItem>
-                        <SelectItem value="rejected">❌ Refusé</SelectItem>
-                        <SelectItem value="expired">⏰ Expiré</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Cliquez ici pour valider ou changer le statut du devis</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            )}
-            {/* Bouton de conversion en SAV pour les devis acceptés */}
-            {quote.status === 'accepted' && (
-              <Button 
-                variant="default" 
-                size="sm"
-                onClick={() => setQuoteToConvert(quote)}
-                className="bg-green-600 hover:bg-green-700"
-              >
-                <Plus className="h-4 w-4 mr-1" />
-                Valider le devis
-              </Button>
-            )}
-            
-            {quote.status !== 'rejected' && (
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => { setEditingQuote(quote); setShowForm(true); }}
-              >
-                Modifier
-              </Button>
-            )}
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => handleViewQuote(quote)}
+          {quote.status === 'accepted' && quote.accepted_by && quote.accepted_at && (
+            <div className="flex items-center gap-1 text-green-600 col-span-2">
+              <CheckCircle className="h-3 w-3 shrink-0" />
+              <span className="text-xs">Accepté par {quote.accepted_by === 'shop' ? 'le magasin' : 'le client'} le {new Date(quote.accepted_at).toLocaleDateString('fr-FR')}</span>
+            </div>
+          )}
+          {quote.status === 'sent' && quote.sms_sent_at && (
+            <div className="flex items-center gap-1 text-green-600 col-span-2">
+              <CheckCircle className="h-3 w-3 shrink-0" />
+              <span className="text-xs">SMS envoyé le {new Date(quote.sms_sent_at).toLocaleDateString('fr-FR')} à {new Date(quote.sms_sent_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</span>
+            </div>
+          )}
+        </div>
+
+        {/* Actions: wrap sur mobile */}
+        <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-border/50">
+          {quote.status !== 'rejected' && (
+            <Select
+              value={quote.status}
+              onValueChange={(value) => handleStatusChange(quote, value as Quote['status'])}
             >
-              <Eye className="h-4 w-4 mr-1" />
-              Voir
+              <SelectTrigger className="w-36 h-8 text-xs border-primary/50 bg-primary/5 hover:bg-primary/10 font-medium">
+                <RefreshCw className="h-3 w-3 mr-1" />
+                <SelectValue placeholder="Statut" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="draft">📝 Brouillon</SelectItem>
+                <SelectItem value="sent">📤 Envoyé</SelectItem>
+                <SelectItem value="viewed">👁️ Consulté</SelectItem>
+                <SelectItem value="accepted">✅ Accepté</SelectItem>
+                <SelectItem value="rejected">❌ Refusé</SelectItem>
+                <SelectItem value="expired">⏰ Expiré</SelectItem>
+              </SelectContent>
+            </Select>
+          )}
+          {quote.status === 'accepted' && (
+            <Button variant="default" size="sm" className="h-8 text-xs bg-green-600 hover:bg-green-700" onClick={() => setQuoteToConvert(quote)}>
+              <Plus className="h-3 w-3 mr-1" />
+              Valider
             </Button>
-            {quote.status !== 'rejected' && (
-              <>
+          )}
+          {quote.status !== 'rejected' && (
+            <Button variant="outline" size="sm" className="h-8 text-xs" onClick={() => { setEditingQuote(quote); setShowForm(true); }}>Modifier</Button>
+          )}
+          <Button variant="outline" size="sm" className="h-8 text-xs" onClick={() => handleViewQuote(quote)}>
+            <Eye className="h-3 w-3 mr-1" />Voir
+          </Button>
+          {quote.status !== 'rejected' && (
+            <>
+              <Button variant="outline" size="sm" className="h-8 text-xs" onClick={() => handleDownloadPDF(quote)}>
+                <Download className="h-3 w-3 mr-1" />PDF
+              </Button>
+              {quote.customer_phone && (
                 <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => handleDownloadPDF(quote)}
+                  variant={quote.status === 'sent' ? 'default' : 'outline'} 
+                  size="sm" 
+                  className={`h-8 text-xs ${quote.status === 'sent' ? 'bg-green-600 hover:bg-green-700' : ''}`}
+                  onClick={() => handleSendSMS(quote)}
                 >
-                  <Download className="h-4 w-4 mr-1" />
-                  PDF
+                  <MessageSquare className="h-3 w-3 mr-1" />
+                  {quote.status === 'sent' ? 'Renvoyer SMS' : 'SMS'}
                 </Button>
-                {quote.customer_phone && (
-                  <Button 
-                    variant={quote.status === 'sent' ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => handleSendSMS(quote)}
-                    className={quote.status === 'sent' ? 'bg-green-600 hover:bg-green-700' : ''}
-                  >
-                    <MessageSquare className="h-4 w-4 mr-1" />
-                    {quote.status === 'sent' ? 'Renvoyé SMS' : 'Envoyer SMS'}
-                  </Button>
-                )}
-              </>
-            )}
-            
-            {/* Bouton d'archivage pour devis actifs et acceptés */}
-            {(quote.status !== 'rejected' && quote.status !== 'archived') && (
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="text-orange-600 hover:text-orange-700"
-                onClick={() => handleArchiveQuote(quote.id)}
-              >
-                <Archive className="h-4 w-4 mr-1" />
-                Archiver
-              </Button>
-            )}
-            
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="text-destructive hover:text-destructive"
-              onClick={() => setDeletingQuote(quote)}
-            >
-              <Trash2 className="h-4 w-4 mr-1" />
-              Supprimer
+              )}
+            </>
+          )}
+          {quote.status !== 'rejected' && quote.status !== 'archived' && (
+            <Button variant="outline" size="sm" className="h-8 text-xs text-orange-600 hover:text-orange-700" onClick={() => handleArchiveQuote(quote.id)}>
+              <Archive className="h-3 w-3 mr-1" />Archiver
             </Button>
-          </div>
+          )}
+          <Button variant="outline" size="sm" className="h-8 text-xs text-destructive hover:text-destructive" onClick={() => setDeletingQuote(quote)}>
+            <Trash2 className="h-3 w-3 mr-1" />Supprimer
+          </Button>
         </div>
       </CardContent>
     </Card>
