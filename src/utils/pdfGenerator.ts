@@ -325,6 +325,28 @@ const getStatusText = (status: string) => {
 };
 
 export const generateSAVRestitutionPDF = async (savCase: SAVCase, shop?: Shop) => {
+  // Récupérer les données fraîches du SAV (closure_history inclus)
+  let freshCaseData: any = null;
+  try {
+    const { data: freshCase, error: freshError } = await supabase
+      .from('sav_cases')
+      .select('closure_history')
+      .eq('id', savCase.id)
+      .single();
+    
+    if (!freshError && freshCase) {
+      freshCaseData = freshCase;
+    }
+  } catch (e) {
+    console.error('Erreur récupération closure_history:', e);
+  }
+
+  const closureHistory = (freshCaseData?.closure_history || savCase.closure_history || []) as Array<{
+    closed_at: string;
+    status_label: string;
+    closed_by: string;
+  }>;
+
   // Récupérer les pièces du SAV avec les informations complètes
   let savCaseWithParts = savCase as any;
   
@@ -340,12 +362,9 @@ export const generateSAVRestitutionPDF = async (savCase: SAVCase, shop?: Shop) =
     if (error) {
       console.error('Erreur lors de la récupération des pièces SAV:', error);
     } else {
-      // Ajouter les pièces au SAV case avec le prix public correct
       savCaseWithParts.sav_parts = savParts?.map(part => ({
         ...part,
-        // Utiliser le nom de la pièce du stock ou le nom personnalisé
         name: part.parts?.name || part.custom_part_name || 'Pièce personnalisée',
-        // Utiliser le prix public (selling_price) de la pièce du stock ou le prix unitaire saisi
         public_price: part.parts?.selling_price || part.unit_price || 0
       })) || [];
     }
