@@ -384,10 +384,10 @@ export const generateSAVRestitutionPDF = async (savCase: SAVCase, shop?: Shop) =
           body {
             font-family: Arial, sans-serif;
             margin: 0;
-            padding: 15px;
+            padding: 10px 15px;
             color: #333;
-            line-height: 1.3;
-            font-size: 12px;
+            line-height: 1.2;
+            font-size: 11px;
           }
           .shop-header {
             text-align: left;
