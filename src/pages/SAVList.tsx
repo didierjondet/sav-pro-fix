@@ -68,7 +68,7 @@ export default function SAVList() {
   const { shop } = useShop();
   const { savWithUnreadMessages } = useSAVUnreadMessages();
   const { checkAndShowLimitDialog } = useLimitDialogContext();
-  const { getStatusInfo, statuses, isReadyStatus, isCancelledStatus, isActiveStatus } = useShopSAVStatuses();
+  const { getStatusInfo, statuses, isReadyStatus, isCancelledStatus, isActiveStatus, isFinalStatus } = useShopSAVStatuses();
   const { getAllTypes, getTypeInfo, types } = useShopSAVTypes();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
