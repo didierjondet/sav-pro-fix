@@ -32,7 +32,14 @@ export const MonthlyComparisonWidget = ({
   const formatCurrency = (value: number) => 
     new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(value || 0);
 
-  const formatPercentWithSign = (value: number) => `${value >= 0 ? '+' : ''}${Math.round(value)}%`;
+  const formatPercentWithSign = (value: number | null) => {
+    if (value === null) return 'Nouveau';
+    return `${value >= 0 ? '+' : ''}${Math.round(value)}%`;
+  };
+
+  // Filter months that have a valid N-1 reference for KPI calculations
+  const monthsWithReference = data.filter(d => d.growth !== null);
+  const positiveMonths = monthsWithReference.filter(d => (d.growth as number) > 0).length;
 
   const chartConfig = {
     currentRevenue: { label: "CA actuel", color: "hsl(var(--primary))" },
