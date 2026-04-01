@@ -13,7 +13,7 @@ interface MonthlyData {
   previousSavCount: number;
   currentProfit: number;
   previousProfit: number;
-  growth: number;
+  growth: number | null;
 }
 
 interface MonthlyComparisonWidgetProps {
