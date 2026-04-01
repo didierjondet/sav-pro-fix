@@ -328,7 +328,8 @@ export function SAVCloseUnifiedDialog({
 
         const caseForPDF = freshCase ? { ...savCase, closure_history: (freshCase.closure_history || []) as any, customer: (freshCase as any).customers || savCase.customer, technician_comments: technicianComments, private_comments: privateComments } as SAVCase : { ...savCase, technician_comments: technicianComments, private_comments: privateComments };
 
-        await generateSAVRestitutionPDF(caseForPDF, shop);
+        const clientMessages = await fetchClientMessages();
+        await generateSAVRestitutionPDF(caseForPDF, shop, { includeAttachments: printAttachments, clientMessages });
         
         if (sendMessage && profile) {
           const senderName = `${profile.first_name} ${profile.last_name}`.trim() || 'Équipe SAV';
