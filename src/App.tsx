@@ -126,6 +126,7 @@ const App = () => {
                 <Route path="/sav" element={<SAVList />} />
                 <Route path="/sav/new" element={<NewSAV />} />
                 <Route path="/sav/:id" element={<SAVDetail />} />
+                <Route path="/sav/:id/logs" element={<SAVLogs />} />
                 <Route path="/track/:slug" element={<TrackSAV />} />
                 <Route path="/parts" element={<Parts />} />
                 <Route path="/quotes" element={<Quotes />} />
