@@ -396,8 +396,8 @@ export const generateSAVRestitutionPDF = async (savCase: SAVCase, shop?: Shop) =
             padding-bottom: 5px;
           }
           .shop-logo {
-            max-height: 50px;
-            max-width: 150px;
+            max-height: 40px;
+            max-width: 120px;
             object-fit: contain;
             margin-bottom: 5px;
           }
