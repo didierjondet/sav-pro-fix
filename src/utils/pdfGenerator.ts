@@ -781,7 +781,7 @@ export const generateSAVRestitutionPDF = async (savCase: SAVCase, shop?: Shop) =
                   <tr style="border-bottom: 1px solid #ddd;">
                     <td style="padding: 3px 6px;">${new Date(entry.closed_at).toLocaleDateString('fr-FR')} à ${new Date(entry.closed_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</td>
                     <td style="padding: 3px 6px; font-weight: bold;">${entry.status_label}</td>
-                    <td style="padding: 3px 6px;">${entry.closed_by}</td>
+                    <td style="padding: 3px 6px;">${entry.closed_by_name || 'Non précisé'}</td>
                   </tr>
                 `).join('')}
               </tbody>
