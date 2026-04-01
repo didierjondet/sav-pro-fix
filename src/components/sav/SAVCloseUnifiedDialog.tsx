@@ -138,7 +138,7 @@ export function SAVCloseUnifiedDialog({
         .eq('id', savCase.id)
         .single();
 
-      const caseForPDF = freshCase ? { ...savCase, closure_history: freshCase.closure_history, customer: (freshCase as any).customers || savCase.customer } : savCase;
+      const caseForPDF = freshCase ? { ...savCase, closure_history: (freshCase.closure_history || []) as any, customer: (freshCase as any).customers || savCase.customer } as SAVCase : savCase;
 
       // Générer et télécharger le PDF avec données fraîches
       await generateSAVRestitutionPDF(caseForPDF, shop);

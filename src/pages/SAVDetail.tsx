@@ -333,7 +333,7 @@ export default function SAVDetail() {
                       .eq('id', savCase.id)
                       .single();
                     
-                    const caseForPDF = freshCase ? { ...savCase, closure_history: freshCase.closure_history, customer: (freshCase as any).customers || savCase.customer } : savCase;
+                    const caseForPDF = freshCase ? { ...savCase, closure_history: (freshCase.closure_history || []) as any, customer: (freshCase as any).customers || savCase.customer } : savCase;
                     await generateSAVRestitutionPDF(caseForPDF, shop);
                     toast({
                       title: "Document de restitution",
