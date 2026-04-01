@@ -289,9 +289,37 @@ export function SAVCloseUnifiedDialog({
       // Confirmer la clôture
       onConfirm(selectedStatus);
       
+      // Générer et imprimer automatiquement le document de restitution
+      try {
+        // Petit délai pour laisser la clôture s'enregistrer en base
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Récupérer les données fraîches du SAV (avec closure_history à jour)
+        const { data: freshCase } = await supabase
+          .from('sav_cases')
+          .select('*, customers(*)')
+          .eq('id', savCase.id)
+          .single();
+
+        const caseForPDF = freshCase ? { ...savCase, closure_history: (freshCase.closure_history || []) as any, customer: (freshCase as any).customers || savCase.customer } as SAVCase : savCase;
+
+        await generateSAVRestitutionPDF(caseForPDF, shop);
+        
+        if (sendMessage && profile) {
+          const senderName = `${profile.first_name} ${profile.last_name}`.trim() || 'Équipe SAV';
+          await sendMessage(
+            `📄 Document de restitution généré pour la clôture du dossier SAV ${savCase.case_number}.`,
+            senderName,
+            'shop'
+          );
+        }
+      } catch (docError) {
+        console.error('Erreur génération document:', docError);
+      }
+      
       toast({
         title: "Dossier clôturé",
-        description: sendSMS ? "Dossier clôturé et SMS envoyé" : "Dossier clôturé avec succès",
+        description: sendSMS ? "Dossier clôturé, SMS envoyé et document généré" : "Dossier clôturé et document généré",
       });
     } catch (error) {
       console.error('Erreur lors de la clôture:', error);
