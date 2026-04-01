@@ -64,7 +64,7 @@ export default function SAVList() {
   const [viewMode, setViewMode] = useState<'standard' | 'compact'>(() => {
     return (localStorage.getItem('fixway_sav_view_mode') as 'standard' | 'compact') || 'standard';
   });
-  const [showPrintDialog, setShowPrintDialog] = useState(false);
+  const { cases, loading, deleteCase, refetch, updateCaseStatus } = useSAVCases();
   const { cases, loading, deleteCase, refetch, updateCaseStatus } = useSAVCases();
   const { shop } = useShop();
   const { savWithUnreadMessages } = useSAVUnreadMessages();
