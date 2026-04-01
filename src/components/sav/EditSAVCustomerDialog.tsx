@@ -24,6 +24,7 @@ interface EditSAVCustomerDialogProps {
 
 export function EditSAVCustomerDialog({ 
   savCaseId, 
+  shopId,
   currentCustomerId, 
   currentCustomerName,
   onCustomerUpdated 
