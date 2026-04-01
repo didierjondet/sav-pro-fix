@@ -117,7 +117,7 @@ export function ReportChartsSection({ selectedWidgets, dateRange, reportData }: 
       const previous = previousYearData[index];
       const growth = previous?.revenue > 0 
         ? ((current.revenue - previous.revenue) / previous.revenue) * 100 
-        : 0;
+        : null;
       
       return {
         month: current.month,
