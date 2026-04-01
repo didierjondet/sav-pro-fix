@@ -768,47 +768,35 @@ export default function Quotes() {
                         ) : (
                           acceptedQuotes.map((quote) => (
                             <Card key={quote.id} className="hover:shadow-md transition-shadow border-green-200">
-                              <CardContent className="p-6">
-                                <div className="flex items-center justify-between">
-                                  <div className="flex-1">
-                                    <div className="flex items-center gap-4 mb-2">
-                                      <h3 className="font-semibold text-lg">{formatCustomerDisplay(quote.customer_name)}</h3>
-                                      <Badge variant="outline">
-                                        {quote.quote_number}
-                                      </Badge>
-                                      <Badge variant="default" className="bg-green-100 text-green-800 border-green-300">
-                                        {getStatusText(quote.status)}
-                                      </Badge>
-                                    </div>
-                                    
-                                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm text-muted-foreground">
-                                      <div>
-                                        <span className="font-medium">Total: </span>
-                                        <span className="text-lg font-bold text-foreground">
-                                          {quote.total_amount.toFixed(2)}€
-                                        </span>
-                                      </div>
-                                      
-                                      {quote.customer_phone && (
-                                        <div>
-                                          <span className="font-medium">Téléphone: </span>
-                                          <span>{quote.customer_phone}</span>
-                                        </div>
-                                      )}
-                                      
-                                      <div>
-                                        <span className="font-medium">Accepté le: </span>
-                                        <span>{new Date(quote.updated_at || quote.created_at).toLocaleDateString()}</span>
-                                      </div>
-                                      
-                                      <div className="flex items-center gap-1 text-green-600">
-                                        <CheckCircle className="h-3 w-3" />
-                                        <span className="font-medium text-xs">Devis validé</span>
-                                      </div>
-                                    </div>
+                              <CardContent className="p-4 md:p-5 space-y-3">
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <h3 className="font-semibold text-base">{formatCustomerDisplay(quote.customer_name)}</h3>
+                                  <Badge variant="outline" className="text-xs">{quote.quote_number}</Badge>
+                                  <Badge variant="default" className="text-xs bg-green-100 text-green-800 border-green-300">{getStatusText(quote.status)}</Badge>
+                                </div>
+                                
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-1 text-sm">
+                                  <div>
+                                    <span className="text-muted-foreground">Total : </span>
+                                    <span className="font-bold text-foreground">{quote.total_amount.toFixed(2)}€</span>
                                   </div>
-                                  
-                                   <div className="flex items-center gap-2 ml-4">
+                                  {quote.customer_phone && (
+                                    <div className="truncate">
+                                      <span className="text-muted-foreground">Tél : </span>
+                                      <span>{quote.customer_phone}</span>
+                                    </div>
+                                  )}
+                                  <div>
+                                    <span className="text-muted-foreground">Accepté le : </span>
+                                    <span>{new Date(quote.updated_at || quote.created_at).toLocaleDateString('fr-FR')}</span>
+                                  </div>
+                                  <div className="flex items-center gap-1 text-green-600">
+                                    <CheckCircle className="h-3 w-3 shrink-0" />
+                                    <span className="text-xs font-medium">Devis validé</span>
+                                  </div>
+                                </div>
+
+                                <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-border/50">
                                      <Button 
                                        variant="outline" 
                                        size="sm"
