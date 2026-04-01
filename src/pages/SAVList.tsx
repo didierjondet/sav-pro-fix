@@ -445,9 +445,26 @@ export default function SAVList() {
                     </Select>
                   </div>
                   
-                  {/* Compteur de résultats */}
-                  <div className="text-sm text-muted-foreground ml-auto">
-                    {totalItems} dossier{totalItems > 1 ? 's' : ''} trouvé{totalItems > 1 ? 's' : ''}
+                  {/* Switch vue compacte + compteur */}
+                  <div className="flex items-center gap-4 ml-auto">
+                    <div className="flex items-center gap-2">
+                      <LayoutList className="h-4 w-4 text-muted-foreground" />
+                      <Switch
+                        id="view-mode"
+                        checked={viewMode === 'compact'}
+                        onCheckedChange={(checked) => {
+                          const mode = checked ? 'compact' : 'standard';
+                          setViewMode(mode);
+                          localStorage.setItem('fixway_sav_view_mode', mode);
+                        }}
+                      />
+                      <Label htmlFor="view-mode" className="text-sm cursor-pointer">
+                        <LayoutGrid className="h-4 w-4 text-muted-foreground" />
+                      </Label>
+                    </div>
+                    <span className="text-sm text-muted-foreground">
+                      {totalItems} dossier{totalItems > 1 ? 's' : ''} trouvé{totalItems > 1 ? 's' : ''}
+                    </span>
                   </div>
                 </div>
               </div>
