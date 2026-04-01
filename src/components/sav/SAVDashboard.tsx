@@ -86,6 +86,7 @@ export function SAVDashboard() {
   const { costs, loading: costsLoading } = useSAVPartsCosts();
   const { storageGB, loading: storageLoading } = useShopStorageUsage(shop?.id);
   const { data: monthlyData, loading: monthlyLoading } = useMonthlyStatistics(selectedYear);
+  const { data: previousYearMonthlyData } = useMonthlyStatistics(selectedYear - 1);
   const { getAllTypes, getTypeInfo, types } = useShopSAVTypes();
   const navigate = useNavigate();
 
