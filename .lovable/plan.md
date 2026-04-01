@@ -1,32 +1,45 @@
 
 
-## Plan : Afficher la date de cloture sur les cards SAV finalisees
+## Plan : Corriger le calcul du taux de retard mensuel
 
-### Objectif
-Quand un dossier SAV a un statut final, afficher la date de cloture a cote de la date de creation dans la ligne metadonnees de la card.
+### Probleme identifie
 
-### Source de donnees
-Le champ `closure_history` (JSONB array) est deja present dans l'interface `SAVCase` et contient les entrees de cloture avec `closed_at`. On prend la derniere entree du tableau pour obtenir la date de cloture la plus recente. En fallback, si `closure_history` est vide, on utilise `updated_at`.
+Le code actuel dans `useMonthlyLateRate.ts` mesure les SAV **encore actifs** a la fin de chaque mois. Cela exclut tous les SAV deja clotures, ce qui est l'inverse de la regle metier souhaitee.
 
-### Modification
+Pour janvier et fevrier, la plupart des SAV sont probablement deja clotures, donc le filtre les exclut tous et le taux tombe a 0%.
 
-**Fichier** : `src/pages/SAVList.tsx`
+### Regle metier correcte (confirmee par l'utilisateur)
 
-Dans la section "Ligne 3 : Metadonnees" (lignes 628-650), apres le badge de date de creation, ajouter conditionnellement un badge de date de cloture :
+1. **Ne compter que les SAV clotures** (statut final = `is_final_status`)
+2. **Attribuer le SAV au mois de creation** (pas au mois de cloture)
+3. **Un SAV est en retard** si : `date de cloture > date de creation + max_processing_days`
+4. **Formule** : `taux = (nb SAV clotures en retard / nb SAV clotures total) * 100` pour les SAV crees dans ce mois
+5. Exclure les types avec `exclude_from_stats` et les types avec `max_processing_days = 0` (internes)
 
-- Condition : `isFinalStatus(savCase.status)` (importer `isFinalStatus` depuis le hook existant)
-- Badge : icone check-circle + date formatee `dd/MM/yyyy HH:mm`
-- Style : `bg-green-100 text-green-700 border-green-200` pour indiquer visuellement la cloture
-- Date source : derniere entree de `savCase.closure_history` ou fallback `savCase.updated_at`
+### Changements concrets
 
-Meme logique appliquee dans la vue compacte si elle affiche la date de creation.
+**Fichier** : `src/hooks/useMonthlyLateRate.ts`
 
-### Rendu attendu
+1. **Requete** : ajouter `closure_history` dans le select pour recuperer les dates de cloture reelles
+
+2. **Logique par mois** : remplacer entierement le filtre et le calcul :
+   - Filtrer les SAV **crees** dans le mois courant de la boucle
+   - Parmi ceux-ci, ne garder que ceux qui ont un **statut final** (`is_final_status`)
+   - Exclure les types exclus des stats et les types avec `max_processing_days = 0`
+   - Pour chaque SAV cloture, extraire la date de cloture depuis la derniere entree de `closure_history` (fallback `updated_at`)
+   - Comparer : si `closureDate > createdAt + maxProcessingDays` → en retard
+   - Calculer le taux sur ce sous-ensemble
+
+3. **Pour le mois en cours** : les SAV non encore clotures ne sont pas comptabilises (conformement a la regle "uniquement apres cloture")
+
+### Resultat attendu
 
 ```text
-📅 15/03/2026 14:30   ✅ Cloturé le 18/03/2026 10:15   ⏱ ...
+Janvier :  12 SAV clotures crees en janvier, dont 4 en retard → 33.3%
+Fevrier :   8 SAV clotures crees en fevrier, dont 2 en retard → 25%
+Mars (en cours) : seuls les SAV deja clotures sont comptes
 ```
 
 ### Fichier impacte
-- `src/pages/SAVList.tsx` — ajout d'un badge conditionnel (environ 10 lignes)
+- `src/hooks/useMonthlyLateRate.ts` — refonte complete de la logique de calcul (~40 lignes)
 
