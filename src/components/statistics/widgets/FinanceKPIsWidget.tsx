@@ -4,12 +4,11 @@ import { Progress } from '@/components/ui/progress';
 import { 
   Euro, 
   TrendingUp, 
-  TrendingDown, 
-  Target,
   CreditCard,
   PiggyBank,
   ArrowUpRight,
-  ArrowDownRight
+  ArrowDownRight,
+  Minus
 } from 'lucide-react';
 
 interface MonthlyFinanceData {
@@ -34,31 +33,17 @@ export const FinanceKPIsWidget = ({
   currentMonth,
   previousMonth,
   yearTarget,
-  monthProgress
 }: FinanceKPIsWidgetProps) => {
 
   const formatCurrency = (value: number) => 
     new Intl.NumberFormat('fr-FR', { 
       style: 'currency', 
       currency: 'EUR', 
-      notation: 'compact',
       maximumFractionDigits: 0,
       minimumFractionDigits: 0
     }).format(Math.round(value));
 
   const formatPercent = (value: number) => `${value >= 0 ? '+' : ''}${Math.round(value)}%`;
-
-  const getGrowthColor = (growth: number) => {
-    if (growth > 0) return 'text-green-600';
-    if (growth < 0) return 'text-red-600';
-    return 'text-gray-600';
-  };
-
-  const getGrowthIcon = (growth: number) => {
-    if (growth > 0) return <ArrowUpRight className="w-3 h-3" />;
-    if (growth < 0) return <ArrowDownRight className="w-3 h-3" />;
-    return <TrendingUp className="w-3 h-3" />;
-  };
 
   const calculateGrowth = (current: number, previous: number) => {
     if (previous === 0) return 0;
@@ -68,96 +53,105 @@ export const FinanceKPIsWidget = ({
   const revenueGrowth = calculateGrowth(currentMonth.revenue, previousMonth.revenue);
   const expensesGrowth = calculateGrowth(currentMonth.expenses, previousMonth.expenses);
   const profitGrowth = calculateGrowth(currentMonth.profit, previousMonth.profit);
+  const targetProgress = yearTarget > 0 ? Math.min((currentMonth.revenue / yearTarget) * 100, 100) : 0;
+  const expenseRatio = currentMonth.revenue > 0 ? Math.round((currentMonth.expenses / currentMonth.revenue) * 100) : 0;
+
+  const GrowthIndicator = ({ value }: { value: number }) => {
+    const color = value > 0 ? 'text-green-600' : value < 0 ? 'text-red-600' : 'text-muted-foreground';
+    const Icon = value > 0 ? ArrowUpRight : value < 0 ? ArrowDownRight : Minus;
+    return (
+      <span className={`inline-flex items-center gap-0.5 text-xs font-medium ${color}`}>
+        <Icon className="w-3 h-3" />
+        {formatPercent(value)}
+      </span>
+    );
+  };
 
   return (
-    <Card className="h-full">
+    <Card>
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center justify-between text-base">
           <div className="flex items-center gap-2">
-            <Euro className="w-4 h-4" />
+            <Euro className="w-5 h-5 text-primary" />
             KPIs Financiers
           </div>
-          <Badge variant="outline" className="text-xs">
-            Ce mois
-          </Badge>
+          <Badge variant="outline" className="text-xs">Ce mois</Badge>
         </CardTitle>
       </CardHeader>
-      <CardContent className="pt-0 space-y-4">
-        {/* Revenus */}
-        <div className="space-y-1">
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-muted-foreground flex items-center gap-1">
-              <TrendingUp className="w-3 h-3" />
-              Chiffre d'affaires
-            </span>
-            <div className={`flex items-center gap-1 text-xs ${getGrowthColor(revenueGrowth)}`}>
-              {getGrowthIcon(revenueGrowth)}
-              {formatPercent(revenueGrowth)}
+      <CardContent className="space-y-3">
+        {/* Main KPIs grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {/* Revenue */}
+          <div className="rounded-lg border p-3 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-muted-foreground flex items-center gap-1">
+                <TrendingUp className="w-3 h-3" />
+                Chiffre d'affaires
+              </span>
+              <GrowthIndicator value={revenueGrowth} />
+            </div>
+            <div className="text-xl font-bold">{formatCurrency(currentMonth.revenue)}</div>
+            <div className="space-y-1">
+              <Progress value={targetProgress} className="h-1.5" />
+              <p className="text-[10px] text-muted-foreground">
+                Objectif : {formatCurrency(yearTarget)} ({Math.round(targetProgress)}%)
+              </p>
             </div>
           </div>
-          <div className="text-lg font-bold">{formatCurrency(currentMonth.revenue)}</div>
-          <Progress 
-            value={Math.min((currentMonth.revenue / yearTarget) * 100, 100)} 
-            className="h-1" 
-          />
-          <div className="text-xs text-muted-foreground">
-            Objectif: {formatCurrency(yearTarget)} ({Math.round((currentMonth.revenue / yearTarget) * 100)}%)
+
+          {/* Expenses */}
+          <div className="rounded-lg border p-3 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-muted-foreground flex items-center gap-1">
+                <CreditCard className="w-3 h-3" />
+                Dépenses pièces
+              </span>
+              <GrowthIndicator value={-expensesGrowth} />
+            </div>
+            <div className="text-xl font-bold text-destructive">{formatCurrency(currentMonth.expenses)}</div>
+            <p className="text-[10px] text-muted-foreground">
+              Ratio : {expenseRatio}% du CA
+            </p>
+          </div>
+
+          {/* Profit */}
+          <div className="rounded-lg border p-3 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-muted-foreground flex items-center gap-1">
+                <PiggyBank className="w-3 h-3" />
+                Profit net
+              </span>
+              <GrowthIndicator value={profitGrowth} />
+            </div>
+            <div className="text-xl font-bold text-green-600">{formatCurrency(currentMonth.profit)}</div>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] text-muted-foreground">Marge :</span>
+              <Badge 
+                variant={currentMonth.margin > 50 ? "default" : currentMonth.margin > 30 ? "secondary" : "destructive"} 
+                className="text-[10px] h-4 px-1.5"
+              >
+                {Math.round(currentMonth.margin)}%
+              </Badge>
+            </div>
           </div>
         </div>
 
-        {/* Dépenses */}
-        <div className="space-y-1">
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-muted-foreground flex items-center gap-1">
-              <CreditCard className="w-3 h-3" />
-              Dépenses pièces
-            </span>
-            <div className={`flex items-center gap-1 text-xs ${getGrowthColor(-expensesGrowth)}`}>
-              {getGrowthIcon(expensesGrowth)}
-              {formatPercent(expensesGrowth)}
+        {/* Comparison with previous month */}
+        <div className="rounded-lg bg-muted/50 p-2.5">
+          <p className="text-[10px] text-muted-foreground mb-1.5 font-medium">vs. mois précédent</p>
+          <div className="grid grid-cols-3 gap-2 text-center text-xs">
+            <div>
+              <p className="text-muted-foreground">CA</p>
+              <p className="font-semibold">{formatCurrency(previousMonth.revenue)}</p>
             </div>
-          </div>
-          <div className="text-lg font-bold text-destructive">{formatCurrency(currentMonth.expenses)}</div>
-          <div className="text-xs text-muted-foreground">
-            Ratio: {Math.round((currentMonth.expenses / currentMonth.revenue) * 100)}% du CA
-          </div>
-        </div>
-
-        {/* Profit */}
-        <div className="space-y-1">
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-muted-foreground flex items-center gap-1">
-              <PiggyBank className="w-3 h-3" />
-              Profit net
-            </span>
-            <div className={`flex items-center gap-1 text-xs ${getGrowthColor(profitGrowth)}`}>
-              {getGrowthIcon(profitGrowth)}
-              {formatPercent(profitGrowth)}
+            <div>
+              <p className="text-muted-foreground">Dépenses</p>
+              <p className="font-semibold">{formatCurrency(previousMonth.expenses)}</p>
             </div>
-          </div>
-          <div className="text-lg font-bold text-success">{formatCurrency(currentMonth.profit)}</div>
-          <div className="flex items-center gap-2 text-xs">
-            <span className="text-muted-foreground">Marge:</span>
-            <Badge variant={currentMonth.margin > 50 ? "default" : currentMonth.margin > 30 ? "secondary" : "destructive"}>
-              {Math.round(currentMonth.margin)}%
-            </Badge>
-          </div>
-        </div>
-
-        {/* Prises en charge */}
-        <div className="space-y-1">
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-muted-foreground flex items-center gap-1">
-              <Target className="w-3 h-3" />
-              Prises en charge
-            </span>
-            <Badge variant="outline" className="text-xs">
-              {currentMonth.takeoverCount} SAV
-            </Badge>
-          </div>
-          <div className="text-lg font-bold">{formatCurrency(currentMonth.takeoverAmount)}</div>
-          <div className="text-xs text-muted-foreground">
-            Moyenne: {formatCurrency(currentMonth.takeoverAmount / currentMonth.takeoverCount)} / SAV
+            <div>
+              <p className="text-muted-foreground">Profit</p>
+              <p className="font-semibold">{formatCurrency(previousMonth.profit)}</p>
+            </div>
           </div>
         </div>
       </CardContent>
