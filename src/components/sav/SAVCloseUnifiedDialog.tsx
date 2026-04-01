@@ -164,8 +164,9 @@ export function SAVCloseUnifiedDialog({
 
       const caseForPDF = freshCase ? { ...savCase, closure_history: (freshCase.closure_history || []) as any, customer: (freshCase as any).customers || savCase.customer, technician_comments: technicianComments, private_comments: privateComments } as SAVCase : { ...savCase, technician_comments: technicianComments, private_comments: privateComments };
 
-      // Générer et télécharger le PDF avec données fraîches
-      await generateSAVRestitutionPDF(caseForPDF, shop);
+      // Récupérer les messages client et générer le PDF
+      const clientMessages = await fetchClientMessages();
+      await generateSAVRestitutionPDF(caseForPDF, shop, { includeAttachments: printAttachments, clientMessages });
 
       if (sendMessage && profile) {
         // Ajouter un message dans le SAV pour indiquer la génération du document
