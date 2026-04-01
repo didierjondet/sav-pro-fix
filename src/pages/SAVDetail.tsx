@@ -16,7 +16,7 @@ import { useShopSAVTypes } from '@/hooks/useShopSAVTypes';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { QrCode, ExternalLink, ArrowLeft, Copy, Share, Save, Lock, User, Mail, Phone, MapPin, CheckCircle, X, MessageSquare, Edit, Clock, CalendarPlus } from 'lucide-react';
+import { QrCode, ExternalLink, ArrowLeft, Copy, Share, Save, Lock, User, Mail, Phone, MapPin, CheckCircle, X, MessageSquare, Edit, Clock, CalendarPlus, ScrollText } from 'lucide-react';
 import { SMSButton } from '@/components/sav/SMSButton';
 import { useNavigate } from 'react-router-dom';
 import { SAVPartsEditor } from '@/components/sav/SAVPartsEditor';
@@ -34,6 +34,8 @@ import { AITextReformulator } from '@/components/sav/AITextReformulator';
 import { EditSAVCustomerDialog } from '@/components/sav/EditSAVCustomerDialog';
 import { EditSAVDetailsDialog } from '@/components/sav/EditSAVDetailsDialog';
 import { AppointmentProposalDialog } from '@/components/agenda/AppointmentProposalDialog';
+import { useProfile } from '@/hooks/useProfile';
+import { logSAVChange, getCurrentUserName } from '@/hooks/useSAVAuditLog';
 export default function SAVDetail() {
   const {
     id
@@ -57,6 +59,8 @@ export default function SAVDetail() {
     shop
   } = useShop();
   const { getStatusInfo, isReadyStatus } = useShopSAVStatuses();
+  const { profile: userProfile, actualProfile } = useProfile();
+  const isAdmin = userProfile?.role === 'admin' || actualProfile?.role === 'super_admin';
   const { getAllTypes, getTypeInfo } = useShopSAVTypes();
   const [savCase, setSavCase] = useState<any>(null);
   const [technicianComments, setTechnicianComments] = useState('');
@@ -154,15 +158,14 @@ export default function SAVDetail() {
     if (!savCase?.id) return;
     setSavingTechnicianComments(true);
     try {
+      const oldVal = savCase.technician_comments || '';
       await updateTechnicianComments(savCase.id, technicianComments);
-
-      // Mettre à jour l'état local
-      setSavCase({
-        ...savCase,
-        technician_comments: technicianComments
-      });
+      if (oldVal !== technicianComments && savCase.shop_id) {
+        const name = await getCurrentUserName();
+        await logSAVChange(savCase.id, savCase.shop_id, 'sav_cases', 'update', 'technician_comments', oldVal || null, technicianComments || null, name);
+      }
+      setSavCase({ ...savCase, technician_comments: technicianComments });
     } catch (error) {
-      // L'erreur est déjà gérée dans le hook
     } finally {
       setSavingTechnicianComments(false);
     }
@@ -171,15 +174,14 @@ export default function SAVDetail() {
     if (!savCase?.id) return;
     setSavingComments(true);
     try {
+      const oldVal = savCase.private_comments || '';
       await updatePrivateComments(savCase.id, privateComments);
-
-      // Mettre à jour l'état local
-      setSavCase({
-        ...savCase,
-        private_comments: privateComments
-      });
+      if (oldVal !== privateComments && savCase.shop_id) {
+        const name = await getCurrentUserName();
+        await logSAVChange(savCase.id, savCase.shop_id, 'sav_cases', 'update', 'private_comments', oldVal || null, privateComments || null, name);
+      }
+      setSavCase({ ...savCase, private_comments: privateComments });
     } catch (error) {
-      // L'erreur est déjà gérée dans le hook
     } finally {
       setSavingComments(false);
     }
@@ -208,7 +210,10 @@ export default function SAVDetail() {
         throw error;
       }
       
-      console.log('updateSavType: Success');
+      if (savCase.shop_id) {
+        const name = await getCurrentUserName();
+        await logSAVChange(savCase.id, savCase.shop_id, 'sav_cases', 'update', 'sav_type', savCase.sav_type, tempSavType, name);
+      }
       
       setSavCase({
         ...savCase,
@@ -386,6 +391,13 @@ export default function SAVDetail() {
                   
                   <SAVPrintButton savCase={savCase} />
                   <SAVPartsEditor savCaseId={savCase.id} onPartsUpdated={() => {}} />
+                  
+                  {isAdmin && (
+                    <Button variant="outline" size="sm" onClick={() => navigate(`/sav/${id}/logs`)} className="border-destructive text-destructive hover:bg-destructive/10">
+                      <ScrollText className="h-4 w-4 mr-2" />
+                      Log
+                    </Button>
+                  )}
                 </div>
               </div>
 
@@ -399,6 +411,7 @@ export default function SAVDetail() {
                       </div>
                       <EditSAVCustomerDialog
                         savCaseId={savCase.id}
+                        shopId={savCase.shop_id}
                         currentCustomerId={savCase.customer_id}
                         currentCustomerName={savCase.customer ? `${savCase.customer.first_name} ${savCase.customer.last_name}` : undefined}
                         onCustomerUpdated={() => {
@@ -457,6 +470,7 @@ export default function SAVDetail() {
                   <span>Détails du dossier</span>
                   <EditSAVDetailsDialog
                     savCaseId={savCase.id}
+                    shopId={savCase.shop_id}
                     currentDetails={{
                       device_brand: savCase.device_brand,
                       device_model: savCase.device_model,

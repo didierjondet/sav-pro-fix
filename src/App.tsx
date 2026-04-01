@@ -50,6 +50,7 @@ import Reports from "./pages/Reports";
 import ChromeExtensionDownload from "./pages/ChromeExtensionDownload";
 import Agenda from "./pages/Agenda";
 import AppointmentConfirm from "./pages/AppointmentConfirm";
+import SAVLogs from "./pages/SAVLogs";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -125,6 +126,7 @@ const App = () => {
                 <Route path="/sav" element={<SAVList />} />
                 <Route path="/sav/new" element={<NewSAV />} />
                 <Route path="/sav/:id" element={<SAVDetail />} />
+                <Route path="/sav/:id/logs" element={<SAVLogs />} />
                 <Route path="/track/:slug" element={<TrackSAV />} />
                 <Route path="/parts" element={<Parts />} />
                 <Route path="/quotes" element={<Quotes />} />

@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useLimitDialogContext } from '@/contexts/LimitDialogContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { logSAVChange, getCurrentUserName } from '@/hooks/useSAVAuditLog';
 
 export interface SAVCase {
   id: string;
@@ -158,10 +159,10 @@ export function useSAVCases() {
         return;
       }
 
-      // Récupérer le SAV actuel (shop_id + closure_history en une seule requête)
+      // Récupérer le SAV actuel (shop_id + closure_history + statut actuel)
       const { data: currentCase } = await supabase
         .from('sav_cases')
-        .select('shop_id, closure_history')
+        .select('shop_id, closure_history, status')
         .eq('id', caseId)
         .single();
 
@@ -213,6 +214,12 @@ export function useSAVCases() {
           status,
           notes,
         });
+
+      // Audit log
+      if (currentCase.shop_id) {
+        const userName = await getCurrentUserName();
+        await logSAVChange(caseId, currentCase.shop_id, 'sav_cases', 'update', 'status', currentCase.status || null, status, userName);
+      }
 
       toast({
         title: "Succès",

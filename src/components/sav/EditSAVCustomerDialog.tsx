@@ -12,9 +12,11 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { multiWordSearch } from '@/utils/searchUtils';
 import { validateFrenchPhoneNumber, formatPhoneInput } from '@/utils/phoneValidation';
+import { logSAVChange, getCurrentUserName } from '@/hooks/useSAVAuditLog';
 
 interface EditSAVCustomerDialogProps {
   savCaseId: string;
+  shopId?: string;
   currentCustomerId?: string;
   currentCustomerName?: string;
   onCustomerUpdated?: () => void;
@@ -22,6 +24,7 @@ interface EditSAVCustomerDialogProps {
 
 export function EditSAVCustomerDialog({ 
   savCaseId, 
+  shopId,
   currentCustomerId, 
   currentCustomerName,
   onCustomerUpdated 
@@ -60,6 +63,14 @@ export function EditSAVCustomerDialog({
         .eq('id', savCaseId);
 
       if (error) throw error;
+
+      // Audit log
+      if (shopId) {
+        const selectedCustomer = customers.find(c => c.id === customerId);
+        const newName = selectedCustomer ? `${selectedCustomer.first_name} ${selectedCustomer.last_name}` : customerId;
+        const userName = await getCurrentUserName();
+        await logSAVChange(savCaseId, shopId, 'sav_cases', 'update', 'customer_id', currentCustomerName || null, newName, userName);
+      }
 
       toast({
         title: "Succès",

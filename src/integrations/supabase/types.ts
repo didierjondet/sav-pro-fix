@@ -1131,6 +1131,56 @@ export type Database = {
           },
         ]
       }
+      sav_audit_logs: {
+        Row: {
+          action: string
+          changed_by_name: string
+          changed_by_user_id: string | null
+          created_at: string | null
+          field_name: string | null
+          id: string
+          new_value: string | null
+          old_value: string | null
+          sav_case_id: string
+          shop_id: string
+          table_name: string
+        }
+        Insert: {
+          action: string
+          changed_by_name: string
+          changed_by_user_id?: string | null
+          created_at?: string | null
+          field_name?: string | null
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+          sav_case_id: string
+          shop_id: string
+          table_name: string
+        }
+        Update: {
+          action?: string
+          changed_by_name?: string
+          changed_by_user_id?: string | null
+          created_at?: string | null
+          field_name?: string | null
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+          sav_case_id?: string
+          shop_id?: string
+          table_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sav_audit_logs_sav_case_id_fkey"
+            columns: ["sav_case_id"]
+            isOneToOne: false
+            referencedRelation: "sav_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sav_cases: {
         Row: {
           accessories: Json | null
