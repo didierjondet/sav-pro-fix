@@ -344,7 +344,7 @@ export const generateSAVRestitutionPDF = async (savCase: SAVCase, shop?: Shop) =
   const closureHistory = (freshCaseData?.closure_history || savCase.closure_history || []) as Array<{
     closed_at: string;
     status_label: string;
-    closed_by: string;
+    closed_by_name: string;
   }>;
 
   // Récupérer les pièces du SAV avec les informations complètes
