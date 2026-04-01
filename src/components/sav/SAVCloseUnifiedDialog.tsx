@@ -78,6 +78,7 @@ export function SAVCloseUnifiedDialog({
   const [warnings, setWarnings] = useState<WarningInfo>({ noParts: false, noPurchase: false });
   const [forceClose, setForceClose] = useState(false);
   const [documentGenerated, setDocumentGenerated] = useState(false);
+  const [printAttachments, setPrintAttachments] = useState(false);
 
   const { sendMessage } = useSAVMessages(savCase.id);
   const { updateTechnicianComments } = useSAVCases();

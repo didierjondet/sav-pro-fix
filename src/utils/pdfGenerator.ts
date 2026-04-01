@@ -816,6 +816,31 @@ export const generateSAVRestitutionPDF = async (savCase: SAVCase, shop?: Shop, o
           </div>
         </div>
 
+        ${options?.includeAttachments && savCase.attachments && Array.isArray(savCase.attachments) && (savCase.attachments as any[]).length > 0 ? `
+          <div style="page-break-before: always; margin-top: 15px;">
+            <h4 style="color: #0066cc; border-bottom: 1px solid #0066cc; padding-bottom: 3px; margin: 8px 0 5px 0; font-size: 12px;">
+              Documents et photos joints
+            </h4>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+              ${(savCase.attachments as any[]).map((att: any) => {
+                const url = att.url || att;
+                const name = att.name || 'Document';
+                const isImage = typeof url === 'string' && (url.match(/\.(jpg|jpeg|png|gif|webp)/i) || url.includes('image'));
+                return isImage ? `
+                  <div style="text-align: center; margin-bottom: 8px;">
+                    <img src="${url}" style="max-width: 200px; max-height: 200px; border: 1px solid #ddd; border-radius: 4px;" />
+                    <p style="font-size: 9px; color: #666; margin-top: 2px;">${name}</p>
+                  </div>
+                ` : `
+                  <div style="padding: 6px 10px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 4px; font-size: 10px;">
+                    📎 ${name}
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          </div>
+        ` : ''}
+
         <div class="footer" style="margin-top: 8px; padding-top: 5px;">
           <p>Document généré le ${new Date().toLocaleDateString('fr-FR')} à ${new Date().toLocaleTimeString('fr-FR')}</p>
         </div>
