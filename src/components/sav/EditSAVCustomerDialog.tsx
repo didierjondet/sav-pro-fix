@@ -64,6 +64,14 @@ export function EditSAVCustomerDialog({
 
       if (error) throw error;
 
+      // Audit log
+      if (shopId) {
+        const selectedCustomer = customers.find(c => c.id === customerId);
+        const newName = selectedCustomer ? `${selectedCustomer.first_name} ${selectedCustomer.last_name}` : customerId;
+        const userName = await getCurrentUserName();
+        await logSAVChange(savCaseId, shopId, 'sav_cases', 'update', 'customer_id', currentCustomerName || null, newName, userName);
+      }
+
       toast({
         title: "Succès",
         description: "Client modifié avec succès"
