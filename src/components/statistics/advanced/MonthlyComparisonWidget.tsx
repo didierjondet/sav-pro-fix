@@ -164,7 +164,10 @@ export const MonthlyComparisonWidget = ({
                     <span className="text-muted-foreground">SAV:</span>
                     <span className="font-semibold">{month.currentSavCount}</span>
                   </div>
-                  <Badge variant={month.growth >= 0 ? "default" : "destructive"} className="text-[10px] h-5 px-1.5">
+                  <Badge 
+                    variant={month.growth === null ? "secondary" : month.growth >= 0 ? "default" : "destructive"} 
+                    className="text-[10px] h-5 px-1.5"
+                  >
                     {formatPercentWithSign(month.growth)}
                   </Badge>
                 </div>
