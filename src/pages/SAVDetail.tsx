@@ -59,6 +59,8 @@ export default function SAVDetail() {
     shop
   } = useShop();
   const { getStatusInfo, isReadyStatus } = useShopSAVStatuses();
+  const { profile: userProfile, actualProfile } = useProfile();
+  const isAdmin = userProfile?.role === 'admin' || actualProfile?.role === 'super_admin';
   const { getAllTypes, getTypeInfo } = useShopSAVTypes();
   const [savCase, setSavCase] = useState<any>(null);
   const [technicianComments, setTechnicianComments] = useState('');
