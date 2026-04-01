@@ -101,9 +101,9 @@ export default function SAVList() {
 
   // Hook pour récupérer les visites des SAV
   const savCaseIds = useMemo(() => cases?.map(c => c.id) || [], [cases]);
-  const { getVisitCount, loading: visitsLoading } = useSAVVisits(savCaseIds);
+  const { getVisitCount, loading: visitsLoading, refetch: refetchVisits } = useSAVVisits(savCaseIds);
 
-  // Mise à jour en temps réel des statuts SAV
+  // Mise à jour en temps réel des statuts SAV et des visites
   useEffect(() => {
     const channel = supabase
       .channel('sav-list-realtime')
@@ -116,8 +116,19 @@ export default function SAVList() {
         },
         (payload) => {
           console.log('SAV case status updated:', payload);
-          // Refetch les données pour avoir les dernières mises à jour
           refetch();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'sav_tracking_visits'
+        },
+        (payload) => {
+          console.log('New SAV visit recorded:', payload);
+          refetchVisits();
         }
       )
       .subscribe();
@@ -125,7 +136,7 @@ export default function SAVList() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [refetch]);
+  }, [refetch, refetchVisits]);
 
   const handleNewSAV = () => {
     if (checkAndShowLimitDialog('sav')) {
