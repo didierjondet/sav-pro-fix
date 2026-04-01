@@ -864,88 +864,46 @@ export default function Quotes() {
                           </Card>
                         ) : (
                           archivedQuotes.map((quote) => (
-                            <Card key={quote.id} className="hover:shadow-md transition-shadow border-gray-200 opacity-75">
-                              <CardContent className="p-6">
-                                <div className="flex items-center justify-between">
-                                  <div className="flex-1">
-                                    <div className="flex items-center gap-4 mb-2">
-                                      <h3 className="font-semibold text-lg text-gray-600">{formatCustomerDisplay(quote.customer_name)}</h3>
-                                      <Badge variant="outline" className="border-gray-300">
-                                        {quote.quote_number}
-                                      </Badge>
-                                      <Badge variant="secondary" className="bg-gray-100 text-gray-600">
-                                        <Archive className="h-3 w-3 mr-1" />
-                                        Archivé
-                                      </Badge>
-                                    </div>
-                                    
-                                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm text-muted-foreground">
-                                      <div>
-                                        <span className="font-medium">Total: </span>
-                                        <span className="text-lg font-bold text-foreground">
-                                          {quote.total_amount.toFixed(2)}€
-                                        </span>
-                                      </div>
-                                      
-                                      {quote.customer_phone && (
-                                        <div>
-                                          <span className="font-medium">Téléphone: </span>
-                                          <span>{quote.customer_phone}</span>
-                                        </div>
-                                      )}
-                                      
-                                      <div>
-                                        <span className="font-medium">Archivé le: </span>
-                                        <span>{new Date(quote.updated_at || quote.created_at).toLocaleDateString()}</span>
-                                      </div>
-                                      
-                                      <div className="flex items-center gap-1 text-gray-500">
-                                        <Archive className="h-3 w-3" />
-                                        <span className="font-medium text-xs">Devis archivé</span>
-                                      </div>
-                                    </div>
+                            <Card key={quote.id} className="hover:shadow-md transition-shadow opacity-75">
+                              <CardContent className="p-4 md:p-5 space-y-3">
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <h3 className="font-semibold text-base text-muted-foreground">{formatCustomerDisplay(quote.customer_name)}</h3>
+                                  <Badge variant="outline" className="text-xs">{quote.quote_number}</Badge>
+                                  <Badge variant="secondary" className="text-xs">
+                                    <Archive className="h-3 w-3 mr-1" />Archivé
+                                  </Badge>
+                                </div>
+                                
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-1 text-sm">
+                                  <div>
+                                    <span className="text-muted-foreground">Total : </span>
+                                    <span className="font-bold text-foreground">{quote.total_amount.toFixed(2)}€</span>
                                   </div>
-                                  
-                                   <div className="flex items-center gap-2 ml-4">
-                                     <Button 
-                                       variant="outline" 
-                                       size="sm"
-                                       onClick={() => handleViewQuote(quote)}
-                                     >
-                                       <Eye className="h-4 w-4 mr-1" />
-                                       Voir
-                                     </Button>
-                                     
-                                     <Button 
-                                       variant="outline" 
-                                       size="sm"
-                                       onClick={() => handleDownloadPDF(quote)}
-                                     >
-                                       <Download className="h-4 w-4 mr-1" />
-                                       PDF
-                                     </Button>
-                                     
-                                     {/* Bouton de réactivation */}
-                                     <Button 
-                                       variant="default" 
-                                       size="sm"
-                                       className="bg-blue-600 hover:bg-blue-700"
-                                       onClick={() => handleReactivateQuote(quote.id, 'draft')}
-                                     >
-                                       <RotateCcw className="h-4 w-4 mr-1" />
-                                       Réactiver
-                                     </Button>
-                                     
-                                     <Button 
-                                       variant="outline" 
-                                       size="sm"
-                                       className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                                       onClick={() => deleteQuote(quote.id)}
-                                     >
-                                       <Trash2 className="h-4 w-4 mr-1" />
-                                       Supprimer
-                                     </Button>
-                                   </div>
+                                  {quote.customer_phone && (
+                                    <div className="truncate">
+                                      <span className="text-muted-foreground">Tél : </span>
+                                      <span>{quote.customer_phone}</span>
+                                    </div>
+                                  )}
+                                  <div>
+                                    <span className="text-muted-foreground">Archivé le : </span>
+                                    <span>{new Date(quote.updated_at || quote.created_at).toLocaleDateString('fr-FR')}</span>
+                                  </div>
+                                </div>
+
+                                <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-border/50">
+                                  <Button variant="outline" size="sm" className="h-8 text-xs" onClick={() => handleViewQuote(quote)}>
+                                    <Eye className="h-3 w-3 mr-1" />Voir
+                                  </Button>
+                                  <Button variant="outline" size="sm" className="h-8 text-xs" onClick={() => handleDownloadPDF(quote)}>
+                                    <Download className="h-3 w-3 mr-1" />PDF
+                                  </Button>
+                                  <Button variant="default" size="sm" className="h-8 text-xs bg-primary hover:bg-primary/90" onClick={() => handleReactivateQuote(quote.id, 'draft')}>
+                                    <RotateCcw className="h-3 w-3 mr-1" />Réactiver
+                                  </Button>
+                                  <Button variant="outline" size="sm" className="h-8 text-xs text-destructive hover:text-destructive" onClick={() => deleteQuote(quote.id)}>
+                                    <Trash2 className="h-3 w-3 mr-1" />Supprimer
+                                  </Button>
                                 </div>
                               </CardContent>
                             </Card>
