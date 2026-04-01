@@ -1,45 +1,21 @@
 
 
-## Plan : Corriger le tracking des visites et ajouter le QR code dans les détails du dossier
+## Plan : Corriger le QR code affiché dans le dossier SAV
 
-### Problème 1 : Les visites ne sont pas enregistrées
+### Diagnostic
 
-La page `SimpleTrack.tsx` (accessible via `/track/:slug`, celle utilisée par les QR codes) ne contient **aucun appel** à `recordVisit()` ou à la RPC `record_sav_visit`. Cette fonction existe uniquement dans `TrackSAV.tsx` (l'ancienne page de tracking). Le compteur de visites reste donc toujours à 0.
+Le QR code dans la section "Détails du dossier" (`SAVDetail.tsx` ligne 586) utilise `generateFullTrackingUrl()` qui génère une URL basée sur `window.location.origin` (= l'URL Lovable preview). Le QR code imprimé sur papier utilise `generateShortTrackingUrl()` qui produit `fixway.fr/track/slug` (la bonne URL publique).
 
-**Correction** : Ajouter dans `SimpleTrack.tsx` un appel à `supabase.rpc('record_sav_visit', ...)` dans le `useEffect` initial, identique à celui de `TrackSAV.tsx`.
+### Correction
 
-### Problème 2 : QR code absent de la section "Détails du dossier"
+**Fichier : `src/pages/SAVDetail.tsx`**
 
-Actuellement le QR code n'est accessible que via un bouton qui ouvre un onglet externe. Il n'est pas affiché directement dans le dossier SAV.
+1. Importer `generateShortTrackingUrl` depuis `trackingUtils`
+2. Modifier `generateTrackingUrl()` (ligne 126-129) pour utiliser `generateShortTrackingUrl` au lieu de `generateFullTrackingUrl`
+3. Cela corrige automatiquement le QR code inline (ligne 586), le bouton QR code (ligne 131), et le lien copié (ligne 141)
 
-**Correction** : Ajouter dans la Card "Détails du dossier" (`SAVDetail.tsx`, après la date de modification) une image QR code inline via l'API `api.qrserver.com`, avec le lien de suivi en dessous.
+Résultat : le QR code affiché dans le dossier SAV pointera vers `fixway.fr/track/slug`, identique au document papier.
 
-### Fichiers modifiés
-
-| Fichier | Modification |
-|---------|-------------|
-| `src/pages/SimpleTrack.tsx` | Ajouter `recordVisit()` avec appel RPC `record_sav_visit` dans le useEffect au chargement |
-| `src/pages/SAVDetail.tsx` | Ajouter une section QR code (image inline) dans la Card "Détails du dossier" |
-
-### Détail technique
-
-**SimpleTrack.tsx** — ajouter après `fetchSAVCase()` dans le useEffect :
-```typescript
-const recordVisit = async () => {
-  if (!slug) return;
-  try {
-    const userAgent = navigator.userAgent;
-    await supabase.rpc('record_sav_visit', {
-      p_tracking_slug: slug,
-      p_visitor_ip: null,
-      p_visitor_user_agent: userAgent
-    });
-  } catch (error) {
-    console.error('Error recording visit:', error);
-  }
-};
-recordVisit();
-```
-
-**SAVDetail.tsx** — dans la CardContent "Détails du dossier", après le bloc `details_updated_at`, ajouter une section QR code avec l'image inline (128x128) et le lien texte en dessous, visible uniquement si `tracking_slug` existe.
+### Fichier impacté
+- `src/pages/SAVDetail.tsx` — 2 lignes modifiées (import + fonction)
 
