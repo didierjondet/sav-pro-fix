@@ -324,7 +324,7 @@ const getStatusText = (status: string) => {
   }
 };
 
-export const generateSAVRestitutionPDF = async (savCase: SAVCase, shop?: Shop) => {
+export const generateSAVRestitutionPDF = async (savCase: SAVCase, shop?: Shop, options?: { includeAttachments?: boolean; clientMessages?: any[] }) => {
   // Récupérer les données fraîches du SAV (closure_history inclus)
   let freshCaseData: any = null;
   try {
@@ -763,6 +763,20 @@ export const generateSAVRestitutionPDF = async (savCase: SAVCase, shop?: Shop) =
           </div>
         ` : ''}
 
+        ${options?.clientMessages && options.clientMessages.length > 0 ? `
+          <div style="margin-bottom: 8px;">
+            <h4 style="color: #28a745; border-bottom: 1px solid #28a745; padding-bottom: 3px; margin: 8px 0 5px 0; font-size: 12px;">
+              Messages du client
+            </h4>
+            ${options.clientMessages.map((msg: any) => `
+              <div style="background-color: #f0fff4; padding: 6px 8px; border-left: 3px solid #28a745; border-radius: 3px; margin-bottom: 4px;">
+                <p style="margin: 0; font-size: 9px; color: #666;">${new Date(msg.created_at).toLocaleDateString('fr-FR')} à ${new Date(msg.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })} — ${msg.sender_name}</p>
+                <p style="margin: 2px 0 0 0; white-space: pre-wrap; line-height: 1.3; font-size: 10px;">${msg.message}</p>
+              </div>
+            `).join('')}
+          </div>
+        ` : ''}
+
         ${closureHistory.length > 0 ? `
           <div style="margin-bottom: 8px;">
             <h4 style="color: #0066cc; border-bottom: 1px solid #0066cc; padding-bottom: 3px; margin: 8px 0 5px 0; font-size: 12px;">
@@ -801,6 +815,31 @@ export const generateSAVRestitutionPDF = async (savCase: SAVCase, shop?: Shop) =
             <small>${shop?.name || 'Magasin'}</small></p>
           </div>
         </div>
+
+        ${options?.includeAttachments && (savCase as any).attachments && Array.isArray((savCase as any).attachments) && ((savCase as any).attachments as any[]).length > 0 ? `
+          <div style="page-break-before: always; margin-top: 15px;">
+            <h4 style="color: #0066cc; border-bottom: 1px solid #0066cc; padding-bottom: 3px; margin: 8px 0 5px 0; font-size: 12px;">
+              Documents et photos joints
+            </h4>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+              ${((savCase as any).attachments as any[]).map((att: any) => {
+                const url = att.url || att;
+                const name = att.name || 'Document';
+                const isImage = typeof url === 'string' && (url.match(/\.(jpg|jpeg|png|gif|webp)/i) || url.includes('image'));
+                return isImage ? `
+                  <div style="text-align: center; margin-bottom: 8px;">
+                    <img src="${url}" style="max-width: 200px; max-height: 200px; border: 1px solid #ddd; border-radius: 4px;" />
+                    <p style="font-size: 9px; color: #666; margin-top: 2px;">${name}</p>
+                  </div>
+                ` : `
+                  <div style="padding: 6px 10px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 4px; font-size: 10px;">
+                    📎 ${name}
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          </div>
+        ` : ''}
 
         <div class="footer" style="margin-top: 8px; padding-top: 5px;">
           <p>Document généré le ${new Date().toLocaleDateString('fr-FR')} à ${new Date().toLocaleTimeString('fr-FR')}</p>

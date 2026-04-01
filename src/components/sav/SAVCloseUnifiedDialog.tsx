@@ -78,6 +78,7 @@ export function SAVCloseUnifiedDialog({
   const [warnings, setWarnings] = useState<WarningInfo>({ noParts: false, noPurchase: false });
   const [forceClose, setForceClose] = useState(false);
   const [documentGenerated, setDocumentGenerated] = useState(false);
+  const [printAttachments, setPrintAttachments] = useState(false);
 
   const { sendMessage } = useSAVMessages(savCase.id);
   const { updateTechnicianComments } = useSAVCases();
@@ -135,6 +136,16 @@ export function SAVCloseUnifiedDialog({
   const canSendSMS = savCase.customer?.phone && credits && !credits.is_exhausted;
   const smsCreditsRemaining = credits?.total_remaining || 0;
 
+  const fetchClientMessages = async () => {
+    const { data } = await supabase
+      .from('sav_messages')
+      .select('*')
+      .eq('sav_case_id', savCase.id)
+      .eq('sender_type', 'client')
+      .order('created_at', { ascending: true });
+    return data || [];
+  };
+
   const handleGenerateDocument = async () => {
     try {
       setIsProcessing(true);
@@ -153,8 +164,9 @@ export function SAVCloseUnifiedDialog({
 
       const caseForPDF = freshCase ? { ...savCase, closure_history: (freshCase.closure_history || []) as any, customer: (freshCase as any).customers || savCase.customer, technician_comments: technicianComments, private_comments: privateComments } as SAVCase : { ...savCase, technician_comments: technicianComments, private_comments: privateComments };
 
-      // Générer et télécharger le PDF avec données fraîches
-      await generateSAVRestitutionPDF(caseForPDF, shop);
+      // Récupérer les messages client et générer le PDF
+      const clientMessages = await fetchClientMessages();
+      await generateSAVRestitutionPDF(caseForPDF, shop, { includeAttachments: printAttachments, clientMessages });
 
       if (sendMessage && profile) {
         // Ajouter un message dans le SAV pour indiquer la génération du document
@@ -316,7 +328,8 @@ export function SAVCloseUnifiedDialog({
 
         const caseForPDF = freshCase ? { ...savCase, closure_history: (freshCase.closure_history || []) as any, customer: (freshCase as any).customers || savCase.customer, technician_comments: technicianComments, private_comments: privateComments } as SAVCase : { ...savCase, technician_comments: technicianComments, private_comments: privateComments };
 
-        await generateSAVRestitutionPDF(caseForPDF, shop);
+        const clientMessages = await fetchClientMessages();
+        await generateSAVRestitutionPDF(caseForPDF, shop, { includeAttachments: printAttachments, clientMessages });
         
         if (sendMessage && profile) {
           const senderName = `${profile.first_name} ${profile.last_name}`.trim() || 'Équipe SAV';
@@ -506,6 +519,36 @@ export function SAVCloseUnifiedDialog({
                 ) : (
                   <p className="text-sm text-muted-foreground">
                     Aucun numéro de téléphone renseigné pour ce client.
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Option d'impression des pièces jointes */}
+            <Card className="border-purple-200 bg-purple-50/50">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2">
+                  <Printer className="h-4 w-4 text-purple-600" />
+                  Documents et photos joints
+                </CardTitle>
+                <CardDescription>
+                  Inclure les pièces jointes du SAV dans le document de restitution
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="print-attachments"
+                    checked={printAttachments}
+                    onCheckedChange={setPrintAttachments}
+                  />
+                  <Label htmlFor="print-attachments" className="text-sm font-medium">
+                    Imprimer les documents et photos joints
+                  </Label>
+                </div>
+                {printAttachments && (
+                  <p className="text-xs text-muted-foreground mt-2">
+                    📎 Les images et documents attachés au SAV seront ajoutés au document de restitution
                   </p>
                 )}
               </CardContent>
