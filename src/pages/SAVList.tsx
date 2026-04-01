@@ -65,7 +65,6 @@ export default function SAVList() {
     return (localStorage.getItem('fixway_sav_view_mode') as 'standard' | 'compact') || 'standard';
   });
   const { cases, loading, deleteCase, refetch, updateCaseStatus } = useSAVCases();
-  const { cases, loading, deleteCase, refetch, updateCaseStatus } = useSAVCases();
   const { shop } = useShop();
   const { savWithUnreadMessages } = useSAVUnreadMessages();
   const { checkAndShowLimitDialog } = useLimitDialogContext();
