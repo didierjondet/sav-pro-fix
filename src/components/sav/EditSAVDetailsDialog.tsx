@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Edit, Save } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { logSAVChanges, getCurrentUserName } from '@/hooks/useSAVAuditLog';
 
 interface EditSAVDetailsDialogProps {
   savCaseId: string;

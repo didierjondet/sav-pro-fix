@@ -210,7 +210,10 @@ export default function SAVDetail() {
         throw error;
       }
       
-      console.log('updateSavType: Success');
+      if (savCase.shop_id) {
+        const name = await getCurrentUserName();
+        await logSAVChange(savCase.id, savCase.shop_id, 'sav_cases', 'update', 'sav_type', savCase.sav_type, tempSavType, name);
+      }
       
       setSavCase({
         ...savCase,
