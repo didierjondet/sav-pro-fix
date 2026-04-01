@@ -18,8 +18,6 @@ import { Loader2 } from 'lucide-react';
 export const AVAILABLE_REPORT_WIDGETS = [
   { id: 'monthly-comparison', name: 'Comparaison mensuelle', description: 'Comparatif mois par mois' },
   { id: 'financial-overview', name: 'Vue d\'ensemble financière', description: 'Graphique combiné des finances' },
-  { id: 'performance-trends', name: 'Performance SAV', description: 'Analyse des performances' },
-  { id: 'annual-stats', name: 'Statistiques annuelles', description: 'Évolution mensuelle' },
   { id: 'finance-kpis', name: 'KPIs financiers', description: 'Indicateurs du mois' },
   { id: 'quote-rejections', name: 'Raisons de refus devis', description: 'Analyse des devis refusés' },
   { id: 'late-rate-chart', name: 'Évolution des retards', description: 'Tendance du taux de retard' },
