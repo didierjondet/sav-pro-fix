@@ -59,11 +59,23 @@ export const MonthlyComparisonWidget = ({
         {/* KPI row - responsive */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <div className="rounded-lg border bg-card p-3 text-center">
-            <div className={`flex items-center justify-center gap-1 ${totalGrowth >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              {totalGrowth >= 0 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
-              <span className="text-lg font-bold">{formatPercentWithSign(totalGrowth)}</span>
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">Croissance</p>
+            {totalGrowth === null ? (
+              <>
+                <div className="flex items-center justify-center gap-1 text-blue-500">
+                  <BarChart3 className="h-4 w-4" />
+                  <span className="text-sm font-bold">Nouveau</span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">Pas de réf. N-1</p>
+              </>
+            ) : (
+              <>
+                <div className={`flex items-center justify-center gap-1 ${totalGrowth >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {totalGrowth >= 0 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
+                  <span className="text-lg font-bold">{formatPercentWithSign(totalGrowth)}</span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">Croissance</p>
+              </>
+            )}
           </div>
           
           <div className="rounded-lg border bg-card p-3 text-center">
