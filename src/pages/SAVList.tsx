@@ -629,6 +629,18 @@ export default function SAVList() {
                         <Badge variant="secondary" className="text-xs">
                           📅 {format(new Date(savCase.created_at), 'dd/MM/yyyy HH:mm', { locale: fr })}
                         </Badge>
+                        {isFinalStatus(savCase.status) && (() => {
+                          const closureHistory = savCase.closure_history as any[] | null;
+                          const lastClosure = closureHistory && closureHistory.length > 0 ? closureHistory[closureHistory.length - 1] : null;
+                          const closureDate = lastClosure?.closed_at ? new Date(lastClosure.closed_at) : new Date(savCase.updated_at);
+                          return (
+                            <Badge variant="secondary" className="text-xs bg-green-100 text-green-700 border-green-200">
+                              <CheckCircle className="h-3 w-3 mr-1" />
+                              Clôturé le {format(closureDate, 'dd/MM/yyyy HH:mm', { locale: fr })}
+                            </Badge>
+                          );
+                        })()}
+                        </Badge>
                         <Badge variant="secondary" className={`text-xs ${
                           isUrgent ? 'bg-destructive/10 text-destructive border-destructive/20' :
                           isHighPriority ? 'bg-orange-100 text-orange-700 border-orange-200' : ''
