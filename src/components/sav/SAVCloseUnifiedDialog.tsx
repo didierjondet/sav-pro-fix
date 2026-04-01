@@ -470,36 +470,6 @@ export function SAVCloseUnifiedDialog({
               </CardContent>
             </Card>
 
-            {/* Document de restitution */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="flex items-center gap-2">
-                  <Download className="h-4 w-4" />
-                  Document de restitution
-                </CardTitle>
-                <CardDescription>
-                  Générez le document final à remettre au client
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button
-                  onClick={handleGenerateDocument}
-                  disabled={isProcessing}
-                  variant="outline"
-                  className="w-full"
-                >
-                  <Printer className="h-4 w-4 mr-2" />
-                  {isProcessing ? 'Génération...' : 'Générer et télécharger'}
-                </Button>
-                
-                {documentGenerated && (
-                  <div className="flex items-center gap-2 mt-2 text-sm text-green-600">
-                    <CheckCircle className="h-4 w-4" />
-                    Document généré avec succès
-                  </div>
-                )}
-              </CardContent>
-            </Card>
           </div>
 
           {/* Colonne droite - Commentaires */}
