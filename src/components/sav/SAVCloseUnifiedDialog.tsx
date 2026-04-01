@@ -289,9 +289,37 @@ export function SAVCloseUnifiedDialog({
       // Confirmer la clôture
       onConfirm(selectedStatus);
       
+      // Générer et imprimer automatiquement le document de restitution
+      try {
+        // Petit délai pour laisser la clôture s'enregistrer en base
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Récupérer les données fraîches du SAV (avec closure_history à jour)
+        const { data: freshCase } = await supabase
+          .from('sav_cases')
+          .select('*, customers(*)')
+          .eq('id', savCase.id)
+          .single();
+
+        const caseForPDF = freshCase ? { ...savCase, closure_history: (freshCase.closure_history || []) as any, customer: (freshCase as any).customers || savCase.customer } as SAVCase : savCase;
+
+        await generateSAVRestitutionPDF(caseForPDF, shop);
+        
+        if (sendMessage && profile) {
+          const senderName = `${profile.first_name} ${profile.last_name}`.trim() || 'Équipe SAV';
+          await sendMessage(
+            `📄 Document de restitution généré pour la clôture du dossier SAV ${savCase.case_number}.`,
+            senderName,
+            'shop'
+          );
+        }
+      } catch (docError) {
+        console.error('Erreur génération document:', docError);
+      }
+      
       toast({
         title: "Dossier clôturé",
-        description: sendSMS ? "Dossier clôturé et SMS envoyé" : "Dossier clôturé avec succès",
+        description: sendSMS ? "Dossier clôturé, SMS envoyé et document généré" : "Dossier clôturé et document généré",
       });
     } catch (error) {
       console.error('Erreur lors de la clôture:', error);
@@ -470,36 +498,6 @@ export function SAVCloseUnifiedDialog({
               </CardContent>
             </Card>
 
-            {/* Document de restitution */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="flex items-center gap-2">
-                  <Download className="h-4 w-4" />
-                  Document de restitution
-                </CardTitle>
-                <CardDescription>
-                  Générez le document final à remettre au client
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button
-                  onClick={handleGenerateDocument}
-                  disabled={isProcessing}
-                  variant="outline"
-                  className="w-full"
-                >
-                  <Printer className="h-4 w-4 mr-2" />
-                  {isProcessing ? 'Génération...' : 'Générer et télécharger'}
-                </Button>
-                
-                {documentGenerated && (
-                  <div className="flex items-center gap-2 mt-2 text-sm text-green-600">
-                    <CheckCircle className="h-4 w-4" />
-                    Document généré avec succès
-                  </div>
-                )}
-              </CardContent>
-            </Card>
           </div>
 
           {/* Colonne droite - Commentaires */}
