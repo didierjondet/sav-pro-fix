@@ -391,9 +391,9 @@ export const generateSAVRestitutionPDF = async (savCase: SAVCase, shop?: Shop) =
           }
           .shop-header {
             text-align: left;
-            margin-bottom: 15px;
+            margin-bottom: 8px;
             border-bottom: 1px solid #0066cc;
-            padding-bottom: 10px;
+            padding-bottom: 5px;
           }
           .shop-logo {
             max-height: 50px;
