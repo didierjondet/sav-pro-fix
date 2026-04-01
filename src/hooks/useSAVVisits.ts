@@ -7,12 +7,12 @@ export interface SAVVisitCount {
 }
 
 export function useSAVVisits(savCaseIds: string[]) {
-  const [visits, setVisits] = useState<SAVVisitCount[]>([]);
+  const [visits, setVisits] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
 
   const fetchVisitCounts = useCallback(async () => {
     if (savCaseIds.length === 0) {
-      setVisits([]);
+      setVisits({});
       setLoading(false);
       return;
     }
@@ -20,31 +20,25 @@ export function useSAVVisits(savCaseIds: string[]) {
     try {
       setLoading(true);
       
-      const { data, error } = await supabase
-        .from('sav_tracking_visits')
-        .select('sav_case_id')
-        .in('sav_case_id', savCaseIds);
-
-      if (error) throw error;
-
-      const visitCounts: { [key: string]: number } = {};
-      data?.forEach(visit => {
-        visitCounts[visit.sav_case_id] = (visitCounts[visit.sav_case_id] || 0) + 1;
+      const { data, error } = await supabase.rpc('get_sav_visit_counts', {
+        p_sav_case_ids: savCaseIds
       });
 
-      const result = savCaseIds.map(id => ({
-        sav_case_id: id,
-        visit_count: visitCounts[id] || 0
-      }));
+      if (error) {
+        console.error('Error fetching SAV visit counts via RPC:', error);
+        return;
+      }
 
-      setVisits(result);
+      const countsMap: Record<string, number> = {};
+      if (data) {
+        (data as any[]).forEach((row: { sav_case_id: string; visit_count: number }) => {
+          countsMap[row.sav_case_id] = Number(row.visit_count);
+        });
+      }
+
+      setVisits(countsMap);
     } catch (error: any) {
       console.error('Error fetching SAV visits:', error);
-      const result = savCaseIds.map(id => ({
-        sav_case_id: id,
-        visit_count: 0
-      }));
-      setVisits(result);
     } finally {
       setLoading(false);
     }
@@ -55,8 +49,7 @@ export function useSAVVisits(savCaseIds: string[]) {
   }, [fetchVisitCounts]);
 
   const getVisitCount = useCallback((savCaseId: string): number => {
-    const visit = visits.find(v => v.sav_case_id === savCaseId);
-    return visit?.visit_count || 0;
+    return visits[savCaseId] ?? 0;
   }, [visits]);
 
   return {

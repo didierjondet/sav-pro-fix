@@ -2827,6 +2827,13 @@ export type Database = {
           total_value: number
         }[]
       }
+      get_sav_visit_counts: {
+        Args: { p_sav_case_ids: string[] }
+        Returns: {
+          sav_case_id: string
+          visit_count: number
+        }[]
+      }
       get_sms_credits_breakdown: {
         Args: { p_shop_id: string }
         Returns: {
