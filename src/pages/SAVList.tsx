@@ -469,7 +469,7 @@ export default function SAVList() {
                 </div>
               </div>
 
-          <div className="grid gap-4">
+          <div className={viewMode === 'compact' ? "grid grid-cols-1 md:grid-cols-2 gap-3" : "grid gap-4"}>
             {totalItems === 0 ? (
               <Card>
                 <CardContent className="text-center py-8">
