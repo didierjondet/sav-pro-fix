@@ -125,7 +125,7 @@ export default function SAVDetail() {
   }, [id]);
   const generateTrackingUrl = () => {
     if (!savCase?.tracking_slug) return '';
-    return generateFullTrackingUrl(savCase.tracking_slug);
+    return generateShortTrackingUrl(savCase.tracking_slug);
   };
   const generateQRCode = async () => {
     const url = generateTrackingUrl();
