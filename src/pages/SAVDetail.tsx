@@ -34,6 +34,8 @@ import { AITextReformulator } from '@/components/sav/AITextReformulator';
 import { EditSAVCustomerDialog } from '@/components/sav/EditSAVCustomerDialog';
 import { EditSAVDetailsDialog } from '@/components/sav/EditSAVDetailsDialog';
 import { AppointmentProposalDialog } from '@/components/agenda/AppointmentProposalDialog';
+import { useProfile } from '@/hooks/useProfile';
+import { logSAVChange, getCurrentUserName } from '@/hooks/useSAVAuditLog';
 export default function SAVDetail() {
   const {
     id
