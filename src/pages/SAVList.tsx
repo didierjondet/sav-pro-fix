@@ -640,7 +640,6 @@ export default function SAVList() {
                             </Badge>
                           );
                         })()}
-                        </Badge>
                         <Badge variant="secondary" className={`text-xs ${
                           isUrgent ? 'bg-destructive/10 text-destructive border-destructive/20' :
                           isHighPriority ? 'bg-orange-100 text-orange-700 border-orange-200' : ''
