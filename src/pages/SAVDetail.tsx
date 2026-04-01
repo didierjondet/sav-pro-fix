@@ -470,6 +470,7 @@ export default function SAVDetail() {
                   <span>Détails du dossier</span>
                   <EditSAVDetailsDialog
                     savCaseId={savCase.id}
+                    shopId={savCase.shop_id}
                     currentDetails={{
                       device_brand: savCase.device_brand,
                       device_model: savCase.device_model,
