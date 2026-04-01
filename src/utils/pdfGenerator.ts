@@ -324,7 +324,7 @@ const getStatusText = (status: string) => {
   }
 };
 
-export const generateSAVRestitutionPDF = async (savCase: SAVCase, shop?: Shop) => {
+export const generateSAVRestitutionPDF = async (savCase: SAVCase, shop?: Shop, options?: { includeAttachments?: boolean; clientMessages?: any[] }) => {
   // Récupérer les données fraîches du SAV (closure_history inclus)
   let freshCaseData: any = null;
   try {
