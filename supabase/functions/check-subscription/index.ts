@@ -98,12 +98,12 @@ Deno.serve(async (req) => {
         const price = await stripe.prices.retrieve(priceId);
         const amount = price.unit_amount || 0;
         
-        if (amount === 3900) { // 39€
+        if (amount === 4900) { // 49€
           subscriptionTier = "premium";
-          smsCreditsAllocated = 100;
-        } else if (amount === 5900) { // 59€
+          smsCreditsAllocated = 40;
+        } else if (amount === 7900) { // 79€
           subscriptionTier = "enterprise";
-          smsCreditsAllocated = 400;
+          smsCreditsAllocated = 100;
         }
         logStep("Used fallback price detection", { priceId, amount, subscriptionTier });
       }

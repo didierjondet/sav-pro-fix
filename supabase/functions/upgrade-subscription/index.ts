@@ -78,9 +78,9 @@ Deno.serve(async (req) => {
 });
 
 function getPriceId(plan: string): string {
-  const priceIds = {
-    premium: "price_premium_id",
-    enterprise: "price_enterprise_id"
+  const priceIds: Record<string, string> = {
+    premium: "price_1TH34QLuQ9FfK7YC9F5qeEIe",
+    enterprise: "price_1TH34RLuQ9FfK7YCqYbZfTQ4"
   };
   return priceIds[plan] || priceIds.premium;
 }

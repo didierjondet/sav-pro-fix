@@ -1,0 +1,2 @@
+UPDATE subscription_plans SET stripe_price_id = 'price_1TH34QLuQ9FfK7YC9F5qeEIe' WHERE LOWER(name) = 'premium';
+UPDATE subscription_plans SET stripe_price_id = 'price_1TH34RLuQ9FfK7YCqYbZfTQ4' WHERE LOWER(name) = 'enterprise';
