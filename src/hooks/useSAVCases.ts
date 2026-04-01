@@ -215,6 +215,12 @@ export function useSAVCases() {
           notes,
         });
 
+      // Audit log
+      if (currentCase.shop_id) {
+        const userName = await getCurrentUserName();
+        await logSAVChange(caseId, currentCase.shop_id, 'sav_cases', 'update', 'status', currentCase.status || null, status, userName);
+      }
+
       toast({
         title: "Succès",
         description: "Statut mis à jour avec succès",
