@@ -174,15 +174,14 @@ export default function SAVDetail() {
     if (!savCase?.id) return;
     setSavingComments(true);
     try {
+      const oldVal = savCase.private_comments || '';
       await updatePrivateComments(savCase.id, privateComments);
-
-      // Mettre à jour l'état local
-      setSavCase({
-        ...savCase,
-        private_comments: privateComments
-      });
+      if (oldVal !== privateComments && savCase.shop_id) {
+        const name = await getCurrentUserName();
+        await logSAVChange(savCase.id, savCase.shop_id, 'sav_cases', 'update', 'private_comments', oldVal || null, privateComments || null, name);
+      }
+      setSavCase({ ...savCase, private_comments: privateComments });
     } catch (error) {
-      // L'erreur est déjà gérée dans le hook
     } finally {
       setSavingComments(false);
     }
