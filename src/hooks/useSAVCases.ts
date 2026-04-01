@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useLimitDialogContext } from '@/contexts/LimitDialogContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { logSAVChange, getCurrentUserName } from '@/hooks/useSAVAuditLog';
 
 export interface SAVCase {
   id: string;
