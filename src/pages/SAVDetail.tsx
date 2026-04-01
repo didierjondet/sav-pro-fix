@@ -26,7 +26,7 @@ import { ReviewRequestButton } from '@/components/sav/ReviewRequestButton';
 import { SAVDocuments } from '@/components/sav/SAVDocuments';
 import { PatternLock } from '@/components/sav/PatternLock';
 import { SecurityCodesDisplay } from '@/components/sav/SecurityCodesDisplay';
-import { generateFullTrackingUrl } from '@/utils/trackingUtils';
+import { generateShortTrackingUrl } from '@/utils/trackingUtils';
 import { generateSAVRestitutionPDF } from '@/utils/pdfGenerator';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
