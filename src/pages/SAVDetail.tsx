@@ -158,15 +158,14 @@ export default function SAVDetail() {
     if (!savCase?.id) return;
     setSavingTechnicianComments(true);
     try {
+      const oldVal = savCase.technician_comments || '';
       await updateTechnicianComments(savCase.id, technicianComments);
-
-      // Mettre à jour l'état local
-      setSavCase({
-        ...savCase,
-        technician_comments: technicianComments
-      });
+      if (oldVal !== technicianComments && savCase.shop_id) {
+        const name = await getCurrentUserName();
+        await logSAVChange(savCase.id, savCase.shop_id, 'sav_cases', 'update', 'technician_comments', oldVal || null, technicianComments || null, name);
+      }
+      setSavCase({ ...savCase, technician_comments: technicianComments });
     } catch (error) {
-      // L'erreur est déjà gérée dans le hook
     } finally {
       setSavingTechnicianComments(false);
     }
