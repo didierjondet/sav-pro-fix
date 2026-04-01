@@ -52,14 +52,18 @@ import {
 export default function SAVList() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterType, setFilterType] = useState('all'); // 'all', 'client', 'internal', etc.
-  const [statusFilter, setStatusFilter] = useState('all-except-ready'); // Par défaut, masquer les SAV prêts
+  const [filterType, setFilterType] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('all-except-ready');
   const [colorFilter, setColorFilter] = useState('all');
   const [gradeFilter, setGradeFilter] = useState('all');
-  const [sortOrder, setSortOrder] = useState('priority'); // 'priority', 'oldest', 'newest'
+  const [sortOrder, setSortOrder] = useState('priority');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(20);
   const [qrCodeCase, setQrCodeCase] = useState(null);
+  const [showPrintDialog, setShowPrintDialog] = useState(false);
+  const [viewMode, setViewMode] = useState<'standard' | 'compact'>(() => {
+    return (localStorage.getItem('fixway_sav_view_mode') as 'standard' | 'compact') || 'standard';
+  });
   const [showPrintDialog, setShowPrintDialog] = useState(false);
   const { cases, loading, deleteCase, refetch, updateCaseStatus } = useSAVCases();
   const { shop } = useShop();
