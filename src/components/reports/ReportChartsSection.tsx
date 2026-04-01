@@ -136,7 +136,7 @@ export function ReportChartsSection({ selectedWidgets, dateRange, reportData }: 
   const totalGrowth = useMemo(() => {
     const currentTotal = currentYearData.reduce((sum, m) => sum + m.revenue, 0);
     const previousTotal = previousYearData.reduce((sum, m) => sum + m.revenue, 0);
-    return previousTotal > 0 ? ((currentTotal - previousTotal) / previousTotal) * 100 : 0;
+    return previousTotal > 0 ? ((currentTotal - previousTotal) / previousTotal) * 100 : null;
   }, [currentYearData, previousYearData]);
 
   const bestMonth = useMemo(() => {

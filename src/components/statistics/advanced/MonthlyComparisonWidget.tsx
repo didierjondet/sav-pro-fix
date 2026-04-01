@@ -18,7 +18,7 @@ interface MonthlyData {
 
 interface MonthlyComparisonWidgetProps {
   data: MonthlyData[];
-  totalGrowth: number;
+  totalGrowth: number | null;
   bestMonth: string;
   worstMonth: string;
 }
