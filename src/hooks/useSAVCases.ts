@@ -159,10 +159,10 @@ export function useSAVCases() {
         return;
       }
 
-      // Récupérer le SAV actuel (shop_id + closure_history en une seule requête)
+      // Récupérer le SAV actuel (shop_id + closure_history + statut actuel)
       const { data: currentCase } = await supabase
         .from('sav_cases')
-        .select('shop_id, closure_history')
+        .select('shop_id, closure_history, status')
         .eq('id', caseId)
         .single();
 
