@@ -524,6 +524,36 @@ export function SAVCloseUnifiedDialog({
               </CardContent>
             </Card>
 
+            {/* Option d'impression des pièces jointes */}
+            <Card className="border-purple-200 bg-purple-50/50">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2">
+                  <Printer className="h-4 w-4 text-purple-600" />
+                  Documents et photos joints
+                </CardTitle>
+                <CardDescription>
+                  Inclure les pièces jointes du SAV dans le document de restitution
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="print-attachments"
+                    checked={printAttachments}
+                    onCheckedChange={setPrintAttachments}
+                  />
+                  <Label htmlFor="print-attachments" className="text-sm font-medium">
+                    Imprimer les documents et photos joints
+                  </Label>
+                </div>
+                {printAttachments && (
+                  <p className="text-xs text-muted-foreground mt-2">
+                    📎 Les images et documents attachés au SAV seront ajoutés au document de restitution
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+
           </div>
 
           {/* Colonne droite - Commentaires */}
