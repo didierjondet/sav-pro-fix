@@ -75,6 +75,24 @@ export function EditSAVDetailsDialog({
 
       if (error) throw error;
 
+      // Audit logging
+      if (shopId) {
+        const userName = await getCurrentUserName();
+        const changes: { field: string; oldValue: string | null; newValue: string | null }[] = [];
+        const check = (field: string, oldVal: string | undefined, newVal: string) => {
+          const o = (oldVal || '').trim();
+          const n = newVal.trim();
+          if (o !== n) changes.push({ field, oldValue: o || null, newValue: n || null });
+        };
+        check('device_brand', currentDetails.device_brand, deviceBrand);
+        check('device_model', currentDetails.device_model, deviceModel);
+        check('device_imei', currentDetails.device_imei, deviceImei);
+        check('sku', currentDetails.sku, sku);
+        check('problem_description', currentDetails.problem_description, problemDescription);
+        check('repair_notes', currentDetails.repair_notes, repairNotes);
+        await logSAVChanges(savCaseId, shopId, 'sav_cases', changes, userName);
+      }
+
       toast({
         title: "Succès",
         description: "Détails du dossier modifiés avec succès"
