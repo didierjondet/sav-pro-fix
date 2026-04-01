@@ -54,7 +54,7 @@ export default function SAVLogs() {
           .single(),
       ]);
 
-      if (logsRes.data) setLogs(logsRes.data as AuditLog[]);
+      if (logsRes.data) setLogs(logsRes.data as unknown as AuditLog[]);
       if (caseRes.data) setCaseNumber(caseRes.data.case_number);
       setLoading(false);
     };

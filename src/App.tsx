@@ -50,6 +50,7 @@ import Reports from "./pages/Reports";
 import ChromeExtensionDownload from "./pages/ChromeExtensionDownload";
 import Agenda from "./pages/Agenda";
 import AppointmentConfirm from "./pages/AppointmentConfirm";
+import SAVLogs from "./pages/SAVLogs";
 
 const queryClient = new QueryClient({
   defaultOptions: {
