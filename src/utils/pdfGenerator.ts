@@ -816,7 +816,7 @@ export const generateSAVRestitutionPDF = async (savCase: SAVCase, shop?: Shop, o
           </div>
         </div>
 
-        ${options?.includeAttachments && savCase.attachments && Array.isArray(savCase.attachments) && (savCase.attachments as any[]).length > 0 ? `
+        ${options?.includeAttachments && (savCase as any).attachments && Array.isArray((savCase as any).attachments) && ((savCase as any).attachments as any[]).length > 0 ? `
           <div style="page-break-before: always; margin-top: 15px;">
             <h4 style="color: #0066cc; border-bottom: 1px solid #0066cc; padding-bottom: 3px; margin: 8px 0 5px 0; font-size: 12px;">
               Documents et photos joints
