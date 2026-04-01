@@ -16,6 +16,7 @@ import { logSAVChange, getCurrentUserName } from '@/hooks/useSAVAuditLog';
 
 interface EditSAVCustomerDialogProps {
   savCaseId: string;
+  shopId?: string;
   currentCustomerId?: string;
   currentCustomerName?: string;
   onCustomerUpdated?: () => void;
