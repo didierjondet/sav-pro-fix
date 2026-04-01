@@ -797,75 +797,35 @@ export default function Quotes() {
                                 </div>
 
                                 <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-border/50">
-                                     <Button 
-                                       variant="outline" 
-                                       size="sm"
-                                       onClick={() => handleViewQuote(quote)}
-                                     >
-                                       <Eye className="h-4 w-4 mr-1" />
-                                       Voir
-                                     </Button>
-                                     <Button 
-                                       variant="outline" 
-                                       size="sm"
-                                       onClick={() => handleDownloadPDF(quote)}
-                                     >
-                                       <Download className="h-4 w-4 mr-1" />
-                                       PDF
-                                     </Button>
-                                     
-                                     {/* Affichage conditionnel : Devis transformé ou bouton de conversion */}
-                                     {quote.sav_case_id ? (
-                                       <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-green-50 border border-green-200 dark:bg-green-950 dark:border-green-800">
-                                         <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
-                                         <span className="text-sm font-medium text-green-700 dark:text-green-300">
-                                           Devis transformé
-                                         </span>
-                                         <Badge 
-                                           variant="outline" 
-                                           className="ml-1"
-                                           style={{
-                                             backgroundColor: `${getTypeInfo(quote.sav_type || 'external').color}20`,
-                                             borderColor: getTypeInfo(quote.sav_type || 'external').color,
-                                             color: getTypeInfo(quote.sav_type || 'external').color
-                                           }}
-                                         >
-                                           {getTypeInfo(quote.sav_type || 'external').label}
-                                         </Badge>
-                                       </div>
-                                     ) : (
-                                       <Button 
-                                         variant="default" 
-                                         size="sm"
-                                         onClick={() => setQuoteToConvert(quote)}
-                                         className="bg-green-600 hover:bg-green-700"
-                                       >
-                                         <Plus className="h-4 w-4 mr-1" />
-                                         Convertir en SAV
-                                       </Button>
-                                     )}
-                                      
-                                      {/* Bouton d'archivage */}
-                                      <Button 
-                                        variant="outline" 
-                                        size="sm"
-                                        className="text-orange-600 hover:text-orange-700"
-                                        onClick={() => handleArchiveQuote(quote.id)}
-                                      >
-                                        <Archive className="h-4 w-4 mr-1" />
-                                        Archiver
-                                      </Button>
-                                      
-                                      <Button 
-                                        variant="outline" 
-                                        size="sm"
-                                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                                        onClick={() => deleteQuote(quote.id)}
-                                      >
-                                        <Trash2 className="h-4 w-4 mr-1" />
-                                        Supprimer
-                                      </Button>
-                                   </div>
+                                  <Button variant="outline" size="sm" className="h-8 text-xs" onClick={() => handleViewQuote(quote)}>
+                                    <Eye className="h-3 w-3 mr-1" />Voir
+                                  </Button>
+                                  <Button variant="outline" size="sm" className="h-8 text-xs" onClick={() => handleDownloadPDF(quote)}>
+                                    <Download className="h-3 w-3 mr-1" />PDF
+                                  </Button>
+                                  {quote.sav_case_id ? (
+                                    <div className="flex items-center gap-2 px-2 py-1 rounded-md bg-green-50 border border-green-200 dark:bg-green-950 dark:border-green-800">
+                                      <CheckCircle className="h-3 w-3 text-green-600 dark:text-green-400" />
+                                      <span className="text-xs font-medium text-green-700 dark:text-green-300">Transformé</span>
+                                      <Badge variant="outline" className="text-xs ml-1" style={{
+                                        backgroundColor: `${getTypeInfo(quote.sav_type || 'external').color}20`,
+                                        borderColor: getTypeInfo(quote.sav_type || 'external').color,
+                                        color: getTypeInfo(quote.sav_type || 'external').color
+                                      }}>
+                                        {getTypeInfo(quote.sav_type || 'external').label}
+                                      </Badge>
+                                    </div>
+                                  ) : (
+                                    <Button variant="default" size="sm" className="h-8 text-xs bg-green-600 hover:bg-green-700" onClick={() => setQuoteToConvert(quote)}>
+                                      <Plus className="h-3 w-3 mr-1" />Convertir en SAV
+                                    </Button>
+                                  )}
+                                  <Button variant="outline" size="sm" className="h-8 text-xs text-orange-600 hover:text-orange-700" onClick={() => handleArchiveQuote(quote.id)}>
+                                    <Archive className="h-3 w-3 mr-1" />Archiver
+                                  </Button>
+                                  <Button variant="outline" size="sm" className="h-8 text-xs text-destructive hover:text-destructive" onClick={() => deleteQuote(quote.id)}>
+                                    <Trash2 className="h-3 w-3 mr-1" />Supprimer
+                                  </Button>
                                 </div>
                               </CardContent>
                             </Card>
