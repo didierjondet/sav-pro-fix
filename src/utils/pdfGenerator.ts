@@ -822,7 +822,7 @@ export const generateSAVRestitutionPDF = async (savCase: SAVCase, shop?: Shop, o
               Documents et photos joints
             </h4>
             <div style="display: flex; flex-wrap: wrap; gap: 8px;">
-              ${(savCase.attachments as any[]).map((att: any) => {
+              ${((savCase as any).attachments as any[]).map((att: any) => {
                 const url = att.url || att;
                 const name = att.name || 'Document';
                 const isImage = typeof url === 'string' && (url.match(/\.(jpg|jpeg|png|gif|webp)/i) || url.includes('image'));
