@@ -1,46 +1,45 @@
 
 
-## Plan : Double presentation des cards SAV avec switch
+## Plan : Corriger le tracking des visites et ajouter le QR code dans les détails du dossier
 
-### Objectif
-Ajouter un switch sur la page SAV List permettant de basculer entre la vue actuelle (standard, detaillee) et une vue compacte plus claire et moins chargee. La preference est sauvegardee dans localStorage.
+### Problème 1 : Les visites ne sont pas enregistrées
 
-### Vue compacte proposee
-- Cards plus etroites, sur une grille 2 colonnes (desktop) au lieu d'une seule colonne
-- Suppression de la timeline, description du probleme, et boutons d'action individuels
-- Affichage condense : une ligne avec nom client + n° dossier, une ligne avec appareil + statut + delai
-- Badge de type SAV et indicateur de messages non lus conserves
-- Clic sur la card entiere pour naviguer vers le detail
-- Police uniformisee en `text-sm`, espacement reduit
+La page `SimpleTrack.tsx` (accessible via `/track/:slug`, celle utilisée par les QR codes) ne contient **aucun appel** à `recordVisit()` ou à la RPC `record_sav_visit`. Cette fonction existe uniquement dans `TrackSAV.tsx` (l'ancienne page de tracking). Le compteur de visites reste donc toujours à 0.
 
-### Modifications
+**Correction** : Ajouter dans `SimpleTrack.tsx` un appel à `supabase.rpc('record_sav_visit', ...)` dans le `useEffect` initial, identique à celui de `TrackSAV.tsx`.
 
-**Fichier : `src/pages/SAVList.tsx`**
+### Problème 2 : QR code absent de la section "Détails du dossier"
 
-1. Ajouter un state `viewMode` initialise depuis `localStorage.getItem('fixway_sav_view_mode') || 'standard'`
-2. Ajouter un composant Switch avec label "Vue compacte" a cote du compteur de resultats
-3. Sauvegarder dans localStorage a chaque changement
-4. Conditionner le rendu des cards :
-   - **Standard** : le rendu actuel (inchange)
-   - **Compact** : grille `grid-cols-1 md:grid-cols-2`, cards simplifiees sans timeline, sans description, sans boutons individuels, clic global vers le detail
+Actuellement le QR code n'est accessible que via un bouton qui ouvre un onglet externe. Il n'est pas affiché directement dans le dossier SAV.
 
-### Detail de la card compacte
+**Correction** : Ajouter dans la Card "Détails du dossier" (`SAVDetail.tsx`, après la date de modification) une image QR code inline via l'API `api.qrserver.com`, avec le lien de suivi en dessous.
 
-```text
-┌──────────────────────────────┐
-│ 🔴 DUPONT Jean    #SAV-0042  │
-│ iPhone 13 Pro  ● En cours    │
-│ ⏱ 2j restants   👁 3 visites │
-│ 📱 Client        💬           │
-└──────────────────────────────┘
+### Fichiers modifiés
+
+| Fichier | Modification |
+|---------|-------------|
+| `src/pages/SimpleTrack.tsx` | Ajouter `recordVisit()` avec appel RPC `record_sav_visit` dans le useEffect au chargement |
+| `src/pages/SAVDetail.tsx` | Ajouter une section QR code (image inline) dans la Card "Détails du dossier" |
+
+### Détail technique
+
+**SimpleTrack.tsx** — ajouter après `fetchSAVCase()` dans le useEffect :
+```typescript
+const recordVisit = async () => {
+  if (!slug) return;
+  try {
+    const userAgent = navigator.userAgent;
+    await supabase.rpc('record_sav_visit', {
+      p_tracking_slug: slug,
+      p_visitor_ip: null,
+      p_visitor_user_agent: userAgent
+    });
+  } catch (error) {
+    console.error('Error recording visit:', error);
+  }
+};
+recordVisit();
 ```
 
-- Bordure gauche coloree selon urgence (comme la vue standard)
-- Badge statut avec couleur personnalisee
-- Badge type SAV
-- Indicateur messages non lus
-- Fond sky-50 conserve
-
-### Fichier impacte
-- `src/pages/SAVList.tsx` uniquement
+**SAVDetail.tsx** — dans la CardContent "Détails du dossier", après le bloc `details_updated_at`, ajouter une section QR code avec l'image inline (128x128) et le lien texte en dessous, visible uniquement si `tracking_slug` existe.
 
