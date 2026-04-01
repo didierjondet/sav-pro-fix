@@ -108,8 +108,6 @@ export default function Agenda() {
         </main>
       </div>
       
-      <Footer />
-
       <AppointmentDialog
         open={isDialogOpen}
         onClose={handleCloseDialog}
