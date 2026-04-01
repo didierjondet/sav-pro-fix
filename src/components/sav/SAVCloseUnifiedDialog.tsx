@@ -91,10 +91,23 @@ export function SAVCloseUnifiedDialog({
   const savTypeInfo = getTypeInfo(savCase.sav_type);
   const showSatisfactionSurvey = savTypeInfo?.show_satisfaction_survey ?? true;
 
-  // Vérifier les avertissements au chargement
+  // Vérifier les avertissements et recharger les commentaires frais à l'ouverture
   useEffect(() => {
     if (isOpen) {
       checkWarnings();
+      // Recharger les commentaires depuis la base pour éviter l'état stale
+      const fetchFreshComments = async () => {
+        const { data } = await supabase
+          .from('sav_cases')
+          .select('technician_comments, private_comments, repair_notes')
+          .eq('id', savCase.id)
+          .single();
+        if (data) {
+          setTechnicianComments(data.technician_comments || '');
+          setPrivateComments(data.private_comments || '');
+        }
+      };
+      fetchFreshComments();
     }
   }, [isOpen, savCase.id]);
 
@@ -138,7 +151,7 @@ export function SAVCloseUnifiedDialog({
         .eq('id', savCase.id)
         .single();
 
-      const caseForPDF = freshCase ? { ...savCase, closure_history: (freshCase.closure_history || []) as any, customer: (freshCase as any).customers || savCase.customer } as SAVCase : savCase;
+      const caseForPDF = freshCase ? { ...savCase, closure_history: (freshCase.closure_history || []) as any, customer: (freshCase as any).customers || savCase.customer, technician_comments: technicianComments, private_comments: privateComments } as SAVCase : { ...savCase, technician_comments: technicianComments, private_comments: privateComments };
 
       // Générer et télécharger le PDF avec données fraîches
       await generateSAVRestitutionPDF(caseForPDF, shop);
@@ -301,7 +314,7 @@ export function SAVCloseUnifiedDialog({
           .eq('id', savCase.id)
           .single();
 
-        const caseForPDF = freshCase ? { ...savCase, closure_history: (freshCase.closure_history || []) as any, customer: (freshCase as any).customers || savCase.customer } as SAVCase : savCase;
+        const caseForPDF = freshCase ? { ...savCase, closure_history: (freshCase.closure_history || []) as any, customer: (freshCase as any).customers || savCase.customer, technician_comments: technicianComments, private_comments: privateComments } as SAVCase : { ...savCase, technician_comments: technicianComments, private_comments: privateComments };
 
         await generateSAVRestitutionPDF(caseForPDF, shop);
         
