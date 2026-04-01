@@ -306,27 +306,33 @@ export default function SAVDetail() {
           <Header onMenuClick={() => setSidebarOpen(true)} isMobileMenuOpen={sidebarOpen} />
           <main className="flex-1 overflow-y-auto p-6">
             <div className="max-w-6xl mx-auto space-y-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <Button variant="outline" size="sm" onClick={() => navigate('/sav')}>
+              {/* En-tête du dossier SAV */}
+              <div className="space-y-3">
+                {/* Ligne 1 : Retour + Numéro + Statut + Appareil */}
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                  <Button variant="outline" size="sm" onClick={() => navigate('/sav')} className="w-fit">
                     <ArrowLeft className="h-4 w-4 mr-2" />
                     Retour
                   </Button>
-                  <div>
-                    <h1 className="text-2xl font-bold">Dossier {savCase.case_number}</h1>
-                    <p className="text-muted-foreground">
-                      {savCase.device_brand} {savCase.device_model}
-                    </p>
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <h1 className="text-xl md:text-2xl font-bold whitespace-nowrap">
+                      {savCase.case_number}
+                    </h1>
+                    <Badge variant={getStatusInfo(savCase.status)?.variant || 'secondary'} className="text-sm">
+                      {getStatusInfo(savCase.status)?.label || savCase.status}
+                    </Badge>
+                    {(savCase.device_brand || savCase.device_model) && (
+                      <span className="text-muted-foreground text-sm font-medium">
+                        {[savCase.device_brand, savCase.device_model].filter(Boolean).join(' — ')}
+                      </span>
+                    )}
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Badge variant={getStatusInfo(savCase.status)?.variant || 'secondary'}>
-                    {getStatusInfo(savCase.status)?.label || savCase.status}
-                  </Badge>
-                  {/* Bouton Imprimer restitution - uniquement pour les SAV prêts */}
+
+                {/* Ligne 2 : Boutons d'action */}
+                <div className="flex items-center gap-2 flex-wrap">
                   {isReadyStatus(savCase.status) && <Button variant="outline" size="sm" onClick={async () => {
                   try {
-                    // Récupérer les données fraîches avant impression
                     const { data: freshCase } = await supabase
                       .from('sav_cases')
                       .select('*, customers(*)')
@@ -351,16 +357,13 @@ export default function SAVDetail() {
                       Imprimer restitution
                     </Button>}
                   
-                  {/* Bouton Partager */}
                   <Button variant="outline" size="sm" onClick={copyTrackingUrl}>
                     <Share className="h-4 w-4 mr-2" />
                     Partager
                   </Button>
                   
-                  {/* SMS Button - for types that require customer info */}
                   {getTypeInfo(savCase.sav_type).show_customer_info && <SMSButton customerPhone={savCase.customer?.phone || savCase.external_contact_phone || ''} customerName={`${savCase.customer?.first_name || ''} ${savCase.customer?.last_name || ''}`.trim() || savCase.external_contact_name || 'Contact'} caseNumber={savCase.case_number} caseId={savCase.id} size="sm" variant="outline" />}
                   
-                  {/* Bouton Proposer RDV - for types with customer info */}
                   {getTypeInfo(savCase.sav_type).show_customer_info && (
                     <AppointmentProposalDialog
                       savCaseId={savCase.id}
