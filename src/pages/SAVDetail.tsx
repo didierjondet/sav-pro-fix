@@ -390,6 +390,13 @@ export default function SAVDetail() {
                   
                   <SAVPrintButton savCase={savCase} />
                   <SAVPartsEditor savCaseId={savCase.id} onPartsUpdated={() => {}} />
+                  
+                  {isAdmin && (
+                    <Button variant="outline" size="sm" onClick={() => navigate(`/sav/${id}/logs`)} className="border-destructive text-destructive hover:bg-destructive/10">
+                      <ScrollText className="h-4 w-4 mr-2" />
+                      Log
+                    </Button>
+                  )}
                 </div>
               </div>
 
