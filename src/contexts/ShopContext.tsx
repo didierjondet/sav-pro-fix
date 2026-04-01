@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { getImpersonatedShopId } from '@/hooks/useProfile';
+import { getImpersonatedShopId, clearImpersonation } from '@/hooks/useProfile';
 
 export interface Shop {
   id: string;
@@ -72,32 +72,37 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Check impersonation state
-  const impersonatedShopId = getImpersonatedShopId();
-
   const { data: shop, isLoading: loading, error, refetch } = useQuery({
-    queryKey: ['shop', user?.id, impersonatedShopId],
+    queryKey: ['shop', user?.id],
     queryFn: async () => {
       if (!user) return null;
 
-      let shopId = impersonatedShopId;
+      // Get real profile first to check role
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('shop_id, role')
+        .eq('user_id', user.id)
+        .maybeSingle();
 
-      // If not impersonating, get shop_id from profile
-      if (!shopId) {
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('shop_id, role')
-          .eq('user_id', user.id)
-          .maybeSingle();
+      if (profileError) throw profileError;
 
-        if (profileError) throw profileError;
+      // Only allow impersonation for super_admin
+      const impersonatedShopId = getImpersonatedShopId();
+      let shopId: string | null = null;
 
-        // Only use impersonation for super_admin
-        if (!profileData?.shop_id && !impersonatedShopId) {
-          console.warn('⚠️ ShopContext: No shop_id found for user');
-          return null;
+      if (profileData?.role === 'super_admin' && impersonatedShopId) {
+        shopId = impersonatedShopId;
+      } else {
+        // Not super_admin: clean up any stale impersonation key
+        if (impersonatedShopId && profileData?.role !== 'super_admin') {
+          clearImpersonation();
         }
-        shopId = profileData?.shop_id;
+        shopId = profileData?.shop_id ?? null;
+      }
+
+      if (!shopId) {
+        console.warn('⚠️ ShopContext: No shop_id found for user');
+        return null;
       }
 
       if (!shopId) return null;

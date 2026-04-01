@@ -325,6 +325,28 @@ const getStatusText = (status: string) => {
 };
 
 export const generateSAVRestitutionPDF = async (savCase: SAVCase, shop?: Shop) => {
+  // Récupérer les données fraîches du SAV (closure_history inclus)
+  let freshCaseData: any = null;
+  try {
+    const { data: freshCase, error: freshError } = await supabase
+      .from('sav_cases')
+      .select('closure_history')
+      .eq('id', savCase.id)
+      .single();
+    
+    if (!freshError && freshCase) {
+      freshCaseData = freshCase;
+    }
+  } catch (e) {
+    console.error('Erreur récupération closure_history:', e);
+  }
+
+  const closureHistory = (freshCaseData?.closure_history || savCase.closure_history || []) as Array<{
+    closed_at: string;
+    status_label: string;
+    closed_by: string;
+  }>;
+
   // Récupérer les pièces du SAV avec les informations complètes
   let savCaseWithParts = savCase as any;
   
@@ -340,12 +362,9 @@ export const generateSAVRestitutionPDF = async (savCase: SAVCase, shop?: Shop) =
     if (error) {
       console.error('Erreur lors de la récupération des pièces SAV:', error);
     } else {
-      // Ajouter les pièces au SAV case avec le prix public correct
       savCaseWithParts.sav_parts = savParts?.map(part => ({
         ...part,
-        // Utiliser le nom de la pièce du stock ou le nom personnalisé
         name: part.parts?.name || part.custom_part_name || 'Pièce personnalisée',
-        // Utiliser le prix public (selling_price) de la pièce du stock ou le prix unitaire saisi
         public_price: part.parts?.selling_price || part.unit_price || 0
       })) || [];
     }
@@ -365,20 +384,20 @@ export const generateSAVRestitutionPDF = async (savCase: SAVCase, shop?: Shop) =
           body {
             font-family: Arial, sans-serif;
             margin: 0;
-            padding: 15px;
+            padding: 10px 15px;
             color: #333;
-            line-height: 1.3;
-            font-size: 12px;
+            line-height: 1.2;
+            font-size: 11px;
           }
           .shop-header {
             text-align: left;
-            margin-bottom: 15px;
+            margin-bottom: 8px;
             border-bottom: 1px solid #0066cc;
-            padding-bottom: 10px;
+            padding-bottom: 5px;
           }
           .shop-logo {
-            max-height: 50px;
-            max-width: 150px;
+            max-height: 40px;
+            max-width: 120px;
             object-fit: contain;
             margin-bottom: 5px;
           }
@@ -734,32 +753,57 @@ export const generateSAVRestitutionPDF = async (savCase: SAVCase, shop?: Shop) =
          </div>
 
         ${savCase.technician_comments ? `
-          <div class="technician-comments">
-            <h4 style="color: #0066cc; border-bottom: 1px solid #0066cc; padding-bottom: 5px; margin: 20px 0 10px 0;">
+          <div style="margin-bottom: 8px;">
+            <h4 style="color: #0066cc; border-bottom: 1px solid #0066cc; padding-bottom: 3px; margin: 8px 0 5px 0; font-size: 12px;">
               Commentaires technicien
             </h4>
-            <div style="background-color: #f8f9fa; padding: 15px; border-left: 4px solid #0066cc; border-radius: 3px; margin-bottom: 20px;">
-              <p style="margin: 0; white-space: pre-wrap; line-height: 1.4;">${savCase.technician_comments}</p>
+            <div style="background-color: #f8f9fa; padding: 8px; border-left: 3px solid #0066cc; border-radius: 3px;">
+              <p style="margin: 0; white-space: pre-wrap; line-height: 1.3; font-size: 10px;">${savCase.technician_comments}</p>
             </div>
           </div>
         ` : ''}
 
-        <div class="signature-section">
+        ${closureHistory.length > 0 ? `
+          <div style="margin-bottom: 8px;">
+            <h4 style="color: #0066cc; border-bottom: 1px solid #0066cc; padding-bottom: 3px; margin: 8px 0 5px 0; font-size: 12px;">
+              Historique de clôture
+            </h4>
+            <table style="width: 100%; border-collapse: collapse; font-size: 10px;">
+              <thead>
+                <tr style="background-color: #0066cc; color: white;">
+                  <th style="padding: 4px 6px; text-align: left;">Date & Heure</th>
+                  <th style="padding: 4px 6px; text-align: left;">Statut</th>
+                  <th style="padding: 4px 6px; text-align: left;">Clôturé par</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${closureHistory.map((entry: any) => `
+                  <tr style="border-bottom: 1px solid #ddd;">
+                    <td style="padding: 3px 6px;">${new Date(entry.closed_at).toLocaleDateString('fr-FR')} à ${new Date(entry.closed_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</td>
+                    <td style="padding: 3px 6px; font-weight: bold;">${entry.status_label}</td>
+                    <td style="padding: 3px 6px;">${entry.closed_by}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        ` : ''}
+
+        <div class="signature-section" style="margin-top: 10px;">
           <div class="signature-box">
-            <div class="signature-line"></div>
+            <div class="signature-line" style="height: 30px;"></div>
             <p><strong>Signature du client</strong><br>
             <small>Bon pour accord et réception</small></p>
           </div>
           <div class="signature-box">
-            <div class="signature-line"></div>
+            <div class="signature-line" style="height: 30px;"></div>
             <p><strong>Signature du technicien</strong><br>
             <small>${shop?.name || 'Magasin'}</small></p>
           </div>
         </div>
 
-        <div class="footer">
+        <div class="footer" style="margin-top: 8px; padding-top: 5px;">
           <p>Document généré le ${new Date().toLocaleDateString('fr-FR')} à ${new Date().toLocaleTimeString('fr-FR')}</p>
-          <p style="font-size: 10px; margin-top: 10px;">Propulsé par <strong>FixWay Pro</strong></p>
         </div>
       </body>
       </html>

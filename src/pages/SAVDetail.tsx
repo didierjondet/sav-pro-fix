@@ -326,7 +326,15 @@ export default function SAVDetail() {
                   {/* Bouton Imprimer restitution - uniquement pour les SAV prêts */}
                   {isReadyStatus(savCase.status) && <Button variant="outline" size="sm" onClick={async () => {
                   try {
-                    await generateSAVRestitutionPDF(savCase, shop);
+                    // Récupérer les données fraîches avant impression
+                    const { data: freshCase } = await supabase
+                      .from('sav_cases')
+                      .select('*, customers(*)')
+                      .eq('id', savCase.id)
+                      .single();
+                    
+                    const caseForPDF = freshCase ? { ...savCase, closure_history: (freshCase.closure_history || []) as any, customer: (freshCase as any).customers || savCase.customer } : savCase;
+                    await generateSAVRestitutionPDF(caseForPDF, shop);
                     toast({
                       title: "Document de restitution",
                       description: "Le document de restitution est en cours d'impression."

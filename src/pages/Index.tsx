@@ -5,7 +5,7 @@ import { useProfile } from '@/hooks/useProfile';
 import { useShop } from '@/contexts/ShopContext';
 import Header from '@/components/layout/Header';
 import { Sidebar } from '@/components/layout/Sidebar';
-import { Footer } from '@/components/layout/Footer';
+
 import { SAVDashboard } from '@/components/sav/SAVDashboard';
 import { SAVForm } from '@/components/sav/SAVForm';
 import { ProfileSetup } from '@/components/auth/ProfileSetup';
@@ -83,9 +83,10 @@ const Index = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
   };
   // Vérifier si les modules IA sont activés
-  const aiModulesConfig = (shop as any)?.ai_modules_config || {};
-  const isDailyAssistantEnabled = aiModulesConfig.daily_assistant_enabled !== false;
-  const isAssistantEnabled = aiModulesConfig.assistant_enabled !== false;
+  // Fail-closed: n'afficher les assistants que si shop est chargé ET la config est explicitement active
+  const aiModulesConfig = shop ? (shop as any)?.ai_modules_config : null;
+  const isDailyAssistantEnabled = aiModulesConfig ? aiModulesConfig.daily_assistant_enabled !== false : false;
+  const isAssistantEnabled = aiModulesConfig ? aiModulesConfig.assistant_enabled !== false : false;
 
   const showShopNamePrompt = profile?.role === 'admin' && shop?.name === 'Mon Magasin';
 
@@ -136,7 +137,6 @@ const Index = () => {
         </div>
       </div>
       
-      <Footer />
     </div>
   );
 };

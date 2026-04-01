@@ -131,8 +131,17 @@ export function SAVCloseUnifiedDialog({
         await updateTechnicianComments(savCase.id, technicianComments);
       }
 
-      // Générer et télécharger le PDF
-      generateSAVRestitutionPDF(savCase, shop);
+      // Récupérer les données fraîches du SAV (avec closure_history à jour)
+      const { data: freshCase } = await supabase
+        .from('sav_cases')
+        .select('*, customers(*)')
+        .eq('id', savCase.id)
+        .single();
+
+      const caseForPDF = freshCase ? { ...savCase, closure_history: (freshCase.closure_history || []) as any, customer: (freshCase as any).customers || savCase.customer } as SAVCase : savCase;
+
+      // Générer et télécharger le PDF avec données fraîches
+      await generateSAVRestitutionPDF(caseForPDF, shop);
 
       if (sendMessage && profile) {
         // Ajouter un message dans le SAV pour indiquer la génération du document
