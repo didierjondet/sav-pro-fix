@@ -5,7 +5,7 @@ import { useProfile } from '@/hooks/useProfile';
 import { useShop } from '@/contexts/ShopContext';
 import Header from '@/components/layout/Header';
 import { Sidebar } from '@/components/layout/Sidebar';
-import { Footer } from '@/components/layout/Footer';
+
 import { SAVDashboard } from '@/components/sav/SAVDashboard';
 import { SAVForm } from '@/components/sav/SAVForm';
 import { ProfileSetup } from '@/components/auth/ProfileSetup';
