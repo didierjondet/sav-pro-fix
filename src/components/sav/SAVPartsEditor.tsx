@@ -307,6 +307,22 @@ const partsToInsert = savParts.map(part => ({
 
       if (updateError) throw updateError;
 
+      // Audit log for parts changes
+      try {
+        const { data: caseData } = await supabase
+          .from('sav_cases')
+          .select('shop_id')
+          .eq('id', savCaseId)
+          .single();
+        if (caseData?.shop_id) {
+          const userName = await getCurrentUserName();
+          const partsList = savParts.map(p => `${p.part_name} x${p.quantity} (${p.unit_price}€)`).join(', ');
+          await logSAVChange(savCaseId, caseData.shop_id, 'sav_parts', 'update', 'pieces', null, partsList || 'Aucune pièce', userName);
+        }
+      } catch (e) {
+        console.error('Audit log error:', e);
+      }
+
       toast({
         title: "Succès",
         description: partsWithZeroStock.length > 0 
