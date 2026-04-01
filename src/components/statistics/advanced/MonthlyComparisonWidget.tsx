@@ -96,7 +96,7 @@ export const MonthlyComparisonWidget = ({
 
           <div className="rounded-lg border bg-card p-3 text-center">
             <span className="text-lg font-bold text-primary">
-              {data.filter(d => d.growth > 0).length}<span className="text-muted-foreground font-normal text-sm">/{data.length}</span>
+              {positiveMonths}<span className="text-muted-foreground font-normal text-sm">/{monthsWithReference.length || data.length}</span>
             </span>
             <p className="text-xs text-muted-foreground mt-1">Mois positifs</p>
           </div>
