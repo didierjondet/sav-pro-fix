@@ -136,6 +136,16 @@ export function SAVCloseUnifiedDialog({
   const canSendSMS = savCase.customer?.phone && credits && !credits.is_exhausted;
   const smsCreditsRemaining = credits?.total_remaining || 0;
 
+  const fetchClientMessages = async () => {
+    const { data } = await supabase
+      .from('sav_messages')
+      .select('*')
+      .eq('sav_case_id', savCase.id)
+      .eq('sender_type', 'client')
+      .order('created_at', { ascending: true });
+    return data || [];
+  };
+
   const handleGenerateDocument = async () => {
     try {
       setIsProcessing(true);
