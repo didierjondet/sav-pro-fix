@@ -486,16 +486,80 @@ export default function SAVList() {
             ) : (
               paginatedCases.map((savCase) => {
                 const isUrgent = savCase.delayInfo.isOverdue;
-                const isHighPriority = !isUrgent && savCase.delayInfo.totalRemainingHours <= 24; // Moins de 24h restantes
-                
-                // Vérifier s'il y a des messages non lus pour ce SAV
+                const isHighPriority = !isUrgent && savCase.delayInfo.totalRemainingHours <= 24;
                 const hasUnreadMessages = savWithUnreadMessages.some(sav => sav.id === savCase.id);
                 
-                // Fond bleu clair uniforme pour toutes les cartes SAV
-                const cardClassName = `hover:shadow-md transition-shadow bg-sky-50 ${
-                  isUrgent ? 'border-l-4 border-l-red-500' : 
-                  isHighPriority ? 'border-l-4 border-l-orange-500' : ''
-                }`;
+                const borderClass = isUrgent ? 'border-l-4 border-l-destructive' : 
+                  isHighPriority ? 'border-l-4 border-l-orange-500' : '';
+
+                if (viewMode === 'compact') {
+                  const statusInfo = getStatusInfo(savCase.status);
+                  return (
+                    <Card 
+                      key={savCase.id} 
+                      className={`hover:shadow-md transition-all cursor-pointer bg-sky-50 ${borderClass}`}
+                      onClick={() => navigate(`/sav/${savCase.id}`)}
+                    >
+                      <CardContent className="p-3">
+                        <div className="flex items-center justify-between mb-1.5">
+                          <div className="flex items-center gap-2 min-w-0 flex-1">
+                            {hasUnreadMessages && <MessageCircle className="h-4 w-4 text-blue-500 animate-pulse shrink-0" />}
+                            <span className="font-semibold text-sm truncate">
+                              {savCase.customer ? 
+                                `${savCase.customer.last_name} ${savCase.customer.first_name}` : 
+                                `#${savCase.case_number}`
+                              }
+                            </span>
+                          </div>
+                          <span className="text-xs text-muted-foreground shrink-0 ml-2">
+                            N° {savCase.case_number}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-2 mb-1.5 text-xs text-muted-foreground">
+                          <Package className="h-3 w-3 shrink-0" />
+                          <span className="truncate">{savCase.device_brand} {savCase.device_model}</span>
+                          <Badge 
+                            variant="outline" 
+                            className="text-[10px] px-1.5 py-0 shrink-0"
+                            style={statusInfo?.status_color ? { 
+                              borderColor: statusInfo.status_color, 
+                              color: statusInfo.status_color 
+                            } : undefined}
+                          >
+                            {statusInfo?.status_label || savCase.status}
+                          </Badge>
+                        </div>
+
+                        <div className="flex items-center justify-between text-xs">
+                          <div className="flex items-center gap-3">
+                            <span className={
+                              isUrgent ? 'text-destructive font-semibold' :
+                              isHighPriority ? 'text-orange-600 font-medium' : 'text-muted-foreground'
+                            }>
+                              <Clock className="h-3 w-3 inline mr-0.5" />
+                              {formatDelayText(savCase.delayInfo)}
+                            </span>
+                            {!visitsLoading && (
+                              <span className="text-muted-foreground">
+                                <Eye className="h-3 w-3 inline mr-0.5" />
+                                {getVisitCount(savCase.id)}
+                              </span>
+                            )}
+                          </div>
+                          <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${
+                            savCase.sav_type === 'client' ? 'border-red-200 text-red-700' : 'border-blue-200 text-blue-700'
+                          }`}>
+                            {getTypeInfo(savCase.sav_type).label}
+                          </Badge>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                }
+
+                // Standard view
+                const cardClassName = `hover:shadow-md transition-shadow bg-sky-50 ${borderClass}`;
                 
                 return (
                 <Card key={savCase.id} className={cardClassName}>
@@ -516,7 +580,6 @@ export default function SAVList() {
                                 `#${savCase.case_number}`
                               }
                             </h3>
-                            {/* Affichage du nombre de visites */}
                             {!visitsLoading && (
                               <Badge variant="secondary" className="text-xs">
                                 <Eye className="h-3 w-3 mr-1" />
@@ -566,7 +629,6 @@ export default function SAVList() {
                             </div>
                           )}
                           
-                           {/* N° SAV seulement si pas déjà affiché en titre (SAV interne sans client) */}
                            {!(savCase.sav_type === 'internal' && !savCase.customer) && (
                              <div className="flex items-center gap-2">
                                <span className="text-xs text-muted-foreground">N° {savCase.case_number}</span>
@@ -576,7 +638,7 @@ export default function SAVList() {
                           <div className="flex items-center gap-2">
                             <Clock className="h-4 w-4" />
                             <span className={
-                              isUrgent ? 'text-red-600 font-semibold' :
+                              isUrgent ? 'text-destructive font-semibold' :
                               isHighPriority ? 'text-orange-600 font-medium' : ''
                             }>
                               {formatDelayText(savCase.delayInfo)}
@@ -588,7 +650,6 @@ export default function SAVList() {
                           {savCase.problem_description}
                         </p>
                         
-                        {/* Timeline SAV */}
                         <div className="mt-3 pt-3 border-t border-border/30">
                           <SAVTimeline savCase={savCase} shop={shop} />
                         </div>
