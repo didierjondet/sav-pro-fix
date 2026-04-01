@@ -576,6 +576,23 @@ export default function SAVDetail() {
                       </div>
                     </div>
                   )}
+
+                  {/* QR Code de suivi inline */}
+                  {savCase.tracking_slug && (
+                    <div className="md:col-span-2 mt-4 pt-4 border-t">
+                      <div className="flex flex-col items-center gap-2">
+                        <h4 className="text-sm font-medium text-muted-foreground">QR Code de suivi</h4>
+                        <img 
+                          src={`https://api.qrserver.com/v1/create-qr-code/?size=128x128&data=${encodeURIComponent(generateTrackingUrl())}`}
+                          alt="QR Code de suivi"
+                          className="w-32 h-32"
+                        />
+                        <p className="text-xs text-muted-foreground break-all text-center max-w-xs">
+                          {generateTrackingUrl()}
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
 

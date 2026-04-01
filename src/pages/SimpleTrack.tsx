@@ -104,6 +104,21 @@ export default function SimpleTrack() {
   useEffect(() => {
     if (slug) {
       fetchSAVCase();
+      // Enregistrer la visite
+      const recordVisit = async () => {
+        try {
+          const userAgent = navigator.userAgent;
+          await supabase.rpc('record_sav_visit', {
+            p_tracking_slug: slug,
+            p_visitor_ip: null,
+            p_visitor_user_agent: userAgent
+          });
+          console.log('✅ [SimpleTrack] Visit recorded for slug:', slug);
+        } catch (error) {
+          console.error('❌ [SimpleTrack] Error recording visit:', error);
+        }
+      };
+      recordVisit();
     }
   }, [slug]);
 
