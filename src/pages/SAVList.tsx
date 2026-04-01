@@ -574,110 +574,104 @@ export default function SAVList() {
                 
                 return (
                 <Card key={savCase.id} className={cardClassName}>
-                  <CardContent className="p-6">
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-4 mb-2">
-                          <div className="flex items-center gap-2">
-                            {hasUnreadMessages && <MessageCircle className="h-5 w-5 text-blue-500 animate-pulse" />}
-                            <PartStatusIcon 
-                              key={`${savCase.id}-${savCase.status}-${savCase.updated_at}`}
-                              savCaseId={savCase.id} 
-                              savStatus={savCase.status} 
-                            />
-                            <h3 className="font-bold text-xl">
-                              {savCase.customer ? 
-                                `${savCase.customer.last_name} ${savCase.customer.first_name}` : 
-                                `#${savCase.case_number}`
-                              }
-                            </h3>
-                            {!visitsLoading && (
-                              <Badge variant="secondary" className="text-xs">
-                                <Eye className="h-3 w-3 mr-1" />
-                                {getVisitCount(savCase.id)} visite{getVisitCount(savCase.id) > 1 ? 's' : ''}
-                              </Badge>
-                            )}
-                          </div>
-                          <SAVStatusDropdown
-                            currentStatus={savCase.status}
-                            onStatusChange={(newStatus) => handleStatusChange(savCase.id, newStatus)}
+                  <CardContent className="p-4 md:p-5">
+                    <div className="flex flex-col gap-3">
+                      {/* Ligne 1 : Identité */}
+                      <div className="flex items-center justify-between flex-wrap gap-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                          {hasUnreadMessages && <MessageCircle className="h-5 w-5 text-blue-500 animate-pulse shrink-0" />}
+                          <PartStatusIcon 
+                            key={`${savCase.id}-${savCase.status}-${savCase.updated_at}`}
+                            savCaseId={savCase.id} 
+                            savStatus={savCase.status} 
                           />
-                            <Badge variant="outline" className={
-                              savCase.sav_type === 'client' ? 'border-red-200 text-red-700' : 'border-blue-200 text-blue-700'
-                            }>
-                              {getTypeInfo(savCase.sav_type).label}
-                            </Badge>
-                            <Badge variant="secondary" className="text-xs">
-                              Créé le {format(new Date(savCase.created_at), 'dd/MM/yyyy à HH:mm', { locale: fr })}
-                            </Badge>
-                         </div>
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm text-muted-foreground">
-                          <div className="flex items-center gap-2">
-                            <Package className="h-4 w-4" />
+                          <h3 className="font-bold text-lg truncate">
+                            {savCase.customer ? 
+                              `${savCase.customer.last_name} ${savCase.customer.first_name}` : 
+                              `#${savCase.case_number}`
+                            }
+                          </h3>
+                        </div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {!(savCase.sav_type === 'internal' && !savCase.customer) && (
+                            <span className="text-xs text-muted-foreground font-mono">N° {savCase.case_number}</span>
+                          )}
+                          <Badge variant="outline" className={
+                            savCase.sav_type === 'client' ? 'border-red-200 text-red-700' : 'border-blue-200 text-blue-700'
+                          }>
+                            {getTypeInfo(savCase.sav_type).label}
+                          </Badge>
+                        </div>
+                      </div>
+
+                      {/* Ligne 2 : Appareil + Statut */}
+                      <div className="flex items-center justify-between flex-wrap gap-2 text-sm text-muted-foreground">
+                        <div className="flex items-center gap-4 flex-wrap">
+                          <div className="flex items-center gap-1.5">
+                            <Package className="h-4 w-4 shrink-0" />
                             <span>{savCase.device_brand} {savCase.device_model}</span>
                           </div>
-                          
                           {savCase.device_imei && (
-                            <div className="flex items-center gap-2">
-                              <Phone className="h-4 w-4" />
+                            <div className="flex items-center gap-1.5">
+                              <Phone className="h-4 w-4 shrink-0" />
                               <span className="font-mono text-xs">{savCase.device_imei}</span>
                             </div>
                           )}
-                          
-                          {savCase.sku && (
-                            <div className="flex items-center gap-2">
-                              <span className="h-4 w-4 text-center text-xs font-semibold">#</span>
-                              <span className="font-mono text-xs">{savCase.sku}</span>
-                            </div>
-                          )}
-                          
-                          {savCase.sku && (
-                            <div className="flex items-center gap-2">
-                              <Badge variant="secondary" className="text-xs">
-                                SKU: {savCase.sku}
-                              </Badge>
-                            </div>
-                          )}
-                          
-                           {!(savCase.sav_type === 'internal' && !savCase.customer) && (
-                             <div className="flex items-center gap-2">
-                               <span className="text-xs text-muted-foreground">N° {savCase.case_number}</span>
-                             </div>
-                           )}
-                          
-                          <div className="flex items-center gap-2">
-                            <Clock className="h-4 w-4" />
-                            <span className={
-                              isUrgent ? 'text-destructive font-semibold' :
-                              isHighPriority ? 'text-orange-600 font-medium' : ''
-                            }>
-                              {formatDelayText(savCase.delayInfo)}
-                            </span>
-                          </div>
                         </div>
-                        
-                        <p className="mt-2 text-sm line-clamp-2">
+                        <SAVStatusDropdown
+                          currentStatus={savCase.status}
+                          onStatusChange={(newStatus) => handleStatusChange(savCase.id, newStatus)}
+                        />
+                      </div>
+
+                      {/* Ligne 3 : Métadonnées */}
+                      <div className="flex items-center flex-wrap gap-2">
+                        <Badge variant="secondary" className="text-xs">
+                          📅 {format(new Date(savCase.created_at), 'dd/MM/yyyy HH:mm', { locale: fr })}
+                        </Badge>
+                        <Badge variant="secondary" className={`text-xs ${
+                          isUrgent ? 'bg-destructive/10 text-destructive border-destructive/20' :
+                          isHighPriority ? 'bg-orange-100 text-orange-700 border-orange-200' : ''
+                        }`}>
+                          <Clock className="h-3 w-3 mr-1" />
+                          {formatDelayText(savCase.delayInfo)}
+                        </Badge>
+                        {!visitsLoading && (
+                          <Badge variant="secondary" className="text-xs">
+                            <Eye className="h-3 w-3 mr-1" />
+                            {getVisitCount(savCase.id)} visite{getVisitCount(savCase.id) > 1 ? 's' : ''}
+                          </Badge>
+                        )}
+                        {savCase.sku && (
+                          <Badge variant="secondary" className="text-xs font-mono">
+                            SKU: {savCase.sku}
+                          </Badge>
+                        )}
+                      </div>
+
+                      {/* Ligne 4 : Description */}
+                      {savCase.problem_description && (
+                        <p className="text-sm text-muted-foreground line-clamp-2">
                           {savCase.problem_description}
                         </p>
-                        
-                        <div className="mt-3 pt-3 border-t border-border/30">
-                          <SAVTimeline savCase={savCase} shop={shop} />
-                        </div>
+                      )}
+
+                      {/* Ligne 5 : Timeline */}
+                      <div className="pt-2 border-t border-border/30">
+                        <SAVTimeline savCase={savCase} shop={shop} />
                       </div>
-                      
-                      <div className="flex items-center gap-2 ml-4">
+
+                      {/* Ligne 6 : Actions */}
+                      <div className="flex items-center justify-end gap-2 pt-2 border-t border-border/30 flex-wrap">
                         <Button variant="outline" size="sm" onClick={() => navigate(`/sav/${savCase.id}`)}>
                           <Eye className="h-4 w-4 mr-1" />
                           Voir
                         </Button>
-                        
                         <SAVPrintButton 
                           savCase={savCase}
                           variant="outline"
                           size="sm"
                         />
-                        
                         <Button 
                           variant="outline" 
                           size="sm"
