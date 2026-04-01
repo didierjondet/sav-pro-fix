@@ -11,6 +11,7 @@ import { logSAVChanges, getCurrentUserName } from '@/hooks/useSAVAuditLog';
 
 interface EditSAVDetailsDialogProps {
   savCaseId: string;
+  shopId?: string;
   currentDetails: {
     device_brand?: string;
     device_model?: string;
@@ -24,6 +25,7 @@ interface EditSAVDetailsDialogProps {
 
 export function EditSAVDetailsDialog({ 
   savCaseId, 
+  shopId,
   currentDetails,
   onDetailsUpdated 
 }: EditSAVDetailsDialogProps) {
