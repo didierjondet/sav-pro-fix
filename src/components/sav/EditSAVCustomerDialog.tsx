@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
 import { Edit, Plus, Search, User, Mail, Phone, Save, X } from 'lucide-react';
 import { useCustomers } from '@/hooks/useCustomers';
+import { useAllCustomers } from '@/hooks/useAllCustomers';
 import { useProfile } from '@/hooks/useProfile';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
