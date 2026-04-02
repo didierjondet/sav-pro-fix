@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { getImpersonatedShopId, clearImpersonation } from '@/hooks/useProfile';
+import { initializeDefaultWidgetConfigurations } from '@/hooks/useWidgetConfiguration';
 
 export interface Shop {
   id: string;
