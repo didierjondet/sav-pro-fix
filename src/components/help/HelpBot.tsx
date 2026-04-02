@@ -3,7 +3,6 @@ import { MessageCircleQuestion, X, Send, RotateCcw, AlertTriangle } from 'lucide
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Badge } from '@/components/ui/badge';
 import { useHelpBot } from '@/hooks/useHelpBot';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLocation } from 'react-router-dom';
@@ -30,10 +29,6 @@ const HelpBot: React.FC = () => {
     getUserContext,
   } = useHelpBot();
 
-  // Don't show on public routes or when not authenticated
-  const isPublicRoute = PUBLIC_ROUTES.some(r => location.pathname === r || location.pathname.startsWith(r));
-  if (!user || isPublicRoute) return null;
-
   const userContext = getUserContext();
 
   // Auto-scroll to bottom
@@ -42,6 +37,10 @@ const HelpBot: React.FC = () => {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages, isLoading]);
+
+  // Don't show on public routes or when not authenticated
+  const isPublicRoute = PUBLIC_ROUTES.some(r => location.pathname === r || location.pathname.startsWith(r));
+  if (!user || isPublicRoute) return null;
 
   const handleSend = async () => {
     const trimmed = input.trim();
@@ -68,7 +67,7 @@ const HelpBot: React.FC = () => {
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-4 right-4 z-50 h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-lg hover:opacity-90 transition-all flex items-center justify-center animate-in fade-in"
+          className="fixed bottom-4 right-4 z-50 h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-lg hover:opacity-90 transition-all flex items-center justify-center"
           aria-label="Ouvrir l'assistant"
         >
           <MessageCircleQuestion className="h-6 w-6" />
@@ -77,7 +76,7 @@ const HelpBot: React.FC = () => {
 
       {/* Chat panel */}
       {isOpen && (
-        <div className="fixed bottom-4 right-4 z-50 w-[380px] max-h-[560px] flex flex-col rounded-2xl border bg-background shadow-2xl animate-in slide-in-from-bottom-4 fade-in">
+        <div className="fixed bottom-4 right-4 z-50 w-[380px] max-h-[560px] flex flex-col rounded-2xl border bg-background shadow-2xl">
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b bg-primary rounded-t-2xl text-primary-foreground">
             <div className="flex items-center gap-2">
@@ -99,16 +98,16 @@ const HelpBot: React.FC = () => {
             <div ref={scrollRef} className="p-4 space-y-3">
               {/* Configuration warnings */}
               {(!userContext.profileComplete || !userContext.shopComplete) && messages.length === 0 && (
-                <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-3 text-sm">
-                  <div className="flex items-center gap-2 font-medium text-amber-700 dark:text-amber-400 mb-1">
+                <div className="bg-accent/50 border border-accent rounded-lg p-3 text-sm">
+                  <div className="flex items-center gap-2 font-medium text-foreground mb-1">
                     <AlertTriangle className="h-4 w-4" />
                     Configuration incomplète
                   </div>
                   {!userContext.profileComplete && (
-                    <p className="text-amber-600 dark:text-amber-500 text-xs">• Complétez votre profil (nom, prénom, téléphone) dans Paramètres</p>
+                    <p className="text-muted-foreground text-xs">• Complétez votre profil (nom, prénom, téléphone) dans Paramètres</p>
                   )}
                   {!userContext.shopComplete && (
-                    <p className="text-amber-600 dark:text-amber-500 text-xs">• Configurez votre boutique (nom, email) dans Paramètres</p>
+                    <p className="text-muted-foreground text-xs">• Configurez votre boutique (nom, email) dans Paramètres</p>
                   )}
                 </div>
               )}
