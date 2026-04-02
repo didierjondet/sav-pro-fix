@@ -597,9 +597,9 @@ export default function SAVList() {
                             }
                           </h3>
                           {savCase.customer?.phone && (
-                            <a href={`tel:${savCase.customer.phone}`} className="flex items-center gap-1 text-muted-foreground hover:text-primary shrink-0">
+                            <a href={`tel:${savCase.customer.phone}`} className="flex items-center gap-1.5 text-muted-foreground hover:text-primary shrink-0">
                               <Phone className="h-4 w-4" />
-                              <span className="text-xs">{savCase.customer.phone}</span>
+                              <span className="text-sm font-medium tracking-wide">{savCase.customer.phone.replace(/\D/g, '').replace(/(\d{2})(?=\d)/g, '$1 ')}</span>
                             </a>
                           )}
                         </div>
