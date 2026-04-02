@@ -504,7 +504,7 @@ export default function SAVList() {
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-medium">Tri:</span>
                     <Select value={sortOrder} onValueChange={setSortOrder}>
-                      <SelectTrigger className="w-48">
+                      <SelectTrigger className={cn("w-48", isFilterModified('sortOrder', sortOrder) && "ring-2 ring-orange-400 bg-orange-50")}>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
