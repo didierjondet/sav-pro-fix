@@ -51,6 +51,7 @@ import ChromeExtensionDownload from "./pages/ChromeExtensionDownload";
 import Agenda from "./pages/Agenda";
 import AppointmentConfirm from "./pages/AppointmentConfirm";
 import SAVLogs from "./pages/SAVLogs";
+import HelpBot from "./components/help/HelpBot";
 
 const queryClient = new QueryClient({
   defaultOptions: {
