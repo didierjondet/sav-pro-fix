@@ -51,6 +51,7 @@ import ChromeExtensionDownload from "./pages/ChromeExtensionDownload";
 import Agenda from "./pages/Agenda";
 import AppointmentConfirm from "./pages/AppointmentConfirm";
 import SAVLogs from "./pages/SAVLogs";
+import HelpBot from "./components/help/HelpBot";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -163,6 +164,7 @@ const App = () => {
                 <Route path="/chrome-extension-download" element={<ChromeExtensionDownload />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
+              <HelpBot />
               </BrowserRouter>
               </TooltipProvider>
             </LimitDialogProvider>

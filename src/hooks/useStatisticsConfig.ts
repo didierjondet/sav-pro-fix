@@ -21,36 +21,33 @@ export interface StatisticModule {
 
 const DEFAULT_MODULES: StatisticModule[] = [
   // Modules du tableau de bord SAV (/dashboard)
-  // Widget sav-types-grid supprimé
   { id: 'finance-kpis', name: 'Indicateurs financiers (mois)', description: 'CA, coûts, marge, prises en charge', enabled: true, order: 1 },
-  { id: 'storage-usage', name: 'Espace de stockage', description: 'Utilisation du stockage', enabled: true, order: 2 },
-  // Widget monthly-profitability supprimé
-  { id: 'annual-stats', name: 'Statistiques annuelles', description: 'Évolution mensuelle (année)', enabled: true, order: 4 },
+  { id: 'storage-usage', name: 'Espace de stockage', description: 'Utilisation du stockage', enabled: false, order: 2 },
+  { id: 'annual-stats', name: 'Statistiques annuelles', description: 'Évolution mensuelle (année)', enabled: false, order: 4 },
 
   // Widgets avancés combinés - Page Statistiques
   { id: 'financial-overview', name: 'Vue d\'ensemble financière', description: 'Graphique combiné des finances avec KPIs', enabled: true, order: 5 },
-  { id: 'performance-trends', name: 'Tendances de performance', description: 'Analyse combinée des performances SAV', enabled: true, order: 6 },
+  { id: 'performance-trends', name: 'Tendances de performance', description: 'Analyse combinée des performances SAV', enabled: false, order: 6 },
   { id: 'parts-usage-heatmap', name: 'Utilisation des pièces', description: 'Heatmap et analyse d\'usage des pièces', enabled: true, order: 7 },
 
-  // KPIs individuels - Plus petits pour compléter
-  { id: 'kpi-revenue', name: 'Chiffre d\'affaires', description: 'Revenus totaux', enabled: true, order: 8 },
-  { id: 'kpi-expenses', name: 'Dépenses', description: 'Coût des pièces', enabled: true, order: 9 },
-  { id: 'kpi-profit', name: 'Profit', description: 'Bénéfices nets', enabled: true, order: 10 },
-  { id: 'kpi-takeover', name: 'Prises en charge', description: 'Montant et nombre', enabled: true, order: 11 },
+  // KPIs individuels
+  { id: 'kpi-revenue', name: 'Chiffre d\'affaires', description: 'Revenus totaux', enabled: false, order: 8 },
+  { id: 'kpi-expenses', name: 'Dépenses', description: 'Coût des pièces', enabled: false, order: 9 },
+  { id: 'kpi-profit', name: 'Profit', description: 'Bénéfices nets', enabled: false, order: 10 },
+  { id: 'kpi-takeover', name: 'Prises en charge', description: 'Montant et nombre', enabled: false, order: 11 },
   { id: 'sav-stats', name: 'Temps moyen de traitement', description: 'Durée moyenne ouverture → fermeture', enabled: true, order: 12 },
   { id: 'late-rate', name: 'Taux de retard', description: 'SAV en retard', enabled: true, order: 13 },
   
   // Graphiques spécialisés
-  // Widget profitability-chart supprimé
   { id: 'top-parts-chart', name: 'Top pièces utilisées', description: 'Classement des pièces', enabled: true, order: 15 },
   { id: 'late-rate-chart', name: 'Évolution retards', description: 'Tendance du taux de retard', enabled: true, order: 16 },
   { id: 'top-devices', name: 'Podium téléphones', description: 'Téléphones les plus réparés', enabled: true, order: 18 },
   
   // Widgets de comparaison
-  { id: 'monthly-comparison', name: 'Comparaison mensuelle', description: 'Comparatif mois par mois', enabled: true, order: 19 },
+  { id: 'monthly-comparison', name: 'Comparaison mensuelle', description: 'Comparatif mois par mois', enabled: false, order: 19 },
   { id: 'revenue-breakdown', name: 'Répartition du CA', description: 'Analyse détaillée des revenus', enabled: true, order: 20 },
   { id: 'customer-satisfaction', name: 'Satisfaction client', description: 'Indicateurs de satisfaction', enabled: true, order: 21 },
-  { id: 'quote-rejections', name: 'Raisons de refus devis', description: 'Analyse des devis refusés', enabled: true, order: 22 }
+  { id: 'quote-rejections', name: 'Raisons de refus devis', description: 'Analyse des devis refusés', enabled: false, order: 22 }
 ];
 
 const STORAGE_KEY = 'statisticsConfig';
