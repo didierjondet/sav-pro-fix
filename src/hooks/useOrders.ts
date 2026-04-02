@@ -131,9 +131,9 @@ export function useOrders() {
         .eq('shop_id', profile.shop_id);
 
       const formattedSavParts = savParts?.filter(item => {
-        // Ne montrer que les pièces avec stock insuffisant
-        const availableStock = Math.max(0, (item.parts.quantity || 0) - (item.parts.reserved_quantity || 0));
-        if (availableStock >= item.quantity) return false;
+        // Ne montrer que les pièces dont le stock physique est insuffisant
+        const physicalStock = item.parts.quantity || 0;
+        if (physicalStock >= item.quantity) return false;
 
         // Vérifier si cette combinaison part_id + sav_case_id n'a pas déjà été commandée
         const alreadyOrdered = existingOrders?.some(order => 
