@@ -43,7 +43,8 @@ export function EditSAVCustomerDialog({
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
   
-  const { customers, createCustomer } = useCustomers();
+  const { customers } = useAllCustomers();
+  const { createCustomer } = useCustomers();
   const { profile } = useProfile();
   const { toast } = useToast();
 
