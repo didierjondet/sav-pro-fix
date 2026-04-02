@@ -44,6 +44,7 @@ import {
   Search,
   Filter,
   Phone,
+  Hash,
   MessageCircle,
   LayoutGrid,
   LayoutList
