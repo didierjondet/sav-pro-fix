@@ -415,7 +415,7 @@ export default function SAVList() {
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-medium">Couleur:</span>
                     <Select value={colorFilter} onValueChange={setColorFilter}>
-                      <SelectTrigger className="w-40">
+                      <SelectTrigger className={cn("w-40", isFilterModified('colorFilter', colorFilter) && "ring-2 ring-orange-400 bg-orange-50")}>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
