@@ -266,13 +266,14 @@ export default function Settings() {
     setSaving(true);
     try {
       // Exclure sav_alert_days et les paramètres IA de la sauvegarde directe
-      const { sav_alert_days, ai_daily_assistant_enabled, ai_assistant_enabled, ...shopDataToSave } = shopForm;
+      const { sav_alert_days, ai_daily_assistant_enabled, ai_assistant_enabled, ai_helpbot_enabled, ...shopDataToSave } = shopForm;
       
       // Construire ai_modules_config
       const aiModulesConfig = {
         ...(shop as any)?.ai_modules_config,
         daily_assistant_enabled: ai_daily_assistant_enabled,
-        assistant_enabled: ai_assistant_enabled
+        assistant_enabled: ai_assistant_enabled,
+        helpbot_enabled: ai_helpbot_enabled
       };
       
       // Sauvegarder les données du shop avec ai_modules_config
