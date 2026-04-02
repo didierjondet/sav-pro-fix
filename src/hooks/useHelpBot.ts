@@ -147,6 +147,7 @@ export function useHelpBot() {
           message: content,
           history,
           userContext: getUserContext(),
+          shopId: shop?.id,
         },
       });
 
