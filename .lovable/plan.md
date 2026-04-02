@@ -1,21 +1,26 @@
 
 
-## Plan : Corriger la recherche client dans la popup de modification SAV
+## Plan : Corriger la logique de stock insuffisant dans l'onglet SAV des commandes
 
-### Problème
-`EditSAVCustomerDialog.tsx` utilise `useCustomers()` (ligne 45) qui est **paginé** (10 éléments par page par défaut). La recherche ne fonctionne donc que sur les 10 premiers clients. Il faut utiliser `useAllCustomers()` qui charge tous les clients de la boutique.
+### Probleme
+Dans `fetchPartsNeededForSAV` (ligne 135 de `useOrders.ts`), le calcul du stock disponible soustrait `reserved_quantity` du stock total. Or `reserved_quantity` inclut deja la reservation faite pour CE meme SAV. Resultat : une piece avec stock=5, reserved=3 (pour ce SAV), besoin=3 → stock disponible calcule = 2 < 3 → la piece apparait comme manquante alors que le stock physique est suffisant.
 
-### Modification
+### Correction
 
-**Fichier : `src/components/sav/EditSAVCustomerDialog.tsx`**
+**Fichier : `src/hooks/useOrders.ts`** (ligne 133-136)
 
-1. Remplacer l'import `useCustomers` par `useAllCustomers`
-2. Remplacer `const { customers, createCustomer } = useCustomers()` par `const { customers } = useAllCustomers()` + import séparé de `useCustomers` uniquement pour `createCustomer`
+Remplacer le calcul du stock disponible par une verification du stock physique brut (`quantity`) contre la quantite necessaire. Si le stock physique couvre le besoin, la piece ne doit pas apparaitre :
 
-Concrètement :
-- Import : `useAllCustomers` au lieu de `useCustomers` pour la liste
-- Garder `useCustomers` uniquement pour la fonction `createCustomer`
+```ts
+const formattedSavParts = savParts?.filter(item => {
+  // Ne montrer que les pièces dont le stock physique est insuffisant
+  const physicalStock = item.parts.quantity || 0;
+  if (physicalStock >= item.quantity) return false;
+  // ...
+```
 
-### Fichier impacté
-- `src/components/sav/EditSAVCustomerDialog.tsx`
+La `reserved_quantity` sert a calculer le stock disponible pour de NOUVELLES reservations, pas a verifier si une reservation existante est couverte. Si le stock physique >= quantite necessaire, le travail peut etre fait.
+
+### Fichier impacte
+- `src/hooks/useOrders.ts`
 
