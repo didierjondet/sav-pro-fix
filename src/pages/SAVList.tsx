@@ -47,8 +47,37 @@ import {
   Hash,
   MessageCircle,
   LayoutGrid,
-  LayoutList
+  LayoutList,
+  RotateCcw
 } from 'lucide-react';
+
+const STORAGE_KEY = 'fixway_sav_filters';
+
+const DEFAULT_FILTERS = {
+  filterType: 'all',
+  statusFilter: 'all-except-ready',
+  colorFilter: 'all',
+  gradeFilter: 'all',
+  sortOrder: 'priority',
+  itemsPerPage: 20,
+};
+
+function loadSavedFilters() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    const today = new Date().toISOString().slice(0, 10);
+    if (parsed.savedDate !== today) {
+      localStorage.removeItem(STORAGE_KEY);
+      return null;
+    }
+    return parsed;
+  } catch {
+    localStorage.removeItem(STORAGE_KEY);
+    return null;
+  }
+}
 
 export default function SAVList() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
