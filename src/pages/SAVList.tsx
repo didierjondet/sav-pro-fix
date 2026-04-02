@@ -47,19 +47,49 @@ import {
   Hash,
   MessageCircle,
   LayoutGrid,
-  LayoutList
+  LayoutList,
+  RotateCcw
 } from 'lucide-react';
+
+const STORAGE_KEY = 'fixway_sav_filters';
+
+const DEFAULT_FILTERS = {
+  filterType: 'all',
+  statusFilter: 'all-except-ready',
+  colorFilter: 'all',
+  gradeFilter: 'all',
+  sortOrder: 'priority',
+  itemsPerPage: 20,
+};
+
+function loadSavedFilters() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    const today = new Date().toISOString().slice(0, 10);
+    if (parsed.savedDate !== today) {
+      localStorage.removeItem(STORAGE_KEY);
+      return null;
+    }
+    return parsed;
+  } catch {
+    localStorage.removeItem(STORAGE_KEY);
+    return null;
+  }
+}
 
 export default function SAVList() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const saved = useMemo(() => loadSavedFilters(), []);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterType, setFilterType] = useState('all');
-  const [statusFilter, setStatusFilter] = useState('all-except-ready');
-  const [colorFilter, setColorFilter] = useState('all');
-  const [gradeFilter, setGradeFilter] = useState('all');
-  const [sortOrder, setSortOrder] = useState('priority');
+  const [filterType, setFilterType] = useState(saved?.filterType ?? DEFAULT_FILTERS.filterType);
+  const [statusFilter, setStatusFilter] = useState(saved?.statusFilter ?? DEFAULT_FILTERS.statusFilter);
+  const [colorFilter, setColorFilter] = useState(saved?.colorFilter ?? DEFAULT_FILTERS.colorFilter);
+  const [gradeFilter, setGradeFilter] = useState(saved?.gradeFilter ?? DEFAULT_FILTERS.gradeFilter);
+  const [sortOrder, setSortOrder] = useState(saved?.sortOrder ?? DEFAULT_FILTERS.sortOrder);
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(20);
+  const [itemsPerPage, setItemsPerPage] = useState(saved?.itemsPerPage ?? DEFAULT_FILTERS.itemsPerPage);
   const [qrCodeCase, setQrCodeCase] = useState(null);
   const [showPrintDialog, setShowPrintDialog] = useState(false);
   const [viewMode, setViewMode] = useState<'standard' | 'compact'>(() => {
@@ -99,6 +129,31 @@ export default function SAVList() {
       setStatusFilter('ready'); // Les prises en charge sont normalement des SAV prêts
     }
   }, [searchParams]);
+
+  // Sauvegarder les filtres dans le localStorage à chaque changement
+  useEffect(() => {
+    const today = new Date().toISOString().slice(0, 10);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      filterType,
+      statusFilter,
+      colorFilter,
+      gradeFilter,
+      sortOrder,
+      itemsPerPage,
+      savedDate: today,
+    }));
+  }, [filterType, statusFilter, colorFilter, gradeFilter, sortOrder, itemsPerPage]);
+
+  const resetFilters = useCallback(() => {
+    setFilterType(DEFAULT_FILTERS.filterType);
+    setStatusFilter(DEFAULT_FILTERS.statusFilter);
+    setColorFilter(DEFAULT_FILTERS.colorFilter);
+    setGradeFilter(DEFAULT_FILTERS.gradeFilter);
+    setSortOrder(DEFAULT_FILTERS.sortOrder);
+    setItemsPerPage(DEFAULT_FILTERS.itemsPerPage);
+    localStorage.removeItem(STORAGE_KEY);
+    toast.success('Filtres réinitialisés');
+  }, []);
 
   // Hook pour récupérer les visites des SAV
   const savCaseIds = useMemo(() => cases?.map(c => c.id) || [], [cases]);
@@ -456,6 +511,17 @@ export default function SAVList() {
                       </SelectContent>
                     </Select>
                   </div>
+
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={resetFilters}
+                    className="text-muted-foreground hover:text-destructive shrink-0"
+                    title="Réinitialiser les filtres"
+                  >
+                    <RotateCcw className="h-4 w-4 mr-1" />
+                    Réinitialiser
+                  </Button>
                   
                   {/* Switch vue compacte + compteur */}
                   <div className="flex items-center gap-4 ml-auto">
