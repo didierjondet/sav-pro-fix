@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
 import { Edit, Plus, Search, User, Mail, Phone, Save, X } from 'lucide-react';
 import { useCustomers } from '@/hooks/useCustomers';
+import { useAllCustomers } from '@/hooks/useAllCustomers';
 import { useProfile } from '@/hooks/useProfile';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -42,7 +43,8 @@ export function EditSAVCustomerDialog({
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
   
-  const { customers, createCustomer } = useCustomers();
+  const { customers } = useAllCustomers();
+  const { createCustomer } = useCustomers();
   const { profile } = useProfile();
   const { toast } = useToast();
 
