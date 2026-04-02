@@ -397,7 +397,7 @@ export default function SAVList() {
                     <Filter className="h-4 w-4 text-muted-foreground" />
                     <span className="text-sm font-medium">Type:</span>
                     <Select value={filterType} onValueChange={setFilterType}>
-                      <SelectTrigger className="w-40">
+                      <SelectTrigger className={cn("w-40", isFilterModified('filterType', filterType) && "ring-2 ring-orange-400 bg-orange-50")}>
                         <SelectValue />
                       </SelectTrigger>
                         <SelectContent>
