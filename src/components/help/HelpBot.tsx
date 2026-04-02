@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { MessageCircleQuestion, X, Send, RotateCcw, AlertTriangle } from 'lucide-react';
+import { MessageCircleQuestion, X, Send, RotateCcw, AlertTriangle, TicketCheck, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -14,13 +14,9 @@ const PUBLIC_PREFIX = ['/track/', '/quote/', '/satisfaction/', '/rdv/', '/shop/'
 function renderSimpleMarkdown(text: string) {
   const lines = text.split('\n');
   return lines.map((line, i) => {
-    // Bold
     let html = line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-    // Italic
     html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
-    // Links
     html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener" class="underline text-primary">$1</a>');
-    // List items
     if (/^[-•]\s/.test(html)) {
       html = '<li class="ml-4 list-disc">' + html.replace(/^[-•]\s/, '') + '</li>';
     } else if (/^\d+\.\s/.test(html)) {
@@ -47,10 +43,13 @@ const HelpBot: React.FC = () => {
     messages,
     isLoading,
     faqItems,
+    pendingEscalation,
     sendMessage,
     clearMessages,
     incrementFAQClick,
     getUserContext,
+    confirmEscalation,
+    dismissEscalation,
   } = useHelpBot();
 
   const userContext = getUserContext();
@@ -59,11 +58,10 @@ const HelpBot: React.FC = () => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages, isLoading]);
+  }, [messages, isLoading, pendingEscalation]);
 
   const isPublicRoute = PUBLIC_EXACT.includes(location.pathname) || PUBLIC_PREFIX.some(p => location.pathname.startsWith(p));
   
-  // Check if helpbot is disabled in shop config
   const aiModulesConfig = (shop as any)?.ai_modules_config || {};
   const helpbotEnabled = aiModulesConfig.helpbot_enabled ?? true;
   
@@ -173,6 +171,35 @@ const HelpBot: React.FC = () => {
                   </div>
                 </div>
               ))}
+
+              {/* Escalation confirmation buttons */}
+              {pendingEscalation && (
+                <div className="bg-accent/60 border border-accent rounded-xl p-3 space-y-2">
+                  <p className="text-sm font-medium text-foreground">
+                    Souhaitez-vous créer un ticket de support pour cette demande ?
+                  </p>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="default"
+                      className="flex-1 gap-1"
+                      onClick={confirmEscalation}
+                    >
+                      <TicketCheck className="h-3.5 w-3.5" />
+                      Oui, créer un ticket
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="flex-1 gap-1"
+                      onClick={dismissEscalation}
+                    >
+                      <XCircle className="h-3.5 w-3.5" />
+                      Non merci
+                    </Button>
+                  </div>
+                </div>
+              )}
 
               {isLoading && (
                 <div className="flex justify-start">
