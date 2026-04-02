@@ -59,7 +59,7 @@ const HelpBot: React.FC = () => {
     }
   }, [messages, isLoading]);
 
-  const isPublicRoute = PUBLIC_ROUTES.some(r => location.pathname === r || location.pathname.startsWith(r));
+  const isPublicRoute = PUBLIC_EXACT.includes(location.pathname) || PUBLIC_PREFIX.some(p => location.pathname.startsWith(p));
   if (!user || isPublicRoute) return null;
 
   const handleSend = async () => {
