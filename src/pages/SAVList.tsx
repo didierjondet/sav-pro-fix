@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
+import { cn } from '@/lib/utils';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { multiWordSearch } from '@/utils/searchUtils';
 import Header from '@/components/layout/Header';
@@ -78,6 +79,9 @@ function loadSavedFilters() {
     return null;
   }
 }
+
+const isFilterModified = (key: keyof typeof DEFAULT_FILTERS, value: string | number) => 
+  value !== DEFAULT_FILTERS[key];
 
 export default function SAVList() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -394,7 +398,7 @@ export default function SAVList() {
                     <Filter className="h-4 w-4 text-muted-foreground" />
                     <span className="text-sm font-medium">Type:</span>
                     <Select value={filterType} onValueChange={setFilterType}>
-                      <SelectTrigger className="w-40">
+                      <SelectTrigger className={cn("w-40", isFilterModified('filterType', filterType) && "ring-2 ring-orange-400 bg-orange-50")}>
                         <SelectValue />
                       </SelectTrigger>
                         <SelectContent>
@@ -412,7 +416,7 @@ export default function SAVList() {
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-medium">Couleur:</span>
                     <Select value={colorFilter} onValueChange={setColorFilter}>
-                      <SelectTrigger className="w-40">
+                      <SelectTrigger className={cn("w-40", isFilterModified('colorFilter', colorFilter) && "ring-2 ring-orange-400 bg-orange-50")}>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -435,7 +439,7 @@ export default function SAVList() {
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-medium">Grade:</span>
                     <Select value={gradeFilter} onValueChange={setGradeFilter}>
-                      <SelectTrigger className="w-32">
+                      <SelectTrigger className={cn("w-32", isFilterModified('gradeFilter', gradeFilter) && "ring-2 ring-orange-400 bg-orange-50")}>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -451,7 +455,7 @@ export default function SAVList() {
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-medium">Statut:</span>
                     <Select value={statusFilter} onValueChange={setStatusFilter}>
-                      <SelectTrigger className="w-48">
+                      <SelectTrigger className={cn("w-48", isFilterModified('statusFilter', statusFilter) && "ring-2 ring-orange-400 bg-orange-50")}>
                         <SelectValue />
                       </SelectTrigger>
                        <SelectContent>
@@ -501,7 +505,7 @@ export default function SAVList() {
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-medium">Tri:</span>
                     <Select value={sortOrder} onValueChange={setSortOrder}>
-                      <SelectTrigger className="w-48">
+                      <SelectTrigger className={cn("w-48", isFilterModified('sortOrder', sortOrder) && "ring-2 ring-orange-400 bg-orange-50")}>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
