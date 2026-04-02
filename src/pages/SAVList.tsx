@@ -130,6 +130,31 @@ export default function SAVList() {
     }
   }, [searchParams]);
 
+  // Sauvegarder les filtres dans le localStorage à chaque changement
+  useEffect(() => {
+    const today = new Date().toISOString().slice(0, 10);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      filterType,
+      statusFilter,
+      colorFilter,
+      gradeFilter,
+      sortOrder,
+      itemsPerPage,
+      savedDate: today,
+    }));
+  }, [filterType, statusFilter, colorFilter, gradeFilter, sortOrder, itemsPerPage]);
+
+  const resetFilters = useCallback(() => {
+    setFilterType(DEFAULT_FILTERS.filterType);
+    setStatusFilter(DEFAULT_FILTERS.statusFilter);
+    setColorFilter(DEFAULT_FILTERS.colorFilter);
+    setGradeFilter(DEFAULT_FILTERS.gradeFilter);
+    setSortOrder(DEFAULT_FILTERS.sortOrder);
+    setItemsPerPage(DEFAULT_FILTERS.itemsPerPage);
+    localStorage.removeItem(STORAGE_KEY);
+    toast.success('Filtres réinitialisés');
+  }, []);
+
   // Hook pour récupérer les visites des SAV
   const savCaseIds = useMemo(() => cases?.map(c => c.id) || [], [cases]);
   const { getVisitCount, loading: visitsLoading, refetch: refetchVisits } = useSAVVisits(savCaseIds);
