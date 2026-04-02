@@ -62,7 +62,12 @@ const HelpBot: React.FC = () => {
   }, [messages, isLoading]);
 
   const isPublicRoute = PUBLIC_EXACT.includes(location.pathname) || PUBLIC_PREFIX.some(p => location.pathname.startsWith(p));
-  if (!user || isPublicRoute) return null;
+  
+  // Check if helpbot is disabled in shop config
+  const aiModulesConfig = (shop as any)?.ai_modules_config || {};
+  const helpbotEnabled = aiModulesConfig.helpbot_enabled ?? true;
+  
+  if (!user || isPublicRoute || !helpbotEnabled) return null;
 
   const handleSend = async () => {
     const trimmed = input.trim();
