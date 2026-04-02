@@ -511,6 +511,17 @@ export default function SAVList() {
                       </SelectContent>
                     </Select>
                   </div>
+
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={resetFilters}
+                    className="text-muted-foreground hover:text-destructive shrink-0"
+                    title="Réinitialiser les filtres"
+                  >
+                    <RotateCcw className="h-4 w-4 mr-1" />
+                    Réinitialiser
+                  </Button>
                   
                   {/* Switch vue compacte + compteur */}
                   <div className="flex items-center gap-4 ml-auto">
