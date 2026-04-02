@@ -1,47 +1,42 @@
 
 
-## Plan : Comparaison mensuelle année N vs année N-1
+## Plan : Refonte esthetique des cartes SAV + correction icone telephone
 
-### Probleme
-- **DragDropStatistics** et **ReportChartsSection** comparent deja correctement avec l'annee precedente (N-1), mais affichent `0%` quand il n'y a pas de donnees N-1 — ce qui est trompeur.
-- **SAVDashboard** compare avec le **mois precedent** au lieu du meme mois de l'annee precedente — c'est incorrect.
+### Probleme identifie
+1. **Vue standard** : le type SAV est en haut a droite, le statut est sous l'appareil — disposition a revoir
+2. **Fond des cartes** : toutes les cartes ont `bg-sky-50` au lieu d'utiliser la couleur du type SAV
+3. **Vue compacte (grille)** : meme probleme de fond uniforme
+4. **Bug icone telephone** : l'IMEI (ligne 614-618) est affiche avec une icone `Phone` — il faut n'afficher l'icone telephone que si le client a un numero de telephone, et afficher l'IMEI avec une icone differente
 
-### Regle metier
-- Janvier 2026 se compare a Janvier 2025, Fevrier 2026 a Fevrier 2025, etc.
-- Si le mois N-1 n'a aucun CA (pas d'historique), afficher un badge "Nouveau" au lieu de 0% ou d'un pourcentage infini.
-- Le meilleur/pire mois et la croissance globale ne prennent en compte que les mois ayant une reference N-1.
+### Modifications prevues
 
-### Modifications
+**Fichier : `src/pages/SAVList.tsx`**
 
-**1. `src/components/sav/SAVDashboard.tsx`** (~lignes 950-1000)
-- Ajouter l'import de `useMonthlyStatistics` pour l'annee N-1
-- Remplacer la logique de comparaison "mois precedent" par une comparaison avec le meme mois de l'annee N-1 (identique a DragDropStatistics)
+#### Vue standard (lignes 572-703)
 
-**2. `src/components/statistics/advanced/MonthlyComparisonWidget.tsx`**
-- Ajouter la gestion du cas "pas de reference" : si `previousRevenue === 0` et `currentRevenue > 0`, afficher un badge "Nouveau" vert au lieu de `+0%`
-- Dans le graphique, utiliser `null` pour la courbe growth quand il n'y a pas de reference (coupure de la ligne)
-- Dans les KPI : le compteur "Mois positifs" exclut les mois sans reference
-- Meilleur/pire mois : seuls les mois avec reference sont consideres
+1. **Fond de card colore par type SAV** : remplacer `bg-sky-50` par un fond dynamique base sur `getTypeInfo(savCase.sav_type).color` avec opacite legere (~15%)
+2. **Deplacer le badge type SAV** en bas a gauche de la card (dans la zone actions, cote gauche)
+3. **Remonter le statut dropdown** a la place du type SAV (coin haut droit, ligne 1)
+4. **Disposition des 4 coins** :
+   - Haut gauche : nom client + icones (inchange)
+   - Haut droit : statut dropdown (remonte)
+   - Bas gauche : badge type SAV (deplace)
+   - Bas droit : boutons actions (inchange)
+5. **Correction icone IMEI** : remplacer l'icone `Phone` par une icone appropriee (ex: `Hash` ou `Barcode`) pour l'IMEI, et n'afficher l'icone `Phone` que si `savCase.customer?.phone` existe
 
-**3. `src/components/statistics/DragDropStatistics.tsx`** (~lignes 284-315)
-- Ajuster le calcul de `growth` : quand `previousRevenue === 0` et `currentRevenue > 0`, mettre `growth = null` (au lieu de 0)
-- Adapter le type pour accepter `growth: number | null`
+#### Vue compacte/grille (lignes 506-569)
 
-**4. `src/components/reports/ReportChartsSection.tsx`** (~lignes 113-152)
-- Meme ajustement : `growth = null` quand pas de reference N-1
+6. **Fond colore par type SAV** : meme logique de fond dynamique
+7. **Deplacer le badge type** en bas a gauche
+8. **Correction coherente** de l'affichage telephone/IMEI si present
 
-### Interface MonthlyData mise a jour
+### Detail technique
 
-```text
-growth: number | null
-  — null  = pas de donnees N-1 → badge "Nouveau"
-  — 0     = meme CA que N-1
-  — >0/<0 = variation en %
-```
+- Couleur de fond : `style={{ backgroundColor: getTypeInfo(savCase.sav_type).color + '15' }}` (hex avec 15% opacite)
+- Le badge type SAV utilise deja `getTypeStyle()` qui retourne la bonne couleur
+- Pour l'IMEI, utiliser l'icone `Hash` de lucide-react au lieu de `Phone`
+- Ajouter conditionnellement l'icone `Phone` uniquement si `savCase.customer?.phone` est renseigne
 
 ### Fichiers impactes
-- `src/components/statistics/advanced/MonthlyComparisonWidget.tsx`
-- `src/components/statistics/DragDropStatistics.tsx`
-- `src/components/sav/SAVDashboard.tsx`
-- `src/components/reports/ReportChartsSection.tsx`
+- `src/pages/SAVList.tsx` — seul fichier a modifier
 
