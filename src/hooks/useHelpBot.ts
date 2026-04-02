@@ -18,10 +18,16 @@ export interface FAQItem {
   category: string;
 }
 
+export interface PendingEscalation {
+  summary: string;
+  userMessage: string;
+}
+
 export function useHelpBot() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [faqItems, setFaqItems] = useState<FAQItem[]>([]);
+  const [pendingEscalation, setPendingEscalation] = useState<PendingEscalation | null>(null);
   const { shop } = useShop();
   const { profile } = useProfile();
 
@@ -74,6 +80,54 @@ export function useHelpBot() {
     }
   }, [faqItems]);
 
+  const confirmEscalation = useCallback(async () => {
+    if (!pendingEscalation) return;
+    
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const userId = session?.user?.id;
+      const shopId = shop?.id;
+      
+      if (shopId && userId) {
+        await supabase.from('support_tickets' as any).insert({
+          shop_id: shopId,
+          created_by: userId,
+          subject: `[Bot IA] ${pendingEscalation.userMessage.substring(0, 80)}`,
+          description: `Demande transmise par l'assistant IA.\n\nQuestion :\n${pendingEscalation.userMessage}\n\nRésumé :\n${pendingEscalation.summary}`,
+          priority: 'medium',
+          status: 'open',
+        });
+        
+        const ticketMsg: ChatMessage = {
+          id: crypto.randomUUID(),
+          role: 'assistant',
+          content: '✅ Un ticket de support a été créé. Notre équipe vous répondra rapidement.',
+          timestamp: new Date(),
+        };
+        setMessages(prev => [...prev, ticketMsg]);
+        toast.success('Ticket de support créé avec succès.');
+      } else {
+        toast.error('Impossible de créer le ticket. Vérifiez votre connexion.');
+      }
+    } catch (e) {
+      console.error('Error creating support ticket:', e);
+      toast.error('Erreur lors de la création du ticket.');
+    } finally {
+      setPendingEscalation(null);
+    }
+  }, [pendingEscalation, shop]);
+
+  const dismissEscalation = useCallback(() => {
+    setPendingEscalation(null);
+    const msg: ChatMessage = {
+      id: crypto.randomUUID(),
+      role: 'assistant',
+      content: 'D\'accord, pas de ticket créé. N\'hésitez pas à me poser d\'autres questions !',
+      timestamp: new Date(),
+    };
+    setMessages(prev => [...prev, msg]);
+  }, []);
+
   const sendMessage = useCallback(async (content: string) => {
     const userMessage: ChatMessage = {
       id: crypto.randomUUID(),
@@ -107,25 +161,12 @@ export function useHelpBot() {
 
       setMessages(prev => [...prev, assistantMessage]);
 
-      // Handle escalation - lazy import createTicket
+      // Handle escalation - propose instead of auto-creating
       if (data.escalate) {
-        toast.info('Votre demande va être transmise à notre équipe support.');
-        
-        try {
-          const shopId = shop?.id;
-          if (shopId) {
-            await supabase.from('support_tickets' as any).insert({
-              shop_id: shopId,
-              subject: `[Bot IA] ${content.substring(0, 80)}`,
-              description: `Demande transmise automatiquement par l'assistant IA.\n\nQuestion de l'utilisateur :\n${content}\n\nRésumé de l'IA :\n${data.escalate_summary || 'Hors périmètre du logiciel'}`,
-              priority: 'medium',
-              status: 'open',
-            });
-            toast.success('Un ticket de support a été créé automatiquement.');
-          }
-        } catch (e) {
-          console.error('Error creating support ticket:', e);
-        }
+        setPendingEscalation({
+          summary: data.escalate_summary || 'Hors périmètre du logiciel',
+          userMessage: content,
+        });
       }
     } catch (error) {
       console.error('Help bot error:', error);
@@ -139,19 +180,23 @@ export function useHelpBot() {
     } finally {
       setIsLoading(false);
     }
-  }, [messages, getUserContext, shop]);
+  }, [messages, getUserContext]);
 
   const clearMessages = useCallback(() => {
     setMessages([]);
+    setPendingEscalation(null);
   }, []);
 
   return {
     messages,
     isLoading,
     faqItems,
+    pendingEscalation,
     sendMessage,
     clearMessages,
     incrementFAQClick,
     getUserContext,
+    confirmEscalation,
+    dismissEscalation,
   };
 }

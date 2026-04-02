@@ -484,6 +484,39 @@ export type Database = {
           },
         ]
       }
+      help_bot_knowledge: {
+        Row: {
+          answer: string
+          category: string
+          created_at: string | null
+          id: string
+          keywords: string[] | null
+          question: string
+          updated_at: string | null
+          usage_count: number | null
+        }
+        Insert: {
+          answer: string
+          category: string
+          created_at?: string | null
+          id?: string
+          keywords?: string[] | null
+          question: string
+          updated_at?: string | null
+          usage_count?: number | null
+        }
+        Update: {
+          answer?: string
+          category?: string
+          created_at?: string | null
+          id?: string
+          keywords?: string[] | null
+          question?: string
+          updated_at?: string | null
+          usage_count?: number | null
+        }
+        Relationships: []
+      }
       import_configurations: {
         Row: {
           column_mappings: Json
