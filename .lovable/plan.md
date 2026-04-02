@@ -1,24 +1,42 @@
 
 
-## Plan : Afficher le numéro de téléphone à côté de l'icône
+## Plan : Mémoriser les filtres SAV en localStorage avec réinitialisation quotidienne
 
-### Problème
-L'icône téléphone s'affiche seule sans le numéro — inutile pour l'utilisateur.
+### Principe
+Sauvegarder les filtres actifs (type, statut, couleur, grade, tri, items/page) dans le localStorage. Au chargement, restaurer ces filtres sauf si la date du jour a changé — dans ce cas, remettre les valeurs par défaut. Ajouter un bouton "Réinitialiser les filtres" visible dans la barre de filtres.
 
-### Modification
+### Modifications
 
-**Fichier : `src/pages/SAVList.tsx`** (ligne 599-601)
+**Fichier : `src/pages/SAVList.tsx`**
 
-Remplacer l'icône seule par l'icône + le numéro de téléphone cliquable (lien `tel:`):
+1. **Clé localStorage** : `fixway_sav_filters` contenant un objet JSON :
+   ```json
+   {
+     "filterType": "all",
+     "statusFilter": "all-except-ready",
+     "colorFilter": "all",
+     "gradeFilter": "all",
+     "sortOrder": "priority",
+     "itemsPerPage": 20,
+     "savedDate": "2026-04-02"
+   }
+   ```
 
-```tsx
-{savCase.customer?.phone && (
-  <a href={`tel:${savCase.customer.phone}`} className="flex items-center gap-1 text-muted-foreground hover:text-primary shrink-0">
-    <Phone className="h-4 w-4" />
-    <span className="text-xs">{savCase.customer.phone}</span>
-  </a>
-)}
-```
+2. **Initialisation des states** : remplacer les valeurs en dur par une lecture du localStorage. Si `savedDate` !== date du jour → utiliser les valeurs par défaut et nettoyer le storage.
+
+3. **Sauvegarde automatique** : un `useEffect` qui persiste les filtres dans le localStorage à chaque changement de l'un des filtres.
+
+4. **Bouton "Réinitialiser"** : ajouter un bouton avec icône `RotateCcw` dans la zone des filtres, qui remet tous les filtres aux valeurs par défaut et supprime l'entrée localStorage.
+
+5. **Priorité URL** : les paramètres URL (`searchParams`) restent prioritaires — si présents, ils écrasent le localStorage (comportement actuel inchangé).
+
+### Valeurs par défaut
+- `filterType`: `'all'`
+- `statusFilter`: `'all-except-ready'`
+- `colorFilter`: `'all'`
+- `gradeFilter`: `'all'`
+- `sortOrder`: `'priority'`
+- `itemsPerPage`: `20`
 
 ### Fichier impacté
 - `src/pages/SAVList.tsx`
