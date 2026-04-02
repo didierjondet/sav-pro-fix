@@ -79,6 +79,9 @@ function loadSavedFilters() {
   }
 }
 
+const isFilterModified = (key: keyof typeof DEFAULT_FILTERS, value: string | number) => 
+  value !== DEFAULT_FILTERS[key];
+
 export default function SAVList() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const saved = useMemo(() => loadSavedFilters(), []);
