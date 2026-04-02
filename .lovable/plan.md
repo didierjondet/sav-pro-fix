@@ -1,26 +1,39 @@
 
 
-## Plan : Corriger l'affichage du HelpBot
+## Plan : Faire fonctionner le HelpBot + ajouter son switch dans les paramètres IA
 
-### Cause du bug
-Ligne 10 de `HelpBot.tsx` : `PUBLIC_ROUTES` contient `'/'`. Ligne 61 : `location.pathname.startsWith('/')` est **toujours vrai** pour toute URL. Résultat : le bot retourne `null` sur toutes les pages.
+### Problème 1 : Le bot répond toujours "problème technique"
+L'edge function `help-bot` utilise l'URL `https://api.lovable.dev/v1` qui est incorrecte. L'URL correcte du gateway Lovable AI est `https://ai.gateway.lovable.dev/v1`. C'est la cause de l'erreur systématique.
 
-### Correction (1 seul fichier)
+### Problème 2 : Pas de switch dédié au HelpBot
+Le switch `assistant_enabled` existant dans l'onglet IA des paramètres contrôle le `DataAssistant` (assistant de données sur le tableau de bord), pas le HelpBot. Il faut un switch séparé.
+
+---
+
+### Corrections
+
+**Fichier : `supabase/functions/help-bot/index.ts`**
+
+1. Corriger l'URL du gateway : `https://api.lovable.dev/v1` → `https://ai.gateway.lovable.dev/v1`
+2. Changer le modèle par défaut : `google/gemini-2.5-flash` → `google/gemini-3-flash-preview` (recommandé)
+3. Retirer `response_format: { type: 'json_object' }` et parser le JSON dans la réponse texte (plus robuste, certains modèles ne supportent pas ce format)
+
+**Fichier : `src/pages/Settings.tsx`**
+
+4. Ajouter un nouveau switch `ai_helpbot_enabled` dans l'onglet IA, avec description "Bulle d'aide en bas à droite de l'écran pour guider les utilisateurs dans l'utilisation de Fixway"
+5. Sauvegarder dans `ai_modules_config.helpbot_enabled`
+6. Valeur par défaut : `true`
 
 **Fichier : `src/components/help/HelpBot.tsx`**
 
-Remplacer les lignes 10 et 61 par une logique qui sépare les routes exactes des routes à préfixe :
+7. Lire `shop.ai_modules_config.helpbot_enabled` via `useShop()` et ne rendre le bot que si cette valeur n'est pas explicitement `false`
 
-```ts
-const PUBLIC_EXACT = ['/', '/landing', '/features', '/about', '/contact', '/auth', '/test', '/chrome-extension-download'];
-const PUBLIC_PREFIX = ['/track/', '/quote/', '/satisfaction/', '/rdv/', '/shop/'];
+**Fichier : `src/hooks/useHelpBot.ts`**
 
-// ligne 61
-const isPublicRoute = PUBLIC_EXACT.includes(location.pathname) || PUBLIC_PREFIX.some(p => location.pathname.startsWith(p));
-```
+8. Retirer la dépendance inutile à `useSupport` (si encore présente)
 
-C'est tout. Pas de modification de routes, pas de switch dans les paramètres pour l'instant (ça n'existe pas encore), pas de changement d'architecture. Juste corriger la condition qui cache le bot partout.
-
-### Fichier impacté
-- `src/components/help/HelpBot.tsx` — lignes 10 et 61 uniquement
+### Fichiers impactés
+- `supabase/functions/help-bot/index.ts` — URL corrigée + modèle
+- `src/pages/Settings.tsx` — nouveau switch HelpBot
+- `src/components/help/HelpBot.tsx` — lire la config shop pour afficher/masquer
 
