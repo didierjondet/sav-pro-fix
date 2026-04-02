@@ -81,14 +81,15 @@ function loadSavedFilters() {
 
 export default function SAVList() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const saved = useMemo(() => loadSavedFilters(), []);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterType, setFilterType] = useState('all');
-  const [statusFilter, setStatusFilter] = useState('all-except-ready');
-  const [colorFilter, setColorFilter] = useState('all');
-  const [gradeFilter, setGradeFilter] = useState('all');
-  const [sortOrder, setSortOrder] = useState('priority');
+  const [filterType, setFilterType] = useState(saved?.filterType ?? DEFAULT_FILTERS.filterType);
+  const [statusFilter, setStatusFilter] = useState(saved?.statusFilter ?? DEFAULT_FILTERS.statusFilter);
+  const [colorFilter, setColorFilter] = useState(saved?.colorFilter ?? DEFAULT_FILTERS.colorFilter);
+  const [gradeFilter, setGradeFilter] = useState(saved?.gradeFilter ?? DEFAULT_FILTERS.gradeFilter);
+  const [sortOrder, setSortOrder] = useState(saved?.sortOrder ?? DEFAULT_FILTERS.sortOrder);
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(20);
+  const [itemsPerPage, setItemsPerPage] = useState(saved?.itemsPerPage ?? DEFAULT_FILTERS.itemsPerPage);
   const [qrCodeCase, setQrCodeCase] = useState(null);
   const [showPrintDialog, setShowPrintDialog] = useState(false);
   const [viewMode, setViewMode] = useState<'standard' | 'compact'>(() => {
