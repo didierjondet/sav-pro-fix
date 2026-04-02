@@ -597,7 +597,10 @@ export default function SAVList() {
                             }
                           </h3>
                           {savCase.customer?.phone && (
-                            <Phone className="h-4 w-4 text-muted-foreground shrink-0" />
+                            <a href={`tel:${savCase.customer.phone}`} className="flex items-center gap-1 text-muted-foreground hover:text-primary shrink-0">
+                              <Phone className="h-4 w-4" />
+                              <span className="text-xs">{savCase.customer.phone}</span>
+                            </a>
                           )}
                         </div>
                         <div className="flex items-center gap-2 flex-wrap">
