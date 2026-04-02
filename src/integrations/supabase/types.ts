@@ -449,6 +449,41 @@ export type Database = {
         }
         Relationships: []
       }
+      help_bot_faq: {
+        Row: {
+          category: string | null
+          click_count: number
+          created_at: string
+          id: string
+          question: string
+          shop_id: string | null
+        }
+        Insert: {
+          category?: string | null
+          click_count?: number
+          created_at?: string
+          id?: string
+          question: string
+          shop_id?: string | null
+        }
+        Update: {
+          category?: string | null
+          click_count?: number
+          created_at?: string
+          id?: string
+          question?: string
+          shop_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "help_bot_faq_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       import_configurations: {
         Row: {
           column_mappings: Json

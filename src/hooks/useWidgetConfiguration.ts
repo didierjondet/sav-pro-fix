@@ -94,3 +94,36 @@ export function useWidgetConfiguration(widgetId: string) {
     deleteConfig: deleteMutation.mutateAsync,
   };
 }
+
+// Default widgets that should have monthly_calendar temporality
+const DEFAULT_ENABLED_WIDGET_IDS = [
+  'finance-kpis', 'financial-overview', 'parts-usage-heatmap',
+  'sav-stats', 'late-rate', 'top-parts-chart', 'late-rate-chart',
+  'top-devices', 'revenue-breakdown', 'customer-satisfaction'
+];
+
+export async function initializeDefaultWidgetConfigurations(shopId: string) {
+  const storageKey = `widgetsDefaultsInitialized_${shopId}`;
+  if (localStorage.getItem(storageKey)) return;
+
+  try {
+    const rows = DEFAULT_ENABLED_WIDGET_IDS.map(widgetId => ({
+      shop_id: shopId,
+      widget_id: widgetId,
+      temporality: 'monthly_calendar' as const,
+    }));
+
+    const { error } = await supabase
+      .from('widget_configurations')
+      .upsert(rows, { onConflict: 'shop_id,widget_id' });
+
+    if (!error) {
+      localStorage.setItem(storageKey, 'true');
+      console.log('✅ Default widget configurations initialized for shop', shopId);
+    } else {
+      console.error('Error initializing widget defaults:', error);
+    }
+  } catch (e) {
+    console.error('Error initializing widget defaults:', e);
+  }
+}
