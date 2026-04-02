@@ -1,26 +1,39 @@
 
 
-## Plan : Corriger la logique de stock insuffisant dans l'onglet SAV des commandes
+## Plan : Mise en évidence visuelle des filtres modifiés
 
-### Probleme
-Dans `fetchPartsNeededForSAV` (ligne 135 de `useOrders.ts`), le calcul du stock disponible soustrait `reserved_quantity` du stock total. Or `reserved_quantity` inclut deja la reservation faite pour CE meme SAV. Resultat : une piece avec stock=5, reserved=3 (pour ce SAV), besoin=3 → stock disponible calcule = 2 < 3 → la piece apparait comme manquante alors que le stock physique est suffisant.
+### Principe
+Quand un filtre a une valeur différente de sa valeur par défaut, son `SelectTrigger` sera visuellement mis en évidence (bordure et fond coloré) pour alerter le technicien d'un coup d'œil.
 
-### Correction
+### Modification
 
-**Fichier : `src/hooks/useOrders.ts`** (ligne 133-136)
+**Fichier : `src/pages/SAVList.tsx`**
 
-Remplacer le calcul du stock disponible par une verification du stock physique brut (`quantity`) contre la quantite necessaire. Si le stock physique couvre le besoin, la piece ne doit pas apparaitre :
+1. **Helper `isModified`** : créer une fonction simple qui compare la valeur actuelle d'un filtre à sa valeur par défaut dans `DEFAULT_FILTERS` :
+   ```ts
+   const isFilterModified = (key: keyof typeof DEFAULT_FILTERS, value: string | number) => 
+     value !== DEFAULT_FILTERS[key];
+   ```
 
-```ts
-const formattedSavParts = savParts?.filter(item => {
-  // Ne montrer que les pièces dont le stock physique est insuffisant
-  const physicalStock = item.parts.quantity || 0;
-  if (physicalStock >= item.quantity) return false;
-  // ...
-```
+2. **Style conditionnel sur chaque `SelectTrigger`** : ajouter une classe conditionnelle `ring-2 ring-orange-400 bg-orange-50` quand le filtre est modifié. Concerne les 5 filtres :
+   - Type (`filterType`)
+   - Couleur (`colorFilter`)
+   - Grade (`gradeFilter`)
+   - Statut (`statusFilter`)
+   - Tri (`sortOrder`)
 
-La `reserved_quantity` sert a calculer le stock disponible pour de NOUVELLES reservations, pas a verifier si une reservation existante est couverte. Si le stock physique >= quantite necessaire, le travail peut etre fait.
+   Exemple :
+   ```tsx
+   <SelectTrigger className={cn("w-40", isFilterModified('filterType', filterType) && "ring-2 ring-orange-400 bg-orange-50")}>
+   ```
 
-### Fichier impacte
-- `src/hooks/useOrders.ts`
+3. **Import `cn`** : déjà importé dans le fichier via `@/lib/utils`.
+
+### Résultat
+- Filtres par défaut → apparence normale
+- Filtre modifié → bordure orange + fond légèrement orangé → repérage immédiat
+- Le bouton "Réinitialiser" existant remet tout à la normale
+
+### Fichier impacté
+- `src/pages/SAVList.tsx`
 
