@@ -2,7 +2,6 @@ import { useState, useCallback, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useShop } from './useShop';
 import { useProfile } from './useProfile';
-import { useSupport } from './useSupport';
 import { toast } from 'sonner';
 
 export interface ChatMessage {
@@ -25,18 +24,24 @@ export function useHelpBot() {
   const [faqItems, setFaqItems] = useState<FAQItem[]>([]);
   const { shop } = useShop();
   const { profile } = useProfile();
-  const { createTicket } = useSupport();
 
-  // Load FAQ items
+  // Load FAQ items with session guard
   useEffect(() => {
     const loadFAQ = async () => {
-      const { data, error } = await supabase
-        .from('help_bot_faq')
-        .select('*')
-        .order('click_count', { ascending: false });
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.user) return;
 
-      if (!error && data) {
-        setFaqItems(data as FAQItem[]);
+        const { data, error } = await supabase
+          .from('help_bot_faq')
+          .select('*')
+          .order('click_count', { ascending: false });
+
+        if (!error && data) {
+          setFaqItems(data as FAQItem[]);
+        }
+      } catch (e) {
+        console.error('FAQ load error:', e);
       }
     };
     loadFAQ();
@@ -102,18 +107,22 @@ export function useHelpBot() {
 
       setMessages(prev => [...prev, assistantMessage]);
 
-      // Handle escalation
+      // Handle escalation - lazy import createTicket
       if (data.escalate) {
         toast.info('Votre demande va être transmise à notre équipe support.');
         
         try {
-          await createTicket({
-            subject: `[Bot IA] ${content.substring(0, 80)}`,
-            description: `Demande transmise automatiquement par l'assistant IA.\n\nQuestion de l'utilisateur :\n${content}\n\nRésumé de l'IA :\n${data.escalate_summary || 'Hors périmètre du logiciel'}`,
-            priority: 'medium',
-          });
-          
-          toast.success('Un ticket de support a été créé automatiquement.');
+          const shopId = shop?.id;
+          if (shopId) {
+            await supabase.from('support_tickets' as any).insert({
+              shop_id: shopId,
+              subject: `[Bot IA] ${content.substring(0, 80)}`,
+              description: `Demande transmise automatiquement par l'assistant IA.\n\nQuestion de l'utilisateur :\n${content}\n\nRésumé de l'IA :\n${data.escalate_summary || 'Hors périmètre du logiciel'}`,
+              priority: 'medium',
+              status: 'open',
+            });
+            toast.success('Un ticket de support a été créé automatiquement.');
+          }
         } catch (e) {
           console.error('Error creating support ticket:', e);
         }
@@ -130,7 +139,7 @@ export function useHelpBot() {
     } finally {
       setIsLoading(false);
     }
-  }, [messages, getUserContext, createTicket]);
+  }, [messages, getUserContext, shop]);
 
   const clearMessages = useCallback(() => {
     setMessages([]);

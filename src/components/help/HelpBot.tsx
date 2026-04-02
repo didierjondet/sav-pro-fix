@@ -6,10 +6,32 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useHelpBot } from '@/hooks/useHelpBot';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLocation } from 'react-router-dom';
-import ReactMarkdown from 'react-markdown';
 
-// Public routes where bot should NOT show
 const PUBLIC_ROUTES = ['/', '/landing', '/track/', '/quote/', '/satisfaction/', '/rdv/', '/shop/', '/features', '/about', '/contact', '/auth', '/test', '/chrome-extension-download'];
+
+function renderSimpleMarkdown(text: string) {
+  const lines = text.split('\n');
+  return lines.map((line, i) => {
+    // Bold
+    let html = line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    // Italic
+    html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
+    // Links
+    html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener" class="underline text-primary">$1</a>');
+    // List items
+    if (/^[-•]\s/.test(html)) {
+      html = '<li class="ml-4 list-disc">' + html.replace(/^[-•]\s/, '') + '</li>';
+    } else if (/^\d+\.\s/.test(html)) {
+      html = '<li class="ml-4 list-decimal">' + html.replace(/^\d+\.\s/, '') + '</li>';
+    }
+    if (!html.trim()) return <br key={i} />;
+    return <span key={i} dangerouslySetInnerHTML={{ __html: html }} />;
+  }).reduce<React.ReactNode[]>((acc, el, i) => {
+    if (i > 0) acc.push(<br key={`br-${i}`} />);
+    acc.push(el);
+    return acc;
+  }, []);
+}
 
 const HelpBot: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -17,7 +39,6 @@ const HelpBot: React.FC = () => {
   const { user } = useAuth();
   const location = useLocation();
   const scrollRef = useRef<HTMLDivElement>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const {
     messages,
@@ -31,14 +52,12 @@ const HelpBot: React.FC = () => {
 
   const userContext = getUserContext();
 
-  // Auto-scroll to bottom
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages, isLoading]);
 
-  // Don't show on public routes or when not authenticated
   const isPublicRoute = PUBLIC_ROUTES.some(r => location.pathname === r || location.pathname.startsWith(r));
   if (!user || isPublicRoute) return null;
 
@@ -63,7 +82,6 @@ const HelpBot: React.FC = () => {
 
   return (
     <>
-      {/* Floating button */}
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
@@ -74,10 +92,8 @@ const HelpBot: React.FC = () => {
         </button>
       )}
 
-      {/* Chat panel */}
       {isOpen && (
         <div className="fixed bottom-4 right-4 z-50 w-[380px] max-h-[560px] flex flex-col rounded-2xl border bg-background shadow-2xl">
-          {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b bg-primary rounded-t-2xl text-primary-foreground">
             <div className="flex items-center gap-2">
               <MessageCircleQuestion className="h-5 w-5" />
@@ -93,10 +109,8 @@ const HelpBot: React.FC = () => {
             </div>
           </div>
 
-          {/* Messages area */}
           <ScrollArea className="flex-1 min-h-0 max-h-[380px]">
             <div ref={scrollRef} className="p-4 space-y-3">
-              {/* Configuration warnings */}
               {(!userContext.profileComplete || !userContext.shopComplete) && messages.length === 0 && (
                 <div className="bg-accent/50 border border-accent rounded-lg p-3 text-sm">
                   <div className="flex items-center gap-2 font-medium text-foreground mb-1">
@@ -112,28 +126,28 @@ const HelpBot: React.FC = () => {
                 </div>
               )}
 
-              {/* Welcome + FAQ when no messages */}
               {messages.length === 0 && (
                 <div className="space-y-3">
                   <p className="text-sm text-muted-foreground">
                     Bonjour ! Je suis votre assistant Fixway. Comment puis-je vous aider ?
                   </p>
-                  <div className="space-y-2">
-                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Questions fréquentes</p>
-                    {faqItems.slice(0, 4).map(faq => (
-                      <button
-                        key={faq.id}
-                        onClick={() => handleFAQClick(faq)}
-                        className="w-full text-left text-sm px-3 py-2 rounded-lg border bg-muted/50 hover:bg-muted transition-colors"
-                      >
-                        {faq.question}
-                      </button>
-                    ))}
-                  </div>
+                  {faqItems.length > 0 && (
+                    <div className="space-y-2">
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Questions fréquentes</p>
+                      {faqItems.slice(0, 4).map(faq => (
+                        <button
+                          key={faq.id}
+                          onClick={() => handleFAQClick(faq)}
+                          className="w-full text-left text-sm px-3 py-2 rounded-lg border bg-muted/50 hover:bg-muted transition-colors"
+                        >
+                          {faq.question}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
 
-              {/* Messages */}
               {messages.map(msg => (
                 <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                   <div className={`max-w-[85%] rounded-xl px-3 py-2 text-sm ${
@@ -142,8 +156,8 @@ const HelpBot: React.FC = () => {
                       : 'bg-muted'
                   }`}>
                     {msg.role === 'assistant' ? (
-                      <div className="prose prose-sm dark:prose-invert max-w-none [&>p]:m-0 [&>ul]:m-0 [&>ol]:m-0">
-                        <ReactMarkdown>{msg.content}</ReactMarkdown>
+                      <div className="prose prose-sm dark:prose-invert max-w-none [&>p]:m-0">
+                        {renderSimpleMarkdown(msg.content)}
                       </div>
                     ) : (
                       <p className="whitespace-pre-wrap">{msg.content}</p>
@@ -152,7 +166,6 @@ const HelpBot: React.FC = () => {
                 </div>
               ))}
 
-              {/* Loading indicator */}
               {isLoading && (
                 <div className="flex justify-start">
                   <div className="bg-muted rounded-xl px-4 py-2">
@@ -167,11 +180,9 @@ const HelpBot: React.FC = () => {
             </div>
           </ScrollArea>
 
-          {/* Input area */}
           <div className="border-t p-3">
             <div className="flex gap-2 items-end">
               <Textarea
-                ref={textareaRef}
                 value={input}
                 onChange={e => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
