@@ -506,10 +506,12 @@ export default function SAVList() {
 
                 if (viewMode === 'compact') {
                   const statusInfo = getStatusInfo(savCase.status);
+                  const typeInfo = getTypeInfo(savCase.sav_type);
                   return (
                     <Card 
                       key={savCase.id} 
-                      className={`hover:shadow-md transition-all cursor-pointer bg-sky-50 ${borderClass}`}
+                      className={`hover:shadow-md transition-all cursor-pointer ${borderClass}`}
+                      style={{ backgroundColor: `${typeInfo.color}15` }}
                       onClick={() => navigate(`/sav/${savCase.id}`)}
                     >
                       <CardContent className="p-3">
@@ -523,14 +525,6 @@ export default function SAVList() {
                               }
                             </span>
                           </div>
-                          <span className="text-xs text-muted-foreground shrink-0 ml-2">
-                            N° {savCase.case_number}
-                          </span>
-                        </div>
-
-                        <div className="flex items-center gap-2 mb-1.5 text-xs text-muted-foreground">
-                          <Package className="h-3 w-3 shrink-0" />
-                          <span className="truncate">{savCase.device_brand} {savCase.device_model}</span>
                           <Badge 
                             variant="outline" 
                             className="text-[10px] px-1.5 py-0 shrink-0"
@@ -543,7 +537,22 @@ export default function SAVList() {
                           </Badge>
                         </div>
 
+                        <div className="flex items-center gap-2 mb-1.5 text-xs text-muted-foreground">
+                          <Package className="h-3 w-3 shrink-0" />
+                          <span className="truncate">{savCase.device_brand} {savCase.device_model}</span>
+                          <span className="text-xs text-muted-foreground shrink-0 ml-auto">
+                            N° {savCase.case_number}
+                          </span>
+                        </div>
+
                         <div className="flex items-center justify-between text-xs">
+                          <Badge 
+                            variant="outline" 
+                            className="text-[10px] px-1.5 py-0"
+                            style={{ borderColor: typeInfo.color, color: typeInfo.color }}
+                          >
+                            {typeInfo.label}
+                          </Badge>
                           <div className="flex items-center gap-3">
                             <span className={
                               isUrgent ? 'text-destructive font-semibold' :
@@ -559,11 +568,6 @@ export default function SAVList() {
                               </span>
                             )}
                           </div>
-                          <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${
-                            savCase.sav_type === 'client' ? 'border-red-200 text-red-700' : 'border-blue-200 text-blue-700'
-                          }`}>
-                            {getTypeInfo(savCase.sav_type).label}
-                          </Badge>
                         </div>
                       </CardContent>
                     </Card>
