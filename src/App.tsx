@@ -164,6 +164,7 @@ const App = () => {
                 <Route path="/chrome-extension-download" element={<ChromeExtensionDownload />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
+              <HelpBot />
               </BrowserRouter>
               </TooltipProvider>
             </LimitDialogProvider>
