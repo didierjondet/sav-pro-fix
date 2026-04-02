@@ -1,5 +1,9 @@
-import { corsHeaders } from '@supabase/supabase-js/cors'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
+}
 
 const SYSTEM_PROMPT = `Tu es l'assistant IA intégré au logiciel de gestion SAV "Fixway". Tu aides les utilisateurs (techniciens, admins de boutique) à utiliser le logiciel.
 
@@ -70,16 +74,8 @@ const SYSTEM_PROMPT = `Tu es l'assistant IA intégré au logiciel de gestion SAV
 3. Si la question est hors du périmètre du logiciel (questions techniques générales, questions personnelles, etc.), réponds poliment que tu ne peux pas aider et que tu vas transférer la demande à un humain.
 4. Si tu détectes que le profil ou la boutique de l'utilisateur est incomplet, suggère de compléter la configuration.
 5. Utilise le format Markdown pour structurer tes réponses.
-
-## Format de réponse
-Réponds en JSON avec cette structure :
-{
-  "message": "Ta réponse en markdown",
-  "escalate": false,
-  "escalate_summary": null
-}
-
-Si tu ne peux pas répondre, mets escalate à true et fournis un résumé dans escalate_summary.`
+6. IMPORTANT: Réponds en texte brut markdown, PAS en JSON. Ta réponse sera directement affichée à l'utilisateur.
+7. Si tu ne peux pas répondre car la question est hors périmètre, commence ta réponse par [ESCALATE] suivi d'un résumé court, puis donne ta réponse à l'utilisateur.`
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -151,11 +147,11 @@ Deno.serve(async (req) => {
       })
     }
 
-    const model = aiConfig?.model || 'google/gemini-2.5-flash'
+    const model = aiConfig?.model || 'google/gemini-3-flash-preview'
     const isLovable = aiConfig?.provider === 'lovable' || apiKeyName === 'LOVABLE_API_KEY'
     
     const baseUrl = isLovable 
-      ? 'https://api.lovable.dev/v1' 
+      ? 'https://ai.gateway.lovable.dev/v1' 
       : aiConfig?.provider === 'google' 
         ? 'https://generativelanguage.googleapis.com/v1beta/openai'
         : 'https://api.openai.com/v1'
@@ -171,13 +167,35 @@ Deno.serve(async (req) => {
         messages,
         temperature: 0.7,
         max_tokens: 1000,
-        response_format: { type: 'json_object' },
       }),
     })
 
     if (!response.ok) {
       const errorText = await response.text()
-      console.error('AI API error:', errorText)
+      console.error('AI API error:', response.status, errorText)
+      
+      if (response.status === 429) {
+        return new Response(JSON.stringify({
+          message: "Le service est temporairement surchargé. Réessayez dans quelques secondes.",
+          escalate: false,
+          escalate_summary: null
+        }), {
+          status: 429,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      
+      if (response.status === 402) {
+        return new Response(JSON.stringify({
+          message: "Les crédits IA sont épuisés. Contactez l'administrateur.",
+          escalate: true,
+          escalate_summary: "Crédits IA épuisés"
+        }), {
+          status: 402,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      
       return new Response(JSON.stringify({
         message: "Désolé, je rencontre un problème technique. Réessayez dans quelques instants.",
         escalate: false,
@@ -188,16 +206,25 @@ Deno.serve(async (req) => {
     }
 
     const data = await response.json()
-    const content = data.choices?.[0]?.message?.content
+    const content = data.choices?.[0]?.message?.content || "Désolé, je n'ai pas pu traiter votre demande."
 
-    let parsed
-    try {
-      parsed = JSON.parse(content)
-    } catch {
-      parsed = { message: content, escalate: false, escalate_summary: null }
+    // Check for escalation marker
+    const shouldEscalate = content.startsWith('[ESCALATE]')
+    let cleanMessage = content
+    let escalateSummary: string | null = null
+    
+    if (shouldEscalate) {
+      // Extract summary from first line after [ESCALATE]
+      const lines = content.replace('[ESCALATE]', '').trim().split('\n')
+      escalateSummary = lines[0].trim()
+      cleanMessage = lines.slice(1).join('\n').trim() || escalateSummary
     }
 
-    return new Response(JSON.stringify(parsed), {
+    return new Response(JSON.stringify({
+      message: cleanMessage,
+      escalate: shouldEscalate,
+      escalate_summary: escalateSummary
+    }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   } catch (error) {

@@ -5,6 +5,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useHelpBot } from '@/hooks/useHelpBot';
 import { useAuth } from '@/contexts/AuthContext';
+import { useShop } from '@/hooks/useShop';
 import { useLocation } from 'react-router-dom';
 
 const PUBLIC_EXACT = ['/', '/landing', '/features', '/about', '/contact', '/auth', '/test', '/chrome-extension-download'];
@@ -38,6 +39,7 @@ const HelpBot: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState('');
   const { user } = useAuth();
+  const { shop } = useShop();
   const location = useLocation();
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -60,7 +62,12 @@ const HelpBot: React.FC = () => {
   }, [messages, isLoading]);
 
   const isPublicRoute = PUBLIC_EXACT.includes(location.pathname) || PUBLIC_PREFIX.some(p => location.pathname.startsWith(p));
-  if (!user || isPublicRoute) return null;
+  
+  // Check if helpbot is disabled in shop config
+  const aiModulesConfig = (shop as any)?.ai_modules_config || {};
+  const helpbotEnabled = aiModulesConfig.helpbot_enabled ?? true;
+  
+  if (!user || isPublicRoute || !helpbotEnabled) return null;
 
   const handleSend = async () => {
     const trimmed = input.trim();
