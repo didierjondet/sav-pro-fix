@@ -1581,7 +1581,27 @@ export default function Settings() {
                     </div>
                   </div>
 
-                  {/* Module 1: Prix du marché */}
+                  {/* Module: Bulle d'aide IA */}
+                  <div className="p-4 border rounded-lg space-y-3">
+                    <div className="flex items-start justify-between">
+                      <div className="space-y-1 flex-1">
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-semibold">Bulle d'aide IA</h4>
+                          <Badge variant="default" className="text-xs">Nouveau</Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          Affiche une bulle d'aide en bas à droite de l'écran pour guider les utilisateurs 
+                          dans l'utilisation de Fixway. L'assistant répond aux questions sur les fonctionnalités du logiciel.
+                        </p>
+                      </div>
+                      <Switch
+                        checked={shopForm.ai_helpbot_enabled}
+                        onCheckedChange={(checked) => 
+                          setShopForm(prev => ({ ...prev, ai_helpbot_enabled: checked }))
+                        }
+                      />
+                    </div>
+                  </div>
                   <div className="p-4 border rounded-lg space-y-3">
                     <div className="flex items-start justify-between">
                       <div className="space-y-1 flex-1">
