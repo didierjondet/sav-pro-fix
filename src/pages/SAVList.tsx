@@ -575,13 +575,13 @@ export default function SAVList() {
                 }
 
                 // Standard view
-                const cardClassName = `hover:shadow-md transition-shadow bg-sky-50 ${borderClass}`;
+                const typeInfo = getTypeInfo(savCase.sav_type);
                 
                 return (
-                <Card key={savCase.id} className={cardClassName}>
+                <Card key={savCase.id} className={`hover:shadow-md transition-shadow ${borderClass}`} style={{ backgroundColor: `${typeInfo.color}15` }}>
                   <CardContent className="p-4 md:p-5">
                     <div className="flex flex-col gap-3">
-                      {/* Ligne 1 : Identité */}
+                      {/* Ligne 1 : Identité (gauche) + Statut (droite) */}
                       <div className="flex items-center justify-between flex-wrap gap-2">
                         <div className="flex items-center gap-2 min-w-0">
                           {hasUnreadMessages && <MessageCircle className="h-5 w-5 text-blue-500 animate-pulse shrink-0" />}
@@ -596,20 +596,22 @@ export default function SAVList() {
                               `#${savCase.case_number}`
                             }
                           </h3>
+                          {savCase.customer?.phone && (
+                            <Phone className="h-4 w-4 text-muted-foreground shrink-0" />
+                          )}
                         </div>
                         <div className="flex items-center gap-2 flex-wrap">
                           {!(savCase.sav_type === 'internal' && !savCase.customer) && (
                             <span className="text-xs text-muted-foreground font-mono">N° {savCase.case_number}</span>
                           )}
-                          <Badge variant="outline" className={
-                            savCase.sav_type === 'client' ? 'border-red-200 text-red-700' : 'border-blue-200 text-blue-700'
-                          }>
-                            {getTypeInfo(savCase.sav_type).label}
-                          </Badge>
+                          <SAVStatusDropdown
+                            currentStatus={savCase.status}
+                            onStatusChange={(newStatus) => handleStatusChange(savCase.id, newStatus)}
+                          />
                         </div>
                       </div>
 
-                      {/* Ligne 2 : Appareil + Statut */}
+                      {/* Ligne 2 : Appareil + IMEI */}
                       <div className="flex items-center justify-between flex-wrap gap-2 text-sm text-muted-foreground">
                         <div className="flex items-center gap-4 flex-wrap">
                           <div className="flex items-center gap-1.5">
@@ -618,15 +620,11 @@ export default function SAVList() {
                           </div>
                           {savCase.device_imei && (
                             <div className="flex items-center gap-1.5">
-                              <Phone className="h-4 w-4 shrink-0" />
+                              <Hash className="h-4 w-4 shrink-0" />
                               <span className="font-mono text-xs">{savCase.device_imei}</span>
                             </div>
                           )}
                         </div>
-                        <SAVStatusDropdown
-                          currentStatus={savCase.status}
-                          onStatusChange={(newStatus) => handleStatusChange(savCase.id, newStatus)}
-                        />
                       </div>
 
                       {/* Ligne 3 : Métadonnées */}
@@ -677,30 +675,38 @@ export default function SAVList() {
                         <SAVTimeline savCase={savCase} shop={shop} />
                       </div>
 
-                      {/* Ligne 6 : Actions */}
-                      <div className="flex items-center justify-end gap-2 pt-2 border-t border-border/30 flex-wrap">
-                        <Button variant="outline" size="sm" onClick={() => navigate(`/sav/${savCase.id}`)}>
-                          <Eye className="h-4 w-4 mr-1" />
-                          Voir
-                        </Button>
-                        <SAVPrintButton 
-                          savCase={savCase}
+                      {/* Ligne 6 : Type SAV (bas gauche) + Actions (bas droite) */}
+                      <div className="flex items-center justify-between gap-2 pt-2 border-t border-border/30 flex-wrap">
+                        <Badge 
                           variant="outline"
-                          size="sm"
-                        />
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => {
-                            if (confirm('Êtes-vous sûr de vouloir supprimer ce dossier SAV ?')) {
-                              deleteCase(savCase.id);
-                            }
-                          }}
-                          className="text-destructive hover:text-destructive"
+                          style={{ borderColor: typeInfo.color, color: typeInfo.color }}
                         >
-                          <Trash2 className="h-4 w-4 mr-1" />
-                          Supprimer
-                        </Button>
+                          {typeInfo.label}
+                        </Badge>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <Button variant="outline" size="sm" onClick={() => navigate(`/sav/${savCase.id}`)}>
+                            <Eye className="h-4 w-4 mr-1" />
+                            Voir
+                          </Button>
+                          <SAVPrintButton 
+                            savCase={savCase}
+                            variant="outline"
+                            size="sm"
+                          />
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => {
+                              if (confirm('Êtes-vous sûr de vouloir supprimer ce dossier SAV ?')) {
+                                deleteCase(savCase.id);
+                              }
+                            }}
+                            className="text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4 mr-1" />
+                            Supprimer
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   </CardContent>
