@@ -117,6 +117,11 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
       if (shopError) throw shopError;
       
       console.log('✅ ShopContext: Shop data loaded:', shopData.name);
+      
+      // Initialize default widget configurations for new shops
+      initializeDefaultWidgetConfigurations(shopData.id);
+      
+      return shopData as Shop;
       return shopData as Shop;
     },
     enabled: !!user,
