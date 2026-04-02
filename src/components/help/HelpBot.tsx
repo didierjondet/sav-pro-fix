@@ -39,6 +39,7 @@ const HelpBot: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState('');
   const { user } = useAuth();
+  const { shop } = useShop();
   const location = useLocation();
   const scrollRef = useRef<HTMLDivElement>(null);
 
