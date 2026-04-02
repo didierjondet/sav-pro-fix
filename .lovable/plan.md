@@ -1,43 +1,21 @@
 
 
-## Plan : Mémoriser les filtres SAV en localStorage avec réinitialisation quotidienne
+## Plan : Corriger la recherche client dans la popup de modification SAV
 
-### Principe
-Sauvegarder les filtres actifs (type, statut, couleur, grade, tri, items/page) dans le localStorage. Au chargement, restaurer ces filtres sauf si la date du jour a changé — dans ce cas, remettre les valeurs par défaut. Ajouter un bouton "Réinitialiser les filtres" visible dans la barre de filtres.
+### Problème
+`EditSAVCustomerDialog.tsx` utilise `useCustomers()` (ligne 45) qui est **paginé** (10 éléments par page par défaut). La recherche ne fonctionne donc que sur les 10 premiers clients. Il faut utiliser `useAllCustomers()` qui charge tous les clients de la boutique.
 
-### Modifications
+### Modification
 
-**Fichier : `src/pages/SAVList.tsx`**
+**Fichier : `src/components/sav/EditSAVCustomerDialog.tsx`**
 
-1. **Clé localStorage** : `fixway_sav_filters` contenant un objet JSON :
-   ```json
-   {
-     "filterType": "all",
-     "statusFilter": "all-except-ready",
-     "colorFilter": "all",
-     "gradeFilter": "all",
-     "sortOrder": "priority",
-     "itemsPerPage": 20,
-     "savedDate": "2026-04-02"
-   }
-   ```
+1. Remplacer l'import `useCustomers` par `useAllCustomers`
+2. Remplacer `const { customers, createCustomer } = useCustomers()` par `const { customers } = useAllCustomers()` + import séparé de `useCustomers` uniquement pour `createCustomer`
 
-2. **Initialisation des states** : remplacer les valeurs en dur par une lecture du localStorage. Si `savedDate` !== date du jour → utiliser les valeurs par défaut et nettoyer le storage.
-
-3. **Sauvegarde automatique** : un `useEffect` qui persiste les filtres dans le localStorage à chaque changement de l'un des filtres.
-
-4. **Bouton "Réinitialiser"** : ajouter un bouton avec icône `RotateCcw` dans la zone des filtres, qui remet tous les filtres aux valeurs par défaut et supprime l'entrée localStorage.
-
-5. **Priorité URL** : les paramètres URL (`searchParams`) restent prioritaires — si présents, ils écrasent le localStorage (comportement actuel inchangé).
-
-### Valeurs par défaut
-- `filterType`: `'all'`
-- `statusFilter`: `'all-except-ready'`
-- `colorFilter`: `'all'`
-- `gradeFilter`: `'all'`
-- `sortOrder`: `'priority'`
-- `itemsPerPage`: `20`
+Concrètement :
+- Import : `useAllCustomers` au lieu de `useCustomers` pour la liste
+- Garder `useCustomers` uniquement pour la fonction `createCustomer`
 
 ### Fichier impacté
-- `src/pages/SAVList.tsx`
+- `src/components/sav/EditSAVCustomerDialog.tsx`
 
