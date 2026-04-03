@@ -210,6 +210,7 @@ const HelpBot: React.FC = () => {
                   </div>
                 </div>
               )}
+              <div ref={bottomRef} />
             </div>
           </ScrollArea>
 
