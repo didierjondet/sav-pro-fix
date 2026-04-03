@@ -1,33 +1,22 @@
 
 
-## Plan : Rendre la scrollbar du HelpBot visible et utilisable
+## Plan : Remplacer la recherche fournisseur par une recherche rapide de stock
 
-### Problème
-La `ScrollArea` de Radix utilise une scrollbar très fine (`w-2.5` = 10px) avec une couleur `bg-border` quasi invisible. De plus, elle ne s'affiche que au survol par défaut sur certains navigateurs, rendant impossible la navigation dans la conversation.
+### Ce qui sera fait
 
-### Correction (1 fichier : `src/components/help/HelpBot.tsx`)
+1. **Supprimer `SupplierPartsSearch`** de la page Devis (`src/pages/Quotes.tsx` ligne 701) et son import (ligne 15)
 
-Remplacer le `<ScrollArea>` Radix par un simple `div` avec `overflow-y-auto` et un style de scrollbar personnalisé visible en permanence. C'est plus fiable et garantit une barre de défilement toujours visible et utilisable (souris + tactile).
+2. **Remplacer par un champ de recherche rapide de pièces en stock** directement dans la page Devis, au même emplacement. Ce champ permettra de :
+   - Taper un nom ou une référence de pièce
+   - Voir instantanément les résultats avec : nom, référence, stock disponible (quantité - réservée), prix de vente, et un indicateur visuel (vert = en stock, rouge = rupture)
+   - Cliquer sur une pièce pour voir ses détails sans quitter la page
 
-```tsx
-// Remplacer :
-<ScrollArea className="flex-1 min-h-0 max-h-[calc(100vh-12rem)] sm:max-h-[380px]">
-  <div className="p-4 space-y-3">
-    ...
-  </div>
-</ScrollArea>
-
-// Par :
-<div className="flex-1 min-h-0 max-h-[calc(100vh-12rem)] sm:max-h-[380px] overflow-y-auto scrollbar-thin scrollbar-thumb-primary/30 scrollbar-track-transparent">
-  <div className="p-4 space-y-3">
-    ...
-  </div>
-</div>
-```
-
-Ajouter aussi dans `src/index.css` les styles CSS pour la scrollbar personnalisée du bot (webkit + Firefox) afin qu'elle soit visible, arrondie, et cliquable sur tous les navigateurs.
+3. **Supprimer le fichier `SupplierPartsSearch.tsx`** car il ne sera plus utilisé nulle part
 
 ### Fichiers impactés
-- `src/components/help/HelpBot.tsx` — remplacer ScrollArea par div scrollable
-- `src/index.css` — ajouter les styles scrollbar custom
+- `src/pages/Quotes.tsx` — retirer import + usage de `SupplierPartsSearch`, ajouter le nouveau composant de recherche stock inline
+- `src/components/quotes/SupplierPartsSearch.tsx` — supprimer le fichier
+
+### Détails techniques
+Le nouveau bloc utilisera le hook `useParts()` déjà importé dans la page (via QuoteForm), avec `multiWordSearch` pour le filtrage. Pas de nouveau composant nécessaire — un simple bloc JSX inline avec un `Input` et une liste de résultats filtrés suffira, similaire à ce qui existe déjà dans `QuoteForm.tsx` (lignes 569-618) mais placé en haut de la liste des devis pour consultation rapide.
 
