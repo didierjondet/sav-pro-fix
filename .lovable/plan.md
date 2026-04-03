@@ -1,20 +1,33 @@
 
 
-## Plan : Corriger le scroll et le responsive du HelpBot
+## Plan : Rendre la scrollbar du HelpBot visible et utilisable
 
-### Probleme
-1. **Scroll cassé** : `scrollRef` est placé sur le `div` intérieur, mais Radix ScrollArea scrolle via son propre `Viewport` interne. Donc `scrollRef.current.scrollTop = scrollHeight` ne fait rien — il faut scroller le viewport Radix, pas le div enfant.
-2. **Pas responsive** : La largeur est fixée à `w-[380px]`, ce qui déborde sur mobile. Pas d'adaptation mobile.
+### Problème
+La `ScrollArea` de Radix utilise une scrollbar très fine (`w-2.5` = 10px) avec une couleur `bg-border` quasi invisible. De plus, elle ne s'affiche que au survol par défaut sur certains navigateurs, rendant impossible la navigation dans la conversation.
 
 ### Correction (1 fichier : `src/components/help/HelpBot.tsx`)
 
-1. Remplacer `scrollRef` sur le div intérieur par un scroll automatique via un élément sentinelle en bas de la liste (`<div ref={bottomRef} />`) avec `bottomRef.current.scrollIntoView({ behavior: 'smooth' })` — fonctionne avec n'importe quel conteneur scroll parent dont Radix.
+Remplacer le `<ScrollArea>` Radix par un simple `div` avec `overflow-y-auto` et un style de scrollbar personnalisé visible en permanence. C'est plus fiable et garantit une barre de défilement toujours visible et utilisable (souris + tactile).
 
-2. Rendre le conteneur responsive :
-   - `w-[380px]` → `w-[calc(100vw-2rem)] sm:w-[380px]` (pleine largeur mobile avec marge)
-   - `max-h-[560px]` → `max-h-[calc(100vh-2rem)] sm:max-h-[560px]` (hauteur adaptée mobile)
-   - `max-h-[380px]` sur ScrollArea → `max-h-[calc(100vh-12rem)] sm:max-h-[380px]`
+```tsx
+// Remplacer :
+<ScrollArea className="flex-1 min-h-0 max-h-[calc(100vh-12rem)] sm:max-h-[380px]">
+  <div className="p-4 space-y-3">
+    ...
+  </div>
+</ScrollArea>
 
-### Fichier impacté
-- `src/components/help/HelpBot.tsx`
+// Par :
+<div className="flex-1 min-h-0 max-h-[calc(100vh-12rem)] sm:max-h-[380px] overflow-y-auto scrollbar-thin scrollbar-thumb-primary/30 scrollbar-track-transparent">
+  <div className="p-4 space-y-3">
+    ...
+  </div>
+</div>
+```
+
+Ajouter aussi dans `src/index.css` les styles CSS pour la scrollbar personnalisée du bot (webkit + Firefox) afin qu'elle soit visible, arrondie, et cliquable sur tous les navigateurs.
+
+### Fichiers impactés
+- `src/components/help/HelpBot.tsx` — remplacer ScrollArea par div scrollable
+- `src/index.css` — ajouter les styles scrollbar custom
 
