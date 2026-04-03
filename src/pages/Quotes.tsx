@@ -705,8 +705,63 @@ export default function Quotes() {
                     </Button>
                   </div>
 
-                  {/* Zone de recherche fournisseurs */}
-                  <SupplierPartsSearch />
+                  {/* Recherche rapide de pièces en stock */}
+                  <Card className="mb-6">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-sm font-medium flex items-center gap-2">
+                        <Package className="h-4 w-4" />
+                        Recherche rapide de pièces en stock
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="pt-0">
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                        <Input
+                          placeholder="Rechercher une pièce par nom, référence, SKU..."
+                          value={partsSearchTerm}
+                          onChange={(e) => setPartsSearchTerm(e.target.value)}
+                          className="pl-10"
+                        />
+                      </div>
+                      {partsSearchTerm.length >= 2 && (
+                        <div className="mt-3 max-h-60 overflow-y-auto border rounded-md">
+                          {filteredParts.length === 0 ? (
+                            <p className="p-3 text-sm text-muted-foreground text-center">Aucune pièce trouvée</p>
+                          ) : (
+                            filteredParts.slice(0, 20).map(part => {
+                              const available = (part.quantity || 0) - (part.reserved_quantity || 0);
+                              const isLow = available <= (part.min_stock || 0);
+                              const isOut = available <= 0;
+                              return (
+                                <div key={part.id} className="flex items-center justify-between p-3 border-b last:border-b-0 hover:bg-muted/50">
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-medium truncate">{part.name}</p>
+                                    <p className="text-xs text-muted-foreground">
+                                      {part.reference && `Réf: ${part.reference}`}
+                                      {part.reference && part.supplier && ' • '}
+                                      {part.supplier && `Fournisseur: ${part.supplier}`}
+                                    </p>
+                                  </div>
+                                  <div className="flex items-center gap-3 ml-3 shrink-0">
+                                    {part.selling_price != null && (
+                                      <span className="text-sm font-semibold">{part.selling_price.toFixed(2)} €</span>
+                                    )}
+                                    <Badge variant={isOut ? 'destructive' : isLow ? 'secondary' : 'default'} className="whitespace-nowrap">
+                                      {isOut ? (
+                                        <><AlertTriangle className="h-3 w-3 mr-1" />Rupture</>
+                                      ) : (
+                                        <>{available} en stock</>
+                                      )}
+                                    </Badge>
+                                  </div>
+                                </div>
+                              );
+                            })
+                          )}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
 
                   {/* Barre de recherche */}
                   <div className="mb-6">
