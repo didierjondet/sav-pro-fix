@@ -212,7 +212,7 @@ const HelpBot: React.FC = () => {
               )}
               <div ref={bottomRef} />
             </div>
-          </ScrollArea>
+          </div>
 
           <div className="border-t p-3">
             <div className="flex gap-2 items-end">
