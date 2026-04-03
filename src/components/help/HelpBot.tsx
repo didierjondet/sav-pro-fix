@@ -113,7 +113,7 @@ const HelpBot: React.FC = () => {
             </div>
           </div>
 
-          <ScrollArea className="flex-1 min-h-0 max-h-[calc(100vh-12rem)] sm:max-h-[380px]">
+          <div className="flex-1 min-h-0 max-h-[calc(100vh-12rem)] sm:max-h-[380px] overflow-y-auto helpbot-scrollbar">
             <div className="p-4 space-y-3">
               {(!userContext.profileComplete || !userContext.shopComplete) && messages.length === 0 && (
                 <div className="bg-accent/50 border border-accent rounded-lg p-3 text-sm">
