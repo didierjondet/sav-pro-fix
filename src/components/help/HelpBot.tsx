@@ -37,7 +37,7 @@ const HelpBot: React.FC = () => {
   const { user } = useAuth();
   const { shop } = useShop();
   const location = useLocation();
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const bottomRef = useRef<HTMLDivElement>(null);
 
   const {
     messages,
@@ -55,9 +55,7 @@ const HelpBot: React.FC = () => {
   const userContext = getUserContext();
 
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isLoading, pendingEscalation]);
 
   const isPublicRoute = PUBLIC_EXACT.includes(location.pathname) || PUBLIC_PREFIX.some(p => location.pathname.startsWith(p));
@@ -99,7 +97,7 @@ const HelpBot: React.FC = () => {
       )}
 
       {isOpen && (
-        <div className="fixed bottom-4 right-4 z-50 w-[380px] max-h-[560px] flex flex-col rounded-2xl border bg-background shadow-2xl">
+        <div className="fixed bottom-4 right-4 z-50 w-[calc(100vw-2rem)] sm:w-[380px] max-h-[calc(100vh-2rem)] sm:max-h-[560px] flex flex-col rounded-2xl border bg-background shadow-2xl">
           <div className="flex items-center justify-between px-4 py-3 border-b bg-primary rounded-t-2xl text-primary-foreground">
             <div className="flex items-center gap-2">
               <MessageCircleQuestion className="h-5 w-5" />
@@ -115,8 +113,8 @@ const HelpBot: React.FC = () => {
             </div>
           </div>
 
-          <ScrollArea className="flex-1 min-h-0 max-h-[380px]">
-            <div ref={scrollRef} className="p-4 space-y-3">
+          <ScrollArea className="flex-1 min-h-0 max-h-[calc(100vh-12rem)] sm:max-h-[380px]">
+            <div className="p-4 space-y-3">
               {(!userContext.profileComplete || !userContext.shopComplete) && messages.length === 0 && (
                 <div className="bg-accent/50 border border-accent rounded-lg p-3 text-sm">
                   <div className="flex items-center gap-2 font-medium text-foreground mb-1">
@@ -212,6 +210,7 @@ const HelpBot: React.FC = () => {
                   </div>
                 </div>
               )}
+              <div ref={bottomRef} />
             </div>
           </ScrollArea>
 
