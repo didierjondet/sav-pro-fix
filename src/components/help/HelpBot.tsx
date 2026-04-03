@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { MessageCircleQuestion, X, Send, RotateCcw, AlertTriangle, TicketCheck, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { ScrollArea } from '@/components/ui/scroll-area';
+
 import { useHelpBot } from '@/hooks/useHelpBot';
 import { useAuth } from '@/contexts/AuthContext';
 import { useShop } from '@/hooks/useShop';
