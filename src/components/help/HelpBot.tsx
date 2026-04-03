@@ -37,7 +37,7 @@ const HelpBot: React.FC = () => {
   const { user } = useAuth();
   const { shop } = useShop();
   const location = useLocation();
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const bottomRef = useRef<HTMLDivElement>(null);
 
   const {
     messages,
