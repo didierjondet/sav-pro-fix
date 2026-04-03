@@ -69,12 +69,18 @@ export default function Quotes() {
   const [editingQuote, setEditingQuote] = useState<Quote | null>(null);
   const [showQuoteActionDialog, setShowQuoteActionDialog] = useState<Quote | null>(null);
   const [selectedSAVType, setSelectedSAVType] = useState<string>('');
+  const [partsSearchTerm, setPartsSearchTerm] = useState('');
   const { quotes, loading, createQuote, deleteQuote, updateQuote, archiveQuote, reactivateQuote } = useQuotes();
   const { createCase } = useSAVCases();
   const { sendQuoteNotification, sendSMS } = useSMS();
   const { shop } = useShop();
   const { toast } = useToast();
   const { getAllTypes, getTypeInfo } = useShopSAVTypes();
+  const { parts: shopParts } = useParts();
+
+  const filteredParts = partsSearchTerm.length >= 2
+    ? shopParts.filter(p => multiWordSearch(partsSearchTerm, p.name, p.reference, p.sku, p.supplier))
+    : [];
 
   const formatCustomerDisplay = (name: string) => {
     if (!name) return '';
