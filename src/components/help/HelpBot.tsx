@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { MessageCircleQuestion, X, Send, RotateCcw, AlertTriangle, TicketCheck, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { ScrollArea } from '@/components/ui/scroll-area';
+
 import { useHelpBot } from '@/hooks/useHelpBot';
 import { useAuth } from '@/contexts/AuthContext';
 import { useShop } from '@/hooks/useShop';
@@ -113,7 +113,7 @@ const HelpBot: React.FC = () => {
             </div>
           </div>
 
-          <ScrollArea className="flex-1 min-h-0 max-h-[calc(100vh-12rem)] sm:max-h-[380px]">
+          <div className="flex-1 min-h-0 max-h-[calc(100vh-12rem)] sm:max-h-[380px] overflow-y-auto helpbot-scrollbar">
             <div className="p-4 space-y-3">
               {(!userContext.profileComplete || !userContext.shopComplete) && messages.length === 0 && (
                 <div className="bg-accent/50 border border-accent rounded-lg p-3 text-sm">
@@ -212,7 +212,7 @@ const HelpBot: React.FC = () => {
               )}
               <div ref={bottomRef} />
             </div>
-          </ScrollArea>
+          </div>
 
           <div className="border-t p-3">
             <div className="flex gap-2 items-end">
