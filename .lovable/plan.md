@@ -1,30 +1,74 @@
 
 
-## Plan : Stabiliser l'affichage sidebar (types/statuts SAV) + corriger Agenda
+## Plan : Corriger le layout de la page Agenda + Enrichir les connaissances du bot
 
-### Problème
-- `refetchOnMount: 'always'` (App.tsx ligne 64) force un re-fetch à chaque changement de page. Pendant le re-fetch, `loading` repasse à `true` → les types/statuts disparaissent puis réapparaissent.
-- Les hooks `useShopSAVTypes` et `useShopSAVStatuses` ont déjà des subscriptions realtime qui invalident le cache quand il y a un changement en base. C'est exactement le comportement souhaité : statique sauf si changement réel.
+### Problème 1 : Layout Agenda différent des autres pages
 
-### Corrections
+**Cause** : La page Agenda utilise une structure différente des autres pages :
 
-**Fichier : `src/App.tsx`** (ligne 64)
-- Changer `refetchOnMount: 'always'` → `refetchOnMount: true`
-- Avec `staleTime: 5min` déjà en place, les données ne seront re-fetchées au mount que si elles sont stale (> 5 min). Les subscriptions realtime continuent de déclencher un refresh immédiat en cas de changement réel (ajout/modif/suppression de type ou statut).
+```text
+Agenda (actuel — INCORRECT) :
+┌──────────────────────────────┐
+│         HEADER (pleine largeur) │
+├────────┬─────────────────────┤
+│ Sidebar│    Main content     │
+└────────┴─────────────────────┘
 
-**Fichier : `src/hooks/useShopSAVTypes.ts`**
-- Ajouter `placeholderData: (prev) => prev` dans les options `useQuery`. Cela garde les anciennes données affichées pendant un éventuel re-fetch en arrière-plan → zéro flash visuel, même si un re-fetch se produit.
+Autres pages (correct) :
+┌────────┬─────────────────────┐
+│        │      HEADER         │
+│ Sidebar├─────────────────────┤
+│        │    Main content     │
+└────────┴─────────────────────┘
+```
 
-**Fichier : `src/hooks/useShopSAVStatuses.ts`**
-- Même chose : ajouter `placeholderData: (prev) => prev` dans `useQuery`.
+La structure d'Agenda est `flex-col > Header > flex > Sidebar + main`. Les autres pages utilisent `flex h-screen > Sidebar > flex-col > Header + main`.
 
-### Comportement résultat
-- **Navigation entre pages** : les types et statuts restent affichés instantanément (données en cache, pas de loading)
-- **Ajout/modification/suppression d'un type ou statut** : la subscription realtime (déjà en place dans les deux hooks) invalide le cache → re-fetch automatique → mise à jour visible, mais sans flash car `placeholderData` maintient l'ancien affichage pendant le fetch
-- **Nouveau SAV créé** : le compteur par type/statut se met à jour via `useSAVCases` qui a aussi son propre realtime
+**Correction** (`src/pages/Agenda.tsx`) : Aligner la structure sur le modèle des autres pages :
+```
+<div className="min-h-screen bg-background">
+  <div className="flex h-screen">
+    <Sidebar ... />
+    <div className="flex-1 flex flex-col overflow-hidden">
+      <Header ... />
+      <main className="flex-1 overflow-y-auto p-4 md:p-6">
+        ...
+      </main>
+    </div>
+  </div>
+</div>
+```
+
+---
+
+### Problème 2 : Enrichir les connaissances du bot
+
+Le bot accède déjà aux données en temps réel du magasin (stock, SAV, clients, devis, commandes). Mais le system prompt manque de profondeur sur les fonctionnalités et règles métier de Fixway.
+
+**Correction** (`supabase/functions/help-bot/index.ts`) :
+
+1. **Enrichir le SYSTEM_PROMPT** avec une documentation complète des fonctionnalités :
+   - Cycle de vie complet d'un dossier SAV (création → diagnostic → devis → réparation → clôture)
+   - Gestion des pièces détachées (stock, réservation, commande, seuils min)
+   - Système de devis (création, envoi client, acceptation/refus, lien avec SAV)
+   - Messagerie interne (communication boutique ↔ client via tracking)
+   - QR codes et suivi client public
+   - Codes de sécurité (pattern lock, code PIN)
+   - Système de SMS (crédits, envoi, notifications)
+   - Agenda et rendez-vous (planification, contre-propositions)
+   - Statistiques et widgets personnalisables
+   - Import/export de données (clients, SAV, pièces)
+   - Système d'abonnement et limites par plan
+   - Rôles utilisateurs (admin, technicien)
+
+2. **Rendre les réponses plus concises** : Ajouter dans les règles du prompt l'instruction d'être bref et de poser des questions de clarification plutôt que de donner de longues réponses génériques.
+
+3. **Augmenter l'interactivité** : Instruire le bot à dialoguer, poser des questions de suivi pour mieux cerner le besoin avant de répondre.
+
+---
 
 ### Fichiers impactés
-- `src/App.tsx` — 1 ligne (refetchOnMount)
-- `src/hooks/useShopSAVTypes.ts` — 1 ligne (placeholderData)
-- `src/hooks/useShopSAVStatuses.ts` — 1 ligne (placeholderData)
+
+- **`src/pages/Agenda.tsx`** — Restructurer le layout pour correspondre aux autres pages (Sidebar en premier, Header à droite)
+- **`supabase/functions/help-bot/index.ts`** — Enrichir le SYSTEM_PROMPT avec la documentation métier complète, instructions de concision et de dialogue interactif
 
