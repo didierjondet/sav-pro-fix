@@ -61,7 +61,7 @@ const queryClient = new QueryClient({
       retry: 1,
       refetchOnWindowFocus: true, // ✅ Réactiver pour synchronisation multi-sessions
       refetchOnReconnect: true, // ✅ Réactiver pour synchronisation
-      refetchOnMount: 'always', // ✅ Toujours recharger au montage pour données fraîches
+      refetchOnMount: true, // Re-fetch seulement si stale (respecte staleTime)
     },
   },
 });

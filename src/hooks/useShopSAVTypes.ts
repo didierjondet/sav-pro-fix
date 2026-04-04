@@ -60,8 +60,9 @@ export function useShopSAVTypes() {
     queryKey: ['shop-sav-types', user?.id],
     queryFn: fetchTypes,
     enabled: !!user,
-    staleTime: 5 * 60 * 1000, // 5 minutes - données stables
-    gcTime: 10 * 60 * 1000, // 10 minutes
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    placeholderData: (prev) => prev,
   });
 
   useEffect(() => {
