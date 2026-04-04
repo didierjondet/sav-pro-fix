@@ -1,22 +1,30 @@
 
 
-## Plan : Remplacer la recherche fournisseur par une recherche rapide de stock
+## Plan : Stabiliser l'affichage sidebar (types/statuts SAV) + corriger Agenda
 
-### Ce qui sera fait
+### Problème
+- `refetchOnMount: 'always'` (App.tsx ligne 64) force un re-fetch à chaque changement de page. Pendant le re-fetch, `loading` repasse à `true` → les types/statuts disparaissent puis réapparaissent.
+- Les hooks `useShopSAVTypes` et `useShopSAVStatuses` ont déjà des subscriptions realtime qui invalident le cache quand il y a un changement en base. C'est exactement le comportement souhaité : statique sauf si changement réel.
 
-1. **Supprimer `SupplierPartsSearch`** de la page Devis (`src/pages/Quotes.tsx` ligne 701) et son import (ligne 15)
+### Corrections
 
-2. **Remplacer par un champ de recherche rapide de pièces en stock** directement dans la page Devis, au même emplacement. Ce champ permettra de :
-   - Taper un nom ou une référence de pièce
-   - Voir instantanément les résultats avec : nom, référence, stock disponible (quantité - réservée), prix de vente, et un indicateur visuel (vert = en stock, rouge = rupture)
-   - Cliquer sur une pièce pour voir ses détails sans quitter la page
+**Fichier : `src/App.tsx`** (ligne 64)
+- Changer `refetchOnMount: 'always'` → `refetchOnMount: true`
+- Avec `staleTime: 5min` déjà en place, les données ne seront re-fetchées au mount que si elles sont stale (> 5 min). Les subscriptions realtime continuent de déclencher un refresh immédiat en cas de changement réel (ajout/modif/suppression de type ou statut).
 
-3. **Supprimer le fichier `SupplierPartsSearch.tsx`** car il ne sera plus utilisé nulle part
+**Fichier : `src/hooks/useShopSAVTypes.ts`**
+- Ajouter `placeholderData: (prev) => prev` dans les options `useQuery`. Cela garde les anciennes données affichées pendant un éventuel re-fetch en arrière-plan → zéro flash visuel, même si un re-fetch se produit.
+
+**Fichier : `src/hooks/useShopSAVStatuses.ts`**
+- Même chose : ajouter `placeholderData: (prev) => prev` dans `useQuery`.
+
+### Comportement résultat
+- **Navigation entre pages** : les types et statuts restent affichés instantanément (données en cache, pas de loading)
+- **Ajout/modification/suppression d'un type ou statut** : la subscription realtime (déjà en place dans les deux hooks) invalide le cache → re-fetch automatique → mise à jour visible, mais sans flash car `placeholderData` maintient l'ancien affichage pendant le fetch
+- **Nouveau SAV créé** : le compteur par type/statut se met à jour via `useSAVCases` qui a aussi son propre realtime
 
 ### Fichiers impactés
-- `src/pages/Quotes.tsx` — retirer import + usage de `SupplierPartsSearch`, ajouter le nouveau composant de recherche stock inline
-- `src/components/quotes/SupplierPartsSearch.tsx` — supprimer le fichier
-
-### Détails techniques
-Le nouveau bloc utilisera le hook `useParts()` déjà importé dans la page (via QuoteForm), avec `multiWordSearch` pour le filtrage. Pas de nouveau composant nécessaire — un simple bloc JSX inline avec un `Input` et une liste de résultats filtrés suffira, similaire à ce qui existe déjà dans `QuoteForm.tsx` (lignes 569-618) mais placé en haut de la liste des devis pour consultation rapide.
+- `src/App.tsx` — 1 ligne (refetchOnMount)
+- `src/hooks/useShopSAVTypes.ts` — 1 ligne (placeholderData)
+- `src/hooks/useShopSAVStatuses.ts` — 1 ligne (placeholderData)
 
