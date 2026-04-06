@@ -413,6 +413,27 @@ export type Database = {
           },
         ]
       }
+      default_role_permissions: {
+        Row: {
+          id: string
+          permissions: Json
+          role: string
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          permissions?: Json
+          role: string
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          permissions?: Json
+          role?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       global_sms_credits: {
         Row: {
           created_at: string
@@ -1597,6 +1618,41 @@ export type Database = {
             columns: ["technician_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shop_role_permissions: {
+        Row: {
+          created_at: string | null
+          id: string
+          permissions: Json
+          role: string
+          shop_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          permissions?: Json
+          role: string
+          shop_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          permissions?: Json
+          role?: string
+          shop_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shop_role_permissions_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
             referencedColumns: ["id"]
           },
         ]
