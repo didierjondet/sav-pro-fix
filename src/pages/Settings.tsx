@@ -1530,6 +1530,8 @@ export default function Settings() {
                     </DialogFooter>
                   </DialogContent>
                 </Dialog>
+
+                <RolePermissionsManager />
               </TabsContent>}
 
             <TabsContent value="ai" className="space-y-6">
