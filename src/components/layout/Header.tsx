@@ -40,6 +40,7 @@ const Header = ({
     profile,
     isImpersonating: isInImpersonationMode
   } = useProfile();
+  const { rolePermissions } = useRolePermissions();
   const {
     storageGB
   } = useShopStorageUsage(shop?.id);
