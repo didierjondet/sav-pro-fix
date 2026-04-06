@@ -11,7 +11,6 @@ import { useUnifiedSMSCredits } from '@/hooks/useUnifiedSMSCredits';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useProfile, clearImpersonation } from '@/hooks/useProfile';
 import { useRolePermissions } from '@/hooks/useRolePermissions';
-import { useProfile, clearImpersonation } from '@/hooks/useProfile';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useNavigate } from 'react-router-dom';
 import { Alert, AlertDescription } from '@/components/ui/alert';
