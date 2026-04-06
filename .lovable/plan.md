@@ -1,74 +1,86 @@
 
 
-## Plan : Corriger le layout de la page Agenda + Enrichir les connaissances du bot
+## Plan révisé : Système de permissions par rôle utilisateur
 
-### Problème 1 : Layout Agenda différent des autres pages
+### Les 3 rôles concernés et leurs valeurs par défaut
 
-**Cause** : La page Agenda utilise une structure différente des autres pages :
+**1. Admin** (accès complet par défaut) :
+- Tous les menus : activés
+- Réglages : accès complet
+- Vue simplifiée : non activée par défaut
+- Logs SAV, suppression SAV, gestion stock, création devis : tout activé
+- Abonnement et achat SMS : **activé** (réservé aux admins)
 
-```text
-Agenda (actuel — INCORRECT) :
-┌──────────────────────────────┐
-│         HEADER (pleine largeur) │
-├────────┬─────────────────────┤
-│ Sidebar│    Main content     │
-└────────┴─────────────────────┘
+**2. Technicien** :
+- Menus : Tableau de bord, Dossiers SAV, Stock pièces, Devis, Commandes, Clients, Agenda, Chat clients → activés
+- Rapports, Statistiques : **désactivés**
+- Vue simplifiée : **non activée** (vue normale)
+- Réglages : accès limité (pas d'abonnement, pas d'achat SMS, pas de gestion utilisateurs)
+- Logs SAV : désactivés
+- Abonnement/Achat SMS : **désactivés**
 
-Autres pages (correct) :
-┌────────┬─────────────────────┐
-│        │      HEADER         │
-│ Sidebar├─────────────────────┤
-│        │    Main content     │
-└────────┴─────────────────────┘
+**3. Admin Magasin (shop_admin)** :
+- Menus : Dossiers SAV, Stock pièces, Devis, Commandes, Clients, Agenda, Chat clients → activés
+- Tableau de bord, Rapports, Statistiques : activés
+- **Menu Réglages : désactivé** (disparaît complètement du menu)
+- **Vue simplifiée : activée par défaut**
+- Logs SAV : désactivés
+- Abonnement/Achat SMS : désactivés
+
+### Structure des permissions (jsonb)
+
+```json
+{
+  "menu_dashboard": true,
+  "menu_sav": true,
+  "menu_parts": true,
+  "menu_quotes": true,
+  "menu_orders": true,
+  "menu_customers": true,
+  "menu_chats": true,
+  "menu_agenda": true,
+  "menu_reports": true,
+  "menu_statistics": true,
+  "menu_settings": true,
+  "settings_subscription": true,
+  "settings_sms_purchase": true,
+  "settings_users": true,
+  "settings_import_export": true,
+  "sav_logs": true,
+  "can_delete_sav": true,
+  "can_create_quotes": true,
+  "can_manage_stock": true,
+  "simplified_view_default": false
+}
 ```
 
-La structure d'Agenda est `flex-col > Header > flex > Sidebar + main`. Les autres pages utilisent `flex h-screen > Sidebar > flex-col > Header + main`.
+### Corrections apportées
 
-**Correction** (`src/pages/Agenda.tsx`) : Aligner la structure sur le modèle des autres pages :
-```
-<div className="min-h-screen bg-background">
-  <div className="flex h-screen">
-    <Sidebar ... />
-    <div className="flex-1 flex flex-col overflow-hidden">
-      <Header ... />
-      <main className="flex-1 overflow-y-auto p-4 md:p-6">
-        ...
-      </main>
-    </div>
-  </div>
-</div>
-```
+1. **Migration SQL** : créer `shop_role_permissions` et `default_role_permissions` avec RLS. Insérer les 3 rôles par défaut (admin, technician, shop_admin) dans `default_role_permissions` avec les valeurs détaillées ci-dessus.
 
----
+2. **Hook `useRolePermissions.ts`** : récupère les permissions du rôle courant de l'utilisateur. Fallback sur `default_role_permissions`. Cache avec `placeholderData` + realtime.
 
-### Problème 2 : Enrichir les connaissances du bot
+3. **Composant `RolePermissionsManager.tsx`** dans Settings > Utilisateurs : sélecteur des 3 rôles, toggles groupés par catégorie. Visible uniquement pour les admins.
 
-Le bot accède déjà aux données en temps réel du magasin (stock, SAV, clients, devis, commandes). Mais le system prompt manque de profondeur sur les fonctionnalités et règles métier de Fixway.
+4. **Composant `DefaultRolePermissionsManager.tsx`** dans Super Admin : même interface mais pour les valeurs par défaut globales appliquées à la création de nouvelles boutiques.
 
-**Correction** (`supabase/functions/help-bot/index.ts`) :
+5. **Sidebar.tsx** : combiner `useMenuPermissions` (plan) + `useRolePermissions` (rôle). Un menu visible seulement si les deux autorisent. Le menu "Réglages" est masqué si `menu_settings: false`.
 
-1. **Enrichir le SYSTEM_PROMPT** avec une documentation complète des fonctionnalités :
-   - Cycle de vie complet d'un dossier SAV (création → diagnostic → devis → réparation → clôture)
-   - Gestion des pièces détachées (stock, réservation, commande, seuils min)
-   - Système de devis (création, envoi client, acceptation/refus, lien avec SAV)
-   - Messagerie interne (communication boutique ↔ client via tracking)
-   - QR codes et suivi client public
-   - Codes de sécurité (pattern lock, code PIN)
-   - Système de SMS (crédits, envoi, notifications)
-   - Agenda et rendez-vous (planification, contre-propositions)
-   - Statistiques et widgets personnalisables
-   - Import/export de données (clients, SAV, pièces)
-   - Système d'abonnement et limites par plan
-   - Rôles utilisateurs (admin, technicien)
+6. **Header.tsx** : le toggle vue simplifiée est masqué si `simplified_view_toggle: false`. Si `simplified_view_default: true`, activer la vue simplifiée par défaut au premier chargement.
 
-2. **Rendre les réponses plus concises** : Ajouter dans les règles du prompt l'instruction d'être bref et de poser des questions de clarification plutôt que de donner de longues réponses génériques.
+7. **Settings.tsx** : masquer les onglets abonnement/SMS si `settings_subscription`/`settings_sms_purchase` sont `false`.
 
-3. **Augmenter l'interactivité** : Instruire le bot à dialoguer, poser des questions de suivi pour mieux cerner le besoin avant de répondre.
-
----
+8. **Initialisation boutique** : à la création d'une boutique, copier les `default_role_permissions` des 3 rôles dans `shop_role_permissions`.
 
 ### Fichiers impactés
 
-- **`src/pages/Agenda.tsx`** — Restructurer le layout pour correspondre aux autres pages (Sidebar en premier, Header à droite)
-- **`supabase/functions/help-bot/index.ts`** — Enrichir le SYSTEM_PROMPT avec la documentation métier complète, instructions de concision et de dialogue interactif
+- **Migration SQL** — 2 tables, RLS, données par défaut pour les 3 rôles
+- `src/hooks/useRolePermissions.ts` — nouveau
+- `src/components/settings/RolePermissionsManager.tsx` — nouveau
+- `src/components/admin/DefaultRolePermissionsManager.tsx` — nouveau
+- `src/components/admin/SuperAdminSidebar.tsx` — nouvelle entrée menu
+- `src/pages/SuperAdmin.tsx` — rendre le composant
+- `src/pages/Settings.tsx` — intégrer le module + filtrer onglets
+- `src/components/layout/Sidebar.tsx` — appliquer permissions rôle
+- `src/components/layout/Header.tsx` — conditionner vue simplifiée
 
