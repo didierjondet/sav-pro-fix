@@ -457,13 +457,15 @@ export function Sidebar({
               <HelpCircle className="mr-3 h-5 w-5" />
               Support
             </Button>
-            <Button variant="ghost" className="w-full justify-start" onClick={() => {
-            navigate('/settings');
-            onClose();
-          }}>
-              <Settings className="mr-3 h-5 w-5" />
-              Paramètres
-            </Button>
+            {rolePermissions.menu_settings && (
+              <Button variant="ghost" className="w-full justify-start" onClick={() => {
+                navigate('/settings');
+                onClose();
+              }}>
+                <Settings className="mr-3 h-5 w-5" />
+                Paramètres
+              </Button>
+            )}
           </div>
         </div>
       </div>
