@@ -50,6 +50,7 @@ import {
 } from 'lucide-react';
 
 import { MenuConfigurationTab } from '@/components/settings/MenuConfigurationTab';
+import { RolePermissionsManager } from '@/components/settings/RolePermissionsManager';
 import { SMSPackagesDisplay } from '@/components/subscription/SMSPackagesDisplay';
 import { BillingInvoices } from '@/components/billing/BillingInvoices';
 import { ImportStock } from '@/components/parts/ImportStock';
@@ -67,6 +68,7 @@ import { useShopSAVStatuses } from '@/hooks/useShopSAVStatuses';
 import { useShopSAVTypes } from '@/hooks/useShopSAVTypes';
 import { useMenuPermissions } from '@/hooks/useMenuPermissions';
 import { useNotificationSound } from '@/hooks/useNotificationSound';
+import { useRolePermissions } from '@/hooks/useRolePermissions';
 import { supabase } from '@/integrations/supabase/client';
 import * as XLSX from 'xlsx';
 
@@ -125,6 +127,7 @@ export default function Settings() {
   const { statuses, loading: statusesLoading, refetch: refetchStatuses } = useShopSAVStatuses();
   const { types: savTypes, loading: savTypesLoading, refetch: refetchSavTypes } = useShopSAVTypes();
   const menuPermissions = useMenuPermissions();
+  const { rolePermissions } = useRolePermissions();
   const { 
     testSound, 
     uploadCustomSound, 
@@ -686,14 +689,18 @@ export default function Settings() {
                 <Monitor className="h-4 w-4 shrink-0" />
                 <span className="hidden sm:inline">Apparence</span>
               </TabsTrigger>
-              <TabsTrigger value="sms" className="flex items-center gap-2 px-3 py-2 shrink-0">
-                <Mail className="h-4 w-4 shrink-0" />
-                <span className="hidden sm:inline">Crédits SMS</span>
-              </TabsTrigger>
-              <TabsTrigger value="import-export" className="flex items-center gap-2 px-3 py-2 shrink-0">
-                <Upload className="h-4 w-4 shrink-0" />
-                <span className="hidden sm:inline">Import/Export</span>
-              </TabsTrigger>
+              {rolePermissions.settings_sms_purchase && (
+                <TabsTrigger value="sms" className="flex items-center gap-2 px-3 py-2 shrink-0">
+                  <Mail className="h-4 w-4 shrink-0" />
+                  <span className="hidden sm:inline">Crédits SMS</span>
+                </TabsTrigger>
+              )}
+              {rolePermissions.settings_import_export && (
+                <TabsTrigger value="import-export" className="flex items-center gap-2 px-3 py-2 shrink-0">
+                  <Upload className="h-4 w-4 shrink-0" />
+                  <span className="hidden sm:inline">Import/Export</span>
+                </TabsTrigger>
+              )}
               <TabsTrigger value="sav-statuses" className="flex items-center gap-2 px-3 py-2 shrink-0">
                 <Tag className="h-4 w-4 shrink-0" />
                 <span className="hidden sm:inline">Statuts SAV</span>
@@ -702,10 +709,12 @@ export default function Settings() {
                 <Package className="h-4 w-4 shrink-0" />
                 <span className="hidden sm:inline">Types de SAV</span>
               </TabsTrigger>
-              <TabsTrigger value="subscription" className="flex items-center gap-2 px-3 py-2 shrink-0">
-                <CreditCard className="h-4 w-4 shrink-0" />
-                <span className="hidden sm:inline">Abonnement</span>
-              </TabsTrigger>
+              {rolePermissions.settings_subscription && (
+                <TabsTrigger value="subscription" className="flex items-center gap-2 px-3 py-2 shrink-0">
+                  <CreditCard className="h-4 w-4 shrink-0" />
+                  <span className="hidden sm:inline">Abonnement</span>
+                </TabsTrigger>
+              )}
               <TabsTrigger value="billing" className="flex items-center gap-2 px-3 py-2 shrink-0">
                 <FileText className="h-4 w-4 shrink-0" />
                 <span className="hidden sm:inline">Facturation</span>
@@ -714,7 +723,7 @@ export default function Settings() {
                 <Sparkles className="h-4 w-4 shrink-0" />
                 <span className="hidden sm:inline">IA</span>
               </TabsTrigger>
-              {isAdmin && (
+              {isAdmin && rolePermissions.settings_users && (
                 <TabsTrigger value="users" className="flex items-center gap-2 px-3 py-2 shrink-0">
                   <Users className="h-4 w-4 shrink-0" />
                   <span className="hidden sm:inline">Utilisateurs</span>
@@ -1521,6 +1530,8 @@ export default function Settings() {
                     </DialogFooter>
                   </DialogContent>
                 </Dialog>
+
+                <RolePermissionsManager />
               </TabsContent>}
 
             <TabsContent value="ai" className="space-y-6">

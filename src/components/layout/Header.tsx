@@ -10,6 +10,7 @@ import { useShopStorageUsage } from '@/hooks/useStorageUsage';
 import { useUnifiedSMSCredits } from '@/hooks/useUnifiedSMSCredits';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useProfile, clearImpersonation } from '@/hooks/useProfile';
+import { useRolePermissions } from '@/hooks/useRolePermissions';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useNavigate } from 'react-router-dom';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -39,6 +40,7 @@ const Header = ({
     profile,
     isImpersonating: isInImpersonationMode
   } = useProfile();
+  const { rolePermissions } = useRolePermissions();
   const {
     storageGB
   } = useShopStorageUsage(shop?.id);
@@ -54,8 +56,20 @@ const Header = ({
   const { toast } = useToast();
   const [isSyncing, setIsSyncing] = useState(false);
   const [isSimplifiedView, setIsSimplifiedView] = useState(() => {
-    return localStorage.getItem('fixway_simplified_view') === 'true';
+    const stored = localStorage.getItem('fixway_simplified_view');
+    if (stored !== null) return stored === 'true';
+    return false; // Will be overridden by role default below
   });
+
+  // Apply role default for simplified view on first load
+  useEffect(() => {
+    const stored = localStorage.getItem('fixway_simplified_view');
+    if (stored === null && rolePermissions.simplified_view_default) {
+      setIsSimplifiedView(true);
+      localStorage.setItem('fixway_simplified_view', 'true');
+      window.dispatchEvent(new CustomEvent('simplifiedViewChanged', { detail: true }));
+    }
+  }, [rolePermissions.simplified_view_default]);
 
   const handleSimplifiedToggle = (checked: boolean) => {
     setIsSimplifiedView(checked);
@@ -246,16 +260,18 @@ const Header = ({
         <div className="flex items-center space-x-4">
           {/* Affichage des limites en permanence */}
           <div className="hidden md:flex items-center space-x-4 text-sm text-muted-foreground">
-            <div className="flex items-center space-x-2 border-r border-border pr-4">
-              <Switch
-                id="simplified-view"
-                checked={isSimplifiedView}
-                onCheckedChange={handleSimplifiedToggle}
-              />
-              <Label htmlFor="simplified-view" className="text-xs cursor-pointer whitespace-nowrap">
-                Vue simplifiée
-              </Label>
-            </div>
+            {rolePermissions.menu_settings && (
+              <div className="flex items-center space-x-2 border-r border-border pr-4">
+                <Switch
+                  id="simplified-view"
+                  checked={isSimplifiedView}
+                  onCheckedChange={handleSimplifiedToggle}
+                />
+                <Label htmlFor="simplified-view" className="text-xs cursor-pointer whitespace-nowrap">
+                  Vue simplifiée
+                </Label>
+              </div>
+            )}
             <Button
               variant="ghost"
               size="sm"

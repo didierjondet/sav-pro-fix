@@ -15,6 +15,7 @@ import { useShopSAVTypes } from '@/hooks/useShopSAVTypes';
 import { useShopSettings } from '@/hooks/useShopSettings';
 import { calculateSAVDelay } from '@/hooks/useSAVDelay';
 import { useMenuPermissions } from '@/hooks/useMenuPermissions';
+import { useRolePermissions } from '@/hooks/useRolePermissions';
 import { usePendingAppointments } from '@/hooks/usePendingAppointments';
 import { MessageSquare, Package, Users, BarChart3, FileText, Settings, X, Plus, Shield, CreditCard, HelpCircle, Info, FileBarChart, Calendar } from 'lucide-react';
 import { useQuotes } from '@/hooks/useQuotes';
@@ -95,6 +96,9 @@ export function Sidebar({
     permissions
   } = useMenuPermissions();
   const {
+    rolePermissions
+  } = useRolePermissions();
+  const {
     pendingCount: pendingAppointmentsCount
   } = usePendingAppointments();
   const totalUnread = (savWithUnreadMessages || []).reduce((sum, s) => sum + s.unread_count, 0);
@@ -140,25 +144,29 @@ export function Sidebar({
     if (isSimplifiedView && !simplifiedPaths.includes(item.href)) {
       return false;
     }
+    // Combine plan permissions AND role permissions
+    const checkBoth = (planPerm: boolean, roleKey: keyof typeof rolePermissions) => {
+      return planPerm && (rolePermissions[roleKey] as boolean);
+    };
     switch (item.href) {
       case '/dashboard':
-        return permissions.dashboard;
+        return checkBoth(permissions.dashboard, 'menu_dashboard');
       case '/sav':
-        return permissions.sav;
+        return checkBoth(permissions.sav, 'menu_sav');
       case '/parts':
-        return permissions.parts;
+        return checkBoth(permissions.parts, 'menu_parts');
       case '/quotes':
-        return permissions.quotes;
+        return checkBoth(permissions.quotes, 'menu_quotes');
       case '/orders':
-        return permissions.orders;
+        return checkBoth(permissions.orders, 'menu_orders');
       case '/customers':
-        return permissions.customers;
+        return checkBoth(permissions.customers, 'menu_customers');
       case '/agenda':
-        return permissions.agenda;
+        return checkBoth(permissions.agenda, 'menu_agenda');
       case '/client-chats':
-        return permissions.chats;
+        return checkBoth(permissions.chats, 'menu_chats');
       case '/reports':
-        return permissions.reports;
+        return checkBoth(permissions.reports, 'menu_reports');
       default:
         return true;
     }
@@ -449,13 +457,15 @@ export function Sidebar({
               <HelpCircle className="mr-3 h-5 w-5" />
               Support
             </Button>
-            <Button variant="ghost" className="w-full justify-start" onClick={() => {
-            navigate('/settings');
-            onClose();
-          }}>
-              <Settings className="mr-3 h-5 w-5" />
-              Paramètres
-            </Button>
+            {rolePermissions.menu_settings && (
+              <Button variant="ghost" className="w-full justify-start" onClick={() => {
+                navigate('/settings');
+                onClose();
+              }}>
+                <Settings className="mr-3 h-5 w-5" />
+                Paramètres
+              </Button>
+            )}
           </div>
         </div>
       </div>
