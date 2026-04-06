@@ -144,25 +144,29 @@ export function Sidebar({
     if (isSimplifiedView && !simplifiedPaths.includes(item.href)) {
       return false;
     }
+    // Combine plan permissions AND role permissions
+    const checkBoth = (planPerm: boolean, roleKey: keyof typeof rolePermissions) => {
+      return planPerm && (rolePermissions[roleKey] as boolean);
+    };
     switch (item.href) {
       case '/dashboard':
-        return permissions.dashboard;
+        return checkBoth(permissions.dashboard, 'menu_dashboard');
       case '/sav':
-        return permissions.sav;
+        return checkBoth(permissions.sav, 'menu_sav');
       case '/parts':
-        return permissions.parts;
+        return checkBoth(permissions.parts, 'menu_parts');
       case '/quotes':
-        return permissions.quotes;
+        return checkBoth(permissions.quotes, 'menu_quotes');
       case '/orders':
-        return permissions.orders;
+        return checkBoth(permissions.orders, 'menu_orders');
       case '/customers':
-        return permissions.customers;
+        return checkBoth(permissions.customers, 'menu_customers');
       case '/agenda':
-        return permissions.agenda;
+        return checkBoth(permissions.agenda, 'menu_agenda');
       case '/client-chats':
-        return permissions.chats;
+        return checkBoth(permissions.chats, 'menu_chats');
       case '/reports':
-        return permissions.reports;
+        return checkBoth(permissions.reports, 'menu_reports');
       default:
         return true;
     }
