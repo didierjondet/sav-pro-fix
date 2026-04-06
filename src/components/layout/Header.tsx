@@ -56,8 +56,20 @@ const Header = ({
   const { toast } = useToast();
   const [isSyncing, setIsSyncing] = useState(false);
   const [isSimplifiedView, setIsSimplifiedView] = useState(() => {
-    return localStorage.getItem('fixway_simplified_view') === 'true';
+    const stored = localStorage.getItem('fixway_simplified_view');
+    if (stored !== null) return stored === 'true';
+    return false; // Will be overridden by role default below
   });
+
+  // Apply role default for simplified view on first load
+  useEffect(() => {
+    const stored = localStorage.getItem('fixway_simplified_view');
+    if (stored === null && rolePermissions.simplified_view_default) {
+      setIsSimplifiedView(true);
+      localStorage.setItem('fixway_simplified_view', 'true');
+      window.dispatchEvent(new CustomEvent('simplifiedViewChanged', { detail: true }));
+    }
+  }, [rolePermissions.simplified_view_default]);
 
   const handleSimplifiedToggle = (checked: boolean) => {
     setIsSimplifiedView(checked);
