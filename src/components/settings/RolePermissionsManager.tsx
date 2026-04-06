@@ -89,20 +89,20 @@ export function RolePermissionsManager() {
         .select('permissions')
         .eq('shop_id', shop.id)
         .eq('role', role)
-        .maybeSingle();
+        .maybeSingle() as any;
 
       if (shopPerms?.permissions) {
-        setPermissions({ ...ALL_TRUE, ...(shopPerms.permissions as any) });
+        setPermissions({ ...ALL_TRUE, ...shopPerms.permissions });
       } else {
         // Fallback to defaults
         const { data: defaultPerms } = await supabase
           .from('default_role_permissions' as any)
           .select('permissions')
           .eq('role', role)
-          .maybeSingle();
+          .maybeSingle() as any;
         
         if (defaultPerms?.permissions) {
-          setPermissions({ ...ALL_TRUE, ...(defaultPerms.permissions as any) });
+          setPermissions({ ...ALL_TRUE, ...defaultPerms.permissions });
         } else {
           setPermissions(ALL_TRUE);
         }

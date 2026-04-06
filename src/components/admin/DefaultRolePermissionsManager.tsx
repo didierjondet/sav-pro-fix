@@ -81,10 +81,10 @@ export function DefaultRolePermissionsManager() {
         .from('default_role_permissions' as any)
         .select('permissions')
         .eq('role', role)
-        .maybeSingle();
+        .maybeSingle() as any;
 
       if (data?.permissions) {
-        setPermissions({ ...ALL_TRUE, ...(data.permissions as any) });
+        setPermissions({ ...ALL_TRUE, ...data.permissions });
       } else {
         setPermissions(ALL_TRUE);
       }

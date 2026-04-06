@@ -74,10 +74,10 @@ export function useRolePermissions() {
         .select('permissions')
         .eq('shop_id', shopId)
         .eq('role', userRole)
-        .maybeSingle();
+        .maybeSingle() as any;
 
       if (shopPerms?.permissions) {
-        return { ...ALL_TRUE, ...(shopPerms.permissions as any) } as RolePermissions;
+        return { ...ALL_TRUE, ...shopPerms.permissions } as RolePermissions;
       }
 
       // Fallback to default permissions
@@ -85,10 +85,10 @@ export function useRolePermissions() {
         .from('default_role_permissions' as any)
         .select('permissions')
         .eq('role', userRole)
-        .maybeSingle();
+        .maybeSingle() as any;
 
       if (defaultPerms?.permissions) {
-        return { ...ALL_TRUE, ...(defaultPerms.permissions as any) } as RolePermissions;
+        return { ...ALL_TRUE, ...defaultPerms.permissions } as RolePermissions;
       }
 
       return ALL_TRUE;
