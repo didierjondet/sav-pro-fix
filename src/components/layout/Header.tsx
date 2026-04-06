@@ -260,16 +260,18 @@ const Header = ({
         <div className="flex items-center space-x-4">
           {/* Affichage des limites en permanence */}
           <div className="hidden md:flex items-center space-x-4 text-sm text-muted-foreground">
-            <div className="flex items-center space-x-2 border-r border-border pr-4">
-              <Switch
-                id="simplified-view"
-                checked={isSimplifiedView}
-                onCheckedChange={handleSimplifiedToggle}
-              />
-              <Label htmlFor="simplified-view" className="text-xs cursor-pointer whitespace-nowrap">
-                Vue simplifiée
-              </Label>
-            </div>
+            {rolePermissions.menu_settings && (
+              <div className="flex items-center space-x-2 border-r border-border pr-4">
+                <Switch
+                  id="simplified-view"
+                  checked={isSimplifiedView}
+                  onCheckedChange={handleSimplifiedToggle}
+                />
+                <Label htmlFor="simplified-view" className="text-xs cursor-pointer whitespace-nowrap">
+                  Vue simplifiée
+                </Label>
+              </div>
+            )}
             <Button
               variant="ghost"
               size="sm"

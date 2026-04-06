@@ -67,6 +67,7 @@ import { useShopSAVStatuses } from '@/hooks/useShopSAVStatuses';
 import { useShopSAVTypes } from '@/hooks/useShopSAVTypes';
 import { useMenuPermissions } from '@/hooks/useMenuPermissions';
 import { useNotificationSound } from '@/hooks/useNotificationSound';
+import { useRolePermissions } from '@/hooks/useRolePermissions';
 import { supabase } from '@/integrations/supabase/client';
 import * as XLSX from 'xlsx';
 
@@ -125,6 +126,7 @@ export default function Settings() {
   const { statuses, loading: statusesLoading, refetch: refetchStatuses } = useShopSAVStatuses();
   const { types: savTypes, loading: savTypesLoading, refetch: refetchSavTypes } = useShopSAVTypes();
   const menuPermissions = useMenuPermissions();
+  const { rolePermissions } = useRolePermissions();
   const { 
     testSound, 
     uploadCustomSound, 
