@@ -50,6 +50,7 @@ import {
 } from 'lucide-react';
 
 import { MenuConfigurationTab } from '@/components/settings/MenuConfigurationTab';
+import { RolePermissionsManager } from '@/components/settings/RolePermissionsManager';
 import { SMSPackagesDisplay } from '@/components/subscription/SMSPackagesDisplay';
 import { BillingInvoices } from '@/components/billing/BillingInvoices';
 import { ImportStock } from '@/components/parts/ImportStock';
