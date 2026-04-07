@@ -40,7 +40,7 @@ const Header = ({
     profile,
     isImpersonating: isInImpersonationMode
   } = useProfile();
-  const { rolePermissions } = useRolePermissions();
+  // rolePermissions moved below with loading
   const {
     storageGB
   } = useShopStorageUsage(shop?.id);
@@ -55,21 +55,27 @@ const Header = ({
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [isSyncing, setIsSyncing] = useState(false);
+  const { rolePermissions, loading: permLoading } = useRolePermissions();
+
   const [isSimplifiedView, setIsSimplifiedView] = useState(() => {
     const stored = localStorage.getItem('fixway_simplified_view');
     if (stored !== null) return stored === 'true';
-    return false; // Will be overridden by role default below
+    return false;
   });
 
-  // Apply role default for simplified view on first load
+  // Apply role default for simplified view — reset when role changes
   useEffect(() => {
-    const stored = localStorage.getItem('fixway_simplified_view');
-    if (stored === null && rolePermissions.simplified_view_default) {
-      setIsSimplifiedView(true);
-      localStorage.setItem('fixway_simplified_view', 'true');
-      window.dispatchEvent(new CustomEvent('simplifiedViewChanged', { detail: true }));
+    if (permLoading) return;
+    const roleKey = `fixway_simplified_view_role_${profile?.role || 'unknown'}`;
+    const alreadyApplied = localStorage.getItem(roleKey);
+    if (!alreadyApplied) {
+      const shouldSimplify = rolePermissions.simplified_view_default;
+      setIsSimplifiedView(shouldSimplify);
+      localStorage.setItem('fixway_simplified_view', String(shouldSimplify));
+      localStorage.setItem(roleKey, 'true');
+      window.dispatchEvent(new CustomEvent('simplifiedViewChanged', { detail: shouldSimplify }));
     }
-  }, [rolePermissions.simplified_view_default]);
+  }, [rolePermissions.simplified_view_default, permLoading, profile?.role]);
 
   const handleSimplifiedToggle = (checked: boolean) => {
     setIsSimplifiedView(checked);
@@ -322,10 +328,12 @@ const Header = ({
                 {profile ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || user?.email : user?.email}
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => navigate('/settings')}>
-                <Settings className="mr-2 h-4 w-4" />
-                Paramètres
-              </DropdownMenuItem>
+              {rolePermissions.menu_settings && (
+                <DropdownMenuItem onClick={() => navigate('/settings')}>
+                  <Settings className="mr-2 h-4 w-4" />
+                  Paramètres
+                </DropdownMenuItem>
+              )}
               
               <DropdownMenuItem onClick={handleClearCache}>
                 <RefreshCw className="mr-2 h-4 w-4" />
