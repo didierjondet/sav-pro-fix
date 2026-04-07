@@ -111,6 +111,8 @@ export function useRolePermissions() {
     return () => { supabase.removeChannel(channel); };
   }, [shopId]);
 
+  if (isSuperAdmin) return { rolePermissions: ALL_TRUE, loading: false };
+
   const result = data || lastValid.current;
   if (data) lastValid.current = data;
 
