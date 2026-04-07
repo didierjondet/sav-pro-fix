@@ -57,18 +57,13 @@ export function useRolePermissions() {
 
   const userRole = profile?.role || 'technician';
   const shopId = shop?.id;
-
-  // Super admins get all permissions
-  if (userRole === 'super_admin') {
-    return { rolePermissions: ALL_TRUE, loading: false };
-  }
+  const isSuperAdmin = userRole === 'super_admin';
 
   const { data, isLoading } = useQuery({
     queryKey: ['role-permissions', shopId, userRole],
     queryFn: async (): Promise<RolePermissions> => {
-      if (!shopId) return ALL_TRUE;
+      if (!shopId || isSuperAdmin) return ALL_TRUE;
 
-      // Try shop-specific permissions first
       const { data: shopPerms } = await supabase
         .from('shop_role_permissions' as any)
         .select('permissions')
@@ -80,7 +75,6 @@ export function useRolePermissions() {
         return { ...ALL_TRUE, ...shopPerms.permissions } as RolePermissions;
       }
 
-      // Fallback to default permissions
       const { data: defaultPerms } = await supabase
         .from('default_role_permissions' as any)
         .select('permissions')
@@ -93,7 +87,7 @@ export function useRolePermissions() {
 
       return ALL_TRUE;
     },
-    enabled: !!shopId && !!userRole,
+    enabled: !!shopId && !!userRole && !isSuperAdmin,
     staleTime: 30 * 60 * 1000,
     placeholderData: (prev) => prev,
   });
@@ -116,6 +110,8 @@ export function useRolePermissions() {
 
     return () => { supabase.removeChannel(channel); };
   }, [shopId]);
+
+  if (isSuperAdmin) return { rolePermissions: ALL_TRUE, loading: false };
 
   const result = data || lastValid.current;
   if (data) lastValid.current = data;
