@@ -18,11 +18,13 @@ import { CalendarIcon, Download, FileSpreadsheet, FileText, Filter, TrendingUp, 
 import { useReportData, PeriodType } from '@/hooks/useReportData';
 import { useShopSAVTypes } from '@/hooks/useShopSAVTypes';
 import { useShopSAVStatuses } from '@/hooks/useShopSAVStatuses';
+import { useRolePermissions } from '@/hooks/useRolePermissions';
 import { cn } from '@/lib/utils';
 import { ReportChartsSection, AVAILABLE_REPORT_WIDGETS } from '@/components/reports/ReportChartsSection';
 import { Label } from '@/components/ui/label';
 
 export default function Reports() {
+  const { rolePermissions } = useRolePermissions();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [periodType, setPeriodType] = useState<PeriodType>('current_month');
   const [startDate, setStartDate] = useState<Date | null>(null);
@@ -291,6 +293,14 @@ export default function Reports() {
   const periodLabel = useMemo(() => {
     return `${format(dateRange.start, 'd MMM yyyy', { locale: fr })} - ${format(dateRange.end, 'd MMM yyyy', { locale: fr })}`;
   }, [dateRange]);
+
+  if (!rolePermissions.menu_reports) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <p className="text-muted-foreground">Accès non autorisé.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
