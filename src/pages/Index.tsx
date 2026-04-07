@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProfile } from '@/hooks/useProfile';
 import { useShop } from '@/contexts/ShopContext';
+import { useRolePermissions } from '@/hooks/useRolePermissions';
 import Header from '@/components/layout/Header';
 import { Sidebar } from '@/components/layout/Sidebar';
 
@@ -28,6 +29,7 @@ const Index = () => {
     loading: shopLoading,
     refetch: refetchShop
   } = useShop();
+  const { rolePermissions, loading: permLoading } = useRolePermissions();
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [currentView, setCurrentView] = useState<'dashboard' | 'new-sav'>('dashboard');
@@ -36,11 +38,17 @@ const Index = () => {
     if (!authLoading && !user) {
       navigate('/auth');
     }
-    // Redirect to /sav if simplified view is enabled
-    if (!authLoading && user && localStorage.getItem('fixway_simplified_view') === 'true') {
-      navigate('/sav');
-    }
   }, [user, authLoading, navigate]);
+
+  // Redirect to /sav if simplified view is active (from permissions or localStorage)
+  useEffect(() => {
+    if (!authLoading && user && !permLoading) {
+      const isSimplified = localStorage.getItem('fixway_simplified_view') === 'true';
+      if (isSimplified) {
+        navigate('/sav');
+      }
+    }
+  }, [user, authLoading, permLoading, navigate]);
 
   // Rediriger les super admins vers /super-admin SAUF s'ils sont en mode impersonation
   useEffect(() => {
