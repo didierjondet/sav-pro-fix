@@ -1,86 +1,55 @@
 
+Vous avez raison : en lisant le code, le problème principal n’est pas un simple cache. La vraie cause est surtout une logique “fail-open” + une synchronisation incomplète :
 
-## Plan révisé : Système de permissions par rôle utilisateur
+- `useRolePermissions.ts` démarre et retombe sur `ALL_TRUE` (tout autorisé). Si la requête n’est pas encore prête, si elle ne se réexécute pas au bon moment, ou si elle échoue, l’UI reste ouverte.
+- Le callback realtime de `shop_role_permissions` est vide, donc quand on modifie les autorisations d’un rôle, les autres sessions ne se mettent pas vraiment à jour.
+- La vue simplifiée ne dépend pas réellement du rôle courant : `Header.tsx` ne l’applique que si `fixway_simplified_view` n’existe pas déjà en localStorage. Donc un ancien choix “false” empêche `shop_admin` de passer en vue simplifiée.
+- `Index.tsx` redirige vers `/sav` uniquement selon le localStorage, pas selon la permission chargée.
+- Le lien “Paramètres” du menu utilisateur dans `Header.tsx` est affiché sans vérifier `menu_settings`, donc même si le rôle ne doit pas voir les réglages, il reste un accès visible.
+- La protection est aujourd’hui surtout visuelle dans la sidebar ; elle n’est pas encore suffisamment appliquée au layout et aux routes.
 
-### Les 3 rôles concernés et leurs valeurs par défaut
+Plan de correction
 
-**1. Admin** (accès complet par défaut) :
-- Tous les menus : activés
-- Réglages : accès complet
-- Vue simplifiée : non activée par défaut
-- Logs SAV, suppression SAV, gestion stock, création devis : tout activé
-- Abonnement et achat SMS : **activé** (réservé aux admins)
+1. Fiabiliser la source RBAC
+- Remplacer le fallback `ALL_TRUE` par un fallback métier par rôle (`admin`, `technician`, `shop_admin`) pour ne plus ouvrir toute l’interface par défaut.
+- Faire retourner aussi un vrai `loading` exploitable.
+- Ajouter un refetch/invalidate réel quand `shop_role_permissions` change, et aussi quand le `profiles.role` de l’utilisateur courant change.
 
-**2. Technicien** :
-- Menus : Tableau de bord, Dossiers SAV, Stock pièces, Devis, Commandes, Clients, Agenda, Chat clients → activés
-- Rapports, Statistiques : **désactivés**
-- Vue simplifiée : **non activée** (vue normale)
-- Réglages : accès limité (pas d'abonnement, pas d'achat SMS, pas de gestion utilisateurs)
-- Logs SAV : désactivés
-- Abonnement/Achat SMS : **désactivés**
+2. Corriger la vue simplifiée
+- Ne plus piloter `shop_admin` avec une simple clé globale `fixway_simplified_view`.
+- Stocker la préférence par utilisateur/boutique, ou réinitialiser proprement la valeur quand le rôle change.
+- Faire dépendre le démarrage de la vue simplifiée du rôle/permissions réellement chargés, pas seulement du localStorage.
 
-**3. Admin Magasin (shop_admin)** :
-- Menus : Dossiers SAV, Stock pièces, Devis, Commandes, Clients, Agenda, Chat clients → activés
-- Tableau de bord, Rapports, Statistiques : activés
-- **Menu Réglages : désactivé** (disparaît complètement du menu)
-- **Vue simplifiée : activée par défaut**
-- Logs SAV : désactivés
-- Abonnement/Achat SMS : désactivés
+3. Fermer les accès qui restent visibles
+- Masquer aussi le lien “Paramètres” dans le dropdown du header si `menu_settings = false`.
+- Appliquer la même règle aux écrans sensibles : `/settings`, `/reports`, `/statistics`, `/sav/:id/logs`, et aux zones conditionnelles déjà présentes dans `Settings.tsx`.
+- Empêcher qu’une URL directe contourne la sidebar.
 
-### Structure des permissions (jsonb)
+4. Supprimer le comportement “tout s’affiche puis rien ne change”
+- Utiliser `rolePermissions.loading` dans `Sidebar`, `Header`, `Settings` et `Index`.
+- Pendant le chargement, ne pas afficher les éléments protégés, ou afficher un état neutre.
+- Ainsi, on n’aura plus un site “ouvert par défaut” qui semble ignorer les rôles.
 
-```json
-{
-  "menu_dashboard": true,
-  "menu_sav": true,
-  "menu_parts": true,
-  "menu_quotes": true,
-  "menu_orders": true,
-  "menu_customers": true,
-  "menu_chats": true,
-  "menu_agenda": true,
-  "menu_reports": true,
-  "menu_statistics": true,
-  "menu_settings": true,
-  "settings_subscription": true,
-  "settings_sms_purchase": true,
-  "settings_users": true,
-  "settings_import_export": true,
-  "sav_logs": true,
-  "can_delete_sav": true,
-  "can_create_quotes": true,
-  "can_manage_stock": true,
-  "simplified_view_default": false
-}
-```
+5. Vérifier la cohérence métier sans casser le reste
+- Revoir la fonction SQL `is_shop_admin()` car son nom laisse penser qu’elle couvre aussi `shop_admin`, alors qu’actuellement elle ne retourne vrai que pour `admin`.
+- Je ne la modifierai que si cette incohérence impacte réellement les droits métier attendus, pour éviter d’ouvrir trop de droits côté base.
 
-### Corrections apportées
+Ce que je corrigerai en priorité pour votre cas “Isa calm”
+- Passage en `shop_admin` : disparition du lien Réglages partout.
+- Application correcte de la vue simplifiée pour ce rôle.
+- Prise en compte immédiate des permissions du rôle configuré (ex. Commandes désactivé si vous l’avez coupé).
+- Réaction correcte après changement de rôle ou modification des autorisations, sans dépendre d’un ancien état local.
 
-1. **Migration SQL** : créer `shop_role_permissions` et `default_role_permissions` avec RLS. Insérer les 3 rôles par défaut (admin, technician, shop_admin) dans `default_role_permissions` avec les valeurs détaillées ci-dessus.
+Fichiers concernés
+- `src/hooks/useRolePermissions.ts`
+- `src/components/layout/Header.tsx`
+- `src/components/layout/Sidebar.tsx`
+- `src/pages/Index.tsx`
+- `src/pages/Settings.tsx`
+- probablement `src/pages/Reports.tsx`, `src/pages/Statistics.tsx`, `src/pages/SAVLogs.tsx`
+- éventuellement une migration SQL ciblée seulement si l’audit de `is_shop_admin()` confirme un vrai décalage bloquant
 
-2. **Hook `useRolePermissions.ts`** : récupère les permissions du rôle courant de l'utilisateur. Fallback sur `default_role_permissions`. Cache avec `placeholderData` + realtime.
-
-3. **Composant `RolePermissionsManager.tsx`** dans Settings > Utilisateurs : sélecteur des 3 rôles, toggles groupés par catégorie. Visible uniquement pour les admins.
-
-4. **Composant `DefaultRolePermissionsManager.tsx`** dans Super Admin : même interface mais pour les valeurs par défaut globales appliquées à la création de nouvelles boutiques.
-
-5. **Sidebar.tsx** : combiner `useMenuPermissions` (plan) + `useRolePermissions` (rôle). Un menu visible seulement si les deux autorisent. Le menu "Réglages" est masqué si `menu_settings: false`.
-
-6. **Header.tsx** : le toggle vue simplifiée est masqué si `simplified_view_toggle: false`. Si `simplified_view_default: true`, activer la vue simplifiée par défaut au premier chargement.
-
-7. **Settings.tsx** : masquer les onglets abonnement/SMS si `settings_subscription`/`settings_sms_purchase` sont `false`.
-
-8. **Initialisation boutique** : à la création d'une boutique, copier les `default_role_permissions` des 3 rôles dans `shop_role_permissions`.
-
-### Fichiers impactés
-
-- **Migration SQL** — 2 tables, RLS, données par défaut pour les 3 rôles
-- `src/hooks/useRolePermissions.ts` — nouveau
-- `src/components/settings/RolePermissionsManager.tsx` — nouveau
-- `src/components/admin/DefaultRolePermissionsManager.tsx` — nouveau
-- `src/components/admin/SuperAdminSidebar.tsx` — nouvelle entrée menu
-- `src/pages/SuperAdmin.tsx` — rendre le composant
-- `src/pages/Settings.tsx` — intégrer le module + filtrer onglets
-- `src/components/layout/Sidebar.tsx` — appliquer permissions rôle
-- `src/components/layout/Header.tsx` — conditionner vue simplifiée
-
+Méthode pour éviter les effets de bord
+- Je corrige d’abord la logique de chargement et d’application des permissions côté interface.
+- Je n’élargis pas les droits SQL tant que ce n’est pas démontré nécessaire.
+- Je validerai ensuite le scénario exact : même utilisateur passé successivement en `technician`, `shop_admin`, `admin`, avec vérification de la sidebar, du header, de la vue simplifiée et des accès directs aux pages.
