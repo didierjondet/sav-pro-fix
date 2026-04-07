@@ -656,6 +656,14 @@ export default function Settings() {
         </div>
       </div>;
   }
+  // Block access if menu_settings is false
+  if (!rolePermissions.menu_settings) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <p className="text-muted-foreground">Accès non autorisé.</p>
+      </div>
+    );
+  }
   return <div className="min-h-screen bg-background">
       <div className="flex h-screen">
         <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />

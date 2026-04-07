@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useProfile } from './useProfile';
@@ -27,42 +27,53 @@ export interface RolePermissions {
   simplified_view_default: boolean;
 }
 
-const ALL_TRUE: RolePermissions = {
-  menu_dashboard: true,
-  menu_sav: true,
-  menu_parts: true,
-  menu_quotes: true,
-  menu_orders: true,
-  menu_customers: true,
-  menu_chats: true,
-  menu_agenda: true,
-  menu_reports: true,
-  menu_statistics: true,
-  menu_settings: true,
-  settings_subscription: true,
-  settings_sms_purchase: true,
-  settings_users: true,
-  settings_import_export: true,
-  sav_logs: true,
-  can_delete_sav: true,
-  can_create_quotes: true,
-  can_manage_stock: true,
-  simplified_view_default: false,
+// Role-specific SAFE defaults (fail-closed)
+const ROLE_DEFAULTS: Record<string, RolePermissions> = {
+  admin: {
+    menu_dashboard: true, menu_sav: true, menu_parts: true, menu_quotes: true,
+    menu_orders: true, menu_customers: true, menu_chats: true, menu_agenda: true,
+    menu_reports: true, menu_statistics: true, menu_settings: true,
+    settings_subscription: true, settings_sms_purchase: true, settings_users: true,
+    settings_import_export: true, sav_logs: true, can_delete_sav: true,
+    can_create_quotes: true, can_manage_stock: true, simplified_view_default: false,
+  },
+  technician: {
+    menu_dashboard: true, menu_sav: true, menu_parts: true, menu_quotes: true,
+    menu_orders: true, menu_customers: true, menu_chats: true, menu_agenda: true,
+    menu_reports: false, menu_statistics: false, menu_settings: true,
+    settings_subscription: false, settings_sms_purchase: false, settings_users: false,
+    settings_import_export: false, sav_logs: false, can_delete_sav: false,
+    can_create_quotes: true, can_manage_stock: true, simplified_view_default: false,
+  },
+  shop_admin: {
+    menu_dashboard: true, menu_sav: true, menu_parts: true, menu_quotes: true,
+    menu_orders: false, menu_customers: true, menu_chats: true, menu_agenda: true,
+    menu_reports: false, menu_statistics: false, menu_settings: false,
+    settings_subscription: false, settings_sms_purchase: false, settings_users: false,
+    settings_import_export: false, sav_logs: false, can_delete_sav: false,
+    can_create_quotes: true, can_manage_stock: true, simplified_view_default: true,
+  },
 };
+
+function getDefaultForRole(role: string): RolePermissions {
+  return ROLE_DEFAULTS[role] || ROLE_DEFAULTS.technician;
+}
 
 export function useRolePermissions() {
   const { profile } = useProfile();
   const { shop } = useShop();
-  const lastValid = useRef<RolePermissions>(ALL_TRUE);
+  const queryClient = useQueryClient();
 
   const userRole = profile?.role || 'technician';
   const shopId = shop?.id;
   const isSuperAdmin = userRole === 'super_admin';
 
+  const roleDefault = getDefaultForRole(userRole);
+
   const { data, isLoading } = useQuery({
     queryKey: ['role-permissions', shopId, userRole],
     queryFn: async (): Promise<RolePermissions> => {
-      if (!shopId || isSuperAdmin) return ALL_TRUE;
+      if (!shopId || isSuperAdmin) return ROLE_DEFAULTS.admin;
 
       const { data: shopPerms } = await supabase
         .from('shop_role_permissions' as any)
@@ -72,7 +83,7 @@ export function useRolePermissions() {
         .maybeSingle() as any;
 
       if (shopPerms?.permissions) {
-        return { ...ALL_TRUE, ...shopPerms.permissions } as RolePermissions;
+        return { ...roleDefault, ...shopPerms.permissions } as RolePermissions;
       }
 
       const { data: defaultPerms } = await supabase
@@ -82,17 +93,17 @@ export function useRolePermissions() {
         .maybeSingle() as any;
 
       if (defaultPerms?.permissions) {
-        return { ...ALL_TRUE, ...defaultPerms.permissions } as RolePermissions;
+        return { ...roleDefault, ...defaultPerms.permissions } as RolePermissions;
       }
 
-      return ALL_TRUE;
+      return roleDefault;
     },
     enabled: !!shopId && !!userRole && !isSuperAdmin,
     staleTime: 30 * 60 * 1000,
     placeholderData: (prev) => prev,
   });
 
-  // Realtime subscription
+  // Realtime: invalidate on shop_role_permissions changes
   useEffect(() => {
     if (!shopId) return;
 
@@ -104,17 +115,37 @@ export function useRolePermissions() {
         table: 'shop_role_permissions',
         filter: `shop_id=eq.${shopId}`,
       }, () => {
-        // Invalidate will be handled by React Query
+        queryClient.invalidateQueries({ queryKey: ['role-permissions', shopId] });
       })
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [shopId]);
+  }, [shopId, queryClient]);
 
-  if (isSuperAdmin) return { rolePermissions: ALL_TRUE, loading: false };
+  // Also listen for profile role changes
+  useEffect(() => {
+    if (!profile?.id) return;
 
-  const result = data || lastValid.current;
-  if (data) lastValid.current = data;
+    const channel = supabase
+      .channel('profile-role-changes')
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'profiles',
+        filter: `id=eq.${profile.id}`,
+      }, () => {
+        queryClient.invalidateQueries({ queryKey: ['profile'] });
+        queryClient.invalidateQueries({ queryKey: ['role-permissions'] });
+      })
+      .subscribe();
 
-  return { rolePermissions: result, loading: isLoading };
+    return () => { supabase.removeChannel(channel); };
+  }, [profile?.id, queryClient]);
+
+  if (isSuperAdmin) return { rolePermissions: ROLE_DEFAULTS.admin, loading: false };
+
+  // Use loaded data, or role-specific safe default while loading
+  const result = data || roleDefault;
+
+  return { rolePermissions: result, loading: isLoading && !data };
 }

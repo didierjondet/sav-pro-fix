@@ -3,7 +3,10 @@ import Header from '@/components/layout/Header';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { DragDropStatistics } from '@/components/statistics/DragDropStatistics';
 import { DailyAssistant } from '@/components/statistics/DailyAssistant';
+import { useRolePermissions } from '@/hooks/useRolePermissions';
+
 export default function Statistics() {
+  const { rolePermissions } = useRolePermissions();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [period, setPeriod] = useState<'7d' | '30d' | '1m_calendar' | '3m' | '6m' | '1y'>('30d');
 
@@ -18,6 +21,14 @@ export default function Statistics() {
     canonical.setAttribute('rel', 'canonical');
     canonical.setAttribute('href', `${window.location.origin}/statistics`);
     document.head.appendChild(canonical);
+  }
+
+  if (!rolePermissions.menu_statistics) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <p className="text-muted-foreground">Accès non autorisé.</p>
+      </div>
+    );
   }
 
   return (

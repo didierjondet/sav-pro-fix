@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useProfile } from '@/hooks/useProfile';
+import { useRolePermissions } from '@/hooks/useRolePermissions';
 import Header from '@/components/layout/Header';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Button } from '@/components/ui/button';
@@ -28,15 +29,17 @@ export default function SAVLogs() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { profile, actualProfile } = useProfile();
+  const { rolePermissions } = useRolePermissions();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [caseNumber, setCaseNumber] = useState('');
 
   const isAdmin = profile?.role === 'admin' || actualProfile?.role === 'super_admin';
+  const canViewLogs = isAdmin && rolePermissions.sav_logs;
 
   useEffect(() => {
-    if (!id || !isAdmin) return;
+    if (!id || !canViewLogs) return;
 
     const fetchLogs = async () => {
       setLoading(true);
@@ -60,9 +63,9 @@ export default function SAVLogs() {
     };
 
     fetchLogs();
-  }, [id, isAdmin]);
+  }, [id, canViewLogs]);
 
-  if (!isAdmin) {
+  if (!canViewLogs) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <p className="text-muted-foreground">Accès réservé aux administrateurs.</p>
