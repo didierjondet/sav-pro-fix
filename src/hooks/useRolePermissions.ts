@@ -57,11 +57,7 @@ export function useRolePermissions() {
 
   const userRole = profile?.role || 'technician';
   const shopId = shop?.id;
-
-  // Super admins get all permissions
-  if (userRole === 'super_admin') {
-    return { rolePermissions: ALL_TRUE, loading: false };
-  }
+  const isSuperAdmin = userRole === 'super_admin';
 
   const { data, isLoading } = useQuery({
     queryKey: ['role-permissions', shopId, userRole],
