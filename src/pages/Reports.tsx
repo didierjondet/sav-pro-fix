@@ -86,6 +86,7 @@ export default function Reports() {
         'Appareil': `${item.device_brand || ''} ${item.device_model || ''}`.trim() || '-',
         'SKU': item.sku || '-',
         'IMEI': item.device_imei || '-',
+        'Commentaire technicien': item.technician_comments || '-',
         'Coût achat (€)': item.purchase_cost,
         'Prix vente (€)': item.selling_price,
         'Marge (€)': item.margin
@@ -101,6 +102,7 @@ export default function Reports() {
         'Appareil': '',
         'SKU': '',
         'IMEI': '',
+        'Commentaire technicien': '',
         'Coût achat (€)': subtotal.costs,
         'Prix vente (€)': subtotal.revenue,
         'Marge (€)': subtotal.margin
@@ -700,6 +702,16 @@ export default function Reports() {
                                       {formatCurrency(item.margin)}
                                     </TableCell>
                                   </TableRow>
+                                  {item.technician_comments && (
+                                    <TableRow className="bg-blue-50/50 dark:bg-blue-950/20 hover:bg-blue-50/70">
+                                      <TableCell colSpan={10} className="py-2 px-4">
+                                        <div className="text-xs text-muted-foreground italic">
+                                          <span className="font-medium not-italic">Commentaire technicien :</span>{' '}
+                                          {item.technician_comments}
+                                        </div>
+                                      </TableCell>
+                                    </TableRow>
+                                  )}
                                   {item.parts.length > 0 && (
                                     <TableRow className="bg-muted/30 hover:bg-muted/40">
                                       <TableCell colSpan={10} className="py-2 px-4">
