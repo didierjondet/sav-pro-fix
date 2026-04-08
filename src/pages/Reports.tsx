@@ -102,6 +102,7 @@ export default function Reports() {
         'Appareil': '',
         'SKU': '',
         'IMEI': '',
+        'Commentaire technicien': '',
         'Coût achat (€)': subtotal.costs,
         'Prix vente (€)': subtotal.revenue,
         'Marge (€)': subtotal.margin
