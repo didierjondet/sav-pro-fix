@@ -26,6 +26,7 @@ export interface ReportSAVItem {
   selling_price: number;
   margin: number;
   parts: ReportPartItem[];
+  technician_comments: string | null;
 }
 
 export interface ReportData {
@@ -111,6 +112,7 @@ export function useReportData({
             id,
             case_number,
             created_at,
+            technician_comments,
             sav_type,
             status,
             device_brand,
@@ -222,7 +224,8 @@ export function useReportData({
         purchase_cost,
         selling_price,
         margin,
-        parts: mappedParts
+        parts: mappedParts,
+        technician_comments: sav.technician_comments || null
       };
     });
 
