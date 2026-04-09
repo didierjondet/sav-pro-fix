@@ -9,7 +9,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useSAVUnreadMessages } from '@/hooks/useSAVUnreadMessages';
 import { useProfile } from '@/hooks/useProfile';
 import { SAVMessaging } from '@/components/sav/SAVMessaging';
-import { MessageSquare, Volume2, VolumeX, Search, Eye } from 'lucide-react';
+import { MessageSquare, Volume2, VolumeX, Search, Eye, Info } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 
@@ -192,7 +193,14 @@ export default function ClientChats() {
                     </Button>
                   </div>
 
-                  <ScrollArea className="h-[calc(100vh-260px)] pr-3">
+                  <Alert className="py-2 px-3">
+                    <Info className="h-4 w-4" />
+                    <AlertDescription className="text-xs">
+                      Les conversations restent ouvertes tant que le dossier SAV est actif, afin de ne manquer aucun échange.
+                    </AlertDescription>
+                  </Alert>
+
+                  <ScrollArea className="h-[calc(100vh-310px)] pr-3">
                     <div className="space-y-2">
                       {filtered.length === 0 ? (
                         <div className="text-sm text-muted-foreground py-8 text-center">
