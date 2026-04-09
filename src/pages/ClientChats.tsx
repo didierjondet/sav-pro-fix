@@ -9,7 +9,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useSAVUnreadMessages } from '@/hooks/useSAVUnreadMessages';
 import { useProfile } from '@/hooks/useProfile';
 import { SAVMessaging } from '@/components/sav/SAVMessaging';
-import { MessageSquare, Volume2, VolumeX, Search, Eye } from 'lucide-react';
+import { MessageSquare, Volume2, VolumeX, Search, Eye, Info } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 
