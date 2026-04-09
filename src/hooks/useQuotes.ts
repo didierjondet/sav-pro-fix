@@ -191,11 +191,7 @@ export function useQuotes() {
 
   const updateQuote = async (quoteId: string, quoteData: Partial<Quote>) => {
     try {
-      // Si le statut est "rejected", supprimer définitivement le devis
-      if (quoteData.status === 'rejected') {
-        await deleteQuote(quoteId);
-        return { error: null };
-      }
+
 
       // Ensure JSON serialization for items when provided
       const payload: any = { ...quoteData };

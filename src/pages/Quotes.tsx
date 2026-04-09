@@ -540,10 +540,6 @@ export default function Quotes() {
         }
       }
 
-      // 7) Supprimer le devis après conversion
-      const { error: deleteErr } = await deleteQuote(quoteToConvert.id);
-      if (deleteErr) throw deleteErr;
-
       const typeInfo = getTypeInfo(type);
       toast({
         title: 'Conversion réussie',
