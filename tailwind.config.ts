@@ -85,22 +85,38 @@ export default {
 						height: '0'
 					}
 				},
-				'pulse-border': {
-					'0%, 100%': {
-						borderColor: 'hsl(213, 94%, 87%)',
-						boxShadow: '0 0 0 0 hsla(217, 91%, 60%, 0.4)'
-					},
-					'50%': {
-						borderColor: 'hsl(217, 91%, 60%)',
-						boxShadow: '0 0 12px 3px hsla(217, 91%, 60%, 0.5)'
-					}
+			'pulse-border': {
+				'0%, 100%': {
+					borderColor: 'hsl(213, 94%, 87%)',
+					boxShadow: '0 0 0 0 hsla(217, 91%, 60%, 0.4)'
+				},
+				'50%': {
+					borderColor: 'hsl(217, 91%, 60%)',
+					boxShadow: '0 0 12px 3px hsla(217, 91%, 60%, 0.5)'
 				}
 			},
-			animation: {
-				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out',
-				'pulse-border': 'pulse-border 1.5s ease-in-out 3'
+			'confetti-fall': {
+				'0%': { transform: 'translateY(0) rotate(0deg)', opacity: '1' },
+				'100%': { transform: 'translateY(120vh) rotate(720deg)', opacity: '0' }
+			},
+			'firework-rise': {
+				'0%': { transform: 'translateY(0) scale(1)', opacity: '1' },
+				'50%': { transform: 'translateY(-60vh) scale(1.5)', opacity: '0.8' },
+				'100%': { transform: 'translateY(-80vh) scale(0)', opacity: '0' }
+			},
+			'fade-in': {
+				'0%': { opacity: '0', transform: 'translateY(10px)' },
+				'100%': { opacity: '1', transform: 'translateY(0)' }
 			}
+		},
+		animation: {
+			'accordion-down': 'accordion-down 0.2s ease-out',
+			'accordion-up': 'accordion-up 0.2s ease-out',
+			'pulse-border': 'pulse-border 1.5s ease-in-out 3',
+			'confetti': 'confetti-fall 3s ease-in forwards',
+			'firework': 'firework-rise 2.5s ease-out forwards',
+			'fade-in': 'fade-in 0.4s ease-out forwards'
+		}
 		}
 	},
 	plugins: [require("tailwindcss-animate")],
