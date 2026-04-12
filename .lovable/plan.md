@@ -1,32 +1,35 @@
 
 
-## Plan : Recherche respecte les filtres + statut "Tous" par defaut
+## Plan : Corriger le calcul du benefice client avec les vrais couts d'achat
 
-### Ce qui change
+### Probleme identifie
 
-**1. Le statut par defaut devient `"all"` (Tous les statuts)**
+Dans `src/hooks/useCustomerActivity.ts`, ligne 77-81 :
+```typescript
+profit = revenue * 0.3; // Estimation 30% de marge
+```
 
-Dans `DEFAULT_FILTERS`, remplacer `statusFilter: 'all-except-ready'` par `statusFilter: 'all'`.
+Le hook ne recupere jamais les pieces (`sav_parts`) du SAV. Il applique un pourcentage fixe de 30% au lieu de calculer :
+- **CA** = somme des `unit_price * quantity` des pieces
+- **Cout d'achat** = somme des `purchase_price * quantity` des pieces
+- **Marge/Profit** = CA - Cout d'achat
 
-Consequence : par defaut, aucun statut n'est exclu. Le bouton "Reinitialiser" remettra aussi ce filtre a `"all"`. Le filtre "Tous les statuts" ne sera pas mis en evidence en orange (car c'est la valeur par defaut). Tout autre choix de statut (y compris "Masquer les prets") sera mis en evidence en orange.
+### Correction dans `src/hooks/useCustomerActivity.ts`
 
-**2. La recherche respecte toujours les filtres**
+1. **Ajouter une requete `sav_parts`** pour chaque SAV du client, en recuperant `unit_price`, `purchase_price`, `quantity`
 
-Supprimer la logique `isUnfilteredSearch` (lignes 264-271) et le bloc conditionnel `if (!isUnfilteredSearch)` (ligne 275). Les filtres s'appliqueront toujours, que le champ de recherche soit vide ou non.
+2. **Remplacer la logique de calcul** :
+   - `revenue` = somme des `unit_price * quantity` (au lieu de `total_cost`)
+   - `purchase_cost` = somme des `purchase_price * quantity`
+   - `profit` = `revenue - purchase_cost`
+   - Tenir compte de la prise en charge (totale/partielle) pour ajuster le CA comme dans les autres hooks
 
-Si l'utilisateur veut chercher dans tous les statuts, il lui suffit de laisser le filtre statut sur "Tous les statuts" (le defaut).
+3. **Approche technique** : Faire une seule requete groupee sur `sav_parts` filtree par les IDs des SAV du client, puis repartir les couts par `sav_case_id`
+
+### Ce qui ne change pas
+- `CustomerActivityDialog.tsx` — l'affichage reste identique, seules les valeurs seront correctes
+- La logique des devis (pas de pieces, donc pas de changement)
 
 ### Fichier impacte
-
-- **`src/pages/SAVList.tsx`** :
-  - Ligne 59 : `statusFilter: 'all'` au lieu de `'all-except-ready'`
-  - Lignes 264-275 : supprimer la variable `hasActiveFilters`, `isUnfilteredSearch`, et le `if (!isUnfilteredSearch)` — les filtres s'appliquent toujours directement
-  - Retirer le bloc conditionnel pour que les filtres type/statut/couleur/grade soient toujours evalues
-
-### Resultat attendu
-
-- Par defaut : statut = "Tous", aucune mise en evidence orange
-- L'utilisateur choisit "Masquer les prets" → fond orange sur le filtre statut
-- La recherche filtre toujours dans le contexte des filtres actifs
-- Le bouton reinitialiser remet tout a "Tous les statuts"
+- `src/hooks/useCustomerActivity.ts` — ajout de la requete `sav_parts` et remplacement du calcul estime par le calcul reel
 
