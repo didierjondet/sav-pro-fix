@@ -56,7 +56,7 @@ const STORAGE_KEY = 'fixway_sav_filters';
 
 const DEFAULT_FILTERS = {
   filterType: 'all',
-  statusFilter: 'all-except-ready',
+  statusFilter: 'all',
   colorFilter: 'all',
   gradeFilter: 'all',
   sortOrder: 'priority',
@@ -260,46 +260,34 @@ export default function SAVList() {
       delayInfo: calculateSAVDelay(case_, shop, types)
     }));
 
-    // Déterminer si des filtres spécifiques ont été choisis par l'utilisateur
-    const hasActiveFilters = filterType !== 'all' || 
-      (statusFilter !== 'all-except-ready' && statusFilter !== 'all') || 
-      colorFilter !== 'all' || 
-      gradeFilter !== 'all';
-
-    // Si une recherche est active et aucun filtre spécifique n'est sélectionné,
-    // chercher sur l'ensemble des SAV sans tenir compte des filtres par défaut
-    const isUnfilteredSearch = searchTerm.trim().length > 0 && !hasActiveFilters;
-
     let filtered = casesWithDelay;
 
-    if (!isUnfilteredSearch) {
-      // 2. Filtrer par type de SAV avec types dynamiques
-      if (filterType !== 'all') {
-        if (filterType === 'shop') {
-          filtered = filtered.filter(case_ => case_.sav_type === 'client' || case_.sav_type === 'external');
-        } else {
-          filtered = filtered.filter(case_ => case_.sav_type === filterType);
-        }
+    // 2. Filtrer par type de SAV avec types dynamiques
+    if (filterType !== 'all') {
+      if (filterType === 'shop') {
+        filtered = filtered.filter(case_ => case_.sav_type === 'client' || case_.sav_type === 'external');
+      } else {
+        filtered = filtered.filter(case_ => case_.sav_type === filterType);
       }
+    }
 
-      // 3. Filtrer par statut
-      if (statusFilter === 'all-except-ready') {
-        filtered = filtered.filter(case_ => !isReadyStatus(case_.status));
-      } else if (statusFilter === 'overdue') {
-        filtered = filtered.filter(case_ => case_.delayInfo.isOverdue && case_.status !== 'cancelled' && !isReadyStatus(case_.status));
-      } else if (statusFilter !== 'all') {
-        filtered = filtered.filter(case_ => case_.status === statusFilter);
-      }
+    // 3. Filtrer par statut
+    if (statusFilter === 'all-except-ready') {
+      filtered = filtered.filter(case_ => !isReadyStatus(case_.status));
+    } else if (statusFilter === 'overdue') {
+      filtered = filtered.filter(case_ => case_.delayInfo.isOverdue && case_.status !== 'cancelled' && !isReadyStatus(case_.status));
+    } else if (statusFilter !== 'all') {
+      filtered = filtered.filter(case_ => case_.status === statusFilter);
+    }
 
-      // 4. Filtrer par couleur
-      if (colorFilter !== 'all') {
-        filtered = filtered.filter(case_ => case_.device_color === colorFilter);
-      }
+    // 4. Filtrer par couleur
+    if (colorFilter !== 'all') {
+      filtered = filtered.filter(case_ => case_.device_color === colorFilter);
+    }
 
-      // 5. Filtrer par grade
-      if (gradeFilter !== 'all') {
-        filtered = filtered.filter(case_ => case_.device_grade === gradeFilter);
-      }
+    // 5. Filtrer par grade
+    if (gradeFilter !== 'all') {
+      filtered = filtered.filter(case_ => case_.device_grade === gradeFilter);
     }
 
     // 6. Filtrer par recherche
