@@ -1,83 +1,32 @@
 
-Plan corrigé : le problème ne vient pas d’un fichier “oublié”, il vient surtout d’une logique backend encore active qui court-circuite totalement l’onboarding.
 
-### Cause réelle identifiée
-Aujourd’hui, à l’inscription, la fonction Supabase `public.handle_new_user()` crée automatiquement :
-- une nouvelle boutique
-- un profil admin lié à cette boutique
+## Plan : Recherche respecte les filtres + statut "Tous" par defaut
 
-Conséquence :
-- dans `Index.tsx`, `profile` existe déjà
-- `ProfileSetup` n’est jamais affiché
-- la popup “Mon Magasin” apparaît directement
-- la boutique est déjà visible dans Super Admin
+### Ce qui change
 
-J’ai aussi repéré un 2e blocage : même si on stoppe l’auto-création, `Index.tsx` considère encore `!profile` comme un état de chargement, ce qui empêcherait aussi l’onboarding de s’afficher correctement.
+**1. Le statut par defaut devient `"all"` (Tous les statuts)**
 
-### Ce qu’il faut réellement modifier
+Dans `DEFAULT_FILTERS`, remplacer `statusFilter: 'all-except-ready'` par `statusFilter: 'all'`.
 
-**1. Supabase — neutraliser l’auto-création à l’inscription**
-- Modifier la fonction `public.handle_new_user()` pour qu’elle ne crée plus automatiquement ni `shops`, ni `profiles` lors du signup.
-- On garde l’inscription auth seule ; le choix “Créer une boutique / Rejoindre une boutique” sera ensuite fait dans l’onboarding.
-- Résultat attendu :
-  - un nouveau compte n’apparaît plus automatiquement comme nouvelle boutique dans Super Admin
-  - aucune boutique n’est créée tant que l’utilisateur n’a pas choisi explicitement “Créer ma boutique”
+Consequence : par defaut, aucun statut n'est exclu. Le bouton "Reinitialiser" remettra aussi ce filtre a `"all"`. Le filtre "Tous les statuts" ne sera pas mis en evidence en orange (car c'est la valeur par defaut). Tout autre choix de statut (y compris "Masquer les prets") sera mis en evidence en orange.
 
-**2. `src/pages/Index.tsx` — afficher réellement l’onboarding quand il n’y a pas encore de profil**
-- Corriger la logique `isLoading`.
-- Ne plus traiter `user && !profile` comme un chargement infini.
-- Laisser la page rendre `ProfileSetup` dès que :
-  - l’auth est prête
-  - la requête profil est terminée
-  - aucun profil n’existe encore
+**2. La recherche respecte toujours les filtres**
 
-**3. `src/components/auth/ProfileSetup.tsx` — réaligner le parcours avec votre vraie règle métier**
-Le composant existe, mais il faut l’adapter au bon scénario métier :
+Supprimer la logique `isUnfilteredSearch` (lignes 264-271) et le bloc conditionnel `if (!isUnfilteredSearch)` (ligne 275). Les filtres s'appliqueront toujours, que le champ de recherche soit vide ou non.
 
-- garder le parcours animé
-- conserver le choix :
-  - `Créer une boutique`
-  - `Rejoindre une boutique`
-- ne plus demander le nom du magasin dans l’onboarding de création
-- si l’utilisateur choisit **Créer** :
-  - créer la boutique avec le nom par défaut `Mon Magasin`
-  - créer le profil `admin`
-  - afficher l’écran festif
-  - puis arriver dans la boutique
-  - et laisser ensuite la popup existante demander le nom du magasin, comme vous le souhaitez
-- si l’utilisateur choisit **Rejoindre** :
-  - demander uniquement le code magasin / code d’invitation
-  - rattacher le profil à la boutique existante
-  - afficher le message de bienvenue + feu d’artifice
-  - puis entrer dans la boutique rejointe
+Si l'utilisateur veut chercher dans tous les statuts, il lui suffit de laisser le filtre statut sur "Tous les statuts" (le defaut).
 
-**4. Rafraîchissement après onboarding**
-- Après succès, recharger à la fois :
-  - le profil
-  - la boutique
-- sinon il y a un risque d’avoir un profil créé mais un `shop` encore en cache à `null`.
+### Fichier impacte
 
-### Fichiers à toucher
-- `supabase/migrations/...sql` — mise à jour de `public.handle_new_user()`
-- `src/pages/Index.tsx` — correction de la condition de chargement + callback de fin d’onboarding
-- `src/components/auth/ProfileSetup.tsx` — ajustement du flux pour ne plus demander le nom du shop avant la popup
+- **`src/pages/SAVList.tsx`** :
+  - Ligne 59 : `statusFilter: 'all'` au lieu de `'all-except-ready'`
+  - Lignes 264-275 : supprimer la variable `hasActiveFilters`, `isUnfilteredSearch`, et le `if (!isUnfilteredSearch)` — les filtres s'appliquent toujours directement
+  - Retirer le bloc conditionnel pour que les filtres type/statut/couleur/grade soient toujours evalues
 
-### Résultat attendu après correction
-Avec un compte neuf :
-1. inscription
-2. arrivée sur l’onboarding animé
-3. choix `Créer` ou `Rejoindre`
-4. aucune boutique créée tant que ce choix n’est pas fait
-5. si `Créer` :
-   - boutique créée seulement à ce moment-là
-   - arrivée dans la boutique
-   - popup de nommage conservée
-6. si `Rejoindre` :
-   - aucune nouvelle boutique créée
-   - rattachement à la boutique existante uniquement
+### Resultat attendu
 
-### Vérification à faire ensuite
-Tester avec un nouveau compte vierge :
-- avant le choix, vérifier dans Super Admin qu’aucune boutique n’a été créée
-- choisir `Créer` et vérifier que la popup “nom du magasin” apparaît bien après l’écran festif
-- refaire un test avec `Rejoindre` et vérifier qu’aucune boutique supplémentaire n’apparaît dans Super Admin
+- Par defaut : statut = "Tous", aucune mise en evidence orange
+- L'utilisateur choisit "Masquer les prets" → fond orange sur le filtre statut
+- La recherche filtre toujours dans le contexte des filtres actifs
+- Le bouton reinitialiser remet tout a "Tous les statuts"
+
