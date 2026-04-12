@@ -53,19 +53,19 @@ export function ProfileSetup({ onComplete }: ProfileSetupProps) {
   };
 
   const handleCreateShop = async () => {
-    if (!user || !formData.firstName || !formData.lastName || !formData.shopName) {
+    if (!user || !formData.firstName || !formData.lastName) {
       toast({ title: "Erreur", description: "Veuillez remplir tous les champs obligatoires", variant: "destructive" });
       return;
     }
     setLoading(true);
     try {
+      // Créer la boutique avec le nom par défaut "Mon Magasin"
+      // La popup ShopNamePromptDialog demandera le vrai nom ensuite
       const { data: shop, error: shopError } = await supabase
         .from('shops')
         .insert({
-          name: formData.shopName,
-          email: formData.shopEmail || user.email,
-          phone: formData.shopPhone,
-          address: formData.shopAddress,
+          name: 'Mon Magasin',
+          email: user.email,
         })
         .select()
         .single();
@@ -275,41 +275,25 @@ export function ProfileSetup({ onComplete }: ProfileSetupProps) {
           </div>
         )}
 
-        {/* Step: Create shop */}
+        {/* Step: Create shop — pas de formulaire, création directe */}
         {step === 'create-shop' && (
           <Card className={`border-none shadow-2xl ${animClass}`}>
-            <CardContent className="pt-8 pb-8 space-y-6">
-              <div className="text-center space-y-2">
-                <Store className="h-10 w-10 text-primary mx-auto" />
-                <h2 className="text-2xl font-bold">Créer votre boutique</h2>
-                <p className="text-muted-foreground">Les informations de votre magasin</p>
+            <CardContent className="pt-10 pb-10 text-center space-y-8">
+              <div className="text-6xl animate-bounce">🏪</div>
+              <div className="space-y-3">
+                <h2 className="text-2xl font-bold">Prêt à créer votre boutique ?</h2>
+                <p className="text-muted-foreground">
+                  Votre espace sera créé en un instant.<br />
+                  Vous pourrez personnaliser le nom et les détails juste après.
+                </p>
               </div>
 
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="shopName">Nom du magasin *</Label>
-                  <Input id="shopName" value={formData.shopName} onChange={(e) => setFormData({ ...formData, shopName: e.target.value })} placeholder="Nom de votre magasin" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="shopEmail">Email du magasin</Label>
-                  <Input id="shopEmail" type="email" value={formData.shopEmail} onChange={(e) => setFormData({ ...formData, shopEmail: e.target.value })} placeholder="contact@monmagasin.com" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="shopPhone">Téléphone du magasin</Label>
-                  <Input id="shopPhone" value={formData.shopPhone} onChange={(e) => setFormData({ ...formData, shopPhone: e.target.value })} placeholder="01 23 45 67 89" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="shopAddress">Adresse du magasin</Label>
-                  <Input id="shopAddress" value={formData.shopAddress} onChange={(e) => setFormData({ ...formData, shopAddress: e.target.value })} placeholder="123 Rue de la République, 75001 Paris" />
-                </div>
-              </div>
-
-              <div className="flex justify-between pt-2">
+              <div className="flex justify-center gap-4 pt-2">
                 <Button variant="ghost" onClick={() => goToStep('choice')} className="gap-1">
                   <ArrowLeft className="h-4 w-4" /> Retour
                 </Button>
-                <Button onClick={handleCreateShop} disabled={loading} className="gap-1">
-                  {loading ? "Création..." : "Créer ma boutique"} <Rocket className="h-4 w-4" />
+                <Button size="lg" onClick={handleCreateShop} disabled={loading} className="gap-2 hover-scale">
+                  {loading ? "Création..." : "Créer ma boutique"} <Rocket className="h-5 w-5" />
                 </Button>
               </div>
             </CardContent>
