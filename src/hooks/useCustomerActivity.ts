@@ -58,28 +58,54 @@ export function useCustomerActivity(customerId: string) {
 
       if (savError) throw savError;
 
+      // Récupérer les pièces de tous les SAV du client pour calculer les vrais coûts
+      const savIds = (savData || []).map(s => s.id);
+      let partsMap: Record<string, { totalSelling: number; totalPurchase: number }> = {};
+
+      if (savIds.length > 0) {
+        const { data: partsData, error: partsError } = await supabase
+          .from('sav_parts')
+          .select('sav_case_id, unit_price, purchase_price, quantity')
+          .in('sav_case_id', savIds);
+
+        if (partsError) throw partsError;
+
+        (partsData || []).forEach((part) => {
+          const caseId = part.sav_case_id;
+          if (!caseId) return;
+          if (!partsMap[caseId]) {
+            partsMap[caseId] = { totalSelling: 0, totalPurchase: 0 };
+          }
+          const qty = Number(part.quantity) || 0;
+          partsMap[caseId].totalSelling += (Number(part.unit_price) || 0) * qty;
+          partsMap[caseId].totalPurchase += (Number(part.purchase_price) || 0) * qty;
+        });
+      }
+
       // Récupérer les devis du client (simplifier pour l'instant)
       const quotesData: any[] = []; // Temporaire jusqu'à ce que la relation soit créée
 
       // Traiter les activités SAV
       const savActivities: CustomerActivity[] = (savData || []).map((sav) => {
+        const parts = partsMap[sav.id] || { totalSelling: 0, totalPurchase: 0 };
         let revenue = 0;
         let profit = 0;
         
-        if (sav.status === 'ready') {
-          if (sav.taken_over) {
-            // SAV totalement pris en charge par le magasin
-            revenue = 0;
-            profit = -sav.total_cost; // Coût pour le magasin
-          } else if (sav.partial_takeover) {
-            // SAV partiellement pris en charge
-            revenue = sav.total_cost - (sav.takeover_amount || 0);
-            profit = revenue * 0.3; // Estimation 30% de marge
-          } else {
-            // SAV entièrement payé par le client
-            revenue = sav.total_cost;
-            profit = revenue * 0.3; // Estimation 30% de marge
-          }
+        if (sav.taken_over) {
+          // SAV totalement pris en charge par le magasin — client ne paie rien
+          revenue = 0;
+          profit = -parts.totalPurchase;
+        } else if (sav.partial_takeover && sav.takeover_amount) {
+          // SAV partiellement pris en charge
+          const totalCost = Number(sav.total_cost) || 1;
+          const takeoverAmt = Number(sav.takeover_amount) || 0;
+          const clientPaysRatio = Math.max(0, 1 - (takeoverAmt / totalCost));
+          revenue = parts.totalSelling * clientPaysRatio;
+          profit = revenue - parts.totalPurchase;
+        } else {
+          // SAV entièrement payé par le client
+          revenue = parts.totalSelling;
+          profit = revenue - parts.totalPurchase;
         }
 
         return {
