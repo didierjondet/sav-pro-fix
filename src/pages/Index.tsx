@@ -59,7 +59,8 @@ const Index = () => {
   }, [profile, navigate]);
 
   // Attendre que TOUTES les données soient chargées : Auth → Profile → Shop
-  const isLoading = authLoading || profileLoading || (user && !profile) || (profile && shopLoading);
+  // Ne PAS traiter user && !profile comme chargement — c'est un nouvel utilisateur sans onboarding
+  const isLoading = authLoading || profileLoading || (profile && shopLoading);
 
   if (isLoading) {
     return (
