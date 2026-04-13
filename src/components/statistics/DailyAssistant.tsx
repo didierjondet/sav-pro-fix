@@ -41,6 +41,12 @@ export function DailyAssistant() {
             description: "Trop de requêtes IA. Veuillez réessayer dans quelques minutes.",
             variant: "destructive",
           });
+        } else if (data.error.includes('503') || data.error.includes('indisponible') || data.error.includes('surchargé')) {
+          toast({
+            title: "Service temporairement indisponible",
+            description: "Le modèle IA est surchargé. Réessayez dans quelques instants.",
+            variant: "destructive",
+          });
         } else if (data.error.includes('402') || data.error.includes('Payment')) {
           toast({
             title: "Crédits insuffisants",
