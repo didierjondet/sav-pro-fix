@@ -96,6 +96,8 @@ export default function ShopManagementDialog({ shop, isOpen, onClose, onUpdate }
   const [userAuthStats, setUserAuthStats] = useState<Record<string, string | null>>({});
   const [newUserEmail, setNewUserEmail] = useState('');
   const [newUserPassword, setNewUserPassword] = useState('');
+  const [newUserFirstName, setNewUserFirstName] = useState('');
+  const [newUserLastName, setNewUserLastName] = useState('');
   const [newUserRole, setNewUserRole] = useState<'admin' | 'technician'>('technician');
   const [subscriptionPlans, setSubscriptionPlans] = useState<any[]>([]);
   const [customSmsLimit, setCustomSmsLimit] = useState('');
@@ -192,7 +194,7 @@ export default function ShopManagementDialog({ shop, isOpen, onClose, onUpdate }
     }
   };
 
-  const handleCreateUser = async () => {
+  const handleCreateOrInvite = async () => {
     if (!newUserEmail) {
       toast({
         title: "Erreur",
@@ -202,41 +204,93 @@ export default function ShopManagementDialog({ shop, isOpen, onClose, onUpdate }
       return;
     }
 
-    setLoading(true);
-    try {
-      // Utiliser la nouvelle fonction d'invitation
-      const { data, error } = await supabase.functions.invoke('send-invitation', {
-        body: {
-          email: newUserEmail,
-          firstName: '',
-          lastName: '',
-          phone: '',
-          role: newUserRole
-        }
-      });
+    // Si mot de passe renseigné → création directe
+    if (newUserPassword) {
+      if (newUserPassword.length < 6) {
+        toast({
+          title: "Erreur",
+          description: "Le mot de passe doit contenir au moins 6 caractères",
+          variant: "destructive",
+        });
+        return;
+      }
 
-      if (error) throw error;
+      setLoading(true);
+      try {
+        const { data, error } = await supabase.functions.invoke('admin-user-management', {
+          body: {
+            action: 'create',
+            email: newUserEmail,
+            password: newUserPassword,
+            first_name: newUserFirstName,
+            last_name: newUserLastName,
+            role: newUserRole,
+            shop_id: shop.id
+          }
+        });
 
-      if (data.success) {
+        if (error) throw error;
+        if (data?.error) throw new Error(data.error);
+
         toast({
           title: "Succès",
-          description: `Invitation envoyée à ${newUserEmail}`,
+          description: `Utilisateur ${newUserEmail} créé avec succès`,
         });
 
         setNewUserEmail('');
+        setNewUserPassword('');
+        setNewUserFirstName('');
+        setNewUserLastName('');
         setNewUserRole('technician');
         fetchUsers();
-      } else {
-        throw new Error(data.error);
+      } catch (error: any) {
+        toast({
+          title: "Erreur",
+          description: error.message,
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
       }
-    } catch (error: any) {
-      toast({
-        title: "Erreur",
-        description: error.message,
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
+    } else {
+      // Sinon → invitation par email (comportement existant)
+      setLoading(true);
+      try {
+        const { data, error } = await supabase.functions.invoke('send-invitation', {
+          body: {
+            email: newUserEmail,
+            firstName: newUserFirstName,
+            lastName: newUserLastName,
+            phone: '',
+            role: newUserRole
+          }
+        });
+
+        if (error) throw error;
+
+        if (data.success) {
+          toast({
+            title: "Succès",
+            description: `Invitation envoyée à ${newUserEmail}`,
+          });
+
+          setNewUserEmail('');
+          setNewUserFirstName('');
+          setNewUserLastName('');
+          setNewUserRole('technician');
+          fetchUsers();
+        } else {
+          throw new Error(data.error);
+        }
+      } catch (error: any) {
+        toast({
+          title: "Erreur",
+          description: error.message,
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
@@ -877,11 +931,23 @@ export default function ShopManagementDialog({ shop, isOpen, onClose, onUpdate }
                     </p>
                   </div>
                   
-                  <Label>Inviter un nouvel utilisateur par email</Label>
+                  <Label>Ajouter un nouvel utilisateur</Label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Input
+                      placeholder="Prénom"
+                      value={newUserFirstName}
+                      onChange={(e) => setNewUserFirstName(e.target.value)}
+                    />
+                    <Input
+                      placeholder="Nom"
+                      value={newUserLastName}
+                      onChange={(e) => setNewUserLastName(e.target.value)}
+                    />
+                  </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <Input
                       type="email"
-                      placeholder="Email"
+                      placeholder="Email *"
                       value={newUserEmail}
                       onChange={(e) => setNewUserEmail(e.target.value)}
                     />
@@ -895,12 +961,20 @@ export default function ShopManagementDialog({ shop, isOpen, onClose, onUpdate }
                       </SelectContent>
                     </Select>
                   </div>
+                  <Input
+                    type="password"
+                    placeholder="Mot de passe (optionnel)"
+                    value={newUserPassword}
+                    onChange={(e) => setNewUserPassword(e.target.value)}
+                  />
                   <p className="text-sm text-muted-foreground">
-                    Un email d'invitation sera envoyé à cette adresse
+                    {newUserPassword 
+                      ? "L'utilisateur sera créé directement avec ce mot de passe" 
+                      : "Sans mot de passe, une invitation sera envoyée par email"}
                   </p>
-                  <Button onClick={handleCreateUser} disabled={loading || !newUserEmail} className="w-full">
-                    <Mail className="h-4 w-4 mr-2" />
-                    {loading ? "Envoi..." : "Envoyer l'invitation"}
+                  <Button onClick={handleCreateOrInvite} disabled={loading || !newUserEmail} className="w-full">
+                    {newUserPassword ? <UserPlus className="h-4 w-4 mr-2" /> : <Mail className="h-4 w-4 mr-2" />}
+                    {loading ? "En cours..." : (newUserPassword ? "Créer l'utilisateur" : "Envoyer l'invitation")}
                   </Button>
                 </div>
 
