@@ -207,26 +207,45 @@ Corrige l'orthographe, la grammaire et améliore la clarté.
 Réponds UNIQUEMENT avec le texte reformulé, sans commentaire ni introduction.`;
     }
 
-    const response = await fetch(aiConfig.url, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${aiConfig.apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: aiConfig.model,
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: text }
-        ],
-      }),
+    const requestBody = JSON.stringify({
+      model: aiConfig.model,
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: text }
+      ],
     });
+
+    const fetchAI = async () => {
+      return await fetch(aiConfig.url, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${aiConfig.apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: requestBody,
+      });
+    };
+
+    let response = await fetchAI();
+
+    // Retry once after 2s on 429 or 503
+    if (response.status === 429 || response.status === 503) {
+      console.log(`AI returned ${response.status}, retrying in 2s...`);
+      await new Promise(r => setTimeout(r, 2000));
+      response = await fetchAI();
+    }
 
     if (!response.ok) {
       if (response.status === 429) {
         return new Response(
           JSON.stringify({ error: "Limite de requêtes atteinte. Veuillez réessayer dans quelques instants." }),
           { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      if (response.status === 503) {
+        return new Response(
+          JSON.stringify({ error: "Service IA temporairement indisponible. Veuillez réessayer dans quelques instants." }),
+          { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
       if (response.status === 402) {

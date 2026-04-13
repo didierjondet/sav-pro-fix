@@ -46,8 +46,13 @@ export function AITextReformulator({
         },
       });
 
+      // Handle edge function errors (non-2xx status returned as data with error)
       if (error) {
         throw error;
+      }
+
+      if (data?.error) {
+        throw new Error(data.error);
       }
 
       if (!data?.reformulatedText) {
@@ -63,12 +68,17 @@ export function AITextReformulator({
     } catch (error: any) {
       console.error("Erreur reformulation IA:", error);
       
-      let errorMessage = "Impossible de reformuler le texte";
+      const msg = error.message || "";
+      let errorMessage = "Impossible de reformuler le texte. Réessayez dans quelques instants.";
       
-      if (error.message?.includes("429")) {
+      if (msg.includes("429") || msg.includes("Limite de requêtes")) {
         errorMessage = "Trop de requêtes. Veuillez réessayer dans quelques instants.";
-      } else if (error.message?.includes("402")) {
+      } else if (msg.includes("402") || msg.includes("Crédits IA")) {
         errorMessage = "Crédits IA insuffisants. Contactez l'administrateur.";
+      } else if (msg.includes("503") || msg.includes("temporairement indisponible")) {
+        errorMessage = "Service IA temporairement indisponible. Réessayez dans quelques instants.";
+      } else if (msg.includes("Clé API")) {
+        errorMessage = msg;
       }
 
       toast({

@@ -67,9 +67,6 @@ export function useSMS() {
         description: "Le SMS a été envoyé avec succès",
       });
 
-      // Trigger a page reload to refresh all SMS counters
-      window.location.reload();
-
       return true;
     } catch (error: any) {
       // Gérer les erreurs liées aux crédits
