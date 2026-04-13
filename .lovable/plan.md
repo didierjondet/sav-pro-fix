@@ -1,56 +1,58 @@
 
 
-## Plan : Corriger les politiques RLS pour debloquer l'onboarding
+## Plan : Corriger l'onboarding (creation + rejoindre boutique)
 
-### Causes racines confirmees par les screenshots
+### 3 problemes identifies
 
-1. **Creer une boutique** → erreur "new row violates row-level security policy for table shops"
-   - L'INSERT sur `shops` a une politique qui autorise les nouveaux utilisateurs sans profil : OK
-   - MAIS le `.select().single()` apres l'INSERT necessite un SELECT, et la seule politique SELECT exige `id = get_current_user_shop_id()` qui retourne NULL pour un utilisateur sans profil
-   - Supabase refuse donc le RETURNING et renvoie une erreur RLS
+**1. Triggers sans SECURITY DEFINER**
+Les fonctions `add_default_sav_statuses_to_new_shop` et `add_default_sav_types_to_new_shop` ne sont pas en `SECURITY DEFINER`. Quand un nouvel utilisateur cree une boutique, ces triggers tentent d'inserer dans `shop_sav_statuses` / `shop_sav_types`, mais le RLS de ces tables exige `get_current_user_shop_id()` qui retourne NULL (pas encore de profil). L'INSERT de la boutique echoue.
 
-2. **Rejoindre une boutique** → erreur "Code d'invitation invalide"
-   - La requete `supabase.from('shops').select('id, name').ilike('invite_code', ...)` est bloquee par RLS
-   - Meme raison : le SELECT sur shops exige `id = get_current_user_shop_id()`, impossible pour un nouvel utilisateur
+**2. Recursion RLS sur profiles**
+La politique `"New users and admins can create profiles"` contient `shop_id IN (SELECT ... FROM profiles ...)` dans son `WITH CHECK`. Quand un nouvel utilisateur cree son premier profil, cette sous-requete declenche les politiques SELECT de `profiles`, qui elles-memes appellent `get_current_user_shop_id()` qui requete `profiles` → recursion infinie.
 
-### Correction : migration SQL
+**3. Politique DENY trop large**
+La politique `"DENY: Block access to profiles from other shops"` (cmd=ALL, incluant INSERT) appelle `get_current_user_shop_id()` pendant l'insertion, ce qui aussi cause de la recursion.
 
-Ajouter deux nouvelles politiques SELECT sur la table `shops` :
+### Correction : une seule migration SQL
 
-1. **Permettre la recherche par code d'invitation** pour les utilisateurs authentifies sans profil :
+1. Passer `add_default_sav_statuses_to_new_shop` et `add_default_sav_types_to_new_shop` en `SECURITY DEFINER` pour qu'elles bypassent le RLS
+
+2. Remplacer la politique INSERT `"New users and admins can create profiles"` par une version sans recursion :
+   - Un nouvel utilisateur peut creer un profil avec `user_id = auth.uid()` SI il n'a pas encore de profil (verification via la fonction `SECURITY DEFINER` existante `get_current_user_shop_id()` qui retourne NULL)
+   - Les admins et super admins restent autorises via les fonctions `SECURITY DEFINER` existantes
+
+3. Aucune modification de `ProfileSetup.tsx` ni d'autre fichier frontend
+
+### Detail technique de la migration
+
 ```sql
-CREATE POLICY "Authenticated users can find shops by invite code"
-ON public.shops FOR SELECT TO authenticated
-USING (
-  NOT EXISTS (SELECT 1 FROM profiles WHERE user_id = auth.uid())
-  AND invite_code IS NOT NULL
+-- 1. Trigger statuts en SECURITY DEFINER
+CREATE OR REPLACE FUNCTION public.add_default_sav_statuses_to_new_shop()
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path TO 'public'
+AS $$ ... (meme corps) $$;
+
+-- 2. Trigger types en SECURITY DEFINER  
+CREATE OR REPLACE FUNCTION public.add_default_sav_types_to_new_shop()
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path TO 'public'
+AS $$ ... (meme corps) $$;
+
+-- 3. Remplacer la politique INSERT profiles recursive
+DROP POLICY "New users and admins can create profiles" ON profiles;
+CREATE POLICY "New users and admins can create profiles" ON profiles
+FOR INSERT TO authenticated
+WITH CHECK (
+  user_id = auth.uid() AND get_current_user_shop_id() IS NULL
+  OR is_shop_admin()
+  OR is_super_admin()
 );
 ```
-Cela permet a un nouvel utilisateur de chercher une boutique par son code d'invitation, mais UNIQUEMENT s'il n'a pas encore de profil (donc pendant l'onboarding seulement).
-
-2. **Permettre de lire la boutique qu'on vient de creer** (pour le RETURNING du INSERT) :
-```sql
-CREATE POLICY "New users can read their just-created shop"
-ON public.shops FOR SELECT TO authenticated
-USING (
-  NOT EXISTS (SELECT 1 FROM profiles WHERE user_id = auth.uid())
-  AND created_at > now() - interval '10 seconds'
-);
-```
-Alternative plus simple : modifier `handleCreateShop` dans `ProfileSetup.tsx` pour ne pas utiliser `.select().single()` apres l'INSERT, et plutot faire l'INSERT du profil sans avoir besoin du shop ID retourne. Mais cela compliquerait le code.
-
-### Modification dans ProfileSetup.tsx
-
-- Normaliser le code d'invitation : `formData.inviteCode.trim().toUpperCase()` avant la requete
-- Ajouter un `await supabase.auth.getSession()` avant les operations pour s'assurer que la session est active
-- Meilleure gestion d'erreur avec messages specifiques
-
-### Fichiers impactes
-- **Migration SQL** : 2 nouvelles politiques SELECT sur `shops`
-- **`src/components/auth/ProfileSetup.tsx`** : normalisation du code + verification de session
 
 ### Ce qui ne change pas
-- Les politiques existantes restent en place
+- Aucun fichier frontend modifie
+- Toutes les autres politiques RLS restent identiques
 - Le flux d'onboarding (etapes, animations) reste identique
-- La logique de creation de profil reste la meme
+- Les politiques SELECT sur shops ajoutees ce matin restent en place
+
+### Fichier impacte
+- **Migration SQL** uniquement (3 modifications)
 
