@@ -244,18 +244,32 @@ export function SAVCloseUnifiedDialog({
           message = `Bonjour ${customerName}, votre dossier de réparation ${savCase.case_number} a été mis à jour : ${statusInfo.label}. Suivez l'évolution : ${shortTrackingUrl}`;
         }
         
-        const { data: smsData, error: smsError } = await supabase.functions.invoke('send-sms', {
-          body: {
-            shopId: savCase.shop_id,
-            toNumber: savCase.customer.phone,
-            message: message,
-            type: 'status_change',
-            recordId: savCase.id
-          }
-        });
+        try {
+          const { data: smsData, error: smsError } = await supabase.functions.invoke('send-sms', {
+            body: {
+              shopId: savCase.shop_id,
+              toNumber: savCase.customer.phone,
+              message: message,
+              type: 'status_change',
+              recordId: savCase.id
+            }
+          });
 
-        if (smsError || !smsData?.success) {
-          throw new Error(smsError?.message || smsData?.error || 'Erreur lors de l\'envoi du SMS de clôture');
+          if (smsError || !smsData?.success) {
+            console.error('SMS envoi échoué:', smsError?.message || smsData?.error);
+            toast({
+              title: "⚠️ SMS non envoyé",
+              description: "Le SAV a été clôturé mais le SMS n'a pas pu être envoyé. Vous pouvez le renvoyer manuellement.",
+              variant: "destructive",
+            });
+          }
+        } catch (smsErr: any) {
+          console.error('Erreur envoi SMS clôture:', smsErr);
+          toast({
+            title: "⚠️ SMS non envoyé",
+            description: "Le SAV a été clôturé mais le SMS n'a pas pu être envoyé.",
+            variant: "destructive",
+          });
         }
       }
 
