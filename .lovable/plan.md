@@ -1,35 +1,56 @@
 
 
-## Plan : Corriger le calcul du benefice client avec les vrais couts d'achat
+## Plan : Corriger les politiques RLS pour debloquer l'onboarding
 
-### Probleme identifie
+### Causes racines confirmees par les screenshots
 
-Dans `src/hooks/useCustomerActivity.ts`, ligne 77-81 :
-```typescript
-profit = revenue * 0.3; // Estimation 30% de marge
+1. **Creer une boutique** → erreur "new row violates row-level security policy for table shops"
+   - L'INSERT sur `shops` a une politique qui autorise les nouveaux utilisateurs sans profil : OK
+   - MAIS le `.select().single()` apres l'INSERT necessite un SELECT, et la seule politique SELECT exige `id = get_current_user_shop_id()` qui retourne NULL pour un utilisateur sans profil
+   - Supabase refuse donc le RETURNING et renvoie une erreur RLS
+
+2. **Rejoindre une boutique** → erreur "Code d'invitation invalide"
+   - La requete `supabase.from('shops').select('id, name').ilike('invite_code', ...)` est bloquee par RLS
+   - Meme raison : le SELECT sur shops exige `id = get_current_user_shop_id()`, impossible pour un nouvel utilisateur
+
+### Correction : migration SQL
+
+Ajouter deux nouvelles politiques SELECT sur la table `shops` :
+
+1. **Permettre la recherche par code d'invitation** pour les utilisateurs authentifies sans profil :
+```sql
+CREATE POLICY "Authenticated users can find shops by invite code"
+ON public.shops FOR SELECT TO authenticated
+USING (
+  NOT EXISTS (SELECT 1 FROM profiles WHERE user_id = auth.uid())
+  AND invite_code IS NOT NULL
+);
 ```
+Cela permet a un nouvel utilisateur de chercher une boutique par son code d'invitation, mais UNIQUEMENT s'il n'a pas encore de profil (donc pendant l'onboarding seulement).
 
-Le hook ne recupere jamais les pieces (`sav_parts`) du SAV. Il applique un pourcentage fixe de 30% au lieu de calculer :
-- **CA** = somme des `unit_price * quantity` des pieces
-- **Cout d'achat** = somme des `purchase_price * quantity` des pieces
-- **Marge/Profit** = CA - Cout d'achat
+2. **Permettre de lire la boutique qu'on vient de creer** (pour le RETURNING du INSERT) :
+```sql
+CREATE POLICY "New users can read their just-created shop"
+ON public.shops FOR SELECT TO authenticated
+USING (
+  NOT EXISTS (SELECT 1 FROM profiles WHERE user_id = auth.uid())
+  AND created_at > now() - interval '10 seconds'
+);
+```
+Alternative plus simple : modifier `handleCreateShop` dans `ProfileSetup.tsx` pour ne pas utiliser `.select().single()` apres l'INSERT, et plutot faire l'INSERT du profil sans avoir besoin du shop ID retourne. Mais cela compliquerait le code.
 
-### Correction dans `src/hooks/useCustomerActivity.ts`
+### Modification dans ProfileSetup.tsx
 
-1. **Ajouter une requete `sav_parts`** pour chaque SAV du client, en recuperant `unit_price`, `purchase_price`, `quantity`
+- Normaliser le code d'invitation : `formData.inviteCode.trim().toUpperCase()` avant la requete
+- Ajouter un `await supabase.auth.getSession()` avant les operations pour s'assurer que la session est active
+- Meilleure gestion d'erreur avec messages specifiques
 
-2. **Remplacer la logique de calcul** :
-   - `revenue` = somme des `unit_price * quantity` (au lieu de `total_cost`)
-   - `purchase_cost` = somme des `purchase_price * quantity`
-   - `profit` = `revenue - purchase_cost`
-   - Tenir compte de la prise en charge (totale/partielle) pour ajuster le CA comme dans les autres hooks
-
-3. **Approche technique** : Faire une seule requete groupee sur `sav_parts` filtree par les IDs des SAV du client, puis repartir les couts par `sav_case_id`
+### Fichiers impactes
+- **Migration SQL** : 2 nouvelles politiques SELECT sur `shops`
+- **`src/components/auth/ProfileSetup.tsx`** : normalisation du code + verification de session
 
 ### Ce qui ne change pas
-- `CustomerActivityDialog.tsx` — l'affichage reste identique, seules les valeurs seront correctes
-- La logique des devis (pas de pieces, donc pas de changement)
-
-### Fichier impacte
-- `src/hooks/useCustomerActivity.ts` — ajout de la requete `sav_parts` et remplacement du calcul estime par le calcul reel
+- Les politiques existantes restent en place
+- Le flux d'onboarding (etapes, animations) reste identique
+- La logique de creation de profil reste la meme
 
