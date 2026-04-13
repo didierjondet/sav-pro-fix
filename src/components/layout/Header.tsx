@@ -45,6 +45,7 @@ const Header = ({
   } = useShop();
   const {
     profile,
+    actualProfile,
     isImpersonating: isInImpersonationMode
   } = useProfile();
   // rolePermissions moved below with loading
