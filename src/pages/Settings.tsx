@@ -104,6 +104,7 @@ export default function Settings() {
   } = useShop();
   const {
     profile,
+    actualProfile,
     refetch: refetchProfile
   } = useProfile();
   const {
@@ -127,7 +128,7 @@ export default function Settings() {
   const { statuses, loading: statusesLoading, refetch: refetchStatuses } = useShopSAVStatuses();
   const { types: savTypes, loading: savTypesLoading, refetch: refetchSavTypes } = useShopSAVTypes();
   const menuPermissions = useMenuPermissions();
-  const { rolePermissions } = useRolePermissions();
+  const { rolePermissions, loading: rolePermissionsLoading } = useRolePermissions();
   const { 
     testSound, 
     uploadCustomSound, 
@@ -638,8 +639,8 @@ export default function Settings() {
       });
     }
   };
-  const isAdmin = profile?.role === 'admin';
-  if (loading) {
+  const isAdmin = profile?.role === 'admin' || actualProfile?.role === 'super_admin';
+  if (loading || rolePermissionsLoading) {
     return <div className="min-h-screen bg-background">
         <div className="flex h-screen">
           <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
