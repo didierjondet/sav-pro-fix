@@ -22,6 +22,13 @@ interface HeaderProps {
   onMenuClick: () => void;
   isMobileMenuOpen: boolean;
 }
+const ROLE_LABELS: Record<string, string> = {
+  admin: 'Administrateur',
+  technician: 'Technicien',
+  shop_admin: 'Admin Magasin',
+  super_admin: 'Super Admin',
+};
+
 const Header = ({
   onMenuClick,
   isMobileMenuOpen
@@ -325,7 +332,14 @@ const Header = ({
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>
-                {profile ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || user?.email : user?.email}
+                <div className="flex flex-col">
+                  <span>{profile ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || user?.email : user?.email}</span>
+                  {actualProfile?.role && (
+                    <span className="text-xs font-normal text-muted-foreground">
+                      {ROLE_LABELS[actualProfile.role] || actualProfile.role}
+                    </span>
+                  )}
+                </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
               {rolePermissions.menu_settings && (
