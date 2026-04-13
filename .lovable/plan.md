@@ -1,47 +1,78 @@
 
+Objectif urgent : rétablir les SMS et supprimer le faux diagnostic sur le secret téléphone.
 
-## Diagnostic et plan de correction
+Diagnostic confirmé
+- Le secret `TWILIO_PHONE_NUMBER` existe bien. Les logs montrent même qu’il est lu par la fonction et utilisé comme expéditeur : `From: +18146486990`.
+- Le vrai problème est ailleurs : `send-sms` reçoit de Twilio une erreur `401 Authenticate` avec le code Twilio `20003`.
+- Donc le bug n’est pas le numéro téléphone, ni le format du SMS, ni la fermeture du SAV.
+- La cause la plus probable est l’authentification du connecteur Twilio lié au projet (`Fixway`) : token invalide, connexion cassée, autorisation à reconnecter, ou secret géré par connecteur devenu invalide.
+- Les fonctions `twilio-balance`, `sync-twilio-credits` et `check-sms-credits` utilisent exactement le même couple `LOVABLE_API_KEY + TWILIO_API_KEY` vers la même gateway Twilio. Si `send-sms` est en 401, il faut vérifier tout le bloc Twilio, pas seulement l’envoi SMS.
 
-### Probleme 1 : SMS — Secret `TWILIO_PHONE_NUMBER` manquant
+Plan de correction
+1. Vérifier et retester tout le bloc Twilio
+- Tester `send-sms`, `twilio-balance`, `sync-twilio-credits` et `check-sms-credits` sur les fonctions déployées.
+- Lire leurs logs pour confirmer si le `401 Authenticate` est global.
+- Si confirmé, lancer une reconnexion du connecteur Twilio `Fixway` au projet, car ce type d’erreur ne se corrige pas par du code seul.
 
-Le code `send-sms` (ligne 22) lit `Deno.env.get('TWILIO_PHONE_NUMBER')` et echoue en ligne 77-79 si absent. En verifiant les secrets configures, seuls `TWILIO_API_KEY` et `LOVABLE_API_KEY` sont presents. **`TWILIO_PHONE_NUMBER` n'est pas dans les secrets.** Les modifications d'aujourd'hui n'ont pas touche les secrets — il est possible que ce secret n'ait jamais ete ajoute (le SMS pouvait fonctionner via un ancien deploiement qui avait cette variable en dur ou via une autre configuration).
+2. Corriger la robustesse backend des fonctions Twilio
+- `supabase/functions/send-sms/index.ts`
+  - conserver la logique métier actuelle
+  - ne plus transformer toutes les erreurs en simple `500`
+  - renvoyer proprement les erreurs Twilio/auth (`401`, `403`, `429`, `503`) avec un JSON clair
+  - ajouter un message explicite du type “connexion Twilio invalide ou expirée” quand la gateway renvoie `Authenticate`
+- Aligner la même gestion d’erreur sur :
+  - `supabase/functions/twilio-balance/index.ts`
+  - `supabase/functions/sync-twilio-credits/index.ts`
+  - `supabase/functions/check-sms-credits/index.ts`
+- Résultat attendu : plus de panne “opaque”, et un diagnostic immédiat côté interface si la connexion Twilio est cassée.
 
-**Action** : Ajouter le secret `TWILIO_PHONE_NUMBER` avec la valeur de votre numero Twilio (format E.164, ex: `+33xxxxxxxxx`). Merci de me le fournir pour que je l'ajoute.
+3. Corriger le frontend pour ne plus afficher l’erreur générique
+- `src/hooks/useSMS.ts`
+  - extraire le vrai message renvoyé par l’edge function au lieu d’afficher seulement `Edge Function returned a non-2xx status code`
+  - afficher un message précis selon le cas : auth Twilio, crédits épuisés, service indisponible, etc.
+- `src/hooks/useTwilioCredits.ts`
+  - même amélioration pour que le test du solde et la synchronisation remontent la vraie cause
+- Résultat attendu : l’utilisateur voit enfin la vraie erreur utile.
 
-### Probleme 2 : SMS bloque la cloture SAV
+4. Sécuriser les flux métier qui utilisent les SMS
+- Vérifier et ajuster les écrans qui envoient des SMS :
+  - `src/components/sav/SMSButton.tsx`
+  - `src/components/dialogs/PrintConfirmDialog.tsx`
+  - `src/components/agenda/AppointmentProposalDialog.tsx`
+  - `src/components/sav/SAVCloseUnifiedDialog.tsx`
+- Points à garantir :
+  - aucun succès visuel si le SMS a échoué
+  - aucune action métier critique bloquée inutilement par un SMS optionnel
+  - clôture SAV toujours possible même si Twilio est indisponible
+  - toasts cohérents et non trompeurs
 
-Dans `SAVCloseUnifiedDialog.tsx` ligne 257-258, si le SMS echoue, un `throw` bloque toute la cloture du SAV. Le SAV ne peut pas etre cloture si le SMS ne part pas.
+5. Validation complète après correctif
+- Tester de bout en bout :
+  - envoi manuel depuis le bouton SMS
+  - SMS lors de clôture SAV
+  - SMS d’enquête de satisfaction
+  - SMS de proposition de rendez-vous
+  - SMS après création/impression SAV
+  - récupération du solde Twilio
+  - synchronisation des crédits Twilio
+- Vérifier dans les logs que les réponses Twilio sont redevenues 2xx après reconnexion.
+- Vérifier que les erreurs affichées en interface sont explicites si Twilio retombe en panne.
 
-**Correction** : Encapsuler l'envoi SMS dans un try/catch separe. L'echec SMS affiche un toast d'avertissement mais ne bloque plus la cloture.
+Détails techniques
+- Fichiers principaux à modifier :
+  - `supabase/functions/send-sms/index.ts`
+  - `supabase/functions/twilio-balance/index.ts`
+  - `supabase/functions/sync-twilio-credits/index.ts`
+  - `supabase/functions/check-sms-credits/index.ts`
+  - `src/hooks/useSMS.ts`
+  - `src/hooks/useTwilioCredits.ts`
+  - éventuellement les composants appelants listés ci-dessus
+- Ce que je ne prévois pas de changer dans ce correctif urgent :
+  - la logique de formatage des numéros
+  - la logique de décompte des crédits SMS
+  - la config IA Gemini, qui n’est pas la cause de ce bug SMS
 
-### Probleme 3 : `window.location.reload()` dans useSMS
-
-Le hook `useSMS.ts` force un rechargement complet de la page apres chaque SMS reussi. C'est brutal et peut causer des pertes de donnees en cours de saisie.
-
-**Correction** : Supprimer le `window.location.reload()`.
-
-### Probleme 4 : Reformulation IA
-
-Le code `ai-reformulate-text` utilise **deja** `getAIConfig()` qui lit la table `ai_engine_config` et respecte le moteur selectionne par le super admin (Gemini, OpenAI, ou Lovable AI). Le probleme n'est PAS la configuration du moteur.
-
-L'erreur est probablement un **429 (rate limit) ou 503 (surcharge)** du service IA. Le code gere le 429 mais ne fait pas de retry. Le 503 n'est pas du tout gere.
-
-**Correction** :
-- Ajouter gestion du 503 dans `ai-reformulate-text`
-- Ajouter un retry automatique (1 tentative apres 2s) pour 429 et 503
-- Ameliorer la detection d'erreur dans le frontend `AITextReformulator.tsx`
-
-### Fichiers a modifier
-
-| Fichier | Modification |
-|---------|-------------|
-| Secret `TWILIO_PHONE_NUMBER` | A ajouter (vous devez me fournir le numero) |
-| `src/components/sav/SAVCloseUnifiedDialog.tsx` | SMS dans try/catch separe |
-| `src/hooks/useSMS.ts` | Supprimer `window.location.reload()` |
-| `supabase/functions/ai-reformulate-text/index.ts` | Retry auto sur 429/503 |
-| `src/components/sav/AITextReformulator.tsx` | Meilleure gestion erreurs |
-
-### Ce qui ne change pas
-- La logique de `send-sms` (correcte, juste le secret manquant)
-- La selection du moteur IA (deja fonctionnelle dans `ai-reformulate-text`)
-
+Conclusion
+- Le secret téléphone n’est pas la cause.
+- Le point critique est la connexion/authentification Twilio.
+- Le correctif doit combiner : reconnexion du connecteur + meilleure remontée d’erreurs backend/frontend + validation complète de tous les points d’envoi SMS.
