@@ -1,39 +1,51 @@
 
 
-## Plan : Afficher le role sous le nom dans le menu profil
+## Plan : Ajouter la creation directe d'utilisateur avec email + mot de passe
 
-### Modification unique
+### Contexte
+Le formulaire actuel n'envoie qu'une invitation par email. L'edge function `admin-user-management` supporte deja l'action `create` avec email + mot de passe. La variable `newUserPassword` existe deja dans le state (ligne 98) mais n'est pas utilisee.
 
-**Fichier** : `src/components/layout/Header.tsx`
+### Modification unique : `src/components/admin/ShopManagementDialog.tsx`
 
-Dans le `DropdownMenuLabel` (lignes 327-329), ajouter une ligne sous le nom affichant le role traduit en francais.
+1. **Ajouter des champs** : prenom, nom, mot de passe dans le formulaire (+ variables state `newUserFirstName`, `newUserLastName`)
+
+2. **Ajouter un choix** : deux boutons ou un switch pour choisir entre "Creer directement" (avec mot de passe) et "Envoyer une invitation" (existant)
+
+3. **Nouvelle fonction `handleCreateUserDirect`** : appelle `admin-user-management` avec action `create`, email, password, first_name, last_name, role, shop_id
+
+4. **UI** : Le formulaire affiche conditionnellement le champ mot de passe. Si mot de passe rempli → creation directe. Sinon → invitation par email (comportement actuel)
+
+### Detail technique
 
 ```tsx
-<DropdownMenuLabel>
-  <div className="flex flex-col">
-    <span>{profile ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || user?.email : user?.email}</span>
-    {profile?.role && (
-      <span className="text-xs font-normal text-muted-foreground">
-        {ROLE_LABELS[profile.role] || profile.role}
-      </span>
-    )}
-  </div>
-</DropdownMenuLabel>
-```
+// Nouveaux states
+const [newUserFirstName, setNewUserFirstName] = useState('');
+const [newUserLastName, setNewUserLastName] = useState('');
 
-Avec un mapping des labels :
-```ts
-const ROLE_LABELS: Record<string, string> = {
-  admin: 'Administrateur',
-  technician: 'Technicien',
-  shop_admin: 'Admin Magasin',
-  super_admin: 'Super Admin',
+// Logique du bouton : si mot de passe rempli → creation directe
+const handleCreateOrInvite = async () => {
+  if (newUserPassword) {
+    // Creation directe via admin-user-management
+    await supabase.functions.invoke('admin-user-management', {
+      body: {
+        action: 'create',
+        email: newUserEmail,
+        password: newUserPassword,
+        first_name: newUserFirstName,
+        last_name: newUserLastName,
+        role: newUserRole,
+        shop_id: shop.id
+      }
+    });
+  } else {
+    // Invitation par email (code existant)
+    handleCreateUser();
+  }
 };
 ```
 
-On utilisera `actualProfile?.role` (du hook `useProfile`) pour afficher le vrai role meme en mode impersonation.
-
 ### Ce qui ne change pas
-- Aucune autre modification
-- Le dropdown garde le meme comportement
+- L'invitation par email reste fonctionnelle
+- L'edge function `admin-user-management` n'est pas modifiee
+- Les autres onglets du dialog restent identiques
 
