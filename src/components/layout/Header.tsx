@@ -332,13 +332,15 @@ const Header = ({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuLabel>
-                <div className="flex flex-col">
-                  <span>{profile ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || user?.email : user?.email}</span>
-                  {actualProfile?.role && (
+              <DropdownMenuLabel className="pb-2">
+                <div className="flex flex-col gap-0.5">
+                  <span className="font-medium">{profile ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || user?.email : user?.email}</span>
+                  {actualProfile?.role ? (
                     <span className="text-xs font-normal text-muted-foreground">
                       {ROLE_LABELS[actualProfile.role] || actualProfile.role}
                     </span>
+                  ) : (
+                    <span className="text-xs font-normal text-muted-foreground">Chargement...</span>
                   )}
                 </div>
               </DropdownMenuLabel>
