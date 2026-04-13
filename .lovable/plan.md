@@ -1,31 +1,37 @@
 
 
-## Plan : Re-appliquer l'affichage du role dans le menu profil
+## Diagnostic : Permissions de roles non appliquees correctement
 
-### Diagnostic
-Le code pour afficher le role est bien present dans `Header.tsx` (lignes 338-342), mais il semble que la modification precedente n'ait pas ete correctement deployee ou que le cache empeche l'affichage.
+### Problemes identifies
 
-### Action
-Re-sauvegarder `src/components/layout/Header.tsx` avec une micro-amelioration pour forcer le rebuild : utiliser `profile?.role` au lieu de `actualProfile?.role` pour que le role affiche soit celui du contexte effectif (en impersonation, on verra "Administrateur" au lieu de "Super Admin", ce qui correspond mieux au role actif).
-
-De plus, ajouter un fallback visuel pour s'assurer que le role est toujours visible meme si le profil met du temps a charger.
-
-### Modification
-
-**Fichier** : `src/components/layout/Header.tsx` — DropdownMenuLabel (lignes 335-344)
-
+**1. Bug : `isAdmin` exclut `super_admin` (Settings.tsx ligne 641)**
 ```tsx
-<DropdownMenuLabel>
-  <div className="flex flex-col">
-    <span>{profile ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || user?.email : user?.email}</span>
-    {actualProfile?.role && (
-      <span className="text-xs font-normal text-muted-foreground">
-        {ROLE_LABELS[actualProfile.role] || actualProfile.role}
-      </span>
-    )}
-  </div>
-</DropdownMenuLabel>
+const isAdmin = profile?.role === 'admin'; // super_admin → false !
 ```
+Quand un super_admin accede a Settings (sans impersonation), `isAdmin = false`. L'onglet "Utilisateurs" est masque car la condition est `isAdmin && rolePermissions.settings_users`.
 
-Le code est identique a ce qui est deja en place. La re-sauvegarde forcera un nouveau build et deploiement.
+**2. Absence de garde sur le chargement des permissions**
+La page Settings verifie uniquement son `loading` local (qui depend de `fetchProfiles`), mais ne verifie pas si `rolePermissions` est charge. Pendant un bref instant, les permissions par defaut du role `technician` (fail-closed) sont utilisees — masquant temporairement les onglets.
+
+**3. Verification base de donnees : tout est correct**
+Les `shop_role_permissions` et `default_role_permissions` sont correctement configures dans la base. Pour Easycash Agde (admin) : `settings_users: true`, `settings_subscription: true`, `simplified_view_default: false`. Pour technician : `simplified_view_default: false` (configurable).
+
+### Corrections
+
+**Fichier 1 : `src/pages/Settings.tsx`**
+- Corriger `isAdmin` pour inclure `super_admin` :
+  ```tsx
+  const isAdmin = profile?.role === 'admin' || actualProfile?.role === 'super_admin';
+  ```
+- Importer `actualProfile` depuis `useProfile`
+- Ajouter la verification `rolePermissions` loading avant le rendu des onglets pour eviter le flash de permissions incorrectes
+
+**Fichier 2 : `src/hooks/useRolePermissions.ts`** (optionnel)
+- Aucun changement necessaire — la logique est correcte, les permissions de super_admin sont bien `ROLE_DEFAULTS.admin`
+
+### Ce qui ne change pas
+- La logique de `useRolePermissions` (deja correcte)
+- Les donnees en base (deja correctes)
+- Le `simplified_view_default` (fonctionne via le Header)
+- Les autres pages
 
