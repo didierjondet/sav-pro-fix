@@ -21,11 +21,21 @@ export function useTwilioCredits() {
         body: {}
       });
 
-      if (error) throw error;
+      if (error) {
+        let realError = error.message;
+        try {
+          const ctx = (error as any).context;
+          if (ctx) {
+            const body = await ctx.json?.() || ctx;
+            realError = body?.error || realError;
+          }
+        } catch { /* ignore */ }
+        console.error('Erreur solde Twilio:', realError);
+        return;
+      }
       setBalance(data);
     } catch (error: any) {
       console.error('Erreur solde Twilio:', error);
-      // Don't toast on initial load to avoid spam
     } finally {
       setLoading(false);
     }

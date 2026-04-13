@@ -43,8 +43,19 @@ export function useSMS() {
         },
       });
 
+      // L'erreur du SDK contient le vrai message si on le parse
       if (error) {
-        throw new Error(`Erreur technique: ${error.message}`);
+        // Tenter d'extraire le JSON de la réponse d'erreur
+        let realError = error.message;
+        try {
+          // supabase.functions.invoke met le body dans error.context?.body ou error.message
+          const ctx = (error as any).context;
+          if (ctx) {
+            const body = await ctx.json?.() || ctx;
+            realError = body?.error || realError;
+          }
+        } catch { /* ignore parse errors */ }
+        throw new Error(realError);
       }
 
       if (!data?.success) {
