@@ -296,7 +296,30 @@ Deno.serve(async (req) => {
           record_id: recordId || null,
         });
 
-      throw new Error(`Erreur Twilio [${response.status}]: ${responseData.message || JSON.stringify(responseData) || 'Erreur inconnue'}`);
+      // Déterminer le message d'erreur et le code HTTP approprié
+      let errorMessage = responseData.message || 'Erreur Twilio inconnue';
+      let httpStatus = response.status;
+      
+      if (response.status === 401 || responseData.code === 20003) {
+        errorMessage = 'Connexion Twilio invalide ou expirée. Veuillez reconnecter le service Twilio dans les paramètres du projet Lovable.';
+      } else if (response.status === 429) {
+        errorMessage = 'Trop de SMS envoyés. Veuillez réessayer dans quelques instants.';
+      } else if (response.status === 503) {
+        errorMessage = 'Service Twilio temporairement indisponible. Réessayez dans quelques instants.';
+      }
+
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: errorMessage,
+          twilio_code: responseData.code,
+          twilio_status: response.status,
+        }),
+        {
+          status: httpStatus,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
     }
 
   } catch (error: any) {

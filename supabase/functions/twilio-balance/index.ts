@@ -29,8 +29,17 @@ Deno.serve(async (req) => {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('[TWILIO-BALANCE] Erreur gateway:', errorText);
-      throw new Error(`Erreur Twilio gateway: ${response.status} - ${errorText}`);
+      console.error('[TWILIO-BALANCE] Erreur gateway:', response.status, errorText);
+      
+      let errorMessage = 'Impossible de récupérer le solde Twilio';
+      if (response.status === 401) {
+        errorMessage = 'Connexion Twilio invalide ou expirée. Veuillez reconnecter le service Twilio.';
+      }
+      
+      return new Response(
+        JSON.stringify({ error: errorMessage, twilio_status: response.status }),
+        { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     const data = await response.json();

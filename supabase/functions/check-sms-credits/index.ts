@@ -61,8 +61,17 @@ Deno.serve(async (req) => {
 
     if (!twilioResponse.ok) {
       const errorText = await twilioResponse.text()
-      console.error('[CHECK-SMS-CREDITS] Erreur API Twilio:', errorText)
-      throw new Error(`Erreur API Twilio: ${twilioResponse.status}`)
+      console.error('[CHECK-SMS-CREDITS] Erreur API Twilio:', twilioResponse.status, errorText)
+      
+      let errorMessage = `Erreur API Twilio: ${twilioResponse.status}`
+      if (twilioResponse.status === 401) {
+        errorMessage = 'Connexion Twilio invalide ou expirée. Veuillez reconnecter le service Twilio.'
+      }
+      
+      return new Response(
+        JSON.stringify({ error: errorMessage, twilio_status: twilioResponse.status }),
+        { status: twilioResponse.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
     }
 
     const twilioData = await twilioResponse.json()
