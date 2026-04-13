@@ -11,7 +11,6 @@ import { SAVDashboard } from '@/components/sav/SAVDashboard';
 import { SAVForm } from '@/components/sav/SAVForm';
 import { ProfileSetup } from '@/components/auth/ProfileSetup';
 import { DailyAssistant } from '@/components/statistics/DailyAssistant';
-import { DataAssistant } from '@/components/statistics/DataAssistant';
 import { ShopNamePromptDialog } from '@/components/dialogs/ShopNamePromptDialog';
 import { Loader2 } from 'lucide-react';
 const Index = () => {
@@ -95,7 +94,6 @@ const Index = () => {
   // Fail-closed: n'afficher les assistants que si shop est chargé ET la config est explicitement active
   const aiModulesConfig = shop ? (shop as any)?.ai_modules_config : null;
   const isDailyAssistantEnabled = aiModulesConfig ? aiModulesConfig.daily_assistant_enabled !== false : false;
-  const isAssistantEnabled = aiModulesConfig ? aiModulesConfig.assistant_enabled !== false : false;
 
   const showShopNamePrompt = profile?.role === 'admin' && shop?.name === 'Mon Magasin';
 
@@ -110,7 +108,6 @@ const Index = () => {
           </div>;
       default:
         return <div className="space-y-6">
-            {isAssistantEnabled && <DataAssistant />}
             {isDailyAssistantEnabled && <DailyAssistant />}
             <SAVDashboard />
           </div>;

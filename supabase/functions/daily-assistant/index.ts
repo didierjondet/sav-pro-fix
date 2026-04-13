@@ -348,6 +348,43 @@ ${sections.join('\n')}`;
           }
         );
       }
+
+      if (aiResponse.status === 503) {
+        console.log('⏳ [DAILY-ASSISTANT] Service indisponible (503), retry dans 2s...');
+        await new Promise(r => setTimeout(r, 2000));
+        const retryResponse = await fetch(aiConfig.url, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${aiConfig.apiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: aiConfig.model,
+            messages: [
+              { role: 'system', content: systemPrompt },
+              { role: 'user', content: userPrompt }
+            ],
+          }),
+        });
+        if (retryResponse.ok) {
+          const retryData = await retryResponse.json();
+          console.log('✅ [DAILY-ASSISTANT] Retry réussi');
+          return new Response(
+            JSON.stringify({
+              recommendations: retryData.choices[0].message.content,
+              stats: analysisData
+            }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+        return new Response(
+          JSON.stringify({ error: '503: Service IA temporairement indisponible. Le modèle est surchargé, veuillez réessayer dans quelques instants.' }),
+          {
+            status: 503,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        );
+      }
       
       throw new Error(`Erreur Lovable AI (${aiResponse.status}): ${errorText}`);
     }
