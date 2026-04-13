@@ -73,8 +73,10 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  const currentImpersonatedId = getImpersonatedShopId();
+  
   const { data: shop, isLoading: loading, error, refetch } = useQuery({
-    queryKey: ['shop', user?.id],
+    queryKey: ['shop', user?.id, currentImpersonatedId],
     queryFn: async () => {
       if (!user) return null;
 
@@ -121,7 +123,6 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
       // Initialize default widget configurations for new shops
       initializeDefaultWidgetConfigurations(shopData.id);
       
-      return shopData as Shop;
       return shopData as Shop;
     },
     enabled: !!user,
