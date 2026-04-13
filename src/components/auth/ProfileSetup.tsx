@@ -59,8 +59,15 @@ export function ProfileSetup({ onComplete }: ProfileSetupProps) {
     }
     setLoading(true);
     try {
+      // Vérifier que la session est toujours active
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast({ title: "Session expirée", description: "Veuillez vous reconnecter", variant: "destructive" });
+        setLoading(false);
+        return;
+      }
+
       // Créer la boutique avec le nom par défaut "Mon Magasin"
-      // La popup ShopNamePromptDialog demandera le vrai nom ensuite
       const { data: shop, error: shopError } = await supabase
         .from('shops')
         .insert({
@@ -100,11 +107,22 @@ export function ProfileSetup({ onComplete }: ProfileSetupProps) {
     }
     setLoading(true);
     try {
+      // Vérifier que la session est toujours active
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast({ title: "Session expirée", description: "Veuillez vous reconnecter", variant: "destructive" });
+        setLoading(false);
+        return;
+      }
+
+      // Normaliser le code d'invitation
+      const normalizedCode = formData.inviteCode.trim().toUpperCase();
+
       let shop;
       const { data: shopByCode } = await supabase
         .from('shops')
         .select('id, name')
-        .ilike('invite_code', formData.inviteCode)
+        .eq('invite_code', normalizedCode)
         .maybeSingle();
 
       if (shopByCode) {
@@ -113,12 +131,12 @@ export function ProfileSetup({ onComplete }: ProfileSetupProps) {
         const { data: shopBySlug } = await supabase
           .from('shops')
           .select('id, name')
-          .ilike('slug', formData.inviteCode)
+          .ilike('slug', normalizedCode)
           .maybeSingle();
         shop = shopBySlug;
       }
 
-      if (!shop) throw new Error("Code d'invitation invalide");
+      if (!shop) throw new Error("Code d'invitation invalide. Vérifiez le code et réessayez.");
 
       const { error: profileError } = await supabase
         .from('profiles')

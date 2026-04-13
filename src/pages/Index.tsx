@@ -86,7 +86,7 @@ const Index = () => {
 
   // Si l'utilisateur n'a pas de profil, afficher le setup
   if (!profile) {
-    return <ProfileSetup onComplete={refetchProfile} />;
+    return <ProfileSetup onComplete={() => { refetchProfile(); refetchShop(); }} />;
   }
   const handleMenuClick = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);

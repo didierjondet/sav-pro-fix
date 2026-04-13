@@ -65,20 +65,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         
         if (!mounted) return;
         
-        if (event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED' || !session) {
-          if (event === 'SIGNED_OUT') {
-            // Nettoyer complètement
-            Object.keys(localStorage).forEach((key) => {
-              if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
-                localStorage.removeItem(key);
-              }
-            });
-          }
+        if (event === 'SIGNED_OUT') {
+          // Nettoyer complètement
+          Object.keys(localStorage).forEach((key) => {
+            if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
+              localStorage.removeItem(key);
+            }
+          });
           setSession(null);
           setUser(null);
         } else if (session) {
           setSession(session);
           setUser(session.user);
+        } else if (!session) {
+          setSession(null);
+          setUser(null);
         }
         
         setLoading(false);
