@@ -94,14 +94,17 @@ export function ShopsManagement({ shops, onUpdate }: ShopsManagementProps) {
   const [selectedShop, setSelectedShop] = useState<Shop | null>(null);
   
 
-  const handleLoginAsShop = (shop: Shop) => {
-    // Store impersonated shop id and redirect to dashboard
+  const handleLoginAsShop = async (shop: Shop) => {
+    // Store impersonated shop id
     localStorage.setItem('fixway_impersonated_shop_id', shop.id);
     toast({
       title: "Mode prise en main activé",
       description: `Vous allez être redirigé vers ${shop.name}`,
     });
-    // Navigate to dashboard - the effective profile will now return admin role + this shop_id
+    // Clear persisted query cache to avoid stale shop data
+    const { del } = await import('idb-keyval');
+    await del('FIXWAY_REACT_QUERY_CACHE');
+    // Navigate to dashboard with full reload
     window.location.href = '/';
   };
   
