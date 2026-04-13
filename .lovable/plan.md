@@ -1,51 +1,31 @@
 
 
-## Plan : Ajouter la creation directe d'utilisateur avec email + mot de passe
+## Plan : Re-appliquer l'affichage du role dans le menu profil
 
-### Contexte
-Le formulaire actuel n'envoie qu'une invitation par email. L'edge function `admin-user-management` supporte deja l'action `create` avec email + mot de passe. La variable `newUserPassword` existe deja dans le state (ligne 98) mais n'est pas utilisee.
+### Diagnostic
+Le code pour afficher le role est bien present dans `Header.tsx` (lignes 338-342), mais il semble que la modification precedente n'ait pas ete correctement deployee ou que le cache empeche l'affichage.
 
-### Modification unique : `src/components/admin/ShopManagementDialog.tsx`
+### Action
+Re-sauvegarder `src/components/layout/Header.tsx` avec une micro-amelioration pour forcer le rebuild : utiliser `profile?.role` au lieu de `actualProfile?.role` pour que le role affiche soit celui du contexte effectif (en impersonation, on verra "Administrateur" au lieu de "Super Admin", ce qui correspond mieux au role actif).
 
-1. **Ajouter des champs** : prenom, nom, mot de passe dans le formulaire (+ variables state `newUserFirstName`, `newUserLastName`)
+De plus, ajouter un fallback visuel pour s'assurer que le role est toujours visible meme si le profil met du temps a charger.
 
-2. **Ajouter un choix** : deux boutons ou un switch pour choisir entre "Creer directement" (avec mot de passe) et "Envoyer une invitation" (existant)
+### Modification
 
-3. **Nouvelle fonction `handleCreateUserDirect`** : appelle `admin-user-management` avec action `create`, email, password, first_name, last_name, role, shop_id
-
-4. **UI** : Le formulaire affiche conditionnellement le champ mot de passe. Si mot de passe rempli → creation directe. Sinon → invitation par email (comportement actuel)
-
-### Detail technique
+**Fichier** : `src/components/layout/Header.tsx` — DropdownMenuLabel (lignes 335-344)
 
 ```tsx
-// Nouveaux states
-const [newUserFirstName, setNewUserFirstName] = useState('');
-const [newUserLastName, setNewUserLastName] = useState('');
-
-// Logique du bouton : si mot de passe rempli → creation directe
-const handleCreateOrInvite = async () => {
-  if (newUserPassword) {
-    // Creation directe via admin-user-management
-    await supabase.functions.invoke('admin-user-management', {
-      body: {
-        action: 'create',
-        email: newUserEmail,
-        password: newUserPassword,
-        first_name: newUserFirstName,
-        last_name: newUserLastName,
-        role: newUserRole,
-        shop_id: shop.id
-      }
-    });
-  } else {
-    // Invitation par email (code existant)
-    handleCreateUser();
-  }
-};
+<DropdownMenuLabel>
+  <div className="flex flex-col">
+    <span>{profile ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || user?.email : user?.email}</span>
+    {actualProfile?.role && (
+      <span className="text-xs font-normal text-muted-foreground">
+        {ROLE_LABELS[actualProfile.role] || actualProfile.role}
+      </span>
+    )}
+  </div>
+</DropdownMenuLabel>
 ```
 
-### Ce qui ne change pas
-- L'invitation par email reste fonctionnelle
-- L'edge function `admin-user-management` n'est pas modifiee
-- Les autres onglets du dialog restent identiques
+Le code est identique a ce qui est deja en place. La re-sauvegarde forcera un nouveau build et deploiement.
 
