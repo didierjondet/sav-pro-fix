@@ -28,8 +28,47 @@ export function useHelpBot() {
   const [isLoading, setIsLoading] = useState(false);
   const [faqItems, setFaqItems] = useState<FAQItem[]>([]);
   const [pendingEscalation, setPendingEscalation] = useState<PendingEscalation | null>(null);
+  const [conversationId, setConversationId] = useState<string | null>(null);
   const { shop } = useShop();
   const { profile } = useProfile();
+
+  // Persist conversation to database
+  const persistConversation = useCallback(async (msgs: ChatMessage[], escalated = false, escalationSummary?: string) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user || !shop?.id) return;
+
+      const userName = profile ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() : null;
+      const messagesJson = msgs.map(m => ({ role: m.role, content: m.content, timestamp: m.timestamp.toISOString() }));
+
+      if (conversationId) {
+        await supabase
+          .from('help_bot_conversations')
+          .update({
+            messages: messagesJson as any,
+            escalated,
+            escalation_summary: escalationSummary || null,
+          })
+          .eq('id', conversationId);
+      } else {
+        const { data } = await supabase
+          .from('help_bot_conversations')
+          .insert({
+            shop_id: shop.id,
+            user_id: session.user.id,
+            user_name: userName,
+            messages: messagesJson as any,
+            escalated,
+            escalation_summary: escalationSummary || null,
+          })
+          .select('id')
+          .single();
+        if (data) setConversationId(data.id);
+      }
+    } catch (e) {
+      console.error('Error persisting bot conversation:', e);
+    }
+  }, [conversationId, shop?.id, profile]);
 
   // Load FAQ items with session guard
   useEffect(() => {
@@ -106,6 +145,8 @@ export function useHelpBot() {
         };
         setMessages(prev => [...prev, ticketMsg]);
         toast.success('Ticket de support créé avec succès.');
+        // Mark conversation as escalated
+        persistConversation(messages, true, pendingEscalation.summary);
       } else {
         toast.error('Impossible de créer le ticket. Vérifiez votre connexion.');
       }
@@ -160,7 +201,11 @@ export function useHelpBot() {
         timestamp: new Date(),
       };
 
+      const updatedMsgs = [...messages, userMessage, assistantMessage];
       setMessages(prev => [...prev, assistantMessage]);
+
+      // Persist after each exchange
+      persistConversation(updatedMsgs, false);
 
       // Handle escalation - propose instead of auto-creating
       if (data.escalate) {
@@ -186,6 +231,7 @@ export function useHelpBot() {
   const clearMessages = useCallback(() => {
     setMessages([]);
     setPendingEscalation(null);
+    setConversationId(null);
   }, []);
 
   return {
