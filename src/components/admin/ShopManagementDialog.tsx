@@ -1060,6 +1060,10 @@ export default function ShopManagementDialog({ shop, isOpen, onClose, onUpdate }
             </Card>
           </TabsContent>
 
+          <TabsContent value="support" className="space-y-4">
+            <BotConversationsViewer shopId={shop.id} shopName={shop.name} />
+          </TabsContent>
+
           <TabsContent value="restrictions" className="space-y-4">
             <Card>
               <CardHeader>
