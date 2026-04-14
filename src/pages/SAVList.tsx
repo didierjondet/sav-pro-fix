@@ -97,6 +97,7 @@ export default function SAVList() {
   const [itemsPerPage, setItemsPerPage] = useState(saved?.itemsPerPage ?? DEFAULT_FILTERS.itemsPerPage);
   const [qrCodeCase, setQrCodeCase] = useState(null);
   const [showPrintDialog, setShowPrintDialog] = useState(false);
+  const [showWizard, setShowWizard] = useState(false);
   const [viewMode, setViewMode] = useState<'standard' | 'compact'>(() => {
     return (localStorage.getItem('fixway_sav_view_mode') as 'standard' | 'compact') || 'standard';
   });
@@ -201,7 +202,12 @@ export default function SAVList() {
 
   const handleNewSAV = () => {
     if (checkAndShowLimitDialog('sav')) {
-      navigate('/sav/new');
+      const isSimplified = localStorage.getItem('fixway_simplified_view') === 'true';
+      if (isSimplified) {
+        setShowWizard(true);
+      } else {
+        navigate('/sav/new');
+      }
     }
   };
 
