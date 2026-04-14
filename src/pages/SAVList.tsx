@@ -805,6 +805,11 @@ export default function SAVList() {
         onClose={() => setShowPrintDialog(false)}
         onPrint={handlePrintWithFilters}
       />
+      <SAVWizardDialog
+        open={showWizard}
+        onOpenChange={setShowWizard}
+        onSuccess={() => refetch()}
+      />
     </div>
   );
 }
