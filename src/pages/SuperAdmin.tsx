@@ -10,6 +10,7 @@ import {
   Globe,
 } from 'lucide-react';
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { SuperAdminSidebar } from '@/components/admin/SuperAdminSidebar';
 import { DashboardOverview } from '@/components/admin/dashboard/DashboardOverview';
 import { ShopsManagement } from '@/components/admin/dashboard/ShopsManagement';
@@ -27,6 +28,7 @@ import { SMSPackagesManager } from '@/components/admin/SMSPackagesManager';
 import { SystemAlertsManager } from '@/components/admin/SystemAlertsManager';
 import { InvoiceManagement } from '@/components/admin/InvoiceManagement';
 import { AIEngineManager } from '@/components/admin/AIEngineManager';
+import { BotConversationsViewer } from '@/components/admin/BotConversationsViewer';
 import { DefaultRolePermissionsManager } from '@/components/admin/DefaultRolePermissionsManager';
 import { MessagingProvidersManager } from '@/components/admin/MessagingProvidersManager';
 import { useStorageUsage } from '@/hooks/useStorageUsage';
@@ -307,9 +309,18 @@ export default function SuperAdmin() {
             }}
           />
         ) : (
-          <SupportTicketsOverview 
-            onTicketSelect={setSelectedTicket}
-          />
+          <Tabs defaultValue="tickets" className="w-full">
+            <TabsList>
+              <TabsTrigger value="tickets">Tickets</TabsTrigger>
+              <TabsTrigger value="bot-conversations">Conversations Bot</TabsTrigger>
+            </TabsList>
+            <TabsContent value="tickets">
+              <SupportTicketsOverview onTicketSelect={setSelectedTicket} />
+            </TabsContent>
+            <TabsContent value="bot-conversations">
+              <BotConversationsViewer />
+            </TabsContent>
+          </Tabs>
         );
       case 'statistics':
         return <StatisticsView shops={shops} />;

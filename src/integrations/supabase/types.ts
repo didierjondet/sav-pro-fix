@@ -470,6 +470,50 @@ export type Database = {
         }
         Relationships: []
       }
+      help_bot_conversations: {
+        Row: {
+          created_at: string
+          escalated: boolean
+          escalation_summary: string | null
+          id: string
+          messages: Json
+          shop_id: string
+          updated_at: string
+          user_id: string
+          user_name: string | null
+        }
+        Insert: {
+          created_at?: string
+          escalated?: boolean
+          escalation_summary?: string | null
+          id?: string
+          messages?: Json
+          shop_id: string
+          updated_at?: string
+          user_id: string
+          user_name?: string | null
+        }
+        Update: {
+          created_at?: string
+          escalated?: boolean
+          escalation_summary?: string | null
+          id?: string
+          messages?: Json
+          shop_id?: string
+          updated_at?: string
+          user_id?: string
+          user_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "help_bot_conversations_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       help_bot_faq: {
         Row: {
           category: string | null

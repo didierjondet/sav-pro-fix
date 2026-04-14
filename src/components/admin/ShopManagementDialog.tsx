@@ -26,6 +26,7 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { SMSCreditsTab } from './SMSCreditsTab';
+import { BotConversationsViewer } from './BotConversationsViewer';
 import {
   Crown,
   CreditCard,
@@ -744,11 +745,12 @@ export default function ShopManagementDialog({ shop, isOpen, onClose, onUpdate }
         </DialogHeader>
 
         <Tabs defaultValue="overview" className="w-full">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-7">
           <TabsTrigger value="overview">Vue d'ensemble</TabsTrigger>
           <TabsTrigger value="subscription">Abonnement</TabsTrigger>
           <TabsTrigger value="sms">Crédits SMS</TabsTrigger>
           <TabsTrigger value="users">Utilisateurs</TabsTrigger>
+          <TabsTrigger value="support">Support</TabsTrigger>
           <TabsTrigger value="restrictions">Restrictions</TabsTrigger>
           <TabsTrigger value="overrides">Forcer l'accès</TabsTrigger>
         </TabsList>
@@ -1056,6 +1058,10 @@ export default function ShopManagementDialog({ shop, isOpen, onClose, onUpdate }
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="support" className="space-y-4">
+            <BotConversationsViewer shopId={shop.id} shopName={shop.name} />
           </TabsContent>
 
           <TabsContent value="restrictions" className="space-y-4">
