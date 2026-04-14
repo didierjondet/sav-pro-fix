@@ -48,13 +48,24 @@ export function useTwilioCredits() {
         body: {}
       });
 
-      if (error) throw error;
+      if (error) {
+        let realError = error.message;
+        try {
+          const ctx = (error as any).context;
+          if (ctx) {
+            const body = await ctx.json?.() || ctx;
+            realError = body?.error || realError;
+          }
+        } catch { /* ignore */ }
+
+        throw new Error(realError);
+      }
       return data;
     } catch (error: any) {
       console.error('Erreur synchronisation:', error);
       toast({
         title: 'Erreur',
-        description: 'Impossible de synchroniser les crédits',
+        description: error.message || 'Impossible de synchroniser les crédits',
         variant: 'destructive',
       });
       throw error;
