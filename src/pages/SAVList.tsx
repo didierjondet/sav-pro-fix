@@ -32,6 +32,7 @@ import { PartStatusIcon } from '@/components/sav/PartStatusIcon';
 import { SAVStatusDropdown } from '@/components/sav/SAVStatusDropdown';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { SAVWizardDialog } from '@/components/sav/SAVWizardDialog';
 import { 
   Eye,
   Clock,
