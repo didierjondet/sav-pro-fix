@@ -134,7 +134,12 @@ Deno.serve(async (req) => {
     if (!shopId || !toNumber || !message) throw new Error('Paramètres requis manquants');
 
     // Reset monthly counters if needed
-    await supabase.rpc('reset_monthly_counters').catch(() => {});
+    try {
+      const { error: rpcError } = await supabase.rpc('reset_monthly_counters');
+      if (rpcError) console.warn('⚠️ reset_monthly_counters error (non-fatal):', rpcError.message);
+    } catch (e) {
+      console.warn('⚠️ reset_monthly_counters exception (non-fatal):', e);
+    }
 
     // Get shop
     const { data: shop, error: shopError } = await supabase.from('shops').select('*').eq('id', shopId).single();

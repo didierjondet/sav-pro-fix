@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -26,9 +26,21 @@ export function useMessaging({ savCaseId, trackingSlug, userType }: UseMessaging
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
-  // Fonction pour récupérer les messages
-  const fetchMessages = async () => {
-    if (!savCaseId && !trackingSlug) {
+  // Stable refs to avoid re-creating callbacks
+  const savCaseIdRef = useRef(savCaseId);
+  const trackingSlugRef = useRef(trackingSlug);
+  const userTypeRef = useRef(userType);
+
+  savCaseIdRef.current = savCaseId;
+  trackingSlugRef.current = trackingSlug;
+  userTypeRef.current = userType;
+
+  const fetchMessages = useCallback(async () => {
+    const currentSavCaseId = savCaseIdRef.current;
+    const currentTrackingSlug = trackingSlugRef.current;
+    const currentUserType = userTypeRef.current;
+
+    if (!currentSavCaseId && !currentTrackingSlug) {
       setMessages([]);
       setLoading(false);
       return;
@@ -37,17 +49,15 @@ export function useMessaging({ savCaseId, trackingSlug, userType }: UseMessaging
     try {
       let query;
       
-      if (userType === 'shop' && savCaseId) {
-        // Pour les utilisateurs authentifiés du magasin
+      if (currentUserType === 'shop' && currentSavCaseId) {
         query = supabase
           .from('sav_messages')
           .select('*')
-          .eq('sav_case_id', savCaseId)
+          .eq('sav_case_id', currentSavCaseId)
           .order('created_at', { ascending: true });
-      } else if (userType === 'client' && trackingSlug) {
-        // Pour les clients publics via tracking slug
+      } else if (currentUserType === 'client' && currentTrackingSlug) {
         query = supabase
-          .rpc('get_tracking_messages', { p_tracking_slug: trackingSlug });
+          .rpc('get_tracking_messages', { p_tracking_slug: currentTrackingSlug });
       } else {
         throw new Error('Configuration invalide');
       }
@@ -55,8 +65,7 @@ export function useMessaging({ savCaseId, trackingSlug, userType }: UseMessaging
       const { data, error } = await query;
       if (error) throw error;
 
-      // Normaliser les données selon le type de requête
-      const normalizedData = userType === 'client' && trackingSlug ? 
+      const normalizedData = currentUserType === 'client' && currentTrackingSlug ? 
         (data || []).map((msg: any) => ({
           id: msg.id || `${msg.sender_type}-${msg.created_at}`,
           sav_case_id: '',
@@ -81,85 +90,73 @@ export function useMessaging({ savCaseId, trackingSlug, userType }: UseMessaging
     } finally {
       setLoading(false);
     }
-  };
+  }, []); // stable - uses refs
 
-  // Configuration du real-time - DÉSACTIVÉ (polling à la place)
+  // Polling setup
   useEffect(() => {
     fetchMessages();
 
     if (!savCaseId && !trackingSlug) return;
 
-    // Polling toutes les 30s au lieu de realtime
     console.log('📨 [Messaging] Polling activé - 30s');
-    const pollInterval = setInterval(() => {
-      fetchMessages();
-    }, 30000);
+    const pollInterval = setInterval(fetchMessages, 30000);
 
     return () => {
       clearInterval(pollInterval);
     };
-  }, [savCaseId, trackingSlug]);
+  }, [savCaseId, trackingSlug, fetchMessages]);
 
-  // Fonction pour envoyer un message
-  const sendMessage = async (message: string, senderName: string, attachments: any[] = []) => {
+  const sendMessage = useCallback(async (message: string, senderName: string, attachments: any[] = []) => {
     if (!message.trim()) return null;
 
     try {
-      let insertData;
-      let shopId;
+      const currentSavCaseId = savCaseIdRef.current;
+      const currentTrackingSlug = trackingSlugRef.current;
+      const currentUserType = userTypeRef.current;
 
-      if (userType === 'shop' && savCaseId) {
-        // Pour les utilisateurs du magasin
+      if (currentUserType === 'shop' && currentSavCaseId) {
         const { data: savCase } = await supabase
           .from('sav_cases')
           .select('shop_id')
-          .eq('id', savCaseId)
+          .eq('id', currentSavCaseId)
           .single();
 
         if (!savCase) throw new Error('Dossier SAV introuvable');
-        shopId = savCase.shop_id;
 
-        insertData = {
-          sav_case_id: savCaseId,
+        const insertData = {
+          sav_case_id: currentSavCaseId,
           sender_type: 'shop',
           sender_name: senderName,
           message: message.trim(),
-          shop_id: shopId,
+          shop_id: savCase.shop_id,
           read_by_shop: true,
           read_by_client: false,
           attachments: attachments
         };
-      } else if (userType === 'client' && trackingSlug) {
-        // Pour les clients publics - utiliser la fonction RPC sécurisée
+
+        const { data, error } = await supabase
+          .from('sav_messages')
+          .insert(insertData)
+          .select()
+          .single();
+
+        if (error) throw error;
+        fetchMessages();
+        return { data, error: null };
+
+      } else if (currentUserType === 'client' && currentTrackingSlug) {
         const { data, error } = await supabase.rpc('send_client_tracking_message', {
-          p_tracking_slug: trackingSlug,
+          p_tracking_slug: currentTrackingSlug,
           p_sender_name: senderName,
           p_message: message.trim()
         });
 
         if (error) throw error;
-
-        // Refetch messages après l'envoi
         fetchMessages();
-        
         return { data: 'success', error: null };
       } else {
         throw new Error('Configuration invalide pour l\'envoi');
       }
-
-      // Pour les utilisateurs du magasin seulement
-      const { data, error } = await supabase
-        .from('sav_messages')
-        .insert(insertData)
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      // Refetch messages après l'envoi
-      fetchMessages();
-      
-      return { data, error: null };
     } catch (error: any) {
       console.error('Error sending message:', error);
       toast({
@@ -169,10 +166,9 @@ export function useMessaging({ savCaseId, trackingSlug, userType }: UseMessaging
       });
       return { data: null, error };
     }
-  };
+  }, [fetchMessages]);
 
-  // Fonction pour supprimer un message (unifié)
-  const deleteMessage = async (messageId: string) => {
+  const deleteMessage = useCallback(async (messageId: string) => {
     try {
       const { error } = await supabase
         .from('sav_messages')
@@ -186,7 +182,6 @@ export function useMessaging({ savCaseId, trackingSlug, userType }: UseMessaging
         description: "Le message a été supprimé avec succès",
       });
 
-      // Refetch messages après suppression
       fetchMessages();
     } catch (error: any) {
       console.error('Error deleting message:', error);
@@ -202,12 +197,11 @@ export function useMessaging({ savCaseId, trackingSlug, userType }: UseMessaging
         variant: "destructive",
       });
     }
-  };
+  }, [fetchMessages]);
 
-  // Fonction pour marquer comme lu
-  const markAsRead = async (messageId: string) => {
+  const markAsRead = useCallback(async (messageId: string) => {
     try {
-      const updateField = userType === 'client' ? 'read_by_client' : 'read_by_shop';
+      const updateField = userTypeRef.current === 'client' ? 'read_by_client' : 'read_by_shop';
       
       const { error } = await supabase
         .from('sav_messages')
@@ -215,77 +209,64 @@ export function useMessaging({ savCaseId, trackingSlug, userType }: UseMessaging
         .eq('id', messageId);
 
       if (error) throw error;
-      
-      // Refetch messages après marquage
-      fetchMessages();
     } catch (error: any) {
       console.error('Error marking message as read:', error);
     }
-  };
+  }, []);
 
-  // Fonction pour marquer tous les messages comme lus
-  const markAllAsRead = async () => {
-    if (!savCaseId && !trackingSlug) return;
+  const markAllAsRead = useCallback(async () => {
+    const currentSavCaseId = savCaseIdRef.current;
+    const currentTrackingSlug = trackingSlugRef.current;
+    const currentUserType = userTypeRef.current;
+
+    if (!currentSavCaseId && !currentTrackingSlug) return;
     
     try {
-      // Déterminer quel champ mettre à jour et de quel type de sender marquer les messages comme lus
-      const updateField = userType === 'client' ? 'read_by_client' : 'read_by_shop';
-      const senderTypeToMark = userType === 'client' ? 'shop' : 'client';
+      const updateField = currentUserType === 'client' ? 'read_by_client' : 'read_by_shop';
+      const senderTypeToMark = currentUserType === 'client' ? 'shop' : 'client';
       
-      console.log('📖 Marking messages as read:', { userType, updateField, senderTypeToMark });
+      let caseId = currentSavCaseId;
       
-      let query;
-      if (savCaseId) {
-        query = supabase
-          .from('sav_messages')
-          .update({ [updateField]: true })
-          .eq('sav_case_id', savCaseId)
-          .eq('sender_type', senderTypeToMark)
-          .eq(updateField, false);
-      } else if (trackingSlug) {
-        // Pour les clients avec tracking slug, il faut d'abord récupérer l'ID du SAV case
+      if (!caseId && currentTrackingSlug) {
         const { data: savCase } = await supabase
           .from('sav_cases')
           .select('id')
-          .eq('tracking_slug', trackingSlug)
+          .eq('tracking_slug', currentTrackingSlug)
           .single();
 
         if (!savCase) return;
-
-        query = supabase
-          .from('sav_messages')
-          .update({ [updateField]: true })
-          .eq('sav_case_id', savCase.id)
-          .eq('sender_type', senderTypeToMark)
-          .eq(updateField, false);
+        caseId = savCase.id;
       }
 
-      if (query) {
-        const { error } = await query;
-        if (error) {
-          console.error('❌ Error marking messages as read:', error);
-          throw error;
-        }
-        console.log('✅ Messages marked as read successfully');
-        fetchMessages();
+      if (!caseId) return;
+
+      const { error } = await supabase
+        .from('sav_messages')
+        .update({ [updateField]: true })
+        .eq('sav_case_id', caseId)
+        .eq('sender_type', senderTypeToMark)
+        .eq(updateField, false);
+
+      if (error) {
+        console.error('❌ Error marking messages as read:', error);
+        throw error;
       }
+      // Do NOT call fetchMessages here to avoid loops
     } catch (error: any) {
       console.error('Error marking all messages as read:', error);
     }
-  };
+  }, []);
 
-  // Fonction pour vérifier si un message peut être supprimé
-  const canDeleteMessage = (message: Message) => {
+  const canDeleteMessage = useCallback((message: Message) => {
     const messageTime = new Date(message.created_at);
     const now = new Date();
     const timeDiff = now.getTime() - messageTime.getTime();
     const oneMinute = 60000;
 
-    // Vérifier si le message a moins d'1 minute ET si c'est le bon type d'utilisateur
     return timeDiff < oneMinute && 
-           ((userType === 'shop' && message.sender_type === 'shop') ||
-            (userType === 'client' && message.sender_type === 'client'));
-  };
+           ((userTypeRef.current === 'shop' && message.sender_type === 'shop') ||
+            (userTypeRef.current === 'client' && message.sender_type === 'client'));
+  }, []);
 
   return {
     messages,
