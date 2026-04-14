@@ -28,6 +28,7 @@ import { SystemAlertsManager } from '@/components/admin/SystemAlertsManager';
 import { InvoiceManagement } from '@/components/admin/InvoiceManagement';
 import { AIEngineManager } from '@/components/admin/AIEngineManager';
 import { DefaultRolePermissionsManager } from '@/components/admin/DefaultRolePermissionsManager';
+import { MessagingProvidersManager } from '@/components/admin/MessagingProvidersManager';
 import { useStorageUsage } from '@/hooks/useStorageUsage';
 import { Shop } from '@/hooks/useShop';
 
@@ -320,6 +321,8 @@ export default function SuperAdmin() {
         return <SystemAlertsManager />;
       case 'ai-engine':
         return <AIEngineManager />;
+      case 'messaging':
+        return <MessagingProvidersManager />;
       case 'role-permissions':
         return <DefaultRolePermissionsManager />;
       default:
