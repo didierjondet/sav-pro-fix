@@ -1,49 +1,46 @@
 
-Constat confirmé après lecture du code et des logs :
 
-1. Le spam de logs "Messages marked as read successfully" est bien anormal
-- La cause est dans `src/components/sav/MessagingInterface.tsx` + `src/hooks/useMessaging.ts`.
-- `MessagingInterface` lance `markAllAsRead()` dans un `useEffect` dépendant de `messages.length` et de `markAllAsRead`.
-- Or `markAllAsRead` est recréée à chaque render, puis elle appelle `fetchMessages()`, ce qui rerender, ce qui relance l'effet, etc.
-- Résultat : boucle quasi infinie de marquage "lu", donc bruit console + consommation inutile.
+## Plan : Historique des conversations HelpBot dans Super Admin (avec suppression)
 
-2. La panne SMS actuelle n’est pas Brevo lui-même
-- Les logs `send-sms` montrent une erreur backend immédiate :
-  `supabase.rpc(...).catch is not a function`
-- Dans `supabase/functions/send-sms/index.ts`, la ligne
-  `await supabase.rpc('reset_monthly_counters').catch(() => {});`
-  est incorrecte.
-- Du coup la fonction casse avant même d’arriver au routage Brevo/Twilio, donc votre configuration Brevo n’est même pas réellement utilisée pour cet envoi.
+### Objectif
+Persister les conversations HelpBot en base, les afficher dans le Super Admin (section Support + cards magasins), et permettre au Super Admin de supprimer des conversations avec confirmation.
 
-Plan de correction
+### 1. Migration SQL
 
-1. Corriger la boucle de messagerie
-- Stabiliser `fetchMessages` et `markAllAsRead` dans `useMessaging` pour éviter qu’elles changent à chaque render.
-- Modifier l’effet de `MessagingInterface` pour ne marquer comme lu que lorsqu’il y a réellement des messages non lus de l’autre côté.
-- Supprimer le `fetchMessages()` systématique après `markAllAsRead`, ou le rendre conditionnel seulement si une vraie mise à jour a été faite.
+Creer la table `help_bot_conversations` :
+- `id`, `shop_id`, `user_id`, `user_name`, `messages` (JSONB), `created_at`, `updated_at`, `escalated`, `escalation_summary`
+- RLS : Super Admin = ALL, shop users = leurs propres conversations
+- Index sur `shop_id` et `created_at`
 
-2. Corriger `send-sms`
-- Remplacer l’appel RPC fautif par une gestion correcte du retour `const { error } = await supabase.rpc(...)`.
-- Conserver la logique multi-provider existante.
-- Ajouter un log clair du provider SMS réellement utilisé pour valider que Brevo est bien pris en compte après le fix.
+### 2. Persistance -- `useHelpBot.ts`
 
-3. Sécuriser le routage Brevo
-- Vérifier que la config déchiffrée Brevo contient bien les champs attendus (`api_key`, `sender_name`).
-- Rendre les erreurs Brevo plus explicites côté réponse backend si la clé, l’expéditeur ou l’API renvoient une erreur.
+Modifier le hook pour sauvegarder chaque conversation (upsert) dans `help_bot_conversations` apres chaque echange. Marquer `escalated = true` si escalade confirmee.
 
-4. Vérification après correction
-- Tester un envoi SMS depuis l’interface SAV.
-- Vérifier que la console n’affiche plus le message en boucle.
-- Vérifier dans les logs Edge Function que `send-sms` passe bien sur `brevo_sms` et ne tombe plus avant routage.
-- Vérifier qu’un échec éventuel Brevo affiche enfin la vraie cause au lieu d’un 500 générique.
+### 3. Nouveau composant `BotConversationsViewer.tsx`
 
-Fichiers à modifier
-- `src/hooks/useMessaging.ts`
-- `src/components/sav/MessagingInterface.tsx`
-- `supabase/functions/send-sms/index.ts`
+- Liste des conversations avec filtres (boutique, date, escalade)
+- Affichage des messages en bulles (user/assistant) avec rendu markdown
+- Mode filtre par `shop_id` (pour usage dans les cards magasins)
+- **Suppression** : bouton supprimer sur chaque conversation, avec `AlertDialog` de confirmation ("Etes-vous sur de vouloir supprimer cette conversation ?")
+- Suppression unitaire ou en lot (checkbox + bouton "Supprimer la selection")
 
-Impact attendu
-- arrêt immédiat du log quasi infini
-- baisse de la charge inutile côté UI / base
-- remise en service de l’envoi SMS
-- validation réelle de votre configuration Brevo
+### 4. Integration Super Admin
+
+- **Section Support** (`SuperAdmin.tsx`) : ajouter un systeme d'onglets "Tickets" / "Conversations Bot"
+- **Card Magasin** (`ShopManagementDialog.tsx`) : ajouter un onglet "Support" avec le viewer filtre par `shop_id`
+
+### Fichiers concernes
+
+| Fichier | Action |
+|---------|--------|
+| Migration SQL | Nouveau |
+| `src/components/admin/BotConversationsViewer.tsx` | Nouveau |
+| `src/hooks/useHelpBot.ts` | Modifie (persistance) |
+| `src/pages/SuperAdmin.tsx` | Modifie (onglet dans support) |
+| `src/components/admin/ShopManagementDialog.tsx` | Modifie (onglet Support) |
+| `src/integrations/supabase/types.ts` | Auto-update |
+
+### Detail suppression avec confirmation
+
+Le composant utilisera `AlertDialog` (deja present dans le projet) pour demander confirmation avant chaque suppression. Un bouton "Supprimer tout" avec confirmation distincte sera aussi disponible pour vider l'historique d'une boutique ou globalement.
+
