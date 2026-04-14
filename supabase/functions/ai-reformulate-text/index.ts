@@ -34,99 +34,125 @@ async function decryptApiKey(encrypted: string): Promise<string> {
   return new TextDecoder().decode(decrypted);
 }
 
-async function getAIConfig(supabaseClient: any) {
-  try {
-    const { data } = await supabaseClient
-      .from("ai_engine_config")
-      .select("*")
-      .eq("is_active", true)
-      .maybeSingle();
-
-    if (!data || data.provider === "lovable") {
-      return {
-        url: "https://ai.gateway.lovable.dev/v1/chat/completions",
-        apiKey: Deno.env.get("LOVABLE_API_KEY"),
-        model: data?.model || "google/gemini-2.5-flash",
-      };
-    }
-
-    let apiKey: string | undefined;
-    if (data.encrypted_api_key) {
-      try {
-        apiKey = await decryptApiKey(data.encrypted_api_key);
-      } catch (e) {
-        console.error("Failed to decrypt API key, may be legacy plaintext:", e);
-        apiKey = undefined;
-      }
-    }
-    if (!apiKey) {
-      apiKey = Deno.env.get(data.api_key_name);
-    }
-    if (!apiKey) {
-      return {
-        error: `Clé API ${data.provider} non configurée. Allez dans Super Admin > Moteur IA pour saisir votre clé API.`,
-      };
-    }
-
-    switch (data.provider) {
-      case "openai":
-        return { url: "https://api.openai.com/v1/chat/completions", apiKey, model: data.model };
-      case "gemini":
-        return { url: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", apiKey, model: data.model };
-      default:
-        return { url: "https://ai.gateway.lovable.dev/v1/chat/completions", apiKey: Deno.env.get("LOVABLE_API_KEY"), model: data.model };
-    }
-  } catch (e) {
-    console.error("Error fetching AI config, using fallback:", e);
-    return {
-      url: "https://ai.gateway.lovable.dev/v1/chat/completions",
-      apiKey: Deno.env.get("LOVABLE_API_KEY"),
-      model: "google/gemini-2.5-flash",
-    };
-  }
+interface AIConfig {
+  url: string;
+  apiKey: string;
+  model: string;
+  provider: string;
+  keySource: string;
 }
 
-Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+interface AIConfigError {
+  error: string;
+}
+
+async function getAIConfig(supabaseClient: any): Promise<AIConfig | AIConfigError> {
+  const { data, error: dbError } = await supabaseClient
+    .from("ai_engine_config")
+    .select("*")
+    .eq("is_active", true)
+    .maybeSingle();
+
+  if (dbError) {
+    console.error("[AI-REFORMULATE] Erreur lecture ai_engine_config:", dbError.message);
+    return { error: `Erreur de lecture de la configuration IA: ${dbError.message}` };
   }
 
-  try {
-    const { text, context } = await req.json();
-
-    const supabaseClient = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-      { auth: { persistSession: false } }
-    );
-
-    const aiConfig = await getAIConfig(supabaseClient);
-
-    if (aiConfig.error) {
-      return new Response(
-        JSON.stringify({ error: aiConfig.error }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+  // Cas 1: Aucune config active → fallback Lovable
+  if (!data) {
+    console.log("[AI-REFORMULATE] Aucune config active, fallback Lovable");
+    const lovableKey = Deno.env.get("LOVABLE_API_KEY");
+    if (!lovableKey) {
+      return { error: "Aucune configuration IA active et clé Lovable absente." };
     }
+    return {
+      url: "https://ai.gateway.lovable.dev/v1/chat/completions",
+      apiKey: lovableKey,
+      model: "google/gemini-2.5-flash",
+      provider: "lovable (fallback)",
+      keySource: "env:LOVABLE_API_KEY",
+    };
+  }
 
-    if (!aiConfig.apiKey) {
-      return new Response(
-        JSON.stringify({ error: "Clé API IA non configurée. Allez dans Super Admin > Moteur IA pour configurer votre clé." }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+  // Cas 2: Config "lovable" active
+  if (data.provider === "lovable") {
+    console.log("[AI-REFORMULATE] Config active: lovable, modèle:", data.model);
+    const lovableKey = Deno.env.get("LOVABLE_API_KEY");
+    if (!lovableKey) {
+      return { error: "Provider Lovable configuré mais clé LOVABLE_API_KEY absente." };
     }
+    return {
+      url: "https://ai.gateway.lovable.dev/v1/chat/completions",
+      apiKey: lovableKey,
+      model: data.model || "google/gemini-2.5-flash",
+      provider: "lovable",
+      keySource: "env:LOVABLE_API_KEY",
+    };
+  }
 
-    if (!text || text.trim() === "") {
-      return new Response(
-        JSON.stringify({ error: "Le texte ne peut pas être vide" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+  // Cas 3: Config tierce (gemini, openai) → STRICT, pas de fallback
+  console.log(`[AI-REFORMULATE] Config active: provider=${data.provider}, modèle=${data.model}`);
+
+  let apiKey: string | undefined;
+  let keySource = "unknown";
+
+  // Essayer la clé chiffrée en DB
+  if (data.encrypted_api_key) {
+    try {
+      apiKey = await decryptApiKey(data.encrypted_api_key);
+      keySource = "db:encrypted_api_key";
+      console.log("[AI-REFORMULATE] Clé API déchiffrée depuis la DB");
+    } catch (e) {
+      console.error("[AI-REFORMULATE] Échec déchiffrement clé API:", (e as Error).message);
+      // NE PAS fallback → essayer env comme dernier recours
     }
+  }
 
-    let systemPrompt = "";
-    switch (context) {
-      case "problem_description":
-        systemPrompt = `Tu es un assistant expert en réparation qui aide à reformuler les descriptions de problèmes techniques.
+  // Si pas de clé chiffrée ou échec déchiffrement, essayer la variable d'env
+  if (!apiKey && data.api_key_name) {
+    apiKey = Deno.env.get(data.api_key_name);
+    if (apiKey) {
+      keySource = `env:${data.api_key_name}`;
+      console.log(`[AI-REFORMULATE] Clé API lue depuis env: ${data.api_key_name}`);
+    }
+  }
+
+  // STRICT: si pas de clé, erreur explicite (pas de fallback Lovable)
+  if (!apiKey) {
+    const msg = data.encrypted_api_key
+      ? `Clé API ${data.provider} impossible à déchiffrer et variable d'environnement ${data.api_key_name || "non configurée"} absente. Reconfigurez la clé dans Super Admin > Moteur IA.`
+      : `Clé API ${data.provider} non configurée. Allez dans Super Admin > Moteur IA pour saisir votre clé API.`;
+    return { error: msg };
+  }
+
+  // Déterminer l'URL selon le provider
+  let url: string;
+  switch (data.provider) {
+    case "openai":
+      url = "https://api.openai.com/v1/chat/completions";
+      break;
+    case "gemini":
+      url = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
+      break;
+    default:
+      return { error: `Provider IA inconnu: "${data.provider}". Providers supportés: lovable, openai, gemini.` };
+  }
+
+  console.log(`[AI-REFORMULATE] URL cible: ${url}, keySource: ${keySource}`);
+
+  return {
+    url,
+    apiKey,
+    model: data.model,
+    provider: data.provider,
+    keySource,
+  };
+}
+
+function getSystemPrompt(context: string): string {
+  switch (context) {
+    case "problem_description":
+      return `Tu es un assistant expert en réparation qui aide à reformuler les descriptions de problèmes techniques.
 CONTEXTE IMPORTANT :
 - L'agent en réception (qui crée le SAV avec le client) rédige ces notes
 - Ces notes sont destinées aux TECHNICIENS de l'équipe qui vont prendre en charge la réparation
@@ -140,9 +166,8 @@ Ton rôle est de :
 - Utiliser un vocabulaire technique clair mais accessible
 - Garder les informations essentielles sans inventer de détails
 - Répondre UNIQUEMENT avec le texte reformulé, sans commentaire ni introduction`;
-        break;
-      case "repair_notes":
-        systemPrompt = `Tu es un technicien expert qui aide à reformuler les notes de réparation.
+    case "repair_notes":
+      return `Tu es un technicien expert qui aide à reformuler les notes de réparation.
 CONTEXTE IMPORTANT :
 - Ces notes documentent les interventions effectuées par le technicien
 - Elles sont destinées à l'équipe technique et au suivi du dossier
@@ -154,9 +179,8 @@ Ton rôle est de :
 - Utiliser un vocabulaire technique approprié mais compréhensible
 - Détailler clairement les interventions effectuées
 - Répondre UNIQUEMENT avec le texte reformulé, sans commentaire ni introduction`;
-        break;
-      case "technician_comments":
-        systemPrompt = `Tu es un assistant expert qui aide à reformuler les commentaires dans un SAV.
+    case "technician_comments":
+      return `Tu es un assistant expert qui aide à reformuler les commentaires dans un SAV.
 CONTEXTE IMPORTANT :
 - L'AGENT qui reçoit le client rédige ces commentaires
 - Ces commentaires sont destinés aux TECHNICIENS de l'équipe
@@ -170,27 +194,24 @@ Ton rôle est de :
 - Garder un ton professionnel et factuel
 - Éviter le jargon incompréhensible mais rester technique si nécessaire
 - Répondre UNIQUEMENT avec le texte reformulé, sans commentaire ni introduction`;
-        break;
-      case "private_comments":
-        systemPrompt = `Tu es un assistant qui aide à reformuler les notes internes pour qu'elles soient claires et organisées.
+    case "private_comments":
+      return `Tu es un assistant qui aide à reformuler les notes internes pour qu'elles soient claires et organisées.
 Ton rôle est de :
 - Corriger l'orthographe et la grammaire
 - Structurer les informations de manière logique
 - Garder un style direct et factuel
 - Conserver tous les détails techniques importants
 - Répondre UNIQUEMENT avec le texte reformulé, sans commentaire ni introduction`;
-        break;
-      case "chat_message":
-        systemPrompt = `Tu es un assistant qui aide à reformuler les messages de chat pour qu'ils soient clairs, polis et professionnels.
+    case "chat_message":
+      return `Tu es un assistant qui aide à reformuler les messages de chat pour qu'ils soient clairs, polis et professionnels.
 Ton rôle est de :
 - Corriger l'orthographe et la grammaire
 - Rendre le message plus fluide et naturel
 - Garder un ton professionnel mais amical
 - Conserver le sens original du message
 - Répondre UNIQUEMENT avec le texte reformulé, sans commentaire ni introduction`;
-        break;
-      case "sms_message":
-        systemPrompt = `Tu es un assistant qui aide à reformuler les SMS professionnels pour qu'ils soient clairs et efficaces.
+    case "sms_message":
+      return `Tu es un assistant qui aide à reformuler les SMS professionnels pour qu'ils soient clairs et efficaces.
 Ton rôle est de :
 - Corriger l'orthographe et la grammaire
 - Garder un ton professionnel mais chaleureux
@@ -200,12 +221,47 @@ Ton rôle est de :
 - Garder le message concis et direct
 - Si le texte dépasse 160 caractères, le raccourcir intelligemment sans perdre le sens
 - Répondre UNIQUEMENT avec le texte reformulé, sans commentaire ni introduction`;
-        break;
-      default:
-        systemPrompt = `Tu es un assistant qui aide à reformuler et corriger du texte.
+    default:
+      return `Tu es un assistant qui aide à reformuler et corriger du texte.
 Corrige l'orthographe, la grammaire et améliore la clarté.
 Réponds UNIQUEMENT avec le texte reformulé, sans commentaire ni introduction.`;
+  }
+}
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const { text, context } = await req.json();
+
+    if (!text || text.trim() === "") {
+      return new Response(
+        JSON.stringify({ error: "Le texte ne peut pas être vide" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
+
+    const supabaseClient = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+      { auth: { persistSession: false } }
+    );
+
+    const aiConfig = await getAIConfig(supabaseClient);
+
+    if ("error" in aiConfig) {
+      console.error("[AI-REFORMULATE] Config error:", aiConfig.error);
+      return new Response(
+        JSON.stringify({ error: aiConfig.error }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    console.log(`[AI-REFORMULATE] Appel IA: provider=${aiConfig.provider}, model=${aiConfig.model}, url=${aiConfig.url}`);
+
+    const systemPrompt = getSystemPrompt(context);
 
     const requestBody = JSON.stringify({
       model: aiConfig.model,
@@ -230,34 +286,50 @@ Réponds UNIQUEMENT avec le texte reformulé, sans commentaire ni introduction.`
 
     // Retry once after 2s on 429 or 503
     if (response.status === 429 || response.status === 503) {
-      console.log(`AI returned ${response.status}, retrying in 2s...`);
+      console.log(`[AI-REFORMULATE] ${aiConfig.provider} returned ${response.status}, retrying in 2s...`);
       await new Promise(r => setTimeout(r, 2000));
       response = await fetchAI();
     }
 
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`[AI-REFORMULATE] Erreur ${aiConfig.provider} (${response.status}):`, errorText);
+
+      const providerLabel = aiConfig.provider.charAt(0).toUpperCase() + aiConfig.provider.slice(1);
+
+      if (response.status === 401) {
+        return new Response(
+          JSON.stringify({ error: `Clé API ${providerLabel} invalide ou expirée. Reconfigurez-la dans Super Admin > Moteur IA.` }),
+          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
       if (response.status === 429) {
         return new Response(
-          JSON.stringify({ error: "Limite de requêtes atteinte. Veuillez réessayer dans quelques instants." }),
+          JSON.stringify({ error: `Limite de requêtes ${providerLabel} atteinte. Réessayez dans quelques instants.` }),
           { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
       if (response.status === 503) {
         return new Response(
-          JSON.stringify({ error: "Service IA temporairement indisponible. Veuillez réessayer dans quelques instants." }),
+          JSON.stringify({ error: `Service ${providerLabel} temporairement indisponible. Réessayez dans quelques instants.` }),
           { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
       if (response.status === 402) {
         return new Response(
-          JSON.stringify({ error: "Crédits IA insuffisants. Veuillez recharger votre compte." }),
+          JSON.stringify({ error: `Crédits ${providerLabel} insuffisants. Rechargez votre compte.` }),
           { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-      const errorText = await response.text();
-      console.error("AI error:", response.status, errorText);
+      if (response.status === 400) {
+        return new Response(
+          JSON.stringify({ error: `Requête rejetée par ${providerLabel}: modèle "${aiConfig.model}" invalide ou paramètres incorrects. Vérifiez la config dans Super Admin > Moteur IA.` }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
       return new Response(
-        JSON.stringify({ error: "Erreur lors de la reformulation" }),
+        JSON.stringify({ error: `Erreur ${providerLabel} (${response.status}): ${errorText.substring(0, 200)}` }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -266,17 +338,23 @@ Réponds UNIQUEMENT avec le texte reformulé, sans commentaire ni introduction.`
     const reformulatedText = data.choices?.[0]?.message?.content;
 
     if (!reformulatedText) {
-      throw new Error("Aucun texte reformulé reçu de l'IA");
+      console.error("[AI-REFORMULATE] Réponse IA sans contenu:", JSON.stringify(data).substring(0, 500));
+      return new Response(
+        JSON.stringify({ error: `Le provider ${aiConfig.provider} n'a retourné aucun texte. Vérifiez le modèle configuré.` }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
+
+    console.log(`[AI-REFORMULATE] Succès via ${aiConfig.provider}/${aiConfig.model}`);
 
     return new Response(
       JSON.stringify({ reformulatedText }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
-    console.error("Error in ai-reformulate-text function:", error);
+    console.error("[AI-REFORMULATE] Erreur inattendue:", error);
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : "Erreur inconnue" }),
+      JSON.stringify({ error: error instanceof Error ? error.message : "Erreur inconnue dans la fonction de reformulation" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
