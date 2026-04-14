@@ -32,6 +32,7 @@ import { PartStatusIcon } from '@/components/sav/PartStatusIcon';
 import { SAVStatusDropdown } from '@/components/sav/SAVStatusDropdown';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { SAVWizardDialog } from '@/components/sav/SAVWizardDialog';
 import { 
   Eye,
   Clock,
@@ -96,6 +97,7 @@ export default function SAVList() {
   const [itemsPerPage, setItemsPerPage] = useState(saved?.itemsPerPage ?? DEFAULT_FILTERS.itemsPerPage);
   const [qrCodeCase, setQrCodeCase] = useState(null);
   const [showPrintDialog, setShowPrintDialog] = useState(false);
+  const [showWizard, setShowWizard] = useState(false);
   const [viewMode, setViewMode] = useState<'standard' | 'compact'>(() => {
     return (localStorage.getItem('fixway_sav_view_mode') as 'standard' | 'compact') || 'standard';
   });
@@ -200,7 +202,12 @@ export default function SAVList() {
 
   const handleNewSAV = () => {
     if (checkAndShowLimitDialog('sav')) {
-      navigate('/sav/new');
+      const isSimplified = localStorage.getItem('fixway_simplified_view') === 'true';
+      if (isSimplified) {
+        setShowWizard(true);
+      } else {
+        navigate('/sav/new');
+      }
     }
   };
 
@@ -797,6 +804,11 @@ export default function SAVList() {
         isOpen={showPrintDialog}
         onClose={() => setShowPrintDialog(false)}
         onPrint={handlePrintWithFilters}
+      />
+      <SAVWizardDialog
+        open={showWizard}
+        onOpenChange={setShowWizard}
+        onSuccess={() => refetch()}
       />
     </div>
   );
