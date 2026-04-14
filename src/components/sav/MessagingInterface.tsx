@@ -65,17 +65,24 @@ export function MessagingInterface({
     canDeleteMessage 
   } = useMessaging({ savCaseId, trackingSlug, userType });
 
-  // Marquer tous les messages comme lus au montage ET à chaque nouveau message
+  // Marquer tous les messages comme lus au montage ET quand de nouveaux messages non lus apparaissent
   useEffect(() => {
-    if (markAllAsRead && messages.length > 0) {
-      // Délai court pour s'assurer que les messages sont bien affichés
-      const timer = setTimeout(() => {
-        markAllAsRead();
-      }, 500);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [messages.length, markAllAsRead]);
+    if (messages.length === 0) return;
+    
+    const readField = userType === 'client' ? 'read_by_client' : 'read_by_shop';
+    const otherSender = userType === 'client' ? 'shop' : 'client';
+    const hasUnread = messages.some(
+      (m) => m.sender_type === otherSender && !(m as any)[readField]
+    );
+    
+    if (!hasUnread) return;
+    
+    const timer = setTimeout(() => {
+      markAllAsRead();
+    }, 500);
+    
+    return () => clearTimeout(timer);
+  }, [messages, userType]); // markAllAsRead is stable via useCallback
 
   // Listener realtime pour mise à jour instantanée du statut "lu"
   useEffect(() => {
