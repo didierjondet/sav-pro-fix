@@ -10,6 +10,7 @@ import {
   Globe,
 } from 'lucide-react';
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { SuperAdminSidebar } from '@/components/admin/SuperAdminSidebar';
 import { DashboardOverview } from '@/components/admin/dashboard/DashboardOverview';
 import { ShopsManagement } from '@/components/admin/dashboard/ShopsManagement';
