@@ -138,11 +138,12 @@ Confirmez votre RDV via le lien dans votre espace de suivi.`;
       }
 
       // Envoyer via SMS
+      let smsSent = false;
       if (sendViaSMS && customerPhone) {
         const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
         const confirmUrl = `${baseUrl}/rdv/${appointment.confirmation_token}`;
         
-        await sendAppointmentSMS(
+        smsSent = await sendAppointmentSMS(
           customerPhone,
           customerName,
           appointmentDateTime,
@@ -153,9 +154,15 @@ Confirmez votre RDV via le lien dans votre espace de suivi.`;
         );
       }
 
+      const successParts = [];
+      if (sendViaChat) successParts.push('via le chat');
+      if (sendViaSMS && smsSent) successParts.push('par SMS');
+
       toast({
-        title: "RDV proposé",
-        description: `La proposition de RDV a été envoyée${sendViaSMS ? ' par SMS' : ''}${sendViaSMS && sendViaChat ? ' et' : ''}${sendViaChat ? ' via le chat' : ''}`
+        title: smsSent || sendViaChat ? "RDV proposé" : "RDV créé partiellement",
+        description: successParts.length > 0
+          ? `La proposition de RDV a été envoyée ${successParts.join(' et ')}`
+          : "Le RDV a été créé, mais l'envoi du SMS a échoué."
       });
 
       setOpen(false);
