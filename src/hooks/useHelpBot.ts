@@ -28,7 +28,7 @@ export function useHelpBot() {
   const [isLoading, setIsLoading] = useState(false);
   const [faqItems, setFaqItems] = useState<FAQItem[]>([]);
   const [pendingEscalation, setPendingEscalation] = useState<PendingEscalation | null>(null);
-  const [conversationId, setConversationId] = useState<string | null>(null);
+  const conversationIdRef = useRef<string | null>(null);
   const { shop } = useShop();
   const { profile } = useProfile();
 
