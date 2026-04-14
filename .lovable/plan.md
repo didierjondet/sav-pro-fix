@@ -1,25 +1,69 @@
 
 
-## Correction : Conversations bot dupliquees
+## Plan : Wizard etape-par-etape pour nouveau SAV en vue simplifiee
 
-### Probleme identifie
+### Concept
 
-Dans `useHelpBot.ts`, `persistConversation` est un `useCallback` qui capture `conversationId` dans sa closure. Quand le premier message est envoye :
+En mode simplifie, le bouton "Nouveau dossier SAV" ouvre un **Dialog plein ecran mobile** avec un assistant pas-a-pas (stepper). Chaque etape presente un seul groupe de champs avec des boutons Retour/Suivant. Une barre de progression en haut indique la progression.
 
-1. `conversationId` est `null` -- `persistConversation` fait un `INSERT` et appelle `setConversationId(data.id)`
-2. Mais `setConversationId` est asynchrone (React state) -- au prochain appel de `persistConversation`, la closure utilise encore l'ancien `conversationId === null`
-3. Resultat : un deuxieme `INSERT` au lieu d'un `UPDATE`, creant une deuxieme ligne en base
+### Etapes du wizard
 
-### Solution
+Le formulaire SAV actuel contient 7 sections numerotees. Le wizard les reprend en etapes simplifiees :
 
-Remplacer `useState` par `useRef` pour `conversationId` afin d'eviter les closures perimees :
+1. **Type de SAV** -- selection du type + statut initial
+2. **Client** -- recherche client existant ou saisie rapide (nom, prenom, telephone) -- conditionnelle selon le type
+3. **Appareil** -- marque, modele, couleur, grade
+4. **Probleme** -- description du probleme + photos
+5. **Accessoires & Codes** -- checkboxes accessoires + codes de securite
+6. **Pieces** -- ajout rapide de pieces (recherche stock + pieces libres)
+7. **Recapitulatif** -- resume de tout avant validation + acompte
 
-**Fichier modifie : `src/hooks/useHelpBot.ts`**
+Chaque etape a un titre, une icone, et des boutons Retour / Suivant. L'etape finale affiche "Creer le dossier".
 
-- Changer `const [conversationId, setConversationId] = useState<string | null>(null)` en `const conversationIdRef = useRef<string | null>(null)`
-- Dans `persistConversation` : lire/ecrire `conversationIdRef.current` au lieu de `conversationId`
-- Dans `clearMessages` : reset `conversationIdRef.current = null`
-- Retirer `conversationId` des dependances du `useCallback`
+### Architecture technique
 
-Cela garantit qu'une seule ligne en base est creee par session de conversation, et que tous les messages sont accumules dans le meme enregistrement JSONB.
+**Nouveau composant : `src/components/sav/SAVWizardDialog.tsx`**
+- Dialog (`max-w-2xl`, plein ecran sur mobile)
+- State interne : `currentStep`, meme states que `SAVForm` (customerInfo, deviceInfo, etc.)
+- Barre de progression avec `Progress` component + indicateur d'etape (ex: "Etape 2/7")
+- Animation de transition entre etapes (simple fade CSS)
+- Reutilise les memes hooks (`useSAVCases`, `useCustomers`, `useShopSAVTypes`, etc.) et la meme logique de soumission que `SAVForm`
+- Reutilise `CustomerSearch`, `PatternLock`, `FileUpload`, `SecurityCodesSection` existants
+- Apres creation : affiche le `PrintConfirmDialog` existant puis ferme le wizard
+
+**Modification : `src/pages/SAVList.tsx`**
+- Detecter le mode simplifie (`localStorage.getItem('fixway_simplified_view') === 'true'`)
+- Si simplifie : `handleNewSAV` ouvre le wizard dialog au lieu de naviguer vers `/sav/new`
+- Ajouter le state `showWizard` et rendre `<SAVWizardDialog />`
+
+### Detail visuel
+
+```text
+┌─────────────────────────────────┐
+│  Nouveau SAV          Etape 2/7 │
+│  ████████░░░░░░░░░░░░░░░░░░░░░ │
+│                                  │
+│  👤 Informations Client          │
+│                                  │
+│  [Rechercher un client...]       │
+│  Prenom: [________]             │
+│  Nom:    [________]             │
+│  Tel:    [________]             │
+│                                  │
+│  [← Retour]          [Suivant →] │
+└─────────────────────────────────┘
+```
+
+### Fichiers concernes
+
+| Fichier | Action |
+|---------|--------|
+| `src/components/sav/SAVWizardDialog.tsx` | Nouveau |
+| `src/pages/SAVList.tsx` | Modifie (condition vue simplifiee) |
+
+### Ce qui ne change pas
+
+- Le formulaire SAV classique (`SAVForm`) reste inchange pour le mode normal
+- La page `/sav/new` continue de fonctionner normalement
+- La logique de creation (insertion en base, gestion des pieces, commandes auto) est repliquee depuis `SAVForm`
 
