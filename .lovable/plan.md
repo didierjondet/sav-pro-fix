@@ -1,94 +1,49 @@
 
+Constat confirmé après lecture du code et des logs :
 
-## Plan : Menu "SMS / Mail" multi-fournisseurs avec Brevo dans Super Admin
+1. Le spam de logs "Messages marked as read successfully" est bien anormal
+- La cause est dans `src/components/sav/MessagingInterface.tsx` + `src/hooks/useMessaging.ts`.
+- `MessagingInterface` lance `markAllAsRead()` dans un `useEffect` dépendant de `messages.length` et de `markAllAsRead`.
+- Or `markAllAsRead` est recréée à chaque render, puis elle appelle `fetchMessages()`, ce qui rerender, ce qui relance l'effet, etc.
+- Résultat : boucle quasi infinie de marquage "lu", donc bruit console + consommation inutile.
 
-### Objectif
-Creer un systeme de gestion multi-fournisseurs SMS et Email, configurable a la volee par le Super Admin, incluant Twilio, Brevo, Resend et SMTP generique. Le meme pattern que `AIEngineManager` / `ai_engine_config` sera replique.
+2. La panne SMS actuelle n’est pas Brevo lui-même
+- Les logs `send-sms` montrent une erreur backend immédiate :
+  `supabase.rpc(...).catch is not a function`
+- Dans `supabase/functions/send-sms/index.ts`, la ligne
+  `await supabase.rpc('reset_monthly_counters').catch(() => {});`
+  est incorrecte.
+- Du coup la fonction casse avant même d’arriver au routage Brevo/Twilio, donc votre configuration Brevo n’est même pas réellement utilisée pour cet envoi.
 
-### 1. Migration base de donnees : table `messaging_providers`
+Plan de correction
 
-```sql
-CREATE TABLE messaging_providers (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  type text NOT NULL CHECK (type IN ('sms', 'email')),
-  provider text NOT NULL, -- twilio_gateway, twilio_direct, brevo_sms, brevo_email, resend, smtp
-  name text NOT NULL,
-  is_active boolean NOT NULL DEFAULT false,
-  encrypted_config jsonb DEFAULT NULL, -- cles API chiffrees (meme crypto AES-GCM que ai_engine_config)
-  from_address text DEFAULT NULL, -- numero tel ou email expediteur
-  created_at timestamptz DEFAULT now(),
-  updated_at timestamptz DEFAULT now()
-);
+1. Corriger la boucle de messagerie
+- Stabiliser `fetchMessages` et `markAllAsRead` dans `useMessaging` pour éviter qu’elles changent à chaque render.
+- Modifier l’effet de `MessagingInterface` pour ne marquer comme lu que lorsqu’il y a réellement des messages non lus de l’autre côté.
+- Supprimer le `fetchMessages()` systématique après `markAllAsRead`, ou le rendre conditionnel seulement si une vraie mise à jour a été faite.
 
-ALTER TABLE messaging_providers ENABLE ROW LEVEL SECURITY;
--- RLS : Super Admin uniquement
--- Contrainte : un seul provider actif par type
-CREATE UNIQUE INDEX idx_one_active_per_type ON messaging_providers (type) WHERE is_active = true;
-```
+2. Corriger `send-sms`
+- Remplacer l’appel RPC fautif par une gestion correcte du retour `const { error } = await supabase.rpc(...)`.
+- Conserver la logique multi-provider existante.
+- Ajouter un log clair du provider SMS réellement utilisé pour valider que Brevo est bien pris en compte après le fix.
 
-### 2. Sidebar Super Admin
-Ajouter une entree **"SMS / Mail"** (icone `Mail`) dans `SuperAdminSidebar.tsx`, section "Configuration".
+3. Sécuriser le routage Brevo
+- Vérifier que la config déchiffrée Brevo contient bien les champs attendus (`api_key`, `sender_name`).
+- Rendre les erreurs Brevo plus explicites côté réponse backend si la clé, l’expéditeur ou l’API renvoient une erreur.
 
-### 3. Nouveau composant `MessagingProvidersManager.tsx`
-Interface avec deux onglets (SMS / Email), inspiree de `AIEngineManager` :
-- Liste des fournisseurs configures avec badge "Actif"
-- Formulaire d'ajout/modification avec champs dynamiques selon le provider :
-  - **Twilio Gateway** : pas de config (utilise secrets existants)
-  - **Twilio Direct** : Account SID, Auth Token, numero expediteur
-  - **Brevo SMS** : cle API Brevo, nom expediteur
-  - **Brevo Email** : cle API Brevo, email expediteur
-  - **Resend** : cle API, email expediteur
-  - **SMTP** : host, port, user, password, email expediteur
-- Bouton "Activer" qui desactive les autres du meme type
-- Bouton "Tester" pour valider la config
+4. Vérification après correction
+- Tester un envoi SMS depuis l’interface SAV.
+- Vérifier que la console n’affiche plus le message en boucle.
+- Vérifier dans les logs Edge Function que `send-sms` passe bien sur `brevo_sms` et ne tombe plus avant routage.
+- Vérifier qu’un échec éventuel Brevo affiche enfin la vraie cause au lieu d’un 500 générique.
 
-### 4. Edge Function `save-messaging-provider`
-Recoit la config, chiffre les secrets (AES-GCM, meme `AI_ENCRYPTION_KEY`), sauvegarde dans `messaging_providers`. Similaire a `save-ai-config`.
+Fichiers à modifier
+- `src/hooks/useMessaging.ts`
+- `src/components/sav/MessagingInterface.tsx`
+- `supabase/functions/send-sms/index.ts`
 
-### 5. Refonte de `send-sms/index.ts`
-Au lieu de toujours appeler Twilio Gateway :
-1. Lire le provider SMS actif dans `messaging_providers` (via service role)
-2. Dechiffrer la config
-3. Router vers l'adaptateur correspondant :
-   - **twilio_gateway** : logique actuelle (gateway Lovable)
-   - **twilio_direct** : appel direct API Twilio avec SID/Token
-   - **brevo_sms** : appel API Brevo SMS (`POST https://api.brevo.com/v3/transactionalSMS/sms`)
-4. Si aucun provider actif : erreur explicite
-5. La logique de credits, historique et integration discussion reste inchangee
-
-### 6. Refonte des fonctions email
-- `send-contact-email` et `send-invoice-notification` :
-  1. Lire le provider email actif dans `messaging_providers`
-  2. Router vers : **resend** (actuel), **brevo_email** (`POST https://api.brevo.com/v3/smtp/email`), ou **smtp** generique
-  3. Si aucun provider actif : fallback Resend (retro-compatible)
-
-### 7. Integration dans `SuperAdmin.tsx`
-Ajouter le case `'messaging'` qui rend `<MessagingProvidersManager />`.
-
-### Fichiers concernes
-- **Nouveau** : migration SQL pour `messaging_providers`
-- **Nouveau** : `src/components/admin/MessagingProvidersManager.tsx`
-- **Nouveau** : `supabase/functions/save-messaging-provider/index.ts`
-- **Modifie** : `src/components/admin/SuperAdminSidebar.tsx` (ajout menu)
-- **Modifie** : `src/pages/SuperAdmin.tsx` (ajout section)
-- **Modifie** : `supabase/functions/send-sms/index.ts` (routage multi-provider)
-- **Modifie** : `supabase/functions/send-contact-email/index.ts` (routage multi-provider)
-- **Modifie** : `supabase/functions/send-invoice-notification/index.ts` (routage multi-provider)
-
-### Ce qui ne change PAS
-- `useSMS.ts` et tous les composants frontend qui envoient des SMS
-- La logique de credits et compteurs SMS
-- Le formatage des numeros de telephone
-- L'historique SMS (`sms_history`)
-
-### Fournisseurs inclus
-
-| Type | Provider | API |
-|------|----------|-----|
-| SMS | Twilio Gateway | Gateway Lovable (existant) |
-| SMS | Twilio Direct | API Twilio directe |
-| SMS | Brevo SMS | `api.brevo.com/v3/transactionalSMS/sms` |
-| Email | Resend | npm resend (existant) |
-| Email | Brevo Email | `api.brevo.com/v3/smtp/email` |
-| Email | SMTP | Connexion SMTP generique |
-
+Impact attendu
+- arrêt immédiat du log quasi infini
+- baisse de la charge inutile côté UI / base
+- remise en service de l’envoi SMS
+- validation réelle de votre configuration Brevo
