@@ -1,64 +1,94 @@
 
-Correction ciblée de la reformulation IA
 
-Constat
-- Votre demande est légitime: la reformulation doit utiliser le moteur IA actif configuré par le super admin.
-- En lisant le code, `ai-reformulate-text` consulte bien `ai_engine_config`, donc la base structurelle existe déjà.
-- En revanche, la fonction a 2 défauts majeurs qui donnent l’impression qu’elle “passe encore par Lovable” :
-  1. elle retombe silencieusement sur Lovable si la lecture de config, le déchiffrement de clé, ou le mapping provider échoue ;
-  2. elle renvoie souvent une erreur générique `Erreur lors de la reformulation`, donc on ne voit jamais si Gemini a réellement été utilisé ni pourquoi ça casse.
+## Plan : Menu "SMS / Mail" multi-fournisseurs avec Brevo dans Super Admin
 
-Ce que je vais corriger
-1. Fiabiliser la sélection du moteur dans `supabase/functions/ai-reformulate-text/index.ts`
-- supprimer le fallback silencieux vers Lovable quand une config active existe mais est invalide
-- distinguer clairement 3 cas :
-  - aucune config active => fallback assumé
-  - config `lovable` active => usage Lovable assumé
-  - config `gemini` ou `openai` active => obligation d’utiliser ce provider, sinon erreur explicite
-- ajouter des logs structurés indiquant :
-  - provider actif détecté
-  - modèle utilisé
-  - type de clé utilisée (clé chiffrée DB ou secret env, sans jamais exposer la valeur)
-  - URL cible appelée
+### Objectif
+Creer un systeme de gestion multi-fournisseurs SMS et Email, configurable a la volee par le Super Admin, incluant Twilio, Brevo, Resend et SMTP generique. Le meme pattern que `AIEngineManager` / `ai_engine_config` sera replique.
 
-2. Corriger la logique Gemini
-- vérifier le format exact envoyé à l’endpoint Gemini compatible OpenAI déjà utilisé dans le projet
-- harmoniser `ai-reformulate-text` avec les autres fonctions IA qui lisent `ai_engine_config`
-- s’assurer que si `provider = gemini`, l’appel part bien sur l’URL Gemini et non sur la gateway Lovable
+### 1. Migration base de donnees : table `messaging_providers`
 
-3. Améliorer les erreurs backend
-- ne plus renvoyer seulement `Erreur lors de la reformulation`
-- propager les causes réelles :
-  - clé API Gemini absente
-  - échec de déchiffrement de la clé enregistrée
-  - provider inconnu
-  - modèle invalide
-  - 401 / 400 / 429 / 503 du provider
-- inclure dans la réponse un message exploitable côté interface
+```sql
+CREATE TABLE messaging_providers (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  type text NOT NULL CHECK (type IN ('sms', 'email')),
+  provider text NOT NULL, -- twilio_gateway, twilio_direct, brevo_sms, brevo_email, resend, smtp
+  name text NOT NULL,
+  is_active boolean NOT NULL DEFAULT false,
+  encrypted_config jsonb DEFAULT NULL, -- cles API chiffrees (meme crypto AES-GCM que ai_engine_config)
+  from_address text DEFAULT NULL, -- numero tel ou email expediteur
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
 
-4. Améliorer le frontend `src/components/sav/AITextReformulator.tsx`
-- extraire le vrai message d’erreur retourné par l’edge function au lieu de se baser seulement sur `error.message`
-- afficher un toast spécifique si :
-  - la config IA active est invalide
-  - la clé Gemini n’est plus lisible
-  - le modèle configuré n’est pas accepté
-  - le service est temporairement indisponible
-- conserver la logique de retry déjà ajoutée pour 429/503
+ALTER TABLE messaging_providers ENABLE ROW LEVEL SECURITY;
+-- RLS : Super Admin uniquement
+-- Contrainte : un seul provider actif par type
+CREATE UNIQUE INDEX idx_one_active_per_type ON messaging_providers (type) WHERE is_active = true;
+```
 
-5. Validation après correction
-- tester la reformulation sur plusieurs contextes:
-  - description du problème
-  - commentaires technicien
-  - commentaires privés
-  - SMS
-- vérifier dans les logs de `ai-reformulate-text` que le provider utilisé est bien `gemini`
-- vérifier qu’en cas d’erreur, le message affiché ne parle plus vaguement de reformulation mais de la vraie cause
+### 2. Sidebar Super Admin
+Ajouter une entree **"SMS / Mail"** (icone `Mail`) dans `SuperAdminSidebar.tsx`, section "Configuration".
 
-Fichiers concernés
-- `supabase/functions/ai-reformulate-text/index.ts`
-- `src/components/sav/AITextReformulator.tsx`
+### 3. Nouveau composant `MessagingProvidersManager.tsx`
+Interface avec deux onglets (SMS / Email), inspiree de `AIEngineManager` :
+- Liste des fournisseurs configures avec badge "Actif"
+- Formulaire d'ajout/modification avec champs dynamiques selon le provider :
+  - **Twilio Gateway** : pas de config (utilise secrets existants)
+  - **Twilio Direct** : Account SID, Auth Token, numero expediteur
+  - **Brevo SMS** : cle API Brevo, nom expediteur
+  - **Brevo Email** : cle API Brevo, email expediteur
+  - **Resend** : cle API, email expediteur
+  - **SMTP** : host, port, user, password, email expediteur
+- Bouton "Activer" qui desactive les autres du meme type
+- Bouton "Tester" pour valider la config
 
-Détail technique important
-- Aujourd’hui, le vrai problème n’est pas que la fonction ignore totalement `ai_engine_config`.
-- Le problème est qu’elle peut masquer un échec de configuration en retombant sur Lovable, puis masquer encore l’échec final avec un message générique.
-- Le correctif structurel sera donc: “provider strict si configuré”, avec logs explicites et erreurs réelles visibles.
+### 4. Edge Function `save-messaging-provider`
+Recoit la config, chiffre les secrets (AES-GCM, meme `AI_ENCRYPTION_KEY`), sauvegarde dans `messaging_providers`. Similaire a `save-ai-config`.
+
+### 5. Refonte de `send-sms/index.ts`
+Au lieu de toujours appeler Twilio Gateway :
+1. Lire le provider SMS actif dans `messaging_providers` (via service role)
+2. Dechiffrer la config
+3. Router vers l'adaptateur correspondant :
+   - **twilio_gateway** : logique actuelle (gateway Lovable)
+   - **twilio_direct** : appel direct API Twilio avec SID/Token
+   - **brevo_sms** : appel API Brevo SMS (`POST https://api.brevo.com/v3/transactionalSMS/sms`)
+4. Si aucun provider actif : erreur explicite
+5. La logique de credits, historique et integration discussion reste inchangee
+
+### 6. Refonte des fonctions email
+- `send-contact-email` et `send-invoice-notification` :
+  1. Lire le provider email actif dans `messaging_providers`
+  2. Router vers : **resend** (actuel), **brevo_email** (`POST https://api.brevo.com/v3/smtp/email`), ou **smtp** generique
+  3. Si aucun provider actif : fallback Resend (retro-compatible)
+
+### 7. Integration dans `SuperAdmin.tsx`
+Ajouter le case `'messaging'` qui rend `<MessagingProvidersManager />`.
+
+### Fichiers concernes
+- **Nouveau** : migration SQL pour `messaging_providers`
+- **Nouveau** : `src/components/admin/MessagingProvidersManager.tsx`
+- **Nouveau** : `supabase/functions/save-messaging-provider/index.ts`
+- **Modifie** : `src/components/admin/SuperAdminSidebar.tsx` (ajout menu)
+- **Modifie** : `src/pages/SuperAdmin.tsx` (ajout section)
+- **Modifie** : `supabase/functions/send-sms/index.ts` (routage multi-provider)
+- **Modifie** : `supabase/functions/send-contact-email/index.ts` (routage multi-provider)
+- **Modifie** : `supabase/functions/send-invoice-notification/index.ts` (routage multi-provider)
+
+### Ce qui ne change PAS
+- `useSMS.ts` et tous les composants frontend qui envoient des SMS
+- La logique de credits et compteurs SMS
+- Le formatage des numeros de telephone
+- L'historique SMS (`sms_history`)
+
+### Fournisseurs inclus
+
+| Type | Provider | API |
+|------|----------|-----|
+| SMS | Twilio Gateway | Gateway Lovable (existant) |
+| SMS | Twilio Direct | API Twilio directe |
+| SMS | Brevo SMS | `api.brevo.com/v3/transactionalSMS/sms` |
+| Email | Resend | npm resend (existant) |
+| Email | Brevo Email | `api.brevo.com/v3/smtp/email` |
+| Email | SMTP | Connexion SMTP generique |
+
