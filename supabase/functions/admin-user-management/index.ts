@@ -291,10 +291,10 @@ Deno.serve(async (req) => {
 
         console.log('Fetching auth stats for shops')
 
-        // Récupérer tous les profils avec leur shop_id
+        // Récupérer tous les profils avec leur shop_id et noms
         const { data: allProfiles, error: allProfilesError } = await supabase
           .from('profiles')
-          .select('user_id, shop_id')
+          .select('user_id, shop_id, first_name, last_name')
           .not('shop_id', 'is', null)
 
         if (allProfilesError) throw allProfilesError
@@ -312,14 +312,14 @@ Deno.serve(async (req) => {
           authMap[u.id] = u.last_sign_in_at || null
         }
 
-        // Compter les connexions par shop et mapper last_sign_in par user
-        const shopStats: Record<string, { total_logins: number; users: Record<string, string | null> }> = {}
+        // Compter les connexions par shop et trouver le dernier connecté
+        const shopStats: Record<string, { total_logins: number; last_login_at: string | null; last_login_user_name: string | null; users: Record<string, string | null> }> = {}
         
         for (const p of allProfiles || []) {
           if (!p.shop_id || !p.user_id) continue
           
           if (!shopStats[p.shop_id]) {
-            shopStats[p.shop_id] = { total_logins: 0, users: {} }
+            shopStats[p.shop_id] = { total_logins: 0, last_login_at: null, last_login_user_name: null, users: {} }
           }
           
           const lastSignIn = authMap[p.user_id] || null
@@ -328,6 +328,13 @@ Deno.serve(async (req) => {
           // Compter comme "connexion" si l'utilisateur s'est déjà connecté
           if (lastSignIn) {
             shopStats[p.shop_id].total_logins += 1
+            
+            // Tracker le dernier connecté
+            if (!shopStats[p.shop_id].last_login_at || lastSignIn > shopStats[p.shop_id].last_login_at!) {
+              shopStats[p.shop_id].last_login_at = lastSignIn
+              const fullName = [p.first_name, p.last_name].filter(Boolean).join(' ') || 'Inconnu'
+              shopStats[p.shop_id].last_login_user_name = fullName
+            }
           }
         }
 

@@ -75,6 +75,8 @@ interface Shop {
   is_blocked?: boolean;
   storage_gb?: number;
   total_logins?: number;
+  last_login_at?: string | null;
+  last_login_user_name?: string | null;
 }
 
 interface ShopsManagementProps {
@@ -503,17 +505,26 @@ export function ShopsManagement({ shops, onUpdate }: ShopsManagementProps) {
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm mb-2">
                         <div className="text-slate-700">
                           <span className="font-medium">Email: </span>
-                          <span>{shop.email}</span>
+                          <span>{shop.email || '—'}</span>
                         </div>
                         <div className="text-slate-700">
                           <span className="font-medium">Téléphone: </span>
-                          <span>{shop.phone}</span>
+                          <span>{shop.phone || '—'}</span>
                         </div>
                         <div className="text-slate-700">
                           <span className="font-medium">CA: </span>
                           <span>{shop.total_revenue?.toFixed(2)}€</span>
                         </div>
                       </div>
+
+                      {shop.last_login_at && (
+                        <div className="text-xs text-slate-500 mt-1">
+                          <span className="font-medium">Dernière connexion: </span>
+                          <span>{shop.last_login_user_name || 'Inconnu'}</span>
+                          <span> — </span>
+                          <span>{new Date(shop.last_login_at).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' })}</span>
+                        </div>
+                      )}
                       
                     </div>
                     
