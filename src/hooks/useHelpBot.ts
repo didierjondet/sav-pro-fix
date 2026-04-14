@@ -41,7 +41,7 @@ export function useHelpBot() {
       const userName = profile ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() : null;
       const messagesJson = msgs.map(m => ({ role: m.role, content: m.content, timestamp: m.timestamp.toISOString() }));
 
-      if (conversationId) {
+      if (conversationIdRef.current) {
         await supabase
           .from('help_bot_conversations')
           .update({
@@ -49,7 +49,7 @@ export function useHelpBot() {
             escalated,
             escalation_summary: escalationSummary || null,
           })
-          .eq('id', conversationId);
+          .eq('id', conversationIdRef.current);
       } else {
         const { data } = await supabase
           .from('help_bot_conversations')
@@ -63,12 +63,12 @@ export function useHelpBot() {
           })
           .select('id')
           .single();
-        if (data) setConversationId(data.id);
+        if (data) conversationIdRef.current = data.id;
       }
     } catch (e) {
       console.error('Error persisting bot conversation:', e);
     }
-  }, [conversationId, shop?.id, profile]);
+  }, [shop?.id, profile]);
 
   // Load FAQ items with session guard
   useEffect(() => {
@@ -231,7 +231,7 @@ export function useHelpBot() {
   const clearMessages = useCallback(() => {
     setMessages([]);
     setPendingEscalation(null);
-    setConversationId(null);
+    conversationIdRef.current = null;
   }, []);
 
   return {
