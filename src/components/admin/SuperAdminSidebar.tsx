@@ -28,6 +28,7 @@ import {
   Receipt,
   Brain,
   ShieldCheck,
+  Mail,
 } from "lucide-react";
 
 interface SuperAdminSidebarProps {
@@ -67,6 +68,7 @@ const menuItems = [
       { id: "landing", title: "Landing Page", icon: FileText },
       { id: "sms-packages", title: "Packs SMS", icon: Zap },
       { id: "ai-engine", title: "Moteur IA", icon: Brain },
+      { id: "messaging", title: "SMS / Mail", icon: Mail },
       { id: "role-permissions", title: "Permissions rôles", icon: ShieldCheck },
       { id: "alerts", title: "Alertes", icon: Bell },
     ]
