@@ -50,6 +50,8 @@ interface SuperAdminShop extends Shop {
   is_blocked?: boolean;
   storage_gb?: number;
   total_logins?: number;
+  last_login_at?: string | null;
+  last_login_user_name?: string | null;
 }
 
 interface Profile {
@@ -234,6 +236,8 @@ export default function SuperAdmin() {
             : 0,
           storage_gb: shopStorage?.storage_gb || 0,
           total_logins: authStats?.total_logins || 0,
+          last_login_at: authStats?.last_login_at || null,
+          last_login_user_name: authStats?.last_login_user_name || null,
         };
       }) || [];
 
