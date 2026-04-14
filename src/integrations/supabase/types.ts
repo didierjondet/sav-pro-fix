@@ -790,6 +790,42 @@ export type Database = {
         }
         Relationships: []
       }
+      messaging_providers: {
+        Row: {
+          created_at: string
+          encrypted_config: Json | null
+          from_address: string | null
+          id: string
+          is_active: boolean
+          name: string
+          provider: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          encrypted_config?: Json | null
+          from_address?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          provider: string
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          encrypted_config?: Json | null
+          from_address?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          provider?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           created_at: string
