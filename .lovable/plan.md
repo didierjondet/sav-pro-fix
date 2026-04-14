@@ -1,46 +1,25 @@
 
 
-## Plan : Historique des conversations HelpBot dans Super Admin (avec suppression)
+## Correction : Conversations bot dupliquees
 
-### Objectif
-Persister les conversations HelpBot en base, les afficher dans le Super Admin (section Support + cards magasins), et permettre au Super Admin de supprimer des conversations avec confirmation.
+### Probleme identifie
 
-### 1. Migration SQL
+Dans `useHelpBot.ts`, `persistConversation` est un `useCallback` qui capture `conversationId` dans sa closure. Quand le premier message est envoye :
 
-Creer la table `help_bot_conversations` :
-- `id`, `shop_id`, `user_id`, `user_name`, `messages` (JSONB), `created_at`, `updated_at`, `escalated`, `escalation_summary`
-- RLS : Super Admin = ALL, shop users = leurs propres conversations
-- Index sur `shop_id` et `created_at`
+1. `conversationId` est `null` -- `persistConversation` fait un `INSERT` et appelle `setConversationId(data.id)`
+2. Mais `setConversationId` est asynchrone (React state) -- au prochain appel de `persistConversation`, la closure utilise encore l'ancien `conversationId === null`
+3. Resultat : un deuxieme `INSERT` au lieu d'un `UPDATE`, creant une deuxieme ligne en base
 
-### 2. Persistance -- `useHelpBot.ts`
+### Solution
 
-Modifier le hook pour sauvegarder chaque conversation (upsert) dans `help_bot_conversations` apres chaque echange. Marquer `escalated = true` si escalade confirmee.
+Remplacer `useState` par `useRef` pour `conversationId` afin d'eviter les closures perimees :
 
-### 3. Nouveau composant `BotConversationsViewer.tsx`
+**Fichier modifie : `src/hooks/useHelpBot.ts`**
 
-- Liste des conversations avec filtres (boutique, date, escalade)
-- Affichage des messages en bulles (user/assistant) avec rendu markdown
-- Mode filtre par `shop_id` (pour usage dans les cards magasins)
-- **Suppression** : bouton supprimer sur chaque conversation, avec `AlertDialog` de confirmation ("Etes-vous sur de vouloir supprimer cette conversation ?")
-- Suppression unitaire ou en lot (checkbox + bouton "Supprimer la selection")
+- Changer `const [conversationId, setConversationId] = useState<string | null>(null)` en `const conversationIdRef = useRef<string | null>(null)`
+- Dans `persistConversation` : lire/ecrire `conversationIdRef.current` au lieu de `conversationId`
+- Dans `clearMessages` : reset `conversationIdRef.current = null`
+- Retirer `conversationId` des dependances du `useCallback`
 
-### 4. Integration Super Admin
-
-- **Section Support** (`SuperAdmin.tsx`) : ajouter un systeme d'onglets "Tickets" / "Conversations Bot"
-- **Card Magasin** (`ShopManagementDialog.tsx`) : ajouter un onglet "Support" avec le viewer filtre par `shop_id`
-
-### Fichiers concernes
-
-| Fichier | Action |
-|---------|--------|
-| Migration SQL | Nouveau |
-| `src/components/admin/BotConversationsViewer.tsx` | Nouveau |
-| `src/hooks/useHelpBot.ts` | Modifie (persistance) |
-| `src/pages/SuperAdmin.tsx` | Modifie (onglet dans support) |
-| `src/components/admin/ShopManagementDialog.tsx` | Modifie (onglet Support) |
-| `src/integrations/supabase/types.ts` | Auto-update |
-
-### Detail suppression avec confirmation
-
-Le composant utilisera `AlertDialog` (deja present dans le projet) pour demander confirmation avant chaque suppression. Un bouton "Supprimer tout" avec confirmation distincte sera aussi disponible pour vider l'historique d'une boutique ou globalement.
+Cela garantit qu'une seule ligne en base est creee par session de conversation, et que tous les messages sont accumules dans le meme enregistrement JSONB.
 
