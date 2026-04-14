@@ -46,9 +46,11 @@ export function AITextReformulator({
         },
       });
 
-      // Handle edge function errors (non-2xx status returned as data with error)
+      // Extract real error from edge function response
       if (error) {
-        throw error;
+        // Try to get the detailed message from the response body
+        const errorMsg = data?.error || error.message || "Erreur inconnue";
+        throw new Error(errorMsg);
       }
 
       if (data?.error) {
@@ -69,21 +71,11 @@ export function AITextReformulator({
       console.error("Erreur reformulation IA:", error);
       
       const msg = error.message || "";
-      let errorMessage = "Impossible de reformuler le texte. Réessayez dans quelques instants.";
       
-      if (msg.includes("429") || msg.includes("Limite de requêtes")) {
-        errorMessage = "Trop de requêtes. Veuillez réessayer dans quelques instants.";
-      } else if (msg.includes("402") || msg.includes("Crédits IA")) {
-        errorMessage = "Crédits IA insuffisants. Contactez l'administrateur.";
-      } else if (msg.includes("503") || msg.includes("temporairement indisponible")) {
-        errorMessage = "Service IA temporairement indisponible. Réessayez dans quelques instants.";
-      } else if (msg.includes("Clé API")) {
-        errorMessage = msg;
-      }
-
+      // Display the real error message from the backend directly
       toast({
-        title: "Erreur",
-        description: errorMessage,
+        title: "Erreur IA",
+        description: msg || "Impossible de reformuler le texte. Réessayez dans quelques instants.",
         variant: "destructive",
       });
     } finally {
