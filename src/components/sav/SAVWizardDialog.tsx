@@ -758,6 +758,10 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
             {renderStepContent()}
           </div>
 
+          {validationError && (
+            <p className="text-sm text-destructive font-medium text-center">{validationError}</p>
+          )}
+
           <div className="flex justify-between pt-4 border-t">
             <Button type="button" variant="outline" onClick={goBack} disabled={currentStep === 0}>
               <ArrowLeft className="mr-2 h-4 w-4" /> Retour
