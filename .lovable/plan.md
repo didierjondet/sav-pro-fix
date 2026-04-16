@@ -1,69 +1,54 @@
 
 
-## Plan : Wizard etape-par-etape pour nouveau SAV en vue simplifiee
+## Plan : Correction du bug de reservations fantomes + validation wizard
 
-### Concept
+### 1. Migration SQL : Corriger le trigger
 
-En mode simplifie, le bouton "Nouveau dossier SAV" ouvre un **Dialog plein ecran mobile** avec un assistant pas-a-pas (stepper). Chaque etape presente un seul groupe de champs avec des boutons Retour/Suivant. Une barre de progression en haut indique la progression.
+Le trigger `handle_sav_completion_stock` filtre `OLD.status IN ('pending', 'in_progress', 'parts_ordered', 'testing')` ce qui exclut `parts_to_order` et les statuts personnalises. Toute transition vers `ready` ou `cancelled` depuis ces statuts oublies ne libere jamais les reservations.
 
-### Etapes du wizard
+**Correction** : supprimer le filtre sur `OLD.status`. Liberer les reservations pour TOUTE transition vers `ready` ou `cancelled`, quelle que soit l'origine :
 
-Le formulaire SAV actuel contient 7 sections numerotees. Le wizard les reprend en etapes simplifiees :
-
-1. **Type de SAV** -- selection du type + statut initial
-2. **Client** -- recherche client existant ou saisie rapide (nom, prenom, telephone) -- conditionnelle selon le type
-3. **Appareil** -- marque, modele, couleur, grade
-4. **Probleme** -- description du probleme + photos
-5. **Accessoires & Codes** -- checkboxes accessoires + codes de securite
-6. **Pieces** -- ajout rapide de pieces (recherche stock + pieces libres)
-7. **Recapitulatif** -- resume de tout avant validation + acompte
-
-Chaque etape a un titre, une icone, et des boutons Retour / Suivant. L'etape finale affiche "Creer le dossier".
-
-### Architecture technique
-
-**Nouveau composant : `src/components/sav/SAVWizardDialog.tsx`**
-- Dialog (`max-w-2xl`, plein ecran sur mobile)
-- State interne : `currentStep`, meme states que `SAVForm` (customerInfo, deviceInfo, etc.)
-- Barre de progression avec `Progress` component + indicateur d'etape (ex: "Etape 2/7")
-- Animation de transition entre etapes (simple fade CSS)
-- Reutilise les memes hooks (`useSAVCases`, `useCustomers`, `useShopSAVTypes`, etc.) et la meme logique de soumission que `SAVForm`
-- Reutilise `CustomerSearch`, `PatternLock`, `FileUpload`, `SecurityCodesSection` existants
-- Apres creation : affiche le `PrintConfirmDialog` existant puis ferme le wizard
-
-**Modification : `src/pages/SAVList.tsx`**
-- Detecter le mode simplifie (`localStorage.getItem('fixway_simplified_view') === 'true'`)
-- Si simplifie : `handleNewSAV` ouvre le wizard dialog au lieu de naviguer vers `/sav/new`
-- Ajouter le state `showWizard` et rendre `<SAVWizardDialog />`
-
-### Detail visuel
-
-```text
-┌─────────────────────────────────┐
-│  Nouveau SAV          Etape 2/7 │
-│  ████████░░░░░░░░░░░░░░░░░░░░░ │
-│                                  │
-│  👤 Informations Client          │
-│                                  │
-│  [Rechercher un client...]       │
-│  Prenom: [________]             │
-│  Nom:    [________]             │
-│  Tel:    [________]             │
-│                                  │
-│  [← Retour]          [Suivant →] │
-└─────────────────────────────────┘
+```sql
+IF NEW.status = 'ready' AND OLD.status <> 'ready' THEN ...
+IF NEW.status = 'cancelled' AND OLD.status <> 'cancelled' THEN ...
 ```
+
+### 2. Migration SQL : Nettoyage des 35 pieces buguees
+
+Recalculer `reserved_quantity` pour TOUTES les pieces en se basant sur les `sav_parts` lies a des SAV encore actifs :
+
+```sql
+UPDATE parts SET reserved_quantity = COALESCE(
+  (SELECT SUM(sp.quantity) FROM sav_parts sp 
+   JOIN sav_cases sc ON sp.sav_case_id = sc.id
+   WHERE sp.part_id = parts.id 
+   AND sc.status NOT IN ('ready','delivered','cancelled')),
+  0
+);
+```
+
+Cela remet a zero les reservations fantomes et corrige les 35 pieces identifiees d'un coup.
+
+### 3. Validation du wizard (SAVWizardDialog.tsx)
+
+Ajouter une fonction `canProceed()` qui desactive le bouton "Suivant" si les champs obligatoires ne sont pas remplis :
+
+- **Etape Client** (si `show_customer_info`) : nom + prenom + (telephone ou email) -- OU client selectionne
+- **Etape Appareil** : marque et modele requis
+- **Etape Probleme** : description requise
+- Les autres etapes restent optionnelles
+
+Afficher un message d'aide en rouge sous le bouton quand la validation echoue.
 
 ### Fichiers concernes
 
 | Fichier | Action |
 |---------|--------|
-| `src/components/sav/SAVWizardDialog.tsx` | Nouveau |
-| `src/pages/SAVList.tsx` | Modifie (condition vue simplifiee) |
+| Migration SQL #1 | Nouveau (fix trigger) |
+| Migration SQL #2 | Nouveau (nettoyage donnees) |
+| `src/components/sav/SAVWizardDialog.tsx` | Modifie (validation par etape) |
 
-### Ce qui ne change pas
+### Ce qui N'est PAS fait
 
-- Le formulaire SAV classique (`SAVForm`) reste inchange pour le mode normal
-- La page `/sav/new` continue de fonctionner normalement
-- La logique de creation (insertion en base, gestion des pieces, commandes auto) est repliquee depuis `SAVForm`
+Pas d'interface admin pour corriger manuellement les reservations -- le nettoyage est fait en une seule migration.
 
