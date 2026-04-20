@@ -73,8 +73,8 @@ serve(async (req) => {
 
     if (!aiConfig.apiKey) {
       return new Response(
-        JSON.stringify({ error: 'Clé API IA non configurée' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: aiConfig.error || 'Clé API IA non configurée. Allez dans Super Admin > Moteur IA pour configurer une clé.' }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
