@@ -51,7 +51,7 @@ interface SortableStatusRowProps {
   editingStatus: SAVStatus | null;
   setEditingStatus: (s: SAVStatus | null) => void;
   formData: any;
-  setFormData: React.Dispatch<React.SetStateAction<any>>;
+  setFormData: (updater: (prev: any) => any) => void;
   openEditDialog: (s: SAVStatus) => void;
   resetForm: () => void;
   handleEdit: () => void;
