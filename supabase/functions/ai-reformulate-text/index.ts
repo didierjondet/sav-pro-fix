@@ -239,7 +239,7 @@ Deno.serve(async (req) => {
     if (!text || text.trim() === "") {
       return new Response(
         JSON.stringify({ error: "Le texte ne peut pas être vide" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -255,7 +255,7 @@ Deno.serve(async (req) => {
       console.error("[AI-REFORMULATE] Config error:", aiConfig.error);
       return new Response(
         JSON.stringify({ error: aiConfig.error }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
