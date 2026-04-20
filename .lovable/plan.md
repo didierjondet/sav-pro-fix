@@ -1,40 +1,49 @@
 
 
-## Plan : Affichage du temps de réparation dans la recherche de pièces SAV
+## Plan : Activer le glisser-déposer pour réordonner les statuts SAV
 
-### Objectif
+### Problème
 
-Afficher le temps de réparation (`time_minutes`) de chaque pièce sous sa référence lors de la recherche, dans la sélection de pièces SAV (vue normale ET vue simplifiée).
+Dans **Réglages → Statuts SAV**, l'icône de poignée (`GripVertical`) est affichée à gauche de chaque statut, mais elle est purement décorative : aucune logique de glisser-déposer n'est branchée. Le hook `useSAVStatuses` expose pourtant déjà la fonction `updateStatusOrder(statusId, newOrder)` qui met à jour `display_order` en base.
 
-### Règle visuelle
+### Solution
 
-- Texte **rouge** si `time_minutes > 45`
-- Texte **noir/standard** si `time_minutes <= 45`
-- Format : `⏱ 30 min` (avec icône horloge `Clock` de lucide)
-- Affiché juste sous la ligne `Réf: ...`
-- Si `time_minutes` est `0` ou non défini, ne rien afficher
+Brancher `@dnd-kit/core` + `@dnd-kit/sortable` (déjà utilisés dans le projet pour les widgets statistiques via `SortableBlock.tsx`) sur la liste des statuts.
 
-### Fichiers concernés
+### Modifications
 
-| Fichier | Modification |
-|---------|--------------|
-| `src/components/sav/PartsSelection.tsx` | Ajouter ligne temps sous `Réf:` dans les résultats de recherche (ligne ~196-198) |
-| `src/components/sav/SAVWizardDialog.tsx` | Ajouter ligne temps sous `Réf:` dans les résultats de recherche du wizard (ligne ~595) |
+**Fichier modifié** : `src/components/sav/SAVStatusesManager.tsx`
 
-### Détail du rendu
+1. **Imports ajoutés** :
+   - `DndContext`, `closestCenter`, `PointerSensor`, `useSensor`, `useSensors` depuis `@dnd-kit/core`
+   - `SortableContext`, `verticalListSortingStrategy`, `useSortable`, `arrayMove` depuis `@dnd-kit/sortable`
+   - `CSS` depuis `@dnd-kit/utilities`
 
-```text
-┌─────────────────────────────────────┐
-│ Écran iPhone 11                     │
-│ Réf: SCR-IP11-BLK                   │
-│ ⏱ 60 min          ← rouge si >45    │
-└─────────────────────────────────────┘
-```
+2. **Extraire la ligne de statut dans un sous-composant `SortableStatusRow`** :
+   - Utilise `useSortable({ id: status.id })`
+   - Applique `transform` / `transition` sur le `<div>` racine
+   - L'icône `GripVertical` reçoit `{...attributes} {...listeners}` + `cursor-grab active:cursor-grabbing`
+   - Conserve à l'identique : Badge couleur, libellé, badges (Par défaut, Sidebar, Final, Timer), boutons Edit/Delete
+
+3. **Wrapper la liste dans `<DndContext>` + `<SortableContext>`** :
+   - `sensors` configuré avec `PointerSensor` + `activationConstraint: { distance: 5 }` (pour éviter les conflits avec le clic sur le bouton Edit)
+   - `onDragEnd` :
+     - Calcule la nouvelle position via `arrayMove`
+     - Boucle sur les statuts réordonnés et appelle `updateStatusOrder(id, index)` pour chacun (en parallèle via `Promise.all`)
+     - Le real-time du hook rafraîchira automatiquement la liste
+
+4. **Aucune modification de la base de données** : la colonne `display_order` et la fonction `updateStatusOrder` existent déjà.
+
+### Comportement attendu
+
+- L'utilisateur clique-maintient sur la poignée `⋮⋮` à gauche d'un statut
+- Glisse vers le haut ou le bas
+- Au relâchement, `display_order` est mis à jour pour tous les statuts impactés
+- La sidebar (qui utilise `useShopSAVStatuses` triés par `display_order`) reflète immédiatement le nouvel ordre via le real-time Supabase
 
 ### Ce qui ne change pas
 
-- Aucune modification de la base de données (champ `time_minutes` existe déjà dans `parts`)
-- Aucune modification de la logique d'ajout/sélection des pièces
-- Le reste de l'interface (Badge stock, bouton Ajouter, pièces sélectionnées) reste identique
-- Les autres composants utilisant `parts` ne sont pas touchés
+- L'apparence visuelle de la liste reste strictement identique
+- Les boutons Edit/Delete et leurs dialogues restent inchangés
+- Les statuts par défaut sont également déplaçables (l'ordre n'est pas verrouillé sur ces statuts)
 
