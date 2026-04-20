@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Trash2, Search, AlertTriangle, Check } from 'lucide-react';
+import { Plus, Trash2, Search, AlertTriangle, Check, Clock } from 'lucide-react';
 import { Part, useParts } from '@/hooks/useParts';
 import { useNotifications } from '@/hooks/useNotifications';
 import { useOrders } from '@/hooks/useOrders';
@@ -195,6 +195,12 @@ export function PartsSelection({ selectedParts, onPartsChange, savCaseId }: Part
                       <div className="font-medium">{part.name}</div>
                       {part.reference && (
                         <div className="text-sm text-muted-foreground">Réf: {part.reference}</div>
+                      )}
+                      {part.time_minutes > 0 && (
+                        <div className={`text-xs flex items-center gap-1 mt-0.5 ${part.time_minutes > 45 ? 'text-destructive font-medium' : 'text-foreground'}`}>
+                          <Clock className="h-3 w-3" />
+                          {part.time_minutes} min
+                        </div>
                       )}
                     </div>
                     <div className="flex items-center gap-2">
