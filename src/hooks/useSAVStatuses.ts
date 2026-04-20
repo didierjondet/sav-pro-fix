@@ -159,21 +159,27 @@ export function useSAVStatuses() {
 
   const updateStatusOrder = async (statusId: string, newOrder: number) => {
     try {
-      const { error } = await supabase
+      console.log('🔃 Updating status order:', { statusId, newOrder });
+      const { data, error } = await supabase
         .from('shop_sav_statuses')
         .update({ display_order: newOrder })
-        .eq('id', statusId);
+        .eq('id', statusId)
+        .select();
 
       if (error) throw error;
-      
-      // Don't need to refetch here as real-time will handle it
+
+      // Detect silent RLS failure (0 rows updated)
+      if (!data || data.length === 0) {
+        throw new Error(`Aucune ligne mise à jour pour le statut ${statusId} (RLS ?)`);
+      }
     } catch (error: any) {
-      console.error('Error updating status order:', error);
+      console.error('❌ Error updating status order:', error);
       toast({
         title: 'Erreur',
-        description: 'Impossible de réorganiser les statuts',
+        description: error.message || 'Impossible de réorganiser les statuts',
         variant: 'destructive'
       });
+      throw error;
     }
   };
 
