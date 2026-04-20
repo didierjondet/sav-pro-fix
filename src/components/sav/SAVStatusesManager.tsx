@@ -553,10 +553,10 @@ export function SAVStatusesManager() {
             onDragEnd={handleDragEnd}
           >
             <SortableContext
-              items={statuses.map(s => s.id)}
+              items={localStatuses.map(s => s.id)}
               strategy={verticalListSortingStrategy}
             >
-              {statuses.map((status) => (
+              {localStatuses.map((status) => (
                 <SortableStatusRow
                   key={status.id}
                   status={status}
