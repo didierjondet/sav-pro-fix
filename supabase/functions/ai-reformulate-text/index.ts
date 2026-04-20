@@ -342,7 +342,7 @@ Deno.serve(async (req) => {
       console.error("[AI-REFORMULATE] Réponse IA sans contenu:", JSON.stringify(data).substring(0, 500));
       return new Response(
         JSON.stringify({ error: `Le provider ${aiConfig.provider} n'a retourné aucun texte. Vérifiez le modèle configuré.` }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
