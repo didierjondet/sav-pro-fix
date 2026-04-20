@@ -1,48 +1,65 @@
 
 
-## Plan : Corriger la persistance du glisser-déposer des statuts SAV
+## Plan : Corriger la gestion des erreurs IA et informer sur les limites
 
-### Diagnostic
+### Cause racine
 
-Le drag visuel fonctionne (dnd-kit applique correctement les transforms), `handleDragEnd` est appelé, mais la ligne revient à sa position de départ au relâchement. Trois causes combinées expliquent ce comportement :
+La clé Google Gemini configurée dans Super Admin utilise le **plan gratuit Google** (20 requêtes/jour/modèle). Après quelques appels (assistant + reformulations), le quota est épuisé → erreur 429. Le message d'erreur détaillé est ensuite perdu car les edge functions retournent des statuts HTTP non-200 que `supabase.functions.invoke` masque.
 
-1. **Pas de mise à jour optimiste** : la liste affichée provient à 100 % du state `statuses` du hook, trié par `display_order`. Au moment du drop, dnd-kit retire son `transform` → la ligne revient visuellement à sa position d'origine. Elle ne bougera que lorsque le state sera mis à jour par le refetch realtime.
+### Deux options pour résoudre le problème de fond
 
-2. **Cascade de refetchs realtime** : le `Promise.all` déclenche N `UPDATE` simultanés → N événements `postgres_changes` → N `fetchStatuses()` qui se chevauchent. Pendant cette fenêtre, le state oscille et peut afficher temporairement l'ordre original. Si une seule des N requêtes échoue silencieusement (RLS, erreur réseau), l'ordre final est incohérent.
+1. **Passer par Lovable AI** (recommandé) : Dans Super Admin > Moteur IA, sélectionner "Lovable" comme provider. Le quota est bien plus élevé et la clé est pré-configurée.
+2. **Upgrader le plan Google** : Passer à un plan payant Google pour augmenter les quotas (pas géré côté code).
 
-3. **Erreurs silencieuses de `updateStatusOrder`** : la fonction ne logge pas les erreurs en console et n'affiche pas de toast en cas d'échec partiel — l'utilisateur ne voit aucun feedback.
+### Corrections techniques (2 edge functions)
 
-### Correctif (un seul fichier modifié)
+**Fichier 1 : `supabase/functions/daily-assistant/index.ts`**
 
-**`src/components/sav/SAVStatusesManager.tsx`** :
+- Retourner **HTTP 200** pour toutes les erreurs IA (429, 402, 503) avec le message dans `{ error: "..." }`. Le client gère déjà parfaitement `data.error` (lignes 36-63 de DailyAssistant.tsx).
+- Ajouter un **retry avec délai de 3 secondes** pour les erreurs 429 (comme déjà fait pour 503).
 
-1. **State local affiché** : maintenir un state local `localStatuses` synchronisé avec `statuses` via `useEffect`. C'est ce state qui est passé à `SortableContext` et mappé dans le rendu.
+**Fichier 2 : `supabase/functions/ai-reformulate-text/index.ts`**
 
-2. **Mise à jour optimiste dans `handleDragEnd`** :
-   - Calculer `arrayMove(localStatuses, oldIndex, newIndex)`
-   - Appliquer immédiatement le nouvel ordre à `localStatuses` (visuellement la ligne reste à sa nouvelle position dès le drop)
-   - Lancer ensuite la persistance DB en arrière-plan
+- Même correction : retourner HTTP 200 au lieu de 429/402/503/401, avec le message d'erreur dans le body JSON.
+- Le client `AITextReformulator.tsx` gère déjà `data.error`.
 
-3. **Persistance batchée et robuste** :
-   - Construire un payload `{ id, display_order: newIndex }[]` pour les rows ayant réellement changé d'ordre
-   - Appeler les updates en séquentiel (pas en parallèle) pour éviter la cascade de realtime, OU mieux : utiliser un seul `upsert` avec tous les ids et leurs nouveaux `display_order`
-   - En cas d'erreur : log console + toast destructif + rollback du state local vers `statuses`
+### Détail des changements
 
-4. **`useSAVStatuses` (hook)** : améliorer `updateStatusOrder` :
-   - Ajouter un `console.log` au début et `console.error` en cas d'erreur (actuellement uniquement toast)
-   - Vérifier le `count` retourné par Supabase : si `0 rows updated`, traiter comme une erreur (RLS silencieux)
+Pour les deux fichiers, remplacer les blocs de retour d'erreur comme :
+```typescript
+// AVANT
+return new Response(
+  JSON.stringify({ error: 'Rate limit...' }),
+  { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+);
+
+// APRÈS
+return new Response(
+  JSON.stringify({ error: 'Rate limit...' }),
+  { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+);
+```
+
+Pour `daily-assistant` uniquement, ajouter un retry 429 (similaire au retry 503 existant) :
+```typescript
+if (aiResponse.status === 429) {
+  console.log('⏳ Retry 429 dans 3s...');
+  await new Promise(r => setTimeout(r, 3000));
+  const retryResponse = await fetch(...);
+  if (retryResponse.ok) { /* retourner le résultat */ }
+  // sinon retourner l'erreur en HTTP 200
+}
+```
 
 ### Comportement attendu après correctif
 
-- Drop → la ligne reste immédiatement à la nouvelle position (pas de retour visuel)
-- DB mise à jour en arrière-plan, realtime confirme
-- En cas d'échec (RLS, réseau) → toast d'erreur explicite + retour à la position d'origine
-- Aucun flicker, aucune cascade de refetchs
+- Les messages d'erreur explicites s'affichent dans les toasts (ex: "Limite de requêtes Gemini atteinte. Réessayez dans quelques instants.")
+- Un retry automatique est tenté avant d'abandonner
+- L'utilisateur comprend clairement le problème et peut agir (changer de provider ou attendre)
 
 ### Ce qui ne change pas
 
-- L'apparence de la liste, les boutons Edit/Delete, les dialogues, les badges
-- La structure du composant `SortableStatusRow`
-- La table `shop_sav_statuses` et ses politiques RLS
-- Les autres composants utilisant `useSAVStatuses` ou `useShopSAVStatuses`
+- Les composants client (`DailyAssistant.tsx`, `AITextReformulator.tsx`) — déjà correctement implémentés
+- La logique de configuration IA, le chiffrement des clés
+- La table `ai_engine_config`
 
