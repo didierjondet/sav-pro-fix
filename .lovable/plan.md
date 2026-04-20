@@ -1,49 +1,48 @@
 
 
-## Plan : Activer le glisser-déposer pour réordonner les statuts SAV
+## Plan : Corriger la persistance du glisser-déposer des statuts SAV
 
-### Problème
+### Diagnostic
 
-Dans **Réglages → Statuts SAV**, l'icône de poignée (`GripVertical`) est affichée à gauche de chaque statut, mais elle est purement décorative : aucune logique de glisser-déposer n'est branchée. Le hook `useSAVStatuses` expose pourtant déjà la fonction `updateStatusOrder(statusId, newOrder)` qui met à jour `display_order` en base.
+Le drag visuel fonctionne (dnd-kit applique correctement les transforms), `handleDragEnd` est appelé, mais la ligne revient à sa position de départ au relâchement. Trois causes combinées expliquent ce comportement :
 
-### Solution
+1. **Pas de mise à jour optimiste** : la liste affichée provient à 100 % du state `statuses` du hook, trié par `display_order`. Au moment du drop, dnd-kit retire son `transform` → la ligne revient visuellement à sa position d'origine. Elle ne bougera que lorsque le state sera mis à jour par le refetch realtime.
 
-Brancher `@dnd-kit/core` + `@dnd-kit/sortable` (déjà utilisés dans le projet pour les widgets statistiques via `SortableBlock.tsx`) sur la liste des statuts.
+2. **Cascade de refetchs realtime** : le `Promise.all` déclenche N `UPDATE` simultanés → N événements `postgres_changes` → N `fetchStatuses()` qui se chevauchent. Pendant cette fenêtre, le state oscille et peut afficher temporairement l'ordre original. Si une seule des N requêtes échoue silencieusement (RLS, erreur réseau), l'ordre final est incohérent.
 
-### Modifications
+3. **Erreurs silencieuses de `updateStatusOrder`** : la fonction ne logge pas les erreurs en console et n'affiche pas de toast en cas d'échec partiel — l'utilisateur ne voit aucun feedback.
 
-**Fichier modifié** : `src/components/sav/SAVStatusesManager.tsx`
+### Correctif (un seul fichier modifié)
 
-1. **Imports ajoutés** :
-   - `DndContext`, `closestCenter`, `PointerSensor`, `useSensor`, `useSensors` depuis `@dnd-kit/core`
-   - `SortableContext`, `verticalListSortingStrategy`, `useSortable`, `arrayMove` depuis `@dnd-kit/sortable`
-   - `CSS` depuis `@dnd-kit/utilities`
+**`src/components/sav/SAVStatusesManager.tsx`** :
 
-2. **Extraire la ligne de statut dans un sous-composant `SortableStatusRow`** :
-   - Utilise `useSortable({ id: status.id })`
-   - Applique `transform` / `transition` sur le `<div>` racine
-   - L'icône `GripVertical` reçoit `{...attributes} {...listeners}` + `cursor-grab active:cursor-grabbing`
-   - Conserve à l'identique : Badge couleur, libellé, badges (Par défaut, Sidebar, Final, Timer), boutons Edit/Delete
+1. **State local affiché** : maintenir un state local `localStatuses` synchronisé avec `statuses` via `useEffect`. C'est ce state qui est passé à `SortableContext` et mappé dans le rendu.
 
-3. **Wrapper la liste dans `<DndContext>` + `<SortableContext>`** :
-   - `sensors` configuré avec `PointerSensor` + `activationConstraint: { distance: 5 }` (pour éviter les conflits avec le clic sur le bouton Edit)
-   - `onDragEnd` :
-     - Calcule la nouvelle position via `arrayMove`
-     - Boucle sur les statuts réordonnés et appelle `updateStatusOrder(id, index)` pour chacun (en parallèle via `Promise.all`)
-     - Le real-time du hook rafraîchira automatiquement la liste
+2. **Mise à jour optimiste dans `handleDragEnd`** :
+   - Calculer `arrayMove(localStatuses, oldIndex, newIndex)`
+   - Appliquer immédiatement le nouvel ordre à `localStatuses` (visuellement la ligne reste à sa nouvelle position dès le drop)
+   - Lancer ensuite la persistance DB en arrière-plan
 
-4. **Aucune modification de la base de données** : la colonne `display_order` et la fonction `updateStatusOrder` existent déjà.
+3. **Persistance batchée et robuste** :
+   - Construire un payload `{ id, display_order: newIndex }[]` pour les rows ayant réellement changé d'ordre
+   - Appeler les updates en séquentiel (pas en parallèle) pour éviter la cascade de realtime, OU mieux : utiliser un seul `upsert` avec tous les ids et leurs nouveaux `display_order`
+   - En cas d'erreur : log console + toast destructif + rollback du state local vers `statuses`
 
-### Comportement attendu
+4. **`useSAVStatuses` (hook)** : améliorer `updateStatusOrder` :
+   - Ajouter un `console.log` au début et `console.error` en cas d'erreur (actuellement uniquement toast)
+   - Vérifier le `count` retourné par Supabase : si `0 rows updated`, traiter comme une erreur (RLS silencieux)
 
-- L'utilisateur clique-maintient sur la poignée `⋮⋮` à gauche d'un statut
-- Glisse vers le haut ou le bas
-- Au relâchement, `display_order` est mis à jour pour tous les statuts impactés
-- La sidebar (qui utilise `useShopSAVStatuses` triés par `display_order`) reflète immédiatement le nouvel ordre via le real-time Supabase
+### Comportement attendu après correctif
+
+- Drop → la ligne reste immédiatement à la nouvelle position (pas de retour visuel)
+- DB mise à jour en arrière-plan, realtime confirme
+- En cas d'échec (RLS, réseau) → toast d'erreur explicite + retour à la position d'origine
+- Aucun flicker, aucune cascade de refetchs
 
 ### Ce qui ne change pas
 
-- L'apparence visuelle de la liste reste strictement identique
-- Les boutons Edit/Delete et leurs dialogues restent inchangés
-- Les statuts par défaut sont également déplaçables (l'ordre n'est pas verrouillé sur ces statuts)
+- L'apparence de la liste, les boutons Edit/Delete, les dialogues, les badges
+- La structure du composant `SortableStatusRow`
+- La table `shop_sav_statuses` et ses politiques RLS
+- Les autres composants utilisant `useSAVStatuses` ou `useShopSAVStatuses`
 
