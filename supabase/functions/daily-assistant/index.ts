@@ -73,8 +73,8 @@ serve(async (req) => {
 
     if (!aiConfig.apiKey) {
       return new Response(
-        JSON.stringify({ error: 'Clé API IA non configurée' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: aiConfig.error || 'Clé API IA non configurée. Allez dans Super Admin > Moteur IA pour configurer une clé.' }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -326,32 +326,15 @@ ${sections.join('\n')}`;
 
     if (!aiResponse.ok) {
       const errorText = await aiResponse.text();
-      console.error('❌ [DAILY-ASSISTANT] Erreur Lovable AI:', aiResponse.status, errorText);
+      console.error('❌ [DAILY-ASSISTANT] Erreur AI:', aiResponse.status, errorText);
       
-      // Gestion des erreurs spécifiques
-      if (aiResponse.status === 429) {
-        return new Response(
-          JSON.stringify({ error: 'Rate limit: Trop de requêtes IA. Veuillez réessayer dans quelques minutes.' }),
-          {
-            status: 429,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          }
-        );
-      }
+      const providerLabel = (aiConfig.model || '').includes('gemini') ? 'Gemini' : 'IA';
       
-      if (aiResponse.status === 402) {
-        return new Response(
-          JSON.stringify({ error: 'Payment required: Crédits IA insuffisants. Ajoutez des crédits dans votre espace Lovable.' }),
-          {
-            status: 402,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          }
-        );
-      }
-
-      if (aiResponse.status === 503) {
-        console.log('⏳ [DAILY-ASSISTANT] Service indisponible (503), retry dans 2s...');
-        await new Promise(r => setTimeout(r, 2000));
+      // Retry automatique pour 429 (rate limit) et 503 (overloaded)
+      if (aiResponse.status === 429 || aiResponse.status === 503) {
+        const retryDelay = aiResponse.status === 429 ? 3000 : 2000;
+        console.log(`⏳ [DAILY-ASSISTANT] ${aiResponse.status} reçu, retry dans ${retryDelay}ms...`);
+        await new Promise(r => setTimeout(r, retryDelay));
         const retryResponse = await fetch(aiConfig.url, {
           method: 'POST',
           headers: {
@@ -377,16 +360,42 @@ ${sections.join('\n')}`;
             { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           );
         }
+        console.log(`❌ [DAILY-ASSISTANT] Retry échoué (${retryResponse.status})`);
+      }
+      
+      // Gestion des erreurs spécifiques — toujours retourner HTTP 200 pour que le client lise le message
+      if (aiResponse.status === 429) {
         return new Response(
-          JSON.stringify({ error: '503: Service IA temporairement indisponible. Le modèle est surchargé, veuillez réessayer dans quelques instants.' }),
-          {
-            status: 503,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          }
+          JSON.stringify({ error: `Limite de requêtes ${providerLabel} atteinte (quota gratuit Google : 20/jour). Attendez quelques minutes ou passez à Lovable AI dans Super Admin > Moteur IA pour un quota supérieur.` }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
       
-      throw new Error(`Erreur Lovable AI (${aiResponse.status}): ${errorText}`);
+      if (aiResponse.status === 402) {
+        return new Response(
+          JSON.stringify({ error: `Crédits ${providerLabel} insuffisants. Rechargez votre compte ou changez de provider dans Super Admin > Moteur IA.` }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      if (aiResponse.status === 401) {
+        return new Response(
+          JSON.stringify({ error: `Clé API ${providerLabel} invalide ou expirée. Reconfigurez-la dans Super Admin > Moteur IA.` }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      if (aiResponse.status === 503) {
+        return new Response(
+          JSON.stringify({ error: `Service ${providerLabel} temporairement indisponible. Réessayez dans quelques instants.` }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      return new Response(
+        JSON.stringify({ error: `Erreur ${providerLabel} (${aiResponse.status}): ${errorText.substring(0, 200)}` }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     const aiData = await aiResponse.json();
@@ -415,7 +424,7 @@ ${sections.join('\n')}`;
         details: error.toString()
       }),
       {
-        status: 500,
+        status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }
     );
