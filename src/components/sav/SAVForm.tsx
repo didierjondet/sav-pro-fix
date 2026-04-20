@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Separator } from '@/components/ui/separator';
-import { Plus, Trash2, Search, Check } from 'lucide-react';
+import { Plus, Trash2, Search, Check, Clock } from 'lucide-react';
 import { useSAVCases } from '@/hooks/useSAVCases';
 import { useCustomers } from '@/hooks/useCustomers';
 import { useParts } from '@/hooks/useParts';
@@ -903,6 +903,12 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
                           <div className="font-medium">{part.name}</div>
                           {part.reference && (
                             <div className="text-sm text-muted-foreground">Réf: {part.reference}</div>
+                          )}
+                          {part.time_minutes > 0 && (
+                            <div className={`text-xs flex items-center gap-1 mt-0.5 ${part.time_minutes > 45 ? 'text-destructive font-medium' : 'text-foreground'}`}>
+                              <Clock className="h-3 w-3" />
+                              {part.time_minutes} min
+                            </div>
                           )}
                         </div>
                       </div>
