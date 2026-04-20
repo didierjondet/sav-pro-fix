@@ -10,6 +10,21 @@ import { useToast } from '@/hooks/use-toast';
 import { useSAVStatuses, SAVStatus } from '@/hooks/useSAVStatuses';
 import { useProfile } from '@/hooks/useProfile';
 import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  useSortable,
+  arrayMove,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -31,8 +46,220 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Plus, Edit, Trash2, GripVertical, Flag } from 'lucide-react';
 
+interface SortableStatusRowProps {
+  status: SAVStatus;
+  editingStatus: SAVStatus | null;
+  setEditingStatus: (s: SAVStatus | null) => void;
+  formData: any;
+  setFormData: (updater: (prev: any) => any) => void;
+  openEditDialog: (s: SAVStatus) => void;
+  resetForm: () => void;
+  handleEdit: () => void;
+  handleDelete: (s: SAVStatus) => void;
+}
+
+function SortableStatusRow({
+  status,
+  editingStatus,
+  setEditingStatus,
+  formData,
+  setFormData,
+  openEditDialog,
+  resetForm,
+  handleEdit,
+  handleDelete,
+}: SortableStatusRowProps) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: status.id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="flex items-center justify-between p-3 border rounded-lg bg-card"
+    >
+      <div className="flex items-center space-x-3">
+        <button
+          type="button"
+          {...attributes}
+          {...listeners}
+          className="cursor-grab active:cursor-grabbing touch-none p-1 -m-1"
+          aria-label="Réorganiser"
+        >
+          <GripVertical className="h-4 w-4 text-muted-foreground" />
+        </button>
+        <Badge
+          style={{ backgroundColor: status.status_color, color: 'white' }}
+          className="min-w-0"
+        >
+          {status.status_label}
+        </Badge>
+        <span className="text-sm text-muted-foreground">
+          ({status.status_key})
+        </span>
+        {status.is_default && (
+          <Badge variant="secondary" className="text-xs">
+            Par défaut
+          </Badge>
+        )}
+        {status.pause_timer && (
+          <Badge variant="outline" className="text-xs border-orange-500 text-orange-700">
+            ⏸️ Timer en pause
+          </Badge>
+        )}
+        {status.show_in_sidebar && (
+          <Badge variant="outline" className="text-xs border-blue-500 text-blue-700">
+            👁️ Sidebar
+          </Badge>
+        )}
+        {status.is_final_status && (
+          <Badge variant="outline" className="text-xs border-green-500 text-green-700">
+            🏁 Final
+          </Badge>
+        )}
+      </div>
+
+      <div className="flex items-center space-x-2">
+        <Dialog open={editingStatus?.id === status.id} onOpenChange={(open) => {
+          if (!open) {
+            setEditingStatus(null);
+            resetForm();
+          }
+        }}>
+          <DialogTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => openEditDialog(status)}
+            >
+              <Edit className="h-4 w-4" />
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Modifier le statut</DialogTitle>
+              <DialogDescription>
+                Modifiez le libellé et la couleur du statut
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit_status_label">Libellé</Label>
+                <Input
+                  id="edit_status_label"
+                  value={formData.status_label}
+                  onChange={(e) => setFormData(prev => ({ ...prev, status_label: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit_status_color">Couleur</Label>
+                <div className="flex items-center space-x-2">
+                  <Input
+                    id="edit_status_color"
+                    type="color"
+                    value={formData.status_color}
+                    onChange={(e) => setFormData(prev => ({ ...prev, status_color: e.target.value }))}
+                    className="w-20"
+                  />
+                  <Input
+                    value={formData.status_color}
+                    onChange={(e) => setFormData(prev => ({ ...prev, status_color: e.target.value }))}
+                    placeholder="#6b7280"
+                  />
+                </div>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="edit_pause_timer"
+                  checked={formData.pause_timer}
+                  onCheckedChange={(checked) =>
+                    setFormData(prev => ({ ...prev, pause_timer: !!checked }))
+                  }
+                />
+                <Label htmlFor="edit_pause_timer" className="text-sm">
+                  Mettre en pause le compteur de temps (ne compte pas dans les retards)
+                </Label>
+              </div>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="edit_show_in_sidebar" className="text-sm">
+                  Afficher dans la barre latérale
+                </Label>
+                <Switch
+                  id="edit_show_in_sidebar"
+                  checked={formData.show_in_sidebar}
+                  onCheckedChange={(checked) =>
+                    setFormData(prev => ({ ...prev, show_in_sidebar: checked }))
+                  }
+                />
+              </div>
+              <div className="flex items-center justify-between pt-2 border-t">
+                <div className="flex-1">
+                  <Label htmlFor="edit_is_final_status" className="text-sm font-medium flex items-center gap-2">
+                    <Flag className="h-4 w-4 text-green-600" />
+                    Statut final (clôture le SAV)
+                  </Label>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Les SAV avec ce statut sont terminés. Le timer s'arrête et ils ne sont plus comptés dans les retards.
+                  </p>
+                </div>
+                <Switch
+                  id="edit_is_final_status"
+                  checked={formData.is_final_status}
+                  onCheckedChange={(checked) =>
+                    setFormData(prev => ({ ...prev, is_final_status: checked }))
+                  }
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setEditingStatus(null)}>
+                Annuler
+              </Button>
+              <Button onClick={handleEdit}>
+                Sauvegarder
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {!status.is_default && (
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="ghost" size="sm" className="text-destructive">
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Supprimer le statut</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Êtes-vous sûr de vouloir supprimer le statut "{status.status_label}" ?
+                  Cette action est irréversible.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Annuler</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => handleDelete(status)}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  Supprimer
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function SAVStatusesManager() {
-  const { statuses, loading, createStatus, updateStatus, deleteStatus } = useSAVStatuses();
+  const { statuses, loading, createStatus, updateStatus, deleteStatus, updateStatusOrder } = useSAVStatuses();
   const { profile } = useProfile();
   const { toast } = useToast();
   
@@ -56,6 +283,30 @@ export function SAVStatusesManager() {
       show_in_sidebar: false,
       is_final_status: false
     });
+  };
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
+  );
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = statuses.findIndex(s => s.id === active.id);
+    const newIndex = statuses.findIndex(s => s.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    const reordered = arrayMove(statuses, oldIndex, newIndex);
+    try {
+      await Promise.all(
+        reordered.map((s, idx) =>
+          s.display_order !== idx ? updateStatusOrder(s.id, idx) : Promise.resolve()
+        )
+      );
+    } catch (error) {
+      // Error handled in hook
+    }
   };
 
   const handleCreate = async () => {
@@ -277,177 +528,31 @@ export function SAVStatusesManager() {
       </CardHeader>
       <CardContent>
         <div className="space-y-2">
-          {statuses.map((status) => (
-            <div
-              key={status.id}
-              className="flex items-center justify-between p-3 border rounded-lg"
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext
+              items={statuses.map(s => s.id)}
+              strategy={verticalListSortingStrategy}
             >
-              <div className="flex items-center space-x-3">
-                <GripVertical className="h-4 w-4 text-muted-foreground" />
-                <Badge 
-                  style={{ backgroundColor: status.status_color, color: 'white' }}
-                  className="min-w-0"
-                >
-                  {status.status_label}
-                </Badge>
-                <span className="text-sm text-muted-foreground">
-                  ({status.status_key})
-                </span>
-                {status.is_default && (
-                  <Badge variant="secondary" className="text-xs">
-                    Par défaut
-                  </Badge>
-                )}
-                {status.pause_timer && (
-                  <Badge variant="outline" className="text-xs border-orange-500 text-orange-700">
-                    ⏸️ Timer en pause
-                  </Badge>
-                )}
-                {status.show_in_sidebar && (
-                  <Badge variant="outline" className="text-xs border-blue-500 text-blue-700">
-                    👁️ Sidebar
-                  </Badge>
-                )}
-                {status.is_final_status && (
-                  <Badge variant="outline" className="text-xs border-green-500 text-green-700">
-                    🏁 Final
-                  </Badge>
-                )}
-              </div>
-              
-              <div className="flex items-center space-x-2">
-                <Dialog open={editingStatus?.id === status.id} onOpenChange={(open) => {
-                  if (!open) {
-                    setEditingStatus(null);
-                    resetForm();
-                  }
-                }}>
-                  <DialogTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => openEditDialog(status)}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Modifier le statut</DialogTitle>
-                      <DialogDescription>
-                        Modifiez le libellé et la couleur du statut
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4 py-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="edit_status_label">Libellé</Label>
-                        <Input
-                          id="edit_status_label"
-                          value={formData.status_label}
-                          onChange={(e) => setFormData(prev => ({ ...prev, status_label: e.target.value }))}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="edit_status_color">Couleur</Label>
-                        <div className="flex items-center space-x-2">
-                          <Input
-                            id="edit_status_color"
-                            type="color"
-                            value={formData.status_color}
-                            onChange={(e) => setFormData(prev => ({ ...prev, status_color: e.target.value }))}
-                            className="w-20"
-                          />
-                          <Input
-                            value={formData.status_color}
-                            onChange={(e) => setFormData(prev => ({ ...prev, status_color: e.target.value }))}
-                            placeholder="#6b7280"
-                          />
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id="edit_pause_timer"
-                          checked={formData.pause_timer}
-                          onCheckedChange={(checked) => 
-                            setFormData(prev => ({ ...prev, pause_timer: !!checked }))
-                          }
-                        />
-                        <Label htmlFor="edit_pause_timer" className="text-sm">
-                          Mettre en pause le compteur de temps (ne compte pas dans les retards)
-                        </Label>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <Label htmlFor="edit_show_in_sidebar" className="text-sm">
-                          Afficher dans la barre latérale
-                        </Label>
-                        <Switch
-                          id="edit_show_in_sidebar"
-                          checked={formData.show_in_sidebar}
-                          onCheckedChange={(checked) => 
-                            setFormData(prev => ({ ...prev, show_in_sidebar: checked }))
-                          }
-                        />
-                      </div>
-                      <div className="flex items-center justify-between pt-2 border-t">
-                        <div className="flex-1">
-                          <Label htmlFor="edit_is_final_status" className="text-sm font-medium flex items-center gap-2">
-                            <Flag className="h-4 w-4 text-green-600" />
-                            Statut final (clôture le SAV)
-                          </Label>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            Les SAV avec ce statut sont terminés. Le timer s'arrête et ils ne sont plus comptés dans les retards.
-                          </p>
-                        </div>
-                        <Switch
-                          id="edit_is_final_status"
-                          checked={formData.is_final_status}
-                          onCheckedChange={(checked) => 
-                            setFormData(prev => ({ ...prev, is_final_status: checked }))
-                          }
-                        />
-                      </div>
-                    </div>
-                    <DialogFooter>
-                      <Button variant="outline" onClick={() => setEditingStatus(null)}>
-                        Annuler
-                      </Button>
-                      <Button onClick={handleEdit}>
-                        Sauvegarder
-                      </Button>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
-                
-                {!status.is_default && (
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="ghost" size="sm" className="text-destructive">
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Supprimer le statut</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Êtes-vous sûr de vouloir supprimer le statut "{status.status_label}" ?
-                          Cette action est irréversible.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Annuler</AlertDialogCancel>
-                        <AlertDialogAction
-                          onClick={() => handleDelete(status)}
-                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                        >
-                          Supprimer
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                )}
-              </div>
-            </div>
-          ))}
+              {statuses.map((status) => (
+                <SortableStatusRow
+                  key={status.id}
+                  status={status}
+                  editingStatus={editingStatus}
+                  setEditingStatus={setEditingStatus}
+                  formData={formData}
+                  setFormData={setFormData}
+                  openEditDialog={openEditDialog}
+                  resetForm={resetForm}
+                  handleEdit={handleEdit}
+                  handleDelete={handleDelete}
+                />
+              ))}
+            </SortableContext>
+          </DndContext>
           
           {statuses.length === 0 && (
             <div className="text-center py-8 text-muted-foreground">
