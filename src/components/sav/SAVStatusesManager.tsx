@@ -285,7 +285,31 @@ export function SAVStatusesManager() {
     });
   };
 
-  const handleCreate = async () => {
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
+  );
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = statuses.findIndex(s => s.id === active.id);
+    const newIndex = statuses.findIndex(s => s.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    const reordered = arrayMove(statuses, oldIndex, newIndex);
+    try {
+      await Promise.all(
+        reordered.map((s, idx) =>
+          s.display_order !== idx ? updateStatusOrder(s.id, idx) : Promise.resolve()
+        )
+      );
+    } catch (error) {
+      // Error handled in hook
+    }
+  };
+
+
     if (!profile?.shop_id) return;
     
     try {
