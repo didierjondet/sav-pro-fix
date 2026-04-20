@@ -265,6 +265,7 @@ export function SAVStatusesManager() {
   
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [editingStatus, setEditingStatus] = useState<SAVStatus | null>(null);
+  const [localStatuses, setLocalStatuses] = useState<SAVStatus[]>([]);
   const [formData, setFormData] = useState({
     status_key: '',
     status_label: '',
@@ -273,6 +274,11 @@ export function SAVStatusesManager() {
     show_in_sidebar: false,
     is_final_status: false
   });
+
+  // Sync local state with hook state (from realtime/refetch)
+  useEffect(() => {
+    setLocalStatuses(statuses);
+  }, [statuses]);
 
   const resetForm = () => {
     setFormData({
@@ -293,19 +299,32 @@ export function SAVStatusesManager() {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
 
-    const oldIndex = statuses.findIndex(s => s.id === active.id);
-    const newIndex = statuses.findIndex(s => s.id === over.id);
+    const oldIndex = localStatuses.findIndex(s => s.id === active.id);
+    const newIndex = localStatuses.findIndex(s => s.id === over.id);
     if (oldIndex === -1 || newIndex === -1) return;
 
-    const reordered = arrayMove(statuses, oldIndex, newIndex);
+    const previous = localStatuses;
+    const reordered = arrayMove(localStatuses, oldIndex, newIndex);
+
+    // Optimistic update — keep new position visually
+    setLocalStatuses(reordered);
+
+    // Persist sequentially to avoid realtime cascade race conditions
     try {
-      await Promise.all(
-        reordered.map((s, idx) =>
-          s.display_order !== idx ? updateStatusOrder(s.id, idx) : Promise.resolve()
-        )
-      );
+      for (let idx = 0; idx < reordered.length; idx++) {
+        const s = reordered[idx];
+        if (s.display_order !== idx) {
+          await updateStatusOrder(s.id, idx);
+        }
+      }
     } catch (error) {
-      // Error handled in hook
+      console.error('❌ Failed to persist new status order, rolling back:', error);
+      setLocalStatuses(previous);
+      toast({
+        title: 'Erreur',
+        description: 'Impossible de sauvegarder le nouvel ordre des statuts',
+        variant: 'destructive'
+      });
     }
   };
 
