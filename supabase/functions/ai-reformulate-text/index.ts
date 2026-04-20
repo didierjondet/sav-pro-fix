@@ -297,40 +297,41 @@ Deno.serve(async (req) => {
 
       const providerLabel = aiConfig.provider.charAt(0).toUpperCase() + aiConfig.provider.slice(1);
 
+      // Toujours retourner HTTP 200 pour que le client puisse lire le message d'erreur explicite
       if (response.status === 401) {
         return new Response(
           JSON.stringify({ error: `Clé API ${providerLabel} invalide ou expirée. Reconfigurez-la dans Super Admin > Moteur IA.` }),
-          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
       if (response.status === 429) {
         return new Response(
-          JSON.stringify({ error: `Limite de requêtes ${providerLabel} atteinte. Réessayez dans quelques instants.` }),
-          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          JSON.stringify({ error: `Limite de requêtes ${providerLabel} atteinte (quota gratuit Google : 20/jour/modèle). Attendez quelques minutes ou passez à Lovable AI dans Super Admin > Moteur IA.` }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
       if (response.status === 503) {
         return new Response(
           JSON.stringify({ error: `Service ${providerLabel} temporairement indisponible. Réessayez dans quelques instants.` }),
-          { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
       if (response.status === 402) {
         return new Response(
-          JSON.stringify({ error: `Crédits ${providerLabel} insuffisants. Rechargez votre compte.` }),
-          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          JSON.stringify({ error: `Crédits ${providerLabel} insuffisants. Rechargez votre compte ou changez de provider dans Super Admin > Moteur IA.` }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
       if (response.status === 400) {
         return new Response(
           JSON.stringify({ error: `Requête rejetée par ${providerLabel}: modèle "${aiConfig.model}" invalide ou paramètres incorrects. Vérifiez la config dans Super Admin > Moteur IA.` }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
 
       return new Response(
         JSON.stringify({ error: `Erreur ${providerLabel} (${response.status}): ${errorText.substring(0, 200)}` }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
