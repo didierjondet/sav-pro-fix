@@ -13,7 +13,7 @@ import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
   ArrowLeft, ArrowRight, Check, Plus, Trash2, Search, 
-  Smartphone, User, Wrench, Shield, Package, ClipboardList, Settings2
+  Smartphone, User, Wrench, Shield, Package, ClipboardList, Settings2, Clock
 } from 'lucide-react';
 import { useSAVCases } from '@/hooks/useSAVCases';
 import { useCustomers } from '@/hooks/useCustomers';
@@ -593,6 +593,12 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
                         <div>
                           <div className="text-sm font-medium">{part.name}</div>
                           {part.reference && <div className="text-xs text-muted-foreground">Réf: {part.reference}</div>}
+                          {part.time_minutes > 0 && (
+                            <div className={`text-xs flex items-center gap-1 mt-0.5 ${part.time_minutes > 45 ? 'text-destructive font-medium' : 'text-foreground'}`}>
+                              <Clock className="h-3 w-3" />
+                              {part.time_minutes} min
+                            </div>
+                          )}
                         </div>
                         <div className="flex items-center gap-2">
                           <Badge variant={part.quantity === 0 ? 'destructive' : 'secondary'} className="text-xs">
