@@ -47,7 +47,7 @@ import {
 import { Plus, Edit, Trash2, GripVertical, Flag } from 'lucide-react';
 
 export function SAVStatusesManager() {
-  const { statuses, loading, createStatus, updateStatus, deleteStatus } = useSAVStatuses();
+  const { statuses, loading, createStatus, updateStatus, deleteStatus, updateStatusOrder } = useSAVStatuses();
   const { profile } = useProfile();
   const { toast } = useToast();
   
