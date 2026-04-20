@@ -309,7 +309,7 @@ export function SAVStatusesManager() {
     }
   };
 
-
+  const handleCreate = async () => {
     if (!profile?.shop_id) return;
     
     try {
