@@ -1587,6 +1587,12 @@ export default function Settings() {
               </TabsContent>
             )}
 
+            {rolePermissions.settings_part_categories && (
+              <TabsContent value="part-categories" className="space-y-6">
+                <PartCategoriesManager />
+              </TabsContent>
+            )}
+
             <TabsContent value="ai" className="space-y-6">
               <Card>
                 <CardHeader>
