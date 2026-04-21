@@ -25,32 +25,63 @@ export function InventoryAssistedDialog({
   onMissing,
   onPause,
 }: InventoryAssistedDialogProps) {
-  const currentItem = useMemo(() => items.find((item) => item.line_status === 'pending') || null, [items]);
+  const orderedItems = useMemo(() => [...items].sort((a, b) => a.position - b.position), [items]);
+  const initialIndex = useMemo(() => {
+    const firstPendingIndex = orderedItems.findIndex((item) => item.line_status === 'pending');
+    return firstPendingIndex >= 0 ? firstPendingIndex : 0;
+  }, [orderedItems]);
+  const [currentIndex, setCurrentIndex] = useState(initialIndex);
+  const currentItem = orderedItems[currentIndex] || null;
   const [quantity, setQuantity] = useState('1');
-  const progressValue = session.total_items > 0 ? (session.counted_items / session.total_items) * 100 : 0;
+  const progressValue = session.total_items > 0 ? ((session.total_items - orderedItems.filter((item) => item.line_status === 'pending').length) / session.total_items) * 100 : 0;
 
   useEffect(() => {
-    setQuantity(currentItem?.expected_quantity ? String(currentItem.expected_quantity) : '1');
-  }, [currentItem?.id, currentItem?.expected_quantity]);
+    setCurrentIndex(initialIndex);
+  }, [initialIndex, open]);
+
+  useEffect(() => {
+    setQuantity(currentItem?.counted_quantity !== null && currentItem?.counted_quantity !== undefined
+      ? String(currentItem.counted_quantity)
+      : currentItem?.expected_quantity
+        ? String(currentItem.expected_quantity)
+        : '1');
+  }, [currentItem?.id, currentItem?.expected_quantity, currentItem?.counted_quantity]);
+
+  const remainingCount = orderedItems.filter((item) => item.line_status === 'pending').length;
+
+  const goToNext = () => {
+    setCurrentIndex((prev) => Math.min(prev + 1, Math.max(orderedItems.length - 1, 0)));
+  };
+
+  const goToPrevious = () => {
+    setCurrentIndex((prev) => Math.max(prev - 1, 0));
+  };
 
   const handleFound = async () => {
     if (!currentItem) return;
     const parsed = Number(quantity);
     await onCount(currentItem.id, Number.isFinite(parsed) && parsed >= 0 ? parsed : 0);
+    goToNext();
   };
 
   const handleMissing = async () => {
     if (!currentItem) return;
     await onMissing(currentItem.id);
+    goToNext();
+  };
+
+  const handlePause = async () => {
+    await onPause();
+    onOpenChange(false);
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-3xl">
         <DialogHeader>
           <DialogTitle>Inventaire assisté</DialogTitle>
           <DialogDescription>
-            Avancez pièce par pièce avec un compteur ajusté en temps réel.
+            Avancez pièce par pièce, corrigez au besoin et reprenez une ligne précédente à tout moment.
           </DialogDescription>
         </DialogHeader>
 
@@ -65,12 +96,12 @@ export function InventoryAssistedDialog({
               <div className="text-2xl font-semibold">{session.counted_items}</div>
             </div>
             <div className="rounded-md border p-3">
-              <div className="text-xs text-muted-foreground">Non trouvées</div>
-              <div className="text-2xl font-semibold">{session.missing_items}</div>
+              <div className="text-xs text-muted-foreground">Restantes</div>
+              <div className="text-2xl font-semibold">{remainingCount}</div>
             </div>
             <div className="rounded-md border p-3">
-              <div className="text-xs text-muted-foreground">Restantes</div>
-              <div className="text-2xl font-semibold">{Math.max(session.total_items - session.counted_items, 0)}</div>
+              <div className="text-xs text-muted-foreground">Position</div>
+              <div className="text-2xl font-semibold">{orderedItems.length ? currentIndex + 1 : 0}/{orderedItems.length}</div>
             </div>
           </div>
 
@@ -94,7 +125,7 @@ export function InventoryAssistedDialog({
                 <Badge variant="outline">Qté théorique {currentItem.expected_quantity}</Badge>
               </div>
 
-              <div className="grid gap-4 md:grid-cols-[160px_1fr] md:items-end">
+              <div className="grid gap-4 md:grid-cols-[180px_1fr] md:items-end">
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Quantité trouvée</label>
                   <Input
@@ -118,10 +149,14 @@ export function InventoryAssistedDialog({
         </div>
 
         <DialogFooter className="gap-2 sm:justify-between sm:space-x-0">
-          <Button variant="outline" onClick={onPause}>Pause</Button>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" onClick={goToPrevious} disabled={currentIndex <= 0}>Précédent</Button>
+            <Button variant="outline" onClick={goToNext} disabled={!currentItem || currentIndex >= orderedItems.length - 1}>Passer</Button>
+            <Button variant="outline" onClick={handlePause}>Pause</Button>
+          </div>
           <div className="flex flex-col-reverse gap-2 sm:flex-row">
             <Button variant="outline" onClick={handleMissing} disabled={!currentItem}>Non trouvé</Button>
-            <Button onClick={handleFound} disabled={!currentItem}>Trouvé / suivant</Button>
+            <Button onClick={handleFound} disabled={!currentItem}>Enregistrer / suivant</Button>
           </div>
         </DialogFooter>
       </DialogContent>

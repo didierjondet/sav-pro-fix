@@ -13,11 +13,10 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useInventory } from '@/hooks/useInventory';
@@ -32,19 +31,24 @@ import {
   PauseCircle,
   PlayCircle,
   Printer,
-  RotateCcw,
   ScanLine,
   ShieldAlert,
   Trash2,
 } from 'lucide-react';
 import { InventoryAssistedDialog } from './InventoryAssistedDialog';
+import { InventoryManualEditor, type InventoryReviewTab } from './InventoryManualEditor';
+import { InventorySessionSummary } from './InventorySessionSummary';
 import {
-  INVENTORY_LINE_STATUS_LABELS,
   INVENTORY_MODE_LABELS,
   INVENTORY_STATUS_LABELS,
+  type InventoryAuditLog,
   type InventoryMode,
   type InventorySessionItem,
 } from './types';
+
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : 'Une erreur est survenue.';
+}
 
 const statusBadgeVariant: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
   in_progress: 'default',
@@ -63,6 +67,21 @@ function currency(value: number) {
   }).format(value || 0);
 }
 
+function getLogLabel(log: InventoryAuditLog) {
+  const labels: Record<string, string> = {
+    session_paused: 'Inventaire mis en pause',
+    session_resumed: 'Inventaire repris',
+    session_stopped: 'Inventaire arrêté',
+    session_completed: 'Comptage clôturé',
+    session_cancelled: 'Inventaire annulé',
+    session_applied: 'Stock appliqué',
+    item_updated: 'Ligne modifiée',
+    bulk_scan: 'Lot de scan traité',
+  };
+
+  return labels[log.action] || log.action;
+}
+
 export function InventoryManager({ canApplyStock }: { canApplyStock: boolean }) {
   const {
     sessions,
@@ -72,11 +91,33 @@ export function InventoryManager({ canApplyStock }: { canApplyStock: boolean }) 
     loading,
     setSelectedSessionId,
     createSession,
-    updateSession,
     updateItem,
+    markItemMissing,
+    resetItem,
+    skipItem,
+    updateItemNote,
+    pauseSession,
+    resumeSession,
+    stopSession,
+    cancelSession,
+    closeSession,
     applySession,
     deleteSession,
     bulkScanCodes,
+    lastScanBatch,
+    pendingItems,
+    missingItems,
+    adjustedItems,
+    exactMatchItems,
+    overstockItems,
+    understockItems,
+    overwrittenItems,
+    completionRate,
+    canEditSession,
+    canCloseSession,
+    canApplySession,
+    canDeleteSession,
+    stats,
   } = useInventory();
   const { toast } = useToast();
 
@@ -87,22 +128,43 @@ export function InventoryManager({ canApplyStock }: { canApplyStock: boolean }) 
   const [createNotes, setCreateNotes] = useState('');
   const [scanCodes, setScanCodes] = useState('');
   const [manualSearch, setManualSearch] = useState('');
+  const [manualFilter, setManualFilter] = useState<'all' | 'pending' | 'found' | 'missing' | 'adjusted'>('all');
+  const [activeTab, setActiveTab] = useState<InventoryReviewTab>('counting');
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const [confirmApplyOpen, setConfirmApplyOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [draftQuantities, setDraftQuantities] = useState<Record<string, string>>({});
+  const [draftNotes, setDraftNotes] = useState<Record<string, string>>({});
 
   const filteredItems = useMemo(() => {
     const term = manualSearch.trim().toLowerCase();
-    if (!term) return items;
-    return items.filter((item) =>
-      [item.part_name, item.part_reference, item.part_sku, item.part_supplier]
-        .filter(Boolean)
-        .some((value) => String(value).toLowerCase().includes(term)),
-    );
-  }, [items, manualSearch]);
+    return items.filter((item) => {
+      const matchesSearch =
+        !term ||
+        [item.part_name, item.part_reference, item.part_sku, item.part_supplier]
+          .filter(Boolean)
+          .some((value) => String(value).toLowerCase().includes(term));
 
-  const overwrittenItems = useMemo(
-    () => items.filter((item) => item.applied_previous_quantity !== null || item.applied_new_quantity !== null),
-    [items],
+      if (!matchesSearch) return false;
+
+      switch (manualFilter) {
+        case 'pending':
+          return item.line_status === 'pending';
+        case 'found':
+          return item.line_status === 'found';
+        case 'missing':
+          return item.line_status === 'missing' || (item.counted_quantity ?? 0) === 0;
+        case 'adjusted':
+          return item.counted_quantity !== null && item.variance_quantity !== 0;
+        default:
+          return true;
+      }
+    });
+  }, [items, manualSearch, manualFilter]);
+
+  const visibleDiscrepancies = useMemo(
+    () => adjustedItems.filter((item) => item.line_status !== 'missing'),
+    [adjustedItems],
   );
 
   const handleCreate = async () => {
@@ -118,38 +180,76 @@ export function InventoryManager({ canApplyStock }: { canApplyStock: boolean }) 
     }
   };
 
+  const setDraftQuantity = (itemId: string, value: string) => {
+    setDraftQuantities((current) => ({ ...current, [itemId]: value }));
+  };
+
+  const setDraftNote = (itemId: string, value: string) => {
+    setDraftNotes((current) => ({ ...current, [itemId]: value }));
+  };
+
+  const resolveDraftQuantity = (item: InventorySessionItem) => {
+    const value = draftQuantities[item.id] ?? (item.counted_quantity ?? item.expected_quantity).toString();
+    const parsed = Number(value);
+    return Number.isFinite(parsed) && parsed >= 0 ? parsed : item.counted_quantity ?? item.expected_quantity;
+  };
+
+  const handleApplyQuantity = async (item: InventorySessionItem, method: InventoryMode = 'manual') => {
+    const quantity = resolveDraftQuantity(item);
+    await updateItem({
+      sessionId: item.inventory_session_id,
+      itemId: item.id,
+      countedQuantity: quantity,
+      lineStatus: quantity === item.expected_quantity ? 'found' : quantity === 0 ? 'missing' : 'adjusted',
+      entryMethod: method,
+    });
+  };
+
+  const handleSaveNote = async (item: InventorySessionItem) => {
+    await updateItemNote(item.inventory_session_id, item.id, draftNotes[item.id] ?? item.notes ?? null);
+    toast({ title: 'Note enregistrée', description: `Note mise à jour pour ${item.part_name}.` });
+  };
+
   const handlePause = async () => {
     if (!currentSession) return;
-    await updateSession(currentSession.id, { status: 'paused', paused_at: new Date().toISOString() }, 'session_paused');
+    await pauseSession(currentSession.id);
     toast({ title: 'Inventaire en pause', description: 'Vous pourrez le reprendre plus tard.' });
   };
 
   const handleResume = async () => {
     if (!currentSession) return;
-    await updateSession(currentSession.id, { status: 'in_progress', paused_at: null }, 'session_resumed');
+    await resumeSession(currentSession.id);
     toast({ title: 'Inventaire repris', description: 'La session est de nouveau active.' });
   };
 
-  const handleForceStop = async () => {
+  const handleStop = async () => {
     if (!currentSession) return;
-    await updateSession(
-      currentSession.id,
-      { status: 'completed', forced_stop: true, completed_at: new Date().toISOString() },
-      'session_forced_stop',
-    );
-    toast({ title: 'Inventaire arrêté', description: 'Vous pouvez désormais imprimer et valider ce relevé.' });
+    await stopSession(currentSession.id);
+    toast({ title: 'Inventaire arrêté', description: 'Le comptage est figé et reste révisable avant application.' });
   };
 
   const handleCancel = async () => {
     if (!currentSession) return;
-    await updateSession(currentSession.id, { status: 'cancelled' }, 'session_cancelled');
+    await cancelSession(currentSession.id);
     toast({ title: 'Inventaire annulé', description: 'La session reste visible dans l’historique.' });
+  };
+
+  const handleCloseSession = async () => {
+    if (!currentSession) return;
+    try {
+      await closeSession(currentSession.id);
+      toast({ title: 'Comptage clôturé', description: 'Vous pouvez maintenant revoir la synthèse avant validation.' });
+    } catch (error: unknown) {
+      toast({ title: 'Clôture impossible', description: getErrorMessage(error), variant: 'destructive' });
+    }
   };
 
   const handleApply = async () => {
     if (!currentSession) return;
     const result = await applySession(currentSession.id);
     const summary = result?.[0];
+    setConfirmApplyOpen(false);
+
     if (summary?.blocked_reserved_rows) {
       toast({
         title: 'Attention réservations',
@@ -158,26 +258,17 @@ export function InventoryManager({ canApplyStock }: { canApplyStock: boolean }) 
     }
   };
 
-  const handleCountItem = async (item: InventorySessionItem, quantity: number, method: InventoryMode) => {
-    await updateItem({
-      sessionId: item.inventory_session_id,
-      itemId: item.id,
-      countedQuantity: quantity,
-      lineStatus: quantity === item.expected_quantity ? 'found' : 'adjusted',
-      entryMethod: method,
-    });
-  };
-
   const handleScan = async () => {
     if (!currentSession) return;
     const codes = scanCodes.split(/\s+/).map((code) => code.trim()).filter(Boolean);
     if (!codes.length) return;
     const result = await bulkScanCodes(currentSession.id, codes);
     setScanCodes('');
+
     if (result.unknownCodes.length) {
       toast({
-        title: 'Codes inconnus',
-        description: `${result.unknownCodes.length} code(s) n’ont pas été reconnus : ${result.unknownCodes.join(', ')}`,
+        title: 'Codes inconnus détectés',
+        description: `${result.unknownCodes.length} code(s) non reconnus.`,
         variant: 'destructive',
       });
     } else {
@@ -185,13 +276,26 @@ export function InventoryManager({ canApplyStock }: { canApplyStock: boolean }) 
     }
   };
 
+  const sessionItemsForTab = useMemo(() => {
+    switch (activeTab) {
+      case 'discrepancies':
+        return visibleDiscrepancies;
+      case 'missing':
+        return missingItems;
+      case 'overwritten':
+        return overwrittenItems;
+      default:
+        return filteredItems;
+    }
+  }, [activeTab, filteredItems, missingItems, overwrittenItems, visibleDiscrepancies]);
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <h2 className="text-2xl font-bold">Inventaire</h2>
           <p className="text-sm text-muted-foreground">
-            Comparez le stock physique au stock Fixway, suivez les écarts et appliquez les quantités finales.
+            Comparez le stock physique au stock Fixway, ajustez les quantités et sécurisez l’application finale.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -211,7 +315,7 @@ export function InventoryManager({ canApplyStock }: { canApplyStock: boolean }) 
               </Button>
               <Button variant="outline" onClick={() => printInventoryDocument({ session: currentSession, items, variant: 'missing' })}>
                 <Archive className="h-4 w-4" />
-                Non trouvés
+                Manquants
               </Button>
             </>
           )}
@@ -224,8 +328,8 @@ export function InventoryManager({ canApplyStock }: { canApplyStock: boolean }) 
           <CardContent><div className="text-3xl font-semibold">{currentSession?.total_items || 0}</div></CardContent>
         </Card>
         <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm">Inventoriées</CardTitle></CardHeader>
-          <CardContent><div className="text-3xl font-semibold">{currentSession?.counted_items || 0}</div></CardContent>
+          <CardHeader className="pb-2"><CardTitle className="text-sm">Progression</CardTitle></CardHeader>
+          <CardContent><div className="text-3xl font-semibold">{Math.round(completionRate)}%</div></CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2"><CardTitle className="text-sm">Valeur non retrouvée</CardTitle></CardHeader>
@@ -243,7 +347,7 @@ export function InventoryManager({ canApplyStock }: { canApplyStock: boolean }) 
             <CardTitle className="text-base">Sessions & historique</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <ScrollArea className="h-[520px] pr-3">
+            <ScrollArea className="h-[680px] pr-3">
               <div className="space-y-3">
                 {sessions.map((session) => (
                   <button
@@ -302,24 +406,29 @@ export function InventoryManager({ canApplyStock }: { canApplyStock: boolean }) 
                   <div className="flex flex-wrap gap-2">
                     {currentSession.status === 'paused' ? (
                       <Button variant="outline" onClick={handleResume}><PlayCircle className="h-4 w-4" />Reprendre</Button>
-                    ) : currentSession.status === 'in_progress' ? (
+                    ) : canEditSession ? (
                       <Button variant="outline" onClick={handlePause}><PauseCircle className="h-4 w-4" />Pause</Button>
                     ) : null}
-                    {currentSession.mode === 'assisted' && currentSession.status !== 'applied' && currentSession.status !== 'cancelled' && (
+                    {currentSession.mode === 'assisted' && canEditSession && (
                       <Button variant="outline" onClick={() => setAssistedOpen(true)}>
-                        <RotateCcw className="h-4 w-4" />Inventaire assisté
+                        <ClipboardList className="h-4 w-4" />Mode assisté
                       </Button>
                     )}
-                    {currentSession.status !== 'applied' && currentSession.status !== 'cancelled' && (
-                      <Button variant="outline" onClick={handleForceStop}><ShieldAlert className="h-4 w-4" />Arrêt forcé</Button>
+                    {canEditSession && (
+                      <Button variant="outline" onClick={handleCloseSession} disabled={!canCloseSession}>
+                        Clôturer le comptage
+                      </Button>
+                    )}
+                    {canEditSession && (
+                      <Button variant="outline" onClick={handleStop}><ShieldAlert className="h-4 w-4" />Arrêter</Button>
                     )}
                     {currentSession.status !== 'applied' && currentSession.status !== 'cancelled' && (
                       <Button variant="outline" onClick={handleCancel}>Annuler</Button>
                     )}
                     {canApplyStock && currentSession.status !== 'applied' && currentSession.status !== 'cancelled' && (
-                      <Button onClick={handleApply}>Valider l’inventaire</Button>
+                      <Button onClick={() => setConfirmApplyOpen(true)} disabled={!canApplySession}>Appliquer le stock</Button>
                     )}
-                    {(currentSession.status === 'draft' || currentSession.status === 'cancelled') && (
+                    {canDeleteSession && (
                       <Button variant="destructive" onClick={() => setPendingDeleteId(currentSession.id)}>
                         <Trash2 className="h-4 w-4" />Supprimer
                       </Button>
@@ -340,8 +449,8 @@ export function InventoryManager({ canApplyStock }: { canApplyStock: boolean }) 
                     <div className="mt-2 text-2xl font-semibold">{currency(currentSession.counted_total_cost)}</div>
                   </div>
                   <div className="rounded-md bg-muted/50 p-4">
-                    <div className="text-sm text-muted-foreground">Produits non retrouvés</div>
-                    <div className="mt-2 text-2xl font-semibold">{currentSession.missing_items}</div>
+                    <div className="text-sm text-muted-foreground">Lignes restantes</div>
+                    <div className="mt-2 text-2xl font-semibold">{stats.pendingItems}</div>
                   </div>
                 </div>
               ) : (
@@ -350,7 +459,19 @@ export function InventoryManager({ canApplyStock }: { canApplyStock: boolean }) 
             </CardContent>
           </Card>
 
-          {currentSession?.mode === 'scan' && currentSession.status !== 'applied' && currentSession.status !== 'cancelled' && (
+          {currentSession && (
+            <InventorySessionSummary
+              pendingCount={pendingItems.length}
+              exactCount={exactMatchItems.length}
+              adjustedCount={adjustedItems.length}
+              missingCount={missingItems.length}
+              overstockCount={overstockItems.length}
+              varianceValue={currentSession.variance_total_cost}
+              overwrittenItems={overwrittenItems}
+            />
+          )}
+
+          {currentSession?.mode === 'scan' && canEditSession && (
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-base"><ScanLine className="h-4 w-4" />Saisie scan / QR / SKU</CardTitle>
@@ -363,146 +484,182 @@ export function InventoryManager({ canApplyStock }: { canApplyStock: boolean }) 
                   rows={5}
                 />
                 <Button onClick={handleScan}><Barcode className="h-4 w-4" />Traiter les codes</Button>
+                {lastScanBatch && (
+                  <div className="rounded-md border p-3 text-sm text-muted-foreground">
+                    <div className="font-medium text-foreground">Dernier lot traité</div>
+                    <div className="mt-1">{lastScanBatch.totalCodes} code(s) · {lastScanBatch.matchedCodes.length} reconnu(s)</div>
+                    {!!lastScanBatch.ambiguousCodes.length && (
+                      <div className="mt-1">SKU présents plusieurs fois : {lastScanBatch.ambiguousCodes.join(', ')}</div>
+                    )}
+                    {!!lastScanBatch.unknownCodes.length && (
+                      <div className="mt-1">Codes inconnus : {lastScanBatch.unknownCodes.join(', ')}</div>
+                    )}
+                  </div>
+                )}
               </CardContent>
             </Card>
           )}
 
           <Card>
             <CardHeader>
-              <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                <CardTitle className="text-base">Saisie manuelle & détail des pièces</CardTitle>
-                <Input
-                  value={manualSearch}
-                  onChange={(event) => setManualSearch(event.target.value)}
-                  placeholder="Rechercher une pièce, référence ou SKU"
-                  className="max-w-xs"
-                />
-              </div>
+              <CardTitle className="text-base">Contrôle du rapprochement</CardTitle>
             </CardHeader>
             <CardContent>
-              <ScrollArea className="h-[460px]">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Pièce</TableHead>
-                      <TableHead>SKU</TableHead>
-                      <TableHead className="text-right">Théorique</TableHead>
-                      <TableHead className="text-right">Comptée</TableHead>
-                      <TableHead className="text-right">Écart</TableHead>
-                      <TableHead>Statut</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredItems.map((item) => (
-                      <TableRow key={item.id}>
-                        <TableCell>
-                          <div className="font-medium">{item.part_name}</div>
-                          <div className="text-xs text-muted-foreground">{item.part_reference || 'Sans référence'}</div>
-                        </TableCell>
-                        <TableCell>{item.part_sku || '—'}</TableCell>
-                        <TableCell className="text-right">{item.expected_quantity}</TableCell>
-                        <TableCell className="text-right">{item.counted_quantity ?? '—'}</TableCell>
-                        <TableCell className="text-right">{item.variance_quantity}</TableCell>
-                        <TableCell>
-                          <Badge variant={item.line_status === 'missing' ? 'destructive' : item.line_status === 'pending' ? 'outline' : 'secondary'}>
-                            {INVENTORY_LINE_STATUS_LABELS[item.line_status]}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {currentSession && currentSession.status !== 'applied' && currentSession.status !== 'cancelled' ? (
-                            <div className="flex flex-wrap justify-end gap-2">
-                              <Button size="sm" variant="outline" onClick={() => handleCountItem(item, item.expected_quantity, 'manual')}>
-                                Trouvé
-                              </Button>
-                              <Button size="sm" variant="outline" onClick={() => updateItem({
-                                sessionId: currentSession.id,
-                                itemId: item.id,
-                                countedQuantity: 0,
-                                lineStatus: 'missing',
-                                entryMethod: 'manual',
-                              })}>
-                                Pas trouvé
-                              </Button>
-                              <Button
-                                size="sm"
-                                onClick={() => {
-                                  const value = window.prompt(`Quantité comptée pour ${item.part_name}`, String(item.counted_quantity ?? item.expected_quantity));
-                                  if (value === null) return;
-                                  const parsed = Number(value);
-                                  if (!Number.isFinite(parsed) || parsed < 0) return;
-                                  void handleCountItem(item, parsed, 'manual');
-                                }}
-                              >
-                                Qté
-                              </Button>
+              <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as InventoryReviewTab)} className="space-y-4">
+                <TabsList className="flex h-auto flex-wrap justify-start gap-2 bg-transparent p-0">
+                  <TabsTrigger value="counting">Comptage</TabsTrigger>
+                  <TabsTrigger value="discrepancies">Écarts</TabsTrigger>
+                  <TabsTrigger value="missing">Manquants</TabsTrigger>
+                  <TabsTrigger value="overwritten">Stocks écrasés</TabsTrigger>
+                  <TabsTrigger value="journal">Journal</TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="counting" className="mt-0">
+                  <InventoryManualEditor
+                    items={sessionItemsForTab}
+                    editable={canEditSession}
+                    searchTerm={manualSearch}
+                    onSearchTermChange={setManualSearch}
+                    draftQuantities={draftQuantities}
+                    onDraftQuantityChange={setDraftQuantity}
+                    draftNotes={draftNotes}
+                    onDraftNoteChange={setDraftNote}
+                    onApplyQuantity={(item) => handleApplyQuantity(item, 'manual')}
+                    onMarkFound={(item) => updateItem({
+                      sessionId: item.inventory_session_id,
+                      itemId: item.id,
+                      countedQuantity: item.expected_quantity,
+                      lineStatus: 'found',
+                      entryMethod: 'manual',
+                    })}
+                    onMarkMissing={(item) => markItemMissing(item.inventory_session_id, item.id, 'manual')}
+                    onReset={(item) => resetItem(item.inventory_session_id, item.id)}
+                    onSaveNote={handleSaveNote}
+                    activeFilter={manualFilter}
+                    onActiveFilterChange={setManualFilter}
+                  />
+                </TabsContent>
+
+                <TabsContent value="discrepancies" className="mt-0">
+                  <InventoryManualEditor
+                    items={sessionItemsForTab}
+                    editable={canEditSession}
+                    searchTerm={manualSearch}
+                    onSearchTermChange={setManualSearch}
+                    draftQuantities={draftQuantities}
+                    onDraftQuantityChange={setDraftQuantity}
+                    draftNotes={draftNotes}
+                    onDraftNoteChange={setDraftNote}
+                    onApplyQuantity={(item) => handleApplyQuantity(item, 'manual')}
+                    onMarkFound={(item) => updateItem({
+                      sessionId: item.inventory_session_id,
+                      itemId: item.id,
+                      countedQuantity: item.expected_quantity,
+                      lineStatus: 'found',
+                      entryMethod: 'manual',
+                    })}
+                    onMarkMissing={(item) => markItemMissing(item.inventory_session_id, item.id, 'manual')}
+                    onReset={(item) => resetItem(item.inventory_session_id, item.id)}
+                    onSaveNote={handleSaveNote}
+                    activeFilter="adjusted"
+                    onActiveFilterChange={setManualFilter}
+                  />
+                </TabsContent>
+
+                <TabsContent value="missing" className="mt-0">
+                  <InventoryManualEditor
+                    items={sessionItemsForTab}
+                    editable={canEditSession}
+                    searchTerm={manualSearch}
+                    onSearchTermChange={setManualSearch}
+                    draftQuantities={draftQuantities}
+                    onDraftQuantityChange={setDraftQuantity}
+                    draftNotes={draftNotes}
+                    onDraftNoteChange={setDraftNote}
+                    onApplyQuantity={(item) => handleApplyQuantity(item, 'manual')}
+                    onMarkFound={(item) => updateItem({
+                      sessionId: item.inventory_session_id,
+                      itemId: item.id,
+                      countedQuantity: resolveDraftQuantity(item),
+                      lineStatus: resolveDraftQuantity(item) === item.expected_quantity ? 'found' : 'adjusted',
+                      entryMethod: 'manual',
+                    })}
+                    onMarkMissing={(item) => markItemMissing(item.inventory_session_id, item.id, 'manual')}
+                    onReset={(item) => resetItem(item.inventory_session_id, item.id)}
+                    onSaveNote={handleSaveNote}
+                    activeFilter="missing"
+                    onActiveFilterChange={setManualFilter}
+                  />
+                </TabsContent>
+
+                <TabsContent value="overwritten" className="mt-0">
+                  <div className="space-y-3">
+                    {overwrittenItems.map((item) => (
+                      <div key={item.id} className="rounded-md border p-3">
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                          <div>
+                            <div className="font-medium">{item.part_name}</div>
+                            <div className="text-sm text-muted-foreground">
+                              Théorique {item.expected_quantity} · Comptée {item.counted_quantity ?? '—'}
                             </div>
-                          ) : (
-                            <span className="text-xs text-muted-foreground">Lecture seule</span>
-                          )}
-                        </TableCell>
-                      </TableRow>
+                          </div>
+                          <Badge variant="outline">
+                            {item.applied_previous_quantity ?? item.expected_quantity} → {item.applied_new_quantity ?? item.counted_quantity ?? 0}
+                          </Badge>
+                        </div>
+                        <div className="mt-2 text-sm text-muted-foreground">
+                          Impact valeur : {currency((item.variance_quantity || ((item.counted_quantity ?? 0) - item.expected_quantity)) * item.unit_cost)}
+                        </div>
+                      </div>
                     ))}
-                  </TableBody>
-                </Table>
-              </ScrollArea>
+                    {!overwrittenItems.length && <div className="text-sm text-muted-foreground">Aucun stock écrasé pour l’instant.</div>}
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="journal" className="mt-0">
+                  <ScrollArea className="h-[460px] pr-3">
+                    <div className="space-y-3">
+                      {logs.map((log) => (
+                        <div key={log.id} className="rounded-md border p-3">
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="font-medium">{getLogLabel(log)}</div>
+                            <div className="text-xs text-muted-foreground">{new Date(log.created_at).toLocaleString('fr-FR')}</div>
+                          </div>
+                          <div className="mt-1 text-sm text-muted-foreground">
+                            {log.changed_by_name}
+                            {typeof log.metadata?.item_name === 'string' ? ` · ${log.metadata.item_name}` : ''}
+                          </div>
+                          {(log.old_value || log.new_value) && (
+                            <div className="mt-2 text-xs text-muted-foreground">
+                              {log.old_value ? `Avant: ${log.old_value}` : ''}
+                              {log.old_value && log.new_value ? ' · ' : ''}
+                              {log.new_value ? `Après: ${log.new_value}` : ''}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                      {!logs.length && <div className="text-sm text-muted-foreground">Aucune action enregistrée.</div>}
+                    </div>
+                  </ScrollArea>
+                </TabsContent>
+              </Tabs>
             </CardContent>
           </Card>
 
-          <div className="grid gap-6 xl:grid-cols-2">
+          {currentSession && currentSession.status === 'completed' && (
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Pièces écrasées / appliquées</CardTitle>
+                <CardTitle className="text-base">Validation finale</CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {overwrittenItems.slice(0, 8).map((item) => (
-                    <div key={item.id} className="rounded-md border p-3">
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="font-medium">{item.part_name}</div>
-                        <Badge variant="outline">{item.applied_previous_quantity ?? item.expected_quantity} → {item.applied_new_quantity ?? item.counted_quantity ?? 0}</Badge>
-                      </div>
-                        <div className="mt-1 text-sm text-muted-foreground">
-                          Valeur impactée : {currency(((item.applied_new_quantity ?? item.counted_quantity ?? 0) - item.expected_quantity) * item.unit_cost)}
-                        </div>
-                    </div>
-                  ))}
-                  {!overwrittenItems.length && <div className="text-sm text-muted-foreground">Aucune quantité écrasée pour l’instant.</div>}
-                </div>
+              <CardContent className="space-y-3 text-sm text-muted-foreground">
+                <div>Les produits manquants passeront à 0 et les écarts écraseront le stock actuel Fixway.</div>
+                <div>{understockItems.length} ligne(s) sont sous le stock théorique et {overstockItems.length} en surplus.</div>
+                {!!stats.reservedConflicts && (
+                  <div>{stats.reservedConflicts} ligne(s) sont sous la quantité réservée : vérifiez avant application.</div>
+                )}
               </CardContent>
             </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Journal d’actions</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ScrollArea className="h-[320px] pr-3">
-                  <div className="space-y-3">
-                    {logs.map((log) => (
-                      <div key={log.id} className="rounded-md border p-3">
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="font-medium">{log.action}</div>
-                          <div className="text-xs text-muted-foreground">{new Date(log.created_at).toLocaleString('fr-FR')}</div>
-                        </div>
-                        <div className="mt-1 text-sm text-muted-foreground">
-                          {log.changed_by_name} · {log.field_name || 'action'}
-                        </div>
-                        {(log.old_value || log.new_value) && (
-                          <div className="mt-2 text-xs text-muted-foreground">
-                            {log.old_value ? `Avant: ${log.old_value}` : ''}
-                            {log.old_value && log.new_value ? ' · ' : ''}
-                            {log.new_value ? `Après: ${log.new_value}` : ''}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                    {!logs.length && <div className="text-sm text-muted-foreground">Aucune action enregistrée.</div>}
-                  </div>
-                </ScrollArea>
-              </CardContent>
-            </Card>
-          </div>
+          )}
         </div>
       </div>
 
@@ -515,16 +672,16 @@ export function InventoryManager({ canApplyStock }: { canApplyStock: boolean }) 
           onCount={async (itemId, quantity) => {
             const item = items.find((entry) => entry.id === itemId);
             if (!item) return;
-            await handleCountItem(item, quantity, 'assisted');
-          }}
-          onMissing={async (itemId) => {
             await updateItem({
               sessionId: currentSession.id,
-              itemId,
-              countedQuantity: 0,
-              lineStatus: 'missing',
+              itemId: item.id,
+              countedQuantity: quantity,
+              lineStatus: quantity === item.expected_quantity ? 'found' : quantity === 0 ? 'missing' : 'adjusted',
               entryMethod: 'assisted',
             });
+          }}
+          onMissing={async (itemId) => {
+            await markItemMissing(currentSession.id, itemId, 'assisted');
           }}
           onPause={handlePause}
         />
@@ -533,7 +690,7 @@ export function InventoryManager({ canApplyStock }: { canApplyStock: boolean }) 
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Nouveau inventaire</DialogTitle>
+            <DialogTitle>Nouvel inventaire</DialogTitle>
             <DialogDescription>
               Fixez un instantané du stock actuel et choisissez le mode de saisie adapté.
             </DialogDescription>
@@ -541,7 +698,7 @@ export function InventoryManager({ canApplyStock }: { canApplyStock: boolean }) 
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="inventory-name">Nom</Label>
-              <Input id="inventory-name" value={createName} onChange={(event) => setCreateName(event.target.value)} placeholder="Inventaire annuel" />
+              <input id="inventory-name" value={createName} onChange={(event) => setCreateName(event.target.value)} placeholder="Inventaire annuel" className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
             </div>
             <div className="space-y-2">
               <Label>Mode</Label>
@@ -563,7 +720,7 @@ export function InventoryManager({ canApplyStock }: { canApplyStock: boolean }) 
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setCreateOpen(false)}>Annuler</Button>
-            <Button onClick={handleCreate} disabled={isSubmitting}>{isSubmitting ? 'Création...' : 'Créer la session'}</Button>
+            <Button onClick={handleCreate} disabled={isSubmitting || !createName.trim()}>{isSubmitting ? 'Création...' : 'Créer la session'}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -586,6 +743,29 @@ export function InventoryManager({ canApplyStock }: { canApplyStock: boolean }) 
               }}
             >
               Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={confirmApplyOpen} onOpenChange={setConfirmApplyOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Appliquer cet inventaire au stock Fixway ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Les produits manquants passeront à 0, les écarts écraseront les quantités actuelles, et cette action impactera immédiatement les modules pièces, commandes, devis et SAV.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-2 text-sm text-muted-foreground">
+            <div>{pendingItems.length} ligne(s) en attente</div>
+            <div>{missingItems.length} produit(s) manquant(s)</div>
+            <div>{overwrittenItems.length} stock(s) qui seront écrasés</div>
+            <div>Valeur d’écart globale : {currency(currentSession?.variance_total_cost || 0)}</div>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={handleApply} disabled={!canApplySession || !canApplyStock}>
+              Appliquer le stock
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

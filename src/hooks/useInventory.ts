@@ -10,6 +10,28 @@ import type {
   InventorySession,
   InventorySessionItem,
 } from '@/components/settings/inventory/types';
+import { getInventoryDerivedData } from '@/hooks/inventory/derived';
+
+const EMPTY_ITEMS: InventorySessionItem[] = [];
+
+const inventoryRpc = supabase.rpc.bind(supabase) as unknown as (
+  fn: string,
+  params?: Record<string, unknown>,
+) => Promise<{ data: unknown; error: { message: string } | null }>;
+
+const inventoryAuditTable = supabase.from('inventory_audit_logs') as unknown as {
+  insert: (values: Record<string, unknown>) => Promise<{ error: { message: string } | null }>;
+};
+
+const inventoryItemsTable = supabase.from('inventory_session_items') as unknown as {
+  update: (values: Record<string, unknown>) => {
+    eq: (column: string, value: string) => { eq: (column: string, value: string) => Promise<{ error: { message: string } | null }> };
+  };
+};
+
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : 'Une erreur est survenue.';
+}
 
 interface UpdateInventoryItemInput {
   sessionId: string;
@@ -22,8 +44,39 @@ interface UpdateInventoryItemInput {
   notes?: string | null;
 }
 
+interface InventoryScanSummary {
+  totalCodes: number;
+  unknownCodes: string[];
+  ambiguousCodes: string[];
+  matchedCodes: string[];
+  processedAt: string;
+}
+
 function normalizeCode(code: string) {
   return code.trim().toUpperCase();
+}
+
+function buildNextPayload(input: UpdateInventoryItemInput) {
+  const nextPayload: Record<string, unknown> = {
+    updated_at: new Date().toISOString(),
+  };
+
+  if (input.countedQuantity !== undefined) {
+    nextPayload.counted_quantity = input.countedQuantity;
+    nextPayload.counted_at = input.countedQuantity === null ? null : new Date().toISOString();
+  }
+
+  if (input.lineStatus) {
+    nextPayload.line_status = input.lineStatus;
+    nextPayload.is_missing = input.lineStatus === 'missing';
+  }
+
+  if (input.entryMethod) nextPayload.entry_method = input.entryMethod;
+  if (input.lastScannedCode !== undefined) nextPayload.last_scanned_code = input.lastScannedCode;
+  if (input.scanCount !== undefined) nextPayload.scan_count = input.scanCount;
+  if (input.notes !== undefined) nextPayload.notes = input.notes;
+
+  return nextPayload;
 }
 
 export function useInventory() {
@@ -32,6 +85,7 @@ export function useInventory() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
+  const [lastScanBatch, setLastScanBatch] = useState<InventoryScanSummary | null>(null);
 
   const shopId = shop?.id;
 
@@ -40,7 +94,7 @@ export function useInventory() {
     enabled: !!shopId,
     queryFn: async (): Promise<InventorySession[]> => {
       const { data, error } = await supabase
-        .from('inventory_sessions' as any)
+        .from('inventory_sessions')
         .select('*')
         .eq('shop_id', shopId)
         .order('created_at', { ascending: false });
@@ -57,7 +111,7 @@ export function useInventory() {
     enabled: !!sessionId,
     queryFn: async (): Promise<InventorySession | null> => {
       const { data, error } = await supabase
-        .from('inventory_sessions' as any)
+        .from('inventory_sessions')
         .select('*')
         .eq('id', sessionId)
         .maybeSingle();
@@ -72,7 +126,7 @@ export function useInventory() {
     enabled: !!sessionId,
     queryFn: async (): Promise<InventorySessionItem[]> => {
       const { data, error } = await supabase
-        .from('inventory_session_items' as any)
+        .from('inventory_session_items')
         .select('*')
         .eq('inventory_session_id', sessionId)
         .order('position', { ascending: true });
@@ -87,7 +141,7 @@ export function useInventory() {
     enabled: !!sessionId,
     queryFn: async (): Promise<InventoryAuditLog[]> => {
       const { data, error } = await supabase
-        .from('inventory_audit_logs' as any)
+        .from('inventory_audit_logs')
         .select('*')
         .eq('inventory_session_id', sessionId)
         .order('created_at', { ascending: false })
@@ -111,7 +165,7 @@ export function useInventory() {
   const addAuditLog = async (payload: Partial<InventoryAuditLog> & { action: string; inventory_session_id: string }) => {
     if (!shopId) return;
 
-    await supabase.from('inventory_audit_logs' as any).insert({
+    await inventoryAuditTable.insert({
       shop_id: shopId,
       changed_by_profile_id: profile?.id ?? null,
       changed_by_name:
@@ -123,7 +177,7 @@ export function useInventory() {
 
   const createSession = async ({ name, mode, notes }: { name: string; mode: InventoryMode; notes?: string }) => {
     try {
-      const { data, error } = await supabase.rpc('begin_inventory_session' as any, {
+      const { data, error } = await inventoryRpc('begin_inventory_session', {
         _name: name,
         _mode: mode,
         _notes: notes || null,
@@ -134,60 +188,61 @@ export function useInventory() {
       await refreshAll();
       toast({ title: 'Inventaire lancé', description: 'La session a été créée avec son instantané de stock.' });
       return data as string;
-    } catch (error: any) {
-      toast({ title: 'Erreur', description: error.message, variant: 'destructive' });
+    } catch (error: unknown) {
+      toast({ title: 'Erreur', description: getErrorMessage(error), variant: 'destructive' });
       throw error;
     }
   };
 
-  const updateSession = async (id: string, patch: Partial<InventorySession>, action?: string, metadata?: Record<string, unknown>) => {
+  const updateSession = async (
+    id: string,
+    patch: Partial<InventorySession>,
+    action?: string,
+    metadata?: Record<string, unknown>,
+  ) => {
     const previous = sessionQuery.data;
-    const { error } = await supabase.from('inventory_sessions' as any).update(patch).eq('id', id);
+    const { error } = await supabase.from('inventory_sessions').update(patch).eq('id', id);
     if (error) throw error;
+
     if (action) {
       await addAuditLog({
         inventory_session_id: id,
         action,
+        field_name: 'status',
         old_value: previous?.status ?? null,
         new_value: typeof patch.status === 'string' ? patch.status : null,
         metadata: metadata || {},
       });
     }
+
     await refreshAll();
   };
 
-  const updateItem = async ({ sessionId, itemId, ...input }: UpdateInventoryItemInput) => {
+  const updateItem = async ({ sessionId: targetSessionId, itemId, ...input }: UpdateInventoryItemInput) => {
     const item = itemsQuery.data?.find((entry) => entry.id === itemId);
-    const nextPayload: Record<string, unknown> = {
-      updated_at: new Date().toISOString(),
-    };
+    const nextPayload = buildNextPayload({ sessionId: targetSessionId, itemId, ...input });
 
-    if (input.countedQuantity !== undefined) nextPayload.counted_quantity = input.countedQuantity;
-    if (input.lineStatus) nextPayload.line_status = input.lineStatus;
-    if (input.entryMethod) nextPayload.entry_method = input.entryMethod;
-    if (input.lastScannedCode !== undefined) nextPayload.last_scanned_code = input.lastScannedCode;
-    if (input.scanCount !== undefined) nextPayload.scan_count = input.scanCount;
-    if (input.notes !== undefined) nextPayload.notes = input.notes;
-
-    const { error } = await supabase
-      .from('inventory_session_items' as any)
+    const { error } = await inventoryItemsTable
       .update(nextPayload)
       .eq('id', itemId)
-      .eq('inventory_session_id', sessionId);
+      .eq('inventory_session_id', targetSessionId);
 
     if (error) throw error;
 
     await addAuditLog({
-      inventory_session_id: sessionId,
+      inventory_session_id: targetSessionId,
       inventory_session_item_id: itemId,
       action: 'item_updated',
+      field_name: 'inventory_line',
       old_value: JSON.stringify({
         counted_quantity: item?.counted_quantity ?? null,
         line_status: item?.line_status ?? null,
+        notes: item?.notes ?? null,
       }),
       new_value: JSON.stringify({
         counted_quantity: input.countedQuantity ?? item?.counted_quantity ?? null,
         line_status: input.lineStatus ?? item?.line_status ?? null,
+        notes: input.notes ?? item?.notes ?? null,
       }),
       metadata: {
         item_name: item?.part_name,
@@ -198,10 +253,76 @@ export function useInventory() {
     await refreshAll();
   };
 
-  const bulkScanCodes = async (sessionId: string, codes: string[]) => {
+  const markItemMissing = async (targetSessionId: string, itemId: string, entryMethod: InventoryMode = 'manual') => {
+    await updateItem({
+      sessionId: targetSessionId,
+      itemId,
+      countedQuantity: 0,
+      lineStatus: 'missing',
+      entryMethod,
+    });
+  };
+
+  const resetItem = async (targetSessionId: string, itemId: string) => {
+    await updateItem({
+      sessionId: targetSessionId,
+      itemId,
+      countedQuantity: null,
+      lineStatus: 'pending',
+      lastScannedCode: null,
+      scanCount: 0,
+      notes: null,
+    });
+  };
+
+  const skipItem = async (targetSessionId: string, itemId: string) => {
+    await updateItem({
+      sessionId: targetSessionId,
+      itemId,
+      lineStatus: 'pending',
+    });
+  };
+
+  const updateItemNote = async (targetSessionId: string, itemId: string, notes: string | null) => {
+    await updateItem({ sessionId: targetSessionId, itemId, notes });
+  };
+
+  const pauseSession = async (targetSessionId: string) => {
+    await updateSession(targetSessionId, { status: 'paused', paused_at: new Date().toISOString() }, 'session_paused');
+  };
+
+  const resumeSession = async (targetSessionId: string) => {
+    await updateSession(targetSessionId, { status: 'in_progress', paused_at: null }, 'session_resumed');
+  };
+
+  const stopSession = async (targetSessionId: string) => {
+    await updateSession(
+      targetSessionId,
+      { status: 'completed', forced_stop: true, completed_at: new Date().toISOString(), paused_at: null },
+      'session_stopped',
+    );
+  };
+
+  const cancelSession = async (targetSessionId: string) => {
+    await updateSession(targetSessionId, { status: 'cancelled', paused_at: null }, 'session_cancelled');
+  };
+
+  const closeSession = async (targetSessionId: string) => {
+    const derived = getInventoryDerivedData(sessionQuery.data, itemsQuery.data || []);
+    if (derived.pendingItems.length > 0) {
+      throw new Error('Toutes les lignes doivent être traitées avant de clôturer le comptage.');
+    }
+
+    await updateSession(
+      targetSessionId,
+      { status: 'completed', completed_at: new Date().toISOString(), paused_at: null, forced_stop: false },
+      'session_completed',
+    );
+  };
+
+  const bulkScanCodes = async (targetSessionId: string, codes: string[]) => {
     const items = itemsQuery.data || [];
     const counts = new Map<string, number>();
-    const originals = new Map(items.map((item) => [item.id, item]));
 
     codes
       .map(normalizeCode)
@@ -209,106 +330,164 @@ export function useInventory() {
       .forEach((code) => counts.set(code, (counts.get(code) || 0) + 1));
 
     const unknownCodes: string[] = [];
+    const ambiguousCodes: string[] = [];
+    const matchedCodes: string[] = [];
+
     const updates: Array<Promise<void>> = [];
 
     for (const [code, increment] of counts.entries()) {
-      const match = items.find((item) => normalizeCode(item.part_sku || '') === code);
-      if (!match) {
+      const matches = items
+        .filter((item) => normalizeCode(item.part_sku || '') === code)
+        .sort((a, b) => {
+          const aPendingScore = a.line_status === 'pending' ? -1 : 1;
+          const bPendingScore = b.line_status === 'pending' ? -1 : 1;
+          return aPendingScore - bPendingScore || a.position - b.position;
+        });
+
+      if (!matches.length) {
         unknownCodes.push(code);
         continue;
       }
 
-      const nextQuantity = (match.counted_quantity ?? 0) + increment;
-      updates.push((async () => {
-        const { error } = await supabase
-          .from('inventory_session_items' as any)
-          .update({
-            counted_quantity: nextQuantity,
-            line_status: nextQuantity === match.expected_quantity ? 'found' : 'adjusted',
-            entry_method: 'scan',
-            last_scanned_code: code,
-            scan_count: (match.scan_count || 0) + increment,
-          })
-          .eq('id', match.id)
-          .eq('inventory_session_id', sessionId);
+      if (matches.length > 1) {
+        ambiguousCodes.push(code);
+      }
 
-        if (error) throw error;
-      })());
+      const match = matches[0];
+      matchedCodes.push(code);
+      const nextQuantity = (match.counted_quantity ?? 0) + increment;
+
+      updates.push(
+        updateItem({
+          sessionId: targetSessionId,
+          itemId: match.id,
+          countedQuantity: nextQuantity,
+          lineStatus: nextQuantity === match.expected_quantity ? 'found' : 'adjusted',
+          entryMethod: 'scan',
+          lastScannedCode: code,
+          scanCount: (match.scan_count || 0) + increment,
+        }),
+      );
     }
 
     await Promise.all(updates);
 
+    const summary = {
+      totalCodes: codes.length,
+      unknownCodes,
+      ambiguousCodes,
+      matchedCodes,
+      processedAt: new Date().toISOString(),
+    } satisfies InventoryScanSummary;
+
+    setLastScanBatch(summary);
+
     await addAuditLog({
-      inventory_session_id: sessionId,
+      inventory_session_id: targetSessionId,
       action: 'bulk_scan',
       new_value: String(codes.length),
-      metadata: {
-        unknown_codes: unknownCodes,
-        matched_codes: Array.from(counts.keys()).filter((code) => !unknownCodes.includes(code)),
-        previous_items: Array.from(originals.values()).length,
-      },
+      metadata: summary,
     });
 
     await refreshAll();
-    return { unknownCodes };
+    return summary;
   };
 
-  const applySession = async (sessionId: string) => {
+  const applySession = async (targetSessionId: string) => {
     try {
-      const { data, error } = await supabase.rpc('apply_inventory_session' as any, {
-        _session_id: sessionId,
+      const derived = getInventoryDerivedData(sessionQuery.data, itemsQuery.data || []);
+      if (derived.pendingItems.length > 0) {
+        throw new Error('Impossible de valider tant que des lignes sont encore à traiter.');
+      }
+
+      const { data, error } = await inventoryRpc('apply_inventory_session', {
+        _session_id: targetSessionId,
       });
       if (error) throw error;
+
+      await addAuditLog({
+        inventory_session_id: targetSessionId,
+        action: 'session_applied',
+        metadata: { updated_rows: data },
+      });
+
       await refreshAll();
       toast({ title: 'Inventaire validé', description: 'Les stocks Fixway ont été mis à jour.' });
       return data as Array<{ updated_rows: number; missing_rows: number; blocked_reserved_rows: number }>;
-    } catch (error: any) {
-      toast({ title: 'Erreur', description: error.message, variant: 'destructive' });
+    } catch (error: unknown) {
+      toast({ title: 'Erreur', description: getErrorMessage(error), variant: 'destructive' });
       throw error;
     }
   };
 
-  const deleteSession = async (sessionId: string) => {
-    const { error } = await supabase.from('inventory_sessions' as any).delete().eq('id', sessionId);
+  const deleteSession = async (targetSessionId: string) => {
+    const { error } = await supabase.from('inventory_sessions').delete().eq('id', targetSessionId);
     if (error) throw error;
-    if (selectedSessionId === sessionId) setSelectedSessionId(null);
+    if (selectedSessionId === targetSessionId) setSelectedSessionId(null);
     await refreshAll();
   };
 
+  const currentSession = sessionQuery.data;
+  const items = itemsQuery.data ?? EMPTY_ITEMS;
+  const derived = useMemo(() => getInventoryDerivedData(currentSession, items), [currentSession, items]);
+
   const stats = useMemo(() => {
-    const session = sessionQuery.data;
-    const items = itemsQuery.data || [];
-    const remainingItems = Math.max((session?.total_items || 0) - (session?.counted_items || 0), 0);
-    const notFoundItems = items.filter((item) => item.line_status === 'missing').length;
-    const overwrittenItems = items.filter((item) => item.applied_previous_quantity !== null || item.applied_new_quantity !== null).length;
     const reservedConflicts = items.filter(
-      (item) => (item.counted_quantity ?? 0) < ((item as any).reserved_quantity ?? 0),
+      (item) => (item.counted_quantity ?? 0) < (((item as InventorySessionItem & { reserved_quantity?: number | null }).reserved_quantity) ?? 0),
     ).length;
 
     return {
-      remainingItems,
-      notFoundItems,
-      overwrittenItems,
+      remainingItems: derived.pendingItems.length,
+      notFoundItems: derived.missingItems.length,
+      overwrittenItems: derived.overwrittenItems.length,
       reservedConflicts,
+      pendingItems: derived.pendingItems.length,
+      exactMatchItems: derived.exactMatchItems.length,
+      adjustedItems: derived.adjustedItems.length,
+      overstockItems: derived.overstockItems.length,
+      understockItems: derived.understockItems.length,
+      completionRate: derived.completionRate,
     };
-  }, [itemsQuery.data, sessionQuery.data]);
+  }, [derived, items]);
 
   return {
     shopId,
     selectedSessionId: sessionId,
     setSelectedSessionId,
     sessions: sessionsQuery.data || [],
-    currentSession: sessionQuery.data,
-    items: itemsQuery.data || [],
+    currentSession,
+    items,
     logs: logsQuery.data || [],
     loading: sessionsQuery.isLoading || sessionQuery.isLoading || itemsQuery.isLoading,
     createSession,
     updateSession,
     updateItem,
+    markItemMissing,
+    resetItem,
+    skipItem,
+    updateItemNote,
+    pauseSession,
+    resumeSession,
+    stopSession,
+    cancelSession,
+    closeSession,
     bulkScanCodes,
+    lastScanBatch,
     applySession,
     deleteSession,
     refreshAll,
     stats,
+    pendingItems: derived.pendingItems,
+    missingItems: derived.missingItems,
+    adjustedItems: derived.adjustedItems,
+    exactMatchItems: derived.exactMatchItems,
+    overstockItems: derived.overstockItems,
+    understockItems: derived.understockItems,
+    overwrittenItems: derived.overwrittenItems,
+    completionRate: derived.completionRate,
+    canEditSession: derived.canEditSession,
+    canCloseSession: derived.canCloseSession,
+    canApplySession: derived.canApplySession,
+    canDeleteSession: derived.canDeleteSession,
   };
 }
