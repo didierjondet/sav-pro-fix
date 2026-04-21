@@ -69,6 +69,37 @@ export const SAVPrintButton = React.forwardRef<SAVPrintButtonRef, SAVPrintButton
         { totalQty: 0, totalTime: 0, totalCost: 0 }
       );
 
+      // Normaliser et résoudre les pièces jointes (signed URLs)
+      const rawAttachments: any[] = Array.isArray((savCase as any).attachments) ? (savCase as any).attachments : [];
+      const normalizedAttachments = rawAttachments
+        .map((att: any, index: number) => {
+          if (typeof att === "object" && att?.url) {
+            const fileName = att.name || att.url.split("/").pop() || `document-${index + 1}`;
+            const ext = fileName.split(".").pop()?.toLowerCase() || "";
+            const type = att.type || (["jpg", "jpeg", "png", "gif", "webp"].includes(ext) ? `image/${ext === "jpg" ? "jpeg" : ext}` : ext === "pdf" ? "application/pdf" : "application/octet-stream");
+            return { path: att.url, name: fileName, type };
+          }
+          if (typeof att === "string" && att.trim()) {
+            const fileName = att.split("/").pop() || `document-${index + 1}`;
+            const ext = fileName.split(".").pop()?.toLowerCase() || "";
+            const type = ["jpg", "jpeg", "png", "gif", "webp"].includes(ext) ? `image/${ext === "jpg" ? "jpeg" : ext}` : ext === "pdf" ? "application/pdf" : "application/octet-stream";
+            return { path: att, name: fileName, type };
+          }
+          return null;
+        })
+        .filter((a): a is { path: string; name: string; type: string } => a !== null);
+
+      const resolvedAttachments = await Promise.all(
+        normalizedAttachments.map(async (att) => {
+          try {
+            const { data } = await supabase.storage.from("sav-attachments").createSignedUrl(att.path, 3600 * 24);
+            return { ...att, signedUrl: data?.signedUrl || "" };
+          } catch {
+            return { ...att, signedUrl: "" };
+          }
+        })
+      );
+
       const trackingUrl = generateTrackingUrl();
       const qrCodeUrl = trackingUrl
         ? `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(trackingUrl)}`
