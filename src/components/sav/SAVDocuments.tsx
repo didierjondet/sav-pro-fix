@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { FileText, Image, Download, Eye, Upload, Trash2, FileIcon, Paperclip } from 'lucide-react';
+import { FileText, Image, Download, Eye, Upload, Trash2, FileIcon, Paperclip, Printer } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -341,19 +341,82 @@ export function SAVDocuments({ savCaseId, attachments, onAttachmentsUpdate }: SA
     }
   };
 
+  const handlePrintAttachments = async () => {
+    if (normalizedAttachments.length === 0) return;
+    try {
+      const escapeHtml = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+
+      const resolved = await Promise.all(
+        normalizedAttachments.map(async (att) => {
+          try {
+            const { data } = await supabase.storage.from('sav-attachments').createSignedUrl(att.url, 3600 * 24);
+            return { ...att, signedUrl: data?.signedUrl || '' };
+          } catch {
+            return { ...att, signedUrl: '' };
+          }
+        })
+      );
+
+      const itemsHtml = resolved.map((att) => {
+        const isImage = att.type?.startsWith('image/');
+        if (isImage && att.signedUrl) {
+          return `<div class="page"><div class="title">${escapeHtml(att.name)}</div><img src="${att.signedUrl}" alt="${escapeHtml(att.name)}" /></div>`;
+        }
+        return `<div class="page file"><div class="title">${escapeHtml(att.name)}</div><div class="ico">📎</div>${att.signedUrl ? `<a href="${att.signedUrl}">${escapeHtml(att.signedUrl)}</a>` : ''}</div>`;
+      }).join('');
+
+      const html = `<!DOCTYPE html><html><head><meta charset="utf-8" /><title>Pièces jointes SAV</title>
+        <style>
+          @page { size: A4 portrait; margin: 1cm; }
+          body { font-family: Arial, sans-serif; margin: 0; }
+          .page { page-break-after: always; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; min-height: 27cm; padding: 10px; }
+          .page:last-child { page-break-after: auto; }
+          .title { font-size: 14px; font-weight: 700; margin-bottom: 12px; text-align: center; word-break: break-all; }
+          .page img { max-width: 100%; max-height: 24cm; object-fit: contain; }
+          .file .ico { font-size: 64px; margin: 24px 0; }
+          .file a { font-size: 11px; color: #2563eb; word-break: break-all; text-align: center; }
+          @media print { body { -webkit-print-color-adjust: exact; } }
+        </style></head><body>${itemsHtml}</body></html>`;
+
+      const win = window.open('', '_blank');
+      if (!win) {
+        toast({ title: 'Popup bloquée', description: 'Autorisez les popups pour imprimer.', variant: 'destructive' });
+        return;
+      }
+      win.document.write(html);
+      win.document.close();
+      // Attendre que toutes les images soient chargées
+      const images = win.document.images;
+      const waitImages = Array.from(images).map((img) => img.complete ? Promise.resolve() : new Promise((res) => { img.onload = img.onerror = () => res(null); }));
+      await Promise.all(waitImages);
+      setTimeout(() => { win.print(); win.close(); }, 300);
+    } catch (error: any) {
+      console.error('Print attachments error:', error);
+      toast({ title: 'Erreur', description: "Impossible d'imprimer les pièces jointes", variant: 'destructive' });
+    }
+  };
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <FileIcon className="h-5 w-5" />
-          Documents et Photos
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <CardTitle className="flex items-center gap-2">
+            <FileIcon className="h-5 w-5" />
+            Documents et Photos
+            {normalizedAttachments.length > 0 && (
+              <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">
+                <Paperclip className="h-3 w-3 mr-1" />
+                {normalizedAttachments.length} fichier{normalizedAttachments.length > 1 ? 's' : ''}
+              </Badge>
+            )}
+          </CardTitle>
           {normalizedAttachments.length > 0 && (
-            <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">
-              <Paperclip className="h-3 w-3 mr-1" />
-              {normalizedAttachments.length} fichier{normalizedAttachments.length > 1 ? 's' : ''}
-            </Badge>
+            <Button variant="outline" size="sm" onClick={handlePrintAttachments}>
+              <Printer className="h-4 w-4 mr-2" />
+              Imprimer les pièces jointes
+            </Button>
           )}
-        </CardTitle>
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Zone d'upload */}

@@ -69,6 +69,37 @@ export const SAVPrintButton = React.forwardRef<SAVPrintButtonRef, SAVPrintButton
         { totalQty: 0, totalTime: 0, totalCost: 0 }
       );
 
+      // Normaliser et résoudre les pièces jointes (signed URLs)
+      const rawAttachments: any[] = Array.isArray((savCase as any).attachments) ? (savCase as any).attachments : [];
+      const normalizedAttachments = rawAttachments
+        .map((att: any, index: number) => {
+          if (typeof att === "object" && att?.url) {
+            const fileName = att.name || att.url.split("/").pop() || `document-${index + 1}`;
+            const ext = fileName.split(".").pop()?.toLowerCase() || "";
+            const type = att.type || (["jpg", "jpeg", "png", "gif", "webp"].includes(ext) ? `image/${ext === "jpg" ? "jpeg" : ext}` : ext === "pdf" ? "application/pdf" : "application/octet-stream");
+            return { path: att.url, name: fileName, type };
+          }
+          if (typeof att === "string" && att.trim()) {
+            const fileName = att.split("/").pop() || `document-${index + 1}`;
+            const ext = fileName.split(".").pop()?.toLowerCase() || "";
+            const type = ["jpg", "jpeg", "png", "gif", "webp"].includes(ext) ? `image/${ext === "jpg" ? "jpeg" : ext}` : ext === "pdf" ? "application/pdf" : "application/octet-stream";
+            return { path: att, name: fileName, type };
+          }
+          return null;
+        })
+        .filter((a): a is { path: string; name: string; type: string } => a !== null);
+
+      const resolvedAttachments = await Promise.all(
+        normalizedAttachments.map(async (att) => {
+          try {
+            const { data } = await supabase.storage.from("sav-attachments").createSignedUrl(att.path, 3600 * 24);
+            return { ...att, signedUrl: data?.signedUrl || "" };
+          } catch {
+            return { ...att, signedUrl: "" };
+          }
+        })
+      );
+
       const trackingUrl = generateTrackingUrl();
       const qrCodeUrl = trackingUrl
         ? `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(trackingUrl)}`
@@ -213,6 +244,25 @@ export const SAVPrintButton = React.forwardRef<SAVPrintButtonRef, SAVPrintButton
         </div>`
         : "";
 
+      const escapeHtml = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+
+      const attachmentsBlock = resolvedAttachments.length > 0
+        ? `
+        <div class="block">
+          <div class="block-title">Pièces jointes (${resolvedAttachments.length})</div>
+          <div class="attachments">
+            ${resolvedAttachments.map((att) => {
+              const isImage = att.type?.startsWith("image/");
+              if (isImage && att.signedUrl) {
+                return `<div class="attachment-item"><img src="${att.signedUrl}" alt="${escapeHtml(att.name)}" class="attachment-img" /><div class="attachment-name">${escapeHtml(att.name)}</div></div>`;
+              }
+              return `<div class="attachment-item attachment-file"><div class="attachment-icon">📎</div><div><div class="attachment-name">${escapeHtml(att.name)}</div>${att.signedUrl ? `<a class="attachment-link" href="${att.signedUrl}">${escapeHtml(att.signedUrl)}</a>` : ""}</div></div>`;
+            }).join("")}
+          </div>
+        </div>`
+        : "";
+
+
       const html = `<!DOCTYPE html>
 <html>
 <head>
@@ -262,6 +312,13 @@ export const SAVPrintButton = React.forwardRef<SAVPrintButtonRef, SAVPrintButton
     .closure-date { font-weight: 600; }
     .closure-status { color: #16a34a; font-weight: 600; }
     .closure-by { color: #555; }
+    .attachments { display: flex; flex-direction: column; gap: 6px; }
+    .attachment-item { display: flex; align-items: flex-start; gap: 6px; page-break-inside: avoid; border: 1px solid #e5e7eb; border-radius: 4px; padding: 4px; background: #fafafa; }
+    .attachment-img { max-width: 100%; max-height: 180px; object-fit: contain; border-radius: 3px; display: block; }
+    .attachment-name { font-size: 8px; font-weight: 600; word-break: break-all; }
+    .attachment-link { font-size: 7px; color: #2563eb; word-break: break-all; text-decoration: underline; }
+    .attachment-icon { font-size: 14px; }
+    .attachment-file { align-items: center; }
     @media print { body { -webkit-print-color-adjust: exact; } }
   </style>
 </head>
@@ -283,6 +340,7 @@ export const SAVPrintButton = React.forwardRef<SAVPrintButtonRef, SAVPrintButton
     ${technicianCommentsBlock}
     ${partsTable}
     ${closureHistoryBlock}
+    ${attachmentsBlock}
     ${qrBlock}
   </div>
   <div class="cut-line">
@@ -304,6 +362,7 @@ export const SAVPrintButton = React.forwardRef<SAVPrintButtonRef, SAVPrintButton
     ${technicianCommentsBlock}
     ${partsTable}
     ${closureHistoryBlock}
+    ${attachmentsBlock}
     
   </div>
 </div>
