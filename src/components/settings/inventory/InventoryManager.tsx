@@ -740,6 +740,8 @@ export function InventoryManager({ canApplyStock }: { canApplyStock: boolean }) 
           )}
         </div>
       </div>
+      </div>
+      )}
 
       {currentSession && (
         <InventoryAssistedDialog
