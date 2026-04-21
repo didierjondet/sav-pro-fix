@@ -312,6 +312,13 @@ export const SAVPrintButton = React.forwardRef<SAVPrintButtonRef, SAVPrintButton
     .closure-date { font-weight: 600; }
     .closure-status { color: #16a34a; font-weight: 600; }
     .closure-by { color: #555; }
+    .attachments { display: flex; flex-direction: column; gap: 6px; }
+    .attachment-item { display: flex; align-items: flex-start; gap: 6px; page-break-inside: avoid; border: 1px solid #e5e7eb; border-radius: 4px; padding: 4px; background: #fafafa; }
+    .attachment-img { max-width: 100%; max-height: 180px; object-fit: contain; border-radius: 3px; display: block; }
+    .attachment-name { font-size: 8px; font-weight: 600; word-break: break-all; }
+    .attachment-link { font-size: 7px; color: #2563eb; word-break: break-all; text-decoration: underline; }
+    .attachment-icon { font-size: 14px; }
+    .attachment-file { align-items: center; }
     @media print { body { -webkit-print-color-adjust: exact; } }
   </style>
 </head>
@@ -333,6 +340,7 @@ export const SAVPrintButton = React.forwardRef<SAVPrintButtonRef, SAVPrintButton
     ${technicianCommentsBlock}
     ${partsTable}
     ${closureHistoryBlock}
+    ${attachmentsBlock}
     ${qrBlock}
   </div>
   <div class="cut-line">
@@ -354,6 +362,7 @@ export const SAVPrintButton = React.forwardRef<SAVPrintButtonRef, SAVPrintButton
     ${technicianCommentsBlock}
     ${partsTable}
     ${closureHistoryBlock}
+    ${attachmentsBlock}
     
   </div>
 </div>
