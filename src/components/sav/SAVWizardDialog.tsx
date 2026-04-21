@@ -33,6 +33,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useShopSAVStatuses } from '@/hooks/useShopSAVStatuses';
 import { useShopSAVTypes } from '@/hooks/useShopSAVTypes';
 import { SecurityCodesSection, SecurityCodes } from './SecurityCodesSection';
+import { AITextReformulator } from './AITextReformulator';
 
 interface CustomerInfo {
   firstName: string;
@@ -505,7 +506,14 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
         return (
           <div className="space-y-4">
             <div>
-              <Label>Description du problème *</Label>
+              <div className="flex items-center justify-between mb-1">
+                <Label>Description du problème *</Label>
+                <AITextReformulator
+                  text={deviceInfo.problemDescription}
+                  context="problem_description"
+                  onReformulated={(reformulated) => setDeviceInfo({ ...deviceInfo, problemDescription: reformulated })}
+                />
+              </div>
               <Textarea value={deviceInfo.problemDescription}
                 onChange={(e) => setDeviceInfo({ ...deviceInfo, problemDescription: e.target.value })}
                 placeholder="Décrivez le problème rencontré..." rows={5} />
