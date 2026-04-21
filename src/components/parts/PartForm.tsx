@@ -6,7 +6,9 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Part } from '@/hooks/useParts';
+import { usePartCategories } from '@/hooks/usePartCategories';
 import { SimilarPartsAlert } from './SimilarPartsAlert';
 import { PartPhotoUpload } from './PartPhotoUpload';
 import { cn } from '@/lib/utils';
@@ -43,6 +45,8 @@ export function PartForm({ initialData, onSubmit, onCancel, isEdit = false, find
   const [pendingData, setPendingData] = useState<any>(null);
   const [photoUrl, setPhotoUrl] = useState<string | null>(initialData?.photo_url || null);
   const [selectedColor, setSelectedColor] = useState<string | null>((initialData as any)?.color || null);
+  const [categoryId, setCategoryId] = useState<string | null>((initialData as any)?.category_id || null);
+  const { categories } = usePartCategories();
   
   const {
     register,
@@ -109,9 +113,10 @@ export function PartForm({ initialData, onSubmit, onCancel, isEdit = false, find
       const partData = {
         ...data,
         photo_url: photoUrl,
-        color: selectedColor
+        color: selectedColor,
+        category_id: categoryId,
       };
-      
+
       const { error } = await onSubmit(partData);
       if (!error) {
         onCancel();
@@ -202,6 +207,29 @@ export function PartForm({ initialData, onSubmit, onCancel, isEdit = false, find
                 placeholder="Ex: Fournisseur ABC"
               />
             </div>
+          </div>
+
+          {/* Catégorie */}
+          <div>
+            <Label htmlFor="category">Catégorie</Label>
+            <Select value={categoryId ?? 'none'} onValueChange={(v) => setCategoryId(v === 'none' ? null : v)}>
+              <SelectTrigger id="category">
+                <SelectValue placeholder="Sélectionner une catégorie" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Sans catégorie</SelectItem>
+                {categories.map((cat) => (
+                  <SelectItem key={cat.id} value={cat.id}>
+                    {cat.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {categories.length === 0 && (
+              <p className="text-xs text-muted-foreground mt-1">
+                Aucune catégorie créée. Créez-en dans Réglages → Catégories de pièces.
+              </p>
+            )}
           </div>
 
           {/* Sélecteur de couleur */}
