@@ -61,10 +61,10 @@ export function printInventoryDocument({
           .box { border: 1px solid #d1d5db; padding: 12px; border-radius: 6px; }
           .label { font-size: 12px; text-transform: uppercase; color: #6b7280; margin-bottom: 6px; }
           .value { font-size: 18px; font-weight: 700; }
+          .note { margin-top: 18px; padding: 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 12px; color: #4b5563; }
           table { width: 100%; border-collapse: collapse; margin-top: 18px; }
           th, td { border: 1px solid #d1d5db; padding: 8px; text-align: left; font-size: 12px; vertical-align: top; }
           th { background: #f3f4f6; }
-          .muted { color: #6b7280; }
           .right { text-align: right; }
           @media print { body { margin: 12px; } }
         </style>
@@ -78,6 +78,7 @@ export function printInventoryDocument({
           <div class="box"><div class="label">Qté inventoriée</div><div class="value">${totalCounted}</div></div>
           <div class="box"><div class="label">Valeur non retrouvée</div><div class="value">${escapeHtml(currency(totalMissingValue))}</div></div>
         </div>
+        ${session.notes ? `<div class="note">${escapeHtml(session.notes)}</div>` : ''}
         <table>
           <thead>
             <tr>
@@ -90,6 +91,7 @@ export function printInventoryDocument({
               <th class="right">Coût unitaire</th>
               <th class="right">Valeur écart</th>
               <th>Statut</th>
+              <th>Note</th>
             </tr>
           </thead>
           <tbody>
@@ -104,6 +106,7 @@ export function printInventoryDocument({
                 <td class="right">${escapeHtml(currency(item.unit_cost))}</td>
                 <td class="right">${escapeHtml(currency(item.variance_value))}</td>
                 <td>${escapeHtml(item.line_status)}</td>
+                <td>${escapeHtml(item.notes || '')}</td>
               </tr>
             `).join('')}
           </tbody>

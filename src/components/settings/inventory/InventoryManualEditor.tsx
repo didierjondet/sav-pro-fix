@@ -1,0 +1,174 @@
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { cn } from '@/lib/utils';
+import { Check, RotateCcw, Save, Search, X } from 'lucide-react';
+import { INVENTORY_LINE_STATUS_LABELS, type InventorySessionItem } from './types';
+
+export type InventoryReviewTab = 'counting' | 'discrepancies' | 'missing' | 'overwritten' | 'journal';
+
+interface InventoryManualEditorProps {
+  items: InventorySessionItem[];
+  editable: boolean;
+  searchTerm: string;
+  onSearchTermChange: (value: string) => void;
+  draftQuantities: Record<string, string>;
+  onDraftQuantityChange: (itemId: string, value: string) => void;
+  draftNotes: Record<string, string>;
+  onDraftNoteChange: (itemId: string, value: string) => void;
+  onApplyQuantity: (item: InventorySessionItem) => Promise<void> | void;
+  onMarkFound: (item: InventorySessionItem) => Promise<void> | void;
+  onMarkMissing: (item: InventorySessionItem) => Promise<void> | void;
+  onReset: (item: InventorySessionItem) => Promise<void> | void;
+  onSaveNote: (item: InventorySessionItem) => Promise<void> | void;
+  activeFilter: 'all' | 'pending' | 'found' | 'missing' | 'adjusted';
+  onActiveFilterChange: (value: 'all' | 'pending' | 'found' | 'missing' | 'adjusted') => void;
+}
+
+const filterLabels: Array<{ key: InventoryManualEditorProps['activeFilter']; label: string }> = [
+  { key: 'all', label: 'Tout' },
+  { key: 'pending', label: 'À traiter' },
+  { key: 'found', label: 'Trouvés' },
+  { key: 'missing', label: 'Manquants' },
+  { key: 'adjusted', label: 'Écarts' },
+];
+
+export function InventoryManualEditor({
+  items,
+  editable,
+  searchTerm,
+  onSearchTermChange,
+  draftQuantities,
+  onDraftQuantityChange,
+  draftNotes,
+  onDraftNoteChange,
+  onApplyQuantity,
+  onMarkFound,
+  onMarkMissing,
+  onReset,
+  onSaveNote,
+  activeFilter,
+  onActiveFilterChange,
+}: InventoryManualEditorProps) {
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+        <div className="flex flex-wrap gap-2">
+          {filterLabels.map((filter) => (
+            <Button
+              key={filter.key}
+              type="button"
+              size="sm"
+              variant={activeFilter === filter.key ? 'default' : 'outline'}
+              onClick={() => onActiveFilterChange(filter.key)}
+            >
+              {filter.label}
+            </Button>
+          ))}
+        </div>
+        <div className="relative w-full xl:max-w-sm">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={searchTerm}
+            onChange={(event) => onSearchTermChange(event.target.value)}
+            placeholder="Rechercher une pièce, une référence ou un SKU"
+            className="pl-9"
+          />
+        </div>
+      </div>
+
+      <ScrollArea className="h-[520px]">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Pièce</TableHead>
+              <TableHead>SKU</TableHead>
+              <TableHead className="text-right">Théorique</TableHead>
+              <TableHead className="text-right">Comptée</TableHead>
+              <TableHead className="text-right">Delta</TableHead>
+              <TableHead>Notes</TableHead>
+              <TableHead>Statut</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {items.map((item) => {
+              const currentQuantity = draftQuantities[item.id] ?? (item.counted_quantity ?? '').toString();
+              const currentNote = draftNotes[item.id] ?? item.notes ?? '';
+
+              return (
+                <TableRow key={item.id}>
+                  <TableCell>
+                    <div className="font-medium">{item.part_name}</div>
+                    <div className="text-xs text-muted-foreground">{item.part_reference || 'Sans référence'}</div>
+                  </TableCell>
+                  <TableCell>{item.part_sku || '—'}</TableCell>
+                  <TableCell className="text-right">{item.expected_quantity}</TableCell>
+                  <TableCell className="min-w-[140px] text-right">
+                    <Input
+                      type="number"
+                      min="0"
+                      value={currentQuantity}
+                      disabled={!editable}
+                      onChange={(event) => onDraftQuantityChange(item.id, event.target.value)}
+                      className="ml-auto max-w-[120px]"
+                    />
+                  </TableCell>
+                  <TableCell className={cn('text-right font-medium', item.variance_quantity !== 0 && 'text-foreground')}>
+                    {item.counted_quantity === null ? '—' : item.variance_quantity}
+                  </TableCell>
+                  <TableCell className="min-w-[180px]">
+                    <div className="flex gap-2">
+                      <Input
+                        value={currentNote}
+                        disabled={!editable}
+                        onChange={(event) => onDraftNoteChange(item.id, event.target.value)}
+                        placeholder="Note rapide"
+                      />
+                      {editable && (
+                        <Button type="button" size="icon" variant="outline" onClick={() => onSaveNote(item)}>
+                          <Save className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={item.line_status === 'missing' ? 'destructive' : item.line_status === 'pending' ? 'outline' : 'secondary'}>
+                      {INVENTORY_LINE_STATUS_LABELS[item.line_status]}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {editable ? (
+                      <div className="flex flex-wrap justify-end gap-2">
+                        <Button size="sm" variant="outline" onClick={() => onMarkFound(item)}>
+                          <Check className="h-4 w-4" />
+                          Trouvé
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={() => onMarkMissing(item)}>
+                          <X className="h-4 w-4" />
+                          Manquant
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={() => onApplyQuantity(item)}>
+                          <Save className="h-4 w-4" />
+                          Ajuster
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={() => onReset(item)}>
+                          <RotateCcw className="h-4 w-4" />
+                          Réinitialiser
+                        </Button>
+                      </div>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">Lecture seule</span>
+                    )}
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </ScrollArea>
+    </div>
+  );
+}
