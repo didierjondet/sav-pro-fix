@@ -462,9 +462,9 @@ export function InventoryManager({ canApplyStock }: { canApplyStock: boolean }) 
                         <div className="font-medium">{item.part_name}</div>
                         <Badge variant="outline">{item.applied_previous_quantity ?? item.expected_quantity} → {item.applied_new_quantity ?? item.counted_quantity ?? 0}</Badge>
                       </div>
-                      <div className="mt-1 text-sm text-muted-foreground">
-                        Valeur impactée : {currency((item.applied_new_quantity ?? item.counted_quantity ?? 0 - item.expected_quantity) * item.unit_cost)}
-                      </div>
+                        <div className="mt-1 text-sm text-muted-foreground">
+                          Valeur impactée : {currency(((item.applied_new_quantity ?? item.counted_quantity ?? 0) - item.expected_quantity) * item.unit_cost)}
+                        </div>
                     </div>
                   ))}
                   {!overwrittenItems.length && <div className="text-sm text-muted-foreground">Aucune quantité écrasée pour l’instant.</div>}

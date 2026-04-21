@@ -640,6 +640,30 @@ export default function Settings() {
     }
   };
   const isAdmin = profile?.role === 'admin' || actualProfile?.role === 'super_admin';
+  const availableTabs = [
+    'shop',
+    'notifications',
+    'appearance',
+    'sav-statuses',
+    'sav-types',
+    'billing',
+    'ai',
+    ...(rolePermissions.settings_sms_purchase ? ['sms'] : []),
+    ...(rolePermissions.settings_import_export ? ['import-export'] : []),
+    ...(rolePermissions.settings_subscription ? ['subscription'] : []),
+    ...(isAdmin && rolePermissions.settings_users ? ['users'] : []),
+    ...(rolePermissions.settings_inventory ? ['inventory'] : []),
+  ];
+  const safeActiveTab = availableTabs.includes(activeTab) ? activeTab : availableTabs[0];
+  useEffect(() => {
+    if (safeActiveTab === activeTab) return;
+    setActiveTab(safeActiveTab);
+    setSearchParams(prev => {
+      const p = new URLSearchParams(prev);
+      p.set('tab', safeActiveTab);
+      return p;
+    });
+  }, [activeTab, safeActiveTab, setSearchParams]);
   if (loading || rolePermissionsLoading) {
     return <div className="min-h-screen bg-background">
         <div className="flex h-screen">
@@ -677,7 +701,7 @@ export default function Settings() {
                 <h1 className="text-2xl font-bold">Paramètres</h1>
               </div>
 
-          <Tabs value={activeTab} onValueChange={val => {
+          <Tabs value={safeActiveTab} onValueChange={val => {
               setActiveTab(val);
               setSearchParams(prev => {
                 const p = new URLSearchParams(prev);
@@ -736,6 +760,12 @@ export default function Settings() {
                 <TabsTrigger value="users" className="flex items-center gap-2 px-3 py-2 shrink-0">
                   <Users className="h-4 w-4 shrink-0" />
                   <span className="hidden sm:inline">Utilisateurs</span>
+                </TabsTrigger>
+              )}
+              {rolePermissions.settings_inventory && (
+                <TabsTrigger value="inventory" className="flex items-center gap-2 px-3 py-2 shrink-0">
+                  <ClipboardList className="h-4 w-4 shrink-0" />
+                  <span className="hidden sm:inline">Inventaire</span>
                 </TabsTrigger>
               )}
             </TabsList>
@@ -1542,6 +1572,12 @@ export default function Settings() {
 
                 <RolePermissionsManager />
               </TabsContent>}
+
+            {rolePermissions.settings_inventory && (
+              <TabsContent value="inventory" className="space-y-6">
+                <InventoryManager canApplyStock={rolePermissions.inventory_apply_stock} />
+              </TabsContent>
+            )}
 
             <TabsContent value="ai" className="space-y-6">
               <Card>

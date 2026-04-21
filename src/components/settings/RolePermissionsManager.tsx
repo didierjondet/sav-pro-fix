@@ -12,14 +12,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
 import { ROLE_PERMISSION_GROUPS, ROLE_PERMISSION_LABELS, getRolePermissionDefaults, type RolePermissions } from '@/lib/rolePermissions';
 
-const ALL_TRUE: RolePermissions = getRolePermissionDefaults('admin');
-
 export function RolePermissionsManager() {
   const { shop } = useShop();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [selectedRole, setSelectedRole] = useState('technician');
-  const [permissions, setPermissions] = useState<RolePermissions>(ALL_TRUE);
+  const [permissions, setPermissions] = useState<RolePermissions>(getRolePermissionDefaults('technician'));
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -31,6 +29,7 @@ export function RolePermissionsManager() {
   const loadPermissions = async (role: string) => {
     if (!shop?.id) return;
     setLoading(true);
+    const roleDefaults = getRolePermissionDefaults(role);
     try {
       // Try shop-specific first
       const { data: shopPerms } = await supabase
@@ -41,7 +40,7 @@ export function RolePermissionsManager() {
         .maybeSingle() as any;
 
       if (shopPerms?.permissions) {
-        setPermissions({ ...ALL_TRUE, ...shopPerms.permissions });
+        setPermissions({ ...roleDefaults, ...shopPerms.permissions });
       } else {
         // Fallback to defaults
         const { data: defaultPerms } = await supabase
@@ -51,9 +50,9 @@ export function RolePermissionsManager() {
           .maybeSingle() as any;
         
         if (defaultPerms?.permissions) {
-          setPermissions({ ...ALL_TRUE, ...defaultPerms.permissions });
+          setPermissions({ ...roleDefaults, ...defaultPerms.permissions });
         } else {
-          setPermissions(ALL_TRUE);
+          setPermissions(roleDefaults);
         }
       }
     } catch (e) {
