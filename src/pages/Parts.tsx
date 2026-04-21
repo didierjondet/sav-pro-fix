@@ -7,7 +7,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useParts, Part } from '@/hooks/useParts';
+import { usePartCategories } from '@/hooks/usePartCategories';
 import { PartForm } from '@/components/parts/PartForm';
 import { StockAdjustment } from '@/components/parts/StockAdjustment';
 import { ImportStock } from '@/components/parts/ImportStock';
@@ -41,6 +43,7 @@ import { isPriceOutdated, getMonthsSinceUpdate } from '@/utils/priceUtils';
 export default function Parts() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(20);
   const [showForm, setShowForm] = useState(false);
@@ -49,24 +52,30 @@ export default function Parts() {
   const [adjustingPart, setAdjustingPart] = useState<Part | null>(null);
   const [showImport, setShowImport] = useState(false);
   const [viewingPhoto, setViewingPhoto] = useState<Part | null>(null);
-  
-  const { parts, loading, statistics, createPart, updatePart, deletePart, adjustStock, findSimilarParts, refetch } = useParts();
 
-  // Filtrage côté client avec multiWordSearch (comme SAVList)
+  const { parts, loading, statistics, createPart, updatePart, deletePart, adjustStock, findSimilarParts, refetch } = useParts();
+  const { categories } = usePartCategories();
+  const categoryById = useMemo(() => {
+    const map = new Map<string, typeof categories[number]>();
+    categories.forEach((c) => map.set(c.id, c));
+    return map;
+  }, [categories]);
+
+  // Filtrage côté client (recherche + catégorie)
   const filteredParts = useMemo(() => {
-    if (!searchTerm.trim()) return parts;
-    
-    return parts.filter(part =>
-      multiWordSearch(
-        searchTerm,
-        part.name,
-        part.reference,
-        part.sku,
-        part.supplier,
-        part.notes
-      )
+    let list = parts;
+    if (categoryFilter !== 'all') {
+      if (categoryFilter === 'none') {
+        list = list.filter((p) => !p.category_id);
+      } else {
+        list = list.filter((p) => p.category_id === categoryFilter);
+      }
+    }
+    if (!searchTerm.trim()) return list;
+    return list.filter(part =>
+      multiWordSearch(searchTerm, part.name, part.reference, part.sku, part.supplier, part.notes)
     );
-  }, [parts, searchTerm]);
+  }, [parts, searchTerm, categoryFilter]);
 
   // Pagination après filtrage
   const displayedParts = filteredParts;
@@ -202,9 +211,9 @@ export default function Parts() {
                     </Card>
                   </div>
 
-                  {/* Barre de recherche */}
-                  <div className="mb-6">
-                    <div className="relative">
+                  {/* Barre de recherche + filtre catégorie */}
+                  <div className="mb-6 flex flex-col gap-3 sm:flex-row">
+                    <div className="relative flex-1">
                       <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                       <Input
                         placeholder="Rechercher une pièce par nom ou référence..."
@@ -213,6 +222,20 @@ export default function Parts() {
                         className="pl-10"
                       />
                     </div>
+                    <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                      <SelectTrigger className="sm:w-64">
+                        <SelectValue placeholder="Toutes les catégories" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Toutes les catégories</SelectItem>
+                        <SelectItem value="none">Sans catégorie</SelectItem>
+                        {categories.map((cat) => (
+                          <SelectItem key={cat.id} value={cat.id}>
+                            {cat.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
 
                    {/* Liste des pièces */}
@@ -273,6 +296,17 @@ export default function Parts() {
                                     {part.reference && (
                                       <Badge variant="outline">
                                         Réf: {part.reference}
+                                      </Badge>
+                                    )}
+                                    {part.category_id && categoryById.get(part.category_id) && (
+                                      <Badge
+                                        variant="outline"
+                                        style={{
+                                          borderColor: categoryById.get(part.category_id)!.color ?? undefined,
+                                          color: categoryById.get(part.category_id)!.color ?? undefined,
+                                        }}
+                                      >
+                                        {categoryById.get(part.category_id)!.name}
                                       </Badge>
                                     )}
                                     {(part.reserved_quantity || 0) > 0 && (

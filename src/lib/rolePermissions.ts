@@ -15,6 +15,7 @@ export interface RolePermissions {
   settings_users: boolean;
   settings_import_export: boolean;
   settings_inventory: boolean;
+  settings_part_categories: boolean;
   sav_logs: boolean;
   can_delete_sav: boolean;
   can_create_quotes: boolean;
@@ -49,6 +50,7 @@ export const ROLE_PERMISSION_DEFAULTS: Record<string, RolePermissions> = {
     settings_users: true,
     settings_import_export: true,
     settings_inventory: true,
+    settings_part_categories: true,
     sav_logs: true,
     can_delete_sav: true,
     can_create_quotes: true,
@@ -73,6 +75,7 @@ export const ROLE_PERMISSION_DEFAULTS: Record<string, RolePermissions> = {
     settings_users: false,
     settings_import_export: false,
     settings_inventory: false,
+    settings_part_categories: false,
     sav_logs: false,
     can_delete_sav: false,
     can_create_quotes: true,
@@ -97,6 +100,7 @@ export const ROLE_PERMISSION_DEFAULTS: Record<string, RolePermissions> = {
     settings_users: false,
     settings_import_export: false,
     settings_inventory: false,
+    settings_part_categories: false,
     sav_logs: false,
     can_delete_sav: false,
     can_create_quotes: true,
@@ -134,6 +138,7 @@ export const ROLE_PERMISSION_GROUPS: Array<{
       { key: 'settings_users', label: 'Gestion des utilisateurs' },
       { key: 'settings_import_export', label: 'Import / Export' },
       { key: 'settings_inventory', label: 'Inventaire' },
+      { key: 'settings_part_categories', label: 'Catégories de pièces' },
     ],
   },
   {

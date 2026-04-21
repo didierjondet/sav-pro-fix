@@ -18,6 +18,7 @@ export interface Part {
   notes?: string;
   photo_url?: string;
   color?: string;
+  category_id?: string | null;
   shop_id: string;
   created_at: string;
   updated_at: string;

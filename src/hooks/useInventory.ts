@@ -175,13 +175,17 @@ export function useInventory() {
     });
   };
 
-  const createSession = async ({ name, mode, notes }: { name: string; mode: InventoryMode; notes?: string }) => {
+  const createSession = async ({ name, mode, notes, categoryIds }: { name: string; mode: InventoryMode; notes?: string; categoryIds?: string[] }) => {
     try {
-      const { data, error } = await inventoryRpc('begin_inventory_session', {
+      const params: Record<string, unknown> = {
         _name: name,
         _mode: mode,
         _notes: notes || null,
-      });
+      };
+      if (categoryIds && categoryIds.length > 0) {
+        params._category_ids = categoryIds;
+      }
+      const { data, error } = await inventoryRpc('begin_inventory_session', params);
 
       if (error) throw error;
       setSelectedSessionId(data as string);

@@ -12,7 +12,9 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -20,14 +22,17 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useInventory } from '@/hooks/useInventory';
+import { usePartCategories } from '@/hooks/usePartCategories';
 import { printInventoryDocument } from '@/lib/inventoryPrint';
 import { cn } from '@/lib/utils';
 import {
   Activity,
   Archive,
+  ArrowLeft,
   Barcode,
   ClipboardList,
   FileSpreadsheet,
+  Layers,
   PauseCircle,
   PlayCircle,
   Printer,
@@ -120,12 +125,14 @@ export function InventoryManager({ canApplyStock }: { canApplyStock: boolean }) 
     stats,
   } = useInventory();
   const { toast } = useToast();
+  const { categories } = usePartCategories();
 
   const [createOpen, setCreateOpen] = useState(false);
   const [assistedOpen, setAssistedOpen] = useState(false);
   const [createName, setCreateName] = useState('');
   const [createMode, setCreateMode] = useState<InventoryMode>('assisted');
   const [createNotes, setCreateNotes] = useState('');
+  const [createCategoryIds, setCreateCategoryIds] = useState<string[]>([]);
   const [scanCodes, setScanCodes] = useState('');
   const [manualSearch, setManualSearch] = useState('');
   const [manualFilter, setManualFilter] = useState<'all' | 'pending' | 'found' | 'missing' | 'adjusted'>('all');
@@ -135,6 +142,7 @@ export function InventoryManager({ canApplyStock }: { canApplyStock: boolean }) 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [draftQuantities, setDraftQuantities] = useState<Record<string, string>>({});
   const [draftNotes, setDraftNotes] = useState<Record<string, string>>({});
+  const [viewMode, setViewMode] = useState<'list' | 'detail'>('list');
 
   const filteredItems = useMemo(() => {
     const term = manualSearch.trim().toLowerCase();
@@ -170,14 +178,36 @@ export function InventoryManager({ canApplyStock }: { canApplyStock: boolean }) 
   const handleCreate = async () => {
     setIsSubmitting(true);
     try {
-      await createSession({ name: createName, mode: createMode, notes: createNotes });
+      await createSession({
+        name: createName,
+        mode: createMode,
+        notes: createNotes,
+        categoryIds: createCategoryIds.length > 0 ? createCategoryIds : undefined,
+      });
       setCreateName('');
       setCreateNotes('');
       setCreateMode('assisted');
+      setCreateCategoryIds([]);
       setCreateOpen(false);
+      setViewMode('detail');
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const openSession = (sessionId: string) => {
+    setSelectedSessionId(sessionId);
+    setViewMode('detail');
+  };
+
+  const goBackToList = () => {
+    setViewMode('list');
+  };
+
+  const toggleCategoryId = (id: string) => {
+    setCreateCategoryIds((current) =>
+      current.includes(id) ? current.filter((x) => x !== id) : [...current, id],
+    );
   };
 
   const setDraftQuantity = (itemId: string, value: string) => {
@@ -341,8 +371,56 @@ export function InventoryManager({ canApplyStock }: { canApplyStock: boolean }) 
         </Card>
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[320px_minmax(0,1fr)]">
+      {viewMode === 'list' || !currentSession ? (
         <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Sessions d'inventaire</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {sessions.length === 0 ? (
+              <div className="rounded-md border border-dashed p-12 text-center text-sm text-muted-foreground">
+                Aucun inventaire pour le moment. Cliquez sur « Lancer un inventaire » pour commencer.
+              </div>
+            ) : (
+              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                {sessions.map((session) => (
+                  <button
+                    key={session.id}
+                    type="button"
+                    onClick={() => openSession(session.id)}
+                    className="w-full rounded-md border p-4 text-left transition-colors hover:bg-muted/50 hover:border-primary"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <div className="font-medium">{session.name}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {INVENTORY_MODE_LABELS[session.mode]} · {new Date(session.created_at).toLocaleDateString('fr-FR')}
+                        </div>
+                      </div>
+                      <Badge variant={statusBadgeVariant[session.status] || 'outline'}>
+                        {INVENTORY_STATUS_LABELS[session.status]}
+                      </Badge>
+                    </div>
+                    <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
+                      <div><span className="text-muted-foreground">Comptés:</span> {session.counted_items}/{session.total_items}</div>
+                      <div><span className="text-muted-foreground">Manquants:</span> {session.missing_items}</div>
+                      <div><span className="text-muted-foreground">Écart:</span> {currency(session.variance_total_cost)}</div>
+                    </div>
+                    <div className="mt-3 text-xs text-primary font-medium">Cliquer pour ouvrir →</div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      ) : (
+      <div className="space-y-6">
+        <Button variant="outline" size="sm" onClick={goBackToList}>
+          <ArrowLeft className="h-4 w-4" /> Retour à la liste des inventaires
+        </Button>
+
+      <div className="grid gap-6">
+        <Card className="hidden">
           <CardHeader>
             <CardTitle className="text-base">Sessions & historique</CardTitle>
           </CardHeader>
@@ -662,6 +740,8 @@ export function InventoryManager({ canApplyStock }: { canApplyStock: boolean }) 
           )}
         </div>
       </div>
+      </div>
+      )}
 
       {currentSession && (
         <InventoryAssistedDialog
@@ -714,8 +794,36 @@ export function InventoryManager({ canApplyStock }: { canApplyStock: boolean }) 
               </Select>
             </div>
             <div className="space-y-2">
+              <Label className="flex items-center gap-2"><Layers className="h-4 w-4" />Catégories à inventorier</Label>
+              {categories.length === 0 ? (
+                <div className="rounded-md border border-dashed p-3 text-xs text-muted-foreground">
+                  Aucune catégorie. L'inventaire portera sur toutes les pièces.
+                </div>
+              ) : (
+                <div className="space-y-2 max-h-40 overflow-y-auto rounded-md border p-3">
+                  <label className="flex items-center gap-2 text-sm">
+                    <Checkbox
+                      checked={createCategoryIds.length === 0}
+                      onCheckedChange={() => setCreateCategoryIds([])}
+                    />
+                    <span className="font-medium">Toutes les catégories</span>
+                  </label>
+                  {categories.map((cat) => (
+                    <label key={cat.id} className="flex items-center gap-2 text-sm">
+                      <Checkbox
+                        checked={createCategoryIds.includes(cat.id)}
+                        onCheckedChange={() => toggleCategoryId(cat.id)}
+                      />
+                      <span className="inline-block h-3 w-3 rounded-full border" style={{ backgroundColor: cat.color ?? '#9CA3AF' }} />
+                      {cat.name}
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="space-y-2">
               <Label htmlFor="inventory-notes">Notes</Label>
-              <Textarea id="inventory-notes" value={createNotes} onChange={(event) => setCreateNotes(event.target.value)} rows={4} placeholder="Commentaire de départ, zone ou consignes de comptage" />
+              <Textarea id="inventory-notes" value={createNotes} onChange={(event) => setCreateNotes(event.target.value)} rows={3} placeholder="Commentaire de départ, zone ou consignes de comptage" />
             </div>
           </div>
           <DialogFooter>
