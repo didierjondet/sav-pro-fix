@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { useParts, Part } from '@/hooks/useParts';
+import { usePartCategories } from '@/hooks/usePartCategories';
 import { PartForm } from '@/components/parts/PartForm';
 import { StockAdjustment } from '@/components/parts/StockAdjustment';
 import { ImportStock } from '@/components/parts/ImportStock';
@@ -41,6 +42,7 @@ import { isPriceOutdated, getMonthsSinceUpdate } from '@/utils/priceUtils';
 export default function Parts() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(20);
   const [showForm, setShowForm] = useState(false);
@@ -49,24 +51,30 @@ export default function Parts() {
   const [adjustingPart, setAdjustingPart] = useState<Part | null>(null);
   const [showImport, setShowImport] = useState(false);
   const [viewingPhoto, setViewingPhoto] = useState<Part | null>(null);
-  
-  const { parts, loading, statistics, createPart, updatePart, deletePart, adjustStock, findSimilarParts, refetch } = useParts();
 
-  // Filtrage côté client avec multiWordSearch (comme SAVList)
+  const { parts, loading, statistics, createPart, updatePart, deletePart, adjustStock, findSimilarParts, refetch } = useParts();
+  const { categories } = usePartCategories();
+  const categoryById = useMemo(() => {
+    const map = new Map<string, typeof categories[number]>();
+    categories.forEach((c) => map.set(c.id, c));
+    return map;
+  }, [categories]);
+
+  // Filtrage côté client (recherche + catégorie)
   const filteredParts = useMemo(() => {
-    if (!searchTerm.trim()) return parts;
-    
-    return parts.filter(part =>
-      multiWordSearch(
-        searchTerm,
-        part.name,
-        part.reference,
-        part.sku,
-        part.supplier,
-        part.notes
-      )
+    let list = parts;
+    if (categoryFilter !== 'all') {
+      if (categoryFilter === 'none') {
+        list = list.filter((p) => !p.category_id);
+      } else {
+        list = list.filter((p) => p.category_id === categoryFilter);
+      }
+    }
+    if (!searchTerm.trim()) return list;
+    return list.filter(part =>
+      multiWordSearch(searchTerm, part.name, part.reference, part.sku, part.supplier, part.notes)
     );
-  }, [parts, searchTerm]);
+  }, [parts, searchTerm, categoryFilter]);
 
   // Pagination après filtrage
   const displayedParts = filteredParts;
