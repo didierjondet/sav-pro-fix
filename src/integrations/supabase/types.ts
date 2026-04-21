@@ -615,6 +615,279 @@ export type Database = {
         }
         Relationships: []
       }
+      inventory_audit_logs: {
+        Row: {
+          action: string
+          changed_by_name: string
+          changed_by_profile_id: string | null
+          created_at: string
+          field_name: string | null
+          id: string
+          inventory_session_id: string
+          inventory_session_item_id: string | null
+          metadata: Json
+          new_value: string | null
+          old_value: string | null
+          shop_id: string
+        }
+        Insert: {
+          action: string
+          changed_by_name?: string
+          changed_by_profile_id?: string | null
+          created_at?: string
+          field_name?: string | null
+          id?: string
+          inventory_session_id: string
+          inventory_session_item_id?: string | null
+          metadata?: Json
+          new_value?: string | null
+          old_value?: string | null
+          shop_id: string
+        }
+        Update: {
+          action?: string
+          changed_by_name?: string
+          changed_by_profile_id?: string | null
+          created_at?: string
+          field_name?: string | null
+          id?: string
+          inventory_session_id?: string
+          inventory_session_item_id?: string | null
+          metadata?: Json
+          new_value?: string | null
+          old_value?: string | null
+          shop_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_audit_logs_changed_by_profile_id_fkey"
+            columns: ["changed_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_audit_logs_inventory_session_id_fkey"
+            columns: ["inventory_session_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_audit_logs_inventory_session_item_id_fkey"
+            columns: ["inventory_session_item_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_session_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_audit_logs_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inventory_session_items: {
+        Row: {
+          applied_new_quantity: number | null
+          applied_previous_quantity: number | null
+          counted_at: string | null
+          counted_quantity: number | null
+          created_at: string
+          entry_method: string | null
+          expected_quantity: number
+          id: string
+          inventory_session_id: string
+          is_missing: boolean
+          last_scanned_code: string | null
+          line_status: string
+          notes: string | null
+          part_id: string | null
+          part_name: string
+          part_reference: string | null
+          part_sku: string | null
+          part_supplier: string | null
+          position: number
+          scan_count: number
+          shop_id: string
+          unit_cost: number
+          updated_at: string
+          variance_quantity: number
+          variance_value: number
+        }
+        Insert: {
+          applied_new_quantity?: number | null
+          applied_previous_quantity?: number | null
+          counted_at?: string | null
+          counted_quantity?: number | null
+          created_at?: string
+          entry_method?: string | null
+          expected_quantity?: number
+          id?: string
+          inventory_session_id: string
+          is_missing?: boolean
+          last_scanned_code?: string | null
+          line_status?: string
+          notes?: string | null
+          part_id?: string | null
+          part_name: string
+          part_reference?: string | null
+          part_sku?: string | null
+          part_supplier?: string | null
+          position?: number
+          scan_count?: number
+          shop_id: string
+          unit_cost?: number
+          updated_at?: string
+          variance_quantity?: number
+          variance_value?: number
+        }
+        Update: {
+          applied_new_quantity?: number | null
+          applied_previous_quantity?: number | null
+          counted_at?: string | null
+          counted_quantity?: number | null
+          created_at?: string
+          entry_method?: string | null
+          expected_quantity?: number
+          id?: string
+          inventory_session_id?: string
+          is_missing?: boolean
+          last_scanned_code?: string | null
+          line_status?: string
+          notes?: string | null
+          part_id?: string | null
+          part_name?: string
+          part_reference?: string | null
+          part_sku?: string | null
+          part_supplier?: string | null
+          position?: number
+          scan_count?: number
+          shop_id?: string
+          unit_cost?: number
+          updated_at?: string
+          variance_quantity?: number
+          variance_value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_session_items_inventory_session_id_fkey"
+            columns: ["inventory_session_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_session_items_part_id_fkey"
+            columns: ["part_id"]
+            isOneToOne: false
+            referencedRelation: "parts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_session_items_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inventory_sessions: {
+        Row: {
+          applied_at: string | null
+          completed_at: string | null
+          counted_items: number
+          counted_total_cost: number
+          created_at: string
+          created_by_name: string | null
+          created_by_profile_id: string | null
+          expected_total_cost: number
+          forced_stop: boolean
+          found_items: number
+          id: string
+          missing_items: number
+          missing_total_cost: number
+          mode: string
+          name: string
+          notes: string | null
+          paused_at: string | null
+          shop_id: string
+          started_at: string | null
+          status: string
+          total_items: number
+          updated_at: string
+          variance_total_cost: number
+        }
+        Insert: {
+          applied_at?: string | null
+          completed_at?: string | null
+          counted_items?: number
+          counted_total_cost?: number
+          created_at?: string
+          created_by_name?: string | null
+          created_by_profile_id?: string | null
+          expected_total_cost?: number
+          forced_stop?: boolean
+          found_items?: number
+          id?: string
+          missing_items?: number
+          missing_total_cost?: number
+          mode?: string
+          name: string
+          notes?: string | null
+          paused_at?: string | null
+          shop_id: string
+          started_at?: string | null
+          status?: string
+          total_items?: number
+          updated_at?: string
+          variance_total_cost?: number
+        }
+        Update: {
+          applied_at?: string | null
+          completed_at?: string | null
+          counted_items?: number
+          counted_total_cost?: number
+          created_at?: string
+          created_by_name?: string | null
+          created_by_profile_id?: string | null
+          expected_total_cost?: number
+          forced_stop?: boolean
+          found_items?: number
+          id?: string
+          missing_items?: number
+          missing_total_cost?: number
+          mode?: string
+          name?: string
+          notes?: string | null
+          paused_at?: string | null
+          shop_id?: string
+          started_at?: string | null
+          status?: string
+          total_items?: number
+          updated_at?: string
+          variance_total_cost?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_sessions_created_by_profile_id_fkey"
+            columns: ["created_by_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_sessions_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invoice_config: {
         Row: {
           bank_details: Json | null
@@ -2918,6 +3191,18 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      apply_inventory_session: {
+        Args: { _session_id: string }
+        Returns: {
+          blocked_reserved_rows: number
+          missing_rows: number
+          updated_rows: number
+        }[]
+      }
+      begin_inventory_session: {
+        Args: { _mode?: string; _name: string; _notes?: string }
+        Returns: string
+      }
       calculate_shop_storage_usage: {
         Args: { p_shop_id: string }
         Returns: number
@@ -3083,6 +3368,10 @@ export type Database = {
           sender_type: string
         }[]
       }
+      has_shop_role_permission: {
+        Args: { _permission: string; _shop_id: string }
+        Returns: boolean
+      }
       invite_user_to_shop: {
         Args: {
           p_email: string
@@ -3097,6 +3386,10 @@ export type Database = {
       is_shop_admin: { Args: { check_user_id?: string }; Returns: boolean }
       is_super_admin: { Args: { check_user_id?: string }; Returns: boolean }
       mask_phone_number: { Args: { phone_number: string }; Returns: string }
+      recalculate_inventory_session_totals: {
+        Args: { _session_id: string }
+        Returns: undefined
+      }
       record_sav_visit: {
         Args: {
           p_tracking_slug: string

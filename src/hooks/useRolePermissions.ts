@@ -3,60 +3,10 @@ import { useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useProfile } from './useProfile';
 import { useShop } from './useShop';
-
-export interface RolePermissions {
-  menu_dashboard: boolean;
-  menu_sav: boolean;
-  menu_parts: boolean;
-  menu_quotes: boolean;
-  menu_orders: boolean;
-  menu_customers: boolean;
-  menu_chats: boolean;
-  menu_agenda: boolean;
-  menu_reports: boolean;
-  menu_statistics: boolean;
-  menu_settings: boolean;
-  settings_subscription: boolean;
-  settings_sms_purchase: boolean;
-  settings_users: boolean;
-  settings_import_export: boolean;
-  sav_logs: boolean;
-  can_delete_sav: boolean;
-  can_create_quotes: boolean;
-  can_manage_stock: boolean;
-  simplified_view_default: boolean;
-}
-
-// Role-specific SAFE defaults (fail-closed)
-const ROLE_DEFAULTS: Record<string, RolePermissions> = {
-  admin: {
-    menu_dashboard: true, menu_sav: true, menu_parts: true, menu_quotes: true,
-    menu_orders: true, menu_customers: true, menu_chats: true, menu_agenda: true,
-    menu_reports: true, menu_statistics: true, menu_settings: true,
-    settings_subscription: true, settings_sms_purchase: true, settings_users: true,
-    settings_import_export: true, sav_logs: true, can_delete_sav: true,
-    can_create_quotes: true, can_manage_stock: true, simplified_view_default: false,
-  },
-  technician: {
-    menu_dashboard: true, menu_sav: true, menu_parts: true, menu_quotes: true,
-    menu_orders: true, menu_customers: true, menu_chats: true, menu_agenda: true,
-    menu_reports: false, menu_statistics: false, menu_settings: true,
-    settings_subscription: false, settings_sms_purchase: false, settings_users: false,
-    settings_import_export: false, sav_logs: false, can_delete_sav: false,
-    can_create_quotes: true, can_manage_stock: true, simplified_view_default: false,
-  },
-  shop_admin: {
-    menu_dashboard: true, menu_sav: true, menu_parts: true, menu_quotes: true,
-    menu_orders: false, menu_customers: true, menu_chats: true, menu_agenda: true,
-    menu_reports: false, menu_statistics: false, menu_settings: false,
-    settings_subscription: false, settings_sms_purchase: false, settings_users: false,
-    settings_import_export: false, sav_logs: false, can_delete_sav: false,
-    can_create_quotes: true, can_manage_stock: true, simplified_view_default: true,
-  },
-};
+import { getRolePermissionDefaults, type RolePermissions } from '@/lib/rolePermissions';
 
 function getDefaultForRole(role: string): RolePermissions {
-  return ROLE_DEFAULTS[role] || ROLE_DEFAULTS.technician;
+  return getRolePermissionDefaults(role);
 }
 
 export function useRolePermissions() {
@@ -73,7 +23,7 @@ export function useRolePermissions() {
   const { data, isLoading } = useQuery({
     queryKey: ['role-permissions', shopId, userRole],
     queryFn: async (): Promise<RolePermissions> => {
-      if (!shopId || isSuperAdmin) return ROLE_DEFAULTS.admin;
+      if (!shopId || isSuperAdmin) return getRolePermissionDefaults('admin');
 
       const { data: shopPerms } = await supabase
         .from('shop_role_permissions' as any)
@@ -142,7 +92,7 @@ export function useRolePermissions() {
     return () => { supabase.removeChannel(channel); };
   }, [profile?.id, queryClient]);
 
-  if (isSuperAdmin) return { rolePermissions: ROLE_DEFAULTS.admin, loading: false };
+  if (isSuperAdmin) return { rolePermissions: getRolePermissionDefaults('admin'), loading: false };
 
   // Use loaded data, or role-specific safe default while loading
   const result = data || roleDefault;

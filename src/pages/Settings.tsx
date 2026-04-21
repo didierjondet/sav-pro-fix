@@ -46,11 +46,13 @@ import {
   Crown,
   Trash2,
   Volume2,
-  Sparkles
+  Sparkles,
+  ClipboardList
 } from 'lucide-react';
 
 import { MenuConfigurationTab } from '@/components/settings/MenuConfigurationTab';
 import { RolePermissionsManager } from '@/components/settings/RolePermissionsManager';
+import { InventoryManager } from '@/components/settings/inventory/InventoryManager';
 import { SMSPackagesDisplay } from '@/components/subscription/SMSPackagesDisplay';
 import { BillingInvoices } from '@/components/billing/BillingInvoices';
 import { ImportStock } from '@/components/parts/ImportStock';

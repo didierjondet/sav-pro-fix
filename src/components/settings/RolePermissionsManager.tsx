@@ -10,60 +10,9 @@ import { useToast } from '@/hooks/use-toast';
 import { useShop } from '@/hooks/useShop';
 import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
-import type { RolePermissions } from '@/hooks/useRolePermissions';
+import { ROLE_PERMISSION_GROUPS, ROLE_PERMISSION_LABELS, getRolePermissionDefaults, type RolePermissions } from '@/lib/rolePermissions';
 
-const ALL_TRUE: RolePermissions = {
-  menu_dashboard: true, menu_sav: true, menu_parts: true, menu_quotes: true,
-  menu_orders: true, menu_customers: true, menu_chats: true, menu_agenda: true,
-  menu_reports: true, menu_statistics: true, menu_settings: true,
-  settings_subscription: true, settings_sms_purchase: true, settings_users: true,
-  settings_import_export: true, sav_logs: true, can_delete_sav: true,
-  can_create_quotes: true, can_manage_stock: true, simplified_view_default: false,
-};
-
-const PERMISSION_GROUPS = [
-  {
-    label: 'Menus',
-    items: [
-      { key: 'menu_dashboard', label: 'Tableau de bord' },
-      { key: 'menu_sav', label: 'Dossiers SAV' },
-      { key: 'menu_parts', label: 'Stock pièces' },
-      { key: 'menu_quotes', label: 'Devis' },
-      { key: 'menu_orders', label: 'Commandes' },
-      { key: 'menu_customers', label: 'Clients' },
-      { key: 'menu_chats', label: 'Chat clients' },
-      { key: 'menu_agenda', label: 'Agenda' },
-      { key: 'menu_reports', label: 'Rapports' },
-      { key: 'menu_statistics', label: 'Statistiques' },
-      { key: 'menu_settings', label: 'Menu Réglages' },
-    ],
-  },
-  {
-    label: 'Réglages accessibles',
-    items: [
-      { key: 'settings_subscription', label: 'Abonnement / Plans' },
-      { key: 'settings_sms_purchase', label: 'Achat de SMS' },
-      { key: 'settings_users', label: 'Gestion des utilisateurs' },
-      { key: 'settings_import_export', label: 'Import / Export' },
-    ],
-  },
-  {
-    label: 'Fonctionnalités',
-    items: [
-      { key: 'sav_logs', label: 'Voir les logs SAV' },
-      { key: 'can_delete_sav', label: 'Supprimer des SAV' },
-      { key: 'can_create_quotes', label: 'Créer des devis' },
-      { key: 'can_manage_stock', label: 'Gérer le stock' },
-      { key: 'simplified_view_default', label: 'Vue simplifiée par défaut' },
-    ],
-  },
-];
-
-const ROLE_LABELS: Record<string, string> = {
-  admin: 'Administrateur',
-  technician: 'Technicien',
-  shop_admin: 'Responsable magasin',
-};
+const ALL_TRUE: RolePermissions = getRolePermissionDefaults('admin');
 
 export function RolePermissionsManager() {
   const { shop } = useShop();
@@ -129,7 +78,7 @@ export function RolePermissionsManager() {
       if (error) throw error;
       
       queryClient.invalidateQueries({ queryKey: ['role-permissions'] });
-      toast({ title: 'Succès', description: `Permissions du rôle "${ROLE_LABELS[selectedRole]}" sauvegardées` });
+      toast({ title: 'Succès', description: `Permissions du rôle "${ROLE_PERMISSION_LABELS[selectedRole]}" sauvegardées` });
     } catch (e: any) {
       toast({ title: 'Erreur', description: e.message, variant: 'destructive' });
     } finally {
@@ -173,7 +122,7 @@ export function RolePermissionsManager() {
           </div>
         ) : (
           <>
-            {PERMISSION_GROUPS.map((group, gi) => (
+            {ROLE_PERMISSION_GROUPS.map((group, gi) => (
               <div key={gi}>
                 <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide mb-3">
                   {group.label}
@@ -189,7 +138,7 @@ export function RolePermissionsManager() {
                     </div>
                   ))}
                 </div>
-                {gi < PERMISSION_GROUPS.length - 1 && <Separator className="my-4" />}
+                {gi < ROLE_PERMISSION_GROUPS.length - 1 && <Separator className="my-4" />}
               </div>
             ))}
 
