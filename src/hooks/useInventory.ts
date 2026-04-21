@@ -19,6 +19,20 @@ const inventoryRpc = supabase.rpc.bind(supabase) as unknown as (
   params?: Record<string, unknown>,
 ) => Promise<{ data: unknown; error: { message: string } | null }>;
 
+const inventoryAuditTable = supabase.from('inventory_audit_logs') as unknown as {
+  insert: (values: Record<string, unknown>) => Promise<{ error: { message: string } | null }>;
+};
+
+const inventoryItemsTable = supabase.from('inventory_session_items') as unknown as {
+  update: (values: Record<string, unknown>) => {
+    eq: (column: string, value: string) => { eq: (column: string, value: string) => Promise<{ error: { message: string } | null }> };
+  };
+};
+
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : 'Une erreur est survenue.';
+}
+
 interface UpdateInventoryItemInput {
   sessionId: string;
   itemId: string;
@@ -151,7 +165,7 @@ export function useInventory() {
   const addAuditLog = async (payload: Partial<InventoryAuditLog> & { action: string; inventory_session_id: string }) => {
     if (!shopId) return;
 
-    await supabase.from('inventory_audit_logs').insert({
+    await inventoryAuditTable.insert({
       shop_id: shopId,
       changed_by_profile_id: profile?.id ?? null,
       changed_by_name:
@@ -174,8 +188,8 @@ export function useInventory() {
       await refreshAll();
       toast({ title: 'Inventaire lancé', description: 'La session a été créée avec son instantané de stock.' });
       return data as string;
-    } catch (error: any) {
-      toast({ title: 'Erreur', description: error.message, variant: 'destructive' });
+    } catch (error: unknown) {
+      toast({ title: 'Erreur', description: getErrorMessage(error), variant: 'destructive' });
       throw error;
     }
   };
@@ -208,9 +222,7 @@ export function useInventory() {
     const item = itemsQuery.data?.find((entry) => entry.id === itemId);
     const nextPayload = buildNextPayload({ sessionId: targetSessionId, itemId, ...input });
 
-    const { error } = await supabase
-      .from('inventory_session_items' as never)
-      .from('inventory_session_items')
+    const { error } = await inventoryItemsTable
       .update(nextPayload)
       .eq('id', itemId)
       .eq('inventory_session_id', targetSessionId);
@@ -402,8 +414,8 @@ export function useInventory() {
       await refreshAll();
       toast({ title: 'Inventaire validé', description: 'Les stocks Fixway ont été mis à jour.' });
       return data as Array<{ updated_rows: number; missing_rows: number; blocked_reserved_rows: number }>;
-    } catch (error: any) {
-      toast({ title: 'Erreur', description: error.message, variant: 'destructive' });
+    } catch (error: unknown) {
+      toast({ title: 'Erreur', description: getErrorMessage(error), variant: 'destructive' });
       throw error;
     }
   };
