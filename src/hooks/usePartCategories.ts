@@ -14,23 +14,6 @@ export interface PartCategory {
   updated_at: string;
 }
 
-const categoriesTable = supabase.from('part_categories' as never) as unknown as {
-  select: (cols: string) => {
-    eq: (col: string, val: string) => {
-      order: (col: string, opts: { ascending: boolean }) => Promise<{ data: PartCategory[] | null; error: { message: string } | null }>;
-    };
-  };
-  insert: (values: Record<string, unknown>) => {
-    select: () => { single: () => Promise<{ data: PartCategory | null; error: { message: string } | null }> };
-  };
-  update: (values: Record<string, unknown>) => {
-    eq: (col: string, val: string) => Promise<{ error: { message: string } | null }>;
-  };
-  delete: () => {
-    eq: (col: string, val: string) => Promise<{ error: { message: string } | null }>;
-  };
-};
-
 export function usePartCategories() {
   const { shop } = useShop();
   const { toast } = useToast();
@@ -41,12 +24,13 @@ export function usePartCategories() {
     queryKey: ['part-categories', shopId],
     enabled: !!shopId,
     queryFn: async (): Promise<PartCategory[]> => {
-      const { data, error } = await categoriesTable
+      const { data, error } = await supabase
+        .from('part_categories')
         .select('*')
         .eq('shop_id', shopId!)
         .order('display_order', { ascending: true });
       if (error) throw new Error(error.message);
-      return data ?? [];
+      return (data ?? []) as PartCategory[];
     },
   });
 
@@ -58,7 +42,8 @@ export function usePartCategories() {
   const createMutation = useMutation({
     mutationFn: async (input: { name: string; description?: string | null; color?: string | null; display_order?: number }) => {
       if (!shopId) throw new Error('Shop introuvable');
-      const { data, error } = await categoriesTable
+      const { data, error } = await supabase
+        .from('part_categories')
         .insert({
           shop_id: shopId,
           name: input.name.trim(),
@@ -85,7 +70,7 @@ export function usePartCategories() {
       if (input.description !== undefined) patch.description = input.description?.trim() || null;
       if (input.color !== undefined) patch.color = input.color || null;
       if (input.display_order !== undefined) patch.display_order = input.display_order;
-      const { error } = await categoriesTable.update(patch).eq('id', input.id);
+      const { error } = await supabase.from('part_categories').update(patch).eq('id', input.id);
       if (error) throw new Error(error.message);
     },
     onSuccess: () => {
@@ -97,7 +82,7 @@ export function usePartCategories() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await categoriesTable.delete().eq('id', id);
+      const { error } = await supabase.from('part_categories').delete().eq('id', id);
       if (error) throw new Error(error.message);
     },
     onSuccess: () => {
