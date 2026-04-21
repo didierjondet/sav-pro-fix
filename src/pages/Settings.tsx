@@ -1380,13 +1380,13 @@ export default function Settings() {
                                 <SelectContent>
                                   <SelectItem value="technician">Technicien</SelectItem>
                                   <SelectItem value="admin">Administrateur</SelectItem>
-                                  <SelectItem value="shop_admin">Admin Magasin</SelectItem>
+                                  <SelectItem value="shop_admin">Responsable magasin</SelectItem>
                                 </SelectContent>
                               </Select>
                               <p className="text-xs text-muted-foreground mt-1">
                                 • Technicien : accès limité aux SAV et stock<br/>
                                 • Administrateur : accès complet sauf paramètres avancés<br/>
-                                • Admin Magasin : accès complet au magasin
+                                • Responsable magasin : accès complet au magasin
                               </p>
                             </div>
                           </div>
@@ -1491,12 +1491,12 @@ export default function Settings() {
                                     <SelectContent>
                                       <SelectItem value="technician">Technicien</SelectItem>
                                       <SelectItem value="admin">Administrateur</SelectItem>
-                                      <SelectItem value="shop_admin">Admin Magasin</SelectItem>
+                                      <SelectItem value="shop_admin">Responsable magasin</SelectItem>
                                     </SelectContent>
                                   </Select>
                                 ) : (
                                   <Badge variant={profile.role === 'admin' || profile.role === 'shop_admin' ? 'default' : 'secondary'}>
-                                    {profile.role === 'admin' ? 'Administrateur' : profile.role === 'shop_admin' ? 'Admin Magasin' : 'Technicien'}
+                                    {profile.role === 'admin' ? 'Administrateur' : profile.role === 'shop_admin' ? 'Responsable magasin' : 'Technicien'}
                                   </Badge>
                                 )}
                               </div>

@@ -62,7 +62,7 @@ const PERMISSION_GROUPS = [
 const ROLE_LABELS: Record<string, string> = {
   admin: 'Administrateur',
   technician: 'Technicien',
-  shop_admin: 'Admin Magasin',
+  shop_admin: 'Responsable magasin',
 };
 
 export function RolePermissionsManager() {
@@ -162,7 +162,7 @@ export function RolePermissionsManager() {
             <SelectContent>
               <SelectItem value="admin">Administrateur</SelectItem>
               <SelectItem value="technician">Technicien</SelectItem>
-              <SelectItem value="shop_admin">Admin Magasin</SelectItem>
+                <SelectItem value="shop_admin">Responsable magasin</SelectItem>
             </SelectContent>
           </Select>
         </div>

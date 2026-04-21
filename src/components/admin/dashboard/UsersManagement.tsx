@@ -197,7 +197,7 @@ export function UsersManagement({ profiles, shops, onUpdate }: UsersManagementPr
       case 'admin':
         return 'Admin';
       case 'shop_admin':
-        return 'Admin Magasin';
+        return 'Responsable magasin';
       case 'technician':
         return 'Technicien';
       default:
@@ -287,7 +287,7 @@ export function UsersManagement({ profiles, shops, onUpdate }: UsersManagementPr
                       <SelectContent>
                         <SelectItem value="admin">Admin</SelectItem>
                         <SelectItem value="technician">Technicien</SelectItem>
-                        <SelectItem value="shop_admin">Admin Magasin</SelectItem>
+                        <SelectItem value="shop_admin">Responsable magasin</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
