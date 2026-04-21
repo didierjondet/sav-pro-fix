@@ -1,160 +1,58 @@
 
 
-## Plan : finaliser l'inventaire + ajouter les catégories de pièces
+## Plan : ajouter l'IA de reformulation au wizard SAV + impression des pièces jointes
 
-### Partie A — Nouvel onglet « Catégories de pièces »
+### Partie 1 — Reformulation IA dans le wizard simplifié
 
-#### A.1 Base de données
-Créer une nouvelle table dédiée :
+Ajouter le composant `AITextReformulator` (déjà utilisé partout ailleurs) dans le `SAVWizardDialog.tsx`, à l'identique du `SAVForm.tsx` standard.
 
-- `part_categories`
-  - `id` uuid PK
-  - `shop_id` uuid (isolation boutique)
-  - `name` text
-  - `description` text nullable
-  - `color` text nullable (badge visuel)
-  - `display_order` int
-  - `created_at`, `updated_at`
-- Ajouter une colonne `category_id` (uuid, nullable, FK logique) sur la table `parts`
-- RLS : lecture/écriture limitée aux utilisateurs du même shop ayant la permission `settings_part_categories`, super_admins inclus
-- Ajouter une nouvelle permission `settings_part_categories` dans `default_role_permissions`, activée par défaut pour `admin`
+**Modification ciblée**
+- Fichier : `src/components/sav/SAVWizardDialog.tsx`
+- Étape concernée : `case 'problem'` (étape 3/6)
+- Ajouter l'import `AITextReformulator`
+- Aligner le `Label "Description du problème *"` avec le bouton IA dans une même ligne flex, comme dans `SAVForm`
+- `context="problem_description"`
+- `onReformulated` met à jour `deviceInfo.problemDescription`
 
-#### A.2 Permissions (RBAC)
-Dans `src/lib/rolePermissions.ts` :
-- Ajouter `settings_part_categories: boolean`
-- Défaut : `true` pour `admin`, `false` pour `technician` et `shop_admin`
-- Ajouter le label dans le groupe « Réglages accessibles » pour que l'administrateur puisse déléguer
+Aucune autre étape du wizard n'a de zone de texte libre nécessitant l'IA.
 
-#### A.3 UI Réglages
-- Nouvel onglet « Catégories de pièces » dans `src/pages/Settings.tsx`, conditionné par `rolePermissions.settings_part_categories`
-- Nouveau composant `src/components/settings/PartCategoriesManager.tsx` :
-  - liste des catégories
-  - création / édition / suppression (avec confirmation)
-  - couleur, nom, description, ordre d'affichage
-  - compteur de pièces associées
-  - blocage suppression si la catégorie est utilisée (proposer réaffectation)
+### Partie 2 — Impression des pièces jointes (photos + documents)
 
-#### A.4 Intégration au stock pièces
-- Dans `src/components/parts/PartForm.tsx` : ajout d'un sélecteur « Catégorie » obligatoire
-- Dans `src/pages/Parts.tsx` : badge catégorie + filtre par catégorie
-- Hook `usePartCategories.ts` partagé
+**Constat**
+Le composant `SAVPrint.tsx` génère le document de restitution PDF mais ne contient aucune logique pour les pièces jointes (`attachments`) du SAV. Les photos de l'appareil et les documents associés ne sont donc jamais imprimés, ni depuis le wizard, ni depuis le détail SAV, ni depuis le bloc `SAVDocuments`.
 
-### Partie B — Inventaire : interface vraiment utilisable
+**Travaux à réaliser**
 
-#### B.1 Choix de la catégorie au démarrage
-Dans la boîte « Nouvel inventaire » :
-- Ajouter un sélecteur multi-catégories (« Toutes » par défaut)
-- Modifier la fonction RPC `begin_inventory_session` pour accepter un paramètre `_category_ids uuid[] DEFAULT NULL` et filtrer le snapshot des `parts`
-- Stocker les catégories choisies dans une colonne `category_filter jsonb` sur `inventory_sessions` pour rappel et impression
+1. Dans `src/components/sav/SAVPrint.tsx`
+   - À la fin du document de restitution, ajouter une section conditionnelle « Pièces jointes » qui n'apparaît que si `savCase.attachments?.length > 0`
+   - Pour chaque pièce jointe :
+     - Image (`image/*` ou extension jpg/jpeg/png/gif/webp) → afficher en miniature inline dans le PDF (largeur max ~45 % de page, hauteur max raisonnable, conserver le ratio, éviter de couper entre deux pages)
+     - PDF / Word / autres → afficher l'icône fichier + nom du fichier + URL accessible (lien cliquable dans le PDF imprimé)
+   - Préserver la mise en page A4 compacte existante (mémoire `pdf-restitution-layout-compactness`)
+   - Ne casser ni la pagination, ni les sections existantes (historique, clôtures cumulées)
 
-#### B.2 Refonte de la disposition (cause racine du « inutilisable »)
-Aujourd'hui sur viewport ~1000px la grille `xl:grid-cols` ne s'active pas et la zone de comptage devient invisible sous la liste de sessions. Refonte :
+2. Dans `src/components/sav/SAVDocuments.tsx`
+   - Ajouter un bouton « Imprimer les pièces jointes » dans l'en-tête de la carte (à côté du bouton d'upload)
+   - Visible uniquement si `normalizedAttachments.length > 0`
+   - Au clic : ouvrir une fenêtre d'impression dédiée contenant uniquement les pièces jointes du SAV (images en pleine taille avec saut de page entre chaque, PDF référencés en lien)
+   - Utiliser un template HTML auto-contenu ouvert dans un nouvel onglet ou un blob (cohérent avec la mémoire `quote-public-pdf-generation-logic`), pour éviter les problèmes d'iframe et de chargement asynchrone des images
 
-```text
-┌──────────────────────────────────────────────┐
-│ En-tête : Lancer / Imprimer / KPIs           │
-├──────────────────────────────────────────────┤
-│ [si AUCUNE session sélectionnée]             │
-│   Liste plein écran des sessions (cards)     │
-│   → clic sur une carte = "ouvrir"            │
-│                                              │
-│ [si session sélectionnée]                    │
-│   Bandeau session + bouton « Retour liste »  │
-│   Actions session (pause/arrêt/clôt./suppr.) │
-│   Synthèse                                   │
-│   Onglets Comptage/Écarts/Manquants/Journal  │
-└──────────────────────────────────────────────┘
-```
+### Points de vigilance
+- Les `attachments` peuvent être au format string (ancien) ou objet (nouveau) — réutiliser la normalisation existante de `SAVDocuments.tsx`
+- Les images doivent être chargées via `<img onload>` ou `Promise` avant déclenchement de l'impression pour éviter une page blanche
+- Respecter la mémoire `user-preferences` : ne rien modifier d'autre dans le wizard (pas de refonte UI, pas de changements de mise en page non demandés)
+- Ne pas toucher au composant `AITextReformulator` lui-même (déjà stable)
 
-Bénéfices :
-- on voit d'abord les sessions
-- on entre explicitement dedans (réponse au besoin « il faut pouvoir rentrer dans cette card »)
-- la zone de comptage devient pleine largeur, donc visible quel que soit l'écran
+### Fichiers modifiés
+- `src/components/sav/SAVWizardDialog.tsx` — ajout du bouton IA dans l'étape « Problème »
+- `src/components/sav/SAVPrint.tsx` — section « Pièces jointes » dans le document de restitution
+- `src/components/sav/SAVDocuments.tsx` — bouton d'impression dédié des pièces jointes
 
-#### B.3 Cohérence des actions de session
-Dans `InventoryManager.tsx` et `useInventory.ts`, garantir la disponibilité visible :
-- Pause / Reprendre
-- Arrêter (fige le comptage)
-- Annuler (abandonne)
-- Clôturer le comptage (passe en `completed`)
-- Supprimer (uniquement statuts autorisés)
-- Réimprimer Synthèse / Feuille papier / Manquants à tout moment, y compris après application
-
-#### B.4 Mode manuel utilisable
-Le composant `InventoryManualEditor` existe déjà mais n'est pas mis en avant. Améliorations :
-- Bouton « +1 / -1 » à côté du champ quantité
-- Sauvegarde automatique au blur (plus besoin de cliquer « Ajuster »)
-- Ligne en surbrillance quand un brouillon non sauvegardé est présent
-- Action « Tout marquer comme conforme » pour les listes courtes
-- Compteurs en haut : à traiter / trouvés / manquants / écarts
-
-#### B.5 Mode scan utilisable
-- Champ de saisie large + scan continu (Enter ajoute le code)
-- Affichage du dernier code scanné en gros
-- Lien direct « Voir » sur les codes inconnus / ambigus
-
-#### B.6 Mode assisté
-Déjà fonctionnel : on garde, on ajoute juste un raccourci clavier (Entrée = valider, M = manquant).
-
-#### B.7 Synthèse et rapprochement final
-- La carte « Synthèse » doit toujours être visible quand une session est ouverte
-- Vue « Écarts » : table compacte écart par écart avec valeur impactée
-- Vue « Manquants » : table des pièces qui passeront à 0
-- Vue « Stocks écrasés » : avant/après après application
-- Avant validation : confirmation forte (déjà présente, à conserver)
-
-#### B.8 Permissions inventaire (rappel)
-- L'onglet Inventaire reste conditionné à `settings_inventory`
-- L'application finale du stock reste conditionnée à `inventory_apply_stock`
-- Le filtre par catégorie n'introduit aucune nouvelle permission (suit `settings_inventory`)
-
-### Partie C — Vérifications à faire après implémentation
-
-#### Tests fonctionnels
-- Création d'une catégorie → affectation à plusieurs pièces
-- Lancement d'un inventaire filtré sur 1 catégorie → seules ces pièces apparaissent
-- Lancement d'un inventaire « toutes catégories » → comportement actuel conservé
-- Saisie manuelle, scan, assisté : tous opérationnels
-- Pause / Reprendre / Arrêter / Annuler / Clôturer / Supprimer
-- Réimpression à tout moment (synthèse, feuille papier, manquants)
-- Application finale → stocks Fixway corrects, manquants à 0
-
-#### Tests permissions
-- Admin : voit Catégories + Inventaire
-- Technicien sans droit : ni l'un ni l'autre
-- Technicien à qui l'admin a donné `settings_inventory` : voit Inventaire mais ne peut pas valider
-- Technicien à qui l'admin a aussi donné `inventory_apply_stock` : peut valider
-- Technicien à qui l'admin a donné `settings_part_categories` : voit l'onglet catégories
-
-#### Non-régression
-- Page Stock pièces (création / édition / liste / filtres)
-- Imports de stock
-- Devis / SAV qui consomment des pièces
-- Commandes
-- Build TypeScript et lint
-
-### Fichiers à créer / modifier
-
-#### Création
-- `src/components/settings/PartCategoriesManager.tsx`
-- `src/hooks/usePartCategories.ts`
-- migration SQL : table `part_categories`, colonne `parts.category_id`, colonne `inventory_sessions.category_filter`, mise à jour `begin_inventory_session`, nouvelle permission `settings_part_categories` dans `default_role_permissions`
-
-#### Modification
-- `src/lib/rolePermissions.ts` (nouvelle permission)
-- `src/pages/Settings.tsx` (nouvel onglet)
-- `src/components/parts/PartForm.tsx` (champ catégorie)
-- `src/pages/Parts.tsx` (filtre + badge)
-- `src/components/settings/inventory/InventoryManager.tsx` (refonte navigation + sélecteur catégories)
-- `src/components/settings/inventory/InventoryManualEditor.tsx` (UX +1/-1, autosave)
-- `src/components/settings/inventory/InventoryAssistedDialog.tsx` (raccourcis clavier)
-- `src/hooks/useInventory.ts` (passage de `category_ids` au RPC)
-- `src/components/settings/inventory/types.ts` (nouveaux champs)
-- `src/lib/inventoryPrint.ts` (mention de la catégorie filtrée)
-
-### Résultat attendu
-- L'administrateur dispose d'un nouvel onglet « Catégories de pièces » paramétrable et délégable par rôle
-- Chaque pièce porte sa catégorie
-- L'inventaire peut désormais être lancé sur une ou plusieurs catégories pour ne plus avoir tout le stock à compter
-- Le module inventaire devient réellement utilisable : on entre dans une session, on compte, on corrige, on imprime, on suspend, on annule, on clôture, on valide — sur n'importe quelle taille d'écran
+### Vérifications après implémentation
+- Création SAV via wizard → bouton IA présent et fonctionnel sur l'étape 3 « Problème »
+- Impression d'un SAV avec photos → photos visibles dans le PDF de restitution
+- Impression d'un SAV avec PDF joint → référence cliquable dans le PDF
+- Impression d'un SAV sans pièce jointe → aucune section vide affichée
+- Bouton « Imprimer les pièces jointes » visible uniquement quand des pièces jointes existent
+- Aucune régression sur le SAV standard ni sur les autres reformulateurs IA
 
