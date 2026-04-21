@@ -125,12 +125,14 @@ export function InventoryManager({ canApplyStock }: { canApplyStock: boolean }) 
     stats,
   } = useInventory();
   const { toast } = useToast();
+  const { categories } = usePartCategories();
 
   const [createOpen, setCreateOpen] = useState(false);
   const [assistedOpen, setAssistedOpen] = useState(false);
   const [createName, setCreateName] = useState('');
   const [createMode, setCreateMode] = useState<InventoryMode>('assisted');
   const [createNotes, setCreateNotes] = useState('');
+  const [createCategoryIds, setCreateCategoryIds] = useState<string[]>([]);
   const [scanCodes, setScanCodes] = useState('');
   const [manualSearch, setManualSearch] = useState('');
   const [manualFilter, setManualFilter] = useState<'all' | 'pending' | 'found' | 'missing' | 'adjusted'>('all');
@@ -140,6 +142,7 @@ export function InventoryManager({ canApplyStock }: { canApplyStock: boolean }) 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [draftQuantities, setDraftQuantities] = useState<Record<string, string>>({});
   const [draftNotes, setDraftNotes] = useState<Record<string, string>>({});
+  const [viewMode, setViewMode] = useState<'list' | 'detail'>('list');
 
   const filteredItems = useMemo(() => {
     const term = manualSearch.trim().toLowerCase();
@@ -175,14 +178,36 @@ export function InventoryManager({ canApplyStock }: { canApplyStock: boolean }) 
   const handleCreate = async () => {
     setIsSubmitting(true);
     try {
-      await createSession({ name: createName, mode: createMode, notes: createNotes });
+      await createSession({
+        name: createName,
+        mode: createMode,
+        notes: createNotes,
+        categoryIds: createCategoryIds.length > 0 ? createCategoryIds : undefined,
+      });
       setCreateName('');
       setCreateNotes('');
       setCreateMode('assisted');
+      setCreateCategoryIds([]);
       setCreateOpen(false);
+      setViewMode('detail');
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const openSession = (sessionId: string) => {
+    setSelectedSessionId(sessionId);
+    setViewMode('detail');
+  };
+
+  const goBackToList = () => {
+    setViewMode('list');
+  };
+
+  const toggleCategoryId = (id: string) => {
+    setCreateCategoryIds((current) =>
+      current.includes(id) ? current.filter((x) => x !== id) : [...current, id],
+    );
   };
 
   const setDraftQuantity = (itemId: string, value: string) => {
