@@ -10,12 +10,10 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { ROLE_PERMISSION_GROUPS, ROLE_PERMISSION_LABELS, getRolePermissionDefaults, type RolePermissions } from '@/lib/rolePermissions';
 
-const ALL_TRUE: RolePermissions = getRolePermissionDefaults('admin');
-
 export function DefaultRolePermissionsManager() {
   const { toast } = useToast();
   const [selectedRole, setSelectedRole] = useState('technician');
-  const [permissions, setPermissions] = useState<RolePermissions>(ALL_TRUE);
+  const [permissions, setPermissions] = useState<RolePermissions>(getRolePermissionDefaults('technician'));
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -25,6 +23,7 @@ export function DefaultRolePermissionsManager() {
 
   const loadDefaults = async (role: string) => {
     setLoading(true);
+    const roleDefaults = getRolePermissionDefaults(role);
     try {
       const { data } = await supabase
         .from('default_role_permissions' as any)
@@ -33,9 +32,9 @@ export function DefaultRolePermissionsManager() {
         .maybeSingle() as any;
 
       if (data?.permissions) {
-        setPermissions({ ...ALL_TRUE, ...data.permissions });
+        setPermissions({ ...roleDefaults, ...data.permissions });
       } else {
-        setPermissions(ALL_TRUE);
+        setPermissions(roleDefaults);
       }
     } catch (e) {
       console.error('Error loading default permissions:', e);
