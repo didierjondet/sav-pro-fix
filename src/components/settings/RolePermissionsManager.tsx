@@ -78,7 +78,7 @@ export function RolePermissionsManager() {
       if (error) throw error;
       
       queryClient.invalidateQueries({ queryKey: ['role-permissions'] });
-      toast({ title: 'Succès', description: `Permissions du rôle "${ROLE_LABELS[selectedRole]}" sauvegardées` });
+      toast({ title: 'Succès', description: `Permissions du rôle "${ROLE_PERMISSION_LABELS[selectedRole]}" sauvegardées` });
     } catch (e: any) {
       toast({ title: 'Erreur', description: e.message, variant: 'destructive' });
     } finally {

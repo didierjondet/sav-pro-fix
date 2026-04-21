@@ -55,7 +55,7 @@ export function DefaultRolePermissionsManager() {
         }, { onConflict: 'role' });
 
       if (error) throw error;
-      toast({ title: 'Succès', description: `Permissions par défaut du rôle "${ROLE_LABELS[selectedRole]}" sauvegardées` });
+      toast({ title: 'Succès', description: `Permissions par défaut du rôle "${ROLE_PERMISSION_LABELS[selectedRole]}" sauvegardées` });
     } catch (e: any) {
       toast({ title: 'Erreur', description: e.message, variant: 'destructive' });
     } finally {

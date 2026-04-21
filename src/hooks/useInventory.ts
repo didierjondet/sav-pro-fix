@@ -46,7 +46,7 @@ export function useInventory() {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return (data || []) as InventorySession[];
+      return data ? (JSON.parse(JSON.stringify(data)) as InventorySession[]) : [];
     },
   });
 
@@ -63,7 +63,7 @@ export function useInventory() {
         .maybeSingle();
 
       if (error) throw error;
-      return (data as InventorySession) || null;
+      return data ? (JSON.parse(JSON.stringify(data)) as InventorySession) : null;
     },
   });
 
@@ -78,7 +78,7 @@ export function useInventory() {
         .order('position', { ascending: true });
 
       if (error) throw error;
-      return (data || []) as InventorySessionItem[];
+      return data ? (JSON.parse(JSON.stringify(data)) as InventorySessionItem[]) : [];
     },
   });
 
@@ -94,7 +94,7 @@ export function useInventory() {
         .limit(200);
 
       if (error) throw error;
-      return (data || []) as InventoryAuditLog[];
+      return data ? (JSON.parse(JSON.stringify(data)) as InventoryAuditLog[]) : [];
     },
   });
 
@@ -209,7 +209,7 @@ export function useInventory() {
       .forEach((code) => counts.set(code, (counts.get(code) || 0) + 1));
 
     const unknownCodes: string[] = [];
-    const updates: Promise<unknown>[] = [];
+    const updates: Array<Promise<void>> = [];
 
     for (const [code, increment] of counts.entries()) {
       const match = items.find((item) => normalizeCode(item.part_sku || '') === code);
@@ -219,8 +219,8 @@ export function useInventory() {
       }
 
       const nextQuantity = (match.counted_quantity ?? 0) + increment;
-      updates.push(
-        supabase
+      updates.push((async () => {
+        const { error } = await supabase
           .from('inventory_session_items' as any)
           .update({
             counted_quantity: nextQuantity,
@@ -230,13 +230,13 @@ export function useInventory() {
             scan_count: (match.scan_count || 0) + increment,
           })
           .eq('id', match.id)
-          .eq('inventory_session_id', sessionId),
-      );
+          .eq('inventory_session_id', sessionId);
+
+        if (error) throw error;
+      })());
     }
 
-    const results = await Promise.all(updates);
-    const failed = results.find((result: any) => result.error);
-    if (failed && (failed as any).error) throw (failed as any).error;
+    await Promise.all(updates);
 
     await addAuditLog({
       inventory_session_id: sessionId,
