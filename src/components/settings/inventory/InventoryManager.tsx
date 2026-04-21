@@ -794,8 +794,36 @@ export function InventoryManager({ canApplyStock }: { canApplyStock: boolean }) 
               </Select>
             </div>
             <div className="space-y-2">
+              <Label className="flex items-center gap-2"><Layers className="h-4 w-4" />Catégories à inventorier</Label>
+              {categories.length === 0 ? (
+                <div className="rounded-md border border-dashed p-3 text-xs text-muted-foreground">
+                  Aucune catégorie. L'inventaire portera sur toutes les pièces.
+                </div>
+              ) : (
+                <div className="space-y-2 max-h-40 overflow-y-auto rounded-md border p-3">
+                  <label className="flex items-center gap-2 text-sm">
+                    <Checkbox
+                      checked={createCategoryIds.length === 0}
+                      onCheckedChange={() => setCreateCategoryIds([])}
+                    />
+                    <span className="font-medium">Toutes les catégories</span>
+                  </label>
+                  {categories.map((cat) => (
+                    <label key={cat.id} className="flex items-center gap-2 text-sm">
+                      <Checkbox
+                        checked={createCategoryIds.includes(cat.id)}
+                        onCheckedChange={() => toggleCategoryId(cat.id)}
+                      />
+                      <span className="inline-block h-3 w-3 rounded-full border" style={{ backgroundColor: cat.color ?? '#9CA3AF' }} />
+                      {cat.name}
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="space-y-2">
               <Label htmlFor="inventory-notes">Notes</Label>
-              <Textarea id="inventory-notes" value={createNotes} onChange={(event) => setCreateNotes(event.target.value)} rows={4} placeholder="Commentaire de départ, zone ou consignes de comptage" />
+              <Textarea id="inventory-notes" value={createNotes} onChange={(event) => setCreateNotes(event.target.value)} rows={3} placeholder="Commentaire de départ, zone ou consignes de comptage" />
             </div>
           </div>
           <DialogFooter>
