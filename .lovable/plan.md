@@ -1,216 +1,228 @@
 
-## Plan mis à jour : module Inventaire avec accès admin par défaut, mais délégable par rôle
+## Finalisation complète du module Inventaire
 
-### Règle métier retenue
-Le module **Inventaire** sera :
-- **autorisé par défaut à l’Administrateur**
-- **désactivé par défaut pour Technicien et Responsable magasin**
-- **délégable** par l’Administrateur depuis le paramétrage des rôles
+### Constats à corriger en priorité
+Le module existe, mais il n’est pas encore exploitable en production sur tous les modes :
+- le mode manuel repose sur des actions trop limitées et un `prompt`, donc pas sur une vraie interface de saisie
+- l’arrêt / annulation / reprise ne sont pas assez visibles ni suffisamment guidés selon le mode
+- il manque une vraie synthèse de rapprochement avant validation
+- il manque une vue claire des pièces manquantes, des surplus et des quantités corrigées
+- la validation finale peut être lancée sans workflow de contrôle assez rassurant
+- la logique de session doit mieux distinguer “comptage en cours”, “inventaire clos”, “prêt à appliquer”
 
-Donc on ne fige pas l’accès uniquement sur `admin` côté interface. On l’intègre dans le système RBAC existant pour que chaque boutique puisse choisir.
+### Objectif
+Transformer l’onglet Inventaire en outil réellement opérationnel :
+- simple pour un débutant
+- rapide pour un utilisateur expert
+- traçable
+- sécurisé par permissions
+- cohérent avant, pendant et après validation du stock
 
-### Ce qui change par rapport au plan initial
-Au lieu d’un accès codé en dur “admin only”, l’inventaire sera piloté par une **nouvelle permission de rôle**, par exemple :
-- `settings_inventory` pour accéder à l’onglet Inventaire
-- et si nécessaire une seconde permission plus sensible comme `inventory_apply_stock` pour valider l’inventaire et écraser les stocks
+### Travaux à implémenter
 
-Cela permet :
-- à l’admin d’y accéder immédiatement dans toutes les nouvelles boutiques
-- à l’admin de donner l’accès au technicien ou au responsable magasin s’il le souhaite
-- de garder une sécurité claire sur les actions critiques
+#### 1. Refaire le mode manuel en vraie interface de comptage
+Dans `InventoryManager.tsx`, remplacer la saisie actuelle par un vrai module manuel avec :
+- champ de quantité éditable directement dans la ligne
+- actions explicites : “Trouvé”, “Non trouvé”, “Ajuster”, “Réinitialiser”
+- sauvegarde propre sans `window.prompt`
+- possibilité d’ajouter une note sur une ligne
+- filtres rapides : tout, à traiter, trouvés, manquants, écarts
+- compteurs visibles en haut de la table
 
-### Intégration au système de rôles existant
-Le projet a déjà une architecture RBAC avec :
-- `useRolePermissions.ts`
-- `RolePermissionsManager.tsx`
-- `DefaultRolePermissionsManager.tsx`
-- tables `default_role_permissions` et `shop_role_permissions`
+Le mode manuel devra permettre :
+- de saisir une quantité libre
+- de corriger une quantité déjà saisie
+- de remettre une ligne en état “à traiter”
+- de marquer rapidement une ligne manquante à 0
 
-Le module Inventaire sera branché sur ce système existant.
+#### 2. Ajouter un vrai pilotage de session
+Renforcer les actions de session dans `InventoryManager.tsx` et `useInventory.ts` :
+- “Mettre en pause”
+- “Reprendre”
+- “Arrêter l’inventaire”
+- “Annuler l’inventaire”
+- “Clôturer le comptage” avant application finale
+- “Supprimer” uniquement si statut autorisé
 
-### Permissions à ajouter
-#### Permission principale
-- `settings_inventory`: permet d’afficher et d’ouvrir l’onglet Inventaire dans Paramètres
-
-#### Permission critique recommandée
-- `inventory_apply_stock`: permet de valider définitivement un inventaire et d’écraser les quantités de stock
-
-Optionnel selon le niveau de finesse souhaité :
-- `inventory_view_logs`
-- `inventory_delete_session`
-
-Mais pour rester simple et efficace, la première version peut fonctionner avec seulement :
-- `settings_inventory`
-- `inventory_apply_stock`
-
-### Valeurs par défaut à prévoir
-#### Admin
-- `settings_inventory: true`
-- `inventory_apply_stock: true`
-
-#### Technicien
-- `settings_inventory: false`
-- `inventory_apply_stock: false`
-
-#### Responsable magasin
-- `settings_inventory: false`
-- `inventory_apply_stock: false`
-
-Ainsi, toute nouvelle boutique héritera automatiquement de cette règle via les permissions par défaut déjà copiées à la création.
-
-### Modifications prévues
-#### 1. Étendre le typage des permissions
-Dans `useRolePermissions.ts` :
-- ajouter les nouvelles clés au type `RolePermissions`
-- les ajouter dans `ROLE_DEFAULTS`
-- garder une logique fail-closed
-
-#### 2. Étendre les écrans de gestion des rôles
-Dans :
-- `src/components/settings/RolePermissionsManager.tsx`
-- `src/components/admin/DefaultRolePermissionsManager.tsx`
-
-Ajouter dans la section “Réglages accessibles” ou “Fonctionnalités” :
-- accès au module Inventaire
-- validation / application finale des stocks
-
-L’admin pourra donc activer ces droits pour Technicien ou Responsable magasin.
-
-#### 3. Ajouter l’onglet Inventaire dans Paramètres
-Dans `src/pages/Settings.tsx` :
-- afficher l’onglet seulement si `rolePermissions.settings_inventory` est vrai
-- afficher le contenu Inventaire seulement si cette permission est vraie
-- si l’onglet est demandé dans l’URL sans permission, rediriger vers un onglet autorisé
-
-#### 4. Sécuriser aussi les actions sensibles hors UI
-L’interface seule ne suffit pas. Il faudra sécuriser :
-- création / reprise / suppression d’inventaire
-- consultation des logs
-- validation finale avec écrasement du stock
-
-Comme la permission est stockée en JSON RBAC, il faudra prévoir une vraie vérification côté base, pas seulement côté React.
-
-### Sécurité base de données à prévoir
-Pour que la délégation fonctionne proprement, les nouvelles tables d’inventaire devront utiliser des politiques alignées sur le RBAC.
-
-Deux approches possibles, la meilleure ici étant :
-
-#### Approche retenue
-Créer une fonction SQL de vérification de permission, du type :
+L’interface devra adapter les actions selon le statut :
 ```text
-public.has_shop_role_permission(_shop_id uuid, _permission text)
+En cours      -> pause / arrêter / annuler / continuer la saisie
+En pause      -> reprendre / annuler
+Terminé       -> revoir les écarts / appliquer le stock
+Appliqué      -> lecture seule + historique
+Annulé        -> lecture seule + suppression si autorisée
 ```
 
-Cette fonction ira lire :
-- le rôle du profil courant
-- les permissions spécifiques boutique dans `shop_role_permissions`
-- sinon les permissions par défaut dans `default_role_permissions`
+#### 3. Ajouter une synthèse métier avant validation
+Créer une vraie zone de synthèse dans `InventoryManager.tsx` avec sections :
+- pièces non traitées
+- pièces trouvées exactes
+- pièces ajustées
+- pièces manquantes
+- surplus de stock constatés
+- valeur d’écart globale
+- pièces qui vont être écrasées dans Fixway
 
-Puis retournera vrai/faux.
+Cette synthèse devra être visible avant le bouton de validation finale, pour que l’utilisateur comprenne exactement ce qui va changer.
 
-Ensuite, les policies RLS des tables inventaire pourront faire :
-```text
-shop_id = get_current_user_shop_id()
-AND public.has_shop_role_permission(shop_id, 'settings_inventory')
-```
+#### 4. Ajouter des vues dédiées “écarts”, “manquants”, “écrasements”
+Dans l’interface inventaire, ajouter des sous-vues ou onglets internes :
+- `Comptage`
+- `Écarts`
+- `Manquants`
+- `Stocks écrasés`
+- `Journal`
 
-Et pour l’application finale du stock :
-```text
-shop_id = get_current_user_shop_id()
-AND public.has_shop_role_permission(shop_id, 'inventory_apply_stock')
-```
+Contenu attendu :
+- `Écarts` : toutes les lignes où compté ≠ théorique
+- `Manquants` : lignes à 0 / non retrouvées
+- `Stocks écrasés` : avant/après une fois appliqué
+- `Journal` : historique d’actions lisible métier
 
-### Pourquoi cette approche est importante
-Sans cela :
-- un technicien à qui l’admin donne l’accès dans l’UI verrait l’onglet
-- mais serait potentiellement bloqué au moment des écritures réelles
-- ou inversement, une personne pourrait appeler les tables directement si seule l’UI protège
+#### 5. Améliorer le mode assisté
+Dans `InventoryAssistedDialog.tsx` :
+- ajouter navigation précédente / suivante
+- permettre de corriger une ligne déjà passée
+- afficher le rang courant
+- afficher les pièces restantes
+- offrir “ignorer pour l’instant”
+- fermer proprement si pause ou arrêt
 
-Avec la fonction SQL + RLS :
-- le droit donné par l’admin devient un vrai droit métier exploitable partout
-- le module reste multi-boutique et cohérent
+Le mode assisté doit rester le plus simple possible, mais ne pas enfermer l’utilisateur dans un flux irréversible.
 
-### Impact sur le module Inventaire lui-même
-Le module gardera les 3 modes prévus :
-- assisté
-- scan / QR / SKU
-- manuel
+#### 6. Renforcer le mode scan
+Dans `InventoryManager.tsx` et `useInventory.ts` :
+- meilleure visualisation des SKU inconnus
+- résumé du dernier lot scanné
+- accès direct aux lignes ajustées par scan
+- correction manuelle d’une ligne scannée
+- affichage du nombre de scans par pièce
+- meilleure distinction entre quantité théorique, comptée et delta
 
-Mais leurs accès seront organisés ainsi :
-- consultation / saisie / reprise : `settings_inventory`
-- validation finale avec mise à jour du stock : `inventory_apply_stock`
+#### 7. Ajouter des helpers métier dans le hook inventaire
+Étendre `useInventory.ts` avec des helpers calculés pour éviter de surcharger le composant :
+- `pendingItems`
+- `missingItems`
+- `adjustedItems`
+- `exactMatchItems`
+- `overstockItems`
+- `understockItems`
+- `completionRate`
+- `canEditSession`
+- `canCloseSession`
+- `canApplySession`
+- `canDeleteSession`
 
-Cela permet un usage très pratique :
-- l’admin peut laisser un technicien compter les pièces
-- puis garder pour lui la validation finale
-- ou déléguer aussi la validation s’il le souhaite
+Ajouter aussi des actions utilitaires :
+- reset d’une ligne
+- marquer ligne ignorée
+- marquer ligne manquante
+- clôturer le comptage
+- reprendre une ligne déjà traitée
 
-### Ajustement des historiques et logs
-Les logs d’inventaire resteront traçables, avec :
+#### 8. Ajuster le modèle de statuts sans casser la base existante
+Conserver la structure actuelle autant que possible, mais faire évoluer la logique métier côté UI :
+- `in_progress` = inventaire modifiable
+- `paused` = inventaire modifiable après reprise
+- `completed` = comptage terminé, plus de saisie normale
+- `applied` = stocks Fixway écrasés
+- `cancelled` = session abandonnée
+
+Si nécessaire, prévoir une petite migration pour compléter la logique SQL afin de mieux journaliser la clôture de comptage, sans refaire tout le schéma.
+
+#### 9. Mieux protéger l’application finale des stocks
+Avant `apply_inventory_session`, ajouter une confirmation forte côté UI :
+- résumé des lignes impactées
+- rappel que les non trouvés passeront à 0
+- mention des quantités réservées potentiellement incohérentes
+- blocage ou avertissement si des lignes restent “à traiter”
+
+Option recommandée :
+- empêcher l’application tant qu’il reste des lignes `pending`
+- ou demander une confirmation explicite “considérer les non traitées comme manquantes”
+
+#### 10. Améliorer le journal d’audit inventaire
+Le journal doit devenir lisible métier :
+- création session
+- pause / reprise
+- arrêt / annulation
+- modification d’une ligne
+- changement de quantité
+- passage en manquant
+- reset d’une ligne
+- application finale du stock
+
+Afficher si possible :
 - utilisateur
-- rôle
-- action
-- ancienne valeur
-- nouvelle valeur
 - date/heure
+- type d’action
+- ancienne valeur / nouvelle valeur
+- pièce concernée
 
-Accès recommandé :
-- lecture si `settings_inventory`
-- actions destructives selon `inventory_apply_stock` ou permission dédiée si on affine plus tard
+### Fichiers à faire évoluer
+#### Frontend
+- `src/components/settings/inventory/InventoryManager.tsx`
+- `src/components/settings/inventory/InventoryAssistedDialog.tsx`
+- `src/hooks/useInventory.ts`
+- `src/components/settings/inventory/types.ts`
+- éventuellement un ou plusieurs nouveaux composants dédiés, par exemple :
+  - `InventorySessionSummary.tsx`
+  - `InventoryManualEditor.tsx`
+  - `InventoryDiscrepanciesTable.tsx`
+  - `InventorySessionActions.tsx`
 
-### Migrations à prévoir
-#### Migration 1
-Étendre les JSON de permissions par défaut :
-- ajouter `settings_inventory`
-- ajouter `inventory_apply_stock`
+#### Impression / export
+- `src/lib/inventoryPrint.ts`
 
-Et mettre à jour les lignes existantes dans `default_role_permissions`.
+#### Base de données
+- migration complémentaire seulement si nécessaire pour :
+  - mieux tracer les changements de statut
+  - éventuellement ajouter une fonction RPC de “clôture de session”
+  - éventuellement mieux distinguer arrêt forcé et fin de comptage
 
-#### Migration 2
-Mettre à jour les permissions déjà copiées en boutique dans `shop_role_permissions` pour injecter les nouvelles clés sans casser les réglages existants.
+### Approche d’implémentation recommandée
+1. Refactorer la logique de `useInventory`
+2. Recomposer `InventoryManager` en sous-composants plus clairs
+3. Construire le vrai mode manuel
+4. renforcer assisté et scan
+5. ajouter la synthèse et la confirmation finale
+6. compléter l’audit log si besoin
+7. tester les cas réels de bout en bout
 
-#### Migration 3
-Créer la fonction SQL de lecture de permission RBAC côté base pour les nouvelles RLS inventaire.
+### Vérifications à faire après implémentation
+#### Tests inventaire
+- création session manuelle
+- saisie quantité libre
+- correction d’une ligne déjà saisie
+- marquage manquant
+- pause / reprise
+- arrêt / annulation
+- clôture comptage
+- validation finale
+- vérification que les pièces non retrouvées passent bien à 0
+- vérification que les pièces en surplus écrasent bien le stock Fixway
 
-#### Migration 4
-Créer les tables d’inventaire + policies RLS basées sur cette fonction.
+#### Vérifications permissions
+- admin : accès complet
+- technicien sans droit : onglet caché
+- technicien avec droit inventaire seul : accès comptage sans validation finale
+- responsable magasin avec les deux droits : accès complet
 
-### UX finale souhaitée
-```text
-Paramètres
- ├─ Magasin
- ├─ Notifications
- ├─ Apparence
- ├─ Import/Export
- ├─ Statuts SAV
- ├─ Types SAV
- ├─ Facturation
- ├─ IA
- ├─ Utilisateurs
- └─ Inventaire   <-- visible seulement si settings_inventory = true
-```
-
-Dans “Autorisations par rôle” :
-```text
-Réglages accessibles
-- Abonnement / Plans
-- Achat de SMS
-- Gestion des utilisateurs
-- Import / Export
-- Inventaire
-
-Fonctionnalités
-- Voir les logs SAV
-- Créer des devis
-- Gérer le stock
-- Valider un inventaire et appliquer les stocks
-- Vue simplifiée par défaut
-```
+#### Non-régression Fixway
+- page Réglages et autres onglets
+- gestion des rôles
+- module pièces / stock
+- commandes
+- devis utilisant le stock
+- SAV utilisant les pièces
+- build TypeScript complet
+- contrôle UI sur desktop et mobile
 
 ### Résultat attendu
-Vous obtenez exactement la nuance métier demandée :
-- l’**Administrateur** garde l’accès par défaut
-- les autres rôles ne l’ont pas par défaut
-- mais l’Administrateur peut **déléguer l’accès au module Inventaire**
-- et éventuellement déléguer aussi la **validation finale**
-- le tout de manière cohérente dans l’UI, les permissions de rôle, et la sécurité base de données
+Après cette itération, le module Inventaire devra permettre :
+- de lancer un inventaire dans chacun des 3 modes
+- de compter, corriger, suspendre, reprendre ou annuler proprement
+- de visualiser clairement les manquants et les écarts
+- de voir exactement ce qui sera écrasé dans le stock Fixway
+- de valider en toute sécurité
+- de garder une traçabilité complète, réservée aux profils autorisés
