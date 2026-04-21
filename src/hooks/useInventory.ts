@@ -12,6 +12,13 @@ import type {
 } from '@/components/settings/inventory/types';
 import { getInventoryDerivedData } from '@/hooks/inventory/derived';
 
+const EMPTY_ITEMS: InventorySessionItem[] = [];
+
+const inventoryRpc = supabase.rpc.bind(supabase) as unknown as (
+  fn: string,
+  params?: Record<string, unknown>,
+) => Promise<{ data: unknown; error: { message: string } | null }>;
+
 interface UpdateInventoryItemInput {
   sessionId: string;
   itemId: string;
@@ -73,7 +80,7 @@ export function useInventory() {
     enabled: !!shopId,
     queryFn: async (): Promise<InventorySession[]> => {
       const { data, error } = await supabase
-        .from('inventory_sessions' as never)
+        .from('inventory_sessions')
         .select('*')
         .eq('shop_id', shopId)
         .order('created_at', { ascending: false });
@@ -90,7 +97,7 @@ export function useInventory() {
     enabled: !!sessionId,
     queryFn: async (): Promise<InventorySession | null> => {
       const { data, error } = await supabase
-        .from('inventory_sessions' as never)
+        .from('inventory_sessions')
         .select('*')
         .eq('id', sessionId)
         .maybeSingle();
@@ -105,7 +112,7 @@ export function useInventory() {
     enabled: !!sessionId,
     queryFn: async (): Promise<InventorySessionItem[]> => {
       const { data, error } = await supabase
-        .from('inventory_session_items' as never)
+        .from('inventory_session_items')
         .select('*')
         .eq('inventory_session_id', sessionId)
         .order('position', { ascending: true });
@@ -120,7 +127,7 @@ export function useInventory() {
     enabled: !!sessionId,
     queryFn: async (): Promise<InventoryAuditLog[]> => {
       const { data, error } = await supabase
-        .from('inventory_audit_logs' as never)
+        .from('inventory_audit_logs')
         .select('*')
         .eq('inventory_session_id', sessionId)
         .order('created_at', { ascending: false })
@@ -144,7 +151,7 @@ export function useInventory() {
   const addAuditLog = async (payload: Partial<InventoryAuditLog> & { action: string; inventory_session_id: string }) => {
     if (!shopId) return;
 
-    await supabase.from('inventory_audit_logs' as never).insert({
+    await supabase.from('inventory_audit_logs').insert({
       shop_id: shopId,
       changed_by_profile_id: profile?.id ?? null,
       changed_by_name:
@@ -156,7 +163,7 @@ export function useInventory() {
 
   const createSession = async ({ name, mode, notes }: { name: string; mode: InventoryMode; notes?: string }) => {
     try {
-      const { data, error } = await supabase.rpc('begin_inventory_session' as never, {
+      const { data, error } = await inventoryRpc('begin_inventory_session', {
         _name: name,
         _mode: mode,
         _notes: notes || null,
@@ -180,7 +187,7 @@ export function useInventory() {
     metadata?: Record<string, unknown>,
   ) => {
     const previous = sessionQuery.data;
-    const { error } = await supabase.from('inventory_sessions' as never).update(patch).eq('id', id);
+    const { error } = await supabase.from('inventory_sessions').update(patch).eq('id', id);
     if (error) throw error;
 
     if (action) {
@@ -203,6 +210,7 @@ export function useInventory() {
 
     const { error } = await supabase
       .from('inventory_session_items' as never)
+      .from('inventory_session_items')
       .update(nextPayload)
       .eq('id', itemId)
       .eq('inventory_session_id', targetSessionId);
@@ -380,7 +388,7 @@ export function useInventory() {
         throw new Error('Impossible de valider tant que des lignes sont encore à traiter.');
       }
 
-      const { data, error } = await supabase.rpc('apply_inventory_session' as never, {
+      const { data, error } = await inventoryRpc('apply_inventory_session', {
         _session_id: targetSessionId,
       });
       if (error) throw error;
@@ -401,14 +409,14 @@ export function useInventory() {
   };
 
   const deleteSession = async (targetSessionId: string) => {
-    const { error } = await supabase.from('inventory_sessions' as never).delete().eq('id', targetSessionId);
+    const { error } = await supabase.from('inventory_sessions').delete().eq('id', targetSessionId);
     if (error) throw error;
     if (selectedSessionId === targetSessionId) setSelectedSessionId(null);
     await refreshAll();
   };
 
   const currentSession = sessionQuery.data;
-  const items = itemsQuery.data || [];
+  const items = itemsQuery.data ?? EMPTY_ITEMS;
   const derived = useMemo(() => getInventoryDerivedData(currentSession, items), [currentSession, items]);
 
   const stats = useMemo(() => {
