@@ -1,228 +1,160 @@
 
-## Finalisation complète du module Inventaire
 
-### Constats à corriger en priorité
-Le module existe, mais il n’est pas encore exploitable en production sur tous les modes :
-- le mode manuel repose sur des actions trop limitées et un `prompt`, donc pas sur une vraie interface de saisie
-- l’arrêt / annulation / reprise ne sont pas assez visibles ni suffisamment guidés selon le mode
-- il manque une vraie synthèse de rapprochement avant validation
-- il manque une vue claire des pièces manquantes, des surplus et des quantités corrigées
-- la validation finale peut être lancée sans workflow de contrôle assez rassurant
-- la logique de session doit mieux distinguer “comptage en cours”, “inventaire clos”, “prêt à appliquer”
+## Plan : finaliser l'inventaire + ajouter les catégories de pièces
 
-### Objectif
-Transformer l’onglet Inventaire en outil réellement opérationnel :
-- simple pour un débutant
-- rapide pour un utilisateur expert
-- traçable
-- sécurisé par permissions
-- cohérent avant, pendant et après validation du stock
+### Partie A — Nouvel onglet « Catégories de pièces »
 
-### Travaux à implémenter
+#### A.1 Base de données
+Créer une nouvelle table dédiée :
 
-#### 1. Refaire le mode manuel en vraie interface de comptage
-Dans `InventoryManager.tsx`, remplacer la saisie actuelle par un vrai module manuel avec :
-- champ de quantité éditable directement dans la ligne
-- actions explicites : “Trouvé”, “Non trouvé”, “Ajuster”, “Réinitialiser”
-- sauvegarde propre sans `window.prompt`
-- possibilité d’ajouter une note sur une ligne
-- filtres rapides : tout, à traiter, trouvés, manquants, écarts
-- compteurs visibles en haut de la table
+- `part_categories`
+  - `id` uuid PK
+  - `shop_id` uuid (isolation boutique)
+  - `name` text
+  - `description` text nullable
+  - `color` text nullable (badge visuel)
+  - `display_order` int
+  - `created_at`, `updated_at`
+- Ajouter une colonne `category_id` (uuid, nullable, FK logique) sur la table `parts`
+- RLS : lecture/écriture limitée aux utilisateurs du même shop ayant la permission `settings_part_categories`, super_admins inclus
+- Ajouter une nouvelle permission `settings_part_categories` dans `default_role_permissions`, activée par défaut pour `admin`
 
-Le mode manuel devra permettre :
-- de saisir une quantité libre
-- de corriger une quantité déjà saisie
-- de remettre une ligne en état “à traiter”
-- de marquer rapidement une ligne manquante à 0
+#### A.2 Permissions (RBAC)
+Dans `src/lib/rolePermissions.ts` :
+- Ajouter `settings_part_categories: boolean`
+- Défaut : `true` pour `admin`, `false` pour `technician` et `shop_admin`
+- Ajouter le label dans le groupe « Réglages accessibles » pour que l'administrateur puisse déléguer
 
-#### 2. Ajouter un vrai pilotage de session
-Renforcer les actions de session dans `InventoryManager.tsx` et `useInventory.ts` :
-- “Mettre en pause”
-- “Reprendre”
-- “Arrêter l’inventaire”
-- “Annuler l’inventaire”
-- “Clôturer le comptage” avant application finale
-- “Supprimer” uniquement si statut autorisé
+#### A.3 UI Réglages
+- Nouvel onglet « Catégories de pièces » dans `src/pages/Settings.tsx`, conditionné par `rolePermissions.settings_part_categories`
+- Nouveau composant `src/components/settings/PartCategoriesManager.tsx` :
+  - liste des catégories
+  - création / édition / suppression (avec confirmation)
+  - couleur, nom, description, ordre d'affichage
+  - compteur de pièces associées
+  - blocage suppression si la catégorie est utilisée (proposer réaffectation)
 
-L’interface devra adapter les actions selon le statut :
+#### A.4 Intégration au stock pièces
+- Dans `src/components/parts/PartForm.tsx` : ajout d'un sélecteur « Catégorie » obligatoire
+- Dans `src/pages/Parts.tsx` : badge catégorie + filtre par catégorie
+- Hook `usePartCategories.ts` partagé
+
+### Partie B — Inventaire : interface vraiment utilisable
+
+#### B.1 Choix de la catégorie au démarrage
+Dans la boîte « Nouvel inventaire » :
+- Ajouter un sélecteur multi-catégories (« Toutes » par défaut)
+- Modifier la fonction RPC `begin_inventory_session` pour accepter un paramètre `_category_ids uuid[] DEFAULT NULL` et filtrer le snapshot des `parts`
+- Stocker les catégories choisies dans une colonne `category_filter jsonb` sur `inventory_sessions` pour rappel et impression
+
+#### B.2 Refonte de la disposition (cause racine du « inutilisable »)
+Aujourd'hui sur viewport ~1000px la grille `xl:grid-cols` ne s'active pas et la zone de comptage devient invisible sous la liste de sessions. Refonte :
+
 ```text
-En cours      -> pause / arrêter / annuler / continuer la saisie
-En pause      -> reprendre / annuler
-Terminé       -> revoir les écarts / appliquer le stock
-Appliqué      -> lecture seule + historique
-Annulé        -> lecture seule + suppression si autorisée
+┌──────────────────────────────────────────────┐
+│ En-tête : Lancer / Imprimer / KPIs           │
+├──────────────────────────────────────────────┤
+│ [si AUCUNE session sélectionnée]             │
+│   Liste plein écran des sessions (cards)     │
+│   → clic sur une carte = "ouvrir"            │
+│                                              │
+│ [si session sélectionnée]                    │
+│   Bandeau session + bouton « Retour liste »  │
+│   Actions session (pause/arrêt/clôt./suppr.) │
+│   Synthèse                                   │
+│   Onglets Comptage/Écarts/Manquants/Journal  │
+└──────────────────────────────────────────────┘
 ```
 
-#### 3. Ajouter une synthèse métier avant validation
-Créer une vraie zone de synthèse dans `InventoryManager.tsx` avec sections :
-- pièces non traitées
-- pièces trouvées exactes
-- pièces ajustées
-- pièces manquantes
-- surplus de stock constatés
-- valeur d’écart globale
-- pièces qui vont être écrasées dans Fixway
+Bénéfices :
+- on voit d'abord les sessions
+- on entre explicitement dedans (réponse au besoin « il faut pouvoir rentrer dans cette card »)
+- la zone de comptage devient pleine largeur, donc visible quel que soit l'écran
 
-Cette synthèse devra être visible avant le bouton de validation finale, pour que l’utilisateur comprenne exactement ce qui va changer.
+#### B.3 Cohérence des actions de session
+Dans `InventoryManager.tsx` et `useInventory.ts`, garantir la disponibilité visible :
+- Pause / Reprendre
+- Arrêter (fige le comptage)
+- Annuler (abandonne)
+- Clôturer le comptage (passe en `completed`)
+- Supprimer (uniquement statuts autorisés)
+- Réimprimer Synthèse / Feuille papier / Manquants à tout moment, y compris après application
 
-#### 4. Ajouter des vues dédiées “écarts”, “manquants”, “écrasements”
-Dans l’interface inventaire, ajouter des sous-vues ou onglets internes :
-- `Comptage`
-- `Écarts`
-- `Manquants`
-- `Stocks écrasés`
-- `Journal`
+#### B.4 Mode manuel utilisable
+Le composant `InventoryManualEditor` existe déjà mais n'est pas mis en avant. Améliorations :
+- Bouton « +1 / -1 » à côté du champ quantité
+- Sauvegarde automatique au blur (plus besoin de cliquer « Ajuster »)
+- Ligne en surbrillance quand un brouillon non sauvegardé est présent
+- Action « Tout marquer comme conforme » pour les listes courtes
+- Compteurs en haut : à traiter / trouvés / manquants / écarts
 
-Contenu attendu :
-- `Écarts` : toutes les lignes où compté ≠ théorique
-- `Manquants` : lignes à 0 / non retrouvées
-- `Stocks écrasés` : avant/après une fois appliqué
-- `Journal` : historique d’actions lisible métier
+#### B.5 Mode scan utilisable
+- Champ de saisie large + scan continu (Enter ajoute le code)
+- Affichage du dernier code scanné en gros
+- Lien direct « Voir » sur les codes inconnus / ambigus
 
-#### 5. Améliorer le mode assisté
-Dans `InventoryAssistedDialog.tsx` :
-- ajouter navigation précédente / suivante
-- permettre de corriger une ligne déjà passée
-- afficher le rang courant
-- afficher les pièces restantes
-- offrir “ignorer pour l’instant”
-- fermer proprement si pause ou arrêt
+#### B.6 Mode assisté
+Déjà fonctionnel : on garde, on ajoute juste un raccourci clavier (Entrée = valider, M = manquant).
 
-Le mode assisté doit rester le plus simple possible, mais ne pas enfermer l’utilisateur dans un flux irréversible.
+#### B.7 Synthèse et rapprochement final
+- La carte « Synthèse » doit toujours être visible quand une session est ouverte
+- Vue « Écarts » : table compacte écart par écart avec valeur impactée
+- Vue « Manquants » : table des pièces qui passeront à 0
+- Vue « Stocks écrasés » : avant/après après application
+- Avant validation : confirmation forte (déjà présente, à conserver)
 
-#### 6. Renforcer le mode scan
-Dans `InventoryManager.tsx` et `useInventory.ts` :
-- meilleure visualisation des SKU inconnus
-- résumé du dernier lot scanné
-- accès direct aux lignes ajustées par scan
-- correction manuelle d’une ligne scannée
-- affichage du nombre de scans par pièce
-- meilleure distinction entre quantité théorique, comptée et delta
+#### B.8 Permissions inventaire (rappel)
+- L'onglet Inventaire reste conditionné à `settings_inventory`
+- L'application finale du stock reste conditionnée à `inventory_apply_stock`
+- Le filtre par catégorie n'introduit aucune nouvelle permission (suit `settings_inventory`)
 
-#### 7. Ajouter des helpers métier dans le hook inventaire
-Étendre `useInventory.ts` avec des helpers calculés pour éviter de surcharger le composant :
-- `pendingItems`
-- `missingItems`
-- `adjustedItems`
-- `exactMatchItems`
-- `overstockItems`
-- `understockItems`
-- `completionRate`
-- `canEditSession`
-- `canCloseSession`
-- `canApplySession`
-- `canDeleteSession`
+### Partie C — Vérifications à faire après implémentation
 
-Ajouter aussi des actions utilitaires :
-- reset d’une ligne
-- marquer ligne ignorée
-- marquer ligne manquante
-- clôturer le comptage
-- reprendre une ligne déjà traitée
+#### Tests fonctionnels
+- Création d'une catégorie → affectation à plusieurs pièces
+- Lancement d'un inventaire filtré sur 1 catégorie → seules ces pièces apparaissent
+- Lancement d'un inventaire « toutes catégories » → comportement actuel conservé
+- Saisie manuelle, scan, assisté : tous opérationnels
+- Pause / Reprendre / Arrêter / Annuler / Clôturer / Supprimer
+- Réimpression à tout moment (synthèse, feuille papier, manquants)
+- Application finale → stocks Fixway corrects, manquants à 0
 
-#### 8. Ajuster le modèle de statuts sans casser la base existante
-Conserver la structure actuelle autant que possible, mais faire évoluer la logique métier côté UI :
-- `in_progress` = inventaire modifiable
-- `paused` = inventaire modifiable après reprise
-- `completed` = comptage terminé, plus de saisie normale
-- `applied` = stocks Fixway écrasés
-- `cancelled` = session abandonnée
+#### Tests permissions
+- Admin : voit Catégories + Inventaire
+- Technicien sans droit : ni l'un ni l'autre
+- Technicien à qui l'admin a donné `settings_inventory` : voit Inventaire mais ne peut pas valider
+- Technicien à qui l'admin a aussi donné `inventory_apply_stock` : peut valider
+- Technicien à qui l'admin a donné `settings_part_categories` : voit l'onglet catégories
 
-Si nécessaire, prévoir une petite migration pour compléter la logique SQL afin de mieux journaliser la clôture de comptage, sans refaire tout le schéma.
+#### Non-régression
+- Page Stock pièces (création / édition / liste / filtres)
+- Imports de stock
+- Devis / SAV qui consomment des pièces
+- Commandes
+- Build TypeScript et lint
 
-#### 9. Mieux protéger l’application finale des stocks
-Avant `apply_inventory_session`, ajouter une confirmation forte côté UI :
-- résumé des lignes impactées
-- rappel que les non trouvés passeront à 0
-- mention des quantités réservées potentiellement incohérentes
-- blocage ou avertissement si des lignes restent “à traiter”
+### Fichiers à créer / modifier
 
-Option recommandée :
-- empêcher l’application tant qu’il reste des lignes `pending`
-- ou demander une confirmation explicite “considérer les non traitées comme manquantes”
+#### Création
+- `src/components/settings/PartCategoriesManager.tsx`
+- `src/hooks/usePartCategories.ts`
+- migration SQL : table `part_categories`, colonne `parts.category_id`, colonne `inventory_sessions.category_filter`, mise à jour `begin_inventory_session`, nouvelle permission `settings_part_categories` dans `default_role_permissions`
 
-#### 10. Améliorer le journal d’audit inventaire
-Le journal doit devenir lisible métier :
-- création session
-- pause / reprise
-- arrêt / annulation
-- modification d’une ligne
-- changement de quantité
-- passage en manquant
-- reset d’une ligne
-- application finale du stock
-
-Afficher si possible :
-- utilisateur
-- date/heure
-- type d’action
-- ancienne valeur / nouvelle valeur
-- pièce concernée
-
-### Fichiers à faire évoluer
-#### Frontend
-- `src/components/settings/inventory/InventoryManager.tsx`
-- `src/components/settings/inventory/InventoryAssistedDialog.tsx`
-- `src/hooks/useInventory.ts`
-- `src/components/settings/inventory/types.ts`
-- éventuellement un ou plusieurs nouveaux composants dédiés, par exemple :
-  - `InventorySessionSummary.tsx`
-  - `InventoryManualEditor.tsx`
-  - `InventoryDiscrepanciesTable.tsx`
-  - `InventorySessionActions.tsx`
-
-#### Impression / export
-- `src/lib/inventoryPrint.ts`
-
-#### Base de données
-- migration complémentaire seulement si nécessaire pour :
-  - mieux tracer les changements de statut
-  - éventuellement ajouter une fonction RPC de “clôture de session”
-  - éventuellement mieux distinguer arrêt forcé et fin de comptage
-
-### Approche d’implémentation recommandée
-1. Refactorer la logique de `useInventory`
-2. Recomposer `InventoryManager` en sous-composants plus clairs
-3. Construire le vrai mode manuel
-4. renforcer assisté et scan
-5. ajouter la synthèse et la confirmation finale
-6. compléter l’audit log si besoin
-7. tester les cas réels de bout en bout
-
-### Vérifications à faire après implémentation
-#### Tests inventaire
-- création session manuelle
-- saisie quantité libre
-- correction d’une ligne déjà saisie
-- marquage manquant
-- pause / reprise
-- arrêt / annulation
-- clôture comptage
-- validation finale
-- vérification que les pièces non retrouvées passent bien à 0
-- vérification que les pièces en surplus écrasent bien le stock Fixway
-
-#### Vérifications permissions
-- admin : accès complet
-- technicien sans droit : onglet caché
-- technicien avec droit inventaire seul : accès comptage sans validation finale
-- responsable magasin avec les deux droits : accès complet
-
-#### Non-régression Fixway
-- page Réglages et autres onglets
-- gestion des rôles
-- module pièces / stock
-- commandes
-- devis utilisant le stock
-- SAV utilisant les pièces
-- build TypeScript complet
-- contrôle UI sur desktop et mobile
+#### Modification
+- `src/lib/rolePermissions.ts` (nouvelle permission)
+- `src/pages/Settings.tsx` (nouvel onglet)
+- `src/components/parts/PartForm.tsx` (champ catégorie)
+- `src/pages/Parts.tsx` (filtre + badge)
+- `src/components/settings/inventory/InventoryManager.tsx` (refonte navigation + sélecteur catégories)
+- `src/components/settings/inventory/InventoryManualEditor.tsx` (UX +1/-1, autosave)
+- `src/components/settings/inventory/InventoryAssistedDialog.tsx` (raccourcis clavier)
+- `src/hooks/useInventory.ts` (passage de `category_ids` au RPC)
+- `src/components/settings/inventory/types.ts` (nouveaux champs)
+- `src/lib/inventoryPrint.ts` (mention de la catégorie filtrée)
 
 ### Résultat attendu
-Après cette itération, le module Inventaire devra permettre :
-- de lancer un inventaire dans chacun des 3 modes
-- de compter, corriger, suspendre, reprendre ou annuler proprement
-- de visualiser clairement les manquants et les écarts
-- de voir exactement ce qui sera écrasé dans le stock Fixway
-- de valider en toute sécurité
-- de garder une traçabilité complète, réservée aux profils autorisés
+- L'administrateur dispose d'un nouvel onglet « Catégories de pièces » paramétrable et délégable par rôle
+- Chaque pièce porte sa catégorie
+- L'inventaire peut désormais être lancé sur une ou plusieurs catégories pour ne plus avoir tout le stock à compter
+- Le module inventaire devient réellement utilisable : on entre dans une session, on compte, on corrige, on imprime, on suspend, on annule, on clôture, on valide — sur n'importe quelle taille d'écran
+
