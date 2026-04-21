@@ -371,8 +371,56 @@ export function InventoryManager({ canApplyStock }: { canApplyStock: boolean }) 
         </Card>
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[320px_minmax(0,1fr)]">
+      {viewMode === 'list' || !currentSession ? (
         <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Sessions d'inventaire</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {sessions.length === 0 ? (
+              <div className="rounded-md border border-dashed p-12 text-center text-sm text-muted-foreground">
+                Aucun inventaire pour le moment. Cliquez sur « Lancer un inventaire » pour commencer.
+              </div>
+            ) : (
+              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                {sessions.map((session) => (
+                  <button
+                    key={session.id}
+                    type="button"
+                    onClick={() => openSession(session.id)}
+                    className="w-full rounded-md border p-4 text-left transition-colors hover:bg-muted/50 hover:border-primary"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <div className="font-medium">{session.name}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {INVENTORY_MODE_LABELS[session.mode]} · {new Date(session.created_at).toLocaleDateString('fr-FR')}
+                        </div>
+                      </div>
+                      <Badge variant={statusBadgeVariant[session.status] || 'outline'}>
+                        {INVENTORY_STATUS_LABELS[session.status]}
+                      </Badge>
+                    </div>
+                    <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
+                      <div><span className="text-muted-foreground">Comptés:</span> {session.counted_items}/{session.total_items}</div>
+                      <div><span className="text-muted-foreground">Manquants:</span> {session.missing_items}</div>
+                      <div><span className="text-muted-foreground">Écart:</span> {currency(session.variance_total_cost)}</div>
+                    </div>
+                    <div className="mt-3 text-xs text-primary font-medium">Cliquer pour ouvrir →</div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      ) : (
+      <div className="space-y-6">
+        <Button variant="outline" size="sm" onClick={goBackToList}>
+          <ArrowLeft className="h-4 w-4" /> Retour à la liste des inventaires
+        </Button>
+
+      <div className="grid gap-6">
+        <Card className="hidden">
           <CardHeader>
             <CardTitle className="text-base">Sessions & historique</CardTitle>
           </CardHeader>
