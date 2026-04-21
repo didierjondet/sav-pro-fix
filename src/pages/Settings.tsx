@@ -53,6 +53,7 @@ import {
 import { MenuConfigurationTab } from '@/components/settings/MenuConfigurationTab';
 import { RolePermissionsManager } from '@/components/settings/RolePermissionsManager';
 import { InventoryManager } from '@/components/settings/inventory/InventoryManager';
+import { PartCategoriesManager } from '@/components/settings/PartCategoriesManager';
 import { SMSPackagesDisplay } from '@/components/subscription/SMSPackagesDisplay';
 import { BillingInvoices } from '@/components/billing/BillingInvoices';
 import { ImportStock } from '@/components/parts/ImportStock';
@@ -653,6 +654,7 @@ export default function Settings() {
     ...(rolePermissions.settings_subscription ? ['subscription'] : []),
     ...(isAdmin && rolePermissions.settings_users ? ['users'] : []),
     ...(rolePermissions.settings_inventory ? ['inventory'] : []),
+    ...(rolePermissions.settings_part_categories ? ['part-categories'] : []),
   ];
   const safeActiveTab = availableTabs.includes(activeTab) ? activeTab : availableTabs[0];
   useEffect(() => {
@@ -766,6 +768,12 @@ export default function Settings() {
                 <TabsTrigger value="inventory" className="flex items-center gap-2 px-3 py-2 shrink-0">
                   <ClipboardList className="h-4 w-4 shrink-0" />
                   <span className="hidden sm:inline">Inventaire</span>
+                </TabsTrigger>
+              )}
+              {rolePermissions.settings_part_categories && (
+                <TabsTrigger value="part-categories" className="flex items-center gap-2 px-3 py-2 shrink-0">
+                  <Tag className="h-4 w-4 shrink-0" />
+                  <span className="hidden sm:inline">Catégories pièces</span>
                 </TabsTrigger>
               )}
             </TabsList>
