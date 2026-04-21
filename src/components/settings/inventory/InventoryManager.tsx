@@ -46,6 +46,10 @@ import {
   type InventorySessionItem,
 } from './types';
 
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : 'Une erreur est survenue.';
+}
+
 const statusBadgeVariant: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
   in_progress: 'default',
   paused: 'secondary',
@@ -235,8 +239,8 @@ export function InventoryManager({ canApplyStock }: { canApplyStock: boolean }) 
     try {
       await closeSession(currentSession.id);
       toast({ title: 'Comptage clôturé', description: 'Vous pouvez maintenant revoir la synthèse avant validation.' });
-    } catch (error: any) {
-      toast({ title: 'Clôture impossible', description: error.message, variant: 'destructive' });
+    } catch (error: unknown) {
+      toast({ title: 'Clôture impossible', description: getErrorMessage(error), variant: 'destructive' });
     }
   };
 
