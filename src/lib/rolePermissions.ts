@@ -15,6 +15,7 @@ export interface RolePermissions {
   settings_users: boolean;
   settings_import_export: boolean;
   settings_inventory: boolean;
+  settings_part_categories: boolean;
   sav_logs: boolean;
   can_delete_sav: boolean;
   can_create_quotes: boolean;

@@ -798,6 +798,7 @@ export type Database = {
       inventory_sessions: {
         Row: {
           applied_at: string | null
+          category_filter: Json | null
           completed_at: string | null
           counted_items: number
           counted_total_cost: number
@@ -823,6 +824,7 @@ export type Database = {
         }
         Insert: {
           applied_at?: string | null
+          category_filter?: Json | null
           completed_at?: string | null
           counted_items?: number
           counted_total_cost?: number
@@ -848,6 +850,7 @@ export type Database = {
         }
         Update: {
           applied_at?: string | null
+          category_filter?: Json | null
           completed_at?: string | null
           counted_items?: number
           counted_total_cost?: number
@@ -1277,8 +1280,50 @@ export type Database = {
           },
         ]
       }
+      part_categories: {
+        Row: {
+          color: string | null
+          created_at: string
+          description: string | null
+          display_order: number
+          id: string
+          name: string
+          shop_id: string
+          updated_at: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          name: string
+          shop_id: string
+          updated_at?: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          name?: string
+          shop_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "part_categories_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       parts: {
         Row: {
+          category_id: string | null
           color: string | null
           created_at: string
           id: string
@@ -1299,6 +1344,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          category_id?: string | null
           color?: string | null
           created_at?: string
           id?: string
@@ -1319,6 +1365,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          category_id?: string | null
           color?: string | null
           created_at?: string
           id?: string
@@ -1339,6 +1386,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "parts_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "part_categories"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "parts_shop_id_fkey"
             columns: ["shop_id"]
@@ -3199,10 +3253,20 @@ export type Database = {
           updated_rows: number
         }[]
       }
-      begin_inventory_session: {
-        Args: { _mode?: string; _name: string; _notes?: string }
-        Returns: string
-      }
+      begin_inventory_session:
+        | {
+            Args: { _mode?: string; _name: string; _notes?: string }
+            Returns: string
+          }
+        | {
+            Args: {
+              _category_ids?: string[]
+              _mode?: string
+              _name: string
+              _notes?: string
+            }
+            Returns: string
+          }
       calculate_shop_storage_usage: {
         Args: { p_shop_id: string }
         Returns: number
