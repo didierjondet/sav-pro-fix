@@ -244,6 +244,25 @@ export const SAVPrintButton = React.forwardRef<SAVPrintButtonRef, SAVPrintButton
         </div>`
         : "";
 
+      const escapeHtml = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+
+      const attachmentsBlock = resolvedAttachments.length > 0
+        ? `
+        <div class="block">
+          <div class="block-title">Pièces jointes (${resolvedAttachments.length})</div>
+          <div class="attachments">
+            ${resolvedAttachments.map((att) => {
+              const isImage = att.type?.startsWith("image/");
+              if (isImage && att.signedUrl) {
+                return `<div class="attachment-item"><img src="${att.signedUrl}" alt="${escapeHtml(att.name)}" class="attachment-img" /><div class="attachment-name">${escapeHtml(att.name)}</div></div>`;
+              }
+              return `<div class="attachment-item attachment-file"><div class="attachment-icon">📎</div><div><div class="attachment-name">${escapeHtml(att.name)}</div>${att.signedUrl ? `<a class="attachment-link" href="${att.signedUrl}">${escapeHtml(att.signedUrl)}</a>` : ""}</div></div>`;
+            }).join("")}
+          </div>
+        </div>`
+        : "";
+
+
       const html = `<!DOCTYPE html>
 <html>
 <head>
