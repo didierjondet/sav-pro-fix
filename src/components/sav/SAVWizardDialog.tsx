@@ -314,44 +314,30 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
 
   const [validationError, setValidationError] = useState('');
 
-  const canProceed = (): boolean => {
-    switch (currentStepKey) {
-      case 'client':
-        if (!selectedCustomer) {
-          if (!customerInfo.firstName.trim() || !customerInfo.lastName.trim()) return false;
-          if (!customerInfo.phone.trim() && !customerInfo.email.trim()) return false;
-        }
-        return true;
-      case 'device':
-        return !!(deviceInfo.brand.trim() && deviceInfo.model.trim());
-      case 'problem':
-        return !!deviceInfo.problemDescription.trim();
-      default:
-        return true;
-    }
-  };
-
-  const getValidationMessage = (): string => {
-    switch (currentStepKey) {
+  const validateStep = (stepKey: string | undefined): { ok: boolean; message: string } => {
+    switch (stepKey) {
       case 'client':
         if (!selectedCustomer) {
           if (!customerInfo.firstName.trim() || !customerInfo.lastName.trim())
-            return 'Le prénom et le nom du client sont obligatoires.';
+            return { ok: false, message: 'Le prénom et le nom du client sont obligatoires.' };
           if (!customerInfo.phone.trim() && !customerInfo.email.trim())
-            return 'Au moins un moyen de contact (téléphone ou email) est requis.';
+            return { ok: false, message: 'Au moins un moyen de contact (téléphone ou email) est requis.' };
         }
-        return '';
+        return { ok: true, message: '' };
       case 'device':
-        if (!deviceInfo.brand.trim()) return 'La marque de l\'appareil est obligatoire.';
-        if (!deviceInfo.model.trim()) return 'Le modèle de l\'appareil est obligatoire.';
-        return '';
+        if (!deviceInfo.brand.trim()) return { ok: false, message: 'La marque de l\'appareil est obligatoire.' };
+        if (!deviceInfo.model.trim()) return { ok: false, message: 'Le modèle de l\'appareil est obligatoire.' };
+        return { ok: true, message: '' };
       case 'problem':
-        if (!deviceInfo.problemDescription.trim()) return 'La description du problème est obligatoire.';
-        return '';
+        if (!deviceInfo.problemDescription.trim()) return { ok: false, message: 'La description du problème est obligatoire.' };
+        return { ok: true, message: '' };
       default:
-        return '';
+        return { ok: true, message: '' };
     }
   };
+
+  const canProceed = (): boolean => validateStep(currentStepKey).ok;
+  const getValidationMessage = (): string => validateStep(currentStepKey).message;
 
   const goNext = () => {
     if (!canProceed()) {
@@ -364,6 +350,25 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
   const goBack = () => {
     setValidationError('');
     if (currentStep > 0) setCurrentStep(currentStep - 1);
+  };
+
+  const goToStep = (targetIndex: number) => {
+    if (targetIndex === currentStep) return;
+    if (targetIndex < currentStep) {
+      setValidationError('');
+      setCurrentStep(targetIndex);
+      return;
+    }
+    for (let i = currentStep; i < targetIndex; i++) {
+      const result = validateStep(activeSteps[i]?.key);
+      if (!result.ok) {
+        setValidationError(result.message);
+        if (i !== currentStep) setCurrentStep(i);
+        return;
+      }
+    }
+    setValidationError('');
+    setCurrentStep(targetIndex);
   };
 
   // Render step content
@@ -558,12 +563,13 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
                   <Label className="text-sm">Identifiant iCloud</Label>
                   <Input type="email" value={securityCodes.icloud_id}
                     onChange={(e) => setSecurityCodes({ ...securityCodes, icloud_id: e.target.value })}
-                    placeholder="email@icloud.com" />
+                    placeholder="mail@gmail.com" />
                 </div>
                 <div>
                   <Label className="text-sm">Mot de passe iCloud</Label>
                   <Input type="password" value={securityCodes.icloud_password}
-                    onChange={(e) => setSecurityCodes({ ...securityCodes, icloud_password: e.target.value })} />
+                    onChange={(e) => setSecurityCodes({ ...securityCodes, icloud_password: e.target.value })}
+                    placeholder="mot de passe" />
                 </div>
                 <div>
                   <Label className="text-sm">Code PIN SIM (4 chiffres)</Label>
@@ -751,18 +757,26 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
             <div className="flex justify-between mt-2">
               {activeSteps.map((step, i) => {
                 const Icon = step.icon;
+                const isCurrent = i === currentStep;
                 return (
-                  <div key={step.key} className={`flex flex-col items-center gap-1 ${
-                    i === currentStep ? 'text-primary' : i < currentStep ? 'text-primary/60' : 'text-muted-foreground/40'
-                  }`}>
+                  <button
+                    type="button"
+                    key={step.key}
+                    onClick={() => goToStep(i)}
+                    aria-label={`Aller à l'étape ${step.label}`}
+                    aria-current={isCurrent ? 'step' : undefined}
+                    className={`flex flex-col items-center gap-1 rounded-md p-1 -m-1 transition-colors ${
+                      isCurrent ? 'text-primary cursor-default' : i < currentStep ? 'text-primary/60 cursor-pointer hover:text-primary' : 'text-muted-foreground/40 cursor-pointer hover:text-muted-foreground'
+                    }`}
+                  >
                     <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs transition-all ${
-                      i === currentStep ? 'bg-primary text-primary-foreground shadow-md' 
-                      : i < currentStep ? 'bg-primary/20 text-primary' 
-                      : 'bg-muted text-muted-foreground'
+                      isCurrent ? 'bg-primary text-primary-foreground shadow-md'
+                      : i < currentStep ? 'bg-primary/20 text-primary hover:bg-primary/30'
+                      : 'bg-muted text-muted-foreground hover:bg-muted/80'
                     }`}>
                       {i < currentStep ? <Check className="h-3 w-3" /> : <Icon className="h-3 w-3" />}
                     </div>
-                  </div>
+                  </button>
                 );
               })}
             </div>
