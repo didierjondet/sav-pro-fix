@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -18,6 +19,25 @@ interface SecurityCodesSectionProps {
 }
 
 export function SecurityCodesSection({ codes, onChange, stepNumber }: SecurityCodesSectionProps) {
+  const uid = useId().replace(/:/g, '');
+  // Noms aléatoires pour éviter le matching des password managers
+  const fieldNames = {
+    unlock: `f_${uid}_a`,
+    icloudId: `f_${uid}_b`,
+    icloudPwd: `f_${uid}_c`,
+    simPin: `f_${uid}_d`,
+  };
+
+  const noAutofillProps = {
+    autoComplete: 'off' as const,
+    autoCorrect: 'off',
+    autoCapitalize: 'off',
+    spellCheck: false,
+    'data-form-type': 'other',
+    'data-lpignore': 'true',
+    'data-1p-ignore': 'true',
+  };
+
   return (
     <Card className="border-orange-200 bg-orange-50/30">
       <CardHeader className="relative">
@@ -38,20 +58,27 @@ export function SecurityCodesSection({ codes, onChange, stepNumber }: SecurityCo
       </CardHeader>
       
       <CardContent className="space-y-4">
+        {/* Honeypot pour absorber l'autofill */}
+        <div style={{ position: 'absolute', left: '-9999px', height: 0, overflow: 'hidden' }} aria-hidden="true">
+          <input type="text" name="username" tabIndex={-1} autoComplete="username" />
+          <input type="password" name="password" tabIndex={-1} autoComplete="current-password" />
+        </div>
+
         {/* Code de déverrouillage */}
         <div>
           <Label htmlFor="unlock-code">Code de déverrouillage (max 8 caractères)</Label>
           <Input
             id="unlock-code"
+            name={fieldNames.unlock}
             type="text"
             maxLength={8}
             value={codes.unlock_code}
             onChange={(e) => {
-              // Accepter uniquement les caractères alphanumériques
               const value = e.target.value.replace(/[^a-zA-Z0-9]/g, '');
               onChange({...codes, unlock_code: value});
             }}
             placeholder="Ex: ABC12345"
+            {...noAutofillProps}
           />
         </div>
 
@@ -63,20 +90,25 @@ export function SecurityCodesSection({ codes, onChange, stepNumber }: SecurityCo
               <Label htmlFor="icloud-id" className="text-sm">Identifiant iCloud</Label>
               <Input
                 id="icloud-id"
-                type="email"
+                name={fieldNames.icloudId}
+                type="text"
                 value={codes.icloud_id}
                 onChange={(e) => onChange({...codes, icloud_id: e.target.value})}
-                placeholder="email@icloud.com"
+                placeholder="mail@gmail.com"
+                {...noAutofillProps}
               />
             </div>
             <div>
               <Label htmlFor="icloud-password" className="text-sm">Mot de passe iCloud</Label>
               <Input
                 id="icloud-password"
-                type="password"
+                name={fieldNames.icloudPwd}
+                type="text"
+                style={{ WebkitTextSecurity: 'disc' } as React.CSSProperties}
                 value={codes.icloud_password}
                 onChange={(e) => onChange({...codes, icloud_password: e.target.value})}
-                placeholder="••••••••"
+                placeholder="mot de passe"
+                {...noAutofillProps}
               />
             </div>
           </div>
@@ -84,18 +116,20 @@ export function SecurityCodesSection({ codes, onChange, stepNumber }: SecurityCo
 
         {/* Code PIN SIM */}
         <div>
-          <Label htmlFor="sim-pin">Code PIN carte SIM (4 chiffres)</Label>
+          <Label htmlFor="sim-pin">Code PIN carte SIM (4 à 6 chiffres)</Label>
           <Input
             id="sim-pin"
+            name={fieldNames.simPin}
             type="text"
-            maxLength={4}
+            inputMode="numeric"
+            maxLength={6}
             value={codes.sim_pin}
             onChange={(e) => {
-              // Ne garder que les chiffres
               const value = e.target.value.replace(/\D/g, '');
               onChange({...codes, sim_pin: value});
             }}
-            placeholder="1234"
+            placeholder="123456"
+            {...noAutofillProps}
           />
         </div>
       </CardContent>
