@@ -111,7 +111,7 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
     problemDescription: '', attachments: [] as string[],
   });
   const [accessories, setAccessories] = useState({
-    charger: false, case: false, screen_protector: false,
+    charger: false, case: false, screen_protector: false, other: '',
   });
   const [unlockPattern, setUnlockPattern] = useState<number[]>([]);
   const [securityCodes, setSecurityCodes] = useState<SecurityCodes>({
@@ -301,7 +301,7 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
     setSelectedCustomer(null);
     setCustomerInfo({ firstName: '', lastName: '', email: '', phone: '', address: '' });
     setDeviceInfo({ brand: '', model: '', imei: '', sku: '', color: '', grade: '', problemDescription: '', attachments: [] });
-    setAccessories({ charger: false, case: false, screen_protector: false });
+    setAccessories({ charger: false, case: false, screen_protector: false, other: '' });
     setUnlockPattern([]);
     setSecurityCodes({ unlock_code: '', icloud_id: '', icloud_password: '', sim_pin: '' });
     setSelectedParts([]);
@@ -529,7 +529,16 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
           </div>
         );
 
-      case 'accessories':
+      case 'accessories': {
+        const wizNoAutofill = {
+          autoComplete: 'off' as const,
+          autoCorrect: 'off',
+          autoCapitalize: 'off',
+          spellCheck: false,
+          'data-form-type': 'other',
+          'data-lpignore': 'true',
+          'data-1p-ignore': 'true',
+        };
         return (
           <div className="space-y-6">
             <div>
@@ -542,40 +551,53 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
                 ].map((acc) => (
                   <div key={acc.key} className="flex items-center space-x-2">
                     <Checkbox id={`wiz-${acc.key}`}
-                      checked={accessories[acc.key as keyof typeof accessories]}
+                      checked={accessories[acc.key as keyof typeof accessories] as boolean}
                       onCheckedChange={(checked) => setAccessories({ ...accessories, [acc.key]: !!checked })} />
                     <Label htmlFor={`wiz-${acc.key}`} className="text-sm font-normal">{acc.label}</Label>
                   </div>
                 ))}
               </div>
+              <div className="mt-3">
+                <Label htmlFor="wiz-accessory-other" className="text-sm">Autre accessoire</Label>
+                <Input id="wiz-accessory-other" value={accessories.other}
+                  onChange={(e) => setAccessories({ ...accessories, other: e.target.value })}
+                  placeholder="Ex : stylet, écouteurs, carte SIM…" />
+              </div>
             </div>
             <Separator />
             <div>
               <Label className="mb-3 block font-medium">Codes de sécurité</Label>
+              {/* Honeypot pour absorber l'autofill */}
+              <div style={{ position: 'absolute', left: '-9999px', height: 0, overflow: 'hidden' }} aria-hidden="true">
+                <input type="text" name="username" tabIndex={-1} autoComplete="username" />
+                <input type="password" name="password" tabIndex={-1} autoComplete="current-password" />
+              </div>
               <div className="space-y-3">
                 <div>
                   <Label className="text-sm">Code de déverrouillage (max 8 car.)</Label>
-                  <Input maxLength={8} value={securityCodes.unlock_code}
+                  <Input name="wiz_unlock_xq" type="text" maxLength={8} value={securityCodes.unlock_code}
                     onChange={(e) => setSecurityCodes({ ...securityCodes, unlock_code: e.target.value.replace(/[^a-zA-Z0-9]/g, '') })}
-                    placeholder="Ex: ABC12345" />
+                    placeholder="Ex: ABC12345" {...wizNoAutofill} />
                 </div>
                 <div>
                   <Label className="text-sm">Identifiant iCloud</Label>
-                  <Input type="email" value={securityCodes.icloud_id}
+                  <Input name="wiz_icid_xq" type="text" value={securityCodes.icloud_id}
                     onChange={(e) => setSecurityCodes({ ...securityCodes, icloud_id: e.target.value })}
-                    placeholder="mail@gmail.com" />
+                    placeholder="mail@gmail.com" {...wizNoAutofill} />
                 </div>
                 <div>
                   <Label className="text-sm">Mot de passe iCloud</Label>
-                  <Input type="password" value={securityCodes.icloud_password}
+                  <Input name="wiz_icpw_xq" type="text"
+                    style={{ WebkitTextSecurity: 'disc' } as React.CSSProperties}
+                    value={securityCodes.icloud_password}
                     onChange={(e) => setSecurityCodes({ ...securityCodes, icloud_password: e.target.value })}
-                    placeholder="mot de passe" />
+                    placeholder="mot de passe" {...wizNoAutofill} />
                 </div>
                 <div>
-                  <Label className="text-sm">Code PIN SIM (4 chiffres)</Label>
-                  <Input maxLength={4} value={securityCodes.sim_pin}
+                  <Label className="text-sm">Code PIN SIM (4 à 6 chiffres)</Label>
+                  <Input name="wiz_pin_xq" type="text" inputMode="numeric" maxLength={6} value={securityCodes.sim_pin}
                     onChange={(e) => setSecurityCodes({ ...securityCodes, sim_pin: e.target.value.replace(/\D/g, '') })}
-                    placeholder="1234" />
+                    placeholder="123456" {...wizNoAutofill} />
                 </div>
               </div>
             </div>
@@ -586,6 +608,7 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
             </div>
           </div>
         );
+      }
 
       case 'parts':
         return (

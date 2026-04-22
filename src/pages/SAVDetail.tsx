@@ -597,7 +597,7 @@ export default function SAVDetail() {
               </Card>
 
               {/* Accessoires présents */}
-              {(savCase.accessories?.charger || savCase.accessories?.case || savCase.accessories?.screen_protector) && <Card>
+              {(savCase.accessories?.charger || savCase.accessories?.case || savCase.accessories?.screen_protector || savCase.accessories?.other) && <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       Accessoires présents
@@ -624,6 +624,14 @@ export default function SAVDetail() {
                         </span>
                       </div>
                     </div>
+                    {savCase.accessories?.other && (
+                      <div className="flex items-center gap-2 mt-3 pt-3 border-t">
+                        <CheckCircle className="h-4 w-4 text-green-500 shrink-0" />
+                        <span className="text-green-600">
+                          <span className="font-medium">Autre :</span> {savCase.accessories.other}
+                        </span>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>}
 

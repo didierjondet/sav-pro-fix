@@ -54,6 +54,7 @@ interface AccessoriesInfo {
   charger: boolean;
   case: boolean;
   screen_protector: boolean;
+  other: string;
 }
 
 interface SelectedPart {
@@ -107,6 +108,7 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
     charger: false,
     case: false,
     screen_protector: false,
+    other: '',
   });
   const [unlockPattern, setUnlockPattern] = useState<number[]>([]);
   const [selectedParts, setSelectedParts] = useState<SelectedPart[]>([]);
@@ -409,6 +411,7 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
         charger: false,
         case: false,
         screen_protector: false,
+        other: '',
       });
       setUnlockPattern([]);
       setSelectedParts([]);
@@ -800,6 +803,15 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
                 Protection d'écran
               </Label>
             </div>
+          </div>
+          <div>
+            <Label htmlFor="accessory-other" className="text-sm">Autre accessoire</Label>
+            <Input
+              id="accessory-other"
+              value={accessories.other}
+              onChange={(e) => setAccessories({ ...accessories, other: e.target.value })}
+              placeholder="Ex : stylet, écouteurs, carte SIM…"
+            />
           </div>
         </CardContent>
       </Card>
