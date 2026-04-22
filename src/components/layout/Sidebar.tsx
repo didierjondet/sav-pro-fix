@@ -151,6 +151,8 @@ export function Sidebar({
         return checkBoth(permissions.chats, 'menu_chats');
       case '/reports':
         return checkBoth(permissions.reports, 'menu_reports');
+      case '/settings?tab=inventory':
+        return (rolePermissions as any).settings_inventory === true;
       default:
         return true;
     }
