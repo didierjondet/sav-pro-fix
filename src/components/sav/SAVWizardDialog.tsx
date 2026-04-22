@@ -608,6 +608,7 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
             </div>
           </div>
         );
+      }
 
       case 'parts':
         return (
