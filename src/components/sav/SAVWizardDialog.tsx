@@ -314,44 +314,30 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
 
   const [validationError, setValidationError] = useState('');
 
-  const canProceed = (): boolean => {
-    switch (currentStepKey) {
-      case 'client':
-        if (!selectedCustomer) {
-          if (!customerInfo.firstName.trim() || !customerInfo.lastName.trim()) return false;
-          if (!customerInfo.phone.trim() && !customerInfo.email.trim()) return false;
-        }
-        return true;
-      case 'device':
-        return !!(deviceInfo.brand.trim() && deviceInfo.model.trim());
-      case 'problem':
-        return !!deviceInfo.problemDescription.trim();
-      default:
-        return true;
-    }
-  };
-
-  const getValidationMessage = (): string => {
-    switch (currentStepKey) {
+  const validateStep = (stepKey: string | undefined): { ok: boolean; message: string } => {
+    switch (stepKey) {
       case 'client':
         if (!selectedCustomer) {
           if (!customerInfo.firstName.trim() || !customerInfo.lastName.trim())
-            return 'Le prénom et le nom du client sont obligatoires.';
+            return { ok: false, message: 'Le prénom et le nom du client sont obligatoires.' };
           if (!customerInfo.phone.trim() && !customerInfo.email.trim())
-            return 'Au moins un moyen de contact (téléphone ou email) est requis.';
+            return { ok: false, message: 'Au moins un moyen de contact (téléphone ou email) est requis.' };
         }
-        return '';
+        return { ok: true, message: '' };
       case 'device':
-        if (!deviceInfo.brand.trim()) return 'La marque de l\'appareil est obligatoire.';
-        if (!deviceInfo.model.trim()) return 'Le modèle de l\'appareil est obligatoire.';
-        return '';
+        if (!deviceInfo.brand.trim()) return { ok: false, message: 'La marque de l\'appareil est obligatoire.' };
+        if (!deviceInfo.model.trim()) return { ok: false, message: 'Le modèle de l\'appareil est obligatoire.' };
+        return { ok: true, message: '' };
       case 'problem':
-        if (!deviceInfo.problemDescription.trim()) return 'La description du problème est obligatoire.';
-        return '';
+        if (!deviceInfo.problemDescription.trim()) return { ok: false, message: 'La description du problème est obligatoire.' };
+        return { ok: true, message: '' };
       default:
-        return '';
+        return { ok: true, message: '' };
     }
   };
+
+  const canProceed = (): boolean => validateStep(currentStepKey).ok;
+  const getValidationMessage = (): string => validateStep(currentStepKey).message;
 
   const goNext = () => {
     if (!canProceed()) {
@@ -364,6 +350,25 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
   const goBack = () => {
     setValidationError('');
     if (currentStep > 0) setCurrentStep(currentStep - 1);
+  };
+
+  const goToStep = (targetIndex: number) => {
+    if (targetIndex === currentStep) return;
+    if (targetIndex < currentStep) {
+      setValidationError('');
+      setCurrentStep(targetIndex);
+      return;
+    }
+    for (let i = currentStep; i < targetIndex; i++) {
+      const result = validateStep(activeSteps[i]?.key);
+      if (!result.ok) {
+        setValidationError(result.message);
+        if (i !== currentStep) setCurrentStep(i);
+        return;
+      }
+    }
+    setValidationError('');
+    setCurrentStep(targetIndex);
   };
 
   // Render step content
