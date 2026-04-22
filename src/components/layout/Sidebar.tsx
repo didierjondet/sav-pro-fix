@@ -248,19 +248,28 @@ export function Sidebar({
           <ScrollArea className="flex-1 p-4">
             <TooltipProvider>
               <nav className="space-y-2">
-                {(shop as any)?.sidebar_nav_visible !== false && navigation.map(item => {
+                {(shop as any)?.sidebar_nav_visible !== false && navigation.map((item, index) => {
                 const Icon = item.icon;
-                const isActive = location.pathname === item.href;
-                return <Button key={item.name} variant={isActive ? 'default' : 'ghost'} className={cn('w-full justify-start', isActive && 'bg-primary text-primary-foreground')} onClick={() => {
-                  navigate(item.href);
-                  onClose();
-                }}>
+                const searchParams = new URLSearchParams(location.search);
+                const isInventoryItem = item.href === '/settings?tab=inventory';
+                const isActive = isInventoryItem
+                  ? location.pathname === '/settings' && searchParams.get('tab') === 'inventory'
+                  : location.pathname === item.href;
+                const prevItem = navigation[index - 1];
+                const showSeparator = prevItem && prevItem.group === 'work' && item.group === 'management';
+                return <div key={item.name}>
+                    {showSeparator && <div className="my-3 border-t border-border/60" />}
+                    <Button variant={isActive ? 'default' : 'ghost'} className={cn('w-full justify-start', isActive && 'bg-primary text-primary-foreground')} onClick={() => {
+                      navigate(item.href);
+                      onClose();
+                    }}>
                       <Icon className="mr-3 h-5 w-5" />
                       <span>{item.name}</span>
                       {item.href === '/client-chats' && openConversationsCount > 0 && <Badge variant="destructive" className="ml-auto text-xs">{openConversationsCount}</Badge>}
                       {item.href === '/quotes' && quoteCounts.inProgress > 0 && <Badge variant="destructive" className="ml-auto text-xs">{quoteCounts.inProgress}</Badge>}
                       {item.href === '/agenda' && pendingAppointmentsCount > 0 && <Badge variant="secondary" className="ml-auto text-xs bg-orange-500 text-white">{pendingAppointmentsCount}</Badge>}
-                    </Button>;
+                    </Button>
+                  </div>;
               })}
                 
                 {profile?.role === 'super_admin' && (shop as any)?.sidebar_nav_visible !== false && <Button variant={location.pathname === '/super-admin' ? 'default' : 'ghost'} className={cn('w-full justify-start', location.pathname === '/super-admin' && 'bg-primary text-primary-foreground')} onClick={() => {
