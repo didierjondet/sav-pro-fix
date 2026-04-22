@@ -17,49 +17,33 @@ import { calculateSAVDelay } from '@/hooks/useSAVDelay';
 import { useMenuPermissions } from '@/hooks/useMenuPermissions';
 import { useRolePermissions } from '@/hooks/useRolePermissions';
 import { usePendingAppointments } from '@/hooks/usePendingAppointments';
-import { MessageSquare, Package, Users, BarChart3, FileText, Settings, X, Plus, Shield, CreditCard, HelpCircle, Info, FileBarChart, Calendar } from 'lucide-react';
+import { MessageSquare, Package, Users, BarChart3, FileText, Settings, X, Plus, Shield, CreditCard, HelpCircle, Info, FileBarChart, Calendar, ClipboardList } from 'lucide-react';
 import { useQuotes } from '@/hooks/useQuotes';
 interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
 }
-const baseNavigation = [{
-  name: 'Tableau de bord',
-  href: '/dashboard',
-  icon: BarChart3
-}, {
-  name: 'Dossiers SAV',
-  href: '/sav',
-  icon: FileText
-}, {
-  name: 'Stock pièces',
-  href: '/parts',
-  icon: Package
-}, {
-  name: 'Devis',
-  href: '/quotes',
-  icon: FileText
-}, {
-  name: 'Commandes',
-  href: '/orders',
-  icon: Package
-}, {
-  name: 'Clients',
-  href: '/customers',
-  icon: Users
-}, {
-  name: 'Agenda',
-  href: '/agenda',
-  icon: Calendar
-}, {
-  name: 'Chat clients',
-  href: '/client-chats',
-  icon: MessageSquare
-}, {
-  name: 'Rapports',
-  href: '/reports',
-  icon: FileBarChart
-}];
+type NavGroup = 'work' | 'management';
+interface NavItem {
+  name: string;
+  href: string;
+  icon: any;
+  group: NavGroup;
+}
+const baseNavigation: NavItem[] = [
+  // Bloc « Travail au quotidien »
+  { name: 'Tableau de bord', href: '/dashboard', icon: BarChart3, group: 'work' },
+  { name: 'Dossiers SAV', href: '/sav', icon: FileText, group: 'work' },
+  { name: 'Devis', href: '/quotes', icon: FileText, group: 'work' },
+  { name: 'Clients', href: '/customers', icon: Users, group: 'work' },
+  { name: 'Agenda', href: '/agenda', icon: Calendar, group: 'work' },
+  { name: 'Chat clients', href: '/client-chats', icon: MessageSquare, group: 'work' },
+  // Bloc « Gestion »
+  { name: 'Stock pièces', href: '/parts', icon: Package, group: 'management' },
+  { name: 'Commandes', href: '/orders', icon: Package, group: 'management' },
+  { name: 'Inventaire', href: '/settings?tab=inventory', icon: ClipboardList, group: 'management' },
+  { name: 'Rapports', href: '/reports', icon: FileBarChart, group: 'management' },
+];
 export function Sidebar({
   isOpen,
   onClose
