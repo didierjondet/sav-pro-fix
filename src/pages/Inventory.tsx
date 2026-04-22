@@ -18,44 +18,46 @@ export default function Inventory() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header onMenuToggle={() => setSidebarOpen(!sidebarOpen)} />
-      <div className="flex">
+      <div className="flex h-screen">
         <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-        <main className="flex-1 p-4 md:p-6 lg:p-8 overflow-x-hidden">
-          <div className="max-w-7xl mx-auto space-y-6">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
-                <ClipboardList className="h-5 w-5" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold tracking-tight">Inventaire</h1>
-                <p className="text-sm text-muted-foreground">
-                  Gérez vos sessions d'inventaire, comptez et ajustez vos stocks.
-                </p>
-              </div>
-            </div>
-
-            {loading ? (
-              <Card>
-                <CardContent className="py-12 text-center text-muted-foreground">
-                  Chargement…
-                </CardContent>
-              </Card>
-            ) : !canAccess ? (
-              <Card>
-                <CardContent className="py-12 text-center space-y-3">
-                  <ShieldAlert className="h-10 w-10 mx-auto text-destructive" />
-                  <p className="font-medium">Accès non autorisé</p>
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <Header onMenuClick={() => setSidebarOpen(true)} isMobileMenuOpen={sidebarOpen} />
+          <main className="flex-1 overflow-y-auto p-6">
+            <div className="max-w-7xl mx-auto space-y-6">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+                  <ClipboardList className="h-5 w-5" />
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold tracking-tight">Inventaire</h1>
                   <p className="text-sm text-muted-foreground">
-                    Vous n'avez pas la permission d'accéder à l'inventaire.
+                    Gérez vos sessions d'inventaire, comptez et ajustez vos stocks.
                   </p>
-                </CardContent>
-              </Card>
-            ) : (
-              <InventoryManager canApplyStock={canApplyStock} />
-            )}
-          </div>
-        </main>
+                </div>
+              </div>
+
+              {loading ? (
+                <Card>
+                  <CardContent className="py-12 text-center text-muted-foreground">
+                    Chargement…
+                  </CardContent>
+                </Card>
+              ) : !canAccess ? (
+                <Card>
+                  <CardContent className="py-12 text-center space-y-3">
+                    <ShieldAlert className="h-10 w-10 mx-auto text-destructive" />
+                    <p className="font-medium">Accès non autorisé</p>
+                    <p className="text-sm text-muted-foreground">
+                      Vous n'avez pas la permission d'accéder à l'inventaire.
+                    </p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <InventoryManager canApplyStock={canApplyStock} />
+              )}
+            </div>
+          </main>
+        </div>
       </div>
     </div>
   );
