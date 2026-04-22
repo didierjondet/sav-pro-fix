@@ -51,6 +51,7 @@ import ChromeExtensionDownload from "./pages/ChromeExtensionDownload";
 import Agenda from "./pages/Agenda";
 import AppointmentConfirm from "./pages/AppointmentConfirm";
 import SAVLogs from "./pages/SAVLogs";
+import Inventory from "./pages/Inventory";
 import HelpBot from "./components/help/HelpBot";
 
 const queryClient = new QueryClient({
@@ -134,6 +135,7 @@ const App = () => {
                 <Route path="/quote/:id" element={<QuotePublic />} />
                 <Route path="/satisfaction/:token" element={<Satisfaction />} />
                 <Route path="/orders" element={<Orders />} />
+                <Route path="/inventory" element={<Inventory />} />
                 <Route path="/customers" element={<Customers />} />
                 <Route path="/client-chats" element={<ClientChats />} />
                 <Route path="/client-chats/*" element={<ClientChats />} />
