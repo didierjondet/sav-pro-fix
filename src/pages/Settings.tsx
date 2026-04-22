@@ -1573,11 +1573,7 @@ export default function Settings() {
                 <RolePermissionsManager />
               </TabsContent>}
 
-            {rolePermissions.settings_inventory && (
-              <TabsContent value="inventory" className="space-y-6">
-                <InventoryManager canApplyStock={rolePermissions.inventory_apply_stock} />
-              </TabsContent>
-            )}
+
 
             {rolePermissions.settings_part_categories && (
               <TabsContent value="part-categories" className="space-y-6">
