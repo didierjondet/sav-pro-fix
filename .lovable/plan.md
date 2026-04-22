@@ -1,50 +1,44 @@
 
 
-## Plan : page Inventaire autonome accessible depuis le menu
+## Plan : améliorations du wizard de création SAV
 
-### Objectif
-Rendre l'inventaire accessible via une page dédiée `/inventory` au lieu d'un onglet de Réglages, et retirer l'onglet « Inventaire » de la page Réglages.
+### 1. Navigation libre entre les étapes
 
-### Modifications
+Rendre cliquables les **indicateurs d'étapes** (les ronds avec icônes en haut du dialogue) pour permettre de revenir sur une étape précédente.
 
-**1. Nouvelle page `src/pages/Inventory.tsx`**
-- Page autonome avec `<Header />` + `<Sidebar />` (même structure que `Parts.tsx`, `Orders.tsx`)
-- Contenu principal : `<InventoryManager canApplyStock={rolePermissions.inventory_apply_stock} />`
-- Garde d'accès : si `rolePermissions.settings_inventory` est faux et utilisateur non super_admin → message « Accès non autorisé »
-- Titre de page « Inventaire » + courte description
+- Fichier : `src/components/sav/SAVWizardDialog.tsx` (lignes ~751-768)
+- Comportement :
+  - Cliquer sur une étape **antérieure** (`i < currentStep`) → retour direct à cette étape, sans validation
+  - Cliquer sur une étape **future** (`i > currentStep`) → autorisé uniquement si toutes les étapes intermédiaires sont valides (utilise la même logique `canProceed()` que le bouton « Suivant » pour l'étape courante). Si invalide, on affiche le message d'erreur et on reste sur l'étape courante
+  - Cliquer sur l'étape **courante** → no-op
+  - Curseur `cursor-pointer` sur les indicateurs cliquables, légère mise en avant au hover
+- Le bouton « Retour » existant en bas est conservé (équivalent rapide vers l'étape précédente)
 
-**2. `src/App.tsx`**
-- Ajouter l'import `Inventory`
-- Ajouter la route `<Route path="/inventory" element={<Inventory />} />`
+### 2. Reformulation IA sur les zones de texte
 
-**3. `src/components/layout/Sidebar.tsx`**
-- Modifier l'entrée « Inventaire » : `href: '/inventory'` (au lieu de `/settings?tab=inventory`)
-- Simplifier la détection `isActive` : retirer la logique spéciale `searchParams`, comparaison directe sur `location.pathname === '/inventory'`
-- Conserver le filtrage de permission via `rolePermissions.settings_inventory` (case `'/inventory'` dans le switch)
+État actuel : seul le champ « Description du problème » dispose du bouton IA (étape Problème). C'est aujourd'hui la seule zone de texte libre du wizard, et le bouton est bien présent dans le code.
 
-**4. `src/pages/Settings.tsx`**
-- Retirer l'import `InventoryManager`
-- Retirer `'inventory'` de la liste `availableTabs`
-- Retirer le `<TabsTrigger value="inventory">` (ligne ~767)
-- Retirer le bloc `<TabsContent value="inventory">` (ligne ~1584)
-- Si l'URL contient encore `?tab=inventory`, rediriger vers `/inventory` au montage (compatibilité ascendante)
+Action : aucun autre champ de saisie libre n'existe dans le wizard. Si l'utilisateur souhaite un champ supplémentaire (par exemple « Notes techniques internes »), nous l'ajouterons à l'étape « Problème », sous la description, avec son propre bouton de reformulation IA (`context="repair_notes"`). Sinon, on confirme simplement que le bouton IA est déjà actif sur la description du problème.
 
-### Comportements préservés
-- Permissions RBAC `settings_inventory` et `inventory_apply_stock` inchangées (même clés en base)
-- RLS sur `inventory_sessions` / `inventory_session_items` / `inventory_audit_logs` inchangées
-- Vue simplifiée (`shop_admin`) : Inventaire reste masqué, comportement identique
-- Onglet « Catégories de pièces » reste dans Réglages (inchangé)
-- Aucune modification visuelle interne du `InventoryManager` lui-même
+### 3. Placeholders des codes iCloud
 
-### Fichiers
-- **Créé** : `src/pages/Inventory.tsx`
-- **Modifié** : `src/App.tsx`, `src/components/layout/Sidebar.tsx`, `src/pages/Settings.tsx`
+Étape « Accessoires & Codes » (lignes ~558-567) : remplacer les placeholders pour qu'ils ressemblent clairement à des exemples génériques (et non des valeurs préremplies).
 
-### Vérifications
-- Clic sur « Inventaire » dans la sidebar → ouverture de `/inventory` (page plein écran, sidebar conservée)
-- L'item « Inventaire » est mis en surbrillance dans la sidebar
-- L'onglet « Inventaire » n'apparaît plus dans Réglages
-- Une URL `/settings?tab=inventory` redirige automatiquement vers `/inventory`
-- Toutes les fonctionnalités existantes (lancer, suspendre, reprendre, annuler, valider, imprimer, filtrer par catégorie) restent fonctionnelles
-- Aucune régression sur les autres pages
+| Champ | Placeholder actuel | Nouveau placeholder |
+|-------|-------------------|---------------------|
+| Identifiant iCloud | `email@icloud.com` | `mail@gmail.com` |
+| Mot de passe iCloud | *(aucun)* | `mot de passe` |
+
+Aucune valeur n'est prérempli en base — il s'agit uniquement de placeholders visuels. Aucune autre modification sur cette étape.
+
+### Fichier modifié
+- `src/components/sav/SAVWizardDialog.tsx`
+
+### Vérifications post-implémentation
+- Cliquer sur un rond d'étape antérieure → retour immédiat à cette étape, données conservées
+- Cliquer sur un rond d'étape future depuis une étape valide → avance ; sinon message d'erreur
+- Bouton « Retour » et « Suivant » fonctionnent comme avant
+- Champ « Description du problème » conserve son bouton IA
+- Champ iCloud affiche `mail@gmail.com` en placeholder, champ mot de passe affiche `mot de passe`
+- Aucune régression sur les autres étapes ni sur la création finale du SAV
 
