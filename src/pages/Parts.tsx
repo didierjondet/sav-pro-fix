@@ -298,17 +298,38 @@ export default function Parts() {
                                         Réf: {part.reference}
                                       </Badge>
                                     )}
-                                    {part.category_id && categoryById.get(part.category_id) && (
-                                      <Badge
-                                        variant="outline"
-                                        style={{
-                                          borderColor: categoryById.get(part.category_id)!.color ?? undefined,
-                                          color: categoryById.get(part.category_id)!.color ?? undefined,
-                                        }}
+                                    <Select
+                                      value={part.category_id ?? 'none'}
+                                      onValueChange={async (value) => {
+                                        await updatePart(part.id, { category_id: value === 'none' ? null : value });
+                                      }}
+                                    >
+                                      <SelectTrigger
+                                        className="h-7 w-auto min-w-[140px] gap-2 px-2 py-0 text-xs"
+                                        style={
+                                          part.category_id && categoryById.get(part.category_id)?.color
+                                            ? {
+                                                borderColor: categoryById.get(part.category_id)!.color!,
+                                                color: categoryById.get(part.category_id)!.color!,
+                                              }
+                                            : undefined
+                                        }
                                       >
-                                        {categoryById.get(part.category_id)!.name}
-                                      </Badge>
-                                    )}
+                                        <SelectValue placeholder="Catégorie">
+                                          {part.category_id && categoryById.get(part.category_id)
+                                            ? categoryById.get(part.category_id)!.name
+                                            : 'Sans catégorie'}
+                                        </SelectValue>
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="none">Sans catégorie</SelectItem>
+                                        {categories.map((cat) => (
+                                          <SelectItem key={cat.id} value={cat.id}>
+                                            {cat.name}
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
                                     {(part.reserved_quantity || 0) > 0 && (
                                       <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-300">
                                         Réservé: {part.reserved_quantity}
