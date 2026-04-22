@@ -16,7 +16,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { useTheme } from 'next-themes';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import {
   Settings as SettingsIcon,
   Palette,
@@ -52,7 +52,6 @@ import {
 
 import { MenuConfigurationTab } from '@/components/settings/MenuConfigurationTab';
 import { RolePermissionsManager } from '@/components/settings/RolePermissionsManager';
-import { InventoryManager } from '@/components/settings/inventory/InventoryManager';
 import { PartCategoriesManager } from '@/components/settings/PartCategoriesManager';
 import { SMSPackagesDisplay } from '@/components/subscription/SMSPackagesDisplay';
 import { BillingInvoices } from '@/components/billing/BillingInvoices';
@@ -96,8 +95,16 @@ export default function Settings() {
     setTheme
   } = useTheme();
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const initialTab = searchParams.get('tab') || 'shop';
   const [activeTab, setActiveTab] = useState<string>(initialTab);
+
+  // Backward compatibility: redirect old inventory tab URL to dedicated page
+  useEffect(() => {
+    if (searchParams.get('tab') === 'inventory') {
+      navigate('/inventory', { replace: true });
+    }
+  }, [searchParams, navigate]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -653,7 +660,6 @@ export default function Settings() {
     ...(rolePermissions.settings_import_export ? ['import-export'] : []),
     ...(rolePermissions.settings_subscription ? ['subscription'] : []),
     ...(isAdmin && rolePermissions.settings_users ? ['users'] : []),
-    ...(rolePermissions.settings_inventory ? ['inventory'] : []),
     ...(rolePermissions.settings_part_categories ? ['part-categories'] : []),
   ];
   const safeActiveTab = availableTabs.includes(activeTab) ? activeTab : availableTabs[0];
@@ -762,12 +768,6 @@ export default function Settings() {
                 <TabsTrigger value="users" className="flex items-center gap-2 px-3 py-2 shrink-0">
                   <Users className="h-4 w-4 shrink-0" />
                   <span className="hidden sm:inline">Utilisateurs</span>
-                </TabsTrigger>
-              )}
-              {rolePermissions.settings_inventory && (
-                <TabsTrigger value="inventory" className="flex items-center gap-2 px-3 py-2 shrink-0">
-                  <ClipboardList className="h-4 w-4 shrink-0" />
-                  <span className="hidden sm:inline">Inventaire</span>
                 </TabsTrigger>
               )}
               {rolePermissions.settings_part_categories && (
@@ -1581,11 +1581,7 @@ export default function Settings() {
                 <RolePermissionsManager />
               </TabsContent>}
 
-            {rolePermissions.settings_inventory && (
-              <TabsContent value="inventory" className="space-y-6">
-                <InventoryManager canApplyStock={rolePermissions.inventory_apply_stock} />
-              </TabsContent>
-            )}
+
 
             {rolePermissions.settings_part_categories && (
               <TabsContent value="part-categories" className="space-y-6">

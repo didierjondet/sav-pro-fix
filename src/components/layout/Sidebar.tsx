@@ -41,7 +41,7 @@ const baseNavigation: NavItem[] = [
   // Bloc « Gestion »
   { name: 'Stock pièces', href: '/parts', icon: Package, group: 'management' },
   { name: 'Commandes', href: '/orders', icon: Package, group: 'management' },
-  { name: 'Inventaire', href: '/settings?tab=inventory', icon: ClipboardList, group: 'management' },
+  { name: 'Inventaire', href: '/inventory', icon: ClipboardList, group: 'management' },
   { name: 'Rapports', href: '/reports', icon: FileBarChart, group: 'management' },
 ];
 export function Sidebar({
@@ -151,7 +151,7 @@ export function Sidebar({
         return checkBoth(permissions.chats, 'menu_chats');
       case '/reports':
         return checkBoth(permissions.reports, 'menu_reports');
-      case '/settings?tab=inventory':
+      case '/inventory':
         return (rolePermissions as any).settings_inventory === true;
       default:
         return true;
@@ -250,11 +250,7 @@ export function Sidebar({
               <nav className="space-y-2">
                 {(shop as any)?.sidebar_nav_visible !== false && navigation.map((item, index) => {
                 const Icon = item.icon;
-                const searchParams = new URLSearchParams(location.search);
-                const isInventoryItem = item.href === '/settings?tab=inventory';
-                const isActive = isInventoryItem
-                  ? location.pathname === '/settings' && searchParams.get('tab') === 'inventory'
-                  : location.pathname === item.href;
+                const isActive = location.pathname === item.href;
                 const prevItem = navigation[index - 1];
                 const showSeparator = prevItem && prevItem.group === 'work' && item.group === 'management';
                 return <div key={item.name}>
