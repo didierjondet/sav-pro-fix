@@ -16,7 +16,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { useTheme } from 'next-themes';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import {
   Settings as SettingsIcon,
   Palette,
@@ -95,8 +95,16 @@ export default function Settings() {
     setTheme
   } = useTheme();
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const initialTab = searchParams.get('tab') || 'shop';
   const [activeTab, setActiveTab] = useState<string>(initialTab);
+
+  // Backward compatibility: redirect old inventory tab URL to dedicated page
+  useEffect(() => {
+    if (searchParams.get('tab') === 'inventory') {
+      navigate('/inventory', { replace: true });
+    }
+  }, [searchParams, navigate]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
