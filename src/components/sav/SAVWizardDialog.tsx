@@ -563,12 +563,13 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
                   <Label className="text-sm">Identifiant iCloud</Label>
                   <Input type="email" value={securityCodes.icloud_id}
                     onChange={(e) => setSecurityCodes({ ...securityCodes, icloud_id: e.target.value })}
-                    placeholder="email@icloud.com" />
+                    placeholder="mail@gmail.com" />
                 </div>
                 <div>
                   <Label className="text-sm">Mot de passe iCloud</Label>
                   <Input type="password" value={securityCodes.icloud_password}
-                    onChange={(e) => setSecurityCodes({ ...securityCodes, icloud_password: e.target.value })} />
+                    onChange={(e) => setSecurityCodes({ ...securityCodes, icloud_password: e.target.value })}
+                    placeholder="mot de passe" />
                 </div>
                 <div>
                   <Label className="text-sm">Code PIN SIM (4 chiffres)</Label>
