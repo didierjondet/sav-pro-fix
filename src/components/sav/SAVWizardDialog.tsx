@@ -756,18 +756,26 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
             <div className="flex justify-between mt-2">
               {activeSteps.map((step, i) => {
                 const Icon = step.icon;
+                const isCurrent = i === currentStep;
                 return (
-                  <div key={step.key} className={`flex flex-col items-center gap-1 ${
-                    i === currentStep ? 'text-primary' : i < currentStep ? 'text-primary/60' : 'text-muted-foreground/40'
-                  }`}>
+                  <button
+                    type="button"
+                    key={step.key}
+                    onClick={() => goToStep(i)}
+                    aria-label={`Aller à l'étape ${step.label}`}
+                    aria-current={isCurrent ? 'step' : undefined}
+                    className={`flex flex-col items-center gap-1 rounded-md p-1 -m-1 transition-colors ${
+                      isCurrent ? 'text-primary cursor-default' : i < currentStep ? 'text-primary/60 cursor-pointer hover:text-primary' : 'text-muted-foreground/40 cursor-pointer hover:text-muted-foreground'
+                    }`}
+                  >
                     <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs transition-all ${
-                      i === currentStep ? 'bg-primary text-primary-foreground shadow-md' 
-                      : i < currentStep ? 'bg-primary/20 text-primary' 
-                      : 'bg-muted text-muted-foreground'
+                      isCurrent ? 'bg-primary text-primary-foreground shadow-md'
+                      : i < currentStep ? 'bg-primary/20 text-primary hover:bg-primary/30'
+                      : 'bg-muted text-muted-foreground hover:bg-muted/80'
                     }`}>
                       {i < currentStep ? <Check className="h-3 w-3" /> : <Icon className="h-3 w-3" />}
                     </div>
-                  </div>
+                  </button>
                 );
               })}
             </div>
