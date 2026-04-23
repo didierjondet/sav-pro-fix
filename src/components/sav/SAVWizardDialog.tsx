@@ -471,7 +471,10 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
     for (let i = currentStep; i < targetIndex; i++) {
       const result = validateStep(activeSteps[i]?.key);
       if (!result.ok) {
-        setValidationError(result.message);
+        const message = result.message.startsWith('DUPLICATE::')
+          ? result.message.replace('DUPLICATE::', '')
+          : result.message;
+        setValidationError(message);
         if (i !== currentStep) setCurrentStep(i);
         return;
       }
