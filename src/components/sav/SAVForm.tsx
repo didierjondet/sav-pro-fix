@@ -111,6 +111,7 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
     other: '',
   });
   const [unlockPattern, setUnlockPattern] = useState<number[]>([]);
+  const [noUnlockCode, setNoUnlockCode] = useState(false);
   const [selectedParts, setSelectedParts] = useState<SelectedPart[]>([]);
   const [depositAmount, setDepositAmount] = useState<number>(0);
   const [loading, setLoading] = useState(false);
@@ -414,6 +415,7 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
         other: '',
       });
       setUnlockPattern([]);
+      setNoUnlockCode(false);
       setSelectedParts([]);
       setDepositAmount(0);
     } catch (error: any) {
@@ -821,7 +823,16 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
         codes={securityCodes}
         onChange={setSecurityCodes}
         stepNumber={currentTypeInfo.show_customer_info ? 5 : 4}
+        noCode={noUnlockCode}
+        onNoCodeChange={(v) => {
+          setNoUnlockCode(v);
+          if (v) {
+            setSecurityCodes({ unlock_code: '', icloud_id: '', icloud_password: '', sim_pin: '' });
+            setUnlockPattern([]);
+          }
+        }}
       />
+
 
       {/* Schéma de verrouillage */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -1167,7 +1178,11 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
         savCaseNumber={createdSAVCase?.case_number || ''}
         savCase={createdSAVCase}
         requireUnlockPattern={currentTypeInfo.require_unlock_pattern}
-        hasUnlockPattern={unlockPattern.length > 0}
+        hasUnlockMethod={
+          unlockPattern.length > 0 ||
+          securityCodes.unlock_code.trim().length > 0 ||
+          noUnlockCode
+        }
       />
     </div>
   );
