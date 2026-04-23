@@ -67,6 +67,19 @@ export function SecurityCodesSection({ codes, onChange, stepNumber, noCode = fal
           <input type="password" name="password" tabIndex={-1} autoComplete="current-password" />
         </div>
 
+        {onNoCodeChange && (
+          <div className="flex items-center space-x-2 p-3 bg-muted/40 rounded-md border border-dashed">
+            <Checkbox
+              id="no-unlock-code"
+              checked={noCode}
+              onCheckedChange={(checked) => onNoCodeChange(checked === true)}
+            />
+            <Label htmlFor="no-unlock-code" className="text-sm font-medium cursor-pointer">
+              Cet appareil n'a pas de code de déverrouillage
+            </Label>
+          </div>
+        )}
+
         {/* Code de déverrouillage */}
         <div>
           <Label htmlFor="unlock-code">Code de déverrouillage (max 8 caractères)</Label>
@@ -76,6 +89,7 @@ export function SecurityCodesSection({ codes, onChange, stepNumber, noCode = fal
             type="text"
             maxLength={8}
             value={codes.unlock_code}
+            disabled={noCode}
             onChange={(e) => {
               const value = e.target.value.replace(/[^a-zA-Z0-9]/g, '');
               onChange({...codes, unlock_code: value});
@@ -96,6 +110,7 @@ export function SecurityCodesSection({ codes, onChange, stepNumber, noCode = fal
                 name={fieldNames.icloudId}
                 type="text"
                 value={codes.icloud_id}
+                disabled={noCode}
                 onChange={(e) => onChange({...codes, icloud_id: e.target.value})}
                 placeholder="mail@gmail.com"
                 {...noAutofillProps}
@@ -109,6 +124,7 @@ export function SecurityCodesSection({ codes, onChange, stepNumber, noCode = fal
                 type="text"
                 style={{ WebkitTextSecurity: 'disc' } as React.CSSProperties}
                 value={codes.icloud_password}
+                disabled={noCode}
                 onChange={(e) => onChange({...codes, icloud_password: e.target.value})}
                 placeholder="mot de passe"
                 {...noAutofillProps}
@@ -127,6 +143,7 @@ export function SecurityCodesSection({ codes, onChange, stepNumber, noCode = fal
             inputMode="numeric"
             maxLength={6}
             value={codes.sim_pin}
+            disabled={noCode}
             onChange={(e) => {
               const value = e.target.value.replace(/\D/g, '');
               onChange({...codes, sim_pin: value});
