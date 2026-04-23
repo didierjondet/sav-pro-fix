@@ -9,6 +9,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
+import { useProspectRedirect } from '@/hooks/useProspectRedirect';
+import { ProspectDialog } from '@/components/landing/ProspectDialog';
 export default function Auth() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
