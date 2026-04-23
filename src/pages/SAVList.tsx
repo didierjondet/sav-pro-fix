@@ -450,7 +450,7 @@ export default function SAVList() {
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-medium">Statut:</span>
                     <Select value={statusFilter} onValueChange={setStatusFilter}>
-                      <SelectTrigger className={cn("w-48", isFilterModified('statusFilter', statusFilter) && "ring-2 ring-orange-400 bg-orange-50")}>
+                      <SelectTrigger className={cn("w-48", statusFilter !== 'all' && "ring-2 ring-orange-400 bg-orange-50")}>
                         <SelectValue />
                       </SelectTrigger>
                        <SelectContent>
