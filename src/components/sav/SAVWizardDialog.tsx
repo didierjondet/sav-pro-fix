@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import React from 'react';
 import { multiWordSearch } from '@/utils/searchUtils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { useSAVCases } from '@/hooks/useSAVCases';
 import { useCustomers } from '@/hooks/useCustomers';
+import { useAllCustomers } from '@/hooks/useAllCustomers';
 import { useParts } from '@/hooks/useParts';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProfile } from '@/hooks/useProfile';
@@ -114,6 +115,7 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
     charger: false, case: false, screen_protector: false, other: '',
   });
   const [unlockPattern, setUnlockPattern] = useState<number[]>([]);
+  const [noUnlockCode, setNoUnlockCode] = useState(false);
   const [securityCodes, setSecurityCodes] = useState<SecurityCodes>({
     unlock_code: '', icloud_id: '', icloud_password: '', sim_pin: '',
   });
@@ -124,12 +126,16 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
   const [recentlyAddedParts, setRecentlyAddedParts] = useState<string[]>([]);
   const [showPrintDialog, setShowPrintDialog] = useState(false);
   const [createdSAVCase, setCreatedSAVCase] = useState<any>(null);
+  const [forceCreateNewCustomer, setForceCreateNewCustomer] = useState(false);
+  const [debouncedFirstName, setDebouncedFirstName] = useState('');
+  const [debouncedLastName, setDebouncedLastName] = useState('');
 
   const printButtonRef = useRef<SAVPrintButtonRef>(null);
   const { user } = useAuth();
   const { profile } = useProfile();
   const { createCase } = useSAVCases();
   const { createCustomer } = useCustomers();
+  const { customers: allCustomers } = useAllCustomers();
   const { parts } = useParts();
   const { checkLimits } = useSubscription();
   const { checkAndShowLimitDialog } = useLimitDialogContext();
@@ -187,7 +193,37 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
     return acc + Math.max(0, lineTotal - discountAmount);
   }, 0);
 
-  const handleSubmit = async () => {
+  // ===== Détection de doublons clients =====
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setDebouncedFirstName(customerInfo.firstName.trim());
+      setDebouncedLastName(customerInfo.lastName.trim());
+    }, 400);
+    return () => clearTimeout(t);
+  }, [customerInfo.firstName, customerInfo.lastName]);
+
+  useEffect(() => {
+    setForceCreateNewCustomer(false);
+  }, [debouncedFirstName, debouncedLastName]);
+
+  const normalize = (s: string) =>
+    s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+
+  const duplicateCustomers = useMemo(() => {
+    if (selectedCustomer) return [];
+    if (debouncedFirstName.length < 2 || debouncedLastName.length < 2) return [];
+    const fn = normalize(debouncedFirstName);
+    const ln = normalize(debouncedLastName);
+    return allCustomers.filter(
+      (c) => normalize(c.first_name || '') === fn && normalize(c.last_name || '') === ln
+    );
+  }, [allCustomers, debouncedFirstName, debouncedLastName, selectedCustomer]);
+
+  const hasUnresolvedDuplicate =
+    duplicateCustomers.length > 0 && !selectedCustomer && !forceCreateNewCustomer;
+
+  // Ouvre simplement le dialog de validation avec un brouillon — AUCUNE persistance ici
+  const handleSubmit = () => {
     if (!user) return;
     if (!checkAndShowLimitDialog('sav')) return;
 
@@ -200,8 +236,46 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
         toast({ title: "Contact manquant", description: "Au moins un moyen de contact est requis.", variant: "destructive" });
         return;
       }
+      if (hasUnresolvedDuplicate) {
+        toast({
+          title: "Doublon client détecté",
+          description: "Sélectionnez un client existant ou cliquez sur « Créer quand même un nouveau client ».",
+          variant: "destructive",
+        });
+        const idx = activeSteps.findIndex((s) => s.key === 'client');
+        if (idx >= 0) setCurrentStep(idx);
+        return;
+      }
+      if (!selectedCustomer && forceCreateNewCustomer && duplicateCustomers.length > 0 && !customerInfo.phone.trim()) {
+        toast({
+          title: "Téléphone requis",
+          description: "Un téléphone est requis pour différencier les homonymes.",
+          variant: "destructive",
+        });
+        const idx = activeSteps.findIndex((s) => s.key === 'client');
+        if (idx >= 0) setCurrentStep(idx);
+        return;
+      }
     }
 
+    const draftCase = {
+      case_number: '',
+      customer: currentTypeInfo.show_customer_info
+        ? {
+            first_name: selectedCustomer?.first_name || customerInfo.firstName,
+            last_name: selectedCustomer?.last_name || customerInfo.lastName,
+            phone: selectedCustomer?.phone || customerInfo.phone,
+            email: selectedCustomer?.email || customerInfo.email,
+          }
+        : null,
+    };
+    setCreatedSAVCase(draftCase);
+    setShowPrintDialog(true);
+  };
+
+  // Persistance réelle — appelée uniquement par les boutons du PrintConfirmDialog
+  const persistSAV = async (): Promise<any | null> => {
+    if (!user) return null;
     setLoading(true);
     try {
       let customerId = selectedCustomer?.id || null;
@@ -227,8 +301,8 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
         total_time_minutes: 0, total_cost: finalCost, deposit_amount: depositAmount,
         status: selectedStatus as any, shop_id: profile?.shop_id,
         attachments: deviceInfo.attachments || [], accessories,
-        unlock_pattern: unlockPattern.length > 0 ? unlockPattern : null,
-        security_codes: (securityCodes.unlock_code || securityCodes.icloud_id || securityCodes.icloud_password || securityCodes.sim_pin)
+        unlock_pattern: !noUnlockCode && unlockPattern.length > 0 ? unlockPattern : null,
+        security_codes: !noUnlockCode && (securityCodes.unlock_code || securityCodes.icloud_id || securityCodes.icloud_password || securityCodes.sim_pin)
           ? { unlock_code: securityCodes.unlock_code || null, icloud_id: securityCodes.icloud_id || null, icloud_password: securityCodes.icloud_password || null, sim_pin: securityCodes.sim_pin || null }
           : null,
       });
@@ -278,10 +352,11 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
       }
 
       setCreatedSAVCase(enrichedCase);
-      setShowPrintDialog(true);
+      return enrichedCase;
     } catch (error: any) {
       console.error('Error creating SAV case:', error);
       toast({ title: "Erreur", description: error.message || "Une erreur est survenue", variant: "destructive" });
+      return null;
     } finally {
       setLoading(false);
     }
@@ -303,14 +378,17 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
     setDeviceInfo({ brand: '', model: '', imei: '', sku: '', color: '', grade: '', problemDescription: '', attachments: [] });
     setAccessories({ charger: false, case: false, screen_protector: false, other: '' });
     setUnlockPattern([]);
+    setNoUnlockCode(false);
     setSecurityCodes({ unlock_code: '', icloud_id: '', icloud_password: '', sim_pin: '' });
     setSelectedParts([]);
     setDepositAmount(0);
     setShowPrintDialog(false);
     setCreatedSAVCase(null);
+    setForceCreateNewCustomer(false);
     onOpenChange(false);
     onSuccess?.();
   };
+
 
   const [validationError, setValidationError] = useState('');
 

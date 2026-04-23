@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Lock, AlertCircle } from 'lucide-react';
 
 export interface SecurityCodes {
@@ -16,9 +17,11 @@ interface SecurityCodesSectionProps {
   codes: SecurityCodes;
   onChange: (codes: SecurityCodes) => void;
   stepNumber: number;
+  noCode?: boolean;
+  onNoCodeChange?: (val: boolean) => void;
 }
 
-export function SecurityCodesSection({ codes, onChange, stepNumber }: SecurityCodesSectionProps) {
+export function SecurityCodesSection({ codes, onChange, stepNumber, noCode = false, onNoCodeChange }: SecurityCodesSectionProps) {
   const uid = useId().replace(/:/g, '');
   // Noms aléatoires pour éviter le matching des password managers
   const fieldNames = {
@@ -64,6 +67,19 @@ export function SecurityCodesSection({ codes, onChange, stepNumber }: SecurityCo
           <input type="password" name="password" tabIndex={-1} autoComplete="current-password" />
         </div>
 
+        {onNoCodeChange && (
+          <div className="flex items-center space-x-2 p-3 bg-muted/40 rounded-md border border-dashed">
+            <Checkbox
+              id="no-unlock-code"
+              checked={noCode}
+              onCheckedChange={(checked) => onNoCodeChange(checked === true)}
+            />
+            <Label htmlFor="no-unlock-code" className="text-sm font-medium cursor-pointer">
+              Cet appareil n'a pas de code de déverrouillage
+            </Label>
+          </div>
+        )}
+
         {/* Code de déverrouillage */}
         <div>
           <Label htmlFor="unlock-code">Code de déverrouillage (max 8 caractères)</Label>
@@ -73,6 +89,7 @@ export function SecurityCodesSection({ codes, onChange, stepNumber }: SecurityCo
             type="text"
             maxLength={8}
             value={codes.unlock_code}
+            disabled={noCode}
             onChange={(e) => {
               const value = e.target.value.replace(/[^a-zA-Z0-9]/g, '');
               onChange({...codes, unlock_code: value});
@@ -93,6 +110,7 @@ export function SecurityCodesSection({ codes, onChange, stepNumber }: SecurityCo
                 name={fieldNames.icloudId}
                 type="text"
                 value={codes.icloud_id}
+                disabled={noCode}
                 onChange={(e) => onChange({...codes, icloud_id: e.target.value})}
                 placeholder="mail@gmail.com"
                 {...noAutofillProps}
@@ -106,6 +124,7 @@ export function SecurityCodesSection({ codes, onChange, stepNumber }: SecurityCo
                 type="text"
                 style={{ WebkitTextSecurity: 'disc' } as React.CSSProperties}
                 value={codes.icloud_password}
+                disabled={noCode}
                 onChange={(e) => onChange({...codes, icloud_password: e.target.value})}
                 placeholder="mot de passe"
                 {...noAutofillProps}
@@ -124,6 +143,7 @@ export function SecurityCodesSection({ codes, onChange, stepNumber }: SecurityCo
             inputMode="numeric"
             maxLength={6}
             value={codes.sim_pin}
+            disabled={noCode}
             onChange={(e) => {
               const value = e.target.value.replace(/\D/g, '');
               onChange({...codes, sim_pin: value});
