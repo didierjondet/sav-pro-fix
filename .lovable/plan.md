@@ -1,58 +1,94 @@
 
 
-## Plan : blocage strict des doublons client à l'étape "Suivant"
+## Plan : blocage des inscriptions + popup prospect + menu Super Admin "Prospects"
 
-### Problème actuel
+### 1. Nouvelle table `prospects` (Supabase)
 
-1. La fonction `validateStep('client')` (qui gère le clic sur **Suivant**) ne vérifie pas la présence de doublons. Le blocage est uniquement dans `handleSubmit` (dernière étape "Récapitulatif"), donc l'utilisateur peut traverser tout le wizard avant d'être bloqué.
-2. L'encart bleu de doublon dépend d'un `debounce` de 400 ms et de `allCustomers` chargé depuis `useAllCustomers`. Si l'utilisateur clique "Suivant" rapidement, le calcul n'a pas eu lieu → aucun blocage visuel ni logique.
-3. Capture d'écran confirme : `jondet didier` saisi, aucun encart affiché, le bouton Suivant reste actif.
+Création d'une table publique pour collecter les contacts depuis la landing page.
 
-### Correctifs
+**Colonnes :**
+- `id` (uuid, PK)
+- `first_name` (text, requis)
+- `last_name` (text, requis)
+- `company_name` (text, requis)
+- `email` (text, requis)
+- `phone` (text, optionnel)
+- `interested_in_beta` (boolean, défaut false) — souhaite être beta testeur
+- `interested_in_recontact` (boolean, défaut false) — souhaite être rappelé à la sortie commerciale
+- `interested_in_demo` (boolean, défaut false) — souhaite une démo
+- `free_message` (text, optionnel) — champ libre
+- `status` (text, défaut `'new'`) — `new`, `contacted`, `converted`, `archived` (pour suivi futur)
+- `created_at`, `updated_at` (timestamps)
 
-**1. Ajouter la vérification de doublon dans `validateStep('client')`**
+**RLS :**
+- INSERT public anonyme (`true`) — pour permettre la soumission depuis la landing sans compte.
+- SELECT/UPDATE/DELETE : `is_super_admin()` uniquement.
 
-Dans `src/components/sav/SAVWizardDialog.tsx` :
-- Étendre le `case 'client'` de `validateStep` :
-  - Si l'utilisateur n'a pas sélectionné de client existant et qu'il a saisi prénom + nom (≥ 2 caractères chacun),
-  - Calculer **immédiatement et synchronement** (sans dépendre du debounce) la liste des doublons via la même logique de normalisation (`normalize`),
-  - Si des doublons existent et que `forceCreateNewCustomer === false` → retourner `{ ok: false, message: "Client(s) existant(s) trouvé(s). Sélectionnez un client dans la liste ou cliquez sur « Créer quand même un nouveau client »." }`.
-  - Si `forceCreateNewCustomer === true` mais téléphone vide → exiger le téléphone.
+### 2. Popup prospect sur la landing page
 
-**2. Calcul synchrone basé sur la saisie en temps réel**
+**Nouveau composant `src/components/landing/ProspectDialog.tsx`** :
+- Dialog modal déclenché par TOUS les boutons d'inscription/auth de la landing publique (`PublicLanding.tsx`).
+- Message d'introduction expliquant que les inscriptions sont temporairement closes le temps du programme bêta, et qu'on peut les recontacter à la sortie commerciale ou organiser une démo.
+- Formulaire avec validation Zod :
+  - Prénom * / Nom * / Entreprise * / Email * / Téléphone (optionnel)
+  - 3 cases à cocher : "Devenir beta testeur" / "Être recontacté à la sortie" / "Demander une démo"
+  - Champ texte libre "Message ou besoin spécifique"
+- Bouton "Envoyer ma demande" → insertion dans `prospects` → toast de confirmation → fermeture.
 
-- Remplacer la dépendance au debounce dans la validation : utiliser directement `customerInfo.firstName.trim()` et `customerInfo.lastName.trim()` au moment du clic Suivant.
-- Le debounce reste utilisé uniquement pour l'affichage de l'encart bleu (UX fluide).
-- Garantit que même un clic Suivant immédiat après saisie déclenche la détection.
+**Modification de `PublicLanding.tsx`** :
+- Remplacer `handleAuthClick = () => window.location.href = '/auth'` par l'ouverture du `ProspectDialog`.
+- État `prospectDialogOpen` géré localement.
+- La page `/auth` reste accessible directement (pour les clients existants déjà inscrits) — seul le parcours d'inscription depuis la landing est bloqué.
 
-**3. Forcer l'affichage de l'encart si validation échoue**
+**Note** : Le fichier `Landing.tsx` (variante interne, non publique) **n'est pas modifié** pour respecter l'isolation. Seule la landing publique `/` (PublicLanding.tsx) est concernée.
 
-- Quand `validateStep` retourne le message de doublon, recalculer immédiatement `debouncedFirstName/LastName` depuis la valeur courante (force l'affichage de l'encart bleu sous les champs).
-- Le message d'erreur rouge actuel (`validationError`) s'affiche déjà sous le bouton Suivant — il restera visible.
-- Ajout d'un `scrollIntoView` doux sur l'encart pour que l'utilisateur le voie.
+### 3. Nouveau menu Super Admin "Prospects"
 
-**4. Robustesse de la détection**
+**Ajout dans `SuperAdminSidebar.tsx`** :
+- Nouveau groupe ou ajout dans groupe "Gestion" : item `{ id: 'prospects', title: 'Prospects', icon: UserPlus }`.
 
-- Normaliser également les **espaces multiples** (`replace(/\s+/g, ' ')`) en plus de la suppression d'accents et de la casse, pour matcher `"jondet "` vs `"jondet"`.
-- La comparaison reste sur `first_name + last_name` exacts après normalisation.
+**Nouveau composant `src/components/admin/ProspectsManager.tsx`** :
+- Liste des prospects sous forme de cartes (style cohérent avec les cards existantes du Super Admin).
+- Chaque carte affiche :
+  - Nom complet + nom de l'entreprise (titre)
+  - Email + téléphone (avec liens `mailto:` / `tel:`)
+  - Badges colorés selon les intérêts cochés : "Beta testeur" (vert), "Recontact" (bleu), "Démo" (violet)
+  - Message libre (si rempli)
+  - Date de création (relative : "il y a X jours")
+  - Badge de statut (`new` / `contacted` / `converted` / `archived`)
+- Filtres en tête : par statut, par intérêt (beta / recontact / démo), recherche texte (nom/entreprise/email).
+- Actions par carte :
+  - Bouton "Marquer comme contacté" → met à jour `status`
+  - Bouton "Archiver"
+  - Bouton "Supprimer" (avec confirmation)
+- Compteur total + compteurs par statut en haut.
 
-### Fichier modifié
+**Branchement dans `SuperAdmin.tsx`** :
+- Import du nouveau composant.
+- Ajout du `case 'prospects': return <ProspectsManager />;` dans `renderActiveSection()`.
 
-- `src/components/sav/SAVWizardDialog.tsx`
-  - `normalize()` : ajout du collapse des espaces.
-  - `validateStep('client')` : ajout du calcul synchrone des doublons et retour d'erreur si non résolus.
-  - `goNext()` : si l'erreur est de type doublon, forcer la mise à jour immédiate de `debouncedFirstName/LastName` pour révéler l'encart bleu.
+### 4. Détails techniques
 
-### Hors scope
+- **Validation** : Zod côté formulaire (email valide, longueurs max 255, au moins une case cochée OU un message libre rempli pour valider).
+- **Pas d'edge function** nécessaire : l'insertion se fait directement via le client Supabase grâce à la policy INSERT publique.
+- **Aucun impact** sur les autres parties du code (auth, SAV, agenda, wizard…).
 
-- Aucune modification de la BDD, des hooks, ou des autres étapes du wizard.
-- Aucun changement visuel à part le déclenchement plus précoce de l'encart bleu existant.
-- Vue normale (`NewSAV.tsx`) non concernée (pas de wizard).
+### Fichiers créés / modifiés
+
+- **Migration BDD** : nouvelle table `prospects` + RLS.
+- **Créés** :
+  - `src/components/landing/ProspectDialog.tsx`
+  - `src/components/admin/ProspectsManager.tsx`
+- **Modifiés** :
+  - `src/pages/PublicLanding.tsx` (remplacement de `handleAuthClick`)
+  - `src/components/admin/SuperAdminSidebar.tsx` (ajout entrée menu)
+  - `src/pages/SuperAdmin.tsx` (ajout du case `'prospects'`)
 
 ### Vérification
 
-- Saisir "jondet didier" (existant en base) → cliquer Suivant → blocage immédiat avec message rouge + encart bleu listant le client jondet didier existant + bouton "Utiliser ce client".
-- Cliquer "Utiliser ce client" → champs auto-remplis, Suivant débloqué.
-- Cliquer "Créer quand même un nouveau client" sans téléphone → blocage avec message "Téléphone requis".
-- Saisir "jondet didier" + téléphone + "Créer quand même" → Suivant fonctionne.
+- Cliquer sur "Essai Gratuit" / "Connexion" / "Essayer gratuitement" / CTA finale sur la landing publique → popup prospect s'ouvre (pas de redirection vers `/auth`).
+- Remplir le formulaire (nom, entreprise, email, cocher "Beta testeur") → soumission → toast de confirmation → fermeture.
+- Vérifier dans Super Admin → menu "Prospects" → la carte apparaît avec les bons badges.
+- Tester les filtres et actions (marquer contacté, archiver, supprimer).
+- Vérifier que `/auth` reste accessible directement (pour utilisateurs existants).
 
