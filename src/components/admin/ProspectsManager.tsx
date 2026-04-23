@@ -36,6 +36,7 @@ import {
   Loader2,
   RefreshCw,
 } from 'lucide-react';
+import { ProspectRedirectToggle } from './ProspectRedirectToggle';
 
 interface Prospect {
   id: string;
@@ -162,6 +163,7 @@ export function ProspectsManager() {
 
   return (
     <div className="space-y-6">
+      <ProspectRedirectToggle />
       <div className="flex items-start justify-between flex-wrap gap-4">
         <div>
           <h2 className="text-2xl font-bold flex items-center gap-2">

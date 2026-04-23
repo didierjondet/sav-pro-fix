@@ -3,9 +3,11 @@ import { Button } from '@/components/ui/button';
 
 interface LandingHeaderProps {
   onAuthClick: () => void;
+  onLoginClick?: () => void;
 }
 
-export function LandingHeader({ onAuthClick }: LandingHeaderProps) {
+export function LandingHeader({ onAuthClick, onLoginClick }: LandingHeaderProps) {
+  const handleLogin = onLoginClick ?? onAuthClick;
   return (
     <header className="bg-white/95 backdrop-blur-sm shadow-sm sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -25,7 +27,7 @@ export function LandingHeader({ onAuthClick }: LandingHeaderProps) {
             <Button 
               variant="ghost" 
               className="text-gray-600 hover:text-gray-900 hidden sm:flex"
-              onClick={onAuthClick}
+              onClick={handleLogin}
             >
               Connexion
             </Button>

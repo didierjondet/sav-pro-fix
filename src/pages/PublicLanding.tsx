@@ -15,6 +15,7 @@ import { LandingHeader } from '@/components/landing/LandingHeader';
 import { LandingFooter } from '@/components/landing/LandingFooter';
 import { FAQSection } from '@/components/landing/FAQSection';
 import { ProspectDialog } from '@/components/landing/ProspectDialog';
+import { useProspectRedirect } from '@/hooks/useProspectRedirect';
 
 interface SubscriptionPlan {
   id: string;
@@ -46,6 +47,7 @@ export default function PublicLanding() {
     title: ''
   });
   const { content: landingContent } = useLandingContent();
+  const { enabled: prospectRedirectEnabled } = useProspectRedirect();
   
   // Dynamic SEO injection
   useEffect(() => {
@@ -97,8 +99,18 @@ export default function PublicLanding() {
     }
   };
   
-  const handleAuthClick = () => {
-    setProspectDialogOpen(true);
+  // "Connexion" header button — always sends existing shops to /auth
+  const handleLoginClick = () => {
+    window.location.href = '/auth';
+  };
+
+  // "Essai gratuit" / Hero / Pricing / FinalCTA — gated by toggle
+  const handleSignupClick = () => {
+    if (prospectRedirectEnabled) {
+      setProspectDialogOpen(true);
+    } else {
+      window.location.href = '/auth';
+    }
   };
 
   const handleLegalClick = (type: 'cgu_content' | 'cgv_content' | 'privacy_policy', title: string) => {
@@ -108,10 +120,10 @@ export default function PublicLanding() {
   return (
     <div className="min-h-screen bg-white">
       {/* Header */}
-      <LandingHeader onAuthClick={handleAuthClick} />
+      <LandingHeader onAuthClick={handleSignupClick} onLoginClick={handleLoginClick} />
 
       {/* Hero Section */}
-      <HeroSection onAuthClick={handleAuthClick} />
+      <HeroSection onAuthClick={handleSignupClick} />
 
       {/* Carousel Section */}
       {(landingContent.show_carousel ?? true) && <LandingCarousel />}
@@ -138,11 +150,11 @@ export default function PublicLanding() {
       <PricingSection 
         plans={subscriptionPlans} 
         loading={loading} 
-        onAuthClick={handleAuthClick} 
+        onAuthClick={handleSignupClick} 
       />
 
       {/* Final CTA */}
-      <FinalCTA onAuthClick={handleAuthClick} />
+      <FinalCTA onAuthClick={handleSignupClick} />
 
       {/* Footer */}
       <LandingFooter onLegalClick={handleLegalClick} />
