@@ -29,6 +29,7 @@ import {
   Brain,
   ShieldCheck,
   Mail,
+  UserPlus,
 } from "lucide-react";
 
 interface SuperAdminSidebarProps {
@@ -49,6 +50,7 @@ const menuItems = [
     items: [
       { id: "shops", title: "Magasins", icon: Store },
       { id: "users", title: "Utilisateurs", icon: Users },
+      { id: "prospects", title: "Prospects", icon: UserPlus },
     ]
   },
   {

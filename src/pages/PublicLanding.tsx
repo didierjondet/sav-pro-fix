@@ -14,6 +14,7 @@ import { PricingSection } from '@/components/landing/PricingSection';
 import { LandingHeader } from '@/components/landing/LandingHeader';
 import { LandingFooter } from '@/components/landing/LandingFooter';
 import { FAQSection } from '@/components/landing/FAQSection';
+import { ProspectDialog } from '@/components/landing/ProspectDialog';
 
 interface SubscriptionPlan {
   id: string;
@@ -34,6 +35,7 @@ export default function PublicLanding() {
   
   const [subscriptionPlans, setSubscriptionPlans] = useState<SubscriptionPlan[]>([]);
   const [loading, setLoading] = useState(true);
+  const [prospectDialogOpen, setProspectDialogOpen] = useState(false);
   const [legalDialog, setLegalDialog] = useState<{
     isOpen: boolean;
     type: 'cgu_content' | 'cgv_content' | 'privacy_policy';
@@ -96,7 +98,7 @@ export default function PublicLanding() {
   };
   
   const handleAuthClick = () => {
-    window.location.href = '/auth';
+    setProspectDialogOpen(true);
   };
 
   const handleLegalClick = (type: 'cgu_content' | 'cgv_content' | 'privacy_policy', title: string) => {
@@ -151,6 +153,12 @@ export default function PublicLanding() {
         title={legalDialog.title}
         isOpen={legalDialog.isOpen}
         onClose={() => setLegalDialog(prev => ({ ...prev, isOpen: false }))}
+      />
+
+      {/* Prospect Dialog (replaces signup flow during beta) */}
+      <ProspectDialog
+        isOpen={prospectDialogOpen}
+        onClose={() => setProspectDialogOpen(false)}
       />
     </div>
   );
