@@ -275,6 +275,7 @@ export function NotificationBell() {
   const getNotificationIcon = (type: string) => {
     switch (type) {
       case 'stock_alert': return '📦';
+      case 'stock_negative_blocked': return '🚫';
       case 'order_needed': return '🛒';  
       case 'support_message': return '💬';
       case 'sav_message': return '🔧';
