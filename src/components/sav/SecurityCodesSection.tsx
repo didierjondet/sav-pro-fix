@@ -16,9 +16,11 @@ interface SecurityCodesSectionProps {
   codes: SecurityCodes;
   onChange: (codes: SecurityCodes) => void;
   stepNumber: number;
+  noCode?: boolean;
+  onNoCodeChange?: (val: boolean) => void;
 }
 
-export function SecurityCodesSection({ codes, onChange, stepNumber }: SecurityCodesSectionProps) {
+export function SecurityCodesSection({ codes, onChange, stepNumber, noCode = false, onNoCodeChange }: SecurityCodesSectionProps) {
   const uid = useId().replace(/:/g, '');
   // Noms aléatoires pour éviter le matching des password managers
   const fieldNames = {
