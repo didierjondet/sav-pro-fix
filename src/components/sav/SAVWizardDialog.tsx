@@ -997,7 +997,12 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
         savCaseNumber={createdSAVCase?.case_number || ''}
         savCase={createdSAVCase}
         requireUnlockPattern={currentTypeInfo.require_unlock_pattern}
-        hasUnlockPattern={unlockPattern.length > 0}
+        hasUnlockMethod={
+          unlockPattern.length > 0 ||
+          securityCodes.unlock_code.trim().length > 0 ||
+          noUnlockCode
+        }
+        onPersistBeforeAction={persistSAV}
       />
     </>
   );
