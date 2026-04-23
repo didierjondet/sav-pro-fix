@@ -4,7 +4,7 @@ import { useToast } from '@/hooks/use-toast';
 
 export interface Notification {
   id: string;
-  type: 'stock_alert' | 'order_needed' | 'general' | 'support_message' | 'sav_delay_alert';
+  type: 'stock_alert' | 'stock_negative_blocked' | 'order_needed' | 'general' | 'support_message' | 'sav_delay_alert';
   title: string;
   message: string;
   sav_case_id?: string;

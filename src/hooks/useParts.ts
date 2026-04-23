@@ -196,9 +196,20 @@ export function useParts() {
 
   const updatePartQuantity = async (partId: string, quantity: number) => {
     try {
+      // 🛡️ Garde-fou : aucune quantité négative autorisée
+      let safeQuantity = quantity;
+      if (quantity < 0) {
+        safeQuantity = 0;
+        toast({
+          title: "Stock insuffisant",
+          description: "Impossible de mettre une pièce en stock négatif. La quantité a été ramenée à 0.",
+          variant: "destructive",
+        });
+      }
+
       const { error } = await supabase
         .from('parts')
-        .update({ quantity })
+        .update({ quantity: safeQuantity })
         .eq('id', partId);
 
       if (error) throw error;
@@ -269,8 +280,9 @@ export function useParts() {
       const part = parts.find(p => p.id === partId);
       if (!part) throw new Error("Pièce introuvable");
 
+      const wouldBeNegative = (part.quantity + adjustment) < 0;
       const newQuantity = Math.max(0, part.quantity + adjustment);
-      
+
       const { error } = await supabase
         .from('parts')
         .update({ quantity: newQuantity })
@@ -278,10 +290,18 @@ export function useParts() {
 
       if (error) throw error;
 
-      toast({
-        title: "Succès",
-        description: `Stock ${adjustment > 0 ? 'ajouté' : 'retiré'} : ${Math.abs(adjustment)} unité(s)`,
-      });
+      if (wouldBeNegative) {
+        toast({
+          title: "Stock insuffisant",
+          description: `L'ajustement aurait conduit à un stock négatif. Le stock de "${part.name}" a été ramené à 0.`,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Succès",
+          description: `Stock ${adjustment > 0 ? 'ajouté' : 'retiré'} : ${Math.abs(adjustment)} unité(s)`,
+        });
+      }
 
       fetchParts();
       return { error: null };
