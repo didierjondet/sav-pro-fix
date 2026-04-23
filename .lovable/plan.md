@@ -1,94 +1,101 @@
 
 
-## Plan : blocage des inscriptions + popup prospect + menu Super Admin "Prospects"
+## Plan : toggle Super Admin + redirection conditionnelle inscription → formulaire prospect
 
-### 1. Nouvelle table `prospects` (Supabase)
+### Comportement cible
 
-Création d'une table publique pour collecter les contacts depuis la landing page.
+**Quand le toggle "Rediriger inscription vers formulaire prospect" est ACTIF (par défaut) :**
+- Bouton "Connexion" du header landing → page `/auth` (onglet connexion) — accès magasins existants conservé.
+- Bouton "Essai Gratuit" du header → ouvre le `ProspectDialog`.
+- Tous les autres CTA "Essayer gratuitement" / Hero / Pricing / FinalCTA → ouvrent le `ProspectDialog`.
+- Sur la page `/auth`, un clic sur l'onglet/lien "Inscription" → ouvre le `ProspectDialog` (au lieu de basculer sur le formulaire de signup).
 
-**Colonnes :**
-- `id` (uuid, PK)
-- `first_name` (text, requis)
-- `last_name` (text, requis)
-- `company_name` (text, requis)
-- `email` (text, requis)
-- `phone` (text, optionnel)
-- `interested_in_beta` (boolean, défaut false) — souhaite être beta testeur
-- `interested_in_recontact` (boolean, défaut false) — souhaite être rappelé à la sortie commerciale
-- `interested_in_demo` (boolean, défaut false) — souhaite une démo
-- `free_message` (text, optionnel) — champ libre
-- `status` (text, défaut `'new'`) — `new`, `contacted`, `converted`, `archived` (pour suivi futur)
-- `created_at`, `updated_at` (timestamps)
+**Quand le toggle est INACTIF :**
+- Tous les boutons retrouvent leur comportement initial : redirection vers `/auth` (signup ou login selon le bouton).
+- Aucun `ProspectDialog` ne s'ouvre.
 
-**RLS :**
-- INSERT public anonyme (`true`) — pour permettre la soumission depuis la landing sans compte.
-- SELECT/UPDATE/DELETE : `is_super_admin()` uniquement.
+### 1. Stockage du flag dans la BDD
 
-### 2. Popup prospect sur la landing page
+Ajouter une ligne dans la table existante `app_settings` (ou équivalent) :
+- Clé : `prospect_redirect_enabled`
+- Valeur : `boolean` (défaut `true`)
 
-**Nouveau composant `src/components/landing/ProspectDialog.tsx`** :
-- Dialog modal déclenché par TOUS les boutons d'inscription/auth de la landing publique (`PublicLanding.tsx`).
-- Message d'introduction expliquant que les inscriptions sont temporairement closes le temps du programme bêta, et qu'on peut les recontacter à la sortie commerciale ou organiser une démo.
-- Formulaire avec validation Zod :
-  - Prénom * / Nom * / Entreprise * / Email * / Téléphone (optionnel)
-  - 3 cases à cocher : "Devenir beta testeur" / "Être recontacté à la sortie" / "Demander une démo"
-  - Champ texte libre "Message ou besoin spécifique"
-- Bouton "Envoyer ma demande" → insertion dans `prospects` → toast de confirmation → fermeture.
+Si aucune table de settings globale n'existe, créer `app_global_settings` (key text PK, value jsonb, updated_at) avec RLS :
+- SELECT public (`true`) — pour que la landing puisse lire le flag sans auth.
+- UPDATE/INSERT : `is_super_admin()` uniquement.
 
-**Modification de `PublicLanding.tsx`** :
-- Remplacer `handleAuthClick = () => window.location.href = '/auth'` par l'ouverture du `ProspectDialog`.
-- État `prospectDialogOpen` géré localement.
-- La page `/auth` reste accessible directement (pour les clients existants déjà inscrits) — seul le parcours d'inscription depuis la landing est bloqué.
+### 2. Hook partagé `useProspectRedirect`
 
-**Note** : Le fichier `Landing.tsx` (variante interne, non publique) **n'est pas modifié** pour respecter l'isolation. Seule la landing publique `/` (PublicLanding.tsx) est concernée.
+Nouveau hook `src/hooks/useProspectRedirect.ts` :
+- Récupère le flag depuis la BDD (avec cache React Query).
+- Retourne `{ enabled: boolean, isLoading: boolean }`.
+- Utilisé par la landing publique ET la page `/auth`.
 
-### 3. Nouveau menu Super Admin "Prospects"
+### 3. Modifications landing publique
 
-**Ajout dans `SuperAdminSidebar.tsx`** :
-- Nouveau groupe ou ajout dans groupe "Gestion" : item `{ id: 'prospects', title: 'Prospects', icon: UserPlus }`.
+**`src/pages/PublicLanding.tsx`** :
+- Récupère `enabled` via `useProspectRedirect`.
+- Crée deux handlers distincts :
+  - `handleLoginClick` → toujours `/auth` (passé au `LandingHeader` pour le bouton "Connexion").
+  - `handleSignupClick` → si `enabled` ouvre `ProspectDialog`, sinon redirige `/auth`.
+- Passe `handleSignupClick` au bouton "Essai Gratuit" du header, à `HeroSection`, `PricingSection`, `FinalCTA`.
 
-**Nouveau composant `src/components/admin/ProspectsManager.tsx`** :
-- Liste des prospects sous forme de cartes (style cohérent avec les cards existantes du Super Admin).
-- Chaque carte affiche :
-  - Nom complet + nom de l'entreprise (titre)
-  - Email + téléphone (avec liens `mailto:` / `tel:`)
-  - Badges colorés selon les intérêts cochés : "Beta testeur" (vert), "Recontact" (bleu), "Démo" (violet)
-  - Message libre (si rempli)
-  - Date de création (relative : "il y a X jours")
-  - Badge de statut (`new` / `contacted` / `converted` / `archived`)
-- Filtres en tête : par statut, par intérêt (beta / recontact / démo), recherche texte (nom/entreprise/email).
-- Actions par carte :
-  - Bouton "Marquer comme contacté" → met à jour `status`
-  - Bouton "Archiver"
-  - Bouton "Supprimer" (avec confirmation)
-- Compteur total + compteurs par statut en haut.
+**`src/components/landing/LandingHeader.tsx`** :
+- Ajouter une prop `onLoginClick` (en plus de `onAuthClick` existant).
+- Bouton "Connexion" → `onLoginClick`.
+- Bouton "Essai Gratuit" → `onAuthClick` (qui devient le handler signup).
+- Rétrocompatible : si `onLoginClick` non fourni, fallback sur `onAuthClick`.
 
-**Branchement dans `SuperAdmin.tsx`** :
-- Import du nouveau composant.
-- Ajout du `case 'prospects': return <ProspectsManager />;` dans `renderActiveSection()`.
+**`src/pages/Landing.tsx`** : aucun changement (page interne, parcours utilisateur connecté).
 
-### 4. Détails techniques
+### 4. Modification de la page `/auth`
 
-- **Validation** : Zod côté formulaire (email valide, longueurs max 255, au moins une case cochée OU un message libre rempli pour valider).
-- **Pas d'edge function** nécessaire : l'insertion se fait directement via le client Supabase grâce à la policy INSERT publique.
-- **Aucun impact** sur les autres parties du code (auth, SAV, agenda, wizard…).
+**`src/pages/Auth.tsx`** :
+- Récupérer `enabled` via `useProspectRedirect`.
+- État local `prospectDialogOpen`.
+- Sur le clic du bouton/onglet "Inscription" (ou "Créer un compte" / lien "Pas encore de compte ?") :
+  - Si `enabled` → `setProspectDialogOpen(true)` (et empêcher la bascule vers le formulaire signup).
+  - Sinon → comportement initial (afficher formulaire signup).
+- Monter `<ProspectDialog>` en bas du JSX.
+
+### 5. Toggle Super Admin
+
+**Nouveau composant `src/components/admin/ProspectRedirectToggle.tsx`** :
+- Card simple avec `<Switch>` + label + description.
+- Lecture/écriture du flag dans la BDD via mutation React Query.
+- Toast de confirmation.
+
+**Intégration** : ajouter ce toggle en haut du composant `ProspectsManager.tsx` (déjà existant), pour regrouper la gestion prospect au même endroit. Pas besoin d'ajouter un nouvel item de menu.
+
+### 6. Détails techniques
+
+- Le flag est public-readable pour éviter un appel auth depuis la landing.
+- Cache React Query sur `useProspectRedirect` avec `staleTime: 60_000` pour éviter les rerenders.
+- Aucun impact sur `/auth` côté login : le formulaire de connexion fonctionne toujours, seul le basculement vers signup est intercepté.
+- Le `ProspectDialog` existant est réutilisé tel quel.
 
 ### Fichiers créés / modifiés
 
-- **Migration BDD** : nouvelle table `prospects` + RLS.
-- **Créés** :
-  - `src/components/landing/ProspectDialog.tsx`
-  - `src/components/admin/ProspectsManager.tsx`
-- **Modifiés** :
-  - `src/pages/PublicLanding.tsx` (remplacement de `handleAuthClick`)
-  - `src/components/admin/SuperAdminSidebar.tsx` (ajout entrée menu)
-  - `src/pages/SuperAdmin.tsx` (ajout du case `'prospects'`)
+**Migration BDD** : créer table `app_global_settings` (si absente) + insérer `prospect_redirect_enabled = true`.
+
+**Créés** :
+- `src/hooks/useProspectRedirect.ts`
+- `src/components/admin/ProspectRedirectToggle.tsx`
+
+**Modifiés** :
+- `src/pages/PublicLanding.tsx` (deux handlers distincts)
+- `src/components/landing/LandingHeader.tsx` (prop `onLoginClick`)
+- `src/pages/Auth.tsx` (interception du clic "Inscription")
+- `src/components/admin/ProspectsManager.tsx` (intégration du toggle en tête)
 
 ### Vérification
 
-- Cliquer sur "Essai Gratuit" / "Connexion" / "Essayer gratuitement" / CTA finale sur la landing publique → popup prospect s'ouvre (pas de redirection vers `/auth`).
-- Remplir le formulaire (nom, entreprise, email, cocher "Beta testeur") → soumission → toast de confirmation → fermeture.
-- Vérifier dans Super Admin → menu "Prospects" → la carte apparaît avec les bons badges.
-- Tester les filtres et actions (marquer contacté, archiver, supprimer).
-- Vérifier que `/auth` reste accessible directement (pour utilisateurs existants).
+- Toggle ON (défaut) :
+  - Landing → "Connexion" ouvre `/auth` (login fonctionne pour magasins existants).
+  - Landing → "Essai Gratuit" ouvre le popup prospect.
+  - `/auth` → clic sur "Inscription" ouvre le popup prospect.
+- Toggle OFF :
+  - Landing → "Connexion" et "Essai Gratuit" mènent tous deux à `/auth`.
+  - `/auth` → "Inscription" affiche normalement le formulaire de création de compte.
+- Bascule du toggle dans Super Admin → effet immédiat sur la landing (après refetch / nouveau chargement).
 
