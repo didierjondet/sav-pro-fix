@@ -115,6 +115,7 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
     charger: false, case: false, screen_protector: false, other: '',
   });
   const [unlockPattern, setUnlockPattern] = useState<number[]>([]);
+  const [noUnlockCode, setNoUnlockCode] = useState(false);
   const [securityCodes, setSecurityCodes] = useState<SecurityCodes>({
     unlock_code: '', icloud_id: '', icloud_password: '', sim_pin: '',
   });
@@ -125,12 +126,16 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
   const [recentlyAddedParts, setRecentlyAddedParts] = useState<string[]>([]);
   const [showPrintDialog, setShowPrintDialog] = useState(false);
   const [createdSAVCase, setCreatedSAVCase] = useState<any>(null);
+  const [forceCreateNewCustomer, setForceCreateNewCustomer] = useState(false);
+  const [debouncedFirstName, setDebouncedFirstName] = useState('');
+  const [debouncedLastName, setDebouncedLastName] = useState('');
 
   const printButtonRef = useRef<SAVPrintButtonRef>(null);
   const { user } = useAuth();
   const { profile } = useProfile();
   const { createCase } = useSAVCases();
   const { createCustomer } = useCustomers();
+  const { customers: allCustomers } = useAllCustomers();
   const { parts } = useParts();
   const { checkLimits } = useSubscription();
   const { checkAndShowLimitDialog } = useLimitDialogContext();
