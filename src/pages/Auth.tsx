@@ -9,6 +9,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
+import { useProspectRedirect } from '@/hooks/useProspectRedirect';
+import { ProspectDialog } from '@/components/landing/ProspectDialog';
 export default function Auth() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -17,6 +19,9 @@ export default function Auth() {
   const [resendLoading, setResendLoading] = useState(false);
   const [showResendOption, setShowResendOption] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<string>('signin');
+  const [prospectDialogOpen, setProspectDialogOpen] = useState(false);
+  const { enabled: prospectRedirectEnabled } = useProspectRedirect();
   const {
     signIn,
     signUp,
@@ -172,7 +177,17 @@ export default function Auth() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="signin" className="w-full">
+          <Tabs
+            value={activeTab}
+            onValueChange={(val) => {
+              if (val === 'signup' && prospectRedirectEnabled) {
+                setProspectDialogOpen(true);
+                return;
+              }
+              setActiveTab(val);
+            }}
+            className="w-full"
+          >
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="signin">Connexion</TabsTrigger>
               <TabsTrigger value="signup">Inscription</TabsTrigger>
@@ -298,5 +313,9 @@ export default function Auth() {
         </CardContent>
       </Card>
       </div>
+      <ProspectDialog
+        isOpen={prospectDialogOpen}
+        onClose={() => setProspectDialogOpen(false)}
+      />
     </div>;
 }
