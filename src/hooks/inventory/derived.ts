@@ -23,7 +23,13 @@ export function getInventoryDerivedData(
   items: InventorySessionItem[],
 ): InventoryDerivedData {
   const pendingItems = items.filter((item) => item.line_status === 'pending');
-  const missingItems = items.filter((item) => item.line_status === 'missing' || item.is_missing || (item.counted_quantity ?? 0) === 0);
+  // Une ligne est considérée comme manquante uniquement si elle a été traitée
+  // (line_status !== 'pending') et qu'elle est marquée manquante ou comptée à 0.
+  const missingItems = items.filter(
+    (item) =>
+      item.line_status !== 'pending' &&
+      (item.line_status === 'missing' || item.is_missing || (item.counted_quantity ?? 0) === 0),
+  );
   const adjustedItems = items.filter(
     (item) => item.counted_quantity !== null && item.line_status !== 'pending' && item.variance_quantity !== 0,
   );
