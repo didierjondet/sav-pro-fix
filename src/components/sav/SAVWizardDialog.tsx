@@ -695,6 +695,25 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
             <Separator />
             <div>
               <Label className="mb-3 block font-medium">Codes de sécurité</Label>
+
+              <div className="flex items-center space-x-2 p-3 bg-muted/40 rounded-md border border-dashed mb-3">
+                <Checkbox
+                  id="wiz-no-unlock-code"
+                  checked={noUnlockCode}
+                  onCheckedChange={(checked) => {
+                    const v = checked === true;
+                    setNoUnlockCode(v);
+                    if (v) {
+                      setSecurityCodes({ unlock_code: '', icloud_id: '', icloud_password: '', sim_pin: '' });
+                      setUnlockPattern([]);
+                    }
+                  }}
+                />
+                <Label htmlFor="wiz-no-unlock-code" className="text-sm font-medium cursor-pointer">
+                  Cet appareil n'a pas de code de déverrouillage
+                </Label>
+              </div>
+
               {/* Honeypot pour absorber l'autofill */}
               <div style={{ position: 'absolute', left: '-9999px', height: 0, overflow: 'hidden' }} aria-hidden="true">
                 <input type="text" name="username" tabIndex={-1} autoComplete="username" />
@@ -704,12 +723,14 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
                 <div>
                   <Label className="text-sm">Code de déverrouillage (max 8 car.)</Label>
                   <Input name="wiz_unlock_xq" type="text" maxLength={8} value={securityCodes.unlock_code}
+                    disabled={noUnlockCode}
                     onChange={(e) => setSecurityCodes({ ...securityCodes, unlock_code: e.target.value.replace(/[^a-zA-Z0-9]/g, '') })}
                     placeholder="Ex: ABC12345" {...wizNoAutofill} />
                 </div>
                 <div>
                   <Label className="text-sm">Identifiant iCloud</Label>
                   <Input name="wiz_icid_xq" type="text" value={securityCodes.icloud_id}
+                    disabled={noUnlockCode}
                     onChange={(e) => setSecurityCodes({ ...securityCodes, icloud_id: e.target.value })}
                     placeholder="mail@gmail.com" {...wizNoAutofill} />
                 </div>
@@ -718,12 +739,14 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
                   <Input name="wiz_icpw_xq" type="text"
                     style={{ WebkitTextSecurity: 'disc' } as React.CSSProperties}
                     value={securityCodes.icloud_password}
+                    disabled={noUnlockCode}
                     onChange={(e) => setSecurityCodes({ ...securityCodes, icloud_password: e.target.value })}
                     placeholder="mot de passe" {...wizNoAutofill} />
                 </div>
                 <div>
                   <Label className="text-sm">Code PIN SIM (4 à 6 chiffres)</Label>
                   <Input name="wiz_pin_xq" type="text" inputMode="numeric" maxLength={6} value={securityCodes.sim_pin}
+                    disabled={noUnlockCode}
                     onChange={(e) => setSecurityCodes({ ...securityCodes, sim_pin: e.target.value.replace(/\D/g, '') })}
                     placeholder="123456" {...wizNoAutofill} />
                 </div>
@@ -732,7 +755,9 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
             <Separator />
             <div>
               <Label className="mb-3 block font-medium">Schéma de verrouillage</Label>
-              <PatternLock pattern={unlockPattern} onChange={setUnlockPattern} />
+              <div className={noUnlockCode ? 'opacity-40 pointer-events-none' : ''}>
+                <PatternLock pattern={unlockPattern} onChange={setUnlockPattern} />
+              </div>
             </div>
           </div>
         );
