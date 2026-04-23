@@ -520,10 +520,60 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
                     <Input type="email" value={customerInfo.email} onChange={(e) => setCustomerInfo({ ...customerInfo, email: e.target.value })} />
                   </div>
                   <div>
-                    <Label>Téléphone</Label>
+                    <Label>Téléphone {duplicateCustomers.length > 0 && forceCreateNewCustomer && <span className="text-destructive">*</span>}</Label>
                     <Input value={customerInfo.phone} onChange={(e) => setCustomerInfo({ ...customerInfo, phone: e.target.value })} />
                   </div>
                 </div>
+
+                {duplicateCustomers.length > 0 && !forceCreateNewCustomer && (
+                  <div className="border border-blue-300 bg-blue-50 dark:bg-blue-950/20 dark:border-blue-800 rounded-lg p-3 space-y-2">
+                    <p className="text-sm font-medium text-blue-900 dark:text-blue-200">
+                      {duplicateCustomers.length} client{duplicateCustomers.length > 1 ? 's' : ''} existant{duplicateCustomers.length > 1 ? 's' : ''} avec ce nom
+                    </p>
+                    <p className="text-xs text-blue-800 dark:text-blue-300">
+                      Sélectionnez un client existant pour éviter les doublons, ou créez un nouveau client si c'est un homonyme.
+                    </p>
+                    <div className="space-y-1.5">
+                      {duplicateCustomers.map((c) => (
+                        <button
+                          key={c.id}
+                          type="button"
+                          onClick={() => {
+                            setSelectedCustomer(c);
+                            setCustomerInfo({
+                              firstName: c.first_name || '',
+                              lastName: c.last_name || '',
+                              email: c.email || '',
+                              phone: c.phone || '',
+                              address: c.address || '',
+                            });
+                          }}
+                          className="w-full text-left bg-background hover:bg-muted rounded-md p-2 border border-blue-200 dark:border-blue-800 transition-colors"
+                        >
+                          <p className="text-sm font-medium">{c.first_name} {c.last_name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {c.phone || '—'} {c.email ? `· ${c.email}` : ''}
+                          </p>
+                        </button>
+                      ))}
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="w-full mt-1"
+                      onClick={() => setForceCreateNewCustomer(true)}
+                    >
+                      Créer quand même un nouveau client
+                    </Button>
+                  </div>
+                )}
+
+                {duplicateCustomers.length > 0 && forceCreateNewCustomer && (
+                  <div className="text-xs text-muted-foreground italic">
+                    Création d'un nouveau client malgré l'homonyme. Téléphone obligatoire pour différenciation.
+                  </div>
+                )}
               </>
             )}
           </div>
@@ -645,6 +695,25 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
             <Separator />
             <div>
               <Label className="mb-3 block font-medium">Codes de sécurité</Label>
+
+              <div className="flex items-center space-x-2 p-3 bg-muted/40 rounded-md border border-dashed mb-3">
+                <Checkbox
+                  id="wiz-no-unlock-code"
+                  checked={noUnlockCode}
+                  onCheckedChange={(checked) => {
+                    const v = checked === true;
+                    setNoUnlockCode(v);
+                    if (v) {
+                      setSecurityCodes({ unlock_code: '', icloud_id: '', icloud_password: '', sim_pin: '' });
+                      setUnlockPattern([]);
+                    }
+                  }}
+                />
+                <Label htmlFor="wiz-no-unlock-code" className="text-sm font-medium cursor-pointer">
+                  Cet appareil n'a pas de code de déverrouillage
+                </Label>
+              </div>
+
               {/* Honeypot pour absorber l'autofill */}
               <div style={{ position: 'absolute', left: '-9999px', height: 0, overflow: 'hidden' }} aria-hidden="true">
                 <input type="text" name="username" tabIndex={-1} autoComplete="username" />
@@ -654,12 +723,14 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
                 <div>
                   <Label className="text-sm">Code de déverrouillage (max 8 car.)</Label>
                   <Input name="wiz_unlock_xq" type="text" maxLength={8} value={securityCodes.unlock_code}
+                    disabled={noUnlockCode}
                     onChange={(e) => setSecurityCodes({ ...securityCodes, unlock_code: e.target.value.replace(/[^a-zA-Z0-9]/g, '') })}
                     placeholder="Ex: ABC12345" {...wizNoAutofill} />
                 </div>
                 <div>
                   <Label className="text-sm">Identifiant iCloud</Label>
                   <Input name="wiz_icid_xq" type="text" value={securityCodes.icloud_id}
+                    disabled={noUnlockCode}
                     onChange={(e) => setSecurityCodes({ ...securityCodes, icloud_id: e.target.value })}
                     placeholder="mail@gmail.com" {...wizNoAutofill} />
                 </div>
@@ -668,12 +739,14 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
                   <Input name="wiz_icpw_xq" type="text"
                     style={{ WebkitTextSecurity: 'disc' } as React.CSSProperties}
                     value={securityCodes.icloud_password}
+                    disabled={noUnlockCode}
                     onChange={(e) => setSecurityCodes({ ...securityCodes, icloud_password: e.target.value })}
                     placeholder="mot de passe" {...wizNoAutofill} />
                 </div>
                 <div>
                   <Label className="text-sm">Code PIN SIM (4 à 6 chiffres)</Label>
                   <Input name="wiz_pin_xq" type="text" inputMode="numeric" maxLength={6} value={securityCodes.sim_pin}
+                    disabled={noUnlockCode}
                     onChange={(e) => setSecurityCodes({ ...securityCodes, sim_pin: e.target.value.replace(/\D/g, '') })}
                     placeholder="123456" {...wizNoAutofill} />
                 </div>
@@ -682,7 +755,9 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
             <Separator />
             <div>
               <Label className="mb-3 block font-medium">Schéma de verrouillage</Label>
-              <PatternLock pattern={unlockPattern} onChange={setUnlockPattern} />
+              <div className={noUnlockCode ? 'opacity-40 pointer-events-none' : ''}>
+                <PatternLock pattern={unlockPattern} onChange={setUnlockPattern} />
+              </div>
             </div>
           </div>
         );
@@ -922,7 +997,12 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
         savCaseNumber={createdSAVCase?.case_number || ''}
         savCase={createdSAVCase}
         requireUnlockPattern={currentTypeInfo.require_unlock_pattern}
-        hasUnlockPattern={unlockPattern.length > 0}
+        hasUnlockMethod={
+          unlockPattern.length > 0 ||
+          securityCodes.unlock_code.trim().length > 0 ||
+          noUnlockCode
+        }
+        onPersistBeforeAction={persistSAV}
       />
     </>
   );
