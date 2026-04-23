@@ -19,6 +19,9 @@ export default function Auth() {
   const [resendLoading, setResendLoading] = useState(false);
   const [showResendOption, setShowResendOption] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<string>('signin');
+  const [prospectDialogOpen, setProspectDialogOpen] = useState(false);
+  const { enabled: prospectRedirectEnabled } = useProspectRedirect();
   const {
     signIn,
     signUp,
