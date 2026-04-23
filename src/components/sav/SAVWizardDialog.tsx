@@ -520,10 +520,60 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
                     <Input type="email" value={customerInfo.email} onChange={(e) => setCustomerInfo({ ...customerInfo, email: e.target.value })} />
                   </div>
                   <div>
-                    <Label>Téléphone</Label>
+                    <Label>Téléphone {duplicateCustomers.length > 0 && forceCreateNewCustomer && <span className="text-destructive">*</span>}</Label>
                     <Input value={customerInfo.phone} onChange={(e) => setCustomerInfo({ ...customerInfo, phone: e.target.value })} />
                   </div>
                 </div>
+
+                {duplicateCustomers.length > 0 && !forceCreateNewCustomer && (
+                  <div className="border border-blue-300 bg-blue-50 dark:bg-blue-950/20 dark:border-blue-800 rounded-lg p-3 space-y-2">
+                    <p className="text-sm font-medium text-blue-900 dark:text-blue-200">
+                      {duplicateCustomers.length} client{duplicateCustomers.length > 1 ? 's' : ''} existant{duplicateCustomers.length > 1 ? 's' : ''} avec ce nom
+                    </p>
+                    <p className="text-xs text-blue-800 dark:text-blue-300">
+                      Sélectionnez un client existant pour éviter les doublons, ou créez un nouveau client si c'est un homonyme.
+                    </p>
+                    <div className="space-y-1.5">
+                      {duplicateCustomers.map((c) => (
+                        <button
+                          key={c.id}
+                          type="button"
+                          onClick={() => {
+                            setSelectedCustomer(c);
+                            setCustomerInfo({
+                              firstName: c.first_name || '',
+                              lastName: c.last_name || '',
+                              email: c.email || '',
+                              phone: c.phone || '',
+                              address: c.address || '',
+                            });
+                          }}
+                          className="w-full text-left bg-background hover:bg-muted rounded-md p-2 border border-blue-200 dark:border-blue-800 transition-colors"
+                        >
+                          <p className="text-sm font-medium">{c.first_name} {c.last_name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {c.phone || '—'} {c.email ? `· ${c.email}` : ''}
+                          </p>
+                        </button>
+                      ))}
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="w-full mt-1"
+                      onClick={() => setForceCreateNewCustomer(true)}
+                    >
+                      Créer quand même un nouveau client
+                    </Button>
+                  </div>
+                )}
+
+                {duplicateCustomers.length > 0 && forceCreateNewCustomer && (
+                  <div className="text-xs text-muted-foreground italic">
+                    Création d'un nouveau client malgré l'homonyme. Téléphone obligatoire pour différenciation.
+                  </div>
+                )}
               </>
             )}
           </div>
