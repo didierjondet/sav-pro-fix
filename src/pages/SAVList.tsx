@@ -57,7 +57,7 @@ const STORAGE_KEY = 'fixway_sav_filters';
 
 const DEFAULT_FILTERS = {
   filterType: 'all',
-  statusFilter: 'all',
+  statusFilter: 'all-except-ready',
   colorFilter: 'all',
   gradeFilter: 'all',
   sortOrder: 'priority',
