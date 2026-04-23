@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import React from 'react';
 import { multiWordSearch } from '@/utils/searchUtils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { useSAVCases } from '@/hooks/useSAVCases';
 import { useCustomers } from '@/hooks/useCustomers';
+import { useAllCustomers } from '@/hooks/useAllCustomers';
 import { useParts } from '@/hooks/useParts';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProfile } from '@/hooks/useProfile';
