@@ -1,83 +1,100 @@
 
 
-## Plan : accessoire libre + désactivation autofill + PIN à 6 chiffres
+## Plan : auto-catégorisation des pièces d'Easycash Agde + correction du mode assisté
 
-### 1. Ajouter un champ libre « Autre accessoire »
+### Partie A — Auto-catégorisation des 443 pièces non catégorisées (Agde)
 
-Permettre au technicien de saisir un accessoire non listé (ex : oreillettes, stylet, carte SIM, dragonne) en plus des trois cases existantes (Chargeur, Coque, Protection d'écran).
+**Contexte chiffré**
+- Boutique : `Easycash Agde`
+- Pièces totales : 464 (21 déjà catégorisées, **443 sans catégorie**)
+- 14 catégories existantes : BATTERIE, ECRANS, PRESTATIONS, CONNECTEUR DE CHARGE DIVERS, PIECE DETACHE CONSOLE, BACK/DOS SMARTPHONE, CAMERA SMARTPHONE, CHASSIS SMARTPHONE, NAPPES DIVERS SMARTPHONE, PIECE DETACHEE DIVERS SMARTPHONE, DISK SSD INFORMATIQUE, MEMOIRE INFORMATIQUE, ALIMENTATION INFORMATIQUE, PIECE DETACHEE DIVERS INFORMATIQUE.
 
-**Modèle de données (sans migration)**
+**Méthode (script ponctuel exécuté via `code--exec` puis `psql`)**
 
-La colonne `sav_cases.accessories` est de type `JSONB`. On ajoute simplement une clé `other` (string) à l'objet :
-```
-{ charger: bool, case: bool, screen_protector: bool, other: string }
-```
-Aucune migration nécessaire — JSONB accepte des clés supplémentaires. La valeur n'est enregistrée que si elle est non vide.
+Script Python qui charge toutes les pièces sans catégorie, applique des règles de priorité par mots-clés sur le nom + référence, puis met à jour `parts.category_id` en lot.
 
-**Fichiers modifiés**
+Règles (ordre de priorité, première qui matche gagne) :
+1. `BATTERIE` → contient « batterie » ou « battery »
+2. `ECRANS` → contient « ecran », « écran », « lcd », « oled », « display », « vitre tactile »
+3. `BACK/DOS SMARTPHONE` → contient « vitre arriere », « vitre arrière », « back cover », « dos », « back glass »
+4. `CHASSIS SMARTPHONE` → contient « chassis », « châssis », « frame », « midframe »
+5. `CAMERA SMARTPHONE` → contient « camera », « caméra », « lentille » (si smartphone)
+6. `CONNECTEUR DE CHARGE DIVERS` → contient « connecteur de charge », « charge port », « dock », « charging »
+7. `NAPPES DIVERS SMARTPHONE` → contient « nappe », « flex »
+8. `PIECE DETACHE CONSOLE` → contient « nintendo », « switch », « ps4 », « ps5 », « xbox », « joycon », « joy-con », « manette »
+9. `DISK SSD INFORMATIQUE` → contient « ssd », « nvme », « m.2 »
+10. `MEMOIRE INFORMATIQUE` → contient « ram », « ddr3 », « ddr4 », « ddr5 », « so-dimm », « dimm »
+11. `ALIMENTATION INFORMATIQUE` → contient « alimentation », « chargeur pc », « adaptateur secteur », « psu »
+12. `PIECE DETACHEE DIVERS INFORMATIQUE` → contient « clavier pc », « pavé tactile », « trackpad », « inverter »
+13. `PRESTATIONS` → contient « réparation », « reparation », « main d'oeuvre », « forfait », « prestation », « diagnostic »
+14. `PIECE DETACHEE DIVERS SMARTPHONE` → fallback si « iphone », « samsung », « xiaomi », « huawei », « oppo », « pixel », « smartphone »
 
-- `src/components/sav/SAVForm.tsx` (vue normale)
-  - Étendre l'état `accessories` avec `other: ''`
-  - Ajouter sous la grille des 3 checkboxes un champ texte « Autre accessoire » (Input + Label, placeholder « Ex : stylet, écouteurs, carte SIM… »)
-  - Réinitialiser `other: ''` dans le reset de formulaire
-- `src/components/sav/SAVWizardDialog.tsx` (vue simplifiée)
-  - Mêmes modifications, dans l'étape `accessories`
-  - Champ texte affiché juste sous les 3 checkboxes
-- `src/pages/SAVDetail.tsx`
-  - Étendre la condition d'affichage de la carte « Accessoires présents » pour aussi déclencher si `accessories.other` est non vide
-  - Ajouter une 4ᵉ ligne dans la grille (ou en pleine largeur si `other` est saisi) : icône `CheckCircle` verte + texte `Autre : {valeur}`
+Toute pièce qui ne déclenche aucune règle reste **non catégorisée** et part dans le PDF des « non trouvées ».
 
-### 2. Empêcher l'autofill du navigateur sur les codes de sécurité
+**Livrable PDF**
+- Fichier généré : `/mnt/documents/agde_pieces_non_categorisees.pdf`
+- Contenu : titre, date, nombre total non catégorisé, tableau (Nom, Référence, SKU, Stock, Fournisseur).
+- Génère aussi un récapitulatif au début : combien de pièces ont été assignées par catégorie.
+- Servi via `<lov-artifact>` à la fin de l'exécution.
 
-Les champs identifiant iCloud, mot de passe iCloud, code de déverrouillage et PIN SIM sont actuellement préremplis par le gestionnaire de mots de passe du navigateur (Chrome/Safari).
+**QA**
+- Vérification SQL post-update : compte avant / après, top 5 catégories les plus garnies.
+- Conversion PDF → image pour validation visuelle (1ère et dernière page).
 
-**Fichiers modifiés**
+Aucune modification de code applicatif pour cette partie : c'est une opération de données one-shot.
 
-- `src/components/sav/SecurityCodesSection.tsx` (utilisé par `SAVForm`)
-- `src/components/sav/SAVWizardDialog.tsx` (étape `accessories`, inputs en lignes ~558-578)
+---
 
-Sur **chaque** Input des codes de sécurité (unlock_code, icloud_id, icloud_password, sim_pin), ajouter :
-- `autoComplete="off"`
-- `autoCorrect="off"`
-- `autoCapitalize="off"`
-- `spellCheck={false}`
-- `data-form-type="other"` (astuce reconnue par les gestionnaires de mots de passe)
-- Pour le mot de passe iCloud : utiliser `type="text"` avec un masquage CSS `style={{ WebkitTextSecurity: 'disc' }}` au lieu de `type="password"` afin de bloquer définitivement le remplissage automatique des password managers, **et** ajouter un `name` aléatoire (ex : `name={'pwd_' + uniqueId}`) pour qu'aucune correspondance d'historique n'opère
-- Pour l'identifiant iCloud : changer `type="email"` en `type="text"` (mêmes raisons), conserver le placeholder `mail@gmail.com`
+### Partie B — Correction du mode assisté de l'inventaire (blocage à 17%)
 
-### 3. PIN SIM : passer de 4 à 6 caractères
+**Diagnostic à partir de la session test « rtert » (6 lignes, 1 traitée → 16,7%)**
 
-- `src/components/sav/SecurityCodesSection.tsx` :
-  - Label : « Code PIN carte SIM (4 à 6 chiffres) »
-  - `maxLength={6}`
-  - Placeholder : `123456`
-- `src/components/sav/SAVWizardDialog.tsx` (étape accessories) :
-  - Label : « Code PIN SIM (4 à 6 chiffres) »
-  - `maxLength={6}`
-  - Placeholder : `123456`
+Trois bugs cumulés empêchent la finalisation :
 
-Aucune contrainte de longueur minimale imposée (4, 5 ou 6 chiffres tous acceptés, conforme aux PIN SIM réels).
+1. **`InventoryAssistedDialog.goToNext`** (ligne 53) avance simplement de +1 dans la liste ordonnée. Une fois sur la dernière ligne, le bouton « Enregistrer / suivant » reste sur la même ligne au lieu de chercher la prochaine ligne **pending**. Résultat : impossible d'arriver au 100% en avançant naturellement.
+2. **Pas d'auto-fermeture / pas d'écran de fin** quand toutes les lignes sont traitées : le dialogue affiche bien « Toutes les pièces ont été traitées » mais ne propose **aucun bouton « Clôturer le comptage »** depuis la pop-up. L'utilisateur doit deviner qu'il faut fermer et aller cliquer ailleurs.
+3. **`closeSession` (hook)** vérifie via `getInventoryDerivedData` qui considère comme « manquante » toute ligne avec `counted_quantity = 0` (cf. `derived.ts` : `missingItems` inclut `counted_quantity ?? 0 === 0`). Or pour un parcours 100% « non trouvé », le calcul `pendingItems` (filtre `line_status = 'pending'`) reste correct, donc la clôture passe — mais le compteur affiché « Progression » côté manager (`completionRate`) reste cohérent. Le vrai blocage est la combinaison des points 1 et 2.
 
-### Comportements préservés
+**Correctifs**
 
-- Les valeurs existantes en base restent compatibles (clé `other` simplement absente sur les anciens dossiers).
-- Suppression automatique des codes de sécurité à la clôture inchangée.
-- Ordre des étapes du wizard inchangé, pas de nouvelle étape.
-- Aucun changement visuel sur les autres champs validés (préférence utilisateur respectée).
+`src/components/settings/inventory/InventoryAssistedDialog.tsx`
+- `goToNext` : chercher l'index de la **prochaine ligne `pending`** après l'index courant ; si aucune, aller à l'index suivant (pour pouvoir réviser) ou rester. Idem `goToPrevious` côté revue.
+- Ajouter un état dérivé `isAllProcessed = orderedItems.every(item => item.line_status !== 'pending')`.
+- Quand `isAllProcessed === true`, afficher dans la zone centrale un encart « Comptage terminé » avec deux boutons :
+  - **« Réviser une ligne »** → repositionne sur la 1ʳᵉ ligne (mode navigation libre).
+  - **« Clôturer le comptage »** → appelle `onClose()` (nouvelle prop) qui déclenche `closeSession` côté parent puis ferme le dialogue.
+- Ajouter une nouvelle prop `onClose: () => Promise<void>` dans `InventoryAssistedDialogProps`.
+- Sur le bouton « Enregistrer / suivant » de la dernière ligne pending : libellé conditionnel « Enregistrer et clôturer » qui chaîne `onCount` + `onClose`.
 
-### Fichiers modifiés
+`src/components/settings/inventory/InventoryManager.tsx`
+- Brancher la nouvelle prop : `onClose={async () => { await handleCloseSession(); setAssistedOpen(false); }}`.
+- Veiller à ce que l'ouverture du dialogue assisté (`setAssistedOpen(true)`) soit bien possible depuis le bouton « Reprendre » lorsque la session est en `paused`.
 
-- `src/components/sav/SAVForm.tsx`
-- `src/components/sav/SAVWizardDialog.tsx`
-- `src/components/sav/SecurityCodesSection.tsx`
-- `src/pages/SAVDetail.tsx`
+`src/hooks/inventory/derived.ts`
+- Petit ajustement défensif : `missingItems` ne doit inclure `counted_quantity = 0` **que si** `line_status !== 'pending'` (sinon les lignes jamais touchées sont comptées comme manquantes par erreur dans les compteurs annexes du parent). Filtre actuel à corriger ligne 8.
+- `canCloseSession` reste basé sur `pendingItems.length === 0 && items.length > 0` → OK.
 
-### Vérifications après implémentation
+**Vérifications post-correctif**
+- Lancer un nouvel inventaire assisté de 6 lignes, traiter chaque ligne (mix « trouvé », « non trouvé », ajusté) → la pop-up avance ligne par ligne sans bloquer.
+- Sur la dernière ligne, le bouton se transforme en « Enregistrer et clôturer ».
+- Après clôture : la session passe en `completed` (100%), boutons « Synthèse / Manquants / Valider » disponibles dans le manager.
+- Reprise d'une session paused → ouverture du dialogue sur la 1ʳᵉ ligne pending restante.
+- Aucune régression sur les modes scan et manuel.
 
-- Vue normale : champ « Autre accessoire » saisi → enregistré et visible dans le détail SAV
-- Vue simplifiée (wizard) : même comportement à l'étape « Accessoires & Codes »
-- Ouverture du formulaire dans Chrome/Safari avec gestionnaire de mots de passe actif → aucun champ de codes de sécurité n'est prérempli
-- PIN SIM accepte 6 chiffres maximum (saisie de 7e chiffre bloquée)
-- Saisie d'un PIN à 4 ou 5 chiffres reste valide
-- Aucune régression sur les SAV existants ni sur la clôture (suppression des codes)
+**Note** : la session test actuelle « rtert » (1/6) sera laissée telle quelle (l'utilisateur pourra la finaliser ou la supprimer librement après la correction).
+
+---
+
+### Récapitulatif des fichiers / actions
+
+**Données (one-shot via exec)**
+- Mise à jour SQL des `parts.category_id` pour Agde (443 lignes ciblées max)
+- Génération `/mnt/documents/agde_pieces_non_categorisees.pdf`
+
+**Code (modifié)**
+- `src/components/settings/inventory/InventoryAssistedDialog.tsx`
+- `src/components/settings/inventory/InventoryManager.tsx`
+- `src/hooks/inventory/derived.ts`
+
+**Aucune migration SQL**, aucune nouvelle table, aucune modification RLS.
 
