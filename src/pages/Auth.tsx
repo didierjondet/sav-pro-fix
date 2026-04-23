@@ -177,7 +177,17 @@ export default function Auth() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="signin" className="w-full">
+          <Tabs
+            value={activeTab}
+            onValueChange={(val) => {
+              if (val === 'signup' && prospectRedirectEnabled) {
+                setProspectDialogOpen(true);
+                return;
+              }
+              setActiveTab(val);
+            }}
+            className="w-full"
+          >
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="signin">Connexion</TabsTrigger>
               <TabsTrigger value="signup">Inscription</TabsTrigger>
