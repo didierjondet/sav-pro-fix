@@ -313,5 +313,9 @@ export default function Auth() {
         </CardContent>
       </Card>
       </div>
+      <ProspectDialog
+        isOpen={prospectDialogOpen}
+        onClose={() => setProspectDialogOpen(false)}
+      />
     </div>;
 }
