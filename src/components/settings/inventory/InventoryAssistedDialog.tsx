@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { CheckCircle2 } from 'lucide-react';
 import type { InventorySession, InventorySessionItem } from './types';
 
 interface InventoryAssistedDialogProps {
@@ -14,6 +15,7 @@ interface InventoryAssistedDialogProps {
   onCount: (itemId: string, quantity: number) => Promise<void>;
   onMissing: (itemId: string) => Promise<void>;
   onPause: () => Promise<void>;
+  onClose: () => Promise<void>;
 }
 
 export function InventoryAssistedDialog({
@@ -24,6 +26,7 @@ export function InventoryAssistedDialog({
   onCount,
   onMissing,
   onPause,
+  onClose,
 }: InventoryAssistedDialogProps) {
   const orderedItems = useMemo(() => [...items].sort((a, b) => a.position - b.position), [items]);
   const initialIndex = useMemo(() => {
@@ -33,7 +36,14 @@ export function InventoryAssistedDialog({
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const currentItem = orderedItems[currentIndex] || null;
   const [quantity, setQuantity] = useState('1');
-  const progressValue = session.total_items > 0 ? ((session.total_items - orderedItems.filter((item) => item.line_status === 'pending').length) / session.total_items) * 100 : 0;
+  const [isClosing, setIsClosing] = useState(false);
+
+  const remainingPending = orderedItems.filter((item) => item.line_status === 'pending');
+  const isAllProcessed = orderedItems.length > 0 && remainingPending.length === 0;
+  const isLastPending = remainingPending.length === 1 && currentItem?.line_status === 'pending';
+  const progressValue = session.total_items > 0
+    ? ((session.total_items - remainingPending.length) / session.total_items) * 100
+    : 0;
 
   useEffect(() => {
     setCurrentIndex(initialIndex);
@@ -47,9 +57,22 @@ export function InventoryAssistedDialog({
         : '1');
   }, [currentItem?.id, currentItem?.expected_quantity, currentItem?.counted_quantity]);
 
-  const remainingCount = orderedItems.filter((item) => item.line_status === 'pending').length;
-
-  const goToNext = () => {
+  const goToNextPending = () => {
+    // Cherche la prochaine ligne pending après l'index courant
+    const nextPendingAfter = orderedItems.findIndex(
+      (item, idx) => idx > currentIndex && item.line_status === 'pending',
+    );
+    if (nextPendingAfter !== -1) {
+      setCurrentIndex(nextPendingAfter);
+      return;
+    }
+    // Sinon cherche depuis le début (ligne pending ailleurs)
+    const anyPending = orderedItems.findIndex((item) => item.line_status === 'pending');
+    if (anyPending !== -1) {
+      setCurrentIndex(anyPending);
+      return;
+    }
+    // Sinon avance d'un cran (mode révision libre)
     setCurrentIndex((prev) => Math.min(prev + 1, Math.max(orderedItems.length - 1, 0)));
   };
 
@@ -57,22 +80,49 @@ export function InventoryAssistedDialog({
     setCurrentIndex((prev) => Math.max(prev - 1, 0));
   };
 
+  const goToNext = () => {
+    setCurrentIndex((prev) => Math.min(prev + 1, Math.max(orderedItems.length - 1, 0)));
+  };
+
   const handleFound = async () => {
     if (!currentItem) return;
     const parsed = Number(quantity);
-    await onCount(currentItem.id, Number.isFinite(parsed) && parsed >= 0 ? parsed : 0);
-    goToNext();
+    const value = Number.isFinite(parsed) && parsed >= 0 ? parsed : 0;
+    await onCount(currentItem.id, value);
+    if (isLastPending) {
+      // Dernière ligne pending : on chaîne avec la clôture
+      await handleClose();
+    } else {
+      goToNextPending();
+    }
   };
 
   const handleMissing = async () => {
     if (!currentItem) return;
     await onMissing(currentItem.id);
-    goToNext();
+    if (isLastPending) {
+      await handleClose();
+    } else {
+      goToNextPending();
+    }
   };
 
   const handlePause = async () => {
     await onPause();
     onOpenChange(false);
+  };
+
+  const handleClose = async () => {
+    setIsClosing(true);
+    try {
+      await onClose();
+    } finally {
+      setIsClosing(false);
+    }
+  };
+
+  const handleReviewFirst = () => {
+    setCurrentIndex(0);
   };
 
   return (
@@ -93,11 +143,11 @@ export function InventoryAssistedDialog({
             </div>
             <div className="rounded-md border p-3">
               <div className="text-xs text-muted-foreground">Traitées</div>
-              <div className="text-2xl font-semibold">{session.counted_items}</div>
+              <div className="text-2xl font-semibold">{session.total_items - remainingPending.length}</div>
             </div>
             <div className="rounded-md border p-3">
               <div className="text-xs text-muted-foreground">Restantes</div>
-              <div className="text-2xl font-semibold">{remainingCount}</div>
+              <div className="text-2xl font-semibold">{remainingPending.length}</div>
             </div>
             <div className="rounded-md border p-3">
               <div className="text-xs text-muted-foreground">Position</div>
@@ -113,7 +163,23 @@ export function InventoryAssistedDialog({
             <Progress value={progressValue} />
           </div>
 
-          {currentItem ? (
+          {isAllProcessed ? (
+            <div className="space-y-4 rounded-md border border-primary/40 bg-primary/5 p-6 text-center">
+              <CheckCircle2 className="mx-auto h-12 w-12 text-primary" />
+              <div>
+                <h3 className="text-lg font-semibold">Comptage terminé</h3>
+                <p className="text-sm text-muted-foreground">
+                  Toutes les pièces ont été traitées. Vous pouvez réviser une ligne ou clôturer le comptage maintenant.
+                </p>
+              </div>
+              <div className="flex flex-col-reverse justify-center gap-2 sm:flex-row">
+                <Button variant="outline" onClick={handleReviewFirst}>Réviser une ligne</Button>
+                <Button onClick={handleClose} disabled={isClosing}>
+                  {isClosing ? 'Clôture en cours…' : 'Clôturer le comptage'}
+                </Button>
+              </div>
+            </div>
+          ) : currentItem ? (
             <div className="space-y-4 rounded-md border p-4">
               <div className="flex items-start justify-between gap-3">
                 <div>
@@ -143,7 +209,7 @@ export function InventoryAssistedDialog({
             </div>
           ) : (
             <div className="rounded-md border border-dashed p-8 text-center text-muted-foreground">
-              Toutes les pièces ont été traitées dans cette session.
+              Aucune pièce à afficher dans cette session.
             </div>
           )}
         </div>
@@ -154,10 +220,16 @@ export function InventoryAssistedDialog({
             <Button variant="outline" onClick={goToNext} disabled={!currentItem || currentIndex >= orderedItems.length - 1}>Passer</Button>
             <Button variant="outline" onClick={handlePause}>Pause</Button>
           </div>
-          <div className="flex flex-col-reverse gap-2 sm:flex-row">
-            <Button variant="outline" onClick={handleMissing} disabled={!currentItem}>Non trouvé</Button>
-            <Button onClick={handleFound} disabled={!currentItem}>Enregistrer / suivant</Button>
-          </div>
+          {!isAllProcessed && (
+            <div className="flex flex-col-reverse gap-2 sm:flex-row">
+              <Button variant="outline" onClick={handleMissing} disabled={!currentItem || isClosing}>
+                {isLastPending ? 'Non trouvé et clôturer' : 'Non trouvé'}
+              </Button>
+              <Button onClick={handleFound} disabled={!currentItem || isClosing}>
+                {isLastPending ? 'Enregistrer et clôturer' : 'Enregistrer / suivant'}
+              </Button>
+            </div>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>

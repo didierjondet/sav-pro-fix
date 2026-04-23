@@ -764,6 +764,10 @@ export function InventoryManager({ canApplyStock }: { canApplyStock: boolean }) 
             await markItemMissing(currentSession.id, itemId, 'assisted');
           }}
           onPause={handlePause}
+          onClose={async () => {
+            await handleCloseSession();
+            setAssistedOpen(false);
+          }}
         />
       )}
 
