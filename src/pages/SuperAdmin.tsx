@@ -31,6 +31,7 @@ import { AIEngineManager } from '@/components/admin/AIEngineManager';
 import { BotConversationsViewer } from '@/components/admin/BotConversationsViewer';
 import { DefaultRolePermissionsManager } from '@/components/admin/DefaultRolePermissionsManager';
 import { MessagingProvidersManager } from '@/components/admin/MessagingProvidersManager';
+import { ProspectsManager } from '@/components/admin/ProspectsManager';
 import { useStorageUsage } from '@/hooks/useStorageUsage';
 import { Shop } from '@/hooks/useShop';
 
@@ -340,6 +341,8 @@ export default function SuperAdmin() {
         return <MessagingProvidersManager />;
       case 'role-permissions':
         return <DefaultRolePermissionsManager />;
+      case 'prospects':
+        return <ProspectsManager />;
       default:
         return <DashboardOverview shops={shops} profiles={profiles} activeSupportCount={activeSupportCount} />;
     }
