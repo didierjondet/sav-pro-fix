@@ -1452,6 +1452,54 @@ export type Database = {
           },
         ]
       }
+      prospects: {
+        Row: {
+          company_name: string
+          created_at: string
+          email: string
+          first_name: string
+          free_message: string | null
+          id: string
+          interested_in_beta: boolean
+          interested_in_demo: boolean
+          interested_in_recontact: boolean
+          last_name: string
+          phone: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          company_name: string
+          created_at?: string
+          email: string
+          first_name: string
+          free_message?: string | null
+          id?: string
+          interested_in_beta?: boolean
+          interested_in_demo?: boolean
+          interested_in_recontact?: boolean
+          last_name: string
+          phone?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          company_name?: string
+          created_at?: string
+          email?: string
+          first_name?: string
+          free_message?: string | null
+          id?: string
+          interested_in_beta?: boolean
+          interested_in_demo?: boolean
+          interested_in_recontact?: boolean
+          last_name?: string
+          phone?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       quotes: {
         Row: {
           accepted_at: string | null
