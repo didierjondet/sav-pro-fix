@@ -99,8 +99,22 @@ export default function SAVList() {
   const [showPrintDialog, setShowPrintDialog] = useState(false);
   const [showWizard, setShowWizard] = useState(false);
   const [viewMode, setViewMode] = useState<'standard' | 'compact'>(() => {
-    return (localStorage.getItem('fixway_sav_view_mode') as 'standard' | 'compact') || 'standard';
+    // La vue est liée au mode simplifié : simplifié → compact, normal → standard
+    const isSimplified = localStorage.getItem('fixway_simplified_view') === 'true';
+    return isSimplified ? 'compact' : 'standard';
   });
+
+  // Basculer automatiquement la vue quand le mode simplifié change
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const isSimplified = (e as CustomEvent).detail as boolean;
+      const mode = isSimplified ? 'compact' : 'standard';
+      setViewMode(mode);
+      localStorage.setItem('fixway_sav_view_mode', mode);
+    };
+    window.addEventListener('simplifiedViewChanged', handler);
+    return () => window.removeEventListener('simplifiedViewChanged', handler);
+  }, []);
   const { cases, loading, deleteCase, refetch, updateCaseStatus } = useSAVCases();
   const { shop } = useShop();
   const { savWithUnreadMessages } = useSAVUnreadMessages();
