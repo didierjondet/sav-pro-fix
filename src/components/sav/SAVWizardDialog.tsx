@@ -207,7 +207,7 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
   }, [debouncedFirstName, debouncedLastName]);
 
   const normalize = (s: string) =>
-    s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+    s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
 
   const duplicateCustomers = useMemo(() => {
     if (selectedCustomer) return [];
@@ -400,6 +400,29 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
             return { ok: false, message: 'Le prénom et le nom du client sont obligatoires.' };
           if (!customerInfo.phone.trim() && !customerInfo.email.trim())
             return { ok: false, message: 'Au moins un moyen de contact (téléphone ou email) est requis.' };
+
+          // Détection synchrone des doublons (sans dépendre du debounce)
+          const fnRaw = customerInfo.firstName.trim();
+          const lnRaw = customerInfo.lastName.trim();
+          if (fnRaw.length >= 2 && lnRaw.length >= 2) {
+            const fn = normalize(fnRaw);
+            const ln = normalize(lnRaw);
+            const matches = allCustomers.filter(
+              (c) => normalize(c.first_name || '') === fn && normalize(c.last_name || '') === ln
+            );
+            if (matches.length > 0 && !forceCreateNewCustomer) {
+              return {
+                ok: false,
+                message: 'DUPLICATE::Client(s) existant(s) trouvé(s). Sélectionnez un client dans la liste ou cliquez sur « Créer quand même un nouveau client ».',
+              };
+            }
+            if (matches.length > 0 && forceCreateNewCustomer && !customerInfo.phone.trim()) {
+              return {
+                ok: false,
+                message: 'Téléphone obligatoire pour différencier de l\'homonyme existant.',
+              };
+            }
+          }
         }
         return { ok: true, message: '' };
       case 'device':
@@ -419,7 +442,15 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
 
   const goNext = () => {
     if (!canProceed()) {
-      setValidationError(getValidationMessage());
+      const rawMessage = getValidationMessage();
+      const isDuplicate = rawMessage.startsWith('DUPLICATE::');
+      const message = isDuplicate ? rawMessage.replace('DUPLICATE::', '') : rawMessage;
+      setValidationError(message);
+      // Force l'affichage immédiat de l'encart bleu de doublons
+      if (isDuplicate) {
+        setDebouncedFirstName(customerInfo.firstName.trim());
+        setDebouncedLastName(customerInfo.lastName.trim());
+      }
       return;
     }
     setValidationError('');
@@ -440,7 +471,10 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
     for (let i = currentStep; i < targetIndex; i++) {
       const result = validateStep(activeSteps[i]?.key);
       if (!result.ok) {
-        setValidationError(result.message);
+        const message = result.message.startsWith('DUPLICATE::')
+          ? result.message.replace('DUPLICATE::', '')
+          : result.message;
+        setValidationError(message);
         if (i !== currentStep) setCurrentStep(i);
         return;
       }
