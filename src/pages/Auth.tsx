@@ -95,7 +95,7 @@ export default function Auth() {
     const {
       error
     } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: 'https://sav-pro-fix.lovable.app/auth'
+      redirectTo: `${window.location.origin}/reset-password`
     });
     if (error) {
       toast({

@@ -116,6 +116,14 @@ export function ShopsManagement({ shops, onUpdate }: ShopsManagementProps) {
     phone: '',
     address: ''
   });
+  const [newShopAdmin, setNewShopAdmin] = useState({
+    first_name: '',
+    last_name: '',
+    email: '',
+    password: '',
+    password_confirm: ''
+  });
+  const [creatingShop, setCreatingShop] = useState(false);
 
   // Filter shops based on search term
   const filteredShops = shops.filter(shop => {
@@ -137,29 +145,60 @@ export function ShopsManagement({ shops, onUpdate }: ShopsManagementProps) {
   });
 
   const createShop = async () => {
+    // Validations
+    if (!newShop.name.trim()) {
+      toast({ title: 'Erreur', description: 'Le nom du magasin est requis', variant: 'destructive' });
+      return;
+    }
+    if (!newShopAdmin.first_name.trim() || !newShopAdmin.email.trim()) {
+      toast({ title: 'Erreur', description: 'Le prénom et l\'email de l\'admin sont requis', variant: 'destructive' });
+      return;
+    }
+    if (newShopAdmin.password.length < 6) {
+      toast({ title: 'Erreur', description: 'Le mot de passe doit contenir au moins 6 caractères', variant: 'destructive' });
+      return;
+    }
+    if (newShopAdmin.password !== newShopAdmin.password_confirm) {
+      toast({ title: 'Erreur', description: 'Les mots de passe ne correspondent pas', variant: 'destructive' });
+      return;
+    }
+
+    setCreatingShop(true);
     try {
-      const { data, error } = await supabase
-        .from('shops')
-        .insert([newShop])
-        .select()
-        .single();
+      const { data, error } = await supabase.functions.invoke('admin-user-management', {
+        body: {
+          action: 'create_shop_with_admin',
+          shop_name: newShop.name,
+          shop_email: newShop.email,
+          shop_phone: newShop.phone,
+          shop_address: newShop.address,
+          admin_email: newShopAdmin.email,
+          admin_password: newShopAdmin.password,
+          admin_first_name: newShopAdmin.first_name,
+          admin_last_name: newShopAdmin.last_name
+        }
+      });
 
       if (error) throw error;
+      if (data?.error) throw new Error(data.error);
 
       onUpdate();
       setIsCreateShopOpen(false);
       setNewShop({ name: '', email: '', phone: '', address: '' });
-      
+      setNewShopAdmin({ first_name: '', last_name: '', email: '', password: '', password_confirm: '' });
+
       toast({
-        title: "Succès",
-        description: "Magasin créé avec succès",
+        title: 'Succès',
+        description: `Magasin "${newShop.name}" créé avec son administrateur. Le mot de passe devra être changé à la première connexion.`,
       });
     } catch (error: any) {
       toast({
-        title: "Erreur",
+        title: 'Erreur',
         description: error.message,
-        variant: "destructive",
+        variant: 'destructive',
       });
+    } finally {
+      setCreatingShop(false);
     }
   };
 
@@ -326,16 +365,17 @@ export function ShopsManagement({ shops, onUpdate }: ShopsManagementProps) {
                   Créer un magasin
                 </Button>
               </DialogTrigger>
-              <DialogContent className="bg-slate-900 border-slate-700 text-white">
+              <DialogContent className="bg-slate-900 border-slate-700 text-white max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>Créer un nouveau magasin</DialogTitle>
                   <DialogDescription className="text-slate-300">
-                    Créez un nouveau magasin pour un client.
+                    Créez un magasin et son compte administrateur. L'admin devra changer son mot de passe à la première connexion.
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4">
+                  <div className="text-xs uppercase tracking-wide text-emerald-400 font-semibold pt-2">Informations du magasin</div>
                   <div>
-                    <Label htmlFor="shop-name" className="text-white">Nom du magasin</Label>
+                    <Label htmlFor="shop-name" className="text-white">Nom du magasin *</Label>
                     <Input
                       id="shop-name"
                       value={newShop.name}
@@ -344,7 +384,7 @@ export function ShopsManagement({ shops, onUpdate }: ShopsManagementProps) {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="shop-email" className="text-white">Email</Label>
+                    <Label htmlFor="shop-email" className="text-white">Email du magasin (contact)</Label>
                     <Input
                       id="shop-email"
                       type="email"
@@ -371,13 +411,72 @@ export function ShopsManagement({ shops, onUpdate }: ShopsManagementProps) {
                       className="bg-slate-800 border-slate-600 text-white"
                     />
                   </div>
+
+                  <div className="text-xs uppercase tracking-wide text-emerald-400 font-semibold pt-4 border-t border-slate-700">Compte administrateur</div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label htmlFor="admin-first-name" className="text-white">Prénom *</Label>
+                      <Input
+                        id="admin-first-name"
+                        value={newShopAdmin.first_name}
+                        onChange={(e) => setNewShopAdmin({ ...newShopAdmin, first_name: e.target.value })}
+                        className="bg-slate-800 border-slate-600 text-white"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="admin-last-name" className="text-white">Nom</Label>
+                      <Input
+                        id="admin-last-name"
+                        value={newShopAdmin.last_name}
+                        onChange={(e) => setNewShopAdmin({ ...newShopAdmin, last_name: e.target.value })}
+                        className="bg-slate-800 border-slate-600 text-white"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <Label htmlFor="admin-email" className="text-white">Email de connexion *</Label>
+                    <Input
+                      id="admin-email"
+                      type="email"
+                      value={newShopAdmin.email}
+                      onChange={(e) => setNewShopAdmin({ ...newShopAdmin, email: e.target.value })}
+                      className="bg-slate-800 border-slate-600 text-white"
+                      placeholder="admin@magasin.com"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label htmlFor="admin-password" className="text-white">Mot de passe initial *</Label>
+                      <Input
+                        id="admin-password"
+                        type="password"
+                        value={newShopAdmin.password}
+                        onChange={(e) => setNewShopAdmin({ ...newShopAdmin, password: e.target.value })}
+                        className="bg-slate-800 border-slate-600 text-white"
+                        placeholder="Min. 6 caractères"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="admin-password-confirm" className="text-white">Confirmer *</Label>
+                      <Input
+                        id="admin-password-confirm"
+                        type="password"
+                        value={newShopAdmin.password_confirm}
+                        onChange={(e) => setNewShopAdmin({ ...newShopAdmin, password_confirm: e.target.value })}
+                        className="bg-slate-800 border-slate-600 text-white"
+                      />
+                    </div>
+                  </div>
+                  <p className="text-xs text-slate-400 italic">
+                    À la première connexion, l'administrateur sera obligé de définir un nouveau mot de passe.
+                  </p>
                 </div>
                 <DialogFooter>
-                  <Button variant="outline" onClick={() => setIsCreateShopOpen(false)}>
+                  <Button variant="outline" onClick={() => setIsCreateShopOpen(false)} disabled={creatingShop}>
                     Annuler
                   </Button>
-                  <Button onClick={createShop} className="bg-emerald-600 hover:bg-emerald-700">
-                    Créer le magasin
+                  <Button onClick={createShop} className="bg-emerald-600 hover:bg-emerald-700" disabled={creatingShop}>
+                    {creatingShop ? 'Création...' : 'Créer le magasin'}
                   </Button>
                 </DialogFooter>
               </DialogContent>
