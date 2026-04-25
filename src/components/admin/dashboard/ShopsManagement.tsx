@@ -266,94 +266,42 @@ export function ShopsManagement({ shops, onUpdate }: ShopsManagementProps) {
 
   const deleteShop = async (shopId: string) => {
     try {
-      console.log('Starting shop deletion for ID:', shopId);
-      
-      // D'abord récupérer tous les sav_cases pour ce magasin
-      console.log('Fetching sav_cases for shop', shopId);
-      const { data: savCases, error: fetchError } = await supabase
-        .from('sav_cases')
-        .select('id')
-        .eq('shop_id', shopId);
+      console.log('Starting complete shop deletion for ID:', shopId);
 
-      if (fetchError) {
-        console.error('Error fetching sav_cases:', fetchError);
-        throw fetchError;
-      }
-
-      const savCaseIds = savCases?.map(sc => sc.id) || [];
-      console.log('Found sav_cases:', savCaseIds);
-
-      // Supprimer sav_parts qui référencent ces sav_cases
-      if (savCaseIds.length > 0) {
-        console.log('Deleting sav_parts for sav_cases', savCaseIds);
-        const { error: savPartsError } = await supabase
-          .from('sav_parts')
-          .delete()
-          .in('sav_case_id', savCaseIds);
-        
-        if (savPartsError) {
-          console.error('Error deleting sav_parts:', savPartsError);
-          throw savPartsError;
+      const { data, error } = await supabase.functions.invoke('admin-user-management', {
+        body: {
+          action: 'delete_shop_complete',
+          shop_id: shopId
         }
+      });
 
-        // Supprimer sav_status_history qui référencent ces sav_cases
-        console.log('Deleting sav_status_history for sav_cases', savCaseIds);
-        const { error: savStatusError } = await supabase
-          .from('sav_status_history')
-          .delete()
-          .in('sav_case_id', savCaseIds);
-        
-        if (savStatusError) {
-          console.error('Error deleting sav_status_history:', savStatusError);
-          throw savStatusError;
-        }
+      // Extraire le vrai message d'erreur si présent
+      let errorMessage: string | null = null;
+      if (error) {
+        try {
+          const ctx = (error as any).context;
+          if (ctx && typeof ctx.json === 'function') {
+            const body = await ctx.json();
+            errorMessage = body?.error || null;
+          } else if (ctx && typeof ctx.text === 'function') {
+            const text = await ctx.text();
+            try { errorMessage = JSON.parse(text)?.error || text; } catch { errorMessage = text; }
+          }
+        } catch { /* ignore */ }
+        if (!errorMessage) errorMessage = error.message;
       }
+      if (!errorMessage && data?.error) errorMessage = data.error;
+      if (errorMessage) throw new Error(errorMessage);
 
-      // Supprimer tous les autres éléments liés...
-      const tablesToClean = [
-        'parts' as const, 
-        'customers' as const, 
-        'quotes' as const, 
-        'order_items' as const, 
-        'notifications' as const, 
-        'sav_messages' as const, 
-        'sav_cases' as const, 
-        'profiles' as const
-      ] as const;
-
-      for (const table of tablesToClean) {
-        console.log(`Deleting ${table} for shop`, shopId);
-        const { error } = await supabase
-          .from(table)
-          .delete()
-          .eq('shop_id', shopId);
-
-        if (error) {
-          console.error(`Error deleting ${table}:`, error);
-          throw error;
-        }
-      }
-
-      // Enfin supprimer le magasin lui-même
-      console.log('Deleting shop', shopId);
-      const { error: shopError } = await supabase
-        .from('shops')
-        .delete()
-        .eq('id', shopId);
-
-      if (shopError) {
-        console.error('Error deleting shop:', shopError);
-        throw shopError;
-      }
-
-      console.log('Shop deletion completed successfully');
+      console.log('Shop deletion completed:', data);
       onUpdate();
-      
+
+      const removedAuth = data?.deleted_auth_users ?? 0;
       toast({
         title: "Succès",
-        description: "Magasin et toutes ses données supprimés",
+        description: `Magasin et toutes ses données supprimés${removedAuth > 0 ? ` (${removedAuth} compte${removedAuth > 1 ? 's' : ''} de connexion libéré${removedAuth > 1 ? 's' : ''})` : ''}.`,
       });
-      
+
     } catch (error: any) {
       console.error('Deletion error:', error);
       toast({
