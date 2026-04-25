@@ -6,7 +6,7 @@ const corsHeaders = {
 }
 
 interface UserRequest {
-  action: 'create' | 'delete' | 'update_password' | 'get_shop_auth_stats' | 'create_shop_with_admin'
+  action: 'create' | 'delete' | 'update_password' | 'get_shop_auth_stats' | 'create_shop_with_admin' | 'delete_shop_complete'
   email?: string
   password?: string
   new_password?: string
