@@ -116,6 +116,14 @@ export function ShopsManagement({ shops, onUpdate }: ShopsManagementProps) {
     phone: '',
     address: ''
   });
+  const [newShopAdmin, setNewShopAdmin] = useState({
+    first_name: '',
+    last_name: '',
+    email: '',
+    password: '',
+    password_confirm: ''
+  });
+  const [creatingShop, setCreatingShop] = useState(false);
 
   // Filter shops based on search term
   const filteredShops = shops.filter(shop => {
@@ -137,29 +145,60 @@ export function ShopsManagement({ shops, onUpdate }: ShopsManagementProps) {
   });
 
   const createShop = async () => {
+    // Validations
+    if (!newShop.name.trim()) {
+      toast({ title: 'Erreur', description: 'Le nom du magasin est requis', variant: 'destructive' });
+      return;
+    }
+    if (!newShopAdmin.first_name.trim() || !newShopAdmin.email.trim()) {
+      toast({ title: 'Erreur', description: 'Le prénom et l\'email de l\'admin sont requis', variant: 'destructive' });
+      return;
+    }
+    if (newShopAdmin.password.length < 6) {
+      toast({ title: 'Erreur', description: 'Le mot de passe doit contenir au moins 6 caractères', variant: 'destructive' });
+      return;
+    }
+    if (newShopAdmin.password !== newShopAdmin.password_confirm) {
+      toast({ title: 'Erreur', description: 'Les mots de passe ne correspondent pas', variant: 'destructive' });
+      return;
+    }
+
+    setCreatingShop(true);
     try {
-      const { data, error } = await supabase
-        .from('shops')
-        .insert([newShop])
-        .select()
-        .single();
+      const { data, error } = await supabase.functions.invoke('admin-user-management', {
+        body: {
+          action: 'create_shop_with_admin',
+          shop_name: newShop.name,
+          shop_email: newShop.email,
+          shop_phone: newShop.phone,
+          shop_address: newShop.address,
+          admin_email: newShopAdmin.email,
+          admin_password: newShopAdmin.password,
+          admin_first_name: newShopAdmin.first_name,
+          admin_last_name: newShopAdmin.last_name
+        }
+      });
 
       if (error) throw error;
+      if (data?.error) throw new Error(data.error);
 
       onUpdate();
       setIsCreateShopOpen(false);
       setNewShop({ name: '', email: '', phone: '', address: '' });
-      
+      setNewShopAdmin({ first_name: '', last_name: '', email: '', password: '', password_confirm: '' });
+
       toast({
-        title: "Succès",
-        description: "Magasin créé avec succès",
+        title: 'Succès',
+        description: `Magasin "${newShop.name}" créé avec son administrateur. Le mot de passe devra être changé à la première connexion.`,
       });
     } catch (error: any) {
       toast({
-        title: "Erreur",
+        title: 'Erreur',
         description: error.message,
-        variant: "destructive",
+        variant: 'destructive',
       });
+    } finally {
+      setCreatingShop(false);
     }
   };
 
