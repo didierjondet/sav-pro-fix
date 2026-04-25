@@ -205,7 +205,7 @@ export function useMessaging({ savCaseId, trackingSlug, userType }: UseMessaging
       
       const { error } = await supabase
         .from('sav_messages')
-        .update({ [updateField]: true })
+        .update({ [updateField]: true } as any)
         .eq('id', messageId);
 
       if (error) throw error;
