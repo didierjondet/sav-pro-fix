@@ -77,12 +77,101 @@ Deno.serve(async (req) => {
     const isSuperAdmin = profile.role === 'super_admin'
     const isShopAdmin = profile.role === 'admin' || profile.role === 'shop_admin'
 
-    const { action, email, password, new_password, first_name, last_name, phone, role, shop_id, user_id, profile_id }: UserRequest = await req.json()
+    const body: UserRequest = await req.json()
+    const { action, email, password, new_password, first_name, last_name, phone, role, shop_id, user_id, profile_id } = body
 
     console.log('Action requested:', action)
 
     switch (action) {
-      case 'create': {
+      case 'create_shop_with_admin': {
+        if (!isSuperAdmin) {
+          throw new Error('Access denied: Super admin privileges required')
+        }
+
+        const { shop_name, shop_email, shop_phone, shop_address, admin_email, admin_password, admin_first_name, admin_last_name } = body
+
+        if (!shop_name || !admin_email || !admin_password || !admin_first_name) {
+          throw new Error('Missing required fields: shop_name, admin_email, admin_password, admin_first_name')
+        }
+
+        if (admin_password.length < 6) {
+          throw new Error('Password must be at least 6 characters')
+        }
+
+        // 1. Création de la boutique
+        const { data: newShop, error: shopError } = await supabase
+          .from('shops')
+          .insert({
+            name: shop_name,
+            email: shop_email || null,
+            phone: shop_phone || null,
+            address: shop_address || null
+          })
+          .select()
+          .single()
+
+        if (shopError) {
+          console.error('Shop creation error:', shopError)
+          throw new Error(`Erreur création boutique: ${shopError.message}`)
+        }
+
+        console.log('Shop created:', newShop.id)
+
+        // 2. Création de l'utilisateur auth
+        const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+          email: admin_email,
+          password: admin_password,
+          email_confirm: true
+        })
+
+        if (authError || !authData?.user) {
+          console.error('Auth user creation error:', authError)
+          // Rollback: suppression de la boutique
+          await supabase.from('shops').delete().eq('id', newShop.id)
+          throw new Error(`Erreur création utilisateur: ${authError?.message || 'unknown'}`)
+        }
+
+        console.log('Auth user created:', authData.user.id)
+
+        // 3. Création du profil admin
+        const { data: profileData, error: newProfileError } = await supabase
+          .from('profiles')
+          .insert({
+            user_id: authData.user.id,
+            shop_id: newShop.id,
+            first_name: admin_first_name,
+            last_name: admin_last_name || '',
+            role: 'admin',
+            must_change_password: true
+          })
+          .select()
+          .single()
+
+        if (newProfileError) {
+          console.error('Profile creation error:', newProfileError)
+          // Rollback: suppression auth user + boutique
+          await supabase.auth.admin.deleteUser(authData.user.id)
+          await supabase.from('shops').delete().eq('id', newShop.id)
+          throw new Error(`Erreur création profil: ${newProfileError.message}`)
+        }
+
+        console.log('Profile created:', profileData.id)
+
+        return new Response(
+          JSON.stringify({
+            success: true,
+            shop: newShop,
+            user: authData.user,
+            profile: profileData
+          }),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 200
+          }
+        )
+      }
+
+
         if (!email || !password || !role || !shop_id) {
           throw new Error('Missing required fields for user creation')
         }
