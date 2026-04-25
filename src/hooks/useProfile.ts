@@ -10,6 +10,7 @@ export interface UserProfile {
   last_name: string;
   phone: string;
   role: 'admin' | 'technician' | 'super_admin' | 'shop_admin';
+  must_change_password?: boolean;
   created_at: string;
   updated_at: string;
 }
