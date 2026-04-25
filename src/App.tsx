@@ -16,6 +16,7 @@ import { unlockAudio } from "@/hooks/useNotificationSound";
 import { DelayNotificationProvider } from "@/components/layout/DelayNotificationProvider";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
+import ResetPassword from "./pages/ResetPassword";
 import Settings from "./pages/Settings";
 import SAVList from "./pages/SAVList";
 import NewSAV from "./pages/NewSAV";
@@ -124,6 +125,7 @@ const App = () => {
                 <Route path="/" element={<Landing />} />
                 <Route path="/dashboard" element={<Index />} />
                 <Route path="/auth" element={<Auth />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path="/settings" element={<Settings />} />
                 <Route path="/sav" element={<SAVList />} />
                 <Route path="/sav/new" element={<NewSAV />} />
