@@ -113,7 +113,7 @@ export function useSAVMessages(savCaseId?: string) {
       
       const { error } = await supabase
         .from('sav_messages')
-        .update({ [updateField]: true })
+        .update({ [updateField]: true } as any)
         .eq('id', messageId);
 
       if (error) throw error;
@@ -131,7 +131,7 @@ export function useSAVMessages(savCaseId?: string) {
       
       const { error } = await supabase
         .from('sav_messages')
-        .update({ [updateField]: true })
+        .update({ [updateField]: true } as any)
         .eq('sav_case_id', savCaseId)
         .eq(updateField, false);
 

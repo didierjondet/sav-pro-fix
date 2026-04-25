@@ -94,7 +94,7 @@ export default function SettingsSimple() {
       
       const { error } = await supabase
         .from('shops')
-        .update(updateData)
+        .update(updateData as any)
         .eq('id', shop.id);
 
       if (error) throw error;
