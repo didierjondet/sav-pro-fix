@@ -1,101 +1,67 @@
 
+## Plan : création magasin + mot de passe initial + reset password fonctionnel
 
-## Plan : toggle Super Admin + redirection conditionnelle inscription → formulaire prospect
+### Partie 1 — Création de magasin avec compte admin et mot de passe (Super Admin)
 
-### Comportement cible
+**Objectif :** quand le super admin crée un magasin, il saisit aussi l'email et le mot de passe initial du compte administrateur du magasin. Le compte est créé immédiatement (email auto-confirmé), associé au nouveau magasin avec le rôle `admin`, et marqué comme devant changer son mot de passe à la première connexion.
 
-**Quand le toggle "Rediriger inscription vers formulaire prospect" est ACTIF (par défaut) :**
-- Bouton "Connexion" du header landing → page `/auth` (onglet connexion) — accès magasins existants conservé.
-- Bouton "Essai Gratuit" du header → ouvre le `ProspectDialog`.
-- Tous les autres CTA "Essayer gratuitement" / Hero / Pricing / FinalCTA → ouvrent le `ProspectDialog`.
-- Sur la page `/auth`, un clic sur l'onglet/lien "Inscription" → ouvre le `ProspectDialog` (au lieu de basculer sur le formulaire de signup).
+**Modifications :**
 
-**Quand le toggle est INACTIF :**
-- Tous les boutons retrouvent leur comportement initial : redirection vers `/auth` (signup ou login selon le bouton).
-- Aucun `ProspectDialog` ne s'ouvre.
+1. **Base de données** (migration) :
+   - Ajouter une colonne `must_change_password` (boolean, défaut `false`) à la table `profiles`.
 
-### 1. Stockage du flag dans la BDD
+2. **Edge Function `admin-user-management`** :
+   - Ajouter une nouvelle action `create_shop_with_admin` qui, en une opération :
+     - Crée la boutique (`shops` insert avec name/email/phone/address).
+     - Crée l'utilisateur auth (`auth.admin.createUser` avec `email_confirm: true` et le mot de passe fourni).
+     - Crée le profil `admin` lié à la boutique avec `must_change_password = true` et `first_name`/`last_name` saisis.
+     - En cas d'échec d'une étape, rollback des étapes précédentes.
+   - Sécurité : action réservée aux `super_admin`.
 
-Ajouter une ligne dans la table existante `app_settings` (ou équivalent) :
-- Clé : `prospect_redirect_enabled`
-- Valeur : `boolean` (défaut `true`)
+3. **Composant `ShopsManagement.tsx`** :
+   - Étendre le formulaire de création avec les champs : prénom admin, nom admin, email admin (séparé de l'email du magasin), mot de passe (min. 6 caractères), confirmation mot de passe.
+   - Remplacer l'appel direct `supabase.from('shops').insert(...)` par l'appel à l'Edge Function `create_shop_with_admin`.
+   - Validation côté client (mots de passe identiques, longueur, email valide).
 
-Si aucune table de settings globale n'existe, créer `app_global_settings` (key text PK, value jsonb, updated_at) avec RLS :
-- SELECT public (`true`) — pour que la landing puisse lire le flag sans auth.
-- UPDATE/INSERT : `is_super_admin()` uniquement.
+### Partie 2 — Forcer le changement de mot de passe à la 1re connexion
 
-### 2. Hook partagé `useProspectRedirect`
+**Composant `ForcePasswordChangeDialog.tsx` (nouveau)** :
+- Modal non-fermable affichant un formulaire (nouveau mot de passe + confirmation).
+- À la soumission : appelle `supabase.auth.updateUser({ password })` puis met à jour `profiles.must_change_password = false`.
 
-Nouveau hook `src/hooks/useProspectRedirect.ts` :
-- Récupère le flag depuis la BDD (avec cache React Query).
-- Retourne `{ enabled: boolean, isLoading: boolean }`.
-- Utilisé par la landing publique ET la page `/auth`.
+**Intégration dans `Index.tsx` (et autres pages d'entrée si besoin)** :
+- Lire `profile.must_change_password` (déjà chargé via `useProfile`).
+- Si `true`, afficher le `ForcePasswordChangeDialog` par-dessus le contenu, bloquant l'accès tant que le changement n'est pas effectué.
+- Hook `useProfile` déjà en place — ajouter le champ dans la query si nécessaire.
 
-### 3. Modifications landing publique
+### Partie 3 — Correction du flux "Mot de passe oublié"
 
-**`src/pages/PublicLanding.tsx`** :
-- Récupère `enabled` via `useProspectRedirect`.
-- Crée deux handlers distincts :
-  - `handleLoginClick` → toujours `/auth` (passé au `LandingHeader` pour le bouton "Connexion").
-  - `handleSignupClick` → si `enabled` ouvre `ProspectDialog`, sinon redirige `/auth`.
-- Passe `handleSignupClick` au bouton "Essai Gratuit" du header, à `HeroSection`, `PricingSection`, `FinalCTA`.
+**Problème actuel :** `resetPasswordForEmail` redirige vers `/auth`, mais cette page ne détecte pas le token `type=recovery` dans l'URL et ne propose pas de formulaire de nouveau mot de passe → l'utilisateur revient à l'écran de connexion.
 
-**`src/components/landing/LandingHeader.tsx`** :
-- Ajouter une prop `onLoginClick` (en plus de `onAuthClick` existant).
-- Bouton "Connexion" → `onLoginClick`.
-- Bouton "Essai Gratuit" → `onAuthClick` (qui devient le handler signup).
-- Rétrocompatible : si `onLoginClick` non fourni, fallback sur `onAuthClick`.
+**Solution :**
 
-**`src/pages/Landing.tsx`** : aucun changement (page interne, parcours utilisateur connecté).
+1. **Nouvelle page `/reset-password`** (`src/pages/ResetPassword.tsx`) :
+   - Route publique ajoutée dans `App.tsx`.
+   - Au montage : Supabase a déjà créé une session temporaire à partir du lien (event `PASSWORD_RECOVERY` dans `onAuthStateChange`).
+   - Affiche un formulaire (nouveau mot de passe + confirmation).
+   - À la soumission : `supabase.auth.updateUser({ password })`, toast de succès, redirection vers `/auth` (ou `/dashboard` si la session reste valide).
+   - Gestion de l'erreur "lien expiré / invalide" avec un bouton pour redemander un email.
 
-### 4. Modification de la page `/auth`
+2. **Mise à jour de `Auth.tsx` — `handleResetPassword`** :
+   - Changer `redirectTo` de `https://sav-pro-fix.lovable.app/auth` vers `https://sav-pro-fix.lovable.app/reset-password`.
 
-**`src/pages/Auth.tsx`** :
-- Récupérer `enabled` via `useProspectRedirect`.
-- État local `prospectDialogOpen`.
-- Sur le clic du bouton/onglet "Inscription" (ou "Créer un compte" / lien "Pas encore de compte ?") :
-  - Si `enabled` → `setProspectDialogOpen(true)` (et empêcher la bascule vers le formulaire signup).
-  - Sinon → comportement initial (afficher formulaire signup).
-- Monter `<ProspectDialog>` en bas du JSX.
+3. **Important — Configuration Supabase à vérifier par le user après déploiement :**
+   - Dans Supabase Dashboard → Authentication → URL Configuration, l'URL `https://sav-pro-fix.lovable.app/reset-password` (ainsi que `https://fixway.fr/reset-password` et `https://logicielsav.com/reset-password`) doit être ajoutée à la liste des Redirect URLs autorisées. Sinon Supabase ignorera le `redirectTo` et utilisera le Site URL par défaut.
 
-### 5. Toggle Super Admin
+### Détails techniques
 
-**Nouveau composant `src/components/admin/ProspectRedirectToggle.tsx`** :
-- Card simple avec `<Switch>` + label + description.
-- Lecture/écriture du flag dans la BDD via mutation React Query.
-- Toast de confirmation.
+- **Migration SQL :** `ALTER TABLE profiles ADD COLUMN must_change_password boolean NOT NULL DEFAULT false;`
+- **Pas de modification RLS nécessaire** : les utilisateurs lisent/modifient déjà leur propre profil.
+- **Rollback Edge Function** : si la création du profil échoue après la création du user auth, on appelle `auth.admin.deleteUser` puis on supprime la boutique. Si la création de l'auth user échoue après la boutique, on supprime la boutique.
+- **Page `/reset-password`** : utilise `onAuthStateChange` pour intercepter `PASSWORD_RECOVERY` et permettre la mise à jour même sans session "complète".
 
-**Intégration** : ajouter ce toggle en haut du composant `ProspectsManager.tsx` (déjà existant), pour regrouper la gestion prospect au même endroit. Pas besoin d'ajouter un nouvel item de menu.
+### Critères d'acceptation
 
-### 6. Détails techniques
-
-- Le flag est public-readable pour éviter un appel auth depuis la landing.
-- Cache React Query sur `useProspectRedirect` avec `staleTime: 60_000` pour éviter les rerenders.
-- Aucun impact sur `/auth` côté login : le formulaire de connexion fonctionne toujours, seul le basculement vers signup est intercepté.
-- Le `ProspectDialog` existant est réutilisé tel quel.
-
-### Fichiers créés / modifiés
-
-**Migration BDD** : créer table `app_global_settings` (si absente) + insérer `prospect_redirect_enabled = true`.
-
-**Créés** :
-- `src/hooks/useProspectRedirect.ts`
-- `src/components/admin/ProspectRedirectToggle.tsx`
-
-**Modifiés** :
-- `src/pages/PublicLanding.tsx` (deux handlers distincts)
-- `src/components/landing/LandingHeader.tsx` (prop `onLoginClick`)
-- `src/pages/Auth.tsx` (interception du clic "Inscription")
-- `src/components/admin/ProspectsManager.tsx` (intégration du toggle en tête)
-
-### Vérification
-
-- Toggle ON (défaut) :
-  - Landing → "Connexion" ouvre `/auth` (login fonctionne pour magasins existants).
-  - Landing → "Essai Gratuit" ouvre le popup prospect.
-  - `/auth` → clic sur "Inscription" ouvre le popup prospect.
-- Toggle OFF :
-  - Landing → "Connexion" et "Essai Gratuit" mènent tous deux à `/auth`.
-  - `/auth` → "Inscription" affiche normalement le formulaire de création de compte.
-- Bascule du toggle dans Super Admin → effet immédiat sur la landing (après refetch / nouveau chargement).
-
+- Super Admin → "Créer un magasin" : formulaire élargi avec champs admin (prénom, nom, email, mot de passe, confirmation). Validation. Création OK → la boutique apparaît + l'admin peut se connecter immédiatement.
+- L'admin se connecte pour la 1re fois → un dialogue bloquant force le changement de mot de passe avant d'accéder à l'app. Après changement, accès normal et le dialogue ne réapparaît plus.
+- Sur `/auth`, "Mot de passe oublié" → email reçu → clic sur le lien → arrivée sur `/reset-password` avec formulaire de nouveau mot de passe → soumission → connexion possible avec le nouveau mot de passe.
