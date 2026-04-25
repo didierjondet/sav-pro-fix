@@ -1428,6 +1428,7 @@ export type Database = {
           last_login_city: string | null
           last_login_country: string | null
           last_name: string | null
+          must_change_password: boolean
           phone: string | null
           role: Database["public"]["Enums"]["user_role"]
           shop_id: string | null
@@ -1441,6 +1442,7 @@ export type Database = {
           last_login_city?: string | null
           last_login_country?: string | null
           last_name?: string | null
+          must_change_password?: boolean
           phone?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           shop_id?: string | null
@@ -1454,6 +1456,7 @@ export type Database = {
           last_login_city?: string | null
           last_login_country?: string | null
           last_name?: string | null
+          must_change_password?: boolean
           phone?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           shop_id?: string | null
