@@ -97,7 +97,7 @@ export function useSupportMessages(ticketId?: string) {
       
       const { error } = await supabase
         .from('support_messages')
-        .update({ [updateField]: true })
+        .update({ [updateField]: true } as any)
         .in('id', unreadMessages.map(msg => msg.id));
 
       if (error) throw error;

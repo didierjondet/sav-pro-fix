@@ -70,7 +70,7 @@ export function usePartCategories() {
       if (input.description !== undefined) patch.description = input.description?.trim() || null;
       if (input.color !== undefined) patch.color = input.color || null;
       if (input.display_order !== undefined) patch.display_order = input.display_order;
-      const { error } = await supabase.from('part_categories').update(patch).eq('id', input.id);
+      const { error } = await supabase.from('part_categories').update(patch as any).eq('id', input.id);
       if (error) throw new Error(error.message);
     },
     onSuccess: () => {
