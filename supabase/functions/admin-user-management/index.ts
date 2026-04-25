@@ -171,7 +171,7 @@ Deno.serve(async (req) => {
         )
       }
 
-
+      case 'create': {
         if (!email || !password || !role || !shop_id) {
           throw new Error('Missing required fields for user creation')
         }
