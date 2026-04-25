@@ -179,8 +179,23 @@ export function ShopsManagement({ shops, onUpdate }: ShopsManagementProps) {
         }
       });
 
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
+      // Tenter d'extraire le vrai message d'erreur renvoyé par l'edge function
+      let errorMessage: string | null = null;
+      if (error) {
+        try {
+          const ctx = (error as any).context;
+          if (ctx && typeof ctx.json === 'function') {
+            const body = await ctx.json();
+            errorMessage = body?.error || null;
+          } else if (ctx && typeof ctx.text === 'function') {
+            const text = await ctx.text();
+            try { errorMessage = JSON.parse(text)?.error || text; } catch { errorMessage = text; }
+          }
+        } catch { /* ignore */ }
+        if (!errorMessage) errorMessage = error.message;
+      }
+      if (!errorMessage && data?.error) errorMessage = data.error;
+      if (errorMessage) throw new Error(errorMessage);
 
       onUpdate();
       setIsCreateShopOpen(false);
