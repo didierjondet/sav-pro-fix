@@ -97,6 +97,12 @@ const Index = () => {
   const isDailyAssistantEnabled = aiModulesConfig ? aiModulesConfig.daily_assistant_enabled !== false : false;
 
   const showShopNamePrompt = profile?.role === 'admin' && shop?.name === 'Mon Magasin';
+  const mustChangePassword = (profile as any)?.must_change_password === true;
+
+  // Si l'utilisateur doit changer son mot de passe, afficher uniquement le dialog bloquant
+  if (mustChangePassword) {
+    return <ForcePasswordChangeDialog onSuccess={() => refetchProfile()} />;
+  }
 
   const renderContent = () => {
     switch (currentView) {
