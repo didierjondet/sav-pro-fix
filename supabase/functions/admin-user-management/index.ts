@@ -6,7 +6,7 @@ const corsHeaders = {
 }
 
 interface UserRequest {
-  action: 'create' | 'delete' | 'update_password' | 'get_shop_auth_stats' | 'create_shop_with_admin'
+  action: 'create' | 'delete' | 'update_password' | 'get_shop_auth_stats' | 'create_shop_with_admin' | 'delete_shop_complete'
   email?: string
   password?: string
   new_password?: string
@@ -98,7 +98,47 @@ Deno.serve(async (req) => {
           throw new Error('Password must be at least 6 characters')
         }
 
-        // 1. Création de la boutique
+        // 1. Vérifier d'abord si un compte auth existe déjà avec cet email
+        const { data: existingUsers, error: listError } = await supabase.auth.admin.listUsers({ perPage: 1000 })
+        if (listError) {
+          throw new Error(`Erreur vérification email: ${listError.message}`)
+        }
+        const emailLower = admin_email.toLowerCase()
+        const existingUser = existingUsers.users.find(u => u.email?.toLowerCase() === emailLower)
+        if (existingUser) {
+          return new Response(
+            JSON.stringify({
+              error: "Un compte utilise déjà cet email. Choisissez un autre email ou supprimez d'abord la boutique/le compte associé."
+            }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 409 }
+          )
+        }
+
+        // 2. Création de l'utilisateur auth EN PREMIER (évite boutiques fantômes)
+        const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+          email: admin_email,
+          password: admin_password,
+          email_confirm: true
+        })
+
+        if (authError || !authData?.user) {
+          console.error('Auth user creation error:', authError)
+          const msg = authError?.message?.toLowerCase() || ''
+          if (msg.includes('already') || msg.includes('registered') || authError?.status === 422) {
+            return new Response(
+              JSON.stringify({ error: "Un compte utilise déjà cet email. Choisissez un autre email ou supprimez d'abord la boutique/le compte associé." }),
+              { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 409 }
+            )
+          }
+          return new Response(
+            JSON.stringify({ error: `Erreur création utilisateur: ${authError?.message || 'inconnue'}` }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+          )
+        }
+
+        console.log('Auth user created:', authData.user.id)
+
+        // 3. Création de la boutique
         const { data: newShop, error: shopError } = await supabase
           .from('shops')
           .insert({
@@ -112,28 +152,17 @@ Deno.serve(async (req) => {
 
         if (shopError) {
           console.error('Shop creation error:', shopError)
-          throw new Error(`Erreur création boutique: ${shopError.message}`)
+          // Rollback: suppression du user auth
+          await supabase.auth.admin.deleteUser(authData.user.id)
+          return new Response(
+            JSON.stringify({ error: `Erreur création boutique: ${shopError.message}` }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+          )
         }
 
         console.log('Shop created:', newShop.id)
 
-        // 2. Création de l'utilisateur auth
-        const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-          email: admin_email,
-          password: admin_password,
-          email_confirm: true
-        })
-
-        if (authError || !authData?.user) {
-          console.error('Auth user creation error:', authError)
-          // Rollback: suppression de la boutique
-          await supabase.from('shops').delete().eq('id', newShop.id)
-          throw new Error(`Erreur création utilisateur: ${authError?.message || 'unknown'}`)
-        }
-
-        console.log('Auth user created:', authData.user.id)
-
-        // 3. Création du profil admin
+        // 4. Création du profil admin
         const { data: profileData, error: newProfileError } = await supabase
           .from('profiles')
           .insert({
@@ -149,10 +178,13 @@ Deno.serve(async (req) => {
 
         if (newProfileError) {
           console.error('Profile creation error:', newProfileError)
-          // Rollback: suppression auth user + boutique
-          await supabase.auth.admin.deleteUser(authData.user.id)
+          // Rollback: suppression boutique + auth user
           await supabase.from('shops').delete().eq('id', newShop.id)
-          throw new Error(`Erreur création profil: ${newProfileError.message}`)
+          await supabase.auth.admin.deleteUser(authData.user.id)
+          return new Response(
+            JSON.stringify({ error: `Erreur création profil: ${newProfileError.message}` }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+          )
         }
 
         console.log('Profile created:', profileData.id)
@@ -168,6 +200,94 @@ Deno.serve(async (req) => {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
             status: 200
           }
+        )
+      }
+
+      case 'delete_shop_complete': {
+        if (!isSuperAdmin) {
+          throw new Error('Access denied: Super admin privileges required')
+        }
+        const { shop_id: targetShopId } = body
+        if (!targetShopId) {
+          throw new Error('Missing shop_id')
+        }
+
+        console.log('Deleting shop completely:', targetShopId)
+
+        // 1. Récupérer tous les profils (et user_ids) liés à ce shop
+        const { data: shopProfiles, error: profilesFetchError } = await supabase
+          .from('profiles')
+          .select('user_id')
+          .eq('shop_id', targetShopId)
+
+        if (profilesFetchError) {
+          throw new Error(`Erreur récupération profils: ${profilesFetchError.message}`)
+        }
+
+        const userIds = (shopProfiles || []).map(p => p.user_id).filter(Boolean) as string[]
+        console.log(`Found ${userIds.length} user(s) attached to shop`)
+
+        // 2. Récupérer les sav_cases pour cascade
+        const { data: savCases } = await supabase
+          .from('sav_cases')
+          .select('id')
+          .eq('shop_id', targetShopId)
+        const savCaseIds = (savCases || []).map(s => s.id)
+
+        if (savCaseIds.length > 0) {
+          await supabase.from('sav_parts').delete().in('sav_case_id', savCaseIds)
+          await supabase.from('sav_status_history').delete().in('sav_case_id', savCaseIds)
+        }
+
+        // 3. Supprimer toutes les données métier liées au shop
+        const tablesToClean = [
+          'parts', 'customers', 'quotes', 'order_items',
+          'notifications', 'sav_messages', 'sav_cases', 'profiles'
+        ]
+        for (const table of tablesToClean) {
+          const { error: delErr } = await supabase.from(table as any).delete().eq('shop_id', targetShopId)
+          if (delErr) {
+            console.error(`Error deleting ${table}:`, delErr)
+            // On continue malgré tout pour ne pas bloquer la suppression
+          }
+        }
+
+        // 4. Supprimer la boutique elle-même
+        const { error: shopDelError } = await supabase.from('shops').delete().eq('id', targetShopId)
+        if (shopDelError) {
+          throw new Error(`Erreur suppression boutique: ${shopDelError.message}`)
+        }
+
+        // 5. Pour chaque user_id, vérifier qu'il n'a plus aucun profil (autre boutique) puis supprimer auth
+        const deletedAuthUsers: string[] = []
+        const skippedAuthUsers: string[] = []
+        for (const uid of userIds) {
+          const { data: remaining } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('user_id', uid)
+            .limit(1)
+          if (!remaining || remaining.length === 0) {
+            const { error: authDelError } = await supabase.auth.admin.deleteUser(uid)
+            if (authDelError) {
+              console.error(`Error deleting auth user ${uid}:`, authDelError)
+            } else {
+              deletedAuthUsers.push(uid)
+            }
+          } else {
+            skippedAuthUsers.push(uid)
+          }
+        }
+
+        console.log(`Shop deleted. Auth users removed: ${deletedAuthUsers.length}, kept: ${skippedAuthUsers.length}`)
+
+        return new Response(
+          JSON.stringify({
+            success: true,
+            deleted_auth_users: deletedAuthUsers.length,
+            kept_auth_users: skippedAuthUsers.length
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
         )
       }
 
@@ -451,10 +571,9 @@ Deno.serve(async (req) => {
 
   } catch (error) {
     console.error('Error in admin user management:', error)
+    const message = error instanceof Error ? error.message : 'Internal server error'
     return new Response(
-      JSON.stringify({ 
-        error: error.message || 'Internal server error' 
-      }),
+      JSON.stringify({ error: message }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 400 
