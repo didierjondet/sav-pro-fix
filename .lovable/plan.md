@@ -1,67 +1,38 @@
+## Plan : nettoyage complet à la suppression d'un magasin + fix création avec email réutilisé
 
-## Plan : création magasin + mot de passe initial + reset password fonctionnel
+### Problème
 
-### Partie 1 — Création de magasin avec compte admin et mot de passe (Super Admin)
+1. La suppression actuelle d'un magasin (ShopsManagement.tsx) supprime bien les données métier et les profils liés, **mais ne supprime PAS les comptes auth (`auth.users`)**. Résultat : l'email reste "pris" côté Supabase Auth et impossible de recréer un magasin avec ce même email plus tard.
+2. La création de magasin (`create_shop_with_admin`) ne gère pas proprement le cas "email déjà existant" : elle crée d'abord la boutique, échoue ensuite sur la création du user (rollback OK mais frontend reçoit un message générique "Edge Function returned a non-2xx status code").
 
-**Objectif :** quand le super admin crée un magasin, il saisit aussi l'email et le mot de passe initial du compte administrateur du magasin. Le compte est créé immédiatement (email auto-confirmé), associé au nouveau magasin avec le rôle `admin`, et marqué comme devant changer son mot de passe à la première connexion.
+### Partie 1 — Suppression : nettoyer aussi les comptes auth
 
-**Modifications :**
+**Edge Function `admin-user-management`** : ajouter une nouvelle action `delete_shop_complete` qui, exécutée avec le service_role :
 
-1. **Base de données** (migration) :
-   - Ajouter une colonne `must_change_password` (boolean, défaut `false`) à la table `profiles`.
+1. Récupère tous les `profiles.user_id` rattachés à ce `shop_id`.
+2. Supprime en cascade les données métier liées (sav_parts, sav_status_history, sav_messages, sav_cases, parts, customers, quotes, order_items, notifications, profiles).
+3. Pour chaque `user_id` collecté, vérifie qu'il n'a pas de profil dans une autre boutique. Si non, appelle `supabase.auth.admin.deleteUser(user_id)` pour supprimer définitivement le compte auth.
+4. Supprime enfin la boutique elle-même.
+5. Réservée aux `super_admin`.
 
-2. **Edge Function `admin-user-management`** :
-   - Ajouter une nouvelle action `create_shop_with_admin` qui, en une opération :
-     - Crée la boutique (`shops` insert avec name/email/phone/address).
-     - Crée l'utilisateur auth (`auth.admin.createUser` avec `email_confirm: true` et le mot de passe fourni).
-     - Crée le profil `admin` lié à la boutique avec `must_change_password = true` et `first_name`/`last_name` saisis.
-     - En cas d'échec d'une étape, rollback des étapes précédentes.
-   - Sécurité : action réservée aux `super_admin`.
+**Composant `ShopsManagement.tsx`** : remplacer toute la fonction `deleteShop` par un simple appel à `supabase.functions.invoke('admin-user-management', { body: { action: 'delete_shop_complete', shop_id } })`. Lecture correcte du message d'erreur retourné.
 
-3. **Composant `ShopsManagement.tsx`** :
-   - Étendre le formulaire de création avec les champs : prénom admin, nom admin, email admin (séparé de l'email du magasin), mot de passe (min. 6 caractères), confirmation mot de passe.
-   - Remplacer l'appel direct `supabase.from('shops').insert(...)` par l'appel à l'Edge Function `create_shop_with_admin`.
-   - Validation côté client (mots de passe identiques, longueur, email valide).
+### Partie 2 — Création : ordre + gestion email existant
 
-### Partie 2 — Forcer le changement de mot de passe à la 1re connexion
+**Edge Function `admin-user-management` action `create_shop_with_admin`** :
 
-**Composant `ForcePasswordChangeDialog.tsx` (nouveau)** :
-- Modal non-fermable affichant un formulaire (nouveau mot de passe + confirmation).
-- À la soumission : appelle `supabase.auth.updateUser({ password })` puis met à jour `profiles.must_change_password = false`.
+- **Inverser l'ordre** : créer d'abord l'utilisateur auth, puis la boutique, puis le profil. Évite les boutiques fantômes en cas d'échec auth.
+- **Pré-vérification** : avant la création auth, intercepter explicitement l'erreur `email_exists` / status 422 et renvoyer un message clair en français : `"Un compte utilise déjà cet email. Choisissez un autre email ou supprimez d'abord la boutique/le compte associé."`
+- Conserver les rollbacks pour les étapes ultérieures (échec création boutique → supprimer auth user ; échec création profil → supprimer boutique + auth user).
 
-**Intégration dans `Index.tsx` (et autres pages d'entrée si besoin)** :
-- Lire `profile.must_change_password` (déjà chargé via `useProfile`).
-- Si `true`, afficher le `ForcePasswordChangeDialog` par-dessus le contenu, bloquant l'accès tant que le changement n'est pas effectué.
-- Hook `useProfile` déjà en place — ajouter le champ dans la query si nécessaire.
-
-### Partie 3 — Correction du flux "Mot de passe oublié"
-
-**Problème actuel :** `resetPasswordForEmail` redirige vers `/auth`, mais cette page ne détecte pas le token `type=recovery` dans l'URL et ne propose pas de formulaire de nouveau mot de passe → l'utilisateur revient à l'écran de connexion.
-
-**Solution :**
-
-1. **Nouvelle page `/reset-password`** (`src/pages/ResetPassword.tsx`) :
-   - Route publique ajoutée dans `App.tsx`.
-   - Au montage : Supabase a déjà créé une session temporaire à partir du lien (event `PASSWORD_RECOVERY` dans `onAuthStateChange`).
-   - Affiche un formulaire (nouveau mot de passe + confirmation).
-   - À la soumission : `supabase.auth.updateUser({ password })`, toast de succès, redirection vers `/auth` (ou `/dashboard` si la session reste valide).
-   - Gestion de l'erreur "lien expiré / invalide" avec un bouton pour redemander un email.
-
-2. **Mise à jour de `Auth.tsx` — `handleResetPassword`** :
-   - Changer `redirectTo` de `https://sav-pro-fix.lovable.app/auth` vers `https://sav-pro-fix.lovable.app/reset-password`.
-
-3. **Important — Configuration Supabase à vérifier par le user après déploiement :**
-   - Dans Supabase Dashboard → Authentication → URL Configuration, l'URL `https://sav-pro-fix.lovable.app/reset-password` (ainsi que `https://fixway.fr/reset-password` et `https://logicielsav.com/reset-password`) doit être ajoutée à la liste des Redirect URLs autorisées. Sinon Supabase ignorera le `redirectTo` et utilisera le Site URL par défaut.
-
-### Détails techniques
-
-- **Migration SQL :** `ALTER TABLE profiles ADD COLUMN must_change_password boolean NOT NULL DEFAULT false;`
-- **Pas de modification RLS nécessaire** : les utilisateurs lisent/modifient déjà leur propre profil.
-- **Rollback Edge Function** : si la création du profil échoue après la création du user auth, on appelle `auth.admin.deleteUser` puis on supprime la boutique. Si la création de l'auth user échoue après la boutique, on supprime la boutique.
-- **Page `/reset-password`** : utilise `onAuthStateChange` pour intercepter `PASSWORD_RECOVERY` et permettre la mise à jour même sans session "complète".
+**Composant `ShopsManagement.tsx`** : lors de l'invocation de l'edge function, lire correctement `data?.error` et le `error.context?.body` pour afficher le vrai message d'erreur dans le toast (au lieu de "Edge Function returned a non-2xx status code").
 
 ### Critères d'acceptation
 
-- Super Admin → "Créer un magasin" : formulaire élargi avec champs admin (prénom, nom, email, mot de passe, confirmation). Validation. Création OK → la boutique apparaît + l'admin peut se connecter immédiatement.
-- L'admin se connecte pour la 1re fois → un dialogue bloquant force le changement de mot de passe avant d'accéder à l'app. Après changement, accès normal et le dialogue ne réapparaît plus.
-- Sur `/auth`, "Mot de passe oublié" → email reçu → clic sur le lien → arrivée sur `/reset-password` avec formulaire de nouveau mot de passe → soumission → connexion possible avec le nouveau mot de passe.
+- Suppression d'un magasin → magasin, données métier, profils ET comptes auth associés disparaissent. Possibilité de recréer immédiatement un nouveau magasin avec le même email admin.
+- Création avec un email déjà pris → message clair en français, pas de boutique orpheline créée, formulaire reste ouvert.
+- Création avec un email libre → magasin + admin créés, l'admin se connecte et est forcé de changer son mot de passe.
+
+### Note
+
+Pour l'email `maisonglun@gmail.com` actuellement bloqué : après déploiement, la suppression de l'ancien magasin (ou la suppression directe du compte via Super Admin → Utilisateurs) libérera l'email. Si aucun magasin ne le possède, je peux ajouter une opération ponctuelle pour supprimer ce compte orphelin.
