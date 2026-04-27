@@ -111,17 +111,9 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Email notification if shop has email
+    // Email notification if shop has email — délégation à send-app-email
     if (invoice.shops?.email) {
       try {
-        // Get active email provider
-        const { data: emailProviderData } = await supabaseClient
-          .from('messaging_providers')
-          .select('*')
-          .eq('type', 'email')
-          .eq('is_active', true)
-          .maybeSingle();
-
         const subject = `Facture ${invoice.invoice_number} disponible`;
         const html = `
           <h1>Nouvelle facture disponible</h1>
@@ -131,29 +123,15 @@ Deno.serve(async (req) => {
           <p>Connectez-vous à votre espace pour la consulter.</p>
         `;
 
-        if (emailProviderData && emailProviderData.provider === 'brevo_email' && emailProviderData.encrypted_config?.data) {
-          const config = await decryptConfig(emailProviderData.encrypted_config.data);
-          await sendViaBrevoEmail(
-            config.api_key,
-            config.from_email || emailProviderData.from_address || 'noreply@fixway.fr',
-            config.from_name || 'FixWay',
-            invoice.shops.email,
+        await supabaseClient.functions.invoke('send-app-email', {
+          body: {
+            to: invoice.shops.email,
             subject,
-            html
-          );
-        } else {
-          // Fallback to Resend
-          const resendKey = Deno.env.get("RESEND_API_KEY");
-          if (resendKey) {
-            const resend = new Resend(resendKey);
-            await resend.emails.send({
-              from: "FixWay <noreply@fixway.fr>",
-              to: [invoice.shops.email],
-              subject,
-              html,
-            });
-          }
-        }
+            html,
+            context: 'invoice_notification',
+            shopId: invoice.shop_id,
+          },
+        });
       } catch (emailError) {
         console.error('Email notification error:', emailError);
       }
