@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { NumberInput } from "@/components/ui/number-input";
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
@@ -183,9 +184,9 @@ export function PartCategoriesManager() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="cat-order">Ordre d’affichage</Label>
-              <Input
+              <NumberInput
                 id="cat-order"
-                type="number"
+                
                 min={0}
                 value={displayOrder}
                 onChange={(e) => setDisplayOrder(Number(e.target.value) || 0)}

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { multiWordSearch } from '@/utils/searchUtils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { NumberInput } from "@/components/ui/number-input";
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
@@ -282,9 +283,9 @@ export function PartsSelection({ selectedParts, onPartsChange, savCaseId }: Part
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
                           <Label htmlFor={`quantity-${part.part_id}`}>Quantité</Label>
-                          <Input
+                          <NumberInput
                             id={`quantity-${part.part_id}`}
-                            type="number"
+                            
                             min="1"
                             value={part.quantity}
                             onChange={(e) => updatePart(part.part_id, 'quantity', parseInt(e.target.value) || 1)}
@@ -295,9 +296,9 @@ export function PartsSelection({ selectedParts, onPartsChange, savCaseId }: Part
                         </div>
                         <div>
                           <Label htmlFor={`time-${part.part_id}`}>Temps (minutes)</Label>
-                          <Input
+                          <NumberInput
                             id={`time-${part.part_id}`}
-                            type="number"
+                            
                             min="0"
                             value={part.time_minutes}
                             onChange={(e) => updatePart(part.part_id, 'time_minutes', parseInt(e.target.value) || 0)}
@@ -305,9 +306,9 @@ export function PartsSelection({ selectedParts, onPartsChange, savCaseId }: Part
                         </div>
                         <div>
                           <Label htmlFor={`price-${part.part_id}`}>Prix unitaire (€)</Label>
-                          <Input
+                          <NumberInput
                             id={`price-${part.part_id}`}
-                            type="number"
+                            
                             min="0"
                             step="0.01"
                             value={part.unit_price}

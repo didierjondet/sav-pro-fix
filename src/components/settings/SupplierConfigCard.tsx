@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { NumberInput } from "@/components/ui/number-input";
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
@@ -150,9 +151,9 @@ export function SupplierConfigCard({
             Coefficient de prix (multiplicateur pour prix public)
           </Label>
           <div className="flex items-center gap-4">
-            <Input
+            <NumberInput
               id={`${name}-coefficient`}
-              type="number"
+              
               min="1"
               max="10"
               step="0.05"

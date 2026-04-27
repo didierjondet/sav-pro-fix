@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { NumberInput } from "@/components/ui/number-input";
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { CheckCircle2 } from 'lucide-react';
@@ -194,8 +195,8 @@ export function InventoryAssistedDialog({
               <div className="grid gap-4 md:grid-cols-[180px_1fr] md:items-end">
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Quantité trouvée</label>
-                  <Input
-                    type="number"
+                  <NumberInput
+                    
                     min="0"
                     value={quantity}
                     onChange={(event) => setQuantity(event.target.value)}

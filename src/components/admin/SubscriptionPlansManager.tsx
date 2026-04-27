@@ -4,6 +4,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { NumberInput } from "@/components/ui/number-input";
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
@@ -469,8 +470,8 @@ export default function SubscriptionPlansManager() {
                 <div>
                   <Label>Prix</Label>
                   <div className="flex gap-2">
-                    <Input
-                      type="number"
+                    <NumberInput
+                      
                       value={formData.monthly_price}
                       onChange={(e) => setFormData({ ...formData, monthly_price: parseFloat(e.target.value) || 0 })}
                     />
@@ -498,8 +499,8 @@ export default function SubscriptionPlansManager() {
               <div className="grid grid-cols-3 gap-4">
                 <div>
                   <Label>Limite SAV (laissez vide pour illimité)</Label>
-                  <Input
-                    type="number"
+                  <NumberInput
+                    
                     value={formData.sav_limit || ''}
                     onChange={(e) => setFormData({ ...formData, sav_limit: e.target.value ? parseInt(e.target.value) : null })}
                     placeholder="ex: 10"
@@ -507,8 +508,8 @@ export default function SubscriptionPlansManager() {
                 </div>
                 <div>
                   <Label>Limite SMS par mois</Label>
-                  <Input
-                    type="number"
+                  <NumberInput
+                    
                     value={formData.sms_limit}
                     onChange={(e) => setFormData({ ...formData, sms_limit: parseInt(e.target.value) || 0 })}
                     placeholder="ex: 100"
@@ -516,8 +517,8 @@ export default function SubscriptionPlansManager() {
                 </div>
                 <div>
                   <Label>Stockage alloué (GB)</Label>
-                  <Input
-                    type="number"
+                  <NumberInput
+                    
                     step="0.5"
                     value={formData.storage_limit_gb}
                     onChange={(e) => setFormData({ ...formData, storage_limit_gb: parseFloat(e.target.value) || 1 })}
@@ -845,8 +846,8 @@ export default function SubscriptionPlansManager() {
               <div>
                 <Label>Prix</Label>
                 <div className="flex gap-2">
-                  <Input
-                    type="number"
+                  <NumberInput
+                    
                     value={formData.monthly_price}
                     onChange={(e) => setFormData({ ...formData, monthly_price: parseFloat(e.target.value) || 0 })}
                   />
@@ -873,24 +874,24 @@ export default function SubscriptionPlansManager() {
             <div className="grid grid-cols-3 gap-4">
               <div>
                 <Label>Limite SAV</Label>
-                <Input
-                  type="number"
+                <NumberInput
+                  
                   value={formData.sav_limit || ''}
                   onChange={(e) => setFormData({ ...formData, sav_limit: e.target.value ? parseInt(e.target.value) : null })}
                 />
               </div>
               <div>
                 <Label>Limite SMS par mois</Label>
-                <Input
-                  type="number"
+                <NumberInput
+                  
                   value={formData.sms_limit}
                   onChange={(e) => setFormData({ ...formData, sms_limit: parseInt(e.target.value) || 0 })}
                 />
                 </div>
                 <div>
                   <Label>Stockage alloué (GB)</Label>
-                  <Input
-                    type="number"
+                  <NumberInput
+                    
                     step="0.5"
                     value={formData.storage_limit_gb}
                     onChange={(e) => setFormData({ ...formData, storage_limit_gb: parseFloat(e.target.value) || 1 })}

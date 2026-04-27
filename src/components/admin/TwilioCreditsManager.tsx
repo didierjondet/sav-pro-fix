@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { NumberInput } from "@/components/ui/number-input";
 import { Badge } from '@/components/ui/badge';
 import { MessageSquare, DollarSign, RotateCcw, ExternalLink, Bell, RefreshCw } from 'lucide-react';
 import { useTwilioCredits } from '@/hooks/useTwilioCredits';
@@ -182,9 +183,9 @@ export function TwilioCreditsManager() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="alert-threshold">Seuil d'alerte (nombre minimum de SMS)</Label>
-              <Input
+              <NumberInput
                 id="alert-threshold"
-                type="number"
+                
                 value={alertThreshold}
                 onChange={(e) => setAlertThreshold(Number(e.target.value))}
                 min="0"

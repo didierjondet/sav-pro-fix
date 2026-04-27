@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { NumberInput } from "@/components/ui/number-input";
 import { Switch } from '@/components/ui/switch';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useDailyAssistantConfig, DailyAssistantConfig } from '@/hooks/useDailyAssistantConfig';
@@ -132,9 +133,9 @@ export function DailyAssistantConfigDialog({ open, onOpenChange }: DailyAssistan
 
             <div className="space-y-2">
               <Label htmlFor="min_age">Ancienneté minimale (jours)</Label>
-              <Input
+              <NumberInput
                 id="min_age"
-                type="number"
+                
                 min="0"
                 value={localConfig.min_sav_age_days ?? config.min_sav_age_days}
                 onChange={(e) =>
@@ -148,9 +149,9 @@ export function DailyAssistantConfigDialog({ open, onOpenChange }: DailyAssistan
           <TabsContent value="priorities" className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="late_threshold">Seuil de retard SAV (jours)</Label>
-              <Input
+              <NumberInput
                 id="late_threshold"
-                type="number"
+                
                 min="1"
                 value={localConfig.late_threshold_days ?? config.late_threshold_days}
                 onChange={(e) =>
@@ -161,9 +162,9 @@ export function DailyAssistantConfigDialog({ open, onOpenChange }: DailyAssistan
 
             <div className="space-y-2">
               <Label htmlFor="stock_threshold">Seuil de stock faible</Label>
-              <Input
+              <NumberInput
                 id="stock_threshold"
-                type="number"
+                
                 min="1"
                 value={localConfig.low_stock_threshold ?? config.low_stock_threshold}
                 onChange={(e) =>
@@ -270,9 +271,9 @@ export function DailyAssistantConfigDialog({ open, onOpenChange }: DailyAssistan
 
             <div className="space-y-2">
               <Label htmlFor="top_items">Nombre d'items à afficher (Top N)</Label>
-              <Input
+              <NumberInput
                 id="top_items"
-                type="number"
+                
                 min="1"
                 max="20"
                 value={localConfig.top_items_count ?? config.top_items_count}

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { multiWordSearch } from '@/utils/searchUtils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { NumberInput } from "@/components/ui/number-input";
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -709,8 +710,8 @@ const updateUnitPurchasePrice = (partId: string, unitPrice: number) => {
                         
                         <div className="flex items-center gap-2">
                           <Label>Qté:</Label>
-                          <Input
-                            type="number"
+                          <NumberInput
+                            
                             min="1"
                             value={item.quantity}
                             onChange={(e) => updateQuantity(item.part_id, parseInt(e.target.value) || 0)}
@@ -720,8 +721,8 @@ const updateUnitPurchasePrice = (partId: string, unitPrice: number) => {
                         
 <div className="flex items-center gap-2">
   <Label>Prix public:</Label>
-  <Input
-    type="number"
+  <NumberInput
+    
     step="0.01"
     min="0"
     value={item.unit_public_price}
@@ -784,9 +785,9 @@ const updateUnitPurchasePrice = (partId: string, unitPrice: number) => {
                         <Label htmlFor="depositAmount" className="text-sm font-medium">
                           Acompte réglé par le client
                         </Label>
-                        <Input
+                        <NumberInput
                           id="depositAmount"
-                          type="number"
+                          
                           min="0"
                           step="0.01"
                           value={depositAmount}

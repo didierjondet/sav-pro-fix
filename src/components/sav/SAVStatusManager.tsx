@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
+import { NumberInput } from "@/components/ui/number-input";
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -457,9 +458,9 @@ L'équipe ${shopData.name || 'de réparation'}`;
                 {partialTakeover && (
                   <div className="space-y-2">
                     <Label htmlFor="takeover-amount">Montant pris en charge par le magasin (€)</Label>
-                    <Input
+                    <NumberInput
                       id="takeover-amount"
-                      type="number"
+                      
                       min="0"
                       max={savCase.total_cost}
                       step="0.01"

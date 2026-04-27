@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { NumberInput } from "@/components/ui/number-input";
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import {
@@ -102,9 +103,9 @@ export function StockAdjustment({ part, isOpen, onClose, onAdjust }: StockAdjust
 
           <div>
             <Label htmlFor="quantity">Quantité</Label>
-            <Input
+            <NumberInput
               id="quantity"
-              type="number"
+              
               min="1"
               value={quantity}
               onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}

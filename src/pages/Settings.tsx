@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { NumberInput } from "@/components/ui/number-input";
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -1024,9 +1025,9 @@ export default function Settings() {
                                     />
                                     Alerte {type.type_label}
                                   </Label>
-                                  <Input 
+                                  <NumberInput 
                                     id={`sav-${type.type_key}-alert-days`} 
-                                    type="number" 
+                                     
                                     min="1" 
                                     max="10" 
                                     value={shopForm.sav_alert_days[type.type_key] || 2} 
@@ -1109,9 +1110,9 @@ export default function Settings() {
                       {shopForm.sms_alert_enabled && (
                         <div className="space-y-2 pt-4 border-t">
                           <Label htmlFor="sms-alert-threshold">Seuil d'alerte (crédits restants)</Label>
-                          <Input 
+                          <NumberInput 
                             id="sms-alert-threshold" 
-                            type="number" 
+                             
                             min="0" 
                             max="200" 
                             value={shopForm.sms_alert_threshold} 

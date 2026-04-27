@@ -1,6 +1,7 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { NumberInput } from "@/components/ui/number-input";
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
@@ -107,8 +108,8 @@ export function InventoryManualEditor({
                   <TableCell>{item.part_sku || '—'}</TableCell>
                   <TableCell className="text-right">{item.expected_quantity}</TableCell>
                   <TableCell className="min-w-[140px] text-right">
-                    <Input
-                      type="number"
+                    <NumberInput
+                      
                       min="0"
                       value={currentQuantity}
                       disabled={!editable}

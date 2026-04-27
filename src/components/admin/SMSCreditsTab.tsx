@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { NumberInput } from "@/components/ui/number-input";
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
@@ -301,8 +302,8 @@ export function SMSCreditsTab({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Nombre de crédits à ajouter</Label>
-              <Input
-                type="number"
+              <NumberInput
+                
                 placeholder="Ex: 50"
                 value={smsCreditsToAdd}
                 onChange={(e) => setSmsCreditsToAdd(e.target.value)}

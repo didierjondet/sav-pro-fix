@@ -3,6 +3,7 @@ import React from 'react';
 import { multiWordSearch } from '@/utils/searchUtils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { NumberInput } from "@/components/ui/number-input";
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -1030,9 +1031,9 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
                         </div>
                         <div>
                           <Label htmlFor={`part-qty-${part.id}`}>Quantité</Label>
-                          <Input
+                          <NumberInput
                             id={`part-qty-${part.id}`}
-                            type="number"
+                            
                             min="1"
                             value={part.quantity}
                             onChange={(e) => updatePart(part.id, 'quantity', parseInt(e.target.value) || 1)}
@@ -1045,9 +1046,9 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
                         </div>
                         <div>
                           <Label htmlFor={`part-price-${part.id}`}>Prix unitaire (€)</Label>
-                          <Input
+                          <NumberInput
                             id={`part-price-${part.id}`}
-                            type="number"
+                            
                             min="0"
                             step="0.01"
                             value={part.unitPrice}
@@ -1117,9 +1118,9 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
                         <Label htmlFor="depositAmount" className="text-sm font-medium">
                           Acompte réglé par le client
                         </Label>
-                        <Input
+                        <NumberInput
                           id="depositAmount"
-                          type="number"
+                          
                           min="0"
                           step="0.01"
                           value={depositAmount}

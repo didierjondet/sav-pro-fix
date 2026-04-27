@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { NumberInput } from "@/components/ui/number-input";
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -174,9 +175,9 @@ export function PartDiscountManager({
                 {discountType === 'percentage' ? 'Pourcentage (%)' : 'Montant (€)'}
               </Label>
               <div className="flex items-center gap-2 mt-1">
-                <Input
+                <NumberInput
                   id={`discount-value-${partName}`}
-                  type="number"
+                  
                   min="0"
                   max={discountType === 'percentage' ? 100 : lineTotal}
                   step={discountType === 'percentage' ? '1' : '0.01'}

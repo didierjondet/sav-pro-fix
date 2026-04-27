@@ -4,6 +4,7 @@ import { multiWordSearch } from '@/utils/searchUtils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { NumberInput } from "@/components/ui/number-input";
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Progress } from '@/components/ui/progress';
@@ -864,12 +865,12 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
                       </div>
                       <div>
                         <Label className="text-xs">Qté</Label>
-                        <Input type="number" min="1" value={part.quantity} className="text-sm h-8"
+                        <NumberInput  min="1" value={part.quantity} className="text-sm h-8"
                           onChange={(e) => updatePart(part.id, 'quantity', parseInt(e.target.value) || 1)} />
                       </div>
                       <div>
                         <Label className="text-xs">Prix (€)</Label>
-                        <Input type="number" min="0" step="0.01" value={part.unitPrice} className="text-sm h-8"
+                        <NumberInput  min="0" step="0.01" value={part.unitPrice} className="text-sm h-8"
                           disabled={!part.isCustom}
                           onChange={(e) => updatePart(part.id, 'unitPrice', parseFloat(e.target.value) || 0)} />
                       </div>
@@ -934,7 +935,7 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
             )}
             <div>
               <Label className="text-sm">Acompte réglé par le client (€)</Label>
-              <Input type="number" min="0" step="0.01" value={depositAmount}
+              <NumberInput  min="0" step="0.01" value={depositAmount}
                 onChange={(e) => setDepositAmount(parseFloat(e.target.value) || 0)}
                 placeholder="0.00" className="text-right" />
             </div>

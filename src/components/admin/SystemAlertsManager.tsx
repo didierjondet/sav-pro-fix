@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { NumberInput } from "@/components/ui/number-input";
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
@@ -153,9 +154,9 @@ export function SystemAlertsManager() {
                       
                       <div className="space-y-2">
                         <Label htmlFor="threshold">Seuil d'alerte (crédits)</Label>
-                        <Input
+                        <NumberInput
                           id="threshold"
-                          type="number"
+                          
                           value={formData.threshold_value || ''}
                           onChange={(e) =>
                             setFormData({
