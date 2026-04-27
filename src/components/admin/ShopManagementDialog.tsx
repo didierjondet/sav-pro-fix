@@ -13,6 +13,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { NumberInput } from "@/components/ui/number-input";
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -1122,8 +1123,8 @@ export default function ShopManagementDialog({ shop, isOpen, onClose, onUpdate }
                       <div className="flex items-center justify-between">
                         <span>SAV simultanés: {shop.active_sav_count}/{shop.custom_sav_limit || currentTier?.sav_limit || 'Illimité'}</span>
                         <div className="flex items-center gap-2">
-                          <Input
-                            type="number"
+                          <NumberInput
+                            
                             placeholder="Nouvelle limite SAV"
                             value={customSavLimit}
                             onChange={(e) => setCustomSavLimit(e.target.value)}
@@ -1141,8 +1142,8 @@ export default function ShopManagementDialog({ shop, isOpen, onClose, onUpdate }
                       <div className="flex items-center justify-between">
                         <span>SMS par mois: {shop.sms_credits_allocated}</span>
                         <div className="flex items-center gap-2">
-                          <Input
-                            type="number"
+                          <NumberInput
+                            
                             placeholder="Nouvelle limite SMS"
                             value={customSmsLimit}
                             onChange={(e) => setCustomSmsLimit(e.target.value)}

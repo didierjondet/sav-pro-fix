@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { NumberInput } from "@/components/ui/number-input";
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -325,8 +326,8 @@ export function SMSCreditManager({ onUpdate }: SMSCreditManagerProps) {
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
-                          <Input
-                            type="number"
+                          <NumberInput
+                            
                             placeholder="0"
                             value={creditsToAdd[shop.shop_id] || ''}
                             onChange={(e) => setCreditsToAdd(prev => ({ 

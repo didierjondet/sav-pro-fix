@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { NumberInput } from "@/components/ui/number-input";
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -267,9 +268,9 @@ export function PartForm({ initialData, onSubmit, onCancel, isEdit = false, find
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="margin">Marge (%)</Label>
-                <Input
+                <NumberInput
                   id="margin"
-                  type="number"
+                  
                   step="0.1"
                   min="0"
                   value={marginPercent}
@@ -286,9 +287,9 @@ export function PartForm({ initialData, onSubmit, onCancel, isEdit = false, find
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="purchase_price">Prix d'achat HT (€)</Label>
-              <Input
+              <NumberInput
                 id="purchase_price"
-                type="number"
+                
                 step="0.01"
                 min="0"
                 {...register('purchase_price', { valueAsNumber: true })}
@@ -309,9 +310,9 @@ export function PartForm({ initialData, onSubmit, onCancel, isEdit = false, find
 
             <div>
               <Label htmlFor="selling_price">Prix public TTC (€)</Label>
-              <Input
+              <NumberInput
                 id="selling_price"
-                type="number"
+                
                 step="0.01"
                 min="0"
                 {...register('selling_price', { valueAsNumber: true })}
@@ -335,9 +336,9 @@ export function PartForm({ initialData, onSubmit, onCancel, isEdit = false, find
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="quantity">Quantité en stock</Label>
-              <Input
+              <NumberInput
                 id="quantity"
-                type="number"
+                
                 min="0"
                 {...register('quantity', { valueAsNumber: true })}
                 placeholder="0"
@@ -346,9 +347,9 @@ export function PartForm({ initialData, onSubmit, onCancel, isEdit = false, find
 
             <div>
               <Label htmlFor="min_stock">Stock minimum</Label>
-              <Input
+              <NumberInput
                 id="min_stock"
-                type="number"
+                
                 min="0"
                 {...register('min_stock', { valueAsNumber: true })}
                 placeholder="1"
@@ -359,9 +360,9 @@ export function PartForm({ initialData, onSubmit, onCancel, isEdit = false, find
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="time_minutes">Temps (minutes)</Label>
-              <Input
+              <NumberInput
                 id="time_minutes"
-                type="number"
+                
                 min="0"
                 {...register('time_minutes', { valueAsNumber: true })}
                 placeholder="15"

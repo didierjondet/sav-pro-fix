@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { NumberInput } from "@/components/ui/number-input";
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
@@ -348,18 +349,18 @@ export function SMSPackagesManager() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="sms_count">Nombre de SMS</Label>
-                <Input
+                <NumberInput
                   id="sms_count"
-                  type="number"
+                  
                   value={formData.sms_count}
                   onChange={(e) => setFormData({ ...formData, sms_count: parseInt(e.target.value) || 0 })}
                 />
               </div>
               <div>
                 <Label htmlFor="price_cents">Prix (centimes)</Label>
-                <Input
+                <NumberInput
                   id="price_cents"
-                  type="number"
+                  
                   value={formData.price_cents}
                   onChange={(e) => setFormData({ ...formData, price_cents: parseInt(e.target.value) || 0 })}
                 />

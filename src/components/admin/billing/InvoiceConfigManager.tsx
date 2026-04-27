@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { NumberInput } from "@/components/ui/number-input";
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
@@ -94,9 +95,9 @@ export function InvoiceConfigManager() {
 
             <div className="space-y-2">
               <Label htmlFor="vat_rate">Taux de TVA (%)</Label>
-              <Input
+              <NumberInput
                 id="vat_rate"
-                type="number"
+                
                 step="0.1"
                 defaultValue={config.vat_rate}
                 onBlur={(e) => handleSave('vat_rate', parseFloat(e.target.value))}

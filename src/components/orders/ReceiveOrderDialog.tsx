@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { NumberInput } from "@/components/ui/number-input";
 import { Label } from '@/components/ui/label';
 import { OrderItemWithPart } from '@/hooks/useOrders';
 import { AlertTriangle } from 'lucide-react';
@@ -76,9 +77,9 @@ export function ReceiveOrderDialog({ isOpen, onClose, onConfirm, onCancelOrder, 
           
           <div className="space-y-2">
             <Label htmlFor="quantity">Quantité reçue *</Label>
-            <Input
+            <NumberInput
               id="quantity"
-              type="number"
+              
               min="0"
               value={quantityReceived}
               onChange={(e) => setQuantityReceived(parseInt(e.target.value) || 0)}

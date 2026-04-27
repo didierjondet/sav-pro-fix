@@ -2,6 +2,7 @@ import { useState, useEffect, type ReactNode } from 'react';
 import { multiWordSearch } from '@/utils/searchUtils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { NumberInput } from "@/components/ui/number-input";
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
@@ -535,9 +536,9 @@ const partsToInsert = savParts.map(part => ({
   </div>
   <div>
     <Label htmlFor={`part-qty-${part.id}`}>Quantité</Label>
-    <Input
+    <NumberInput
       id={`part-qty-${part.id}`}
-      type="number"
+      
       min="1"
       value={part.quantity}
       onChange={(e) => updatePart(part.id, 'quantity', parseInt(e.target.value) || 1)}
@@ -550,9 +551,9 @@ const partsToInsert = savParts.map(part => ({
   </div>
   <div>
     <Label htmlFor={`part-time-${part.id}`}>Temps (min)</Label>
-    <Input
+    <NumberInput
       id={`part-time-${part.id}`}
-      type="number"
+      
       min="0"
       value={part.time_minutes}
       onChange={(e) => updatePart(part.id, 'time_minutes', parseInt(e.target.value) || 0)}
@@ -560,9 +561,9 @@ const partsToInsert = savParts.map(part => ({
   </div>
   <div>
     <Label htmlFor={`part-price-${part.id}`}>Prix public (€)</Label>
-    <Input
+    <NumberInput
       id={`part-price-${part.id}`}
-      type="number"
+      
       min="0"
       step="0.01"
       value={part.unit_price}
@@ -571,9 +572,9 @@ const partsToInsert = savParts.map(part => ({
   </div>
   <div>
     <Label htmlFor={`part-price-purchase-${part.id}`}>Prix d'achat (€)</Label>
-    <Input
+    <NumberInput
       id={`part-price-purchase-${part.id}`}
-      type="number"
+      
       min="0"
       step="0.01"
       value={part.purchase_price ?? 0}
