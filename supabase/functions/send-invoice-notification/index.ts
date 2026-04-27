@@ -1,48 +1,10 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.54.0';
-import { Resend } from "npm:resend@4.0.0";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// === AES-GCM Decryption ===
-async function getDecryptionKey(): Promise<CryptoKey> {
-  const secret = Deno.env.get("AI_ENCRYPTION_KEY") || "default-fallback-key-change-me";
-  const keyMaterial = await crypto.subtle.importKey(
-    "raw", new TextEncoder().encode(secret.padEnd(32, "0").slice(0, 32)),
-    { name: "PBKDF2" }, false, ["deriveKey"]
-  );
-  return crypto.subtle.deriveKey(
-    { name: "PBKDF2", salt: new TextEncoder().encode("messaging-config-salt"), iterations: 100000, hash: "SHA-256" },
-    keyMaterial, { name: "AES-GCM", length: 256 }, false, ["decrypt"]
-  );
-}
-
-async function decryptConfig(encryptedData: string): Promise<Record<string, string>> {
-  const key = await getDecryptionKey();
-  const combined = Uint8Array.from(atob(encryptedData), c => c.charCodeAt(0));
-  const iv = combined.slice(0, 12);
-  const ciphertext = combined.slice(12);
-  const decrypted = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, ciphertext);
-  return JSON.parse(new TextDecoder().decode(decrypted));
-}
-
-async function sendViaBrevoEmail(apiKey: string, from: string, fromName: string, to: string, subject: string, html: string) {
-  const response = await fetch('https://api.brevo.com/v3/smtp/email', {
-    method: 'POST',
-    headers: { 'api-key': apiKey, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      sender: { name: fromName || 'FixWay', email: from },
-      to: [{ email: to }],
-      subject,
-      htmlContent: html,
-    }),
-  });
-  const data = await response.json();
-  if (!response.ok) throw new Error(data.message || JSON.stringify(data));
-  return data;
-}
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
