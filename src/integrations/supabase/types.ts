@@ -452,6 +452,50 @@ export type Database = {
         }
         Relationships: []
       }
+      email_send_logs: {
+        Row: {
+          context: string | null
+          created_at: string
+          error_message: string | null
+          id: string
+          provider: string
+          shop_id: string | null
+          status: string
+          subject: string | null
+          to_email: string
+        }
+        Insert: {
+          context?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          provider: string
+          shop_id?: string | null
+          status: string
+          subject?: string | null
+          to_email: string
+        }
+        Update: {
+          context?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          provider?: string
+          shop_id?: string | null
+          status?: string
+          subject?: string | null
+          to_email?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_send_logs_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       global_sms_credits: {
         Row: {
           created_at: string
