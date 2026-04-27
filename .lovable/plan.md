@@ -1,97 +1,65 @@
+# Suppression du "0" parasite dans tous les champs numériques
 
-# Intégration Brevo (API HTTP) — Tous les emails de l'application
+## Problème identifié
 
-## Contexte
+Sur l'ensemble du site, les champs numériques (`<Input type="number">`) affichent un **"0" par défaut** qui ne s'efface pas quand on clique. Résultat : pour saisir "12", l'utilisateur doit taper "012" (et obtient même 12.5% au lieu de 12% à cause du parsing).
 
-Vous avez fourni des identifiants SMTP Brevo (`smtp-relay.brevo.com:587`, login `a47870001@smtp-brevo.com`). Comme expliqué, les Edge Functions Deno **ne supportent pas le SMTP nativement**, et l'application utilise déjà l'API HTTP Brevo (plus rapide et fiable). Le code multi-fournisseurs est déjà en place — il faut juste finaliser le câblage et créer le compte Brevo dans la base.
+**Cause technique** : tous les champs sont liés à un state initialisé à `0` (number), donc React force l'affichage de `"0"` dans l'input, qu'on ne peut pas effacer simplement.
 
-**Action requise de votre côté** : générer une **clé API Brevo** (format `xkeysib-...`) dans votre compte Brevo → menu **SMTP & API → API Keys → Generate a new API key**. Le mot de passe SMTP que vous m'avez fourni n'est pas utilisable pour l'API HTTP.
+**Étendue** : 56 champs `type="number"` répartis dans 27 fichiers (devis, SAV, pièces, paramètres, super admin, abonnements, SMS, inventaire, etc.).
 
-## Plan technique
+## Solution proposée
 
-### 1. Création du fournisseur Brevo en base (via Super Admin)
+### 1. Créer un composant réutilisable `NumberInput`
 
-Une fois la clé API générée, vous l'ajouterez via l'interface existante :
-- **Super Admin → SMS / Mail → Email → Ajouter**
-- Choisir **Brevo Email**
-- Renseigner : clé API, `from_email = noreply@fixway.fr`, `from_name = FixWay`
-- Cliquer **Activer** sur la carte créée
+Nouveau fichier `src/components/ui/number-input.tsx` :
+- Wrapper autour du composant `Input` existant.
+- Props : `value: number | undefined`, `onChange: (n: number | undefined) => void`, plus toutes les props standards (`min`, `max`, `step`, `placeholder`, `className`, `disabled`...).
+- Comportement clé :
+  - **Affichage vide** quand `value === 0` ou `undefined` → on montre le `placeholder` (ex. "0", "10", "5.00") au lieu de la valeur "0".
+  - **Sélection automatique** au focus : `onFocus={(e) => e.target.select()}` → cliquer dans le champ surligne le contenu pour qu'il soit remplacé immédiatement.
+  - **État interne string** pour permettre la saisie fluide (gérer `""`, `"0."`, `"."`, etc. sans forcer un parseFloat à chaque frappe).
+  - **Au blur** : si vide, renvoie `0` (ou `undefined` selon prop `allowEmpty`) au parent ; sinon convertit en number.
+  - **Suppression du scroll** sur la molette (évite les changements involontaires) : `onWheel={(e) => e.currentTarget.blur()}`.
 
-Aucune modification de code n'est nécessaire pour cette étape — l'interface `MessagingProvidersManager` gère déjà ce flow (chiffrement AES-256, activation, désactivation).
+### 2. Remplacer les 56 occurrences
 
-### 2. Câblage Brevo dans toutes les Edge Functions d'envoi d'email
+Dans chaque fichier listé ci-dessous, remplacer `<Input type="number" ... />` par `<NumberInput ... />` (même API simplifiée).
 
-Actuellement seules 2 Edge Functions consultent le fournisseur actif :
-- ✅ `send-contact-email` (formulaire de contact prospect) — déjà OK
-- ✅ `send-invoice-notification` (notifications de factures) — déjà OK
+Fichiers concernés (27 fichiers) :
+- **Devis / SAV** : `QuoteForm.tsx`, `SAVForm.tsx`, `SAVWizardDialog.tsx`, `SAVPartsEditor.tsx`, `PartsSelection.tsx`, `SAVTypesManager.tsx`, `SAVStatusManager.tsx`, `part-discount-manager.tsx`
+- **Pièces / Stock / Commandes** : `PartForm.tsx`, `StockAdjustment.tsx`, `ReceiveOrderDialog.tsx`, `PartCategoriesManager.tsx`, `InventoryManualEditor.tsx`, `InventoryAssistedDialog.tsx`, `SupplierConfigCard.tsx`
+- **Paramètres / Réglages** : `Settings.tsx`, `DailyAssistantConfigDialog.tsx`
+- **Super Admin** : `ShopManagementDialog.tsx`, `SMSCreditManager.tsx`, `SMSCreditsTab.tsx`, `SMSPackagesManager.tsx`, `TwilioCreditsManager.tsx`, `SubscriptionPlansManager.tsx`, `CarouselManager.tsx`, `SystemAlertsManager.tsx`, `InvoiceConfigManager.tsx`
+- *(Le `XAxis type="number"` dans `PartsUsageHeatmapWidget.tsx` est un axe Recharts, pas un input → ignoré.)*
 
-À ajouter / modifier :
+### 3. Effet utilisateur attendu
 
-#### a) `send-invitation` (invitations d'équipiers)
-Actuellement, cette fonction crée l'invitation en base et **renvoie juste l'URL** sans envoyer d'email. Je vais :
-- Récupérer le fournisseur email actif (Brevo si configuré)
-- Envoyer un email HTML d'invitation avec le bouton « Rejoindre l'équipe »
-- Inclure : nom de l'inviteur, nom du magasin, rôle attribué, lien d'inscription
-- Fallback Resend si aucun fournisseur actif (comportement déjà en place ailleurs)
+Avant : champ affiche "0" → je tape "12" → j'obtiens "012" → après parse "12" mais visuellement étrange.
 
-#### b) Nouvelle Edge Function partagée `send-app-email` (recommandé)
-Pour éviter de dupliquer la logique de décryptage / routage dans chaque fonction, je vais créer **une seule Edge Function utilitaire** :
+Après :
+- Champ vide affiche le placeholder gris "0" (ou "10", "5.00" selon le contexte).
+- Au clic, si une valeur existe elle est sélectionnée → la frappe la remplace.
+- Si je tape "12", ça affiche "12" directement.
+- Si j'efface tout et que je quitte le champ, ça revient à 0 (valeur métier conservée).
+- La molette ne modifie plus accidentellement la valeur.
 
+## Détails techniques
+
+```tsx
+// src/components/ui/number-input.tsx (esquisse)
+interface NumberInputProps extends Omit<InputProps, 'value' | 'onChange' | 'type'> {
+  value: number | undefined | null;
+  onChange: (value: number) => void;
+  min?: number; max?: number; step?: number | string;
+  allowDecimals?: boolean; // sinon parseInt
+}
+// Logique : useState<string> interne, sync avec value en useEffect quand value change de l'extérieur,
+// onFocus -> select(), onBlur -> commit (parseFloat ou parseInt), onWheel -> blur.
 ```
-supabase/functions/send-app-email/index.ts
-```
 
-Elle prend `{ to, subject, html }` et route automatiquement vers le fournisseur actif (Brevo / Resend / SMTP-fallback). Les fonctions existantes seront refactorées pour l'appeler via `supabase.functions.invoke('send-app-email', ...)`.
+## Hors-scope
 
-Bénéfices :
-- Un seul endroit pour la logique de routage
-- Activation/désactivation/changement de prestataire en 1 clic depuis l'interface (déjà existant)
-- Logs centralisés des envois email
-
-#### c) Emails Supabase Auth (reset mot de passe, confirmation email)
-Les emails d'authentification Supabase (`resetPasswordForEmail`, signup confirmation) sont **gérés par Supabase Auth en interne**, pas par notre code. Pour les router via Brevo, deux options :
-
-- **Option A (manuelle, recommandée et simple)** : configurer Brevo comme **SMTP custom dans le dashboard Supabase**
-  - Dashboard Supabase → Project Settings → Authentication → SMTP Settings
-  - Sender email : `noreply@fixway.fr`, Sender name : `FixWay`
-  - Host : `smtp-relay.brevo.com`, Port : `587`
-  - Username : `a47870001@smtp-brevo.com`, Password : votre **clé SMTP Brevo** (= `master password` SMTP, pas la clé API)
-  - C'est la **seule option** où votre login SMTP `a47870001@smtp-brevo.com` que vous m'avez fourni est utile.
-  - Je vous fournirai un guide pas-à-pas après le déploiement.
-
-- **Option B (automatique via Auth Hook)** : implémenter un hook `auth-email-hook` qui intercepte les emails Auth et les envoie via l'API HTTP Brevo. Plus complexe, nécessite la configuration d'un hook Supabase + déploiement d'une Edge Function dédiée. Non incluse dans ce plan — à ajouter en phase 2 si besoin.
-
-### 3. Logs & traçabilité
-
-Création d'une table `email_send_logs` (optionnel mais recommandé) :
-- `id`, `shop_id` (nullable), `provider` (`brevo_email` / `resend` / `smtp`)
-- `to_email`, `subject`, `status` (`sent` / `failed`), `error_message`
-- `sent_at`, `created_at`
-- RLS : super_admin only
-
-L'Edge Function `send-app-email` y inscrira chaque envoi. Visible dans le Super Admin (à brancher dans une 2e étape si vous le souhaitez).
-
-## Récapitulatif des fichiers modifiés / créés
-
-| Fichier | Action |
-|---|---|
-| `supabase/functions/send-app-email/index.ts` | **Créé** — utilitaire central d'envoi |
-| `supabase/functions/send-invitation/index.ts` | Modifié — envoi du mail d'invitation via `send-app-email` |
-| `supabase/functions/send-contact-email/index.ts` | Refactor — délègue à `send-app-email` |
-| `supabase/functions/send-invoice-notification/index.ts` | Refactor — délègue à `send-app-email` |
-| `supabase/config.toml` | Ajout de `[functions.send-app-email]` avec `verify_jwt = false` (pour appel inter-fonctions) |
-| Migration SQL | Création de la table `email_send_logs` + RLS super_admin |
-
-## Étapes après approbation
-
-1. Vous générez la **clé API Brevo** dans votre compte (menu *SMTP & API → API Keys*)
-2. J'implémente le code (création Edge Function + refactor + migration)
-3. Vous ajoutez le fournisseur Brevo via le Super Admin et l'activez
-4. Test : envoyer un email via le formulaire de contact ou créer une invitation
-5. (Optionnel) Vous configurez le SMTP Brevo dans Supabase Auth pour les emails reset / confirmation
-
-## Questions importantes avant exécution
-
-⚠️ **Le domaine `fixway.fr` doit être validé dans Brevo** (Senders, Domains & Dedicated IPs → Domains → Authenticate). Sans cette validation DKIM/SPF, Brevo refusera d'envoyer ou les mails iront en spam. Si ce n'est pas encore fait, prévoyez ~10 minutes pour ajouter les enregistrements DNS chez votre registrar.
-
-Souhaitez-vous que je procède avec ce plan ?
+- Pas de changement visuel (taille, bordures, classes Tailwind conservés via passthrough `className`).
+- Pas de changement de la logique métier des formulaires (les states restent en `number`).
+- Les calculs liés (totaux, remises, prix) ne sont pas modifiés.
