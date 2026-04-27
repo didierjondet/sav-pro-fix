@@ -101,3 +101,6 @@ verify_jwt = false
 
 [functions.twilio-purchase-credits]
 verify_jwt = false
+
+[functions.send-app-email]
+verify_jwt = false
