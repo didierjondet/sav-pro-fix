@@ -1139,6 +1139,18 @@ export const generateSAVListPDF = async (savCases: SAVCase[], shop?: Shop, filte
         .case-number {
           font-weight: bold;
           color: #0066cc;
+          word-break: break-all;
+          white-space: normal;
+        }
+        .ref-line {
+          display: block;
+          font-size: 8px;
+          font-weight: normal;
+          color: #555;
+          word-break: break-all;
+          white-space: normal;
+          margin-top: 2px;
+          font-family: 'Courier New', monospace;
         }
         .status-badge {
           display: inline-block;
