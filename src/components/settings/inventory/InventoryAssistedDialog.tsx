@@ -13,8 +13,8 @@ interface InventoryAssistedDialogProps {
   onOpenChange: (open: boolean) => void;
   session: InventorySession;
   items: InventorySessionItem[];
-  onCount: (itemId: string, quantity: number) => Promise<void>;
-  onMissing: (itemId: string) => Promise<void>;
+  onCount: (itemId: string, quantity: number) => Promise<{ freshItems?: InventorySessionItem[] } | void>;
+  onMissing: (itemId: string) => Promise<{ freshItems?: InventorySessionItem[] } | void>;
   onPause: () => Promise<void>;
   onClose: () => Promise<void>;
 }
@@ -31,13 +31,20 @@ export function InventoryAssistedDialog({
 }: InventoryAssistedDialogProps) {
   const orderedItems = useMemo(() => [...items].sort((a, b) => a.position - b.position), [items]);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [correctionMode, setCorrectionMode] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
   const [quantity, setQuantity] = useState('1');
 
-  const currentItem = orderedItems[currentIndex] || null;
+  const correctionItems = orderedItems.filter((item) => item.line_status !== 'pending' && item.counted_quantity !== null && item.variance_quantity !== 0);
+  const visibleItems = correctionMode ? correctionItems : orderedItems;
+  const currentItem = visibleItems[currentIndex] || null;
   const remainingPending = orderedItems.filter((item) => item.line_status === 'pending');
   const isAllProcessed = orderedItems.length > 0 && remainingPending.length === 0;
-  const isLastPending = remainingPending.length === 1 && currentItem?.line_status === 'pending';
+  const isLastPending = !correctionMode && remainingPending.length === 1 && currentItem?.line_status === 'pending';
+  const countedValue = orderedItems.reduce((sum, item) => sum + ((item.counted_quantity ?? 0) * item.unit_cost), 0);
+  const missingItems = orderedItems.filter((item) => item.line_status !== 'pending' && (item.line_status === 'missing' || (item.counted_quantity ?? 0) === 0));
+  const positiveItems = orderedItems.filter((item) => item.counted_quantity !== null && (item.counted_quantity ?? 0) > item.expected_quantity);
+  const positiveValue = positiveItems.reduce((sum, item) => sum + Math.max(0, item.variance_quantity) * item.unit_cost, 0);
   const progressValue = orderedItems.length > 0
     ? ((orderedItems.length - remainingPending.length) / orderedItems.length) * 100
     : 0;
