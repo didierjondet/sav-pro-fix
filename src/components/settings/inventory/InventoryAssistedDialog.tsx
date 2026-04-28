@@ -29,7 +29,9 @@ export function InventoryAssistedDialog({
   onPause,
   onClose,
 }: InventoryAssistedDialogProps) {
-  const orderedItems = useMemo(() => [...items].sort((a, b) => a.position - b.position), [items]);
+  const [localItems, setLocalItems] = useState<InventorySessionItem[] | null>(null);
+  const sourceItems = localItems ?? items;
+  const orderedItems = useMemo(() => [...sourceItems].sort((a, b) => a.position - b.position), [sourceItems]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [correctionMode, setCorrectionMode] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
@@ -54,6 +56,7 @@ export function InventoryAssistedDialog({
   // en arrière après chaque enregistrement (cause de la boucle infinie).
   useEffect(() => {
     if (!open) return;
+    setLocalItems(null);
     setCorrectionMode(false);
     const firstPendingIndex = orderedItems.findIndex((item) => item.line_status === 'pending');
     setCurrentIndex(firstPendingIndex >= 0 ? firstPendingIndex : 0);
@@ -104,11 +107,9 @@ export function InventoryAssistedDialog({
     const parsed = Number(quantity);
     const value = Number.isFinite(parsed) && parsed >= 0 ? parsed : 0;
     const result = await onCount(treatedId, value);
-    if (wasLastPending) {
-      await handleClose();
-    } else {
-      advanceAfterTreatment(treatedId, result && 'freshItems' in result ? result.freshItems ?? items : items);
-    }
+    const freshItems = result && 'freshItems' in result ? result.freshItems ?? items : items;
+    setLocalItems(freshItems);
+    if (!wasLastPending) advanceAfterTreatment(treatedId, freshItems);
   };
 
   const handleMissing = async () => {
@@ -116,11 +117,9 @@ export function InventoryAssistedDialog({
     const treatedId = currentItem.id;
     const wasLastPending = isLastPending;
     const result = await onMissing(treatedId);
-    if (wasLastPending) {
-      await handleClose();
-    } else {
-      advanceAfterTreatment(treatedId, result && 'freshItems' in result ? result.freshItems ?? items : items);
-    }
+    const freshItems = result && 'freshItems' in result ? result.freshItems ?? items : items;
+    setLocalItems(freshItems);
+    if (!wasLastPending) advanceAfterTreatment(treatedId, freshItems);
   };
 
   const handlePause = async () => {
@@ -138,6 +137,7 @@ export function InventoryAssistedDialog({
   };
 
   const handleReviewFirst = () => {
+    setCorrectionMode(true);
     setCurrentIndex(0);
   };
 
