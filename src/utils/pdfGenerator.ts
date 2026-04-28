@@ -1009,15 +1009,16 @@ export const generateSAVListPDF = async (savCases: SAVCase[], shop?: Shop, filte
       const customerHTML = savCase.customer
         ? `<strong>${savCase.customer.first_name} ${savCase.customer.last_name}</strong><br>${savCase.customer.phone || ''}`
         : 'Non renseigné';
-      const imeiHTML = savCase.device_imei ? `<br><small>IMEI: ${savCase.device_imei.substring(0, 8)}...</small>` : '';
+      const imeiLine = savCase.device_imei ? `<div class="ref-line">IMEI: ${savCase.device_imei}</div>` : '';
+      const skuLine = savCase.sku ? `<div class="ref-line">SKU: ${savCase.sku}</div>` : '';
       const costHTML = realCost > 0 ? `${realCost.toFixed(2)}€` : '-';
 
       return `
         <tr>
-          <td class="case-number">${savCase.case_number}</td>
+          <td class="case-number">${savCase.case_number}${imeiLine}${skuLine}</td>
           <td class="text-center">${new Date(savCase.created_at).toLocaleDateString('fr-FR')}</td>
           <td class="customer-info">${customerHTML}</td>
-          <td class="device-info"><strong>${savCase.device_brand}</strong><br>${savCase.device_model}${imeiHTML}</td>
+          <td class="device-info"><strong>${savCase.device_brand}</strong><br>${savCase.device_model}</td>
           <td class="problem-desc" title="${savCase.problem_description || ''}">${savCase.problem_description || 'Non renseigné'}</td>
           <td class="text-center"><span class="status-badge ${getStatusClass(savCase.status)}">${getStatusText(savCase.status)}</span></td>
           <td class="text-center">${costHTML}</td>
@@ -1035,11 +1036,11 @@ export const generateSAVListPDF = async (savCases: SAVCase[], shop?: Shop, filte
         <table class="sav-table" style="margin-bottom: 0;">
           <thead>
             <tr>
-              <th style="width: 12%;">N° Dossier</th>
+              <th style="width: 15%;">N° Dossier</th>
               <th style="width: 8%;">Date</th>
               <th style="width: 15%;">Client</th>
               <th style="width: 15%;">Appareil</th>
-              <th style="width: 20%;">Problème</th>
+              <th style="width: 17%;">Problème</th>
               <th style="width: 12%;">Statut</th>
               <th style="width: 8%;">Coût</th>
               <th style="width: 10%;">Dernière MAJ</th>
@@ -1138,6 +1139,18 @@ export const generateSAVListPDF = async (savCases: SAVCase[], shop?: Shop, filte
         .case-number {
           font-weight: bold;
           color: #0066cc;
+          word-break: break-all;
+          white-space: normal;
+        }
+        .ref-line {
+          display: block;
+          font-size: 8px;
+          font-weight: normal;
+          color: #555;
+          word-break: break-all;
+          white-space: normal;
+          margin-top: 2px;
+          font-family: 'Courier New', monospace;
         }
         .status-badge {
           display: inline-block;
