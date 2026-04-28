@@ -183,16 +183,32 @@ export function InventoryAssistedDialog({
           </div>
 
           {isAllProcessed ? (
-            <div className="space-y-4 rounded-md border border-primary/40 bg-primary/5 p-6 text-center">
+            <div className="space-y-4 rounded-md border border-primary/40 bg-primary/5 p-4 text-center sm:p-6">
               <CheckCircle2 className="mx-auto h-12 w-12 text-primary" />
               <div>
                 <h3 className="text-lg font-semibold">Comptage terminé</h3>
                 <p className="text-sm text-muted-foreground">
-                  Toutes les pièces ont été traitées. Vous pouvez réviser une ligne ou clôturer le comptage maintenant.
+                  Toutes les pièces ont été traitées. Vérifiez les résultats puis corrigez uniquement les écarts si besoin.
                 </p>
               </div>
+              <div className="grid gap-3 text-left sm:grid-cols-3">
+                <div className="rounded-md border bg-background/70 p-3">
+                  <div className="text-xs text-muted-foreground">Valeur finale</div>
+                  <div className="mt-1 text-xl font-semibold">{currency(countedValue)}</div>
+                </div>
+                <div className="rounded-md border bg-background/70 p-3">
+                  <div className="text-xs text-muted-foreground">Produits manquants</div>
+                  <div className="mt-1 text-xl font-semibold">{missingItems.length}</div>
+                  <div className="text-xs text-muted-foreground">{currency(missingItems.reduce((sum, item) => sum + item.expected_quantity * item.unit_cost, 0))}</div>
+                </div>
+                <div className="rounded-md border bg-background/70 p-3">
+                  <div className="text-xs text-muted-foreground">Produits positifs</div>
+                  <div className="mt-1 text-xl font-semibold">{positiveItems.length}</div>
+                  <div className="text-xs text-muted-foreground">+{currency(positiveValue)}</div>
+                </div>
+              </div>
               <div className="flex flex-col-reverse justify-center gap-2 sm:flex-row">
-                <Button variant="outline" onClick={handleReviewFirst}>Réviser une ligne</Button>
+                <Button variant="outline" onClick={handleReviewFirst} disabled={correctionItems.length === 0}>Corriger les écarts</Button>
                 <Button onClick={handleClose} disabled={isClosing}>
                   {isClosing ? 'Clôture en cours…' : 'Clôturer le comptage'}
                 </Button>
@@ -236,16 +252,16 @@ export function InventoryAssistedDialog({
         <DialogFooter className="gap-2 sm:justify-between sm:space-x-0">
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" onClick={goToPrevious} disabled={currentIndex <= 0}>Précédent</Button>
-            <Button variant="outline" onClick={goToNext} disabled={!currentItem || currentIndex >= orderedItems.length - 1}>Passer</Button>
+            <Button variant="outline" onClick={goToNext} disabled={!currentItem || currentIndex >= visibleItems.length - 1}>Passer</Button>
             <Button variant="outline" onClick={handlePause}>Pause</Button>
           </div>
           {!isAllProcessed && (
             <div className="flex flex-col-reverse gap-2 sm:flex-row">
               <Button variant="outline" onClick={handleMissing} disabled={!currentItem || isClosing}>
-                {isLastPending ? 'Non trouvé et clôturer' : 'Non trouvé'}
+                Non trouvé
               </Button>
               <Button onClick={handleFound} disabled={!currentItem || isClosing}>
-                {isLastPending ? 'Enregistrer et clôturer' : 'Enregistrer / suivant'}
+                Valider / suivant
               </Button>
             </div>
           )}
