@@ -117,19 +117,12 @@ export function InventoryManualEditor({
                     {item.counted_quantity === null ? '—' : item.variance_quantity}
                   </TableCell>
                   <TableCell className="min-w-[180px]">
-                    <div className="flex gap-2">
-                      <Input
-                        value={currentNote}
-                        disabled={!editable}
-                        onChange={(event) => onDraftNoteChange(item.id, event.target.value)}
-                        placeholder="Note rapide"
-                      />
-                      {editable && (
-                        <Button type="button" size="icon" variant="outline" onClick={() => onSaveNote(item)}>
-                          <Save className="h-4 w-4" />
-                        </Button>
-                      )}
-                    </div>
+                    <Input
+                      value={currentNote}
+                      disabled={!editable}
+                      onChange={(event) => onDraftNoteChange(item.id, event.target.value)}
+                      placeholder="Note rapide"
+                    />
                   </TableCell>
                   <TableCell>
                     <Badge variant={item.line_status === 'missing' ? 'destructive' : item.line_status === 'pending' ? 'outline' : 'secondary'}>
@@ -138,22 +131,18 @@ export function InventoryManualEditor({
                   </TableCell>
                   <TableCell className="text-right">
                     {editable ? (
-                      <div className="flex flex-wrap justify-end gap-2">
-                        <Button size="sm" variant="outline" onClick={() => onMarkFound(item)}>
+                      <div className="grid gap-2 sm:grid-cols-3 lg:flex lg:flex-wrap lg:justify-end">
+                        <Button size="sm" onClick={() => onMarkFound(item)} className="bg-success text-success-foreground hover:bg-success/90">
                           <Check className="h-4 w-4" />
-                          Trouvé
+                          Valider
                         </Button>
-                        <Button size="sm" variant="outline" onClick={() => onMarkMissing(item)}>
+                        <Button size="sm" variant="destructive" onClick={() => onMarkMissing(item)}>
                           <X className="h-4 w-4" />
-                          Manquant
+                          Non trouvé
                         </Button>
-                        <Button size="sm" variant="outline" onClick={() => onApplyQuantity(item)}>
+                        <Button size="sm" onClick={() => onApplyQuantity(item)} className="bg-warning text-warning-foreground hover:bg-warning/90">
                           <Save className="h-4 w-4" />
                           Ajuster
-                        </Button>
-                        <Button size="sm" variant="outline" onClick={() => onReset(item)}>
-                          <RotateCcw className="h-4 w-4" />
-                          Réinitialiser
                         </Button>
                       </div>
                     ) : (
