@@ -89,19 +89,56 @@ export function useInventory() {
 
   const shopId = shop?.id;
 
+  const fetchSessions = async (): Promise<InventorySession[]> => {
+    if (!shopId) return [];
+    const { data, error } = await supabase
+      .from('inventory_sessions')
+      .select('*')
+      .eq('shop_id', shopId)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data ? (JSON.parse(JSON.stringify(data)) as InventorySession[]) : [];
+  };
+
+  const fetchSession = async (targetSessionId: string): Promise<InventorySession | null> => {
+    const { data, error } = await supabase
+      .from('inventory_sessions')
+      .select('*')
+      .eq('id', targetSessionId)
+      .maybeSingle();
+
+    if (error) throw error;
+    return data ? (JSON.parse(JSON.stringify(data)) as InventorySession) : null;
+  };
+
+  const fetchItems = async (targetSessionId: string): Promise<InventorySessionItem[]> => {
+    const { data, error } = await supabase
+      .from('inventory_session_items')
+      .select('*')
+      .eq('inventory_session_id', targetSessionId)
+      .order('position', { ascending: true });
+
+    if (error) throw error;
+    return data ? (JSON.parse(JSON.stringify(data)) as InventorySessionItem[]) : [];
+  };
+
+  const fetchLogs = async (targetSessionId: string): Promise<InventoryAuditLog[]> => {
+    const { data, error } = await supabase
+      .from('inventory_audit_logs')
+      .select('*')
+      .eq('inventory_session_id', targetSessionId)
+      .order('created_at', { ascending: false })
+      .limit(200);
+
+    if (error) throw error;
+    return data ? (JSON.parse(JSON.stringify(data)) as InventoryAuditLog[]) : [];
+  };
+
   const sessionsQuery = useQuery({
     queryKey: ['inventory-sessions', shopId],
     enabled: !!shopId,
-    queryFn: async (): Promise<InventorySession[]> => {
-      const { data, error } = await supabase
-        .from('inventory_sessions')
-        .select('*')
-        .eq('shop_id', shopId)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      return data ? (JSON.parse(JSON.stringify(data)) as InventorySession[]) : [];
-    },
+    queryFn: fetchSessions,
   });
 
   const sessionId = selectedSessionId ?? sessionsQuery.data?.[0]?.id ?? null;
@@ -109,60 +146,38 @@ export function useInventory() {
   const sessionQuery = useQuery({
     queryKey: ['inventory-session', sessionId],
     enabled: !!sessionId,
-    queryFn: async (): Promise<InventorySession | null> => {
-      const { data, error } = await supabase
-        .from('inventory_sessions')
-        .select('*')
-        .eq('id', sessionId)
-        .maybeSingle();
-
-      if (error) throw error;
-      return data ? (JSON.parse(JSON.stringify(data)) as InventorySession) : null;
-    },
+    queryFn: () => fetchSession(sessionId as string),
   });
 
   const itemsQuery = useQuery({
     queryKey: ['inventory-items', sessionId],
     enabled: !!sessionId,
-    queryFn: async (): Promise<InventorySessionItem[]> => {
-      const { data, error } = await supabase
-        .from('inventory_session_items')
-        .select('*')
-        .eq('inventory_session_id', sessionId)
-        .order('position', { ascending: true });
-
-      if (error) throw error;
-      return data ? (JSON.parse(JSON.stringify(data)) as InventorySessionItem[]) : [];
-    },
+    queryFn: () => fetchItems(sessionId as string),
   });
 
   const logsQuery = useQuery({
     queryKey: ['inventory-logs', sessionId],
     enabled: !!sessionId,
-    queryFn: async (): Promise<InventoryAuditLog[]> => {
-      const { data, error } = await supabase
-        .from('inventory_audit_logs')
-        .select('*')
-        .eq('inventory_session_id', sessionId)
-        .order('created_at', { ascending: false })
-        .limit(200);
-
-      if (error) throw error;
-      return data ? (JSON.parse(JSON.stringify(data)) as InventoryAuditLog[]) : [];
-    },
+    queryFn: () => fetchLogs(sessionId as string),
   });
 
-  const refreshAll = async () => {
-    // Utilise refetchQueries pour ATTENDRE réellement le rafraîchissement,
-    // sinon les appelants travaillent sur des données obsolètes (boucle assistée).
-    await Promise.all([
-      queryClient.refetchQueries({ queryKey: ['inventory-sessions', shopId] }),
-      queryClient.refetchQueries({ queryKey: ['inventory-session', sessionId] }),
-      queryClient.refetchQueries({ queryKey: ['inventory-items', sessionId] }),
-      queryClient.refetchQueries({ queryKey: ['inventory-logs', sessionId] }),
+  const refreshAll = async (targetSessionId = sessionId) => {
+    const [freshSessions, freshSession, freshItems, freshLogs] = await Promise.all([
+      fetchSessions(),
+      targetSessionId ? fetchSession(targetSessionId) : Promise.resolve(null),
+      targetSessionId ? fetchItems(targetSessionId) : Promise.resolve([]),
+      targetSessionId ? fetchLogs(targetSessionId) : Promise.resolve([]),
     ]);
-    // Parts en arrière-plan, pas critique pour la suite immédiate.
+
+    queryClient.setQueryData(['inventory-sessions', shopId], freshSessions);
+    if (targetSessionId) {
+      queryClient.setQueryData(['inventory-session', targetSessionId], freshSession);
+      queryClient.setQueryData(['inventory-items', targetSessionId], freshItems);
+      queryClient.setQueryData(['inventory-logs', targetSessionId], freshLogs);
+    }
+
     queryClient.invalidateQueries({ queryKey: ['parts', shopId] });
+    return { freshSession, freshItems, freshLogs, freshSessions };
   };
 
   const addAuditLog = async (payload: Partial<InventoryAuditLog> & { action: string; inventory_session_id: string }) => {
@@ -192,7 +207,7 @@ export function useInventory() {
 
       if (error) throw error;
       setSelectedSessionId(data as string);
-      await refreshAll();
+      await refreshAll(data as string);
       toast({ title: 'Inventaire lancé', description: 'La session a été créée avec son instantané de stock.' });
       return data as string;
     } catch (error: unknown) {
@@ -222,7 +237,7 @@ export function useInventory() {
       });
     }
 
-    await refreshAll();
+    await refreshAll(id);
   };
 
   const updateItem = async ({ sessionId: targetSessionId, itemId, ...input }: UpdateInventoryItemInput) => {
@@ -257,11 +272,11 @@ export function useInventory() {
       },
     });
 
-    await refreshAll();
+    return refreshAll(targetSessionId);
   };
 
   const markItemMissing = async (targetSessionId: string, itemId: string, entryMethod: InventoryMode = 'manual') => {
-    await updateItem({
+    return updateItem({
       sessionId: targetSessionId,
       itemId,
       countedQuantity: 0,
@@ -271,7 +286,7 @@ export function useInventory() {
   };
 
   const resetItem = async (targetSessionId: string, itemId: string) => {
-    await updateItem({
+    return updateItem({
       sessionId: targetSessionId,
       itemId,
       countedQuantity: null,
@@ -283,7 +298,7 @@ export function useInventory() {
   };
 
   const skipItem = async (targetSessionId: string, itemId: string) => {
-    await updateItem({
+    return updateItem({
       sessionId: targetSessionId,
       itemId,
       lineStatus: 'pending',
@@ -291,7 +306,7 @@ export function useInventory() {
   };
 
   const updateItemNote = async (targetSessionId: string, itemId: string, notes: string | null) => {
-    await updateItem({ sessionId: targetSessionId, itemId, notes });
+    return updateItem({ sessionId: targetSessionId, itemId, notes });
   };
 
   const pauseSession = async (targetSessionId: string) => {
@@ -315,15 +330,7 @@ export function useInventory() {
   };
 
   const closeSession = async (targetSessionId: string) => {
-    // S'assure d'avoir des données à jour avant de vérifier les pending.
-    await Promise.all([
-      queryClient.refetchQueries({ queryKey: ['inventory-items', targetSessionId] }),
-      queryClient.refetchQueries({ queryKey: ['inventory-session', targetSessionId] }),
-    ]);
-    const freshItems =
-      queryClient.getQueryData<InventorySessionItem[]>(['inventory-items', targetSessionId]) ?? [];
-    const freshSession =
-      queryClient.getQueryData<InventorySession>(['inventory-session', targetSessionId]) ?? sessionQuery.data;
+    const { freshItems, freshSession } = await refreshAll(targetSessionId);
     const derived = getInventoryDerivedData(freshSession, freshItems);
     if (derived.pendingItems.length > 0) {
       throw new Error('Toutes les lignes doivent être traitées avant de clôturer le comptage.');
@@ -334,6 +341,7 @@ export function useInventory() {
       { status: 'completed', completed_at: new Date().toISOString(), paused_at: null, forced_stop: false },
       'session_completed',
     );
+    return refreshAll(targetSessionId);
   };
 
   const bulkScanCodes = async (targetSessionId: string, codes: string[]) => {
@@ -382,7 +390,7 @@ export function useInventory() {
           entryMethod: 'scan',
           lastScannedCode: code,
           scanCount: (match.scan_count || 0) + increment,
-        }),
+        }).then(() => undefined),
       );
     }
 

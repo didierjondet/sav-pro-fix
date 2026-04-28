@@ -1,20 +1,23 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { NumberInput } from "@/components/ui/number-input";
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { CheckCircle2 } from 'lucide-react';
 import type { InventorySession, InventorySessionItem } from './types';
 
+function currency(value: number) {
+  return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 }).format(value || 0);
+}
+
 interface InventoryAssistedDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   session: InventorySession;
   items: InventorySessionItem[];
-  onCount: (itemId: string, quantity: number) => Promise<void>;
-  onMissing: (itemId: string) => Promise<void>;
+  onCount: (itemId: string, quantity: number) => Promise<{ freshItems?: InventorySessionItem[] } | void>;
+  onMissing: (itemId: string) => Promise<{ freshItems?: InventorySessionItem[] } | void>;
   onPause: () => Promise<void>;
   onClose: () => Promise<void>;
 }
@@ -29,15 +32,24 @@ export function InventoryAssistedDialog({
   onPause,
   onClose,
 }: InventoryAssistedDialogProps) {
-  const orderedItems = useMemo(() => [...items].sort((a, b) => a.position - b.position), [items]);
+  const [localItems, setLocalItems] = useState<InventorySessionItem[] | null>(null);
+  const sourceItems = localItems ?? items;
+  const orderedItems = useMemo(() => [...sourceItems].sort((a, b) => a.position - b.position), [sourceItems]);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [correctionMode, setCorrectionMode] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
   const [quantity, setQuantity] = useState('1');
 
-  const currentItem = orderedItems[currentIndex] || null;
+  const correctionItems = orderedItems.filter((item) => item.line_status !== 'pending' && item.counted_quantity !== null && item.variance_quantity !== 0);
+  const visibleItems = correctionMode ? correctionItems : orderedItems;
+  const currentItem = visibleItems[currentIndex] || null;
   const remainingPending = orderedItems.filter((item) => item.line_status === 'pending');
   const isAllProcessed = orderedItems.length > 0 && remainingPending.length === 0;
-  const isLastPending = remainingPending.length === 1 && currentItem?.line_status === 'pending';
+  const isLastPending = !correctionMode && remainingPending.length === 1 && currentItem?.line_status === 'pending';
+  const countedValue = orderedItems.reduce((sum, item) => sum + ((item.counted_quantity ?? 0) * item.unit_cost), 0);
+  const missingItems = orderedItems.filter((item) => item.line_status !== 'pending' && (item.line_status === 'missing' || (item.counted_quantity ?? 0) === 0));
+  const positiveItems = orderedItems.filter((item) => item.counted_quantity !== null && (item.counted_quantity ?? 0) > item.expected_quantity);
+  const positiveValue = positiveItems.reduce((sum, item) => sum + Math.max(0, item.variance_quantity) * item.unit_cost, 0);
   const progressValue = orderedItems.length > 0
     ? ((orderedItems.length - remainingPending.length) / orderedItems.length) * 100
     : 0;
@@ -47,6 +59,8 @@ export function InventoryAssistedDialog({
   // en arrière après chaque enregistrement (cause de la boucle infinie).
   useEffect(() => {
     if (!open) return;
+    setLocalItems(null);
+    setCorrectionMode(false);
     const firstPendingIndex = orderedItems.findIndex((item) => item.line_status === 'pending');
     setCurrentIndex(firstPendingIndex >= 0 ? firstPendingIndex : 0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -66,13 +80,19 @@ export function InventoryAssistedDialog({
   // (improbable) où la liste n'aurait pas encore reflété la mise à jour.
   const advanceAfterTreatment = (treatedId: string, freshItems: InventorySessionItem[]) => {
     const ordered = [...freshItems].sort((a, b) => a.position - b.position);
-    const nextPending = ordered.find(
-      (item) => item.line_status === 'pending' && item.id !== treatedId,
-    );
-    if (nextPending) {
-      const idx = ordered.findIndex((item) => item.id === nextPending.id);
-      setCurrentIndex(idx);
+    if (correctionMode) {
+      const nextCorrections = ordered.filter((item) => item.line_status !== 'pending' && item.counted_quantity !== null && item.variance_quantity !== 0 && item.id !== treatedId);
+      if (nextCorrections.length) setCurrentIndex(0);
+      else {
+        setCorrectionMode(false);
+        setCurrentIndex(0);
+      }
+      return;
     }
+    const currentPosition = ordered.find((item) => item.id === treatedId)?.position ?? 0;
+    const nextPending = ordered.find((item) => item.line_status === 'pending' && item.position > currentPosition)
+      ?? ordered.find((item) => item.line_status === 'pending' && item.id !== treatedId);
+    if (nextPending) setCurrentIndex(ordered.findIndex((item) => item.id === nextPending.id));
   };
 
   const goToPrevious = () => {
@@ -80,7 +100,7 @@ export function InventoryAssistedDialog({
   };
 
   const goToNext = () => {
-    setCurrentIndex((prev) => Math.min(prev + 1, Math.max(orderedItems.length - 1, 0)));
+    setCurrentIndex((prev) => Math.min(prev + 1, Math.max(visibleItems.length - 1, 0)));
   };
 
   const handleFound = async () => {
@@ -89,24 +109,20 @@ export function InventoryAssistedDialog({
     const wasLastPending = isLastPending;
     const parsed = Number(quantity);
     const value = Number.isFinite(parsed) && parsed >= 0 ? parsed : 0;
-    await onCount(treatedId, value);
-    if (wasLastPending) {
-      await handleClose();
-    } else {
-      advanceAfterTreatment(treatedId, items);
-    }
+    const result = await onCount(treatedId, value);
+    const freshItems = result && 'freshItems' in result ? result.freshItems ?? items : items;
+    setLocalItems(freshItems);
+    if (!wasLastPending) advanceAfterTreatment(treatedId, freshItems);
   };
 
   const handleMissing = async () => {
     if (!currentItem) return;
     const treatedId = currentItem.id;
     const wasLastPending = isLastPending;
-    await onMissing(treatedId);
-    if (wasLastPending) {
-      await handleClose();
-    } else {
-      advanceAfterTreatment(treatedId, items);
-    }
+    const result = await onMissing(treatedId);
+    const freshItems = result && 'freshItems' in result ? result.freshItems ?? items : items;
+    setLocalItems(freshItems);
+    if (!wasLastPending) advanceAfterTreatment(treatedId, freshItems);
   };
 
   const handlePause = async () => {
@@ -124,6 +140,7 @@ export function InventoryAssistedDialog({
   };
 
   const handleReviewFirst = () => {
+    setCorrectionMode(correctionItems.length > 0);
     setCurrentIndex(0);
   };
 
@@ -165,17 +182,33 @@ export function InventoryAssistedDialog({
             <Progress value={progressValue} />
           </div>
 
-          {isAllProcessed ? (
-            <div className="space-y-4 rounded-md border border-primary/40 bg-primary/5 p-6 text-center">
+          {isAllProcessed && !correctionMode ? (
+            <div className="space-y-4 rounded-md border border-primary/40 bg-primary/5 p-4 text-center sm:p-6">
               <CheckCircle2 className="mx-auto h-12 w-12 text-primary" />
               <div>
                 <h3 className="text-lg font-semibold">Comptage terminé</h3>
                 <p className="text-sm text-muted-foreground">
-                  Toutes les pièces ont été traitées. Vous pouvez réviser une ligne ou clôturer le comptage maintenant.
+                  Toutes les pièces ont été traitées. Vérifiez les résultats puis corrigez uniquement les écarts si besoin.
                 </p>
               </div>
+              <div className="grid gap-3 text-left sm:grid-cols-3">
+                <div className="rounded-md border bg-background/70 p-3">
+                  <div className="text-xs text-muted-foreground">Valeur finale</div>
+                  <div className="mt-1 text-xl font-semibold">{currency(countedValue)}</div>
+                </div>
+                <div className="rounded-md border bg-background/70 p-3">
+                  <div className="text-xs text-muted-foreground">Produits manquants</div>
+                  <div className="mt-1 text-xl font-semibold">{missingItems.length}</div>
+                  <div className="text-xs text-muted-foreground">{currency(missingItems.reduce((sum, item) => sum + item.expected_quantity * item.unit_cost, 0))}</div>
+                </div>
+                <div className="rounded-md border bg-background/70 p-3">
+                  <div className="text-xs text-muted-foreground">Produits positifs</div>
+                  <div className="mt-1 text-xl font-semibold">{positiveItems.length}</div>
+                  <div className="text-xs text-muted-foreground">+{currency(positiveValue)}</div>
+                </div>
+              </div>
               <div className="flex flex-col-reverse justify-center gap-2 sm:flex-row">
-                <Button variant="outline" onClick={handleReviewFirst}>Réviser une ligne</Button>
+                <Button variant="outline" onClick={handleReviewFirst} disabled={correctionItems.length === 0}>Corriger les écarts</Button>
                 <Button onClick={handleClose} disabled={isClosing}>
                   {isClosing ? 'Clôture en cours…' : 'Clôturer le comptage'}
                 </Button>
@@ -219,16 +252,16 @@ export function InventoryAssistedDialog({
         <DialogFooter className="gap-2 sm:justify-between sm:space-x-0">
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" onClick={goToPrevious} disabled={currentIndex <= 0}>Précédent</Button>
-            <Button variant="outline" onClick={goToNext} disabled={!currentItem || currentIndex >= orderedItems.length - 1}>Passer</Button>
+            <Button variant="outline" onClick={goToNext} disabled={!currentItem || currentIndex >= visibleItems.length - 1}>Passer</Button>
             <Button variant="outline" onClick={handlePause}>Pause</Button>
           </div>
-          {!isAllProcessed && (
+          {(!isAllProcessed || correctionMode) && (
             <div className="flex flex-col-reverse gap-2 sm:flex-row">
               <Button variant="outline" onClick={handleMissing} disabled={!currentItem || isClosing}>
-                {isLastPending ? 'Non trouvé et clôturer' : 'Non trouvé'}
+                Non trouvé
               </Button>
               <Button onClick={handleFound} disabled={!currentItem || isClosing}>
-                {isLastPending ? 'Enregistrer et clôturer' : 'Enregistrer / suivant'}
+                Valider / suivant
               </Button>
             </div>
           )}
