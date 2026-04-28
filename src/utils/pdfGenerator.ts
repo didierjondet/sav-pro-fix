@@ -1036,11 +1036,11 @@ export const generateSAVListPDF = async (savCases: SAVCase[], shop?: Shop, filte
         <table class="sav-table" style="margin-bottom: 0;">
           <thead>
             <tr>
-              <th style="width: 12%;">N° Dossier</th>
+              <th style="width: 15%;">N° Dossier</th>
               <th style="width: 8%;">Date</th>
               <th style="width: 15%;">Client</th>
               <th style="width: 15%;">Appareil</th>
-              <th style="width: 20%;">Problème</th>
+              <th style="width: 17%;">Problème</th>
               <th style="width: 12%;">Statut</th>
               <th style="width: 8%;">Coût</th>
               <th style="width: 10%;">Dernière MAJ</th>
