@@ -54,6 +54,7 @@ export function InventoryAssistedDialog({
   // en arrière après chaque enregistrement (cause de la boucle infinie).
   useEffect(() => {
     if (!open) return;
+    setCorrectionMode(false);
     const firstPendingIndex = orderedItems.findIndex((item) => item.line_status === 'pending');
     setCurrentIndex(firstPendingIndex >= 0 ? firstPendingIndex : 0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -73,13 +74,19 @@ export function InventoryAssistedDialog({
   // (improbable) où la liste n'aurait pas encore reflété la mise à jour.
   const advanceAfterTreatment = (treatedId: string, freshItems: InventorySessionItem[]) => {
     const ordered = [...freshItems].sort((a, b) => a.position - b.position);
-    const nextPending = ordered.find(
-      (item) => item.line_status === 'pending' && item.id !== treatedId,
-    );
-    if (nextPending) {
-      const idx = ordered.findIndex((item) => item.id === nextPending.id);
-      setCurrentIndex(idx);
+    if (correctionMode) {
+      const nextCorrections = ordered.filter((item) => item.line_status !== 'pending' && item.counted_quantity !== null && item.variance_quantity !== 0 && item.id !== treatedId);
+      if (nextCorrections.length) setCurrentIndex(0);
+      else {
+        setCorrectionMode(false);
+        setCurrentIndex(0);
+      }
+      return;
     }
+    const currentPosition = ordered.find((item) => item.id === treatedId)?.position ?? 0;
+    const nextPending = ordered.find((item) => item.line_status === 'pending' && item.position > currentPosition)
+      ?? ordered.find((item) => item.line_status === 'pending' && item.id !== treatedId);
+    if (nextPending) setCurrentIndex(ordered.findIndex((item) => item.id === nextPending.id));
   };
 
   const goToPrevious = () => {
@@ -87,7 +94,7 @@ export function InventoryAssistedDialog({
   };
 
   const goToNext = () => {
-    setCurrentIndex((prev) => Math.min(prev + 1, Math.max(orderedItems.length - 1, 0)));
+    setCurrentIndex((prev) => Math.min(prev + 1, Math.max(visibleItems.length - 1, 0)));
   };
 
   const handleFound = async () => {
@@ -96,11 +103,11 @@ export function InventoryAssistedDialog({
     const wasLastPending = isLastPending;
     const parsed = Number(quantity);
     const value = Number.isFinite(parsed) && parsed >= 0 ? parsed : 0;
-    await onCount(treatedId, value);
+    const result = await onCount(treatedId, value);
     if (wasLastPending) {
       await handleClose();
     } else {
-      advanceAfterTreatment(treatedId, items);
+      advanceAfterTreatment(treatedId, result?.freshItems ?? items);
     }
   };
 
@@ -108,11 +115,11 @@ export function InventoryAssistedDialog({
     if (!currentItem) return;
     const treatedId = currentItem.id;
     const wasLastPending = isLastPending;
-    await onMissing(treatedId);
+    const result = await onMissing(treatedId);
     if (wasLastPending) {
       await handleClose();
     } else {
-      advanceAfterTreatment(treatedId, items);
+      advanceAfterTreatment(treatedId, result?.freshItems ?? items);
     }
   };
 
