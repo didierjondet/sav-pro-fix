@@ -5,7 +5,7 @@ import { NumberInput } from "@/components/ui/number-input";
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
-import { Check, RotateCcw, Save, Search, X } from 'lucide-react';
+import { Check, Save, Search, X } from 'lucide-react';
 import { INVENTORY_LINE_STATUS_LABELS, type InventorySessionItem } from './types';
 
 export type InventoryReviewTab = 'counting' | 'discrepancies' | 'missing' | 'overwritten' | 'journal';
@@ -22,8 +22,6 @@ interface InventoryManualEditorProps {
   onApplyQuantity: (item: InventorySessionItem) => Promise<unknown> | unknown;
   onMarkFound: (item: InventorySessionItem) => Promise<unknown> | unknown;
   onMarkMissing: (item: InventorySessionItem) => Promise<unknown> | unknown;
-  onReset: (item: InventorySessionItem) => Promise<unknown> | unknown;
-  onSaveNote: (item: InventorySessionItem) => Promise<unknown> | unknown;
   activeFilter: 'all' | 'pending' | 'found' | 'missing' | 'adjusted';
   onActiveFilterChange: (value: 'all' | 'pending' | 'found' | 'missing' | 'adjusted') => void;
 }
@@ -48,8 +46,6 @@ export function InventoryManualEditor({
   onApplyQuantity,
   onMarkFound,
   onMarkMissing,
-  onReset,
-  onSaveNote,
   activeFilter,
   onActiveFilterChange,
 }: InventoryManualEditorProps) {
