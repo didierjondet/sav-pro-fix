@@ -207,7 +207,7 @@ export function useInventory() {
 
       if (error) throw error;
       setSelectedSessionId(data as string);
-      await refreshAll();
+      await refreshAll(data as string);
       toast({ title: 'Inventaire lancé', description: 'La session a été créée avec son instantané de stock.' });
       return data as string;
     } catch (error: unknown) {
@@ -237,7 +237,7 @@ export function useInventory() {
       });
     }
 
-    await refreshAll();
+    await refreshAll(id);
   };
 
   const updateItem = async ({ sessionId: targetSessionId, itemId, ...input }: UpdateInventoryItemInput) => {
@@ -341,6 +341,7 @@ export function useInventory() {
       { status: 'completed', completed_at: new Date().toISOString(), paused_at: null, forced_stop: false },
       'session_completed',
     );
+    return refreshAll(targetSessionId);
   };
 
   const bulkScanCodes = async (targetSessionId: string, codes: string[]) => {
