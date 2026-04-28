@@ -276,7 +276,7 @@ export function useInventory() {
   };
 
   const markItemMissing = async (targetSessionId: string, itemId: string, entryMethod: InventoryMode = 'manual') => {
-    await updateItem({
+    return updateItem({
       sessionId: targetSessionId,
       itemId,
       countedQuantity: 0,
@@ -286,7 +286,7 @@ export function useInventory() {
   };
 
   const resetItem = async (targetSessionId: string, itemId: string) => {
-    await updateItem({
+    return updateItem({
       sessionId: targetSessionId,
       itemId,
       countedQuantity: null,
@@ -298,7 +298,7 @@ export function useInventory() {
   };
 
   const skipItem = async (targetSessionId: string, itemId: string) => {
-    await updateItem({
+    return updateItem({
       sessionId: targetSessionId,
       itemId,
       lineStatus: 'pending',
@@ -306,7 +306,7 @@ export function useInventory() {
   };
 
   const updateItemNote = async (targetSessionId: string, itemId: string, notes: string | null) => {
-    await updateItem({ sessionId: targetSessionId, itemId, notes });
+    return updateItem({ sessionId: targetSessionId, itemId, notes });
   };
 
   const pauseSession = async (targetSessionId: string) => {
