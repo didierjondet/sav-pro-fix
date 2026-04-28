@@ -389,7 +389,7 @@ export function useInventory() {
           entryMethod: 'scan',
           lastScannedCode: code,
           scanCount: (match.scan_count || 0) + increment,
-        }),
+        }).then(() => undefined),
       );
     }
 
