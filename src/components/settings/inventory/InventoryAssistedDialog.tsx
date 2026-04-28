@@ -1,12 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { NumberInput } from "@/components/ui/number-input";
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { CheckCircle2 } from 'lucide-react';
 import type { InventorySession, InventorySessionItem } from './types';
+
+function currency(value: number) {
+  return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 }).format(value || 0);
+}
 
 interface InventoryAssistedDialogProps {
   open: boolean;
@@ -137,7 +140,7 @@ export function InventoryAssistedDialog({
   };
 
   const handleReviewFirst = () => {
-    setCorrectionMode(true);
+    setCorrectionMode(correctionItems.length > 0);
     setCurrentIndex(0);
   };
 
