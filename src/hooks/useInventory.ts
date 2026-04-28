@@ -153,13 +153,16 @@ export function useInventory() {
   });
 
   const refreshAll = async () => {
+    // Utilise refetchQueries pour ATTENDRE réellement le rafraîchissement,
+    // sinon les appelants travaillent sur des données obsolètes (boucle assistée).
     await Promise.all([
-      queryClient.invalidateQueries({ queryKey: ['inventory-sessions', shopId] }),
-      queryClient.invalidateQueries({ queryKey: ['inventory-session', sessionId] }),
-      queryClient.invalidateQueries({ queryKey: ['inventory-items', sessionId] }),
-      queryClient.invalidateQueries({ queryKey: ['inventory-logs', sessionId] }),
-      queryClient.invalidateQueries({ queryKey: ['parts', shopId] }),
+      queryClient.refetchQueries({ queryKey: ['inventory-sessions', shopId] }),
+      queryClient.refetchQueries({ queryKey: ['inventory-session', sessionId] }),
+      queryClient.refetchQueries({ queryKey: ['inventory-items', sessionId] }),
+      queryClient.refetchQueries({ queryKey: ['inventory-logs', sessionId] }),
     ]);
+    // Parts en arrière-plan, pas critique pour la suite immédiate.
+    queryClient.invalidateQueries({ queryKey: ['parts', shopId] });
   };
 
   const addAuditLog = async (payload: Partial<InventoryAuditLog> & { action: string; inventory_session_id: string }) => {
