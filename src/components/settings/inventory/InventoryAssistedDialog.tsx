@@ -107,7 +107,7 @@ export function InventoryAssistedDialog({
     if (wasLastPending) {
       await handleClose();
     } else {
-      advanceAfterTreatment(treatedId, result?.freshItems ?? items);
+      advanceAfterTreatment(treatedId, result && 'freshItems' in result ? result.freshItems ?? items : items);
     }
   };
 
@@ -119,7 +119,7 @@ export function InventoryAssistedDialog({
     if (wasLastPending) {
       await handleClose();
     } else {
-      advanceAfterTreatment(treatedId, result?.freshItems ?? items);
+      advanceAfterTreatment(treatedId, result && 'freshItems' in result ? result.freshItems ?? items : items);
     }
   };
 
