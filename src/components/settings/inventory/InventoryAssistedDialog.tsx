@@ -30,26 +30,29 @@ export function InventoryAssistedDialog({
   onClose,
 }: InventoryAssistedDialogProps) {
   const orderedItems = useMemo(() => [...items].sort((a, b) => a.position - b.position), [items]);
-  const initialIndex = useMemo(() => {
-    const firstPendingIndex = orderedItems.findIndex((item) => item.line_status === 'pending');
-    return firstPendingIndex >= 0 ? firstPendingIndex : 0;
-  }, [orderedItems]);
-  const [currentIndex, setCurrentIndex] = useState(initialIndex);
-  const currentItem = orderedItems[currentIndex] || null;
-  const [quantity, setQuantity] = useState('1');
+  const [currentIndex, setCurrentIndex] = useState(0);
   const [isClosing, setIsClosing] = useState(false);
+  const [quantity, setQuantity] = useState('1');
 
+  const currentItem = orderedItems[currentIndex] || null;
   const remainingPending = orderedItems.filter((item) => item.line_status === 'pending');
   const isAllProcessed = orderedItems.length > 0 && remainingPending.length === 0;
   const isLastPending = remainingPending.length === 1 && currentItem?.line_status === 'pending';
-  const progressValue = session.total_items > 0
-    ? ((session.total_items - remainingPending.length) / session.total_items) * 100
+  const progressValue = orderedItems.length > 0
+    ? ((orderedItems.length - remainingPending.length) / orderedItems.length) * 100
     : 0;
 
+  // À l'ouverture du dialogue uniquement, positionner sur le premier pending.
+  // On ne réagit PAS aux changements de orderedItems pour éviter de revenir
+  // en arrière après chaque enregistrement (cause de la boucle infinie).
   useEffect(() => {
-    setCurrentIndex(initialIndex);
-  }, [initialIndex, open]);
+    if (!open) return;
+    const firstPendingIndex = orderedItems.findIndex((item) => item.line_status === 'pending');
+    setCurrentIndex(firstPendingIndex >= 0 ? firstPendingIndex : 0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
+  // Met à jour la quantité affichée quand on change d'item.
   useEffect(() => {
     setQuantity(currentItem?.counted_quantity !== null && currentItem?.counted_quantity !== undefined
       ? String(currentItem.counted_quantity)
@@ -58,23 +61,18 @@ export function InventoryAssistedDialog({
         : '1');
   }, [currentItem?.id, currentItem?.expected_quantity, currentItem?.counted_quantity]);
 
-  const goToNextPending = () => {
-    // Cherche la prochaine ligne pending après l'index courant
-    const nextPendingAfter = orderedItems.findIndex(
-      (item, idx) => idx > currentIndex && item.line_status === 'pending',
+  // Avance vers le prochain item pending APRÈS qu'un item ait été traité.
+  // On exclut explicitement l'ID qu'on vient de traiter pour gérer le cas
+  // (improbable) où la liste n'aurait pas encore reflété la mise à jour.
+  const advanceAfterTreatment = (treatedId: string, freshItems: InventorySessionItem[]) => {
+    const ordered = [...freshItems].sort((a, b) => a.position - b.position);
+    const nextPending = ordered.find(
+      (item) => item.line_status === 'pending' && item.id !== treatedId,
     );
-    if (nextPendingAfter !== -1) {
-      setCurrentIndex(nextPendingAfter);
-      return;
+    if (nextPending) {
+      const idx = ordered.findIndex((item) => item.id === nextPending.id);
+      setCurrentIndex(idx);
     }
-    // Sinon cherche depuis le début (ligne pending ailleurs)
-    const anyPending = orderedItems.findIndex((item) => item.line_status === 'pending');
-    if (anyPending !== -1) {
-      setCurrentIndex(anyPending);
-      return;
-    }
-    // Sinon avance d'un cran (mode révision libre)
-    setCurrentIndex((prev) => Math.min(prev + 1, Math.max(orderedItems.length - 1, 0)));
   };
 
   const goToPrevious = () => {
@@ -87,24 +85,27 @@ export function InventoryAssistedDialog({
 
   const handleFound = async () => {
     if (!currentItem) return;
+    const treatedId = currentItem.id;
+    const wasLastPending = isLastPending;
     const parsed = Number(quantity);
     const value = Number.isFinite(parsed) && parsed >= 0 ? parsed : 0;
-    await onCount(currentItem.id, value);
-    if (isLastPending) {
-      // Dernière ligne pending : on chaîne avec la clôture
+    await onCount(treatedId, value);
+    if (wasLastPending) {
       await handleClose();
     } else {
-      goToNextPending();
+      advanceAfterTreatment(treatedId, items);
     }
   };
 
   const handleMissing = async () => {
     if (!currentItem) return;
-    await onMissing(currentItem.id);
-    if (isLastPending) {
+    const treatedId = currentItem.id;
+    const wasLastPending = isLastPending;
+    await onMissing(treatedId);
+    if (wasLastPending) {
       await handleClose();
     } else {
-      goToNextPending();
+      advanceAfterTreatment(treatedId, items);
     }
   };
 

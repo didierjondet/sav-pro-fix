@@ -153,13 +153,16 @@ export function useInventory() {
   });
 
   const refreshAll = async () => {
+    // Utilise refetchQueries pour ATTENDRE réellement le rafraîchissement,
+    // sinon les appelants travaillent sur des données obsolètes (boucle assistée).
     await Promise.all([
-      queryClient.invalidateQueries({ queryKey: ['inventory-sessions', shopId] }),
-      queryClient.invalidateQueries({ queryKey: ['inventory-session', sessionId] }),
-      queryClient.invalidateQueries({ queryKey: ['inventory-items', sessionId] }),
-      queryClient.invalidateQueries({ queryKey: ['inventory-logs', sessionId] }),
-      queryClient.invalidateQueries({ queryKey: ['parts', shopId] }),
+      queryClient.refetchQueries({ queryKey: ['inventory-sessions', shopId] }),
+      queryClient.refetchQueries({ queryKey: ['inventory-session', sessionId] }),
+      queryClient.refetchQueries({ queryKey: ['inventory-items', sessionId] }),
+      queryClient.refetchQueries({ queryKey: ['inventory-logs', sessionId] }),
     ]);
+    // Parts en arrière-plan, pas critique pour la suite immédiate.
+    queryClient.invalidateQueries({ queryKey: ['parts', shopId] });
   };
 
   const addAuditLog = async (payload: Partial<InventoryAuditLog> & { action: string; inventory_session_id: string }) => {
@@ -312,7 +315,16 @@ export function useInventory() {
   };
 
   const closeSession = async (targetSessionId: string) => {
-    const derived = getInventoryDerivedData(sessionQuery.data, itemsQuery.data || []);
+    // S'assure d'avoir des données à jour avant de vérifier les pending.
+    await Promise.all([
+      queryClient.refetchQueries({ queryKey: ['inventory-items', targetSessionId] }),
+      queryClient.refetchQueries({ queryKey: ['inventory-session', targetSessionId] }),
+    ]);
+    const freshItems =
+      queryClient.getQueryData<InventorySessionItem[]>(['inventory-items', targetSessionId]) ?? [];
+    const freshSession =
+      queryClient.getQueryData<InventorySession>(['inventory-session', targetSessionId]) ?? sessionQuery.data;
+    const derived = getInventoryDerivedData(freshSession, freshItems);
     if (derived.pendingItems.length > 0) {
       throw new Error('Toutes les lignes doivent être traitées avant de clôturer le comptage.');
     }
