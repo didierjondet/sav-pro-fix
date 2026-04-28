@@ -19,11 +19,11 @@ interface InventoryManualEditorProps {
   onDraftQuantityChange: (itemId: string, value: string) => void;
   draftNotes: Record<string, string>;
   onDraftNoteChange: (itemId: string, value: string) => void;
-  onApplyQuantity: (item: InventorySessionItem) => Promise<void> | void;
-  onMarkFound: (item: InventorySessionItem) => Promise<void> | void;
-  onMarkMissing: (item: InventorySessionItem) => Promise<void> | void;
-  onReset: (item: InventorySessionItem) => Promise<void> | void;
-  onSaveNote: (item: InventorySessionItem) => Promise<void> | void;
+  onApplyQuantity: (item: InventorySessionItem) => Promise<unknown> | unknown;
+  onMarkFound: (item: InventorySessionItem) => Promise<unknown> | unknown;
+  onMarkMissing: (item: InventorySessionItem) => Promise<unknown> | unknown;
+  onReset: (item: InventorySessionItem) => Promise<unknown> | unknown;
+  onSaveNote: (item: InventorySessionItem) => Promise<unknown> | unknown;
   activeFilter: 'all' | 'pending' | 'found' | 'missing' | 'adjusted';
   onActiveFilterChange: (value: 'all' | 'pending' | 'found' | 'missing' | 'adjusted') => void;
 }
