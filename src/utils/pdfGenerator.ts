@@ -1009,15 +1009,16 @@ export const generateSAVListPDF = async (savCases: SAVCase[], shop?: Shop, filte
       const customerHTML = savCase.customer
         ? `<strong>${savCase.customer.first_name} ${savCase.customer.last_name}</strong><br>${savCase.customer.phone || ''}`
         : 'Non renseigné';
-      const imeiHTML = savCase.device_imei ? `<br><small>IMEI: ${savCase.device_imei.substring(0, 8)}...</small>` : '';
+      const imeiLine = savCase.device_imei ? `<div class="ref-line">IMEI: ${savCase.device_imei}</div>` : '';
+      const skuLine = savCase.sku ? `<div class="ref-line">SKU: ${savCase.sku}</div>` : '';
       const costHTML = realCost > 0 ? `${realCost.toFixed(2)}€` : '-';
 
       return `
         <tr>
-          <td class="case-number">${savCase.case_number}</td>
+          <td class="case-number">${savCase.case_number}${imeiLine}${skuLine}</td>
           <td class="text-center">${new Date(savCase.created_at).toLocaleDateString('fr-FR')}</td>
           <td class="customer-info">${customerHTML}</td>
-          <td class="device-info"><strong>${savCase.device_brand}</strong><br>${savCase.device_model}${imeiHTML}</td>
+          <td class="device-info"><strong>${savCase.device_brand}</strong><br>${savCase.device_model}</td>
           <td class="problem-desc" title="${savCase.problem_description || ''}">${savCase.problem_description || 'Non renseigné'}</td>
           <td class="text-center"><span class="status-badge ${getStatusClass(savCase.status)}">${getStatusText(savCase.status)}</span></td>
           <td class="text-center">${costHTML}</td>
