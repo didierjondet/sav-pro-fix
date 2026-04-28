@@ -226,12 +226,35 @@ export function InventoryManager({ canApplyStock }: { canApplyStock: boolean }) 
 
   const handleApplyQuantity = async (item: InventorySessionItem, method: InventoryMode = 'manual') => {
     const quantity = resolveDraftQuantity(item);
-    await updateItem({
+    return updateItem({
       sessionId: item.inventory_session_id,
       itemId: item.id,
       countedQuantity: quantity,
       lineStatus: quantity === item.expected_quantity ? 'found' : quantity === 0 ? 'missing' : 'adjusted',
       entryMethod: method,
+      notes: draftNotes[item.id] ?? item.notes ?? null,
+    });
+  };
+
+  const handleValidateExpected = async (item: InventorySessionItem, method: InventoryMode = 'manual') => {
+    return updateItem({
+      sessionId: item.inventory_session_id,
+      itemId: item.id,
+      countedQuantity: item.expected_quantity,
+      lineStatus: 'found',
+      entryMethod: method,
+      notes: draftNotes[item.id] ?? item.notes ?? null,
+    });
+  };
+
+  const handleMarkMissing = async (item: InventorySessionItem, method: InventoryMode = 'manual') => {
+    return updateItem({
+      sessionId: item.inventory_session_id,
+      itemId: item.id,
+      countedQuantity: 0,
+      lineStatus: 'missing',
+      entryMethod: method,
+      notes: draftNotes[item.id] ?? item.notes ?? null,
     });
   };
 
