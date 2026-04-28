@@ -626,16 +626,8 @@ export function InventoryManager({ canApplyStock }: { canApplyStock: boolean }) 
                     draftNotes={draftNotes}
                     onDraftNoteChange={setDraftNote}
                     onApplyQuantity={(item) => handleApplyQuantity(item, 'manual')}
-                    onMarkFound={(item) => updateItem({
-                      sessionId: item.inventory_session_id,
-                      itemId: item.id,
-                      countedQuantity: item.expected_quantity,
-                      lineStatus: 'found',
-                      entryMethod: 'manual',
-                    })}
-                    onMarkMissing={(item) => markItemMissing(item.inventory_session_id, item.id, 'manual')}
-                    onReset={(item) => resetItem(item.inventory_session_id, item.id)}
-                    onSaveNote={handleSaveNote}
+                    onMarkFound={(item) => handleValidateExpected(item, 'manual')}
+                    onMarkMissing={(item) => handleMarkMissing(item, 'manual')}
                     activeFilter={manualFilter}
                     onActiveFilterChange={setManualFilter}
                   />
@@ -652,16 +644,8 @@ export function InventoryManager({ canApplyStock }: { canApplyStock: boolean }) 
                     draftNotes={draftNotes}
                     onDraftNoteChange={setDraftNote}
                     onApplyQuantity={(item) => handleApplyQuantity(item, 'manual')}
-                    onMarkFound={(item) => updateItem({
-                      sessionId: item.inventory_session_id,
-                      itemId: item.id,
-                      countedQuantity: item.expected_quantity,
-                      lineStatus: 'found',
-                      entryMethod: 'manual',
-                    })}
-                    onMarkMissing={(item) => markItemMissing(item.inventory_session_id, item.id, 'manual')}
-                    onReset={(item) => resetItem(item.inventory_session_id, item.id)}
-                    onSaveNote={handleSaveNote}
+                    onMarkFound={(item) => handleValidateExpected(item, 'manual')}
+                    onMarkMissing={(item) => handleMarkMissing(item, 'manual')}
                     activeFilter="adjusted"
                     onActiveFilterChange={setManualFilter}
                   />
@@ -678,16 +662,8 @@ export function InventoryManager({ canApplyStock }: { canApplyStock: boolean }) 
                     draftNotes={draftNotes}
                     onDraftNoteChange={setDraftNote}
                     onApplyQuantity={(item) => handleApplyQuantity(item, 'manual')}
-                    onMarkFound={(item) => updateItem({
-                      sessionId: item.inventory_session_id,
-                      itemId: item.id,
-                      countedQuantity: resolveDraftQuantity(item),
-                      lineStatus: resolveDraftQuantity(item) === item.expected_quantity ? 'found' : 'adjusted',
-                      entryMethod: 'manual',
-                    })}
-                    onMarkMissing={(item) => markItemMissing(item.inventory_session_id, item.id, 'manual')}
-                    onReset={(item) => resetItem(item.inventory_session_id, item.id)}
-                    onSaveNote={handleSaveNote}
+                    onMarkFound={(item) => handleValidateExpected(item, 'manual')}
+                    onMarkMissing={(item) => handleMarkMissing(item, 'manual')}
                     activeFilter="missing"
                     onActiveFilterChange={setManualFilter}
                   />
