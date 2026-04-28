@@ -272,7 +272,7 @@ export function useInventory() {
       },
     });
 
-    await refreshAll();
+    return refreshAll(targetSessionId);
   };
 
   const markItemMissing = async (targetSessionId: string, itemId: string, entryMethod: InventoryMode = 'manual') => {
@@ -330,15 +330,7 @@ export function useInventory() {
   };
 
   const closeSession = async (targetSessionId: string) => {
-    // S'assure d'avoir des données à jour avant de vérifier les pending.
-    await Promise.all([
-      queryClient.refetchQueries({ queryKey: ['inventory-items', targetSessionId] }),
-      queryClient.refetchQueries({ queryKey: ['inventory-session', targetSessionId] }),
-    ]);
-    const freshItems =
-      queryClient.getQueryData<InventorySessionItem[]>(['inventory-items', targetSessionId]) ?? [];
-    const freshSession =
-      queryClient.getQueryData<InventorySession>(['inventory-session', targetSessionId]) ?? sessionQuery.data;
+    const { freshItems, freshSession } = await refreshAll(targetSessionId);
     const derived = getInventoryDerivedData(freshSession, freshItems);
     if (derived.pendingItems.length > 0) {
       throw new Error('Toutes les lignes doivent être traitées avant de clôturer le comptage.');
