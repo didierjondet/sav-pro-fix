@@ -182,7 +182,7 @@ export function InventoryAssistedDialog({
             <Progress value={progressValue} />
           </div>
 
-          {isAllProcessed ? (
+          {isAllProcessed && !correctionMode ? (
             <div className="space-y-4 rounded-md border border-primary/40 bg-primary/5 p-4 text-center sm:p-6">
               <CheckCircle2 className="mx-auto h-12 w-12 text-primary" />
               <div>
@@ -255,7 +255,7 @@ export function InventoryAssistedDialog({
             <Button variant="outline" onClick={goToNext} disabled={!currentItem || currentIndex >= visibleItems.length - 1}>Passer</Button>
             <Button variant="outline" onClick={handlePause}>Pause</Button>
           </div>
-          {!isAllProcessed && (
+          {(!isAllProcessed || correctionMode) && (
             <div className="flex flex-col-reverse gap-2 sm:flex-row">
               <Button variant="outline" onClick={handleMissing} disabled={!currentItem || isClosing}>
                 Non trouvé
