@@ -287,13 +287,15 @@ export function InventoryManager({ canApplyStock }: { canApplyStock: boolean }) 
     toast({ title: 'Inventaire annulé', description: 'La session reste visible dans l’historique.' });
   };
 
-  const handleCloseSession = async () => {
+  const handleCloseSession = async (returnToList = false) => {
     if (!currentSession) return;
     try {
       await closeSession(currentSession.id);
       toast({ title: 'Comptage clôturé', description: 'Vous pouvez maintenant revoir la synthèse avant validation.' });
+      if (returnToList) setViewMode('list');
     } catch (error: unknown) {
       toast({ title: 'Clôture impossible', description: getErrorMessage(error), variant: 'destructive' });
+      throw error;
     }
   };
 
