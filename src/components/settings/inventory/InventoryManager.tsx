@@ -518,7 +518,7 @@ export function InventoryManager({ canApplyStock }: { canApplyStock: boolean }) 
                       </Button>
                     )}
                     {canEditSession && (
-                      <Button variant="outline" onClick={handleCloseSession} disabled={!canCloseSession}>
+                      <Button variant="outline" onClick={() => handleCloseSession(false)} disabled={!canCloseSession}>
                         Clôturer le comptage
                       </Button>
                     )}
