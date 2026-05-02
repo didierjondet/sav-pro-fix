@@ -306,6 +306,38 @@ export function InventoryManualEditor({
           )}
         </div>
       </ScrollArea>
+
+      <AlertDialog
+        open={pendingAction !== null}
+        onOpenChange={(open) => {
+          if (!open) setPendingAction(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Pièce déjà traitée</AlertDialogTitle>
+            <AlertDialogDescription>
+              {pendingAction ? (
+                <>
+                  La pièce <strong>{pendingAction.item.part_name}</strong> a déjà été traitée
+                  (statut : <strong>{statusLabel(pendingAction.item)}</strong>, quantité comptée :{' '}
+                  <strong>{pendingAction.item.counted_quantity ?? '—'}</strong>).
+                  <br />
+                  En continuant ({PENDING_ACTION_LABELS[pendingAction.action]}), la saisie
+                  précédente sera écrasée. Le stock réel n'est pas modifié tant que l'inventaire
+                  n'est pas clôturé.
+                </>
+              ) : null}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmPendingAction}>
+              Écraser la saisie
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
