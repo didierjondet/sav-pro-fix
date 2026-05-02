@@ -93,11 +93,15 @@ export function InventoryManualEditor({
   onActiveFilterChange,
 }: InventoryManualEditorProps) {
   const [busyId, setBusyId] = useState<string | null>(null);
-  const [busyAction, setBusyAction] = useState<'found' | 'missing' | 'adjust' | null>(null);
+  const [busyAction, setBusyAction] = useState<PendingActionType | null>(null);
+  const [pendingAction, setPendingAction] = useState<{
+    item: InventorySessionItem;
+    action: PendingActionType;
+  } | null>(null);
 
   const runAction = async (
     item: InventorySessionItem,
-    action: 'found' | 'missing' | 'adjust',
+    action: PendingActionType,
     fn: () => Promise<unknown> | unknown,
   ) => {
     if (busyId) return;
@@ -111,21 +115,43 @@ export function InventoryManualEditor({
     }
   };
 
-  const handleFound = (item: InventorySessionItem) =>
+  const executeFound = (item: InventorySessionItem) =>
     runAction(item, 'found', async () => {
-      // Copie la quantité attendue dans le champ visible puis enregistre.
       onDraftQuantityChange(item.id, String(item.expected_quantity));
       await onMarkFound(item);
     });
 
-  const handleMissing = (item: InventorySessionItem) =>
+  const executeMissing = (item: InventorySessionItem) =>
     runAction(item, 'missing', async () => {
       onDraftQuantityChange(item.id, '0');
       await onMarkMissing(item);
     });
 
-  const handleAdjust = (item: InventorySessionItem) =>
+  const executeAdjust = (item: InventorySessionItem) =>
     runAction(item, 'adjust', () => onApplyQuantity(item));
+
+  const requestAction = (item: InventorySessionItem, action: PendingActionType) => {
+    if (item.line_status !== 'pending') {
+      setPendingAction({ item, action });
+      return;
+    }
+    if (action === 'found') void executeFound(item);
+    else if (action === 'missing') void executeMissing(item);
+    else void executeAdjust(item);
+  };
+
+  const handleFound = (item: InventorySessionItem) => requestAction(item, 'found');
+  const handleMissing = (item: InventorySessionItem) => requestAction(item, 'missing');
+  const handleAdjust = (item: InventorySessionItem) => requestAction(item, 'adjust');
+
+  const confirmPendingAction = () => {
+    if (!pendingAction) return;
+    const { item, action } = pendingAction;
+    setPendingAction(null);
+    if (action === 'found') void executeFound(item);
+    else if (action === 'missing') void executeMissing(item);
+    else void executeAdjust(item);
+  };
 
   return (
     <div className="space-y-4">
