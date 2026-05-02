@@ -39,6 +39,16 @@ function badgeVariant(status: InventorySessionItem['line_status']) {
   return 'secondary' as const;
 }
 
+function statusLabel(item: InventorySessionItem) {
+  if (item.line_status === 'pending') return 'À traiter';
+  if (item.line_status === 'missing') return 'Non trouvé';
+  if (item.line_status === 'found') return 'Traité';
+  if (item.line_status === 'adjusted') return 'Ajusté';
+  if (item.line_status === 'applied') return 'Appliqué';
+  if (item.line_status === 'skipped') return 'Ignoré';
+  return INVENTORY_LINE_STATUS_LABELS[item.line_status];
+}
+
 export function InventoryManualEditor({
   items,
   editable,
@@ -140,7 +150,7 @@ export function InventoryManualEditor({
                     </div>
                   </div>
                   <Badge variant={badgeVariant(item.line_status)} className="shrink-0">
-                    {INVENTORY_LINE_STATUS_LABELS[item.line_status]}
+                    {statusLabel(item)}
                   </Badge>
                 </div>
 

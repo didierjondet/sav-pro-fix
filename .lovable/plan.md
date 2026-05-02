@@ -1,55 +1,50 @@
-## Plan de correction inventaire
+## Diagnostic
 
-### Objectifs fonctionnels
-1. **Bouton Valider en vue standard**
-   - Quand on appuie sur **Valider**, copier immédiatement la quantité théorique/attendue dans le champ de correction de la ligne.
-   - Enregistrer en même temps cette quantité attendue avec le statut `found`.
-   - Garder le comportement **Non trouvé** = quantité `0`, statut `missing`.
-   - Garder le comportement **Ajuster** = quantité saisie manuellement, statut `found/missing/adjusted` selon l’écart.
+En interrogeant la base, je vois que les mises à jour Supabase **fonctionnent bien** (ex: une ligne en `line_status='found'`, `counted_quantity=0`), mais l'interface ne reflète pas ces changements. La puce reste « À traiter » et le champ « Comptée » reste à `—` parce que la donnée affichée vient de `item.line_status` / `item.counted_quantity` (cache React Query), tandis que seul le **brouillon local** (`draftQuantities`) se met à jour visuellement.
 
-2. **Actions qui ne semblent pas fonctionner**
-   - Ajouter un état d’enregistrement par ligne pour empêcher les doubles clics et rendre l’action visible.
-   - Nettoyer les brouillons locaux après succès pour que l’interface reflète les données fraîches.
-   - Afficher une erreur si Supabase refuse la mise à jour au lieu d’avoir un bouton qui semble inactif.
+Causes identifiées :
 
-3. **Mode assisté sans boucle**
-   - Ne plus se baser sur `currentIndex` après mutation avec une liste potentiellement obsolète.
-   - Utiliser le résultat réel de `updateItem/markItemMissing` retourné par le hook (`freshItems`) pour calculer le prochain produit.
-   - Après la dernière pièce, afficher 100% et clôturer proprement le comptage.
-   - À la clôture depuis le mode assisté : fermer la fenêtre et revenir sur la page générale/liste d’inventaire au lieu de repartir au début.
+1. **Le cache React Query n'est pas correctement rafraîchi** après l'action. `refreshAll` fait bien un `setQueryData`, mais les composants enfants reçoivent toujours l'ancien tableau `items` parce que la propagation est masquée par les brouillons locaux et le `busyId` qui se réinitialise avant la propagation visuelle.
 
-4. **Progression synchronisée**
-   - Calculer la barre uniquement depuis la liste d’items fraîche après chaque validation.
-   - Afficher limites claires : total, traité, restant, position.
-   - Quand toutes les lignes sont traitées : progression = 100%, plus aucune navigation vers le premier produit.
+2. **Confusion « Valider » vs « Ajuster » sur des pièces avec stock théorique = 0.** « Valider » force `counted_quantity = expected_quantity` (donc 0) avec `line_status='found'`. Visuellement c'est trompeur : l'utilisateur croit avoir cliqué sur « Non trouvé ».
 
-5. **Vue smartphone/tablette**
-   - Remplacer l’expérience type tableau par des cartes compactes sur mobile/tablette.
-   - Garder une version plus dense sur desktop si utile, mais avec les mêmes 3 actions principales.
-   - Boutons larges, tactiles, et ordre clair : **Valider**, **Non trouvé**, **Ajuster**.
-   - Notes intégrées dans la carte et enregistrées avec l’action, sans bouton de sauvegarde séparé.
+3. **« Non trouvé » qui semble inactif** : le draft local passe à `'0'` mais comme la puce ne change pas et que la cellule « Comptée » ne change pas, l'utilisateur en conclut que rien n'a fonctionné. En fait le serveur est à jour mais l'UI ne se rafraîchit pas.
 
-### Fichiers à modifier
-- `src/hooks/useInventory.ts`
-  - Sécuriser le retour de `updateItem`, `markItemMissing`, `closeSession` pour fournir les données fraîches utilisables par l’UI.
+## Plan de correction (UI uniquement, pas de changement DB)
 
-- `src/components/settings/inventory/InventoryManager.tsx`
-  - Corriger les handlers `Valider`, `Non trouvé`, `Ajuster`.
-  - Mettre à jour les champs locaux après action.
-  - Brancher correctement le retour `freshItems` vers le mode assisté.
-  - Fermer le mode assisté et revenir à la liste générale après fin/clôture.
+### 1. Forcer le rafraîchissement réel après chaque action
 
-- `src/components/settings/inventory/InventoryAssistedDialog.tsx`
-  - Refaire la logique d’avancement pour ne jamais reboucler sur le début.
-  - Verrouiller les actions pendant l’enregistrement.
-  - Afficher l’état final 100% avant clôture, puis clôturer/revenir à la liste.
+Dans `src/hooks/useInventory.ts` :
+- Après `setQueryData` dans `refreshAll`, ajouter `queryClient.invalidateQueries({ queryKey: ['inventory-items', targetSessionId] })` et la même chose pour `inventory-session` afin de garantir le re-render des consommateurs.
+- Garder le retour `{ freshSession, freshItems }` pour usage immédiat par les composants (ex. mode assisté).
 
-- `src/components/settings/inventory/InventoryManualEditor.tsx`
-  - Refonte responsive en cartes mobiles/tablettes.
-  - Boutons simplifiés avec état loading par ligne.
-  - Valider copie aussi la quantité attendue dans le champ visible.
+### 2. Synchroniser le brouillon local avec la donnée fraîche
 
-### Points de vigilance
-- Pas de changement de structure Supabase prévu.
-- Ne pas toucher aux autres modules SAV/devis/commandes.
-- Conserver les statuts existants (`pending`, `found`, `missing`, `adjusted`) pour ne pas casser l’application finale du stock.
+Dans `src/components/settings/inventory/InventoryManager.tsx` :
+- Après chaque action (`handleApplyQuantity`, `handleValidateExpected`, `handleMarkMissing`), nettoyer l'entrée correspondante dans `draftQuantities` et `draftNotes` pour que l'affichage retombe sur la valeur DB fraîche (`item.counted_quantity`).
+- Effet visible immédiat : la puce passe à « Trouvé » / « Non trouvé », la cellule « Comptée » affiche la nouvelle valeur, l'écart se met à jour.
+
+### 3. Feedback visuel clair sur la carte (vue standard)
+
+Dans `src/components/settings/inventory/InventoryManualEditor.tsx` :
+- Forcer un rafraîchissement de la carte en s'appuyant sur `item.line_status` plutôt que sur le brouillon local pour le champ « Comptée ».
+- Afficher la **valeur effective comptée** (DB) à côté du champ d'ajustement quand un brouillon diverge, pour que l'utilisateur voit que l'enregistrement a bien eu lieu.
+- Garder le badge dynamique : « À traiter » / « Trouvé » / « Non trouvé » / « Ajusté ».
+- Petit toast `Pièce mise à jour` après chaque action pour confirmer immédiatement à l'utilisateur.
+
+### 4. Cas particulier : pièce avec stock théorique = 0
+
+- Si l'utilisateur clique sur « Valider » alors que la quantité attendue est 0, on enregistre bien `found` + `counted_quantity = 0`, mais on affiche un libellé explicite sur le badge : « Trouvé (0) ».
+- Comportement « Non trouvé » inchangé : `missing` + `counted_quantity = 0`.
+
+## Fichiers modifiés
+
+- `src/hooks/useInventory.ts` — invalidations + retour `freshItems` plus fiable.
+- `src/components/settings/inventory/InventoryManager.tsx` — nettoyage des brouillons après action, toasts.
+- `src/components/settings/inventory/InventoryManualEditor.tsx` — affichage piloté par la donnée DB, badge à jour.
+
+## Hors périmètre
+
+- Aucune modification de la base Supabase (les triggers et le schéma sont corrects).
+- Aucune modification du mode assisté ni du mode scan.
+- Aucune modification du calcul des écarts ou de l'application du stock.

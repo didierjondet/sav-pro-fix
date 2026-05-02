@@ -174,6 +174,12 @@ export function useInventory() {
       queryClient.setQueryData(['inventory-session', targetSessionId], freshSession);
       queryClient.setQueryData(['inventory-items', targetSessionId], freshItems);
       queryClient.setQueryData(['inventory-logs', targetSessionId], freshLogs);
+      // Force notification of all subscribers (some consumers ignore setQueryData
+      // when the reference looks stable). Invalidate without refetch since we
+      // just set fresh data ourselves.
+      queryClient.invalidateQueries({ queryKey: ['inventory-session', targetSessionId], refetchType: 'none' });
+      queryClient.invalidateQueries({ queryKey: ['inventory-items', targetSessionId], refetchType: 'none' });
+      queryClient.invalidateQueries({ queryKey: ['inventory-logs', targetSessionId], refetchType: 'none' });
     }
 
     queryClient.invalidateQueries({ queryKey: ['parts', shopId] });

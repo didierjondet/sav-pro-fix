@@ -224,20 +224,43 @@ export function InventoryManager({ canApplyStock }: { canApplyStock: boolean }) 
     return Number.isFinite(parsed) && parsed >= 0 ? parsed : item.counted_quantity ?? item.expected_quantity;
   };
 
-  const handleApplyQuantity = async (item: InventorySessionItem, method: InventoryMode = 'manual') => {
-    const quantity = resolveDraftQuantity(item);
-    return updateItem({
-      sessionId: item.inventory_session_id,
-      itemId: item.id,
-      countedQuantity: quantity,
-      lineStatus: quantity === item.expected_quantity ? 'found' : quantity === 0 ? 'missing' : 'adjusted',
-      entryMethod: method,
-      notes: draftNotes[item.id] ?? item.notes ?? null,
+  const clearDrafts = (itemId: string) => {
+    setDraftQuantities((current) => {
+      if (!(itemId in current)) return current;
+      const next = { ...current };
+      delete next[itemId];
+      return next;
+    });
+    setDraftNotes((current) => {
+      if (!(itemId in current)) return current;
+      const next = { ...current };
+      delete next[itemId];
+      return next;
     });
   };
 
+  const handleApplyQuantity = async (item: InventorySessionItem, method: InventoryMode = 'manual') => {
+    const quantity = resolveDraftQuantity(item);
+    const lineStatus =
+      quantity === item.expected_quantity && quantity > 0
+        ? 'found'
+        : quantity === 0
+          ? 'missing'
+          : 'adjusted';
+    await updateItem({
+      sessionId: item.inventory_session_id,
+      itemId: item.id,
+      countedQuantity: quantity,
+      lineStatus,
+      entryMethod: method,
+      notes: draftNotes[item.id] ?? item.notes ?? null,
+    });
+    clearDrafts(item.id);
+    toast({ title: 'Pièce ajustée', description: `${item.part_name} : quantité ${quantity}.` });
+  };
+
   const handleValidateExpected = async (item: InventorySessionItem, method: InventoryMode = 'manual') => {
-    return updateItem({
+    await updateItem({
       sessionId: item.inventory_session_id,
       itemId: item.id,
       countedQuantity: item.expected_quantity,
@@ -245,10 +268,12 @@ export function InventoryManager({ canApplyStock }: { canApplyStock: boolean }) 
       entryMethod: method,
       notes: draftNotes[item.id] ?? item.notes ?? null,
     });
+    clearDrafts(item.id);
+    toast({ title: 'Pièce validée', description: `${item.part_name} : ${item.expected_quantity} en stock.` });
   };
 
   const handleMarkMissing = async (item: InventorySessionItem, method: InventoryMode = 'manual') => {
-    return updateItem({
+    await updateItem({
       sessionId: item.inventory_session_id,
       itemId: item.id,
       countedQuantity: 0,
@@ -256,6 +281,8 @@ export function InventoryManager({ canApplyStock }: { canApplyStock: boolean }) 
       entryMethod: method,
       notes: draftNotes[item.id] ?? item.notes ?? null,
     });
+    clearDrafts(item.id);
+    toast({ title: 'Pièce non trouvée', description: `${item.part_name} marquée à 0.`, variant: 'destructive' });
   };
 
   const handleSaveNote = async (item: InventorySessionItem) => {
