@@ -1,50 +1,49 @@
-## Diagnostic
+## Constat
 
-En interrogeant la base, je vois que les mises à jour Supabase **fonctionnent bien** (ex: une ligne en `line_status='found'`, `counted_quantity=0`), mais l'interface ne reflète pas ces changements. La puce reste « À traiter » et le champ « Comptée » reste à `—` parce que la donnée affichée vient de `item.line_status` / `item.counted_quantity` (cache React Query), tandis que seul le **brouillon local** (`draftQuantities`) se met à jour visuellement.
+- Les boutons écrivent bien une action dans le journal, mais la ligne de session reste parfois `pending` avec `counted_quantity = null`.
+- Le stock réel (`parts.quantity`) n’est modifié que par la fonction SQL `apply_inventory_session`, appelée par le bouton **Appliquer le stock**. Les boutons vert/rouge/ajuster ne doivent modifier que `inventory_session_items`.
+- Il faut rendre cette séparation plus sûre et plus visible : **comptage/clôture = préparation**, **application finale = écrasement irréversible du stock**.
 
-Causes identifiées :
+## Plan de correction
 
-1. **Le cache React Query n'est pas correctement rafraîchi** après l'action. `refreshAll` fait bien un `setQueryData`, mais les composants enfants reçoivent toujours l'ancien tableau `items` parce que la propagation est masquée par les brouillons locaux et le `busyId` qui se réinitialise avant la propagation visuelle.
+1. **Sécuriser l’enregistrement des lignes d’inventaire**
+   - Remplacer l’update direct côté frontend par une fonction SQL dédiée, par exemple `set_inventory_session_item_count`.
+   - Cette fonction mettra à jour uniquement la ligne de session : `counted_quantity`, `line_status`, `entry_method`, `notes`, `counted_at`.
+   - Elle refusera toute modification si la session est déjà `completed`, `applied` ou `cancelled`.
+   - Elle recalculera les totaux de session juste après l’enregistrement.
 
-2. **Confusion « Valider » vs « Ajuster » sur des pièces avec stock théorique = 0.** « Valider » force `counted_quantity = expected_quantity` (donc 0) avec `line_status='found'`. Visuellement c'est trompeur : l'utilisateur croit avoir cliqué sur « Non trouvé ».
+2. **Corriger le bouton vert et le bouton rouge**
+   - **Valider** : enverra la quantité théorique dans la ligne d’inventaire, donc la zone **Comptée** affichera `1` pour cette pièce et la puce passera à **Traité**.
+   - **Non trouvé** : enverra `0`, donc la zone **Comptée** affichera `0` et la puce passera à **Non trouvé** / traité comme ligne traitée.
+   - **Ajuster** : enverra la quantité saisie manuellement et passera la ligne en **Ajusté** si elle diffère du théorique.
 
-3. **« Non trouvé » qui semble inactif** : le draft local passe à `'0'` mais comme la puce ne change pas et que la cellule « Comptée » ne change pas, l'utilisateur en conclut que rien n'a fonctionné. En fait le serveur est à jour mais l'UI ne se rafraîchit pas.
+3. **Synchroniser immédiatement l’interface**
+   - Après chaque action, rafraîchir explicitement la session et ses lignes depuis Supabase.
+   - Corriger l’état local des champs pour éviter qu’un brouillon masque la donnée réelle.
+   - Ajouter un petit rafraîchissement optimiste local pour que la carte change immédiatement, puis confirmer avec les données serveur.
 
-## Plan de correction (UI uniquement, pas de changement DB)
+4. **Clarifier les libellés pour éviter la peur de modifier le stock**
+   - Modifier les toasts des boutons de comptage : remplacer “en stock” par “compté dans l’inventaire”.
+   - Renommer/clarifier la zone finale : **Clôturer le comptage** ne modifie pas le stock, elle fige la session.
+   - Garder **Appliquer le stock** comme seule action qui écrase réellement les quantités, avec confirmation irréversible.
 
-### 1. Forcer le rafraîchissement réel après chaque action
+5. **Vérifier l’application finale du stock**
+   - Confirmer dans le code que seul `apply_inventory_session` modifie `parts.quantity`.
+   - Si besoin, renforcer la fonction SQL pour n’accepter l’application que sur une session `completed`, sans lignes `pending`, et jamais pendant le comptage.
 
-Dans `src/hooks/useInventory.ts` :
-- Après `setQueryData` dans `refreshAll`, ajouter `queryClient.invalidateQueries({ queryKey: ['inventory-items', targetSessionId] })` et la même chose pour `inventory-session` afin de garantir le re-render des consommateurs.
-- Garder le retour `{ freshSession, freshItems }` pour usage immédiat par les composants (ex. mode assisté).
+6. **Conserver les impressions / archives existantes**
+   - Les boutons d’impression existants seront conservés pour imprimer la synthèse, les manquants et la feuille papier depuis les sessions historisées.
+   - Je ne refais pas toute la partie archive maintenant, sauf si nécessaire pour ne pas casser le correctif principal.
 
-### 2. Synchroniser le brouillon local avec la donnée fraîche
+## Fichiers concernés
 
-Dans `src/components/settings/inventory/InventoryManager.tsx` :
-- Après chaque action (`handleApplyQuantity`, `handleValidateExpected`, `handleMarkMissing`), nettoyer l'entrée correspondante dans `draftQuantities` et `draftNotes` pour que l'affichage retombe sur la valeur DB fraîche (`item.counted_quantity`).
-- Effet visible immédiat : la puce passe à « Trouvé » / « Non trouvé », la cellule « Comptée » affiche la nouvelle valeur, l'écart se met à jour.
+- `src/hooks/useInventory.ts`
+- `src/components/settings/inventory/InventoryManager.tsx`
+- `src/components/settings/inventory/InventoryManualEditor.tsx`
+- Migration Supabase pour la fonction sécurisée d’enregistrement des lignes
 
-### 3. Feedback visuel clair sur la carte (vue standard)
+## Résultat attendu
 
-Dans `src/components/settings/inventory/InventoryManualEditor.tsx` :
-- Forcer un rafraîchissement de la carte en s'appuyant sur `item.line_status` plutôt que sur le brouillon local pour le champ « Comptée ».
-- Afficher la **valeur effective comptée** (DB) à côté du champ d'ajustement quand un brouillon diverge, pour que l'utilisateur voit que l'enregistrement a bien eu lieu.
-- Garder le badge dynamique : « À traiter » / « Trouvé » / « Non trouvé » / « Ajusté ».
-- Petit toast `Pièce mise à jour` après chaque action pour confirmer immédiatement à l'utilisateur.
-
-### 4. Cas particulier : pièce avec stock théorique = 0
-
-- Si l'utilisateur clique sur « Valider » alors que la quantité attendue est 0, on enregistre bien `found` + `counted_quantity = 0`, mais on affiche un libellé explicite sur le badge : « Trouvé (0) ».
-- Comportement « Non trouvé » inchangé : `missing` + `counted_quantity = 0`.
-
-## Fichiers modifiés
-
-- `src/hooks/useInventory.ts` — invalidations + retour `freshItems` plus fiable.
-- `src/components/settings/inventory/InventoryManager.tsx` — nettoyage des brouillons après action, toasts.
-- `src/components/settings/inventory/InventoryManualEditor.tsx` — affichage piloté par la donnée DB, badge à jour.
-
-## Hors périmètre
-
-- Aucune modification de la base Supabase (les triggers et le schéma sont corrects).
-- Aucune modification du mode assisté ni du mode scan.
-- Aucune modification du calcul des écarts ou de l'application du stock.
+- La pièce “connecteur de charge iPhone 12 Pro Max” passe bien de **À traiter** à **Traité** après le bouton vert.
+- La zone **Comptée** affiche bien la quantité validée (`1`) ou `0` avec **Non trouvé**.
+- Aucun stock réel n’est modifié avant l’action finale **Appliquer le stock**.
