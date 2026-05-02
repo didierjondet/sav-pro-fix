@@ -256,7 +256,7 @@ export function InventoryManager({ canApplyStock }: { canApplyStock: boolean }) 
       notes: draftNotes[item.id] ?? item.notes ?? null,
     });
     clearDrafts(item.id);
-    toast({ title: 'Pièce ajustée', description: `${item.part_name} : quantité ${quantity}.` });
+    toast({ title: 'Quantité enregistrée', description: `${item.part_name} : ${quantity} comptée (stock non modifié).` });
   };
 
   const handleValidateExpected = async (item: InventorySessionItem, method: InventoryMode = 'manual') => {
@@ -269,7 +269,7 @@ export function InventoryManager({ canApplyStock }: { canApplyStock: boolean }) 
       notes: draftNotes[item.id] ?? item.notes ?? null,
     });
     clearDrafts(item.id);
-    toast({ title: 'Pièce validée', description: `${item.part_name} : ${item.expected_quantity} en stock.` });
+    toast({ title: 'Pièce validée', description: `${item.part_name} : ${item.expected_quantity} comptée (stock non modifié).` });
   };
 
   const handleMarkMissing = async (item: InventorySessionItem, method: InventoryMode = 'manual') => {
@@ -282,7 +282,7 @@ export function InventoryManager({ canApplyStock }: { canApplyStock: boolean }) 
       notes: draftNotes[item.id] ?? item.notes ?? null,
     });
     clearDrafts(item.id);
-    toast({ title: 'Pièce non trouvée', description: `${item.part_name} marquée à 0.`, variant: 'destructive' });
+    toast({ title: 'Pièce non trouvée', description: `${item.part_name} marquée à 0 (stock non modifié).`, variant: 'destructive' });
   };
 
   const handleSaveNote = async (item: InventorySessionItem) => {
