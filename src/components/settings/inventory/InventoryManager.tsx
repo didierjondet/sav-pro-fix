@@ -766,8 +766,12 @@ export function InventoryManager({ canApplyStock }: { canApplyStock: boolean }) 
           }}
           onPause={handlePause}
           onClose={async () => {
-            await handleCloseSession();
-            setAssistedOpen(false);
+            try {
+              await handleCloseSession(true);
+              setAssistedOpen(false);
+            } catch {
+              // toast déjà émis ; on garde le dialog ouvert
+            }
           }}
         />
       )}
