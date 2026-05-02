@@ -34,15 +34,26 @@ export function printInventoryDocument({
 
   const filteredItems =
     variant === 'missing'
-      ? items.filter((item) => item.line_status === 'missing' || (item.counted_quantity ?? 0) === 0)
+      ? items.filter((item) => item.line_status === 'missing')
       : items;
 
   const totalCounted = filteredItems.reduce((sum, item) => sum + (item.counted_quantity ?? 0), 0);
   const totalExpected = filteredItems.reduce((sum, item) => sum + item.expected_quantity, 0);
-  const totalMissingValue = filteredItems.reduce(
-    (sum, item) => sum + ((item.line_status === 'missing' || (item.counted_quantity ?? 0) === 0) ? item.unit_cost * item.expected_quantity : 0),
-    0,
-  );
+
+  // Bilan financier basé sur la totalité des items (pour la synthèse)
+  const totalMissingValue = items
+    .filter((item) => item.line_status === 'missing')
+    .reduce((sum, item) => sum + item.unit_cost * item.expected_quantity, 0);
+
+  const totalAdjustedPositiveValue = items
+    .filter((item) => item.line_status === 'adjusted' && item.variance_quantity > 0)
+    .reduce((sum, item) => sum + item.unit_cost * item.variance_quantity, 0);
+
+  const bilanNet = totalAdjustedPositiveValue - totalMissingValue;
+  const bilanColor = bilanNet >= 0 ? '#16a34a' : '#dc2626';
+
+  // Pour le variant 'missing', recalcule la valeur des manquants sur la liste filtrée
+  const displayMissingValue = variant === 'missing' ? totalMissingValue : totalMissingValue;
 
   const popup = window.open('', '_blank', 'width=1100,height=800');
   if (!popup) return;
@@ -76,8 +87,15 @@ export function printInventoryDocument({
           <div class="box"><div class="label">Références</div><div class="value">${filteredItems.length}</div></div>
           <div class="box"><div class="label">Qté théorique</div><div class="value">${totalExpected}</div></div>
           <div class="box"><div class="label">Qté inventoriée</div><div class="value">${totalCounted}</div></div>
-          <div class="box"><div class="label">Valeur non retrouvée</div><div class="value">${escapeHtml(currency(totalMissingValue))}</div></div>
+          <div class="box"><div class="label">Valeur non retrouvée</div><div class="value" style="color:#dc2626">${escapeHtml(currency(displayMissingValue))}</div></div>
         </div>
+        ${variant === 'summary' ? `
+          <div class="meta" style="grid-template-columns: repeat(3, minmax(0, 1fr));">
+            <div class="box"><div class="label">Valeur produits non retrouvés</div><div class="value" style="color:#dc2626">- ${escapeHtml(currency(totalMissingValue))}</div></div>
+            <div class="box"><div class="label">Valeur ajustée (positif)</div><div class="value" style="color:#16a34a">+ ${escapeHtml(currency(totalAdjustedPositiveValue))}</div></div>
+            <div class="box"><div class="label">Bilan net</div><div class="value" style="color:${bilanColor}">${bilanNet >= 0 ? '+ ' : ''}${escapeHtml(currency(bilanNet))}</div></div>
+          </div>
+        ` : ''}
         ${session.notes ? `<div class="note">${escapeHtml(session.notes)}</div>` : ''}
         <table>
           <thead>
