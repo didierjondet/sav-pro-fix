@@ -1,75 +1,58 @@
+
 ## Objectif
 
-Donner aux cartes de pièces une dominante de couleur selon leur statut, et avertir l'utilisateur avant d'écraser une ligne déjà traitée.
+Améliorer le document de synthèse imprimable et corriger le bouton « Manquants » qui imprime actuellement toute la liste des pièces.
 
-## 1. Dominante visuelle par statut
+## Problèmes identifiés
 
-Dans `src/components/settings/inventory/InventoryManualEditor.tsx`, appliquer une teinte de fond et de bordure sur le conteneur de chaque carte selon `item.line_status` :
+1. **Synthèse imprimable** (`printInventoryDocument` variant `summary`) : ne montre qu'une seule case "Valeur non retrouvée" sans détailler la valeur des ajustements positifs ni proposer un bilan net.
+2. **Bouton « Manquants »** (variant `missing`) : le filtre actuel `line_status === 'missing' || (counted_quantity ?? 0) === 0` inclut aussi toutes les pièces non encore traitées (`pending` avec `counted_quantity = null`), donc imprime quasi toute la liste au lieu des seules pièces marquées non trouvées.
 
-| Statut | Dominante |
-|---|---|
-| `pending` (À traiter) | Neutre actuel (`bg-card`) |
-| `found` (Traité) | Vert : `bg-success/10 border-success/40` |
-| `adjusted` (Ajusté) | Jaune : `bg-warning/15 border-warning/50` |
-| `missing` (Non trouvé) | Rouge : `bg-destructive/10 border-destructive/40` |
-| `applied` | Vert atténué (`bg-success/5 border-success/30`) |
-| `skipped` | Gris (`bg-muted/50 border-dashed`) |
+## Modifications
 
-La dominante se recalcule automatiquement à chaque changement de `line_status` (déjà réactif via React Query + optimistic update). Aucune action supplémentaire requise.
+### 1. `src/lib/inventoryPrint.ts`
 
-Le badge de statut existant garde sa variante actuelle pour rester lisible par-dessus la dominante.
+**Filtre « Manquants » plus strict** : ne garder que les lignes dont `line_status === 'missing'` (pièces explicitement marquées non trouvées). Retirer la condition sur `counted_quantity === 0` qui capture les `pending`.
 
-### Détail technique
+**Calcul de trois nouvelles valeurs financières** (sur l'ensemble `items`, pas `filteredItems`, pour le variant `summary`) :
+- `totalMissingValue` : somme de `unit_cost × expected_quantity` pour `line_status === 'missing'` (valeur perdue).
+- `totalAdjustedPositiveValue` : somme de `unit_cost × variance_quantity` pour les lignes où `line_status === 'adjusted'` ET `variance_quantity > 0` (surplus trouvés en positif).
+- `bilanNet` : `totalAdjustedPositiveValue - totalMissingValue` (positif = gain net, négatif = perte nette).
 
-```tsx
-const STATUS_DOMINANCE: Record<InventoryLineStatus, string> = {
-  pending: "bg-card border-border",
-  found: "bg-success/10 border-success/40",
-  adjusted: "bg-warning/15 border-warning/50",
-  missing: "bg-destructive/10 border-destructive/40",
-  applied: "bg-success/5 border-success/30",
-  skipped: "bg-muted/50 border-dashed",
-};
+**Refonte du bloc `.meta` du HTML pour le variant `summary`** :
 
-<div className={cn(
-  "flex flex-col gap-3 rounded-lg border p-3 shadow-sm sm:p-4 transition-colors",
-  STATUS_DOMINANCE[item.line_status]
-)}>
+```text
+[ Références ] [ Qté théorique ] [ Qté inventoriée ]
+[ Valeur non retrouvée ] [ Valeur ajustée (+) ] [ Bilan net ]
 ```
 
-Les tokens `success`, `warning`, `destructive` existent déjà dans `index.css` / `tailwind.config.ts` — pas de couleur en dur.
+Le « Bilan net » sera coloré (rouge si négatif, vert si positif) via une classe inline.
 
-## 2. Avertissement avant modification d'une ligne déjà traitée
+Pour les variants `count-sheet` et `missing`, garder la grille `meta` actuelle simple (4 cases) — pas de bilan nécessaire.
 
-Quand l'utilisateur clique sur **Valider**, **Non trouvé** ou **Ajuster** sur une carte dont `line_status !== 'pending'`, afficher d'abord un `AlertDialog` (shadcn) :
+### 2. Aucun autre fichier touché
 
-> « Cette pièce a déjà été traitée (statut actuel : Traité / Ajusté / Non trouvé, quantité comptée : X). En continuant, l'ancienne saisie sera écrasée. Confirmer la modification ? »
+Les composants React (`InventoryManager`, `InventoryManualEditor`, `InventorySessionSummary`) ne sont pas concernés — le bug et l'amélioration sont 100% dans la fonction de génération HTML d'impression.
 
-Boutons : **Annuler** / **Écraser la saisie**.
+## Détails techniques
 
-- L'avertissement s'affiche pour les 3 boutons d'action (found / missing / adjust).
-- Si l'utilisateur confirme, l'action s'exécute normalement (RPC `set_inventory_item_count` existant).
-- Si la ligne est `pending`, aucun dialog → comportement actuel inchangé.
-- L'utilisateur peut toujours éditer librement les champs Quantité / Note (pas de blocage), seul l'enregistrement via les 3 boutons déclenche l'avertissement.
+```ts
+// Filtrage corrigé pour le variant 'missing'
+const filteredItems =
+  variant === 'missing'
+    ? items.filter((item) => item.line_status === 'missing')
+    : items;
 
-### Détail technique
+// Calculs financiers (pour summary)
+const totalMissingValue = items
+  .filter((i) => i.line_status === 'missing')
+  .reduce((sum, i) => sum + i.unit_cost * i.expected_quantity, 0);
 
-- Réutiliser `AlertDialog` de `@/components/ui/alert-dialog` (déjà présent dans le projet).
-- Stocker dans un state local `pendingAction: { item, action: 'found'|'missing'|'adjust' } | null`.
-- Les handlers `handleFound`, `handleMissing`, `handleAdjust` deviennent :
-  ```ts
-  const handleFound = (item) => {
-    if (item.line_status !== 'pending') {
-      setPendingAction({ item, action: 'found' });
-      return;
-    }
-    runFound(item);
-  };
-  ```
-- À la confirmation du dialog, appeler la fonction `runXxx` correspondante.
+const totalAdjustedPositiveValue = items
+  .filter((i) => i.line_status === 'adjusted' && i.variance_quantity > 0)
+  .reduce((sum, i) => sum + i.unit_cost * i.variance_quantity, 0);
 
-## Hors scope
+const bilanNet = totalAdjustedPositiveValue - totalMissingValue;
+```
 
-- Pas de changement de la logique serveur, des hooks `useInventory`, ni des RPC.
-- Pas de migration DB.
-- Aucun impact sur l'application finale du stock (`apply_inventory_session`).
+Affichage HTML supplémentaire (uniquement si `variant === 'summary'`) : une seconde rangée `.meta` avec les 3 cases financières, `bilanNet` stylé `color: #16a34a` (positif) ou `color: #dc2626` (négatif).
