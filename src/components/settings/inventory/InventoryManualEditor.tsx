@@ -5,7 +5,35 @@ import { Input } from '@/components/ui/input';
 import { NumberInput } from '@/components/ui/number-input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Check, Loader2, Search, SlidersHorizontal, X } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { cn } from '@/lib/utils';
 import { INVENTORY_LINE_STATUS_LABELS, type InventorySessionItem } from './types';
+
+const STATUS_DOMINANCE: Record<InventorySessionItem['line_status'], string> = {
+  pending: 'bg-card border-border',
+  found: 'bg-success/10 border-success/40',
+  adjusted: 'bg-warning/15 border-warning/50',
+  missing: 'bg-destructive/10 border-destructive/40',
+  applied: 'bg-success/5 border-success/30',
+  skipped: 'bg-muted/50 border-dashed',
+};
+
+type PendingActionType = 'found' | 'missing' | 'adjust';
+
+const PENDING_ACTION_LABELS: Record<PendingActionType, string> = {
+  found: 'Valider (reprend la quantité théorique)',
+  missing: 'Marquer comme non trouvé',
+  adjust: 'Enregistrer la quantité saisie',
+};
 
 export type InventoryReviewTab = 'counting' | 'discrepancies' | 'missing' | 'overwritten' | 'journal';
 
