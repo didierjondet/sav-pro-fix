@@ -1,49 +1,75 @@
-## Constat
+## Objectif
 
-- Les boutons écrivent bien une action dans le journal, mais la ligne de session reste parfois `pending` avec `counted_quantity = null`.
-- Le stock réel (`parts.quantity`) n’est modifié que par la fonction SQL `apply_inventory_session`, appelée par le bouton **Appliquer le stock**. Les boutons vert/rouge/ajuster ne doivent modifier que `inventory_session_items`.
-- Il faut rendre cette séparation plus sûre et plus visible : **comptage/clôture = préparation**, **application finale = écrasement irréversible du stock**.
+Donner aux cartes de pièces une dominante de couleur selon leur statut, et avertir l'utilisateur avant d'écraser une ligne déjà traitée.
 
-## Plan de correction
+## 1. Dominante visuelle par statut
 
-1. **Sécuriser l’enregistrement des lignes d’inventaire**
-   - Remplacer l’update direct côté frontend par une fonction SQL dédiée, par exemple `set_inventory_session_item_count`.
-   - Cette fonction mettra à jour uniquement la ligne de session : `counted_quantity`, `line_status`, `entry_method`, `notes`, `counted_at`.
-   - Elle refusera toute modification si la session est déjà `completed`, `applied` ou `cancelled`.
-   - Elle recalculera les totaux de session juste après l’enregistrement.
+Dans `src/components/settings/inventory/InventoryManualEditor.tsx`, appliquer une teinte de fond et de bordure sur le conteneur de chaque carte selon `item.line_status` :
 
-2. **Corriger le bouton vert et le bouton rouge**
-   - **Valider** : enverra la quantité théorique dans la ligne d’inventaire, donc la zone **Comptée** affichera `1` pour cette pièce et la puce passera à **Traité**.
-   - **Non trouvé** : enverra `0`, donc la zone **Comptée** affichera `0` et la puce passera à **Non trouvé** / traité comme ligne traitée.
-   - **Ajuster** : enverra la quantité saisie manuellement et passera la ligne en **Ajusté** si elle diffère du théorique.
+| Statut | Dominante |
+|---|---|
+| `pending` (À traiter) | Neutre actuel (`bg-card`) |
+| `found` (Traité) | Vert : `bg-success/10 border-success/40` |
+| `adjusted` (Ajusté) | Jaune : `bg-warning/15 border-warning/50` |
+| `missing` (Non trouvé) | Rouge : `bg-destructive/10 border-destructive/40` |
+| `applied` | Vert atténué (`bg-success/5 border-success/30`) |
+| `skipped` | Gris (`bg-muted/50 border-dashed`) |
 
-3. **Synchroniser immédiatement l’interface**
-   - Après chaque action, rafraîchir explicitement la session et ses lignes depuis Supabase.
-   - Corriger l’état local des champs pour éviter qu’un brouillon masque la donnée réelle.
-   - Ajouter un petit rafraîchissement optimiste local pour que la carte change immédiatement, puis confirmer avec les données serveur.
+La dominante se recalcule automatiquement à chaque changement de `line_status` (déjà réactif via React Query + optimistic update). Aucune action supplémentaire requise.
 
-4. **Clarifier les libellés pour éviter la peur de modifier le stock**
-   - Modifier les toasts des boutons de comptage : remplacer “en stock” par “compté dans l’inventaire”.
-   - Renommer/clarifier la zone finale : **Clôturer le comptage** ne modifie pas le stock, elle fige la session.
-   - Garder **Appliquer le stock** comme seule action qui écrase réellement les quantités, avec confirmation irréversible.
+Le badge de statut existant garde sa variante actuelle pour rester lisible par-dessus la dominante.
 
-5. **Vérifier l’application finale du stock**
-   - Confirmer dans le code que seul `apply_inventory_session` modifie `parts.quantity`.
-   - Si besoin, renforcer la fonction SQL pour n’accepter l’application que sur une session `completed`, sans lignes `pending`, et jamais pendant le comptage.
+### Détail technique
 
-6. **Conserver les impressions / archives existantes**
-   - Les boutons d’impression existants seront conservés pour imprimer la synthèse, les manquants et la feuille papier depuis les sessions historisées.
-   - Je ne refais pas toute la partie archive maintenant, sauf si nécessaire pour ne pas casser le correctif principal.
+```tsx
+const STATUS_DOMINANCE: Record<InventoryLineStatus, string> = {
+  pending: "bg-card border-border",
+  found: "bg-success/10 border-success/40",
+  adjusted: "bg-warning/15 border-warning/50",
+  missing: "bg-destructive/10 border-destructive/40",
+  applied: "bg-success/5 border-success/30",
+  skipped: "bg-muted/50 border-dashed",
+};
 
-## Fichiers concernés
+<div className={cn(
+  "flex flex-col gap-3 rounded-lg border p-3 shadow-sm sm:p-4 transition-colors",
+  STATUS_DOMINANCE[item.line_status]
+)}>
+```
 
-- `src/hooks/useInventory.ts`
-- `src/components/settings/inventory/InventoryManager.tsx`
-- `src/components/settings/inventory/InventoryManualEditor.tsx`
-- Migration Supabase pour la fonction sécurisée d’enregistrement des lignes
+Les tokens `success`, `warning`, `destructive` existent déjà dans `index.css` / `tailwind.config.ts` — pas de couleur en dur.
 
-## Résultat attendu
+## 2. Avertissement avant modification d'une ligne déjà traitée
 
-- La pièce “connecteur de charge iPhone 12 Pro Max” passe bien de **À traiter** à **Traité** après le bouton vert.
-- La zone **Comptée** affiche bien la quantité validée (`1`) ou `0` avec **Non trouvé**.
-- Aucun stock réel n’est modifié avant l’action finale **Appliquer le stock**.
+Quand l'utilisateur clique sur **Valider**, **Non trouvé** ou **Ajuster** sur une carte dont `line_status !== 'pending'`, afficher d'abord un `AlertDialog` (shadcn) :
+
+> « Cette pièce a déjà été traitée (statut actuel : Traité / Ajusté / Non trouvé, quantité comptée : X). En continuant, l'ancienne saisie sera écrasée. Confirmer la modification ? »
+
+Boutons : **Annuler** / **Écraser la saisie**.
+
+- L'avertissement s'affiche pour les 3 boutons d'action (found / missing / adjust).
+- Si l'utilisateur confirme, l'action s'exécute normalement (RPC `set_inventory_item_count` existant).
+- Si la ligne est `pending`, aucun dialog → comportement actuel inchangé.
+- L'utilisateur peut toujours éditer librement les champs Quantité / Note (pas de blocage), seul l'enregistrement via les 3 boutons déclenche l'avertissement.
+
+### Détail technique
+
+- Réutiliser `AlertDialog` de `@/components/ui/alert-dialog` (déjà présent dans le projet).
+- Stocker dans un state local `pendingAction: { item, action: 'found'|'missing'|'adjust' } | null`.
+- Les handlers `handleFound`, `handleMissing`, `handleAdjust` deviennent :
+  ```ts
+  const handleFound = (item) => {
+    if (item.line_status !== 'pending') {
+      setPendingAction({ item, action: 'found' });
+      return;
+    }
+    runFound(item);
+  };
+  ```
+- À la confirmation du dialog, appeler la fonction `runXxx` correspondante.
+
+## Hors scope
+
+- Pas de changement de la logique serveur, des hooks `useInventory`, ni des RPC.
+- Pas de migration DB.
+- Aucun impact sur l'application finale du stock (`apply_inventory_session`).
