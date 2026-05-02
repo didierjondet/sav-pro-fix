@@ -194,7 +194,10 @@ export function InventoryManualEditor({
             return (
               <div
                 key={item.id}
-                className="flex flex-col gap-3 rounded-lg border bg-card p-3 shadow-sm sm:p-4"
+                className={cn(
+                  'flex flex-col gap-3 rounded-lg border p-3 shadow-sm sm:p-4 transition-colors',
+                  STATUS_DOMINANCE[item.line_status],
+                )}
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
