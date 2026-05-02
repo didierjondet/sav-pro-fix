@@ -1,11 +1,10 @@
+import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { NumberInput } from "@/components/ui/number-input";
+import { NumberInput } from '@/components/ui/number-input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { cn } from '@/lib/utils';
-import { Check, Save, Search, X } from 'lucide-react';
+import { Check, Loader2, Search, SlidersHorizontal, X } from 'lucide-react';
 import { INVENTORY_LINE_STATUS_LABELS, type InventorySessionItem } from './types';
 
 export type InventoryReviewTab = 'counting' | 'discrepancies' | 'missing' | 'overwritten' | 'journal';
@@ -34,6 +33,12 @@ const filterLabels: Array<{ key: InventoryManualEditorProps['activeFilter']; lab
   { key: 'adjusted', label: 'Écarts' },
 ];
 
+function badgeVariant(status: InventorySessionItem['line_status']) {
+  if (status === 'missing') return 'destructive' as const;
+  if (status === 'pending') return 'outline' as const;
+  return 'secondary' as const;
+}
+
 export function InventoryManualEditor({
   items,
   editable,
@@ -49,111 +54,190 @@ export function InventoryManualEditor({
   activeFilter,
   onActiveFilterChange,
 }: InventoryManualEditorProps) {
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [busyAction, setBusyAction] = useState<'found' | 'missing' | 'adjust' | null>(null);
+
+  const runAction = async (
+    item: InventorySessionItem,
+    action: 'found' | 'missing' | 'adjust',
+    fn: () => Promise<unknown> | unknown,
+  ) => {
+    if (busyId) return;
+    setBusyId(item.id);
+    setBusyAction(action);
+    try {
+      await fn();
+    } finally {
+      setBusyId(null);
+      setBusyAction(null);
+    }
+  };
+
+  const handleFound = (item: InventorySessionItem) =>
+    runAction(item, 'found', async () => {
+      // Copie la quantité attendue dans le champ visible puis enregistre.
+      onDraftQuantityChange(item.id, String(item.expected_quantity));
+      await onMarkFound(item);
+    });
+
+  const handleMissing = (item: InventorySessionItem) =>
+    runAction(item, 'missing', async () => {
+      onDraftQuantityChange(item.id, '0');
+      await onMarkMissing(item);
+    });
+
+  const handleAdjust = (item: InventorySessionItem) =>
+    runAction(item, 'adjust', () => onApplyQuantity(item));
+
   return (
     <div className="space-y-4">
-      <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-        <div className="flex flex-wrap gap-2">
-          {filterLabels.map((filter) => (
-            <Button
-              key={filter.key}
-              type="button"
-              size="sm"
-              variant={activeFilter === filter.key ? 'default' : 'outline'}
-              onClick={() => onActiveFilterChange(filter.key)}
-            >
-              {filter.label}
-            </Button>
-          ))}
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex items-center gap-2 overflow-x-auto pb-1">
+          <SlidersHorizontal className="h-4 w-4 shrink-0 text-muted-foreground" />
+          <div className="flex flex-nowrap gap-2">
+            {filterLabels.map((filter) => (
+              <Button
+                key={filter.key}
+                type="button"
+                size="sm"
+                variant={activeFilter === filter.key ? 'default' : 'outline'}
+                onClick={() => onActiveFilterChange(filter.key)}
+                className="shrink-0"
+              >
+                {filter.label}
+              </Button>
+            ))}
+          </div>
         </div>
-        <div className="relative w-full xl:max-w-sm">
+        <div className="relative w-full lg:max-w-sm">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={searchTerm}
             onChange={(event) => onSearchTermChange(event.target.value)}
-            placeholder="Rechercher une pièce, une référence ou un SKU"
+            placeholder="Rechercher une pièce, référence ou SKU"
             className="pl-9"
           />
         </div>
       </div>
 
-      <ScrollArea className="h-[520px]">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Pièce</TableHead>
-              <TableHead>SKU</TableHead>
-              <TableHead className="text-right">Théorique</TableHead>
-              <TableHead className="text-right">Comptée</TableHead>
-              <TableHead className="text-right">Delta</TableHead>
-              <TableHead>Notes</TableHead>
-              <TableHead>Statut</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {items.map((item) => {
-              const currentQuantity = draftQuantities[item.id] ?? (item.counted_quantity ?? '').toString();
-              const currentNote = draftNotes[item.id] ?? item.notes ?? '';
+      <ScrollArea className="h-[60vh] min-h-[420px]">
+        <div className="grid gap-3 pr-2 sm:grid-cols-1 xl:grid-cols-2">
+          {items.map((item) => {
+            const currentQuantity = draftQuantities[item.id] ?? (item.counted_quantity ?? '').toString();
+            const currentNote = draftNotes[item.id] ?? item.notes ?? '';
+            const isBusy = busyId === item.id;
 
-              return (
-                <TableRow key={item.id}>
-                  <TableCell>
-                    <div className="font-medium">{item.part_name}</div>
-                    <div className="text-xs text-muted-foreground">{item.part_reference || 'Sans référence'}</div>
-                  </TableCell>
-                  <TableCell>{item.part_sku || '—'}</TableCell>
-                  <TableCell className="text-right">{item.expected_quantity}</TableCell>
-                  <TableCell className="min-w-[140px] text-right">
+            return (
+              <div
+                key={item.id}
+                className="flex flex-col gap-3 rounded-lg border bg-card p-3 shadow-sm sm:p-4"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="truncate text-base font-semibold">{item.part_name}</div>
+                    <div className="truncate text-xs text-muted-foreground">
+                      {item.part_reference || 'Sans référence'} · SKU {item.part_sku || '—'}
+                    </div>
+                  </div>
+                  <Badge variant={badgeVariant(item.line_status)} className="shrink-0">
+                    {INVENTORY_LINE_STATUS_LABELS[item.line_status]}
+                  </Badge>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                  <div className="rounded-md bg-muted/50 p-2">
+                    <div className="text-muted-foreground">Théorique</div>
+                    <div className="text-base font-semibold">{item.expected_quantity}</div>
+                  </div>
+                  <div className="rounded-md bg-muted/50 p-2">
+                    <div className="text-muted-foreground">Comptée</div>
+                    <div className="text-base font-semibold">
+                      {item.counted_quantity ?? '—'}
+                    </div>
+                  </div>
+                  <div className="rounded-md bg-muted/50 p-2">
+                    <div className="text-muted-foreground">Écart</div>
+                    <div className="text-base font-semibold">
+                      {item.counted_quantity === null ? '—' : item.variance_quantity}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid gap-2 sm:grid-cols-[150px_1fr]">
+                  <div>
+                    <label className="text-xs text-muted-foreground">Quantité</label>
                     <NumberInput
-                      
                       min="0"
                       value={currentQuantity}
-                      disabled={!editable}
+                      disabled={!editable || isBusy}
                       onChange={(event) => onDraftQuantityChange(item.id, event.target.value)}
-                      className="ml-auto max-w-[120px]"
+                      className="mt-1"
                     />
-                  </TableCell>
-                  <TableCell className={cn('text-right font-medium', item.variance_quantity !== 0 && 'text-foreground')}>
-                    {item.counted_quantity === null ? '—' : item.variance_quantity}
-                  </TableCell>
-                  <TableCell className="min-w-[180px]">
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted-foreground">Note (auto-enregistrée)</label>
                     <Input
                       value={currentNote}
-                      disabled={!editable}
+                      disabled={!editable || isBusy}
                       onChange={(event) => onDraftNoteChange(item.id, event.target.value)}
                       placeholder="Note rapide"
+                      className="mt-1"
                     />
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={item.line_status === 'missing' ? 'destructive' : item.line_status === 'pending' ? 'outline' : 'secondary'}>
-                      {INVENTORY_LINE_STATUS_LABELS[item.line_status]}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {editable ? (
-                      <div className="grid gap-2 sm:grid-cols-3 lg:flex lg:flex-wrap lg:justify-end">
-                        <Button size="sm" onClick={() => onMarkFound(item)} className="bg-success text-success-foreground hover:bg-success/90">
-                          <Check className="h-4 w-4" />
-                          Valider
-                        </Button>
-                        <Button size="sm" variant="destructive" onClick={() => onMarkMissing(item)}>
-                          <X className="h-4 w-4" />
-                          Non trouvé
-                        </Button>
-                        <Button size="sm" onClick={() => onApplyQuantity(item)} className="bg-warning text-warning-foreground hover:bg-warning/90">
-                          <Save className="h-4 w-4" />
-                          Ajuster
-                        </Button>
-                      </div>
-                    ) : (
-                      <span className="text-xs text-muted-foreground">Lecture seule</span>
-                    )}
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
+                  </div>
+                </div>
+
+                {editable ? (
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                    <Button
+                      onClick={() => handleFound(item)}
+                      disabled={isBusy}
+                      className="h-11 bg-success text-success-foreground hover:bg-success/90"
+                    >
+                      {isBusy && busyAction === 'found' ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Check className="h-4 w-4" />
+                      )}
+                      Valider
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      onClick={() => handleMissing(item)}
+                      disabled={isBusy}
+                      className="h-11"
+                    >
+                      {isBusy && busyAction === 'missing' ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <X className="h-4 w-4" />
+                      )}
+                      Non trouvé
+                    </Button>
+                    <Button
+                      onClick={() => handleAdjust(item)}
+                      disabled={isBusy}
+                      className="h-11 bg-warning text-warning-foreground hover:bg-warning/90"
+                    >
+                      {isBusy && busyAction === 'adjust' ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <SlidersHorizontal className="h-4 w-4" />
+                      )}
+                      Ajuster
+                    </Button>
+                  </div>
+                ) : (
+                  <span className="text-xs text-muted-foreground">Lecture seule</span>
+                )}
+              </div>
+            );
+          })}
+          {items.length === 0 && (
+            <div className="rounded-md border border-dashed p-8 text-center text-sm text-muted-foreground sm:col-span-2">
+              Aucune pièce à afficher avec ces filtres.
+            </div>
+          )}
+        </div>
       </ScrollArea>
     </div>
   );
