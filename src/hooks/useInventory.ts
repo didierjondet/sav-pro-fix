@@ -248,14 +248,28 @@ export function useInventory() {
 
   const updateItem = async ({ sessionId: targetSessionId, itemId, ...input }: UpdateInventoryItemInput) => {
     const item = itemsQuery.data?.find((entry) => entry.id === itemId);
-    const nextPayload = buildNextPayload({ sessionId: targetSessionId, itemId, ...input });
 
-    const { error } = await inventoryItemsTable
-      .update(nextPayload)
-      .eq('id', itemId)
-      .eq('inventory_session_id', targetSessionId);
-
-    if (error) throw error;
+    // Pour les actions de comptage (quantité + statut), utilise la RPC sécurisée
+    // qui garantit que la ligne est bien modifiée et que le stock réel n'est pas touché.
+    if (input.countedQuantity !== undefined && input.lineStatus && input.lineStatus !== 'pending' && input.lineStatus !== 'applied') {
+      const { error } = await inventoryRpc('set_inventory_item_count', {
+        _session_id: targetSessionId,
+        _item_id: itemId,
+        _counted_quantity: input.countedQuantity,
+        _line_status: input.lineStatus,
+        _entry_method: input.entryMethod ?? 'manual',
+        _notes: input.notes ?? item?.notes ?? null,
+      });
+      if (error) throw error;
+    } else {
+      // Mises à jour annexes (note seule, reset, scan…) — update direct.
+      const nextPayload = buildNextPayload({ sessionId: targetSessionId, itemId, ...input });
+      const { error } = await inventoryItemsTable
+        .update(nextPayload)
+        .eq('id', itemId)
+        .eq('inventory_session_id', targetSessionId);
+      if (error) throw error;
+    }
 
     await addAuditLog({
       inventory_session_id: targetSessionId,

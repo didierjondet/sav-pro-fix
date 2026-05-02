@@ -3585,6 +3585,49 @@ export type Database = {
         }
         Returns: string
       }
+      set_inventory_item_count: {
+        Args: {
+          _counted_quantity: number
+          _entry_method?: string
+          _item_id: string
+          _line_status: string
+          _notes?: string
+          _session_id: string
+        }
+        Returns: {
+          applied_new_quantity: number | null
+          applied_previous_quantity: number | null
+          counted_at: string | null
+          counted_quantity: number | null
+          created_at: string
+          entry_method: string | null
+          expected_quantity: number
+          id: string
+          inventory_session_id: string
+          is_missing: boolean
+          last_scanned_code: string | null
+          line_status: string
+          notes: string | null
+          part_id: string | null
+          part_name: string
+          part_reference: string | null
+          part_sku: string | null
+          part_supplier: string | null
+          position: number
+          scan_count: number
+          shop_id: string
+          unit_cost: number
+          updated_at: string
+          variance_quantity: number
+          variance_value: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "inventory_session_items"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
     }
     Enums: {
       appointment_status:
