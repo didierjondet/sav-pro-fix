@@ -5,7 +5,35 @@ import { Input } from '@/components/ui/input';
 import { NumberInput } from '@/components/ui/number-input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Check, Loader2, Search, SlidersHorizontal, X } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { cn } from '@/lib/utils';
 import { INVENTORY_LINE_STATUS_LABELS, type InventorySessionItem } from './types';
+
+const STATUS_DOMINANCE: Record<InventorySessionItem['line_status'], string> = {
+  pending: 'bg-card border-border',
+  found: 'bg-success/10 border-success/40',
+  adjusted: 'bg-warning/15 border-warning/50',
+  missing: 'bg-destructive/10 border-destructive/40',
+  applied: 'bg-success/5 border-success/30',
+  skipped: 'bg-muted/50 border-dashed',
+};
+
+type PendingActionType = 'found' | 'missing' | 'adjust';
+
+const PENDING_ACTION_LABELS: Record<PendingActionType, string> = {
+  found: 'Valider (reprend la quantité théorique)',
+  missing: 'Marquer comme non trouvé',
+  adjust: 'Enregistrer la quantité saisie',
+};
 
 export type InventoryReviewTab = 'counting' | 'discrepancies' | 'missing' | 'overwritten' | 'journal';
 
@@ -65,11 +93,15 @@ export function InventoryManualEditor({
   onActiveFilterChange,
 }: InventoryManualEditorProps) {
   const [busyId, setBusyId] = useState<string | null>(null);
-  const [busyAction, setBusyAction] = useState<'found' | 'missing' | 'adjust' | null>(null);
+  const [busyAction, setBusyAction] = useState<PendingActionType | null>(null);
+  const [pendingAction, setPendingAction] = useState<{
+    item: InventorySessionItem;
+    action: PendingActionType;
+  } | null>(null);
 
   const runAction = async (
     item: InventorySessionItem,
-    action: 'found' | 'missing' | 'adjust',
+    action: PendingActionType,
     fn: () => Promise<unknown> | unknown,
   ) => {
     if (busyId) return;
@@ -83,21 +115,43 @@ export function InventoryManualEditor({
     }
   };
 
-  const handleFound = (item: InventorySessionItem) =>
+  const executeFound = (item: InventorySessionItem) =>
     runAction(item, 'found', async () => {
-      // Copie la quantité attendue dans le champ visible puis enregistre.
       onDraftQuantityChange(item.id, String(item.expected_quantity));
       await onMarkFound(item);
     });
 
-  const handleMissing = (item: InventorySessionItem) =>
+  const executeMissing = (item: InventorySessionItem) =>
     runAction(item, 'missing', async () => {
       onDraftQuantityChange(item.id, '0');
       await onMarkMissing(item);
     });
 
-  const handleAdjust = (item: InventorySessionItem) =>
+  const executeAdjust = (item: InventorySessionItem) =>
     runAction(item, 'adjust', () => onApplyQuantity(item));
+
+  const requestAction = (item: InventorySessionItem, action: PendingActionType) => {
+    if (item.line_status !== 'pending') {
+      setPendingAction({ item, action });
+      return;
+    }
+    if (action === 'found') void executeFound(item);
+    else if (action === 'missing') void executeMissing(item);
+    else void executeAdjust(item);
+  };
+
+  const handleFound = (item: InventorySessionItem) => requestAction(item, 'found');
+  const handleMissing = (item: InventorySessionItem) => requestAction(item, 'missing');
+  const handleAdjust = (item: InventorySessionItem) => requestAction(item, 'adjust');
+
+  const confirmPendingAction = () => {
+    if (!pendingAction) return;
+    const { item, action } = pendingAction;
+    setPendingAction(null);
+    if (action === 'found') void executeFound(item);
+    else if (action === 'missing') void executeMissing(item);
+    else void executeAdjust(item);
+  };
 
   return (
     <div className="space-y-4">
@@ -140,7 +194,10 @@ export function InventoryManualEditor({
             return (
               <div
                 key={item.id}
-                className="flex flex-col gap-3 rounded-lg border bg-card p-3 shadow-sm sm:p-4"
+                className={cn(
+                  'flex flex-col gap-3 rounded-lg border p-3 shadow-sm sm:p-4 transition-colors',
+                  STATUS_DOMINANCE[item.line_status],
+                )}
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
@@ -249,6 +306,38 @@ export function InventoryManualEditor({
           )}
         </div>
       </ScrollArea>
+
+      <AlertDialog
+        open={pendingAction !== null}
+        onOpenChange={(open) => {
+          if (!open) setPendingAction(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Pièce déjà traitée</AlertDialogTitle>
+            <AlertDialogDescription>
+              {pendingAction ? (
+                <>
+                  La pièce <strong>{pendingAction.item.part_name}</strong> a déjà été traitée
+                  (statut : <strong>{statusLabel(pendingAction.item)}</strong>, quantité comptée :{' '}
+                  <strong>{pendingAction.item.counted_quantity ?? '—'}</strong>).
+                  <br />
+                  En continuant ({PENDING_ACTION_LABELS[pendingAction.action]}), la saisie
+                  précédente sera écrasée. Le stock réel n'est pas modifié tant que l'inventaire
+                  n'est pas clôturé.
+                </>
+              ) : null}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmPendingAction}>
+              Écraser la saisie
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
