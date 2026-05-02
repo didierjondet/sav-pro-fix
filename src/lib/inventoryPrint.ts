@@ -87,8 +87,15 @@ export function printInventoryDocument({
           <div class="box"><div class="label">Références</div><div class="value">${filteredItems.length}</div></div>
           <div class="box"><div class="label">Qté théorique</div><div class="value">${totalExpected}</div></div>
           <div class="box"><div class="label">Qté inventoriée</div><div class="value">${totalCounted}</div></div>
-          <div class="box"><div class="label">Valeur non retrouvée</div><div class="value">${escapeHtml(currency(totalMissingValue))}</div></div>
+          <div class="box"><div class="label">Valeur non retrouvée</div><div class="value" style="color:#dc2626">${escapeHtml(currency(displayMissingValue))}</div></div>
         </div>
+        ${variant === 'summary' ? `
+          <div class="meta" style="grid-template-columns: repeat(3, minmax(0, 1fr));">
+            <div class="box"><div class="label">Valeur produits non retrouvés</div><div class="value" style="color:#dc2626">- ${escapeHtml(currency(totalMissingValue))}</div></div>
+            <div class="box"><div class="label">Valeur ajustée (positif)</div><div class="value" style="color:#16a34a">+ ${escapeHtml(currency(totalAdjustedPositiveValue))}</div></div>
+            <div class="box"><div class="label">Bilan net</div><div class="value" style="color:${bilanColor}">${bilanNet >= 0 ? '+ ' : ''}${escapeHtml(currency(bilanNet))}</div></div>
+          </div>
+        ` : ''}
         ${session.notes ? `<div class="note">${escapeHtml(session.notes)}</div>` : ''}
         <table>
           <thead>
