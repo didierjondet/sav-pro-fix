@@ -1,58 +1,96 @@
 
-## Objectif
+# Refonte ergonomique du module Inventaire
 
-Améliorer le document de synthèse imprimable et corriger le bouton « Manquants » qui imprime actuellement toute la liste des pièces.
+## Constat actuel
 
-## Problèmes identifiés
+- On confond la page "module" et la page "session ouverte" (vue liste vs détail mélangée).
+- Les boutons Synthèse / Feuille papier / Manquants sont visibles dès l'écran général alors qu'ils ne concernent qu'une session précise.
+- Pas de différenciation visuelle entre un inventaire validé, en cours, en pause.
+- Le détail d'une session mélange comptage, scan, rapprochement, logs, sans hiérarchie claire.
+- Les logs globaux ne sont pas accessibles facilement.
 
-1. **Synthèse imprimable** (`printInventoryDocument` variant `summary`) : ne montre qu'une seule case "Valeur non retrouvée" sans détailler la valeur des ajustements positifs ni proposer un bilan net.
-2. **Bouton « Manquants »** (variant `missing`) : le filtre actuel `line_status === 'missing' || (counted_quantity ?? 0) === 0` inclut aussi toutes les pièces non encore traitées (`pending` avec `counted_quantity = null`), donc imprime quasi toute la liste au lieu des seules pièces marquées non trouvées.
+## Nouvelle structure
 
-## Modifications
-
-### 1. `src/lib/inventoryPrint.ts`
-
-**Filtre « Manquants » plus strict** : ne garder que les lignes dont `line_status === 'missing'` (pièces explicitement marquées non trouvées). Retirer la condition sur `counted_quantity === 0` qui capture les `pending`.
-
-**Calcul de trois nouvelles valeurs financières** (sur l'ensemble `items`, pas `filteredItems`, pour le variant `summary`) :
-- `totalMissingValue` : somme de `unit_cost × expected_quantity` pour `line_status === 'missing'` (valeur perdue).
-- `totalAdjustedPositiveValue` : somme de `unit_cost × variance_quantity` pour les lignes où `line_status === 'adjusted'` ET `variance_quantity > 0` (surplus trouvés en positif).
-- `bilanNet` : `totalAdjustedPositiveValue - totalMissingValue` (positif = gain net, négatif = perte nette).
-
-**Refonte du bloc `.meta` du HTML pour le variant `summary`** :
+Navigation principale par **onglets dynamiques** en haut de la page Inventaire :
 
 ```text
-[ Références ] [ Qté théorique ] [ Qté inventoriée ]
-[ Valeur non retrouvée ] [ Valeur ajustée (+) ] [ Bilan net ]
+[ Général ] [ ● Inventaire Atelier 02/05 ] [ ● Stock vitrine ] [ + ]
 ```
 
-Le « Bilan net » sera coloré (rouge si négatif, vert si positif) via une classe inline.
+- **Général** : onglet permanent par défaut.
+- **Un onglet par session ouverte** (statut `in_progress` ou `paused`). Pastille colorée :
+  - Vert clignotant = en cours
+  - Orange = en pause
+  - Gris = clôturée mais pas encore appliquée
+- Bouton **« + Lancer un inventaire »** intégré comme dernier onglet (ou bouton à droite).
+- Cliquer sur un onglet → bascule sur cette session sans perdre son état (search, filtres, brouillons).
+- Fermer un onglet (croix) = le retirer de la navigation, sans supprimer la session.
 
-Pour les variants `count-sheet` et `missing`, garder la grille `meta` actuelle simple (4 cases) — pas de bilan nécessaire.
+### Onglet « Général »
 
-### 2. Aucun autre fichier touché
+Contenu :
 
-Les composants React (`InventoryManager`, `InventoryManualEditor`, `InventorySessionSummary`) ne sont pas concernés — le bug et l'amélioration sont 100% dans la fonction de génération HTML d'impression.
+1. **Bouton rouge proéminent** : « Lancer un nouvel inventaire » (en haut à droite).
+2. **Sessions en cours / en pause** : cartes condensées résumant nom, progression %, manquants, valeur écart. Cliquer = ouvre l'onglet correspondant.
+3. **Métriques & graphiques** sur les inventaires **validés uniquement** :
+   - Nombre d'inventaires sur 12 mois
+   - Valeur totale ajustée (gain / perte) par mois (bar chart)
+   - Top 10 références les plus souvent manquantes
+   - Taux de complétion moyen
+4. **Historique des inventaires clôturés** (tableau compact, filtrable).
+5. **Logs globaux** (tous inventaires confondus) — section dépliable en bas, présentés en timeline.
+
+⚠️ Pas de boutons « Synthèse / Feuille papier / Manquants » sur cet onglet — ils sont propres à une session.
+
+### Onglet d'une session ouverte
+
+Hiérarchie claire en deux blocs visuellement séparés :
+
+```text
+┌─────────────────────────────────────────────────────┐
+│ EN-TÊTE SESSION                                     │
+│ Nom · Mode · Statut · Progression bar · Actions     │
+│ [Pause] [Reprendre] [Clôturer] [Imprimer ▼]         │
+└─────────────────────────────────────────────────────┘
+
+┌──────────────── BLOC 1 : COMPTAGE ──────────────────┐
+│ Sous-onglets : [Saisie] [Scan code-barres]          │
+│ - Recherche / filtres                               │
+│ - Liste des pièces avec actions ligne par ligne     │
+└─────────────────────────────────────────────────────┘
+
+┌──────────── BLOC 2 : RAPPROCHEMENT ─────────────────┐
+│ Sous-onglets :                                      │
+│ [Synthèse] [Écarts] [Manquants] [Réécritures]       │
+│ - Affichage en lecture / impression                 │
+│ - Bouton final : « Valider et appliquer au stock »  │
+└─────────────────────────────────────────────────────┘
+```
+
+- **Comptage = ce que l'utilisateur fait** (action terrain).
+- **Rapprochement = ce qu'il analyse avant de valider** (vue analytique).
+- Le bouton « Valider et appliquer » reste visible mais désactivé tant que la session n'est pas clôturée, avec un tooltip clair (« Clôturez d'abord le comptage »).
+
+### Indicateurs visuels d'état
+
+- Bandeau coloré en haut de l'onglet session selon statut (bleu en cours, orange pause, vert prêt à appliquer, gris validé).
+- Badge "Terminé ✓" quand `completionRate === 100` pour signaler clairement que l'on peut clôturer.
+- Quand toutes les pièces sont traitées, afficher un encart vert d'appel à l'action : « Comptage terminé — Clôturer l'inventaire ».
 
 ## Détails techniques
 
-```ts
-// Filtrage corrigé pour le variant 'missing'
-const filteredItems =
-  variant === 'missing'
-    ? items.filter((item) => item.line_status === 'missing')
-    : items;
+Fichiers impactés :
 
-// Calculs financiers (pour summary)
-const totalMissingValue = items
-  .filter((i) => i.line_status === 'missing')
-  .reduce((sum, i) => sum + i.unit_cost * i.expected_quantity, 0);
+- `src/components/settings/inventory/InventoryManager.tsx` : remplacer le système `viewMode list/detail` par un système d'onglets contrôlés (state local `openTabs: string[]` + `activeTab: 'general' | sessionId`).
+- Nouveau composant `InventoryGeneralTab.tsx` : métriques + graphiques (recharts) + historique + logs globaux + bouton lancement.
+- Nouveau composant `InventorySessionTab.tsx` : en-tête + bloc Comptage + bloc Rapprochement (utilise `InventoryManualEditor` et `InventorySessionSummary` existants, recomposés).
+- `useInventory` : ajouter capacité à charger logs globaux du shop (sans `inventory_session_id`) pour l'onglet Général.
+- Persistance des onglets ouverts dans `localStorage` (clé `fixway_inventory_open_tabs`) pour ne pas perdre la nav après refresh.
+- Réutilisation des composants UI existants (`Tabs`, `Card`, `Badge`). Ajout d'un bouton de fermeture sur chaque `TabsTrigger` de session.
+- Aucune modification base de données nécessaire.
 
-const totalAdjustedPositiveValue = items
-  .filter((i) => i.line_status === 'adjusted' && i.variance_quantity > 0)
-  .reduce((sum, i) => sum + i.unit_cost * i.variance_quantity, 0);
+## Hors scope
 
-const bilanNet = totalAdjustedPositiveValue - totalMissingValue;
-```
-
-Affichage HTML supplémentaire (uniquement si `variant === 'summary'`) : une seconde rangée `.meta` avec les 3 cases financières, `bilanNet` stylé `color: #16a34a` (positif) ou `color: #dc2626` (négatif).
+- Pas de changement des règles métier (calcul valeurs, RPC `apply_inventory_session`, statuts).
+- Pas de modification de l'impression PDF (déjà refactorée précédemment).
+- Pas de changement du flux scan code-barres existant.
