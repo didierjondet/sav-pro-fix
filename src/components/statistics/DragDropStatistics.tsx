@@ -753,29 +753,34 @@ export const DragDropStatistics = ({ period, onPeriodChange }: DragDropStatistic
       // Widget monthly-profitability supprimé
 
       case 'annual-stats':
-        const annualMonthlyData = profitabilityChart.map((item, index) => ({
-          month: item.date,
-          revenue: item.revenue,
-          savCount: completedSavChart.find(c => c.date === item.date)?.completed || 0,
-          averageTime: savStats.averageTime + (Math.random() - 0.5) * 10,
-          customerSatisfaction: 85 + Math.random() * 15,
-          partsUsed: Math.floor(Math.random() * 50) + 20,
-          efficiency: Math.max(60, Math.min(95, 80 + (Math.random() - 0.5) * 20)),
-          profit: item.profit
-        }));
-        
         return (
           <div className={className}>
-            <AnnualStatsWidget 
-              monthlyData={annualMonthlyData}
-              currentYear={2024}
-              totalRevenue={revenue * 12}
-              totalSAV={savStats.total * 12}
-              averageEfficiency={82}
-              yearOverYearGrowth={15.3}
-              bestPerformanceMonth="Juin"
-              worstPerformanceMonth="Février"
-            />
+            <StatisticsWidgetContainer module={module} period={period} wrap={false}>
+              {({ stats }) => {
+                const annualMonthlyData = stats.profitabilityChart.map((item) => ({
+                  month: item.date,
+                  revenue: item.revenue,
+                  savCount: stats.completedSavChart.find(c => c.date === item.date)?.completed || 0,
+                  averageTime: stats.savStats.averageTime,
+                  customerSatisfaction: 0,
+                  partsUsed: 0,
+                  efficiency: Math.max(0, 100 - stats.savStats.lateRate),
+                  profit: item.profit
+                }));
+                return (
+                  <AnnualStatsWidget
+                    monthlyData={annualMonthlyData}
+                    currentYear={new Date().getFullYear()}
+                    totalRevenue={stats.revenue}
+                    totalSAV={stats.savStats.total}
+                    averageEfficiency={Math.max(0, 100 - stats.savStats.lateRate)}
+                    yearOverYearGrowth={0}
+                    bestPerformanceMonth="—"
+                    worstPerformanceMonth="—"
+                  />
+                );
+              }}
+            </StatisticsWidgetContainer>
           </div>
         );
 
