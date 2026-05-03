@@ -673,18 +673,25 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
       case 'problem':
         return (
           <div className="space-y-4">
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <Label>Description du problème *</Label>
+            <div className="rounded-lg border-l-4 border-l-primary bg-primary/5 p-4 space-y-3 shadow-sm">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="h-5 w-5 text-primary" />
+                  <Label className="text-base font-semibold">Description du problème *</Label>
+                </div>
                 <AITextReformulator
                   text={deviceInfo.problemDescription}
                   context="problem_description"
                   onReformulated={(reformulated) => setDeviceInfo({ ...deviceInfo, problemDescription: reformulated })}
                 />
               </div>
-              <Textarea value={deviceInfo.problemDescription}
+              <Textarea
+                className="bg-background"
+                value={deviceInfo.problemDescription}
                 onChange={(e) => setDeviceInfo({ ...deviceInfo, problemDescription: e.target.value })}
-                placeholder="Décrivez le problème rencontré..." rows={5} />
+                placeholder="Décrivez le problème rencontré..."
+                rows={5}
+              />
             </div>
             <FileUpload files={deviceInfo.attachments}
               onFilesChange={(files) => setDeviceInfo({ ...deviceInfo, attachments: files })}
