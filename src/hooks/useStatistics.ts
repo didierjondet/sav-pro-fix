@@ -435,31 +435,10 @@ export function useStatistics(
           const excludeRevenue = excludeFromSalesRevenue.includes(savCase.sav_type);
 
           savCase.sav_parts?.forEach((savPart: any) => {
-            // Utiliser le purchase_price stocké dans sav_parts en priorité, sinon fallback sur le catalogue
             const partCost = (savPart.purchase_price ?? savPart.part?.purchase_price ?? 0) * savPart.quantity;
             const partRevenue = (savPart.unit_price || savPart.part?.selling_price || 0) * savPart.quantity;
-            
-            // Ajouter les coûts seulement si non exclus
-            if (!excludeCosts) {
-              caseCost += partCost;
-            }
-            
-            // Ajouter les revenus seulement si non exclus
-            if (!excludeRevenue) {
-              caseRevenue += partRevenue;
-            }
-
-            // Tracking des pièces les plus utilisées (seulement si identifiables)
-            const partKey = savPart.part?.name || savPart.custom_part_name;
-            if (partKey) {
-              if (!partsUsage[partKey]) {
-                partsUsage[partKey] = { quantity: 0, revenue: 0, name: partKey };
-              }
-              partsUsage[partKey].quantity += savPart.quantity;
-              if (!excludeRevenue) {
-                partsUsage[partKey].revenue += partRevenue;
-              }
-            }
+            if (!excludeCosts) caseCost += partCost;
+            if (!excludeRevenue) caseRevenue += partRevenue;
           });
 
           // Calculer les prises en charge (seulement si revenus non exclus)
