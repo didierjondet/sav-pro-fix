@@ -55,10 +55,11 @@ type StatisticsPeriod = '7d' | '30d' | '1m_calendar' | '3m' | '6m' | '1y';
 interface StatisticsWidgetContainerProps {
   module: StatisticModule;
   period: StatisticsPeriod;
+  wrap?: boolean;
   children: (args: { stats: ReturnType<typeof useStatistics>; effectivePeriod: StatisticsPeriod }) => ReactNode;
 }
 
-const StatisticsWidgetContainer = ({ module, period, children }: StatisticsWidgetContainerProps) => {
+const StatisticsWidgetContainer = ({ module, period, wrap = true, children }: StatisticsWidgetContainerProps) => {
   const { config } = useWidgetConfiguration(module.id);
 
   const effectivePeriod: StatisticsPeriod = config?.temporality === 'monthly'
@@ -76,13 +77,17 @@ const StatisticsWidgetContainer = ({ module, period, children }: StatisticsWidge
     savTypes: config?.sav_types_filter ?? undefined,
   });
 
+  const content = children({ stats, effectivePeriod });
+
+  if (!wrap) return <>{content}</>;
+
   return (
     <DraggableStatisticsWidget
       id={module.id}
       title={module.name}
       isEnabled={module.enabled}
     >
-      {children({ stats, effectivePeriod })}
+      {content}
     </DraggableStatisticsWidget>
   );
 };
