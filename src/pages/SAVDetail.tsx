@@ -16,7 +16,7 @@ import { useShopSAVTypes } from '@/hooks/useShopSAVTypes';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { QrCode, ExternalLink, ArrowLeft, Copy, Share, Save, Lock, User, Mail, Phone, MapPin, CheckCircle, X, MessageSquare, Edit, Clock, CalendarPlus, ScrollText } from 'lucide-react';
+import { QrCode, ExternalLink, ArrowLeft, Copy, Share, Save, Lock, User, Mail, Phone, MapPin, CheckCircle, X, MessageSquare, Edit, Clock, CalendarPlus, ScrollText, AlertCircle } from 'lucide-react';
 import { SMSButton } from '@/components/sav/SMSButton';
 import { useNavigate } from 'react-router-dom';
 import { SAVPartsEditor } from '@/components/sav/SAVPartsEditor';
@@ -554,9 +554,14 @@ export default function SAVDetail() {
                   <div>
                     <strong>Coût total:</strong> {savCase.total_cost}€
                   </div>
-                  <div className="md:col-span-2">
-                    <strong>Description du problème:</strong>
-                    <p className="mt-1 text-muted-foreground">{savCase.problem_description}</p>
+                  <div className="md:col-span-2 rounded-lg border-l-4 border-l-primary bg-primary/5 p-4 shadow-sm">
+                    <div className="flex items-center gap-2 mb-2">
+                      <AlertCircle className="h-5 w-5 text-primary" />
+                      <h3 className="font-semibold text-base">Description du problème</h3>
+                    </div>
+                    <p className="text-foreground whitespace-pre-wrap">
+                      {savCase.problem_description || <span className="italic text-muted-foreground">Aucune description renseignée</span>}
+                    </p>
                   </div>
                   {savCase.repair_notes && <div className="md:col-span-2">
                       <strong>Notes de réparation:</strong>
