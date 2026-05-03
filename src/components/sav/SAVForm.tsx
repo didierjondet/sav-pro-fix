@@ -32,6 +32,7 @@ import { useShopSAVStatuses } from '@/hooks/useShopSAVStatuses';
 import { useShopSAVTypes } from '@/hooks/useShopSAVTypes';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AITextReformulator } from '@/components/sav/AITextReformulator';
+import { ProblemDescriptionField } from '@/components/sav/ProblemDescriptionHighlight';
 import { SecurityCodesSection, SecurityCodes } from './SecurityCodesSection';
 
 interface CustomerInfo {
@@ -728,9 +729,9 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
             </div>
           </div>
           
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <Label htmlFor="problemDescription">Description du problème *</Label>
+          <ProblemDescriptionField
+            required
+            action={
               <AITextReformulator
                 text={deviceInfo.problemDescription}
                 context="problem_description"
@@ -738,7 +739,8 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
                   setDeviceInfo({ ...deviceInfo, problemDescription: reformulatedText })
                 }
               />
-            </div>
+            }
+          >
             <Textarea
               id="problemDescription"
               value={deviceInfo.problemDescription}
@@ -749,7 +751,7 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
               required
               rows={4}
             />
-          </div>
+          </ProblemDescriptionField>
           
           <FileUpload
             files={deviceInfo.attachments}

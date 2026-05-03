@@ -8,6 +8,7 @@ import { Edit, Save } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { logSAVChanges, getCurrentUserName } from '@/hooks/useSAVAuditLog';
+import { ProblemDescriptionField } from '@/components/sav/ProblemDescriptionHighlight';
 
 interface EditSAVDetailsDialogProps {
   savCaseId: string;
@@ -185,8 +186,7 @@ export function EditSAVDetailsDialog({
             </div>
           </div>
 
-          <div>
-            <Label htmlFor="problemDescription">Description du problème</Label>
+          <ProblemDescriptionField>
             <Textarea
               id="problemDescription"
               value={problemDescription}
@@ -194,7 +194,7 @@ export function EditSAVDetailsDialog({
               rows={3}
               placeholder="Décrivez le problème rencontré..."
             />
-          </div>
+          </ProblemDescriptionField>
 
           <div>
             <Label htmlFor="repairNotes">Notes de réparation</Label>
