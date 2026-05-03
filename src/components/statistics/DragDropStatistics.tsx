@@ -55,10 +55,11 @@ type StatisticsPeriod = '7d' | '30d' | '1m_calendar' | '3m' | '6m' | '1y';
 interface StatisticsWidgetContainerProps {
   module: StatisticModule;
   period: StatisticsPeriod;
+  wrap?: boolean;
   children: (args: { stats: ReturnType<typeof useStatistics>; effectivePeriod: StatisticsPeriod }) => ReactNode;
 }
 
-const StatisticsWidgetContainer = ({ module, period, children }: StatisticsWidgetContainerProps) => {
+const StatisticsWidgetContainer = ({ module, period, wrap = true, children }: StatisticsWidgetContainerProps) => {
   const { config } = useWidgetConfiguration(module.id);
 
   const effectivePeriod: StatisticsPeriod = config?.temporality === 'monthly'
@@ -76,13 +77,17 @@ const StatisticsWidgetContainer = ({ module, period, children }: StatisticsWidge
     savTypes: config?.sav_types_filter ?? undefined,
   });
 
+  const content = children({ stats, effectivePeriod });
+
+  if (!wrap) return <>{content}</>;
+
   return (
     <DraggableStatisticsWidget
       id={module.id}
       title={module.name}
       isEnabled={module.enabled}
     >
-      {children({ stats, effectivePeriod })}
+      {content}
     </DraggableStatisticsWidget>
   );
 };
@@ -202,24 +207,29 @@ export const DragDropStatistics = ({ period, onPeriodChange }: DragDropStatistic
     switch (module.id) {
       // Widgets avancés combinés
       case 'financial-overview':
-        const financialData = profitabilityChart.map(item => ({
-          date: item.date,
-          revenue: item.revenue,
-          expenses: item.expenses,
-          profit: item.profit,
-          margin: item.profit ? (item.profit / item.revenue) * 100 : 0,
-          savCount: completedSavChart.find(c => c.date === item.date)?.completed || 0
-        }));
-        
         return (
           <div className={className}>
-            <FinancialOverviewWidget 
-              data={financialData}
-              totalRevenue={revenue}
-              totalExpenses={expenses}
-              totalProfit={profit}
-              averageMargin={profit ? (profit / revenue) * 100 : 0}
-            />
+            <StatisticsWidgetContainer module={module} period={period} wrap={false}>
+              {({ stats }) => {
+                const financialData = stats.profitabilityChart.map(item => ({
+                  date: item.date,
+                  revenue: item.revenue,
+                  expenses: item.expenses,
+                  profit: item.profit,
+                  margin: item.profit ? (item.profit / item.revenue) * 100 : 0,
+                  savCount: stats.completedSavChart.find(c => c.date === item.date)?.completed || 0
+                }));
+                return (
+                  <FinancialOverviewWidget
+                    data={financialData}
+                    totalRevenue={stats.revenue}
+                    totalExpenses={stats.expenses}
+                    totalProfit={stats.profit}
+                    averageMargin={stats.profit ? (stats.profit / stats.revenue) * 100 : 0}
+                  />
+                );
+              }}
+            </StatisticsWidgetContainer>
           </div>
         );
 
@@ -253,23 +263,28 @@ export const DragDropStatistics = ({ period, onPeriodChange }: DragDropStatistic
         );
 
       case 'parts-usage-heatmap':
-        const partsUsageData = topParts.map((part, index) => ({
-          name: part.name,
-          value: part.quantity,
-          cost: part.quantity * 25, // Prix estimé
-          frequency: Math.max(10 - index, 1),
-          trend: index < 2 ? 'up' as const : index > 5 ? 'down' as const : 'stable' as const,
-          category: 'Écran'
-        }));
-        
         return (
           <div className={className}>
-            <PartsUsageHeatmapWidget 
-              partsData={partsUsageData}
-              totalParts={topParts.reduce((sum, p) => sum + p.quantity, 0)}
-              totalCost={expenses}
-              topCategory="Écrans"
-            />
+            <StatisticsWidgetContainer module={module} period={period} wrap={false}>
+              {({ stats }) => {
+                const partsUsageData = stats.topParts.map((part) => ({
+                  name: part.name,
+                  value: part.quantity,
+                  cost: part.revenue || 0,
+                  frequency: part.quantity,
+                  trend: 'stable' as const,
+                  category: 'Pièce'
+                }));
+                return (
+                  <PartsUsageHeatmapWidget
+                    partsData={partsUsageData}
+                    totalParts={stats.topParts.reduce((sum, p) => sum + p.quantity, 0)}
+                    totalCost={stats.expenses}
+                    topCategory={stats.topParts[0]?.name || 'N/A'}
+                  />
+                );
+              }}
+            </StatisticsWidgetContainer>
           </div>
         );
 
@@ -528,20 +543,18 @@ export const DragDropStatistics = ({ period, onPeriodChange }: DragDropStatistic
 
                 return (
                   <>
-                    <DraggableStatisticsWidget id={module.id} title={module.name} isEnabled={module.enabled}>
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="text-xs text-muted-foreground">📅 {periodLabel}</div>
-                      </div>
-                      <div className="text-3xl font-semibold">
-                        {savStats.averageProcessingDays} jours
-                      </div>
-                      <div className="text-sm text-muted-foreground mt-2">
-                        De l'ouverture à la fermeture du SAV
-                      </div>
-                      <div className="text-xs text-muted-foreground mt-1">
-                        Basé sur {savStats.total} SAV terminés (statut "Prêt" ou "Annulé")
-                      </div>
-                    </DraggableStatisticsWidget>
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="text-xs text-muted-foreground">📅 {periodLabel}</div>
+                    </div>
+                    <div className="text-3xl font-semibold">
+                      {savStats.averageProcessingDays} jours
+                    </div>
+                    <div className="text-sm text-muted-foreground mt-2">
+                      De l'ouverture à la fermeture du SAV
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-1">
+                      Basé sur {savStats.total} SAV terminés (statut "Prêt" ou "Annulé")
+                    </div>
                   </>
                 );
               }}
@@ -589,19 +602,21 @@ export const DragDropStatistics = ({ period, onPeriodChange }: DragDropStatistic
       case 'top-parts-chart':
         return (
           <div className={className}>
-            <DraggableStatisticsWidget {...baseProps}>
-              <ChartContainer
-                config={{ quantity: { label: "Quantité", color: "hsl(var(--primary))" } }}
-                className="h-72"
-              >
-                <BarChart data={topParts}>
-                  <XAxis dataKey="name" tickLine={false} axisLine={false} interval={0} angle={-15} textAnchor="end" height={60} />
-                  <YAxis tickLine={false} axisLine={false} />
-                  <ChartTooltip content={<ChartTooltipContent />} />
-                  <Bar dataKey="quantity" fill="var(--color-quantity)" radius={4} />
-                </BarChart>
-              </ChartContainer>
-            </DraggableStatisticsWidget>
+            <StatisticsWidgetContainer module={module} period={period}>
+              {({ stats }) => (
+                <ChartContainer
+                  config={{ quantity: { label: "Quantité", color: "hsl(var(--primary))" } }}
+                  className="h-72"
+                >
+                  <BarChart data={stats.topParts}>
+                    <XAxis dataKey="name" tickLine={false} axisLine={false} interval={0} angle={-15} textAnchor="end" height={60} />
+                    <YAxis tickLine={false} axisLine={false} />
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <Bar dataKey="quantity" fill="var(--color-quantity)" radius={4} />
+                  </BarChart>
+                </ChartContainer>
+              )}
+            </StatisticsWidgetContainer>
           </div>
         );
 
@@ -617,45 +632,39 @@ export const DragDropStatistics = ({ period, onPeriodChange }: DragDropStatistic
       case 'top-devices':
         return (
           <div className={className}>
-            <DraggableStatisticsWidget {...baseProps}>
-              <div className="space-y-3">
-                {topDevices.slice(0, 5).map((device, index) => (
-                  <div 
-                    key={`${device.brand}-${device.model}`}
-                    className={`p-4 rounded-lg border-2 transition-all hover:shadow-md ${getPodiumBg(index)}`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        {getPodiumIcon(index)}
-                        <div>
-                          <div className="font-semibold text-foreground">
-                            {device.brand}
-                          </div>
-                          <div className="text-sm text-muted-foreground">
-                            {device.model}
+            <StatisticsWidgetContainer module={module} period={period}>
+              {({ stats }) => (
+                <div className="space-y-3">
+                  {stats.topDevices.slice(0, 5).map((device, index) => (
+                    <div
+                      key={`${device.brand}-${device.model}`}
+                      className={`p-4 rounded-lg border-2 transition-all hover:shadow-md ${getPodiumBg(index)}`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          {getPodiumIcon(index)}
+                          <div>
+                            <div className="font-semibold text-foreground">{device.brand}</div>
+                            <div className="text-sm text-muted-foreground">{device.model}</div>
                           </div>
                         </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-2xl font-bold text-foreground">
-                          {device.count}
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          réparations
+                        <div className="text-right">
+                          <div className="text-2xl font-bold text-foreground">{device.count}</div>
+                          <div className="text-xs text-muted-foreground">réparations</div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))}
-                {topDevices.length === 0 && (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <Trophy className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                    <p>Aucune donnée de téléphone disponible</p>
-                    <p className="text-sm">Les données apparaîtront quand des SAV avec marque/modèle seront créés</p>
-                  </div>
-                )}
-              </div>
-            </DraggableStatisticsWidget>
+                  ))}
+                  {stats.topDevices.length === 0 && (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Trophy className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                      <p>Aucune donnée de téléphone disponible</p>
+                      <p className="text-sm">Les données apparaîtront quand des SAV avec marque/modèle seront créés</p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </StatisticsWidgetContainer>
           </div>
         );
 
@@ -683,36 +692,40 @@ export const DragDropStatistics = ({ period, onPeriodChange }: DragDropStatistic
       // Widget sav-types-grid supprimé
 
       case 'finance-kpis':
-        const currentMonthFinance = {
-          revenue,
-          expenses,
-          profit,
-          margin: profit ? (profit / revenue) * 100 : 0,
-          takeoverAmount: takeoverStats.amount,
-          takeoverCount: takeoverStats.count,
-          growth: 15.2,
-          target: revenue * 1.2
-        };
-        
-        const previousMonthFinance = {
-          revenue: revenue * 0.85,
-          expenses: expenses * 0.9,
-          profit: profit * 0.8,
-          margin: 42,
-          takeoverAmount: takeoverStats.amount * 0.7,
-          takeoverCount: takeoverStats.count - 5,
-          growth: -5.3,
-          target: revenue * 1.15
-        };
-        
         return (
           <div className={className}>
-            <FinanceKPIsWidget 
-              currentMonth={currentMonthFinance}
-              previousMonth={previousMonthFinance}
-              yearTarget={revenue * 12}
-              monthProgress={75}
-            />
+            <StatisticsWidgetContainer module={module} period={period} wrap={false}>
+              {({ stats }) => {
+                const currentMonthFinance = {
+                  revenue: stats.revenue,
+                  expenses: stats.expenses,
+                  profit: stats.profit,
+                  margin: stats.profit ? (stats.profit / stats.revenue) * 100 : 0,
+                  takeoverAmount: stats.takeoverStats.amount,
+                  takeoverCount: stats.takeoverStats.count,
+                  growth: 0,
+                  target: 0
+                };
+                const previousMonthFinance = {
+                  revenue: 0,
+                  expenses: 0,
+                  profit: 0,
+                  margin: 0,
+                  takeoverAmount: 0,
+                  takeoverCount: 0,
+                  growth: 0,
+                  target: 0
+                };
+                return (
+                  <FinanceKPIsWidget
+                    currentMonth={currentMonthFinance}
+                    previousMonth={previousMonthFinance}
+                    yearTarget={0}
+                    monthProgress={0}
+                  />
+                );
+              }}
+            </StatisticsWidgetContainer>
           </div>
         );
 
@@ -740,29 +753,34 @@ export const DragDropStatistics = ({ period, onPeriodChange }: DragDropStatistic
       // Widget monthly-profitability supprimé
 
       case 'annual-stats':
-        const annualMonthlyData = profitabilityChart.map((item, index) => ({
-          month: item.date,
-          revenue: item.revenue,
-          savCount: completedSavChart.find(c => c.date === item.date)?.completed || 0,
-          averageTime: savStats.averageTime + (Math.random() - 0.5) * 10,
-          customerSatisfaction: 85 + Math.random() * 15,
-          partsUsed: Math.floor(Math.random() * 50) + 20,
-          efficiency: Math.max(60, Math.min(95, 80 + (Math.random() - 0.5) * 20)),
-          profit: item.profit
-        }));
-        
         return (
           <div className={className}>
-            <AnnualStatsWidget 
-              monthlyData={annualMonthlyData}
-              currentYear={2024}
-              totalRevenue={revenue * 12}
-              totalSAV={savStats.total * 12}
-              averageEfficiency={82}
-              yearOverYearGrowth={15.3}
-              bestPerformanceMonth="Juin"
-              worstPerformanceMonth="Février"
-            />
+            <StatisticsWidgetContainer module={module} period={period} wrap={false}>
+              {({ stats }) => {
+                const annualMonthlyData = stats.profitabilityChart.map((item) => ({
+                  month: item.date,
+                  revenue: item.revenue,
+                  savCount: stats.completedSavChart.find(c => c.date === item.date)?.completed || 0,
+                  averageTime: stats.savStats.averageTime,
+                  customerSatisfaction: 0,
+                  partsUsed: 0,
+                  efficiency: Math.max(0, 100 - stats.savStats.lateRate),
+                  profit: item.profit
+                }));
+                return (
+                  <AnnualStatsWidget
+                    monthlyData={annualMonthlyData}
+                    currentYear={new Date().getFullYear()}
+                    totalRevenue={stats.revenue}
+                    totalSAV={stats.savStats.total}
+                    averageEfficiency={Math.max(0, 100 - stats.savStats.lateRate)}
+                    yearOverYearGrowth={0}
+                    bestPerformanceMonth="—"
+                    worstPerformanceMonth="—"
+                  />
+                );
+              }}
+            </StatisticsWidgetContainer>
           </div>
         );
 

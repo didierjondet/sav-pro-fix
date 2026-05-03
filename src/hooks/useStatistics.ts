@@ -329,25 +329,41 @@ export function useStatistics(
           }
         });
 
-        // Tracking des téléphones les plus réparés (tous les SAV, pas seulement terminés, hors exclus)
-        (savCases || []).forEach((savCase: any) => {
-          if (!excludedFromStatsTypes.includes(savCase.sav_type) && (savCase.device_brand || savCase.device_model)) {
+        // Périmètre commun pour rankings (top téléphones + top pièces) :
+        // tous les SAV de la période, hors types exclus et hors annulés.
+        const trackedSavCases = (savCases || []).filter((c: any) =>
+          !excludedFromStatsTypes.includes(c.sav_type) && c.status !== 'cancelled'
+        );
+
+        // Tracking des téléphones les plus réparés
+        trackedSavCases.forEach((savCase: any) => {
+          if (savCase.device_brand || savCase.device_model) {
             const { normalizedKey, displayBrand, displayModel } = normalizeDeviceName(
-              savCase.device_brand, 
+              savCase.device_brand,
               savCase.device_model
             );
-            
             if (!deviceUsage[normalizedKey]) {
-              deviceUsage[normalizedKey] = { 
-                model: displayModel, 
-                brand: displayBrand, 
-                count: 0 
-              };
+              deviceUsage[normalizedKey] = { model: displayModel, brand: displayBrand, count: 0 };
             }
             deviceUsage[normalizedKey].count++;
           }
 
-          // Calculer le temps total pour tous les SAV non exclus qui ont un temps > 0
+          // Tracking des pièces les plus utilisées (même périmètre que le podium téléphones)
+          const excludeRevenue = excludeFromSalesRevenue.includes(savCase.sav_type);
+          savCase.sav_parts?.forEach((savPart: any) => {
+            const partKey = savPart.part?.name || savPart.custom_part_name;
+            if (!partKey) return;
+            const partRevenue = (savPart.unit_price || savPart.part?.selling_price || 0) * savPart.quantity;
+            if (!partsUsage[partKey]) {
+              partsUsage[partKey] = { quantity: 0, revenue: 0, name: partKey };
+            }
+            partsUsage[partKey].quantity += savPart.quantity;
+            if (!excludeRevenue) partsUsage[partKey].revenue += partRevenue;
+          });
+        });
+
+        // Calculer le temps total pour tous les SAV non exclus qui ont un temps > 0
+        (savCases || []).forEach((savCase: any) => {
           if (!excludedFromStatsTypes.includes(savCase.sav_type) && savCase.total_time_minutes && savCase.total_time_minutes > 0) {
             totalTimeMinutes += savCase.total_time_minutes;
             savWithTimeCount++;
@@ -419,31 +435,10 @@ export function useStatistics(
           const excludeRevenue = excludeFromSalesRevenue.includes(savCase.sav_type);
 
           savCase.sav_parts?.forEach((savPart: any) => {
-            // Utiliser le purchase_price stocké dans sav_parts en priorité, sinon fallback sur le catalogue
             const partCost = (savPart.purchase_price ?? savPart.part?.purchase_price ?? 0) * savPart.quantity;
             const partRevenue = (savPart.unit_price || savPart.part?.selling_price || 0) * savPart.quantity;
-            
-            // Ajouter les coûts seulement si non exclus
-            if (!excludeCosts) {
-              caseCost += partCost;
-            }
-            
-            // Ajouter les revenus seulement si non exclus
-            if (!excludeRevenue) {
-              caseRevenue += partRevenue;
-            }
-
-            // Tracking des pièces les plus utilisées (seulement si identifiables)
-            const partKey = savPart.part?.name || savPart.custom_part_name;
-            if (partKey) {
-              if (!partsUsage[partKey]) {
-                partsUsage[partKey] = { quantity: 0, revenue: 0, name: partKey };
-              }
-              partsUsage[partKey].quantity += savPart.quantity;
-              if (!excludeRevenue) {
-                partsUsage[partKey].revenue += partRevenue;
-              }
-            }
+            if (!excludeCosts) caseCost += partCost;
+            if (!excludeRevenue) caseRevenue += partRevenue;
           });
 
           // Calculer les prises en charge (seulement si revenus non exclus)
