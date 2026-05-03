@@ -32,6 +32,7 @@ import { useShopSAVStatuses } from '@/hooks/useShopSAVStatuses';
 import { useShopSAVTypes } from '@/hooks/useShopSAVTypes';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AITextReformulator } from '@/components/sav/AITextReformulator';
+import { ProblemDescriptionField } from '@/components/sav/ProblemDescriptionHighlight';
 import { SecurityCodesSection, SecurityCodes } from './SecurityCodesSection';
 
 interface CustomerInfo {
