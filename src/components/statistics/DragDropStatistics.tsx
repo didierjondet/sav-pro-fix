@@ -533,20 +533,18 @@ export const DragDropStatistics = ({ period, onPeriodChange }: DragDropStatistic
 
                 return (
                   <>
-                    <DraggableStatisticsWidget id={module.id} title={module.name} isEnabled={module.enabled}>
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="text-xs text-muted-foreground">📅 {periodLabel}</div>
-                      </div>
-                      <div className="text-3xl font-semibold">
-                        {savStats.averageProcessingDays} jours
-                      </div>
-                      <div className="text-sm text-muted-foreground mt-2">
-                        De l'ouverture à la fermeture du SAV
-                      </div>
-                      <div className="text-xs text-muted-foreground mt-1">
-                        Basé sur {savStats.total} SAV terminés (statut "Prêt" ou "Annulé")
-                      </div>
-                    </DraggableStatisticsWidget>
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="text-xs text-muted-foreground">📅 {periodLabel}</div>
+                    </div>
+                    <div className="text-3xl font-semibold">
+                      {savStats.averageProcessingDays} jours
+                    </div>
+                    <div className="text-sm text-muted-foreground mt-2">
+                      De l'ouverture à la fermeture du SAV
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-1">
+                      Basé sur {savStats.total} SAV terminés (statut "Prêt" ou "Annulé")
+                    </div>
                   </>
                 );
               }}
