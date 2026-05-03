@@ -692,36 +692,40 @@ export const DragDropStatistics = ({ period, onPeriodChange }: DragDropStatistic
       // Widget sav-types-grid supprimé
 
       case 'finance-kpis':
-        const currentMonthFinance = {
-          revenue,
-          expenses,
-          profit,
-          margin: profit ? (profit / revenue) * 100 : 0,
-          takeoverAmount: takeoverStats.amount,
-          takeoverCount: takeoverStats.count,
-          growth: 15.2,
-          target: revenue * 1.2
-        };
-        
-        const previousMonthFinance = {
-          revenue: revenue * 0.85,
-          expenses: expenses * 0.9,
-          profit: profit * 0.8,
-          margin: 42,
-          takeoverAmount: takeoverStats.amount * 0.7,
-          takeoverCount: takeoverStats.count - 5,
-          growth: -5.3,
-          target: revenue * 1.15
-        };
-        
         return (
           <div className={className}>
-            <FinanceKPIsWidget 
-              currentMonth={currentMonthFinance}
-              previousMonth={previousMonthFinance}
-              yearTarget={revenue * 12}
-              monthProgress={75}
-            />
+            <StatisticsWidgetContainer module={module} period={period} wrap={false}>
+              {({ stats }) => {
+                const currentMonthFinance = {
+                  revenue: stats.revenue,
+                  expenses: stats.expenses,
+                  profit: stats.profit,
+                  margin: stats.profit ? (stats.profit / stats.revenue) * 100 : 0,
+                  takeoverAmount: stats.takeoverStats.amount,
+                  takeoverCount: stats.takeoverStats.count,
+                  growth: 0,
+                  target: 0
+                };
+                const previousMonthFinance = {
+                  revenue: 0,
+                  expenses: 0,
+                  profit: 0,
+                  margin: 0,
+                  takeoverAmount: 0,
+                  takeoverCount: 0,
+                  growth: 0,
+                  target: 0
+                };
+                return (
+                  <FinanceKPIsWidget
+                    currentMonth={currentMonthFinance}
+                    previousMonth={previousMonthFinance}
+                    yearTarget={0}
+                    monthProgress={0}
+                  />
+                );
+              }}
+            </StatisticsWidgetContainer>
           </div>
         );
 
