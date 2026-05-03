@@ -207,24 +207,29 @@ export const DragDropStatistics = ({ period, onPeriodChange }: DragDropStatistic
     switch (module.id) {
       // Widgets avancés combinés
       case 'financial-overview':
-        const financialData = profitabilityChart.map(item => ({
-          date: item.date,
-          revenue: item.revenue,
-          expenses: item.expenses,
-          profit: item.profit,
-          margin: item.profit ? (item.profit / item.revenue) * 100 : 0,
-          savCount: completedSavChart.find(c => c.date === item.date)?.completed || 0
-        }));
-        
         return (
           <div className={className}>
-            <FinancialOverviewWidget 
-              data={financialData}
-              totalRevenue={revenue}
-              totalExpenses={expenses}
-              totalProfit={profit}
-              averageMargin={profit ? (profit / revenue) * 100 : 0}
-            />
+            <StatisticsWidgetContainer module={module} period={period} wrap={false}>
+              {({ stats }) => {
+                const financialData = stats.profitabilityChart.map(item => ({
+                  date: item.date,
+                  revenue: item.revenue,
+                  expenses: item.expenses,
+                  profit: item.profit,
+                  margin: item.profit ? (item.profit / item.revenue) * 100 : 0,
+                  savCount: stats.completedSavChart.find(c => c.date === item.date)?.completed || 0
+                }));
+                return (
+                  <FinancialOverviewWidget
+                    data={financialData}
+                    totalRevenue={stats.revenue}
+                    totalExpenses={stats.expenses}
+                    totalProfit={stats.profit}
+                    averageMargin={stats.profit ? (stats.profit / stats.revenue) * 100 : 0}
+                  />
+                );
+              }}
+            </StatisticsWidgetContainer>
           </div>
         );
 
@@ -258,23 +263,28 @@ export const DragDropStatistics = ({ period, onPeriodChange }: DragDropStatistic
         );
 
       case 'parts-usage-heatmap':
-        const partsUsageData = topParts.map((part, index) => ({
-          name: part.name,
-          value: part.quantity,
-          cost: part.quantity * 25, // Prix estimé
-          frequency: Math.max(10 - index, 1),
-          trend: index < 2 ? 'up' as const : index > 5 ? 'down' as const : 'stable' as const,
-          category: 'Écran'
-        }));
-        
         return (
           <div className={className}>
-            <PartsUsageHeatmapWidget 
-              partsData={partsUsageData}
-              totalParts={topParts.reduce((sum, p) => sum + p.quantity, 0)}
-              totalCost={expenses}
-              topCategory="Écrans"
-            />
+            <StatisticsWidgetContainer module={module} period={period} wrap={false}>
+              {({ stats }) => {
+                const partsUsageData = stats.topParts.map((part) => ({
+                  name: part.name,
+                  value: part.quantity,
+                  cost: part.revenue || 0,
+                  frequency: part.quantity,
+                  trend: 'stable' as const,
+                  category: 'Pièce'
+                }));
+                return (
+                  <PartsUsageHeatmapWidget
+                    partsData={partsUsageData}
+                    totalParts={stats.topParts.reduce((sum, p) => sum + p.quantity, 0)}
+                    totalCost={stats.expenses}
+                    topCategory={stats.topParts[0]?.name || 'N/A'}
+                  />
+                );
+              }}
+            </StatisticsWidgetContainer>
           </div>
         );
 
