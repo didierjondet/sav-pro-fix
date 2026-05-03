@@ -554,9 +554,14 @@ export default function SAVDetail() {
                   <div>
                     <strong>Coût total:</strong> {savCase.total_cost}€
                   </div>
-                  <div className="md:col-span-2">
-                    <strong>Description du problème:</strong>
-                    <p className="mt-1 text-muted-foreground">{savCase.problem_description}</p>
+                  <div className="md:col-span-2 rounded-lg border-l-4 border-l-primary bg-primary/5 p-4 shadow-sm">
+                    <div className="flex items-center gap-2 mb-2">
+                      <AlertCircle className="h-5 w-5 text-primary" />
+                      <h3 className="font-semibold text-base">Description du problème</h3>
+                    </div>
+                    <p className="text-foreground whitespace-pre-wrap">
+                      {savCase.problem_description || <span className="italic text-muted-foreground">Aucune description renseignée</span>}
+                    </p>
                   </div>
                   {savCase.repair_notes && <div className="md:col-span-2">
                       <strong>Notes de réparation:</strong>
