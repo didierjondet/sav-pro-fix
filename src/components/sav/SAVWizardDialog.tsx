@@ -14,7 +14,7 @@ import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
   ArrowLeft, ArrowRight, Check, Plus, Trash2, Search, 
-  Smartphone, User, Wrench, Shield, Package, ClipboardList, Settings2, Clock
+  Smartphone, User, Wrench, Shield, Package, ClipboardList, Settings2, Clock, AlertCircle
 } from 'lucide-react';
 import { useSAVCases } from '@/hooks/useSAVCases';
 import { useCustomers } from '@/hooks/useCustomers';
