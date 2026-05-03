@@ -602,19 +602,21 @@ export const DragDropStatistics = ({ period, onPeriodChange }: DragDropStatistic
       case 'top-parts-chart':
         return (
           <div className={className}>
-            <DraggableStatisticsWidget {...baseProps}>
-              <ChartContainer
-                config={{ quantity: { label: "Quantité", color: "hsl(var(--primary))" } }}
-                className="h-72"
-              >
-                <BarChart data={topParts}>
-                  <XAxis dataKey="name" tickLine={false} axisLine={false} interval={0} angle={-15} textAnchor="end" height={60} />
-                  <YAxis tickLine={false} axisLine={false} />
-                  <ChartTooltip content={<ChartTooltipContent />} />
-                  <Bar dataKey="quantity" fill="var(--color-quantity)" radius={4} />
-                </BarChart>
-              </ChartContainer>
-            </DraggableStatisticsWidget>
+            <StatisticsWidgetContainer module={module} period={period}>
+              {({ stats }) => (
+                <ChartContainer
+                  config={{ quantity: { label: "Quantité", color: "hsl(var(--primary))" } }}
+                  className="h-72"
+                >
+                  <BarChart data={stats.topParts}>
+                    <XAxis dataKey="name" tickLine={false} axisLine={false} interval={0} angle={-15} textAnchor="end" height={60} />
+                    <YAxis tickLine={false} axisLine={false} />
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <Bar dataKey="quantity" fill="var(--color-quantity)" radius={4} />
+                  </BarChart>
+                </ChartContainer>
+              )}
+            </StatisticsWidgetContainer>
           </div>
         );
 
