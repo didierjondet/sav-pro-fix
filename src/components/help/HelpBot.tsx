@@ -83,7 +83,7 @@ const HelpBot: React.FC = () => {
       setTimeout(() => setShakeNow(false), 1300);
     };
     tick();
-    const id = setInterval(tick, 12000);
+    const id = setInterval(tick, 15 * 60 * 1000);
     return () => clearInterval(id);
   }, [shouldAttract]);
 
