@@ -1,11 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { MessageCircleQuestion, X, Send, RotateCcw, AlertTriangle, TicketCheck, XCircle } from 'lucide-react';
+import { MessageCircleQuestion, X, Send, RotateCcw, TicketCheck, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 
 import { useHelpBot } from '@/hooks/useHelpBot';
 import { useAuth } from '@/contexts/AuthContext';
 import { useShop } from '@/hooks/useShop';
+import { useProfile } from '@/hooks/useProfile';
+import { useOnboardingProgress } from '@/hooks/useOnboardingProgress';
+import OnboardingPanel from '@/components/help/OnboardingPanel';
 import { useLocation } from 'react-router-dom';
 
 const PUBLIC_EXACT = ['/', '/landing', '/features', '/about', '/contact', '/auth', '/test', '/chrome-extension-download'];
@@ -34,8 +37,10 @@ function renderSimpleMarkdown(text: string) {
 const HelpBot: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState('');
+  const [shakeNow, setShakeNow] = useState(false);
   const { user } = useAuth();
   const { shop } = useShop();
+  const { profile } = useProfile();
   const location = useLocation();
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -52,6 +57,8 @@ const HelpBot: React.FC = () => {
     dismissEscalation,
   } = useHelpBot();
 
+  const { pendingCount, isDismissed, isFullyConfigured } = useOnboardingProgress();
+
   const userContext = getUserContext();
 
   useEffect(() => {
@@ -59,10 +66,27 @@ const HelpBot: React.FC = () => {
   }, [messages, isLoading, pendingEscalation]);
 
   const isPublicRoute = PUBLIC_EXACT.includes(location.pathname) || PUBLIC_PREFIX.some(p => location.pathname.startsWith(p));
-  
+
   const aiModulesConfig = (shop as any)?.ai_modules_config || {};
   const helpbotEnabled = aiModulesConfig.helpbot_enabled ?? true;
-  
+
+  const canSeeOnboarding = !!profile && ['admin', 'shop_admin', 'super_admin'].includes(profile.role);
+  const shouldAttract = canSeeOnboarding && !isFullyConfigured && pendingCount > 0 && !isDismissed && !isOpen;
+
+  useEffect(() => {
+    if (!shouldAttract) {
+      setShakeNow(false);
+      return;
+    }
+    const tick = () => {
+      setShakeNow(true);
+      setTimeout(() => setShakeNow(false), 1300);
+    };
+    tick();
+    const id = setInterval(tick, 12000);
+    return () => clearInterval(id);
+  }, [shouldAttract]);
+
   if (!user || isPublicRoute || !helpbotEnabled) return null;
 
   const handleSend = async () => {
@@ -89,10 +113,15 @@ const HelpBot: React.FC = () => {
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-4 right-4 z-50 h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-lg hover:opacity-90 transition-all flex items-center justify-center"
+          className={`fixed bottom-4 right-4 z-50 h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-lg hover:opacity-90 transition-all flex items-center justify-center ${shakeNow ? 'animate-wiggle-attention' : ''}`}
           aria-label="Ouvrir l'assistant"
         >
           <MessageCircleQuestion className="h-6 w-6" />
+          {canSeeOnboarding && pendingCount > 0 && !isFullyConfigured && (
+            <span className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center border-2 border-background">
+              {pendingCount}
+            </span>
+          )}
         </button>
       )}
 
@@ -115,19 +144,11 @@ const HelpBot: React.FC = () => {
 
           <div className="flex-1 min-h-0 max-h-[calc(100vh-12rem)] sm:max-h-[380px] overflow-y-auto helpbot-scrollbar">
             <div className="p-4 space-y-3">
-              {(!userContext.profileComplete || !userContext.shopComplete) && messages.length === 0 && (
-                <div className="bg-accent/50 border border-accent rounded-lg p-3 text-sm">
-                  <div className="flex items-center gap-2 font-medium text-foreground mb-1">
-                    <AlertTriangle className="h-4 w-4" />
-                    Configuration incomplète
-                  </div>
-                  {!userContext.profileComplete && (
-                    <p className="text-muted-foreground text-xs">• Complétez votre profil (nom, prénom, téléphone) dans Paramètres</p>
-                  )}
-                  {!userContext.shopComplete && (
-                    <p className="text-muted-foreground text-xs">• Configurez votre boutique (nom, email) dans Paramètres</p>
-                  )}
-                </div>
+              {canSeeOnboarding && (
+                <OnboardingPanel
+                  onAskHelp={(q) => sendMessage(q)}
+                  defaultExpanded={!isFullyConfigured && messages.length === 0}
+                />
               )}
 
               {messages.length === 0 && (

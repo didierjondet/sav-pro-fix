@@ -2142,6 +2142,41 @@ export type Database = {
           },
         ]
       }
+      shop_onboarding_progress: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          dismissed_until: string | null
+          shop_id: string
+          steps_seen: Json
+          updated_at: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          dismissed_until?: string | null
+          shop_id: string
+          steps_seen?: Json
+          updated_at?: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          dismissed_until?: string | null
+          shop_id?: string
+          steps_seen?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shop_onboarding_progress_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: true
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       shop_role_permissions: {
         Row: {
           created_at: string | null
