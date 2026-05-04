@@ -144,19 +144,11 @@ const HelpBot: React.FC = () => {
 
           <div className="flex-1 min-h-0 max-h-[calc(100vh-12rem)] sm:max-h-[380px] overflow-y-auto helpbot-scrollbar">
             <div className="p-4 space-y-3">
-              {(!userContext.profileComplete || !userContext.shopComplete) && messages.length === 0 && (
-                <div className="bg-accent/50 border border-accent rounded-lg p-3 text-sm">
-                  <div className="flex items-center gap-2 font-medium text-foreground mb-1">
-                    <AlertTriangle className="h-4 w-4" />
-                    Configuration incomplète
-                  </div>
-                  {!userContext.profileComplete && (
-                    <p className="text-muted-foreground text-xs">• Complétez votre profil (nom, prénom, téléphone) dans Paramètres</p>
-                  )}
-                  {!userContext.shopComplete && (
-                    <p className="text-muted-foreground text-xs">• Configurez votre boutique (nom, email) dans Paramètres</p>
-                  )}
-                </div>
+              {canSeeOnboarding && (
+                <OnboardingPanel
+                  onAskHelp={(q) => sendMessage(q)}
+                  defaultExpanded={!isFullyConfigured && messages.length === 0}
+                />
               )}
 
               {messages.length === 0 && (
