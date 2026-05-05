@@ -482,6 +482,13 @@ export function InventorySessionTab(props: InventorySessionTabProps) {
           </CardContent>
         </Card>
       )}
+      <InventoryJournalDialog
+        open={journalOpen}
+        onOpenChange={setJournalOpen}
+        title={`Journal de l'inventaire — ${session.name}`}
+        logs={logs}
+        session={session}
+      />
     </div>
   );
 }
