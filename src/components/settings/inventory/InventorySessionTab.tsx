@@ -202,6 +202,9 @@ export function InventorySessionTab(props: InventorySessionTabProps) {
           </div>
 
           <div className="flex flex-wrap gap-2">
+            <Button variant="outline" size="sm" onClick={() => setJournalOpen(true)}>
+              <History className="h-4 w-4" />Journal log
+            </Button>
             {session.status === 'paused' ? (
               <Button variant="outline" size="sm" onClick={onResume}><PlayCircle className="h-4 w-4" />Reprendre</Button>
             ) : canEditSession ? (
