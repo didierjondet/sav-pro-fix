@@ -24,7 +24,6 @@ Deno.serve(async (req) => {
       { auth: { persistSession: false } }
     );
 
-    // Ne créer la notification qu'en fin de mois
     if (!isLastDayOfMonth()) {
       return new Response(JSON.stringify({ skipped: true, reason: 'Not last day of month' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -32,30 +31,56 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Récupérer toutes les boutiques
+    const now = new Date();
+    // Start of current month (UTC)
+    const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();
+    // Shops must have been created at least 30 days ago
+    const cutoffCreated = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
+
     const { data: shops, error: shopsError } = await supabase
       .from('shops')
-      .select('id, name');
+      .select('id, name')
+      .lt('created_at', cutoffCreated);
     if (shopsError) throw shopsError;
 
-    const title = 'Rappel sauvegarde de fin de mois';
-    const message = "Pensez à sauvegarder vos SAV et Devis. Ouvrir l'export ici: /settings?tab=import-export";
+    const monthLabel = now.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+    const title = `Rappel sauvegarde – ${monthLabel}`;
+    const message = "Pensez à sauvegarder vos SAV et Devis du mois. Ouvrir l'export ici: /settings?tab=import-export";
 
-    // Insérer une notification par boutique
-    if (shops && shops.length > 0) {
-      const inserts = shops.map((s) => ({
-        shop_id: s.id,
-        title,
-        message,
-        type: 'general' as const,
-        read: false,
-      }));
+    const inserts: Array<{ shop_id: string; title: string; message: string; type: 'general'; read: boolean }> = [];
 
+    for (const s of shops ?? []) {
+      // Check if shop has any SAV or quote created in the current month
+      const [{ count: savCount }, { count: quoteCount }] = await Promise.all([
+        supabase
+          .from('sav_cases')
+          .select('id', { count: 'exact', head: true })
+          .eq('shop_id', s.id)
+          .gte('created_at', monthStart),
+        supabase
+          .from('quotes')
+          .select('id', { count: 'exact', head: true })
+          .eq('shop_id', s.id)
+          .gte('created_at', monthStart),
+      ]);
+
+      if ((savCount ?? 0) > 0 || (quoteCount ?? 0) > 0) {
+        inserts.push({
+          shop_id: s.id,
+          title,
+          message,
+          type: 'general',
+          read: false,
+        });
+      }
+    }
+
+    if (inserts.length > 0) {
       const { error: notifErr } = await supabase.from('notifications').insert(inserts);
       if (notifErr) throw notifErr;
     }
 
-    return new Response(JSON.stringify({ success: true, created: shops?.length || 0 }), {
+    return new Response(JSON.stringify({ success: true, eligible: shops?.length || 0, created: inserts.length }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     });
