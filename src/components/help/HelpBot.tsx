@@ -57,7 +57,7 @@ const HelpBot: React.FC = () => {
     dismissEscalation,
   } = useHelpBot();
 
-  const { pendingCount, isDismissed, isFullyConfigured } = useOnboardingProgress();
+  const { pendingCount, isDismissed, isFullyConfigured, isOnboardingExpired } = useOnboardingProgress();
 
   const userContext = getUserContext();
 
