@@ -143,6 +143,7 @@ export function InventorySessionTab(props: InventorySessionTabProps) {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<'all' | 'pending' | 'found' | 'missing' | 'adjusted'>('all');
   const [reviewTab, setReviewTab] = useState<InventoryReviewTab>('discrepancies');
+  const [journalOpen, setJournalOpen] = useState(false);
 
   const filteredItems = useMemo(() => {
     const term = search.trim().toLowerCase();
