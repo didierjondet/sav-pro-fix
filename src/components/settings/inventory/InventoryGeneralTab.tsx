@@ -121,6 +121,19 @@ export function InventoryGeneralTab({ sessions, shopId, onOpenSession, onCreate 
     return m;
   }, [sessions]);
 
+  const [globalLogOpen, setGlobalLogOpen] = useState(false);
+  const [openHistoryId, setOpenHistoryId] = useState<string | null>(null);
+
+  const logsBySession = useMemo(() => {
+    const map = new Map<string, InventoryAuditLog[]>();
+    (logsQuery.data ?? []).forEach((l) => {
+      const arr = map.get(l.inventory_session_id) ?? [];
+      arr.push(l);
+      map.set(l.inventory_session_id, arr);
+    });
+    return map;
+  }, [logsQuery.data]);
+
   return (
     <div className="space-y-6">
       {/* En-tête + bouton rouge */}
@@ -134,11 +147,26 @@ export function InventoryGeneralTab({ sessions, shopId, onOpenSession, onCreate 
             Pilotez vos sessions, suivez les écarts validés et consultez l'historique global.
           </p>
         </div>
-        <Button onClick={onCreate} variant="destructive" size="lg" className="font-semibold">
-          <ClipboardList className="h-4 w-4" />
-          Lancer un nouvel inventaire
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button onClick={() => setGlobalLogOpen(true)} variant="outline" size="lg">
+            <History className="h-4 w-4" />
+            Journal log global
+          </Button>
+          <Button onClick={onCreate} variant="destructive" size="lg" className="font-semibold">
+            <ClipboardList className="h-4 w-4" />
+            Lancer un nouvel inventaire
+          </Button>
+        </div>
       </div>
+
+      <InventoryJournalDialog
+        open={globalLogOpen}
+        onOpenChange={setGlobalLogOpen}
+        title="Journal global des inventaires"
+        logs={logsQuery.data ?? []}
+        sessionNameById={sessionNameById}
+        showSessionColumn
+      />
 
       {/* Sessions en cours */}
       <Card>
