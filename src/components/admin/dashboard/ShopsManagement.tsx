@@ -21,6 +21,7 @@ import {
   ArrowUpDown,
   LogIn,
   Loader2,
+  Copy,
 } from 'lucide-react';
 import {
   Dialog,
