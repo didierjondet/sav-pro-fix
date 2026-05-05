@@ -578,6 +578,29 @@ export function ShopsManagement({ shops, onUpdate }: ShopsManagementProps) {
                           <span className="font-medium">CA: </span>
                           <span>{shop.total_revenue?.toFixed(2)}€</span>
                         </div>
+                        <div className="text-slate-700 flex items-center gap-2">
+                          <span className="font-medium">Code: </span>
+                          {shop.invite_code ? (
+                            <>
+                              <code className="px-2 py-0.5 rounded bg-emerald-50 border border-emerald-200 text-emerald-700 font-mono text-xs tracking-wider">
+                                {shop.invite_code}
+                              </code>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  navigator.clipboard.writeText(shop.invite_code);
+                                  toast({ title: 'Code copié', description: shop.invite_code });
+                                }}
+                                className="text-slate-500 hover:text-emerald-600 transition-colors"
+                                title="Copier le code"
+                              >
+                                <Copy className="h-3.5 w-3.5" />
+                              </button>
+                            </>
+                          ) : (
+                            <span>—</span>
+                          )}
+                        </div>
                       </div>
 
                       {shop.last_login_at && (
