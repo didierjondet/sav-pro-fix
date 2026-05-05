@@ -326,6 +326,7 @@ export function InventoryGeneralTab({ sessions, shopId, onOpenSession, onCreate,
                         open={isOpen}
                         onOpenChange={(o) => setOpenHistoryId(o ? s.id : null)}
                         className="rounded-md border"
+                        ref={(el: HTMLDivElement | null) => { sessionRefs.current.set(s.id, el); }}
                       >
                         <CollapsibleTrigger className="w-full flex items-center justify-between gap-3 p-3 text-left hover:bg-muted/50">
                           <div className="min-w-0">
