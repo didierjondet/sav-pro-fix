@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -106,6 +107,22 @@ export function InventoryManager({ canApplyStock }: { canApplyStock: boolean }) 
       setActiveTab('general');
     }
   }, [sessions, activeTab]);
+
+  // Handle ?session=<id> deep link from Parts page
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [focusedSessionId, setFocusedSessionId] = useState<string | null>(null);
+  const handledRef = useRef<string | null>(null);
+  useEffect(() => {
+    const sid = searchParams.get('session');
+    if (!sid || handledRef.current === sid) return;
+    if (!sessions.length) return;
+    handledRef.current = sid;
+    setActiveTab('general');
+    setFocusedSessionId(sid);
+    const next = new URLSearchParams(searchParams);
+    next.delete('session');
+    setSearchParams(next, { replace: true });
+  }, [searchParams, sessions, setSearchParams]);
 
   const openSession = (sessionId: string) => {
     setOpenTabIds((prev) => (prev.includes(sessionId) ? prev : [...prev, sessionId]));
@@ -334,6 +351,8 @@ export function InventoryManager({ canApplyStock }: { canApplyStock: boolean }) 
           shopId={shopId}
           onOpenSession={openSession}
           onCreate={() => setCreateOpen(true)}
+          focusedSessionId={focusedSessionId}
+          onFocusedHandled={() => setFocusedSessionId(null)}
         />
       ) : currentSession && currentSession.id === activeTab ? (
         <InventorySessionTab

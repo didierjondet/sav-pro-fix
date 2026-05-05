@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -58,9 +58,11 @@ interface InventoryGeneralTabProps {
   shopId: string | undefined;
   onOpenSession: (sessionId: string) => void;
   onCreate: () => void;
+  focusedSessionId?: string | null;
+  onFocusedHandled?: () => void;
 }
 
-export function InventoryGeneralTab({ sessions, shopId, onOpenSession, onCreate }: InventoryGeneralTabProps) {
+export function InventoryGeneralTab({ sessions, shopId, onOpenSession, onCreate, focusedSessionId, onFocusedHandled }: InventoryGeneralTabProps) {
   const ongoing = useMemo(
     () => sessions.filter((s) => s.status === 'in_progress' || s.status === 'paused' || s.status === 'completed'),
     [sessions],
@@ -123,6 +125,18 @@ export function InventoryGeneralTab({ sessions, shopId, onOpenSession, onCreate 
 
   const [globalLogOpen, setGlobalLogOpen] = useState(false);
   const [openHistoryId, setOpenHistoryId] = useState<string | null>(null);
+  const sessionRefs = useRef<Map<string, HTMLDivElement | null>>(new Map());
+
+  useEffect(() => {
+    if (!focusedSessionId) return;
+    if (!sessions.some((s) => s.id === focusedSessionId)) return;
+    setOpenHistoryId(focusedSessionId);
+    requestAnimationFrame(() => {
+      const el = sessionRefs.current.get(focusedSessionId);
+      el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+    onFocusedHandled?.();
+  }, [focusedSessionId, sessions, onFocusedHandled]);
 
   const logsBySession = useMemo(() => {
     const map = new Map<string, InventoryAuditLog[]>();
@@ -312,6 +326,7 @@ export function InventoryGeneralTab({ sessions, shopId, onOpenSession, onCreate 
                         open={isOpen}
                         onOpenChange={(o) => setOpenHistoryId(o ? s.id : null)}
                         className="rounded-md border"
+                        ref={(el: HTMLDivElement | null) => { sessionRefs.current.set(s.id, el); }}
                       >
                         <CollapsibleTrigger className="w-full flex items-center justify-between gap-3 p-3 text-left hover:bg-muted/50">
                           <div className="min-w-0">
