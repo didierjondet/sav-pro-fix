@@ -1,34 +1,18 @@
-## Problème identifié
+## Action ciblée
 
-L'edge function `monthly-backup-reminder` s'exécute le dernier jour de chaque mois et insère une notification "Rappel sauvegarde de fin de mois" pour **toutes les boutiques sans exception**, y compris :
-- les boutiques créées quelques jours avant (ex: MDI créée le 23/04, notification le 30/04),
-- les boutiques qui n'ont aucun SAV ni devis à sauvegarder.
+Supprimer uniquement les données liées à `maisonglun@gmail.com` afin qu'il puisse recréer un compte/magasin :
 
-Résultat : une nouvelle boutique reçoit immédiatement un rappel de "sauvegarde antérieure" qui n'a aucun sens pour elle.
+- **Auth user** : `bf4d25bc-64f5-492b-a007-a58c8bad28cf`
+- **Boutique** : `Easycash Montelimar` (`f3df8523-53bd-41fa-8930-7dc48b543b08`) — déjà vide (0 SAV, 0 client, 0 devis)
+- **Profil** : seul rattachement à cette boutique
 
-## Correctifs proposés
+### Étapes (migration SQL ponctuelle)
+1. Nettoyer les éventuelles tables filles attachées à ce shop (notifications, order_items, sav_messages, sav_parts, sav_status_history, sav_cases, customers, quotes, parts, profiles) — par sécurité, même si vide.
+2. Supprimer la ligne dans `shops`.
+3. Supprimer l'utilisateur `bf4d25bc-64f5-492b-a007-a58c8bad28cf` dans `auth.users`.
 
-### 1. Filtrer les boutiques éligibles dans `supabase/functions/monthly-backup-reminder/index.ts`
+### Hors scope
+Les 15 auth users orphelins ne seront **pas** touchés.
 
-N'envoyer la notification qu'aux boutiques qui remplissent **toutes** ces conditions :
-- créées il y a **plus de 30 jours** (donc présentes au moins un mois calendaire complet),
-- possédant au moins **1 SAV ou 1 devis** dans le mois écoulé (sinon il n'y a rien à sauvegarder).
-
-Logique : pour chaque boutique, vérifier `created_at < now() - 30 days`, puis compter rapidement les `sav_cases` et `quotes` du mois courant. Insérer la notification uniquement si l'un des deux compteurs est > 0.
-
-### 2. Nettoyage des notifications déjà créées à tort
-
-Supprimer (via migration ponctuelle) les notifications `Rappel sauvegarde de fin de mois` adressées à des boutiques :
-- créées dans le mois où la notification a été générée, **ou**
-- sans aucun SAV / devis sur la période concernée.
-
-Cela retirera les rappels parasites visibles aujourd'hui chez les nouveaux magasins.
-
-### 3. (Optionnel, à confirmer) Adapter le message
-
-Si tu le souhaites, on peut aussi rendre le message plus explicite en mentionnant le mois concerné ("Rappel sauvegarde – avril 2026") pour éviter toute ambiguïté future.
-
-## Fichiers impactés
-
-- `supabase/functions/monthly-backup-reminder/index.ts` (logique de filtrage)
-- migration SQL ponctuelle (nettoyage des notifications obsolètes)
+### Résultat attendu
+`maisonglun@gmail.com` libéré et capable de recréer un compte normalement.
