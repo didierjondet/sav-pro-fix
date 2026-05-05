@@ -35,10 +35,13 @@ import {
   Eye,
   Upload,
   Image as ImageIcon,
-  Clock
+  Clock,
+  ClipboardCheck
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { isPriceOutdated, getMonthsSinceUpdate } from '@/utils/priceUtils';
+import { useLastInventoryByPart } from '@/hooks/useLastInventoryByPart';
+import { useNavigate } from 'react-router-dom';
 
 export default function Parts() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
