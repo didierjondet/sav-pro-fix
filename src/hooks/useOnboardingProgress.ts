@@ -248,6 +248,7 @@ export function useOnboardingProgress() {
     totalSteps,
     progressPercent,
     isFullyConfigured,
+    isOnboardingExpired,
     isDismissed,
     markStepSeen: markStepSeen.mutate,
     dismissTemporarily: dismissTemporarily.mutate,
