@@ -438,12 +438,34 @@ export default function Parts() {
                                      </div>
                                    )}
                                    
-                                   {part.supplier && (
-                                     <div className="mt-2 text-sm text-muted-foreground">
-                                       <span className="font-medium">Fournisseur: </span>
-                                       <span>{part.supplier}</span>
-                                     </div>
-                                   )}
+                                    {part.supplier && (
+                                      <div className="mt-2 text-sm text-muted-foreground">
+                                        <span className="font-medium">Fournisseur: </span>
+                                        <span>{part.supplier}</span>
+                                      </div>
+                                    )}
+
+                                    {(() => {
+                                      const lastInv = lastInventoryByPart.get(part.id);
+                                      return (
+                                        <div className="mt-2 text-sm text-muted-foreground flex items-center gap-1.5">
+                                          <ClipboardCheck className="h-3.5 w-3.5" />
+                                          <span className="font-medium">Dernier inventaire: </span>
+                                          {lastInv ? (
+                                            <button
+                                              type="button"
+                                              onClick={() => navigate(`/inventory?session=${lastInv.sessionId}`)}
+                                              className="text-primary hover:underline font-medium"
+                                              title={`Voir la session : ${lastInv.sessionName}`}
+                                            >
+                                              {new Date(lastInv.lastCountedAt).toLocaleDateString('fr-FR')}
+                                            </button>
+                                          ) : (
+                                            <span className="italic">Jamais inventoriée</span>
+                                          )}
+                                        </div>
+                                      );
+                                    })()}
                                 </div>
                               </div>
                               
