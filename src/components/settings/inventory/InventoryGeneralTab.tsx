@@ -58,9 +58,11 @@ interface InventoryGeneralTabProps {
   shopId: string | undefined;
   onOpenSession: (sessionId: string) => void;
   onCreate: () => void;
+  focusedSessionId?: string | null;
+  onFocusedHandled?: () => void;
 }
 
-export function InventoryGeneralTab({ sessions, shopId, onOpenSession, onCreate }: InventoryGeneralTabProps) {
+export function InventoryGeneralTab({ sessions, shopId, onOpenSession, onCreate, focusedSessionId, onFocusedHandled }: InventoryGeneralTabProps) {
   const ongoing = useMemo(
     () => sessions.filter((s) => s.status === 'in_progress' || s.status === 'paused' || s.status === 'completed'),
     [sessions],
