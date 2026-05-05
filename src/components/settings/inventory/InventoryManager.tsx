@@ -351,6 +351,8 @@ export function InventoryManager({ canApplyStock }: { canApplyStock: boolean }) 
           shopId={shopId}
           onOpenSession={openSession}
           onCreate={() => setCreateOpen(true)}
+          focusedSessionId={focusedSessionId}
+          onFocusedHandled={() => setFocusedSessionId(null)}
         />
       ) : currentSession && currentSession.id === activeTab ? (
         <InventorySessionTab
