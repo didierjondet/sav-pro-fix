@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
-import { useMemo } from 'react';
+import { useMemo, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useShop } from '@/contexts/ShopContext';
 import { useProfile } from '@/hooks/useProfile';
@@ -191,6 +191,21 @@ export function useOnboardingProgress() {
   const progressPercent = totalSteps > 0 ? Math.round((doneCount / totalSteps) * 100) : 0;
   const isFullyConfigured = pendingCount === 0;
 
+  const completedAt = progress?.completed_at ? new Date(progress.completed_at) : null;
+  const FIFTEEN_DAYS_MS = 15 * 24 * 3600 * 1000;
+  const isOnboardingExpired = !!completedAt && (Date.now() - completedAt.getTime()) >= FIFTEEN_DAYS_MS;
+
+  // Auto-mark completed_at when fully configured (once)
+  useEffect(() => {
+    if (!shopId) return;
+    if (isFullyConfigured && progress && !progress.completed_at) {
+      supabase
+        .from('shop_onboarding_progress' as any)
+        .upsert({ shop_id: shopId, completed_at: new Date().toISOString() }, { onConflict: 'shop_id' })
+        .then(() => queryClient.invalidateQueries({ queryKey: ['onboarding-progress', shopId] }));
+    }
+  }, [isFullyConfigured, progress, shopId, queryClient]);
+
   const dismissedUntil = progress?.dismissed_until ? new Date(progress.dismissed_until) : null;
   const isDismissed = !!(dismissedUntil && dismissedUntil.getTime() > Date.now());
 
@@ -233,6 +248,7 @@ export function useOnboardingProgress() {
     totalSteps,
     progressPercent,
     isFullyConfigured,
+    isOnboardingExpired,
     isDismissed,
     markStepSeen: markStepSeen.mutate,
     dismissTemporarily: dismissTemporarily.mutate,
