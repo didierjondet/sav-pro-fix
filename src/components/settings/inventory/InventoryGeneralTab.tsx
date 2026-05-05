@@ -109,7 +109,7 @@ export function InventoryGeneralTab({ sessions, shopId, onOpenSession, onCreate 
         .select('*')
         .eq('shop_id', shopId as string)
         .order('created_at', { ascending: false })
-        .limit(100);
+        .limit(2000);
       if (error) throw error;
       return (data ?? []) as unknown as InventoryAuditLog[];
     },
