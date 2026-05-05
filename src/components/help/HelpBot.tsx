@@ -70,7 +70,7 @@ const HelpBot: React.FC = () => {
   const aiModulesConfig = (shop as any)?.ai_modules_config || {};
   const helpbotEnabled = aiModulesConfig.helpbot_enabled ?? true;
 
-  const canSeeOnboarding = !!profile && ['admin', 'shop_admin', 'super_admin'].includes(profile.role);
+  const canSeeOnboarding = !!profile && ['admin', 'shop_admin', 'super_admin'].includes(profile.role) && !isOnboardingExpired;
   const shouldAttract = canSeeOnboarding && !isFullyConfigured && pendingCount > 0 && !isDismissed && !isOpen;
 
   useEffect(() => {
