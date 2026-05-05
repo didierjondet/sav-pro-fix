@@ -12,6 +12,7 @@ import {
   CheckCircle2,
   ClipboardList,
   FileSpreadsheet,
+  History,
   PauseCircle,
   PlayCircle,
   Printer,
@@ -20,6 +21,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import { printInventoryDocument } from '@/lib/inventoryPrint';
+import { InventoryJournalDialog } from './InventoryJournalDialog';
 import { InventoryManualEditor, type InventoryReviewTab } from './InventoryManualEditor';
 import { InventorySessionSummary } from './InventorySessionSummary';
 import {
