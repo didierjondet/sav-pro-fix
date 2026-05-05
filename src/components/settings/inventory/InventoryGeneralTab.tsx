@@ -125,6 +125,18 @@ export function InventoryGeneralTab({ sessions, shopId, onOpenSession, onCreate,
 
   const [globalLogOpen, setGlobalLogOpen] = useState(false);
   const [openHistoryId, setOpenHistoryId] = useState<string | null>(null);
+  const sessionRefs = useRef<Map<string, HTMLDivElement | null>>(new Map());
+
+  useEffect(() => {
+    if (!focusedSessionId) return;
+    if (!sessions.some((s) => s.id === focusedSessionId)) return;
+    setOpenHistoryId(focusedSessionId);
+    requestAnimationFrame(() => {
+      const el = sessionRefs.current.get(focusedSessionId);
+      el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+    onFocusedHandled?.();
+  }, [focusedSessionId, sessions, onFocusedHandled]);
 
   const logsBySession = useMemo(() => {
     const map = new Map<string, InventoryAuditLog[]>();
