@@ -58,6 +58,8 @@ export default function Parts() {
 
   const { parts, loading, statistics, createPart, updatePart, deletePart, adjustStock, findSimilarParts, refetch } = useParts();
   const { categories } = usePartCategories();
+  const { lastInventoryByPart } = useLastInventoryByPart();
+  const navigate = useNavigate();
   const categoryById = useMemo(() => {
     const map = new Map<string, typeof categories[number]>();
     categories.forEach((c) => map.set(c.id, c));
