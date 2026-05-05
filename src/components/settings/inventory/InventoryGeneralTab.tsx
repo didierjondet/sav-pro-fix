@@ -1,10 +1,13 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Activity, ClipboardList, History, TrendingUp } from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Activity, ChevronDown, ClipboardList, History, TrendingUp } from 'lucide-react';
+import { InventoryJournalDialog } from './InventoryJournalDialog';
 import { supabase } from '@/integrations/supabase/client';
 import {
   Bar,
@@ -106,7 +109,7 @@ export function InventoryGeneralTab({ sessions, shopId, onOpenSession, onCreate 
         .select('*')
         .eq('shop_id', shopId as string)
         .order('created_at', { ascending: false })
-        .limit(100);
+        .limit(2000);
       if (error) throw error;
       return (data ?? []) as unknown as InventoryAuditLog[];
     },
@@ -117,6 +120,19 @@ export function InventoryGeneralTab({ sessions, shopId, onOpenSession, onCreate 
     sessions.forEach((s) => m.set(s.id, s.name));
     return m;
   }, [sessions]);
+
+  const [globalLogOpen, setGlobalLogOpen] = useState(false);
+  const [openHistoryId, setOpenHistoryId] = useState<string | null>(null);
+
+  const logsBySession = useMemo(() => {
+    const map = new Map<string, InventoryAuditLog[]>();
+    (logsQuery.data ?? []).forEach((l) => {
+      const arr = map.get(l.inventory_session_id) ?? [];
+      arr.push(l);
+      map.set(l.inventory_session_id, arr);
+    });
+    return map;
+  }, [logsQuery.data]);
 
   return (
     <div className="space-y-6">
@@ -131,11 +147,26 @@ export function InventoryGeneralTab({ sessions, shopId, onOpenSession, onCreate 
             Pilotez vos sessions, suivez les écarts validés et consultez l'historique global.
           </p>
         </div>
-        <Button onClick={onCreate} variant="destructive" size="lg" className="font-semibold">
-          <ClipboardList className="h-4 w-4" />
-          Lancer un nouvel inventaire
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button onClick={() => setGlobalLogOpen(true)} variant="outline" size="lg">
+            <History className="h-4 w-4" />
+            Journal log global
+          </Button>
+          <Button onClick={onCreate} variant="destructive" size="lg" className="font-semibold">
+            <ClipboardList className="h-4 w-4" />
+            Lancer un nouvel inventaire
+          </Button>
+        </div>
       </div>
+
+      <InventoryJournalDialog
+        open={globalLogOpen}
+        onOpenChange={setGlobalLogOpen}
+        title="Journal global des inventaires"
+        logs={logsQuery.data ?? []}
+        sessionNameById={sessionNameById}
+        showSessionColumn
+      />
 
       {/* Sessions en cours */}
       <Card>
@@ -268,72 +299,92 @@ export function InventoryGeneralTab({ sessions, shopId, onOpenSession, onCreate 
           {validated.length === 0 && cancelled.length === 0 ? (
             <div className="text-sm text-muted-foreground py-6 text-center">Aucun historique.</div>
           ) : (
-            <ScrollArea className="max-h-[320px]">
+            <ScrollArea className="max-h-[480px]">
               <div className="space-y-2">
                 {[...validated, ...cancelled]
                   .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-                  .map((s) => (
-                    <button
-                      key={s.id}
-                      type="button"
-                      onClick={() => onOpenSession(s.id)}
-                      className="w-full flex items-center justify-between gap-3 rounded-md border p-3 text-left hover:bg-muted/50"
-                    >
-                      <div className="min-w-0">
-                        <div className="font-medium truncate">{s.name}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {new Date(s.applied_at || s.completed_at || s.created_at).toLocaleString('fr-FR')}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3 shrink-0">
-                        <span className="text-xs text-muted-foreground">Écart: {currency(s.variance_total_cost)}</span>
-                        <Badge variant={statusBadgeVariant[s.status] || 'outline'}>
-                          {INVENTORY_STATUS_LABELS[s.status]}
-                        </Badge>
-                      </div>
-                    </button>
-                  ))}
+                  .map((s) => {
+                    const isOpen = openHistoryId === s.id;
+                    const sessionLogs = logsBySession.get(s.id) ?? [];
+                    return (
+                      <Collapsible
+                        key={s.id}
+                        open={isOpen}
+                        onOpenChange={(o) => setOpenHistoryId(o ? s.id : null)}
+                        className="rounded-md border"
+                      >
+                        <CollapsibleTrigger className="w-full flex items-center justify-between gap-3 p-3 text-left hover:bg-muted/50">
+                          <div className="min-w-0">
+                            <div className="font-medium truncate">{s.name}</div>
+                            <div className="text-xs text-muted-foreground">
+                              {new Date(s.applied_at || s.completed_at || s.created_at).toLocaleString('fr-FR')}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-3 shrink-0">
+                            <span className="text-xs text-muted-foreground">Écart: {currency(s.variance_total_cost)}</span>
+                            <Badge variant={statusBadgeVariant[s.status] || 'outline'}>
+                              {INVENTORY_STATUS_LABELS[s.status]}
+                            </Badge>
+                            <ChevronDown className={`h-4 w-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                          </div>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent className="border-t p-3">
+                          <Tabs defaultValue="details">
+                            <TabsList>
+                              <TabsTrigger value="details">Détails</TabsTrigger>
+                              <TabsTrigger value="logs">Logs ({sessionLogs.length})</TabsTrigger>
+                            </TabsList>
+                            <TabsContent value="details" className="mt-3">
+                              <div className="grid gap-2 text-xs sm:grid-cols-2 md:grid-cols-3">
+                                <div><span className="text-muted-foreground">Lignes :</span> {s.counted_items}/{s.total_items}</div>
+                                <div><span className="text-muted-foreground">Manquants :</span> {s.missing_items}</div>
+                                <div><span className="text-muted-foreground">Écart valeur :</span> {currency(s.variance_total_cost)}</div>
+                                <div><span className="text-muted-foreground">Valeur manquants :</span> {currency(s.missing_total_cost)}</div>
+                                <div><span className="text-muted-foreground">Créé :</span> {new Date(s.created_at).toLocaleDateString('fr-FR')}</div>
+                                {s.applied_at && <div><span className="text-muted-foreground">Appliqué :</span> {new Date(s.applied_at).toLocaleDateString('fr-FR')}</div>}
+                              </div>
+                              <div className="mt-3">
+                                <Button size="sm" variant="outline" onClick={() => onOpenSession(s.id)}>
+                                  Ouvrir la session
+                                </Button>
+                              </div>
+                            </TabsContent>
+                            <TabsContent value="logs" className="mt-3">
+                              {sessionLogs.length === 0 ? (
+                                <div className="text-xs text-muted-foreground py-2">Aucune action.</div>
+                              ) : (
+                                <div className="space-y-1.5 max-h-[300px] overflow-auto pr-2">
+                                  {sessionLogs
+                                    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+                                    .map((log) => (
+                                      <div key={log.id} className="rounded border p-2 text-xs">
+                                        <div className="flex items-center justify-between gap-2">
+                                          <Badge variant="outline">{ACTION_LABELS[log.action] || log.action}</Badge>
+                                          <span className="text-muted-foreground">
+                                            {new Date(log.created_at).toLocaleString('fr-FR')}
+                                          </span>
+                                        </div>
+                                        <div className="mt-1 text-muted-foreground">
+                                          {log.changed_by_name}
+                                          {typeof log.metadata?.item_name === 'string' ? ` · ${log.metadata.item_name}` : ''}
+                                          {log.field_name ? ` · ${log.field_name}` : ''}
+                                          {(log.old_value !== null || log.new_value !== null)
+                                            ? ` : ${log.old_value ?? ''} → ${log.new_value ?? ''}`
+                                            : ''}
+                                        </div>
+                                      </div>
+                                    ))}
+                                </div>
+                              )}
+                            </TabsContent>
+                          </Tabs>
+                        </CollapsibleContent>
+                      </Collapsible>
+                    );
+                  })}
               </div>
             </ScrollArea>
           )}
-        </CardContent>
-      </Card>
-
-      {/* Logs globaux */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2">
-            <History className="h-4 w-4" />
-            Journal global
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ScrollArea className="max-h-[400px] pr-3">
-            <div className="space-y-2">
-              {(logsQuery.data ?? []).map((log) => (
-                <div key={log.id} className="rounded-md border p-2.5 text-sm">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <Badge variant="outline" className="shrink-0">{ACTION_LABELS[log.action] || log.action}</Badge>
-                      <span className="text-xs text-muted-foreground truncate">
-                        {sessionNameById.get(log.inventory_session_id) || '—'}
-                      </span>
-                    </div>
-                    <span className="text-xs text-muted-foreground shrink-0">
-                      {new Date(log.created_at).toLocaleString('fr-FR')}
-                    </span>
-                  </div>
-                  <div className="mt-1 text-xs text-muted-foreground">
-                    {log.changed_by_name}
-                    {typeof log.metadata?.item_name === 'string' ? ` · ${log.metadata.item_name}` : ''}
-                  </div>
-                </div>
-              ))}
-              {!logsQuery.data?.length && (
-                <div className="text-sm text-muted-foreground text-center py-4">Aucune action enregistrée.</div>
-              )}
-            </div>
-          </ScrollArea>
         </CardContent>
       </Card>
     </div>

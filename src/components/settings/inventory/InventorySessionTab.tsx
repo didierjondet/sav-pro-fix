@@ -12,6 +12,7 @@ import {
   CheckCircle2,
   ClipboardList,
   FileSpreadsheet,
+  History,
   PauseCircle,
   PlayCircle,
   Printer,
@@ -20,6 +21,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import { printInventoryDocument } from '@/lib/inventoryPrint';
+import { InventoryJournalDialog } from './InventoryJournalDialog';
 import { InventoryManualEditor, type InventoryReviewTab } from './InventoryManualEditor';
 import { InventorySessionSummary } from './InventorySessionSummary';
 import {
@@ -141,6 +143,7 @@ export function InventorySessionTab(props: InventorySessionTabProps) {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<'all' | 'pending' | 'found' | 'missing' | 'adjusted'>('all');
   const [reviewTab, setReviewTab] = useState<InventoryReviewTab>('discrepancies');
+  const [journalOpen, setJournalOpen] = useState(false);
 
   const filteredItems = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -199,6 +202,9 @@ export function InventorySessionTab(props: InventorySessionTabProps) {
           </div>
 
           <div className="flex flex-wrap gap-2">
+            <Button variant="outline" size="sm" onClick={() => setJournalOpen(true)}>
+              <History className="h-4 w-4" />Journal log
+            </Button>
             {session.status === 'paused' ? (
               <Button variant="outline" size="sm" onClick={onResume}><PlayCircle className="h-4 w-4" />Reprendre</Button>
             ) : canEditSession ? (
@@ -476,6 +482,13 @@ export function InventorySessionTab(props: InventorySessionTabProps) {
           </CardContent>
         </Card>
       )}
+      <InventoryJournalDialog
+        open={journalOpen}
+        onOpenChange={setJournalOpen}
+        title={`Journal de l'inventaire — ${session.name}`}
+        logs={logs}
+        session={session}
+      />
     </div>
   );
 }
