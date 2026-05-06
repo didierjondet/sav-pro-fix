@@ -1,94 +1,37 @@
-## Objectif
+## Problème onglet "TVA & MO" non sélectionnable
 
-Permettre aux magasins de facturer la **main d'œuvre** en plus des pièces, et d'appliquer un **régime de TVA** configurable sur devis et SAV. La main d'œuvre se gère **directement depuis la fiche pièce** (pas de menu séparé) pour rester simple.
+Dans `src/pages/Settings.tsx` (ligne 766-771), l'onglet est rendu uniquement si `isAdmin`. De plus, la `TabsList` a beaucoup d'onglets et défile horizontalement : selon le rôle/permission et la largeur d'écran, l'onglet est soit caché soit hors-vue. À vérifier aussi : aucun bouton ne route automatiquement vers `?tab=billing-vat` (l'onboarding pointe dessus mais le `Tabs` ne lit pas le query param `tab`).
 
-## 1. Réglages magasin (nouvel onglet "Facturation & TVA")
+### Correctifs UI/Accès
+1. Lire `?tab=` dans l'URL au montage de `Settings.tsx` et l'utiliser comme `defaultValue` du `Tabs` (sinon le clic depuis l'onboarding ne sélectionne pas l'onglet).
+2. Garder l'onglet réservé aux admins mais le placer juste après "Boutique"/"Facturation" pour qu'il soit visible sans scroller, et ajouter un focus/scroll-into-view quand `tab=billing-vat`.
+3. Lier l'onglet à la permission `settings_billing` (ou fallback `isAdmin`) pour que les admins de boutique ne soient pas bloqués par RBAC.
 
-Nouvel onglet dans `Settings` avec deux sections :
+## Travail restant à finaliser
 
-### A. Régime de TVA
-- **Régime** (radio) : 
-  - Auto-entrepreneur (TVA non applicable, art. 293 B)
-  - TVA classique (taux paramétrable)
-  - TVA sur marge (appliquée uniquement sur la marge pièces)
-- **Taux TVA pièces** (%) — défaut 20
-- **Taux TVA main d'œuvre** (%) — défaut 20 (peut différer)
-- **Prix saisis en** : TTC ou HT (impacte le calcul affiché)
+### A. Saisie manuelle du temps MO
+- Dans `QuoteForm.tsx` et `SAVPartsEditor.tsx` : pour chaque ligne pièce, si `config.labor_billing_enabled && labor_mode === 'hourly'` et que la pièce n'a ni `time_minutes` ni `labor_cost`, afficher un input "Temps (min)" qui alimente `computeLineTotals(..., overrideMinutes)`.
+- Stocker la valeur saisie dans la ligne (`time_minutes_override`) pour persister dans `quote_items` / `sav_parts` (colonne déjà existante `time_minutes` à réutiliser, sinon ajout d'une colonne `time_minutes` sur `sav_parts` et `quote_items`).
 
-### B. Main d'œuvre
-- **Activer la facturation main d'œuvre** (switch on/off) — si off, tout le reste est masqué et aucun calcul MO n'est fait
-- **Mode de calcul** : 
-  - Forfait par pièce (montant saisi sur la fiche pièce)
-  - Taux horaire global (utilise `time_minutes` × taux)
-- **Taux horaire** (€/h) — visible uniquement en mode horaire
-- **Libellé sur devis/facture** (défaut : "Main d'œuvre")
+### B. PDF SAV (`SAVPrint.tsx` + `pdfGenerator.generateRestitutionPDF`)
+- Vérifier que `buildVatHtmlBlock` est bien appelé dans `SAVPrint.tsx` (composant React imprimé) — actuellement seul `pdfGenerator.ts` l'utilise. Ajouter le bloc TVA + ligne MO dans `SAVPrint.tsx`.
+- Garantir que la mention "TVA non applicable, art. 293 B du CGI" apparaît en pied de page quand `vat_regime === 'none'`.
 
-## 2. Fiche pièce (`PartForm.tsx`)
+### C. Coûts SAV (`useSAVPartsCosts.ts`)
+- Intégrer le coût MO HT par ligne dans le calcul des coûts pour que les statistiques (CA, marge) reflètent la MO facturée.
+- Revenu = sum(parts TTC) + sum(MO TTC) ; coût = sum(purchase_price). Conserver la règle existante "Revenue × ratio client".
 
-Ajouter un bloc "Main d'œuvre" affiché uniquement si activé en réglages :
-- Mode forfait → champ **Coût main d'œuvre HT** (€)
-- Mode horaire → affichage calculé en lecture seule à partir de `time_minutes` et du taux horaire global, avec possibilité d'override par pièce
-- Si `time_minutes` absent en mode horaire → message "Temps non renseigné, sera demandé manuellement à la facturation"
+### D. Onboarding `labor_config`
+- Ajouter une 2e étape dans `useOnboardingProgress.ts` : `labor_config` → `/settings?tab=billing-vat`, manuellement marquable comme vue.
 
-## 3. Devis & SAV (parties pièces)
+## Fichiers touchés
+- `src/pages/Settings.tsx` — query param tab + repositionnement de l'onglet + permission
+- `src/components/quotes/QuoteForm.tsx` — input temps manuel conditionnel
+- `src/components/sav/SAVPartsEditor.tsx` — input temps manuel conditionnel
+- `src/components/sav/SAVPrint.tsx` — bloc TVA + MO + mention légale
+- `src/hooks/useSAVPartsCosts.ts` — intégration MO dans coûts
+- `src/hooks/useOnboardingProgress.ts` — étape `labor_config`
+- Migration éventuelle : ajouter `time_minutes` sur `sav_parts` et `quote_items` si absent
 
-Pour chaque ligne pièce sélectionnée :
-- Affichage : prix pièce + ligne MO automatique (si activée)
-- Si pièce sans temps en mode horaire → invite à saisir le temps (minutes) ponctuellement
-- Total = pièces + MO, avec ventilation TVA selon régime :
-  - Auto-entrepreneur → pas de TVA, mention légale
-  - Classique → HT + TVA pièces + TVA MO + TTC
-  - TVA sur marge → TVA calculée sur (PV - PA) pièces uniquement, MO en TVA classique
-
-## 4. Onboarding (HelpBot)
-
-Ajouter 2 étapes dans `useOnboardingProgress.ts` :
-- `vat_config` — "Configurer votre régime de TVA" → `/settings?tab=billing-vat`
-- `labor_config` — "Activer la facturation main d'œuvre" (manual, peut être marquée vue si non souhaitée) → même onglet
-
-## 5. Base de données
-
-Nouvelle table `shop_billing_config` :
-- `shop_id` (unique)
-- `vat_regime` : 'none' | 'standard' | 'margin'
-- `vat_rate_parts` (numeric, défaut 20)
-- `vat_rate_labor` (numeric, défaut 20)
-- `prices_include_vat` (bool)
-- `labor_billing_enabled` (bool, défaut false)
-- `labor_mode` : 'flat' | 'hourly'
-- `labor_hourly_rate` (numeric)
-- `labor_label` (text)
-
-Ajout colonne `parts.labor_cost` (numeric, nullable) — coût MO forfaitaire par pièce (mode forfait ou override).
-
-RLS : lecture pour membres du shop, écriture pour admins (`has_shop_role_permission settings_billing` ou `is_shop_admin`).
-
-## 6. Hooks & utilitaires
-
-- `useBillingConfig.ts` — récupère/met à jour `shop_billing_config`
-- `lib/vatCalculator.ts` — fonctions pures `computeLineTotals(part, qty, config)` et `computeQuoteTotals(lines, config)` réutilisées par devis, SAV, impressions PDF
-
-## 7. Impact UI mineur
-
-- Garder le bouton actuel "Ajouter une pièce" tel quel (pas de bouton prestation séparé) — la main d'œuvre vit sur la fiche pièce
-- Le menu reste "Stock pièces"
-- Sur les PDF devis/facture/SAV : nouvelle colonne MO si activée + bloc TVA conforme au régime
-
-## Section technique
-
-**Fichiers créés :**
-- `supabase/migrations/<ts>_billing_config.sql`
-- `src/hooks/useBillingConfig.ts`
-- `src/lib/vatCalculator.ts`
-- `src/components/settings/BillingVatTab.tsx`
-
-**Fichiers modifiés :**
-- `src/pages/Settings.tsx` (nouvel onglet `billing-vat`)
-- `src/components/parts/PartForm.tsx` (bloc MO conditionnel)
-- `src/components/quotes/QuoteForm.tsx` + `QuoteView.tsx` (ventilation TVA + lignes MO)
-- `src/components/sav/SAVPartsEditor.tsx` / `PartsSelection.tsx` (ligne MO auto)
-- `src/components/sav/SAVPrint.tsx` + `utils/pdfGenerator.ts` (PDF avec TVA)
-- `src/hooks/useOnboardingProgress.ts` (2 étapes)
-- `src/hooks/useSAVPartsCosts.ts` (intégrer MO dans coûts)
-
-**Compatibilité :** valeurs par défaut → comportement actuel inchangé pour les magasins existants (labor_billing_enabled=false, régime classique 20%).
+## Compatibilité
+Aucune régression : `labor_billing_enabled=false` par défaut → comportement actuel inchangé.

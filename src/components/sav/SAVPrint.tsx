@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { SAVCase } from "@/hooks/useSAVCases";
 import { Printer, Scissors } from "lucide-react";
 import { generateShortTrackingUrl } from '@/utils/trackingUtils';
+import { fetchBillingConfig, aggregateTotals, buildVatHtmlBlock } from '@/utils/pdfVatHelpers';
 
 interface SAVPrintButtonRef {
   print: () => void;
@@ -46,7 +47,7 @@ export const SAVPrintButton = React.forwardRef<SAVPrintButtonRef, SAVPrintButton
       const { data: partsData } = await supabase
         .from("sav_parts")
         .select(
-          `quantity, unit_price, purchase_price, time_minutes, custom_part_name, parts:part_id(name, reference)`
+          `quantity, unit_price, purchase_price, time_minutes, custom_part_name, parts:part_id(name, reference, time_minutes, labor_cost)`
         )
         .eq("sav_case_id", savCase.id);
 
@@ -56,8 +57,25 @@ export const SAVPrintButton = React.forwardRef<SAVPrintButtonRef, SAVPrintButton
         quantity: Number(p.quantity) || 0,
         unit_price: Number(p.unit_price) || 0,
         purchase_price: p.purchase_price !== null && p.purchase_price !== undefined ? Number(p.purchase_price) : undefined,
-        time_minutes: Number(p.time_minutes) || 0,
+        time_minutes: Number(p.time_minutes) || Number(p.parts?.time_minutes) || 0,
+        labor_cost: p.parts?.labor_cost ?? null,
       }));
+
+      const billingConfig = await fetchBillingConfig((shop as any)?.id);
+      const vatTotals = aggregateTotals(
+        parts.map((p) => ({
+          part: {
+            selling_price: p.unit_price,
+            purchase_price: p.purchase_price ?? 0,
+            time_minutes: p.time_minutes,
+            labor_cost: p.labor_cost,
+          },
+          quantity: p.quantity,
+          overrideMinutes: p.time_minutes || undefined,
+        })),
+        billingConfig
+      );
+      const vatHtml = buildVatHtmlBlock(vatTotals, billingConfig);
 
       const totals = parts.reduce(
         (acc, p) => {
@@ -229,8 +247,8 @@ export const SAVPrintButton = React.forwardRef<SAVPrintButtonRef, SAVPrintButton
           `}
           <div class="summary">
             <div><span>Total pièces:</span> ${totals.totalQty}</div>
-            <div class="grand-total"><span>Montant total:</span> ${totals.totalCost.toFixed(2)}€</div>
           </div>
+          ${vatHtml}
         </div>`;
 
       const qrBlock = trackingUrl
