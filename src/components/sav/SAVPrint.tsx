@@ -247,8 +247,8 @@ export const SAVPrintButton = React.forwardRef<SAVPrintButtonRef, SAVPrintButton
           `}
           <div class="summary">
             <div><span>Total pièces:</span> ${totals.totalQty}</div>
-            <div class="grand-total"><span>Montant total:</span> ${totals.totalCost.toFixed(2)}€</div>
           </div>
+          ${vatHtml}
         </div>`;
 
       const qrBlock = trackingUrl
