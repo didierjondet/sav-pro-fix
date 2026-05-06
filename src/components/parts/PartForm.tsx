@@ -248,6 +248,7 @@ export function PartForm({ initialData, onSubmit, onCancel, isEdit = false, find
           </div>
 
           {/* Sélecteur de couleur */}
+          {!isService && (
           <div>
             <Label className="mb-2 block">Couleur de la pièce</Label>
             <div className="flex flex-wrap gap-2">
@@ -273,6 +274,7 @@ export function PartForm({ initialData, onSubmit, onCancel, isEdit = false, find
               </p>
             )}
           </div>
+          )}
 
           <div className="flex items-center gap-3">
             <Switch id="use_margin" checked={useMargin} onCheckedChange={setUseMargin} />
@@ -419,12 +421,14 @@ export function PartForm({ initialData, onSubmit, onCancel, isEdit = false, find
           </div>
 
           {/* Upload de photo */}
+          {!isService && (
           <PartPhotoUpload
             photoUrl={photoUrl}
             onPhotoChange={setPhotoUrl}
             partName={watch('name') || 'cette pièce'}
             disabled={loading}
           />
+          )}
 
           <div className="flex gap-2 justify-end">
             <Button type="button" variant="outline" onClick={onCancel}>
