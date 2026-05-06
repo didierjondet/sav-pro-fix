@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Download, Mail, X, MessageSquare, Clock, CheckCircle, FileText, DollarSign, ShieldOff, Calendar, AlertTriangle } from 'lucide-react';
 import { useSMS } from '@/hooks/useSMS';
 import { useToast } from '@/hooks/use-toast';
+import { BillingTotalsSummary } from '@/components/billing/BillingTotalsSummary';
 
 const REJECTION_LABELS: Record<string, { label: string; icon: React.ReactNode; color: string }> = {
   too_expensive: { label: 'Trop cher', icon: <DollarSign className="h-4 w-4" />, color: 'text-red-600 bg-red-50' },
@@ -247,11 +248,19 @@ export function QuoteView({ quote, isOpen, onClose, onDownloadPDF, onSendEmail, 
                 );
               })}
               
-              <div className="border-t bg-muted/30 p-3">
+              <div className="border-t bg-muted/30 p-3 space-y-3">
+                <BillingTotalsSummary
+                  lines={(quote.items || []).map((it: any) => ({
+                    part_id: typeof it.part_id === 'string' && !it.part_id.startsWith('custom-') ? it.part_id : null,
+                    unit_public_price: it.unit_public_price ?? it.total_price / Math.max(1, it.quantity || 1),
+                    unit_purchase_price: it.unit_purchase_price ?? 0,
+                    quantity: it.quantity || 1,
+                  }))}
+                />
                 <div className="flex justify-end">
                   <div className="text-right space-y-2">
                     <div className="text-lg font-bold">
-                      Total: {quote.total_amount.toFixed(2)}€
+                      Total devis: {quote.total_amount.toFixed(2)}€
                     </div>
                     {quote.deposit_amount && quote.deposit_amount > 0 && (
                       <>

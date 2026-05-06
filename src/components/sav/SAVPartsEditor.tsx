@@ -14,6 +14,7 @@ import { useParts } from '@/hooks/useParts';
 import { useToast } from '@/hooks/use-toast';
 import { PartForm } from '@/components/parts/PartForm';
 import { logSAVChange, getCurrentUserName } from '@/hooks/useSAVAuditLog';
+import { BillingTotalsSummary } from '@/components/billing/BillingTotalsSummary';
 
 interface SAVPart {
   id: string;
@@ -609,6 +610,17 @@ const partsToInsert = savParts.map(part => ({
                       {totalCost.toFixed(2)}€
                     </span>
                   </div>
+                </div>
+                <div className="mt-3">
+                  <BillingTotalsSummary
+                    lines={savParts.map(p => ({
+                      part_id: p.isCustom ? null : p.part_id,
+                      unit_public_price: p.unit_price,
+                      unit_purchase_price: (p as any).purchase_price ?? 0,
+                      quantity: p.quantity,
+                      time_minutes: p.time_minutes,
+                    }))}
+                  />
                 </div>
               </div>
             </>

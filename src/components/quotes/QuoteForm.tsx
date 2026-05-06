@@ -21,6 +21,7 @@ import { useCustomers } from '@/hooks/useCustomers';
 import { useProfile } from '@/hooks/useProfile';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { BillingTotalsSummary } from '@/components/billing/BillingTotalsSummary';
 
 interface QuoteFormProps {
   onSubmit: (data: any) => Promise<{ data: any; error: any }>;
@@ -778,6 +779,16 @@ const updateUnitPurchasePrice = (partId: string, unitPrice: number) => {
                       <span>Total:</span>
                       <span>{totalAmount.toFixed(2)}€</span>
                     </div>
+
+                    <BillingTotalsSummary
+                      lines={selectedItems.map(i => ({
+                        part_id: i.part_id?.startsWith('custom-') ? null : i.part_id,
+                        unit_public_price: i.unit_public_price,
+                        unit_purchase_price: i.unit_purchase_price,
+                        quantity: i.quantity,
+                      }))}
+                      discountTotal={selectedItems.reduce((s, i) => s + (i.discount?.amount || 0), 0)}
+                    />
                     
                     {/* Acompte client */}
                     <div className="border-t pt-3 mt-3">
