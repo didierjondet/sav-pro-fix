@@ -349,29 +349,28 @@ export function PartForm({ initialData, onSubmit, onCancel, isEdit = false, find
             </div>
           </div>
 
+          {!isService && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="quantity">Quantité en stock</Label>
               <NumberInput
                 id="quantity"
-                
                 min="0"
                 {...register('quantity', { valueAsNumber: true })}
                 placeholder="0"
               />
             </div>
-
             <div>
               <Label htmlFor="min_stock">Stock minimum</Label>
               <NumberInput
                 id="min_stock"
-                
                 min="0"
                 {...register('min_stock', { valueAsNumber: true })}
                 placeholder="1"
               />
             </div>
           </div>
+          )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
