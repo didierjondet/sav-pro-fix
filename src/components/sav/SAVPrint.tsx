@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { SAVCase } from "@/hooks/useSAVCases";
 import { Printer, Scissors } from "lucide-react";
 import { generateShortTrackingUrl } from '@/utils/trackingUtils';
+import { fetchBillingConfig, aggregateTotals, buildVatHtmlBlock } from '@/utils/pdfVatHelpers';
 
 interface SAVPrintButtonRef {
   print: () => void;
