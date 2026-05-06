@@ -223,6 +223,7 @@ export const generateQuotePDF = async (quote: Quote, shop?: Shop) => {
             </div>
           `;
         })()}
+        ${vatBlockHtml}
       </div>
       
       <div class="footer">
