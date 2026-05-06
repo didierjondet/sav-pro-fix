@@ -13,6 +13,7 @@ import { usePartCategories } from '@/hooks/usePartCategories';
 import { SimilarPartsAlert } from './SimilarPartsAlert';
 import { PartPhotoUpload } from './PartPhotoUpload';
 import { cn } from '@/lib/utils';
+import { useBillingConfig } from '@/hooks/useBillingConfig';
 
 const PART_COLORS = [
   { value: 'black', label: 'Noir', color: '#000000' },
@@ -48,6 +49,7 @@ export function PartForm({ initialData, onSubmit, onCancel, isEdit = false, find
   const [selectedColor, setSelectedColor] = useState<string | null>((initialData as any)?.color || null);
   const [categoryId, setCategoryId] = useState<string | null>((initialData as any)?.category_id || null);
   const { categories } = usePartCategories();
+  const { config: billing } = useBillingConfig();
   
   const {
     register,
@@ -66,6 +68,7 @@ export function PartForm({ initialData, onSubmit, onCancel, isEdit = false, find
       quantity: initialData?.quantity || 0,
       min_stock: initialData?.min_stock || 1,
       time_minutes: initialData?.time_minutes ?? 15,
+      labor_cost: (initialData as any)?.labor_cost ?? null,
       notes: initialData?.notes || '',
       photo_url: initialData?.photo_url || '',
     }
