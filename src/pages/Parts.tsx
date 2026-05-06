@@ -239,6 +239,16 @@ export default function Parts() {
                         className="pl-10"
                       />
                     </div>
+                    <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as any)}>
+                      <SelectTrigger className="sm:w-48">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Pièces & prestations</SelectItem>
+                        <SelectItem value="parts">Pièces uniquement</SelectItem>
+                        <SelectItem value="services">Prestations uniquement</SelectItem>
+                      </SelectContent>
+                    </Select>
                     <Select value={categoryFilter} onValueChange={setCategoryFilter}>
                       <SelectTrigger className="sm:w-64">
                         <SelectValue placeholder="Toutes les catégories" />
