@@ -497,14 +497,16 @@ export default function Parts() {
                               </div>
                               
                               <div className="flex items-center gap-2 ml-4">
-                                <Button 
-                                  variant="outline" 
-                                  size="sm"
-                                  onClick={() => setAdjustingPart(part)}
-                                >
-                                  <TrendingUp className="h-4 w-4 mr-1" />
-                                  Stock
-                                </Button>
+                                {!(part as any).is_service && (
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm"
+                                    onClick={() => setAdjustingPart(part)}
+                                  >
+                                    <TrendingUp className="h-4 w-4 mr-1" />
+                                    Stock
+                                  </Button>
+                                )}
                                 <Button 
                                   variant="outline" 
                                   size="sm"
