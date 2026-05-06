@@ -773,8 +773,7 @@ export const generateSAVRestitutionPDF = async (savCase: SAVCase, shop?: Shop, o
               ).toFixed(2)}€</strong></span>
             </div>
           </div>
-          
-          ${(((savCase as any).taken_over && !(savCase as any).partial_takeover) || (savCase.total_cost || 0) === 0) ? `
+          ${vatBlockHtml}
             <div class="no-charge-info">
               <strong style="color: #856404;">INTERVENTION GRATUITE</strong>
               <p style="margin: 3px 0 0 0;">
