@@ -659,6 +659,7 @@ export default function Settings() {
     'sav-types',
     'billing',
     'ai',
+    ...(isAdmin ? ['billing-vat'] : []),
     ...(rolePermissions.settings_sms_purchase ? ['sms'] : []),
     ...(rolePermissions.settings_import_export ? ['import-export'] : []),
     ...(rolePermissions.settings_subscription ? ['subscription'] : []),
