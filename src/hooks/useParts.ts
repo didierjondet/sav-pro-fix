@@ -24,6 +24,7 @@ export interface Part {
   updated_at: string;
   price_last_updated?: string;
   labor_cost?: number | null;
+  is_service?: boolean;
 }
 
 export interface PartStatistics {
