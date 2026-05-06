@@ -35,6 +35,14 @@ export function useSAVPartsCosts() {
       const start = startOfMonth(now);
       const end = endOfMonth(now);
 
+      // Récupérer la config de facturation pour intégrer la MO si activée
+      const { data: billingCfg } = await supabase
+        .from('shop_billing_config' as any)
+        .select('*')
+        .eq('shop_id', shop.id)
+        .maybeSingle();
+      const cfg: any = billingCfg || { labor_billing_enabled: false, labor_mode: 'flat', labor_hourly_rate: 0 };
+
       // Récupérer les coûts des pièces pour TOUS les SAV de la période (pas seulement les prêts)
       const { data: partsData, error: partsError } = await supabase
         .from('sav_parts')
@@ -42,6 +50,8 @@ export function useSAVPartsCosts() {
           quantity,
           unit_price,
           purchase_price,
+          time_minutes,
+          parts:part_id(time_minutes, labor_cost),
           sav_cases!inner(id, sav_type, status, taken_over, partial_takeover, takeover_amount, total_cost, shop_id, created_at)
         `)
         .eq('sav_cases.shop_id', shop.id)
@@ -63,8 +73,17 @@ export function useSAVPartsCosts() {
           const purchase = Number(item.purchase_price) || 0;
           const selling = Number(item.unit_price) || 0;
 
+          // MO HT par unité selon config
+          let laborUnit = 0;
+          if (cfg.labor_billing_enabled) {
+            const partLabor = Number(item.parts?.labor_cost) || 0;
+            const minutes = Number(item.time_minutes) || Number(item.parts?.time_minutes) || 0;
+            if (cfg.labor_mode === 'flat') laborUnit = partLabor;
+            else laborUnit = partLabor > 0 ? partLabor : (minutes / 60) * (Number(cfg.labor_hourly_rate) || 0);
+          }
+
           const partCost = purchase * qty;
-          const partRevenue = selling * qty;
+          const partRevenue = (selling + laborUnit) * qty;
           const savCase = item.sav_cases;
 
           // Calculer les coûts selon le type de SAV et la prise en charge
