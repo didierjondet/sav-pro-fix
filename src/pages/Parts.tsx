@@ -560,9 +560,11 @@ export default function Parts() {
                   onCancel={() => {
                     setShowForm(false);
                     setEditingPart(null);
+                    setCreatingService(false);
                   }}
                   isEdit={!!editingPart}
                   findSimilarParts={findSimilarParts}
+                  defaultIsService={creatingService}
                 />
               )}
 
