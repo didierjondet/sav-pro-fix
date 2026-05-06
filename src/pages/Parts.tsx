@@ -308,6 +308,11 @@ export default function Parts() {
                                   <div className="flex items-center gap-4 mb-2">
                                     <div className="flex items-center gap-2">
                                       <h3 className="font-semibold text-lg">{part.name}</h3>
+                                      {(part as any).is_service && (
+                                        <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-300">
+                                          <Wrench className="h-3 w-3 mr-1" /> Prestation
+                                        </Badge>
+                                      )}
                                       {part.photo_url && (
                                         <Button
                                           variant="ghost"
