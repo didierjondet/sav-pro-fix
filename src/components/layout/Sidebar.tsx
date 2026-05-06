@@ -39,7 +39,7 @@ const baseNavigation: NavItem[] = [
   { name: 'Agenda', href: '/agenda', icon: Calendar, group: 'work' },
   { name: 'Chat clients', href: '/client-chats', icon: MessageSquare, group: 'work' },
   // Bloc « Gestion »
-  { name: 'Stock pièces & prestations', href: '/parts', icon: Package, group: 'management' },
+  { name: 'Stock & prestations', href: '/parts', icon: Package, group: 'management' },
   { name: 'Commandes', href: '/orders', icon: Package, group: 'management' },
   { name: 'Inventaire', href: '/inventory', icon: ClipboardList, group: 'management' },
   { name: 'Rapports', href: '/reports', icon: FileBarChart, group: 'management' },
