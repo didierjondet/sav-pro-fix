@@ -38,9 +38,10 @@ interface PartFormProps {
   onCancel: () => void;
   isEdit?: boolean;
   findSimilarParts?: (name: string, excludeId?: string) => Part[];
+  defaultIsService?: boolean;
 }
 
-export function PartForm({ initialData, onSubmit, onCancel, isEdit = false, findSimilarParts }: PartFormProps) {
+export function PartForm({ initialData, onSubmit, onCancel, isEdit = false, findSimilarParts, defaultIsService = false }: PartFormProps) {
   const [loading, setLoading] = useState(false);
   const [showSimilarAlert, setShowSimilarAlert] = useState(false);
   const [similarParts, setSimilarParts] = useState<Part[]>([]);
@@ -48,6 +49,7 @@ export function PartForm({ initialData, onSubmit, onCancel, isEdit = false, find
   const [photoUrl, setPhotoUrl] = useState<string | null>(initialData?.photo_url || null);
   const [selectedColor, setSelectedColor] = useState<string | null>((initialData as any)?.color || null);
   const [categoryId, setCategoryId] = useState<string | null>((initialData as any)?.category_id || null);
+  const [isService, setIsService] = useState<boolean>((initialData as any)?.is_service ?? defaultIsService);
   const { categories } = usePartCategories();
   const { config: billing } = useBillingConfig();
   
@@ -119,6 +121,7 @@ export function PartForm({ initialData, onSubmit, onCancel, isEdit = false, find
         photo_url: photoUrl,
         color: selectedColor,
         category_id: categoryId,
+        is_service: isService,
       };
 
       const { error } = await onSubmit(partData);
@@ -165,8 +168,16 @@ export function PartForm({ initialData, onSubmit, onCancel, isEdit = false, find
     <Card>
       <CardHeader>
         <CardTitle>
-          {isEdit ? 'Modifier la pièce' : 'Ajouter une nouvelle pièce'}
+          {isEdit
+            ? (isService ? 'Modifier la prestation' : 'Modifier la pièce')
+            : (isService ? 'Ajouter une nouvelle prestation' : 'Ajouter une nouvelle pièce')}
         </CardTitle>
+        <div className="flex items-center gap-3 pt-2">
+          <Switch id="is_service" checked={isService} onCheckedChange={setIsService} />
+          <Label htmlFor="is_service">
+            {isService ? 'Prestation (main d\'œuvre / service sans stock)' : 'Pièce physique avec stock'}
+          </Label>
+        </div>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-4">
