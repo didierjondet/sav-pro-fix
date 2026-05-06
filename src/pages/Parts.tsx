@@ -36,7 +36,8 @@ import {
   Upload,
   Image as ImageIcon,
   Clock,
-  ClipboardCheck
+  ClipboardCheck,
+  Wrench
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { isPriceOutdated, getMonthsSinceUpdate } from '@/utils/priceUtils';
@@ -47,9 +48,11 @@ export default function Parts() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [typeFilter, setTypeFilter] = useState<'all' | 'parts' | 'services'>('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(20);
   const [showForm, setShowForm] = useState(false);
+  const [creatingService, setCreatingService] = useState(false);
   const [editingPart, setEditingPart] = useState<Part | null>(null);
   const [deletingPart, setDeletingPart] = useState<Part | null>(null);
   const [adjustingPart, setAdjustingPart] = useState<Part | null>(null);
@@ -69,6 +72,11 @@ export default function Parts() {
   // Filtrage côté client (recherche + catégorie)
   const filteredParts = useMemo(() => {
     let list = parts;
+    if (typeFilter === 'parts') {
+      list = list.filter((p) => !(p as any).is_service);
+    } else if (typeFilter === 'services') {
+      list = list.filter((p) => !!(p as any).is_service);
+    }
     if (categoryFilter !== 'all') {
       if (categoryFilter === 'none') {
         list = list.filter((p) => !p.category_id);
@@ -80,7 +88,7 @@ export default function Parts() {
     return list.filter(part =>
       multiWordSearch(searchTerm, part.name, part.reference, part.sku, part.supplier, part.notes)
     );
-  }, [parts, searchTerm, categoryFilter]);
+  }, [parts, searchTerm, categoryFilter, typeFilter]);
 
   // Pagination après filtrage
   const displayedParts = filteredParts;
@@ -163,14 +171,18 @@ export default function Parts() {
             <div className="max-w-7xl mx-auto">
               {!showForm && !editingPart && !showImport ? (
                 <>
-                  <div className="flex justify-between items-center mb-6">
-                    <h1 className="text-2xl font-bold">Gestion des stocks</h1>
-                    <div className="flex gap-2">
+                  <div className="flex justify-between items-center mb-6 flex-wrap gap-2">
+                    <h1 className="text-2xl font-bold">Stock pièces & prestations</h1>
+                    <div className="flex gap-2 flex-wrap">
                       <Button variant="outline" onClick={() => setShowImport(true)}>
                         <Upload className="h-4 w-4 mr-2" />
                         Importer CSV/Excel
                       </Button>
-                      <Button onClick={() => setShowForm(true)}>
+                      <Button variant="secondary" onClick={() => { setCreatingService(true); setShowForm(true); }}>
+                        <Wrench className="h-4 w-4 mr-2" />
+                        Ajouter une prestation
+                      </Button>
+                      <Button onClick={() => { setCreatingService(false); setShowForm(true); }}>
                         <Plus className="h-4 w-4 mr-2" />
                         Ajouter une pièce
                       </Button>
