@@ -2,8 +2,23 @@ import { supabase } from '@/integrations/supabase/client';
 import { Quote } from '@/hooks/useQuotes';
 import { Shop } from '@/hooks/useShop';
 import { SAVCase } from '@/hooks/useSAVCases';
+import { fetchBillingConfig, aggregateTotals, buildVatHtmlBlock } from '@/utils/pdfVatHelpers';
+import { regimeLabel } from '@/lib/vatCalculator';
 
-export const generateQuotePDF = (quote: Quote, shop?: Shop) => {
+export const generateQuotePDF = async (quote: Quote, shop?: Shop) => {
+  const billing = await fetchBillingConfig(shop?.id);
+  // For quotes, we treat each item's total_price as TTC (legacy). Build synthetic part with selling=TTC unit.
+  const lines = quote.items.map((item: any) => ({
+    part: {
+      selling_price: item.total_price / Math.max(item.quantity || 1, 1),
+      purchase_price: item.unit_purchase_price ?? 0,
+      time_minutes: item.time_minutes ?? null,
+      labor_cost: item.labor_cost ?? null,
+    },
+    quantity: item.quantity || 1,
+  }));
+  const vatTotals = aggregateTotals(lines, billing);
+  const vatBlockHtml = buildVatHtmlBlock(vatTotals, billing);
   // Créer le contenu HTML du PDF
   const htmlContent = `
     <!DOCTYPE html>
@@ -208,6 +223,7 @@ export const generateQuotePDF = (quote: Quote, shop?: Shop) => {
             </div>
           `;
         })()}
+        ${vatBlockHtml}
       </div>
       
       <div class="footer">
@@ -349,19 +365,21 @@ export const generateSAVRestitutionPDF = async (savCase: SAVCase, shop?: Shop, o
 
   // Récupérer les pièces du SAV avec les informations complètes
   let savCaseWithParts = savCase as any;
-  
+  let savPartsForVat: any[] = [];
+
   try {
     const { data: savParts, error } = await supabase
       .from('sav_parts')
       .select(`
         *,
-        parts(name, reference, selling_price, purchase_price)
+        parts(name, reference, selling_price, purchase_price, time_minutes, labor_cost, is_service)
       `)
       .eq('sav_case_id', savCase.id);
 
     if (error) {
       console.error('Erreur lors de la récupération des pièces SAV:', error);
     } else {
+      savPartsForVat = savParts || [];
       savCaseWithParts.sav_parts = savParts?.map(part => ({
         ...part,
         name: part.parts?.name || part.custom_part_name || 'Pièce personnalisée',
@@ -372,6 +390,20 @@ export const generateSAVRestitutionPDF = async (savCase: SAVCase, shop?: Shop, o
     console.error('Erreur lors de la récupération des pièces SAV:', error);
     savCaseWithParts.sav_parts = [];
   }
+
+  // Calcul TVA / MO
+  const billing = await fetchBillingConfig(shop?.id);
+  const vatLines = savPartsForVat.map((sp: any) => ({
+    part: {
+      selling_price: sp.unit_price ?? sp.parts?.selling_price ?? 0,
+      purchase_price: sp.purchase_price_at_time ?? sp.parts?.purchase_price ?? 0,
+      time_minutes: sp.time_minutes ?? sp.parts?.time_minutes ?? null,
+      labor_cost: sp.labor_cost ?? sp.parts?.labor_cost ?? null,
+    },
+    quantity: sp.quantity || 1,
+  }));
+  const vatTotals = aggregateTotals(vatLines, billing);
+  const vatBlockHtml = buildVatHtmlBlock(vatTotals, billing);
 
   // Créer le contenu HTML du document de restitution
   const htmlContent = `
@@ -741,7 +773,7 @@ export const generateSAVRestitutionPDF = async (savCase: SAVCase, shop?: Shop, o
               ).toFixed(2)}€</strong></span>
             </div>
           </div>
-          
+          ${vatBlockHtml}
           ${(((savCase as any).taken_over && !(savCase as any).partial_takeover) || (savCase.total_cost || 0) === 0) ? `
             <div class="no-charge-info">
               <strong style="color: #856404;">INTERVENTION GRATUITE</strong>

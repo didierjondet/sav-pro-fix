@@ -1389,6 +1389,7 @@ export type Database = {
           color: string | null
           created_at: string
           id: string
+          is_service: boolean
           labor_cost: number | null
           min_stock: number | null
           name: string
@@ -1411,6 +1412,7 @@ export type Database = {
           color?: string | null
           created_at?: string
           id?: string
+          is_service?: boolean
           labor_cost?: number | null
           min_stock?: number | null
           name: string
@@ -1433,6 +1435,7 @@ export type Database = {
           color?: string | null
           created_at?: string
           id?: string
+          is_service?: boolean
           labor_cost?: number | null
           min_stock?: number | null
           name?: string
