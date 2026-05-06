@@ -13,6 +13,7 @@ import { usePartCategories } from '@/hooks/usePartCategories';
 import { SimilarPartsAlert } from './SimilarPartsAlert';
 import { PartPhotoUpload } from './PartPhotoUpload';
 import { cn } from '@/lib/utils';
+import { useBillingConfig } from '@/hooks/useBillingConfig';
 
 const PART_COLORS = [
   { value: 'black', label: 'Noir', color: '#000000' },
@@ -48,6 +49,7 @@ export function PartForm({ initialData, onSubmit, onCancel, isEdit = false, find
   const [selectedColor, setSelectedColor] = useState<string | null>((initialData as any)?.color || null);
   const [categoryId, setCategoryId] = useState<string | null>((initialData as any)?.category_id || null);
   const { categories } = usePartCategories();
+  const { config: billing } = useBillingConfig();
   
   const {
     register,
@@ -66,6 +68,7 @@ export function PartForm({ initialData, onSubmit, onCancel, isEdit = false, find
       quantity: initialData?.quantity || 0,
       min_stock: initialData?.min_stock || 1,
       time_minutes: initialData?.time_minutes ?? 15,
+      labor_cost: (initialData as any)?.labor_cost ?? null,
       notes: initialData?.notes || '',
       photo_url: initialData?.photo_url || '',
     }
@@ -362,13 +365,36 @@ export function PartForm({ initialData, onSubmit, onCancel, isEdit = false, find
               <Label htmlFor="time_minutes">Temps (minutes)</Label>
               <NumberInput
                 id="time_minutes"
-                
                 min="0"
                 {...register('time_minutes', { valueAsNumber: true })}
                 placeholder="15"
               />
               <p className="text-xs text-muted-foreground mt-1">Par défaut: 15 minutes</p>
             </div>
+
+            {billing.labor_billing_enabled && (
+              <div>
+                <Label htmlFor="labor_cost">
+                  {billing.labor_mode === 'flat'
+                    ? "Coût main d'œuvre (€ HT)"
+                    : "Surcharge MO (€ HT, optionnel)"}
+                </Label>
+                <NumberInput
+                  id="labor_cost"
+                  min="0"
+                  step="0.01"
+                  {...register('labor_cost', { setValueAs: (v) => v === '' || v === null ? null : parseFloat(v) })}
+                  placeholder={billing.labor_mode === 'hourly'
+                    ? `Auto: ${(((watch('time_minutes') || 0) / 60) * (billing.labor_hourly_rate || 0)).toFixed(2)} €`
+                    : '0.00'}
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  {billing.labor_mode === 'hourly'
+                    ? `Calcul auto = temps × ${billing.labor_hourly_rate} €/h. Laissez vide pour utiliser ce calcul.`
+                    : 'Montant ajouté automatiquement sur les devis et factures.'}
+                </p>
+              </div>
+            )}
           </div>
 
           <div>

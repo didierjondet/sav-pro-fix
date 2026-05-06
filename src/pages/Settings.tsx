@@ -56,6 +56,8 @@ import { RolePermissionsManager } from '@/components/settings/RolePermissionsMan
 import { PartCategoriesManager } from '@/components/settings/PartCategoriesManager';
 import { SMSPackagesDisplay } from '@/components/subscription/SMSPackagesDisplay';
 import { BillingInvoices } from '@/components/billing/BillingInvoices';
+import { BillingVatTab } from '@/components/settings/BillingVatTab';
+import { Percent } from 'lucide-react';
 import { ImportStock } from '@/components/parts/ImportStock';
 import { ImportQuotes } from '@/components/import/ImportQuotes';
 import { ImportSAVs } from '@/components/import/ImportSAVs';
@@ -761,6 +763,12 @@ export default function Settings() {
                 <FileText className="h-4 w-4 shrink-0" />
                 <span className="hidden sm:inline">Facturation</span>
               </TabsTrigger>
+              {isAdmin && (
+                <TabsTrigger value="billing-vat" className="flex items-center gap-2 px-3 py-2 shrink-0">
+                  <Percent className="h-4 w-4 shrink-0" />
+                  <span className="hidden sm:inline">TVA & MO</span>
+                </TabsTrigger>
+              )}
               <TabsTrigger value="ai" className="flex items-center gap-2 px-3 py-2 shrink-0">
                 <Sparkles className="h-4 w-4 shrink-0" />
                 <span className="hidden sm:inline">IA</span>
@@ -1944,6 +1952,12 @@ export default function Settings() {
             <TabsContent value="billing" className="space-y-6">
               <BillingInvoices />
             </TabsContent>
+
+            {isAdmin && (
+              <TabsContent value="billing-vat" className="space-y-6">
+                <BillingVatTab />
+              </TabsContent>
+            )}
 
 
           </Tabs>

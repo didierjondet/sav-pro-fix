@@ -163,6 +163,16 @@ export function useOnboardingProgress() {
         manual: true,
       },
       {
+        id: 'vat_config',
+        label: 'Configurer votre TVA & main d\'œuvre',
+        description: 'Choisissez votre régime de TVA et activez la facturation main d\'œuvre si besoin.',
+        status: stepsSeen.includes('vat_config') ? 'done' : 'pending',
+        actionRoute: '/settings?tab=billing-vat',
+        helpQuestion: 'Comment configurer la TVA et la main d\'œuvre ?',
+        category: 'shop',
+        manual: true,
+      },
+      {
         id: 'messaging_tutorial',
         label: 'Découvrir la messagerie client',
         description: 'Comprenez comment échanger avec vos clients (chat & SMS).',

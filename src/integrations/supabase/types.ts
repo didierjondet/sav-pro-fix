@@ -1389,6 +1389,7 @@ export type Database = {
           color: string | null
           created_at: string
           id: string
+          labor_cost: number | null
           min_stock: number | null
           name: string
           notes: string | null
@@ -1410,6 +1411,7 @@ export type Database = {
           color?: string | null
           created_at?: string
           id?: string
+          labor_cost?: number | null
           min_stock?: number | null
           name: string
           notes?: string | null
@@ -1431,6 +1433,7 @@ export type Database = {
           color?: string | null
           created_at?: string
           id?: string
+          labor_cost?: number | null
           min_stock?: number | null
           name?: string
           notes?: string | null
@@ -2091,6 +2094,51 @@ export type Database = {
           visited_at?: string
           visitor_ip?: string | null
           visitor_user_agent?: string | null
+        }
+        Relationships: []
+      }
+      shop_billing_config: {
+        Row: {
+          created_at: string
+          id: string
+          labor_billing_enabled: boolean
+          labor_hourly_rate: number
+          labor_label: string
+          labor_mode: string
+          prices_include_vat: boolean
+          shop_id: string
+          updated_at: string
+          vat_rate_labor: number
+          vat_rate_parts: number
+          vat_regime: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          labor_billing_enabled?: boolean
+          labor_hourly_rate?: number
+          labor_label?: string
+          labor_mode?: string
+          prices_include_vat?: boolean
+          shop_id: string
+          updated_at?: string
+          vat_rate_labor?: number
+          vat_rate_parts?: number
+          vat_regime?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          labor_billing_enabled?: boolean
+          labor_hourly_rate?: number
+          labor_label?: string
+          labor_mode?: string
+          prices_include_vat?: boolean
+          shop_id?: string
+          updated_at?: string
+          vat_rate_labor?: number
+          vat_rate_parts?: number
+          vat_regime?: string
         }
         Relationships: []
       }

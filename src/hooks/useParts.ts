@@ -23,6 +23,7 @@ export interface Part {
   created_at: string;
   updated_at: string;
   price_last_updated?: string;
+  labor_cost?: number | null;
 }
 
 export interface PartStatistics {
