@@ -2,8 +2,23 @@ import { supabase } from '@/integrations/supabase/client';
 import { Quote } from '@/hooks/useQuotes';
 import { Shop } from '@/hooks/useShop';
 import { SAVCase } from '@/hooks/useSAVCases';
+import { fetchBillingConfig, aggregateTotals, buildVatHtmlBlock } from '@/utils/pdfVatHelpers';
+import { regimeLabel } from '@/lib/vatCalculator';
 
-export const generateQuotePDF = (quote: Quote, shop?: Shop) => {
+export const generateQuotePDF = async (quote: Quote, shop?: Shop) => {
+  const billing = await fetchBillingConfig(shop?.id);
+  // For quotes, we treat each item's total_price as TTC (legacy). Build synthetic part with selling=TTC unit.
+  const lines = quote.items.map((item: any) => ({
+    part: {
+      selling_price: item.total_price / Math.max(item.quantity || 1, 1),
+      purchase_price: item.unit_purchase_price ?? 0,
+      time_minutes: item.time_minutes ?? null,
+      labor_cost: item.labor_cost ?? null,
+    },
+    quantity: item.quantity || 1,
+  }));
+  const vatTotals = aggregateTotals(lines, billing);
+  const vatBlockHtml = buildVatHtmlBlock(vatTotals, billing);
   // Créer le contenu HTML du PDF
   const htmlContent = `
     <!DOCTYPE html>
