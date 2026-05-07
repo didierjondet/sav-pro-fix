@@ -1938,7 +1938,7 @@ export default function Settings() {
                                 Plan Actuel
                               </Button> : plan.contact_only ? <Button onClick={() => window.location.href = `mailto:contact@fixway.fr?subject=Demande de contact pour le plan ${plan.name}&body=Bonjour,%0D%0A%0D%0AJe souhaite obtenir plus d'informations sur le plan ${plan.name}.%0D%0A%0D%0ACordialement`} className="w-full">
                                 Nous contacter
-                              </Button> : <Button onClick={() => createCheckout(plan.name.toLowerCase() as 'premium' | 'enterprise')} className="w-full">
+                              </Button> : <Button onClick={() => createCheckout((plan.tier_key || plan.name.toLowerCase()) as 'premium' | 'enterprise')} className="w-full">
                                 Passer à {plan.name}
                               </Button>}
                           </CardContent>
