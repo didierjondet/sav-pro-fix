@@ -130,7 +130,9 @@ Deno.serve(async (req) => {
 
     if (plansError) throw new Error(`Error fetching plans: ${plansError.message}`);
     
-    const planData = plans?.find(p => p.name.toLowerCase() === plan.toLowerCase());
+    const planKey = String(plan).toLowerCase();
+    const planData = plans?.find(p => (p.tier_key || '').toLowerCase() === planKey)
+      || plans?.find(p => p.name.toLowerCase() === planKey);
     if (!planData) throw new Error(`Plan ${plan} not found`);
     if (!planData.stripe_price_id) {
       logStep("Stripe Price ID not configured", { plan, planId: planData.id });
