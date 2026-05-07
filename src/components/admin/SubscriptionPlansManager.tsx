@@ -486,7 +486,18 @@ export default function SubscriptionPlansManager() {
                   </div>
                 </div>
               </div>
-              
+
+              {editingPlan?.tier_key && (
+                <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+                  <strong>Clé technique :</strong> <code className="font-mono">{editingPlan.tier_key}</code>
+                  <div className="mt-1 text-amber-800">
+                    Le nom du plan est un libellé d'affichage modifiable librement. Toute la logique métier
+                    (abonnements, accès aux features, Stripe) s'appuie sur cette clé technique stable, qui
+                    ne doit jamais être modifiée.
+                  </div>
+                </div>
+              )}
+
               <div>
                 <Label>Description</Label>
                 <Textarea
