@@ -145,8 +145,8 @@ export function useSMS() {
     quoteNumber: string,
     quoteId: string
   ): Promise<boolean> => {
-    const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
-    const quoteUrl = `${baseUrl}/quote/${quoteId}`;
+    const { generatePublicQuoteUrl } = await import('@/utils/trackingUtils');
+    const quoteUrl = generatePublicQuoteUrl(quoteId);
     
     const smsWarning = "\n\n⚠️ Ne répondez pas à ce SMS. Contactez-nous directement pour toute question.";
     const message = `Bonjour ${customerName}, votre devis ${quoteNumber} est prêt ! Consultez-le ici: ${quoteUrl}${smsWarning}`;
