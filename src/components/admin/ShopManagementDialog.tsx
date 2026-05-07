@@ -871,7 +871,7 @@ export default function ShopManagementDialog({ shop, isOpen, onClose, onUpdate }
                     </SelectTrigger>
                     <SelectContent>
                       {subscriptionPlans.map(plan => (
-                        <SelectItem key={plan.id} value={plan.name.toLowerCase()}>
+                        <SelectItem key={plan.id} value={plan.tier_key}>
                           {plan.name} - {plan.monthly_price}€/mois
                         </SelectItem>
                       ))}
