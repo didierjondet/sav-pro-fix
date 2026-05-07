@@ -90,7 +90,7 @@ Deno.serve(async (req) => {
       const matchingPlan = plans?.find(p => p.stripe_price_id === priceId);
       
       if (matchingPlan) {
-        subscriptionTier = matchingPlan.name.toLowerCase();
+        subscriptionTier = (matchingPlan.tier_key || matchingPlan.name.toLowerCase());
         smsCreditsAllocated = matchingPlan.sms_limit;
         logStep("Matched plan from database", { planName: matchingPlan.name, smsLimit: matchingPlan.sms_limit });
       } else {
