@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useQueryClient } from '@tanstack/react-query';
 import { useShopLimits } from '@/hooks/useShopLimits';
+import { resolvePlan, getPlanByTierKey } from '@/lib/planResolver';
 import {
   Dialog,
   DialogContent,
@@ -112,40 +113,47 @@ export default function ShopManagementDialog({ shop, isOpen, onClose, onUpdate }
       fetchSubscriptionPlans();
       setSubscriptionMenuVisible(shop.subscription_menu_visible ?? true);
       setForcedFeatures((shop as any).forced_features || {});
-      // Synchroniser avec le plan par défaut si pas de plan spécifique
-      syncWithDefaultPlan();
     }
   }, [shop?.id, shop?.subscription_menu_visible]);
 
+  // Sync with default plan once plans are loaded (backfill subscription_plan_id)
+  useEffect(() => {
+    if (shop?.id && subscriptionPlans.length > 0) {
+      syncWithDefaultPlan();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shop?.id, subscriptionPlans.length]);
+
   if (!shop) return null;
 
-  const currentTier = subscriptionPlans.find(plan => 
-    shop.subscription_plan_id ? plan.id === shop.subscription_plan_id : plan.name.toLowerCase() === shop.subscription_tier?.toLowerCase()
-  );
+  const currentTier = resolvePlan(shop as any, subscriptionPlans);
 
   const syncWithDefaultPlan = async () => {
-    if (!shop || shop.subscription_plan_id) return; // Ne sync que si pas de plan spécifique
-    
-    const defaultTier = subscriptionPlans.find(plan => 
-      plan.name.toLowerCase() === shop.subscription_tier?.toLowerCase()
-    );
-    
-    if (defaultTier && (shop.sms_credits_allocated !== defaultTier.sms_limit)) {
-      try {
-        const { error } = await supabase
-          .from('shops')
-          .update({
-            sms_credits_allocated: defaultTier.sms_limit,
-            subscription_plan_id: defaultTier.id
-          })
-          .eq('id', shop.id);
+    if (!shop) return;
 
-        if (!error) {
-          onUpdate();
-        }
-      } catch (error) {
-        console.error('Error syncing with default plan:', error);
+    // Resolve the matching plan by tier_key (stable key)
+    const defaultTier = getPlanByTierKey(subscriptionPlans, shop.subscription_tier || 'free');
+    if (!defaultTier) return;
+
+    const needsPlanIdBackfill = !shop.subscription_plan_id;
+    const needsSmsSync = !shop.subscription_plan_id && shop.sms_credits_allocated !== defaultTier.sms_limit;
+
+    if (!needsPlanIdBackfill && !needsSmsSync) return;
+
+    try {
+      const updates: any = { subscription_plan_id: defaultTier.id };
+      if (needsSmsSync) updates.sms_credits_allocated = defaultTier.sms_limit;
+
+      const { error } = await supabase
+        .from('shops')
+        .update(updates)
+        .eq('id', shop.id);
+
+      if (!error) {
+        onUpdate();
       }
+    } catch (error) {
+      console.error('Error syncing with default plan:', error);
     }
   };
 
@@ -378,10 +386,12 @@ export default function ShopManagementDialog({ shop, isOpen, onClose, onUpdate }
     
     setLoading(true);
     try {
-      const selectedPlan = subscriptionPlans.find(plan => plan.name.toLowerCase() === newSubscriptionTier.toLowerCase());
-      
+      // newSubscriptionTier holds the tier_key of the selected plan
+      const selectedPlan = getPlanByTierKey(subscriptionPlans, newSubscriptionTier);
+      if (!selectedPlan) throw new Error('Plan introuvable');
+
       // Nettoyer les forced_features redondantes avec le nouveau plan
-      const newPlanMenuConfig = selectedPlan?.menu_config || {};
+      const newPlanMenuConfig = selectedPlan.menu_config || {};
       const cleanedForced: Record<string, boolean> = {};
       Object.keys(forcedFeatures).forEach(key => {
         if (!newPlanMenuConfig[key]) {
@@ -392,9 +402,10 @@ export default function ShopManagementDialog({ shop, isOpen, onClose, onUpdate }
       const { error } = await supabase
         .from('shops')
         .update({
-          subscription_tier: newSubscriptionTier,
-          sms_credits_allocated: selectedPlan?.sms_limit || 15,
-          subscription_end: newSubscriptionTier === 'free' ? null : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+          subscription_tier: selectedPlan.tier_key,
+          subscription_plan_id: selectedPlan.id,
+          sms_credits_allocated: selectedPlan.sms_limit || 15,
+          subscription_end: selectedPlan.tier_key === 'free' ? null : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
           forced_features: cleanedForced
         })
         .eq('id', shop.id);
@@ -405,7 +416,7 @@ export default function ShopManagementDialog({ shop, isOpen, onClose, onUpdate }
 
       toast({
         title: "Succès",
-        description: `Abonnement mis à jour vers ${selectedPlan?.name || newSubscriptionTier}`,
+        description: `Abonnement mis à jour vers ${selectedPlan.name}`,
       });
       
       onUpdate();
@@ -860,7 +871,7 @@ export default function ShopManagementDialog({ shop, isOpen, onClose, onUpdate }
                     </SelectTrigger>
                     <SelectContent>
                       {subscriptionPlans.map(plan => (
-                        <SelectItem key={plan.id} value={plan.name.toLowerCase()}>
+                        <SelectItem key={plan.id} value={plan.tier_key}>
                           {plan.name} - {plan.monthly_price}€/mois
                         </SelectItem>
                       ))}

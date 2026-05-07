@@ -94,14 +94,23 @@ async function handleSubscriptionChange(supabaseClient: any, subscription: Strip
     ? subscription.customer 
     : subscription.customer.id;
 
-  // Déterminer le tier basé sur le montant
+  // Déterminer le tier en cherchant le plan par stripe_price_id (source de vérité = tier_key)
   let subscriptionTier = 'free';
-  const amount = subscription.items.data[0]?.price.unit_amount || 0;
-  
-  if (amount >= 4000) { // 40€ ou plus
-    subscriptionTier = 'enterprise';
-  } else if (amount >= 1200) { // 12€ ou plus
-    subscriptionTier = 'premium';
+  const priceId = subscription.items.data[0]?.price.id;
+  if (priceId) {
+    const { data: plan } = await supabaseClient
+      .from('subscription_plans')
+      .select('tier_key')
+      .eq('stripe_price_id', priceId)
+      .maybeSingle();
+    if (plan?.tier_key) {
+      subscriptionTier = plan.tier_key;
+    } else {
+      // Fallback amount-based
+      const amount = subscription.items.data[0]?.price.unit_amount || 0;
+      if (amount >= 4000) subscriptionTier = 'enterprise';
+      else if (amount >= 1200) subscriptionTier = 'premium';
+    }
   }
 
   const subscriptionEnd = new Date(subscription.current_period_end * 1000).toISOString();

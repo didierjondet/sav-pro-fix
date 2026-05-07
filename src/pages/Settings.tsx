@@ -1889,7 +1889,8 @@ export default function Settings() {
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {plans.map(plan => {
-                        const isCurrentPlan = subscription?.subscription_tier === plan.name.toLowerCase() || plan.monthly_price === 0 && (!subscription?.subscribed || subscription?.subscription_tier === 'free');
+                        const planTierKey = (plan.tier_key || plan.name.toLowerCase());
+                        const isCurrentPlan = subscription?.subscription_tier === planTierKey || (plan.monthly_price === 0 && (!subscription?.subscribed || subscription?.subscription_tier === 'free'));
 
                         // Déterminer l'icône basée sur le nom du plan  
                         let PlanIcon = Star;
@@ -1937,7 +1938,7 @@ export default function Settings() {
                                 Plan Actuel
                               </Button> : plan.contact_only ? <Button onClick={() => window.location.href = `mailto:contact@fixway.fr?subject=Demande de contact pour le plan ${plan.name}&body=Bonjour,%0D%0A%0D%0AJe souhaite obtenir plus d'informations sur le plan ${plan.name}.%0D%0A%0D%0ACordialement`} className="w-full">
                                 Nous contacter
-                              </Button> : <Button onClick={() => createCheckout(plan.name.toLowerCase() as 'premium' | 'enterprise')} className="w-full">
+                              </Button> : <Button onClick={() => createCheckout((plan.tier_key || plan.name.toLowerCase()) as 'premium' | 'enterprise')} className="w-full">
                                 Passer à {plan.name}
                               </Button>}
                           </CardContent>
