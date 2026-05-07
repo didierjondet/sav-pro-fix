@@ -386,10 +386,12 @@ export default function ShopManagementDialog({ shop, isOpen, onClose, onUpdate }
     
     setLoading(true);
     try {
-      const selectedPlan = subscriptionPlans.find(plan => plan.name.toLowerCase() === newSubscriptionTier.toLowerCase());
-      
+      // newSubscriptionTier holds the tier_key of the selected plan
+      const selectedPlan = getPlanByTierKey(subscriptionPlans, newSubscriptionTier);
+      if (!selectedPlan) throw new Error('Plan introuvable');
+
       // Nettoyer les forced_features redondantes avec le nouveau plan
-      const newPlanMenuConfig = selectedPlan?.menu_config || {};
+      const newPlanMenuConfig = selectedPlan.menu_config || {};
       const cleanedForced: Record<string, boolean> = {};
       Object.keys(forcedFeatures).forEach(key => {
         if (!newPlanMenuConfig[key]) {
@@ -400,9 +402,10 @@ export default function ShopManagementDialog({ shop, isOpen, onClose, onUpdate }
       const { error } = await supabase
         .from('shops')
         .update({
-          subscription_tier: newSubscriptionTier,
-          sms_credits_allocated: selectedPlan?.sms_limit || 15,
-          subscription_end: newSubscriptionTier === 'free' ? null : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+          subscription_tier: selectedPlan.tier_key,
+          subscription_plan_id: selectedPlan.id,
+          sms_credits_allocated: selectedPlan.sms_limit || 15,
+          subscription_end: selectedPlan.tier_key === 'free' ? null : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
           forced_features: cleanedForced
         })
         .eq('id', shop.id);
@@ -413,7 +416,7 @@ export default function ShopManagementDialog({ shop, isOpen, onClose, onUpdate }
 
       toast({
         title: "Succès",
-        description: `Abonnement mis à jour vers ${selectedPlan?.name || newSubscriptionTier}`,
+        description: `Abonnement mis à jour vers ${selectedPlan.name}`,
       });
       
       onUpdate();
