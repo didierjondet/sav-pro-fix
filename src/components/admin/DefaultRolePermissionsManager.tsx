@@ -89,7 +89,7 @@ export function DefaultRolePermissionsManager() {
               <SelectContent>
                 <SelectItem value="admin">Administrateur</SelectItem>
                 <SelectItem value="technician">Technicien</SelectItem>
-                <SelectItem value="shop_admin">Responsable magasin</SelectItem>
+                <SelectItem value="shop_admin">Magasin</SelectItem>
               </SelectContent>
             </Select>
           </div>
