@@ -1889,7 +1889,8 @@ export default function Settings() {
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {plans.map(plan => {
-                        const isCurrentPlan = subscription?.subscription_tier === plan.name.toLowerCase() || plan.monthly_price === 0 && (!subscription?.subscribed || subscription?.subscription_tier === 'free');
+                        const planTierKey = (plan.tier_key || plan.name.toLowerCase());
+                        const isCurrentPlan = subscription?.subscription_tier === planTierKey || (plan.monthly_price === 0 && (!subscription?.subscribed || subscription?.subscription_tier === 'free'));
 
                         // Déterminer l'icône basée sur le nom du plan  
                         let PlanIcon = Star;
