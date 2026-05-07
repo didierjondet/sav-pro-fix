@@ -140,8 +140,8 @@ Confirmez votre RDV via le lien dans votre espace de suivi.`;
       // Envoyer via SMS
       let smsSent = false;
       if (sendViaSMS && customerPhone) {
-        const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
-        const confirmUrl = `${baseUrl}/rdv/${appointment.confirmation_token}`;
+        const { generatePublicAppointmentUrl } = await import('@/utils/trackingUtils');
+        const confirmUrl = generatePublicAppointmentUrl(appointment.confirmation_token);
         
         smsSent = await sendAppointmentSMS(
           customerPhone,
