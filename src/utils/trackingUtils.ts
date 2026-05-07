@@ -17,22 +17,23 @@ export function generateFullTrackingUrl(trackingSlug: string): string {
 }
 
 /**
- * Renvoie une base URL publique adaptée pour les liens envoyés en SMS/email.
- * Sur preview/lovable, on force fixway.fr ; sur custom domain on garde l'origin.
+ * Renvoie un host public sans schéma (ex: "fixway.fr") pour les liens SMS.
+ * Le schéma https:// + UUID long déclenche les filtres anti-spam SMS (Brevo).
+ * Les clients SMS rendent quand même le lien cliquable sans le schéma.
  */
-export function getPublicBaseUrl(): string {
-  if (typeof window === 'undefined') return 'https://fixway.fr';
+export function getPublicSmsHost(): string {
+  if (typeof window === 'undefined') return 'fixway.fr';
   const host = window.location.hostname;
   if (host.includes('lovable.app') || host.includes('lovableproject.com') || host === 'localhost' || host.startsWith('127.')) {
-    return 'https://fixway.fr';
+    return 'fixway.fr';
   }
-  return window.location.origin;
+  return host;
 }
 
 export function generatePublicQuoteUrl(quoteId: string): string {
-  return `${getPublicBaseUrl()}/quote/${quoteId}`;
+  return `${getPublicSmsHost()}/quote/${quoteId}`;
 }
 
 export function generatePublicAppointmentUrl(token: string): string {
-  return `${getPublicBaseUrl()}/rdv/${token}`;
+  return `${getPublicSmsHost()}/rdv/${token}`;
 }
