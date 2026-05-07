@@ -29,7 +29,7 @@ export type RolePermissionKey = keyof RolePermissions;
 export const ROLE_PERMISSION_LABELS: Record<string, string> = {
   admin: 'Administrateur',
   technician: 'Technicien',
-  shop_admin: 'Responsable magasin',
+  shop_admin: 'Magasin',
 };
 
 export const ROLE_PERMISSION_DEFAULTS: Record<string, RolePermissions> = {
