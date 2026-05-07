@@ -54,6 +54,7 @@ import {
 
 interface SubscriptionPlan {
   id: string;
+  tier_key?: string | null;
   name: string;
   description: string;
   monthly_price: number;
