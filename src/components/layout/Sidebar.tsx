@@ -107,18 +107,20 @@ export function Sidebar({
   } = useQuotes();
   const quoteCounts = (quotes || []).reduce((acc, q) => {
     const activeStatuses = ['draft', 'sent', 'viewed'];
-    if (q.status === 'accepted') {
+    if (q.status === 'sms_accepted') {
+      acc.clientAccepted++;
+    } else if (q.status === 'accepted') {
       acc.accepted++;
     } else if (q.status === 'rejected') {
       acc.rejected++;
     } else if (activeStatuses.includes(q.status)) {
       acc.inProgress++;
     }
-    // archived, completed, expired quotes are not counted
     return acc;
   }, {
     inProgress: 0,
     accepted: 0,
+    clientAccepted: 0,
     rejected: 0
   });
 
