@@ -525,8 +525,7 @@ export default function Quotes() {
             .single();
 
           if (!savFetchError && createdSAV?.tracking_slug) {
-            const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
-            const trackingUrl = `${baseUrl}/track/${createdSAV.tracking_slug}`;
+            const trackingUrl = generateShortTrackingUrl(createdSAV.tracking_slug);
             
             const message = `Bonjour ${cleanQuote.customer_name}, votre devis ${cleanQuote.quote_number} a été accepté ! Un dossier SAV ${createdSAV.case_number} a été créé. Suivez l'avancement ici: ${trackingUrl}\n\n⚠️ Ne répondez pas à ce SMS. Pour échanger, utilisez le chat de suivi.`;
             
