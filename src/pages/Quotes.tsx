@@ -626,7 +626,7 @@ export default function Quotes() {
               </SelectContent>
             </Select>
           )}
-          {quote.status === 'accepted' && (
+          {(quote.status === 'accepted' || quote.status === 'sms_accepted') && (
             <Button variant="default" size="sm" className="h-8 text-xs bg-green-600 hover:bg-green-700" onClick={() => setQuoteToConvert(quote)}>
               <Plus className="h-3 w-3 mr-1" />
               Valider
@@ -643,7 +643,7 @@ export default function Quotes() {
               <Button variant="outline" size="sm" className="h-8 text-xs" onClick={() => handleDownloadPDF(quote)}>
                 <Download className="h-3 w-3 mr-1" />PDF
               </Button>
-              {quote.customer_phone && (
+              {quote.customer_phone && quote.status !== 'sms_accepted' && (
                 <Button 
                   variant={quote.status === 'sent' ? 'default' : 'outline'} 
                   size="sm" 
