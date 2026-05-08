@@ -591,10 +591,10 @@ export default function Quotes() {
             <span className="text-muted-foreground">Créé : </span>
             <span>{new Date(quote.created_at).toLocaleDateString('fr-FR')}</span>
           </div>
-          {quote.status === 'accepted' && quote.accepted_by && quote.accepted_at && (
+          {(quote.status === 'accepted' || quote.status === 'sms_accepted') && quote.accepted_at && (
             <div className="flex items-center gap-1 text-green-600 col-span-2">
               <CheckCircle className="h-3 w-3 shrink-0" />
-              <span className="text-xs">Accepté par {quote.accepted_by === 'shop' ? 'le magasin' : 'le client'} le {new Date(quote.accepted_at).toLocaleDateString('fr-FR')}</span>
+              <span className="text-xs">Accepté par {quote.status === 'sms_accepted' ? 'le client' : (quote.accepted_by === 'shop' ? 'le magasin' : 'le client')} le {new Date(quote.accepted_at).toLocaleDateString('fr-FR')}</span>
             </div>
           )}
           {quote.status === 'sent' && quote.sms_sent_at && (
