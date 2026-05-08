@@ -1,39 +1,88 @@
-## Diagnostic
+## Objectif
 
-Les SMS sont envoyés (statut `sent` + Twilio SID en DB) mais **non livrés** depuis qu'on a remplacé l'URL preview par `https://fixway.fr/quote/<UUID>`.
-
-Preuve dans `sms_history` :
-- ✅ Reçu : `fixway.fr/track/didierjond5262` (SAV — sans `https://`, slug court)
-- ❌ Non reçu : `https://fixway.fr/quote/abeb6ba2-3868-4d4b-a935-be229c5abe5c`
-
-Brevo SMS (provider actif) applique un filtrage anti-spam silencieux sur les SMS contenant `https://` + UUID long. Le SID est retourné côté API mais le message est droppé en aval. Le SAV échappe au filtre car il utilise déjà un slug court sans schéma (`generateShortTrackingUrl`).
+Quand un client accepte un devis depuis la page publique SMS (`status = 'sms_accepted'`), il doit :
+1. apparaître dans l'onglet **"Devis acceptés"** (déplacement uniquement, pas de changement de couleur)
+2. afficher un compteur dans le titre de l'onglet
+3. afficher un compteur (badge) sur l'item **Devis** de la sidebar
+4. déclencher une **notification** (cloche) du type "Votre devis n°XXX vient d'être accepté par le client. Transformez-le en SAV."
+5. corriger le SMS post-conversion qui réutilise encore l'URL preview lovable
 
 ## Plan
 
-### 1. Aligner les URL de devis sur le format SAV (sans `https://`)
+### 1. `src/pages/Quotes.tsx` — onglets et carte
 
-**`src/utils/trackingUtils.ts`** :
-- `generatePublicQuoteUrl(quoteId)` doit renvoyer `fixway.fr/quote/<id>` **sans** `https://` (sur preview/lovable). Sur custom domain, renvoyer `<host>/quote/<id>` sans schéma.
-- Idem `generatePublicAppointmentUrl(token)` → `fixway.fr/rdv/<token>`.
+- `acceptedQuotes` : inclure aussi `status === 'sms_accepted'` (en plus de `'accepted'`).
+- `activeQuotes` : exclure `'sms_accepted'`.
+- Onglet "Devis acceptés" : afficher déjà `({acceptedQuotes.length})`. Vérifier que c'est bien visible (déjà le cas ligne 782).
+- Dans `renderQuoteCard`, pour `status === 'sms_accepted'` :
+  - Affichage normal (pas de fond vert), juste un badge "Accepté par le client le <date>" (réutiliser le bloc lignes 592–597 en l'étendant à `sms_accepted` et en libellant "le client").
+  - Bouton **Valider** (transformation en SAV) : déjà présent pour `'accepted'` ligne 627 — étendre la condition à `['accepted','sms_accepted'].includes(quote.status)`.
+  - Masquer le bouton "Renvoyer SMS" / "SMS" pour `sms_accepted` (le devis est déjà accepté).
+- `getStatusText` / `getStatusColor` : ajouter mapping `sms_accepted` → "Accepté par client" / `default`.
 
-Les SMS clients des téléphones rendent ces liens cliquables sans le schéma (comme déjà constaté avec `/track/`).
+### 2. `src/components/layout/Sidebar.tsx` — badge
 
-### 2. (Optionnel) Raccourcir l'identifiant
-L'UUID complet reste long (36 chars). On garde l'UUID pour cette itération (changer le schéma de `quotes` impose une migration `public_slug`). Si Brevo continue de filtrer après l'étape 1, on ajoutera un `public_slug` court (ex. base36 8 chars) en seconde itération — pas dans ce plan.
+Dans le `reduce` (ligne 108–123) : compter `sms_accepted` dans `acc.accepted` (ou créer un compteur dédié `clientAccepted`).
 
-### 3. Vérifier côté SAV
-Le SAV utilise déjà `generateShortTrackingUrl` (`fixway.fr/track/<slug>`) sans `https://`. Aucun changement à prévoir — confirmé par les SMS reçus en production.
+Ajouter à côté du badge "inProgress" un second badge orange pour les devis acceptés-client en attente de validation (ligne 265) :
+```tsx
+{item.href === '/quotes' && quoteCounts.clientAccepted > 0 && (
+  <Badge className="ml-1 bg-green-600 text-white text-xs">{quoteCounts.clientAccepted}</Badge>
+)}
+```
 
-### 4. Vérification
-- Créer un nouveau devis avec téléphone test → cliquer "Envoyer SMS".
-- Le message doit contenir `fixway.fr/quote/<id>` (sans `https://`).
-- Réception sur le téléphone à confirmer.
-- Vérifier en parallèle qu'un SMS SAV arrive toujours (sanity check).
+### 3. Notification cloche — création depuis l'edge function `quote-public`
+
+Dans `supabase/functions/quote-public/index.ts`, juste après l'update réussie quand `status === 'sms_accepted'` (lignes 102–104) :
+
+```ts
+if (status === 'sms_accepted' && updatedQuote.shop_id) {
+  await supabase.from('notifications').insert({
+    shop_id: updatedQuote.shop_id,
+    type: 'general',
+    title: 'Devis accepté par le client',
+    message: `Le devis n°${updatedQuote.quote_number} vient d'être accepté par ${updatedQuote.customer_name}. Transformez-le en SAV pour finaliser.`,
+    read: false,
+  });
+}
+```
+
+Vérifier le schéma `notifications` (colonnes `shop_id`, `type`, `title`, `message`, `read`) — déjà utilisé par `useNotifications.ts` (lignes 162–170, 361). Si `'general'` n'est pas suffisant, ajouter à terme un type `'quote_accepted'`, mais pour rester sans migration on garde `'general'`.
+
+Le hook `useNotifications` est déjà branché sur le realtime `notifications-realtime` → la cloche se mettra à jour automatiquement côté magasin.
+
+### 4. Correction SMS de conversion devis → SAV (bug lovable persistant)
+
+Dans `src/pages/Quotes.tsx`, fonction `convertQuoteToSAV` (lignes 514–540) :
+
+- Remplacer :
+  ```ts
+  const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+  const trackingUrl = `${baseUrl}/track/${createdSAV.tracking_slug}`;
+  ```
+  par :
+  ```ts
+  import { generateShortTrackingUrl } from '@/utils/trackingUtils';
+  const trackingUrl = generateShortTrackingUrl(createdSAV.tracking_slug);
+  ```
+  → produit `fixway.fr/track/<slug>` sans `https://` ni domaine preview lovable, identique au reste des SMS SAV.
+
+### 5. Vérification
+
+- Accepter un devis test depuis la page publique :
+  - apparaît dans l'onglet "Devis acceptés" avec compteur incrémenté
+  - badge vert sur l'item Devis de la sidebar
+  - notification cloche "Votre devis n°XXX..."
+- Cliquer **Valider** → choisir un type SAV → SAV créé, devis passe à `accepted`, SMS reçu sur le téléphone test contenant `fixway.fr/track/<slug>` (sans `https://`, sans "lovable").
 
 ### Fichiers modifiés
-- `src/utils/trackingUtils.ts` (retirer `https://` dans `generatePublicQuoteUrl` et `generatePublicAppointmentUrl`).
+
+- `src/pages/Quotes.tsx` (filtres `acceptedQuotes`/`activeQuotes`, conditions sur la carte, libellés, correction URL SMS).
+- `src/components/layout/Sidebar.tsx` (compteur acceptés client + badge).
+- `supabase/functions/quote-public/index.ts` (insertion notification sur `sms_accepted`).
 
 ### Hors scope
+
 - Pas de migration DB.
-- Pas de changement edge function `send-sms` (le provider routing est correct).
-- Le double toast de création de devis (signalé au tour précédent) reste à traiter dans un plan séparé si tu confirmes.
+- Pas de changement de couleur de carte.
+- Pas de modification du SMS initial du devis (déjà corrigé précédemment).

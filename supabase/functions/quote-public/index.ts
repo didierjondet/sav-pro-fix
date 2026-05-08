@@ -103,6 +103,21 @@ Deno.serve(async (req) => {
 
       console.log(`Quote ${quoteId} updated to status: ${status}${rejection_reason ? `, reason: ${rejection_reason}` : ''}`);
 
+      // Notification cloche pour le magasin quand un client accepte par SMS
+      if (status === 'sms_accepted' && updatedQuote.shop_id) {
+        try {
+          await supabase.from('notifications').insert({
+            shop_id: updatedQuote.shop_id,
+            type: 'general',
+            title: 'Devis accepté par le client',
+            message: `Le devis n°${updatedQuote.quote_number} vient d'être accepté par ${updatedQuote.customer_name}. Transformez-le en SAV pour finaliser.`,
+            read: false,
+          });
+        } catch (notifErr) {
+          console.error('Notification insert failed (non-fatal):', notifErr);
+        }
+      }
+
       return new Response(
         JSON.stringify({ success: true, quote: updatedQuote }),
         { 

@@ -18,6 +18,7 @@ import { Package, AlertTriangle } from 'lucide-react';
 import { QuoteView } from '@/components/quotes/QuoteView';
 import { QuoteActionDialog } from '@/components/dialogs/QuoteActionDialog';
 import { generateQuotePDF } from '@/utils/pdfGenerator';
+import { generateShortTrackingUrl } from '@/utils/trackingUtils';
 import { useToast } from '@/hooks/use-toast';
 import {
   Select,
@@ -100,14 +101,14 @@ export default function Quotes() {
   };
 
   const activeQuotes = quotes.filter(quote => 
-    quote.status !== 'rejected' && quote.status !== 'accepted' && quote.status !== 'archived' &&
+    quote.status !== 'rejected' && quote.status !== 'accepted' && quote.status !== 'sms_accepted' && quote.status !== 'archived' &&
     (quote.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
      quote.quote_number.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   const acceptedQuotes = quotes.filter(quote => {
-    // Inclure seulement les devis acceptés mais pas encore terminés ni archivés
-    const isAccepted = quote.status === 'accepted';
+    // Inclure les devis acceptés (par magasin ou par client via SMS) en attente de transformation
+    const isAccepted = quote.status === 'accepted' || quote.status === 'sms_accepted';
     const isNotCompleted = quote.status !== 'completed' && quote.status !== 'archived';
     const matchesSearch = quote.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          quote.quote_number.toLowerCase().includes(searchTerm.toLowerCase());
@@ -288,6 +289,7 @@ export default function Quotes() {
       case 'sent': return 'outline';
       case 'viewed': return 'secondary';
       case 'accepted': return 'default';
+      case 'sms_accepted': return 'default';
       case 'rejected': return 'destructive';
       case 'expired': return 'outline';
       default: return 'default';
@@ -301,6 +303,7 @@ export default function Quotes() {
       case 'sent': return 'Envoyé';
       case 'under_negotiation': return 'En négociation';
       case 'accepted': return 'Accepté';
+      case 'sms_accepted': return 'Accepté par client';
       case 'rejected': return 'Refusé';
       case 'expired': return 'Expiré';
       default: return status;
@@ -522,8 +525,7 @@ export default function Quotes() {
             .single();
 
           if (!savFetchError && createdSAV?.tracking_slug) {
-            const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
-            const trackingUrl = `${baseUrl}/track/${createdSAV.tracking_slug}`;
+            const trackingUrl = generateShortTrackingUrl(createdSAV.tracking_slug);
             
             const message = `Bonjour ${cleanQuote.customer_name}, votre devis ${cleanQuote.quote_number} a été accepté ! Un dossier SAV ${createdSAV.case_number} a été créé. Suivez l'avancement ici: ${trackingUrl}\n\n⚠️ Ne répondez pas à ce SMS. Pour échanger, utilisez le chat de suivi.`;
             
@@ -589,10 +591,10 @@ export default function Quotes() {
             <span className="text-muted-foreground">Créé : </span>
             <span>{new Date(quote.created_at).toLocaleDateString('fr-FR')}</span>
           </div>
-          {quote.status === 'accepted' && quote.accepted_by && quote.accepted_at && (
+          {(quote.status === 'accepted' || quote.status === 'sms_accepted') && quote.accepted_at && (
             <div className="flex items-center gap-1 text-green-600 col-span-2">
               <CheckCircle className="h-3 w-3 shrink-0" />
-              <span className="text-xs">Accepté par {quote.accepted_by === 'shop' ? 'le magasin' : 'le client'} le {new Date(quote.accepted_at).toLocaleDateString('fr-FR')}</span>
+              <span className="text-xs">Accepté par {quote.status === 'sms_accepted' ? 'le client' : (quote.accepted_by === 'shop' ? 'le magasin' : 'le client')} le {new Date(quote.accepted_at).toLocaleDateString('fr-FR')}</span>
             </div>
           )}
           {quote.status === 'sent' && quote.sms_sent_at && (
@@ -624,7 +626,7 @@ export default function Quotes() {
               </SelectContent>
             </Select>
           )}
-          {quote.status === 'accepted' && (
+          {(quote.status === 'accepted' || quote.status === 'sms_accepted') && (
             <Button variant="default" size="sm" className="h-8 text-xs bg-green-600 hover:bg-green-700" onClick={() => setQuoteToConvert(quote)}>
               <Plus className="h-3 w-3 mr-1" />
               Valider
@@ -641,7 +643,7 @@ export default function Quotes() {
               <Button variant="outline" size="sm" className="h-8 text-xs" onClick={() => handleDownloadPDF(quote)}>
                 <Download className="h-3 w-3 mr-1" />PDF
               </Button>
-              {quote.customer_phone && (
+              {quote.customer_phone && quote.status !== 'sms_accepted' && (
                 <Button 
                   variant={quote.status === 'sent' ? 'default' : 'outline'} 
                   size="sm" 
