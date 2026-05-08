@@ -289,6 +289,7 @@ export default function Quotes() {
       case 'sent': return 'outline';
       case 'viewed': return 'secondary';
       case 'accepted': return 'default';
+      case 'sms_accepted': return 'default';
       case 'rejected': return 'destructive';
       case 'expired': return 'outline';
       default: return 'default';
@@ -302,6 +303,7 @@ export default function Quotes() {
       case 'sent': return 'Envoyé';
       case 'under_negotiation': return 'En négociation';
       case 'accepted': return 'Accepté';
+      case 'sms_accepted': return 'Accepté par client';
       case 'rejected': return 'Refusé';
       case 'expired': return 'Expiré';
       default: return status;
