@@ -1,88 +1,48 @@
-## Objectif
+## Diagnostic
 
-Quand un client accepte un devis depuis la page publique SMS (`status = 'sms_accepted'`), il doit :
-1. apparaître dans l'onglet **"Devis acceptés"** (déplacement uniquement, pas de changement de couleur)
-2. afficher un compteur dans le titre de l'onglet
-3. afficher un compteur (badge) sur l'item **Devis** de la sidebar
-4. déclencher une **notification** (cloche) du type "Votre devis n°XXX vient d'être accepté par le client. Transformez-le en SAV."
-5. corriger le SMS post-conversion qui réutilise encore l'URL preview lovable
+Logs edge `quote-public` confirment : `Quote f54974d4... updated to status: sms_accepted` ✅
+Notification cloche reçue ✅ (table `notifications` est branchée sur son propre realtime).
+**Mais** la table `public.quotes` n'est **pas** dans la publication `supabase_realtime` :
+
+```
+pg_publication_tables (supabase_realtime) →
+  sav_cases, sav_parts, sav_status_history, sav_messages, support_*
+  ❌ quotes absent
+  ❌ notifications absent (mais géré ailleurs)
+```
+
+Conséquence : le canal `quotes-changes` (`useQuotes.ts` ligne 111) ne reçoit aucun événement quand l'edge function modifie le statut. L'UI ne bouge donc pas tant qu'on ne recharge pas la page. C'est aussi pour ça que le badge "Accepté par le client" n'apparaît pas : la carte n'est jamais re-rendue avec le nouveau statut `sms_accepted`.
 
 ## Plan
 
-### 1. `src/pages/Quotes.tsx` — onglets et carte
+### 1. Migration DB — activer realtime sur `quotes`
 
-- `acceptedQuotes` : inclure aussi `status === 'sms_accepted'` (en plus de `'accepted'`).
-- `activeQuotes` : exclure `'sms_accepted'`.
-- Onglet "Devis acceptés" : afficher déjà `({acceptedQuotes.length})`. Vérifier que c'est bien visible (déjà le cas ligne 782).
-- Dans `renderQuoteCard`, pour `status === 'sms_accepted'` :
-  - Affichage normal (pas de fond vert), juste un badge "Accepté par le client le <date>" (réutiliser le bloc lignes 592–597 en l'étendant à `sms_accepted` et en libellant "le client").
-  - Bouton **Valider** (transformation en SAV) : déjà présent pour `'accepted'` ligne 627 — étendre la condition à `['accepted','sms_accepted'].includes(quote.status)`.
-  - Masquer le bouton "Renvoyer SMS" / "SMS" pour `sms_accepted` (le devis est déjà accepté).
-- `getStatusText` / `getStatusColor` : ajouter mapping `sms_accepted` → "Accepté par client" / `default`.
-
-### 2. `src/components/layout/Sidebar.tsx` — badge
-
-Dans le `reduce` (ligne 108–123) : compter `sms_accepted` dans `acc.accepted` (ou créer un compteur dédié `clientAccepted`).
-
-Ajouter à côté du badge "inProgress" un second badge orange pour les devis acceptés-client en attente de validation (ligne 265) :
-```tsx
-{item.href === '/quotes' && quoteCounts.clientAccepted > 0 && (
-  <Badge className="ml-1 bg-green-600 text-white text-xs">{quoteCounts.clientAccepted}</Badge>
-)}
+```sql
+ALTER TABLE public.quotes REPLICA IDENTITY FULL;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.quotes;
 ```
 
-### 3. Notification cloche — création depuis l'edge function `quote-public`
+`REPLICA IDENTITY FULL` permet au payload `UPDATE` realtime de contenir toutes les colonnes (sinon le filtre côté client ne marche pas correctement).
 
-Dans `supabase/functions/quote-public/index.ts`, juste après l'update réussie quand `status === 'sms_accepted'` (lignes 102–104) :
+### 2. Filet de sécurité côté front (`src/pages/Quotes.tsx`)
 
-```ts
-if (status === 'sms_accepted' && updatedQuote.shop_id) {
-  await supabase.from('notifications').insert({
-    shop_id: updatedQuote.shop_id,
-    type: 'general',
-    title: 'Devis accepté par le client',
-    message: `Le devis n°${updatedQuote.quote_number} vient d'être accepté par ${updatedQuote.customer_name}. Transformez-le en SAV pour finaliser.`,
-    read: false,
-  });
-}
-```
+Ajouter un `refetch()` de `useQuotes` au focus de la fenêtre **et** quand une nouvelle notification de type `quote_accepted` (ou message contenant "devis accepté") arrive via `useNotifications`. Implémentation simple : `useEffect` qui écoute `window.addEventListener('focus', refetch)`.
 
-Vérifier le schéma `notifications` (colonnes `shop_id`, `type`, `title`, `message`, `read`) — déjà utilisé par `useNotifications.ts` (lignes 162–170, 361). Si `'general'` n'est pas suffisant, ajouter à terme un type `'quote_accepted'`, mais pour rester sans migration on garde `'general'`.
+Ainsi, même si realtime tarde, dès que l'utilisateur revient sur l'onglet la liste se met à jour.
 
-Le hook `useNotifications` est déjà branché sur le realtime `notifications-realtime` → la cloche se mettra à jour automatiquement côté magasin.
+### 3. Vérification
 
-### 4. Correction SMS de conversion devis → SAV (bug lovable persistant)
+- Accepter un devis test depuis la page publique SMS.
+- Sans recharger : la carte doit basculer de "Devis actifs" vers "Devis acceptés" et afficher le badge "Accepté par le client le …".
+- Le compteur d'onglet et le badge sidebar doivent s'incrémenter en direct.
 
-Dans `src/pages/Quotes.tsx`, fonction `convertQuoteToSAV` (lignes 514–540) :
+### Fichiers touchés
 
-- Remplacer :
-  ```ts
-  const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
-  const trackingUrl = `${baseUrl}/track/${createdSAV.tracking_slug}`;
-  ```
-  par :
-  ```ts
-  import { generateShortTrackingUrl } from '@/utils/trackingUtils';
-  const trackingUrl = generateShortTrackingUrl(createdSAV.tracking_slug);
-  ```
-  → produit `fixway.fr/track/<slug>` sans `https://` ni domaine preview lovable, identique au reste des SMS SAV.
-
-### 5. Vérification
-
-- Accepter un devis test depuis la page publique :
-  - apparaît dans l'onglet "Devis acceptés" avec compteur incrémenté
-  - badge vert sur l'item Devis de la sidebar
-  - notification cloche "Votre devis n°XXX..."
-- Cliquer **Valider** → choisir un type SAV → SAV créé, devis passe à `accepted`, SMS reçu sur le téléphone test contenant `fixway.fr/track/<slug>` (sans `https://`, sans "lovable").
-
-### Fichiers modifiés
-
-- `src/pages/Quotes.tsx` (filtres `acceptedQuotes`/`activeQuotes`, conditions sur la carte, libellés, correction URL SMS).
-- `src/components/layout/Sidebar.tsx` (compteur acceptés client + badge).
-- `supabase/functions/quote-public/index.ts` (insertion notification sur `sms_accepted`).
+- Migration SQL (publication realtime + replica identity).
+- `src/pages/Quotes.tsx` (refetch on focus, ~5 lignes).
 
 ### Hors scope
 
-- Pas de migration DB.
-- Pas de changement de couleur de carte.
-- Pas de modification du SMS initial du devis (déjà corrigé précédemment).
+- Aucun changement UI / couleurs.
+- Aucun changement edge function (déjà OK).
+- Le devis `DEV-2026-05-08-001` mentionné par l'utilisateur n'est pas en base (introuvable, dernier devis = `DEV-2026-05-07-001`). Le problème observé est bien le bug realtime, pas un problème de données.
