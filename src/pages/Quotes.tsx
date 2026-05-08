@@ -18,6 +18,7 @@ import { Package, AlertTriangle } from 'lucide-react';
 import { QuoteView } from '@/components/quotes/QuoteView';
 import { QuoteActionDialog } from '@/components/dialogs/QuoteActionDialog';
 import { generateQuotePDF } from '@/utils/pdfGenerator';
+import { generateShortTrackingUrl } from '@/utils/trackingUtils';
 import { useToast } from '@/hooks/use-toast';
 import {
   Select,
