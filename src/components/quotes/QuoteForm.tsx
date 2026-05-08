@@ -604,6 +604,10 @@ const updateUnitPurchasePrice = (partId: string, unitPrice: number) => {
                         )}
                         <p className="text-sm text-muted-foreground">
                           Prix: {(part.selling_price || 0).toFixed(2)}€
+                          {' • '}
+                          <span className={(part.quantity ?? 0) <= 0 ? 'text-destructive font-medium' : (part.quantity ?? 0) <= (part.min_stock ?? 0) ? 'text-orange-600 font-medium' : 'text-green-600 font-medium'}>
+                            Stock: {part.quantity ?? 0}
+                          </span>
                         </p>
                       </div>
                     </div>
