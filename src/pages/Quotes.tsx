@@ -71,7 +71,19 @@ export default function Quotes() {
   const [showQuoteActionDialog, setShowQuoteActionDialog] = useState<Quote | null>(null);
   const [selectedSAVType, setSelectedSAVType] = useState<string>('');
   const [partsSearchTerm, setPartsSearchTerm] = useState('');
-  const { quotes, loading, createQuote, deleteQuote, updateQuote, archiveQuote, reactivateQuote } = useQuotes();
+  const { quotes, loading, createQuote, deleteQuote, updateQuote, archiveQuote, reactivateQuote, refetch: refetchQuotes } = useQuotes();
+
+  // Filet de sécurité : si le realtime quotes ne déclenche pas (changement effectué côté edge function),
+  // on rafraîchit dès que l'utilisateur revient sur l'onglet ou la fenêtre.
+  useEffect(() => {
+    const onFocus = () => refetchQuotes();
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onFocus);
+    return () => {
+      window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onFocus);
+    };
+  }, [refetchQuotes]);
   const { createCase } = useSAVCases();
   const { sendQuoteNotification, sendSMS } = useSMS();
   const { shop } = useShop();
