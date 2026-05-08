@@ -101,14 +101,14 @@ export default function Quotes() {
   };
 
   const activeQuotes = quotes.filter(quote => 
-    quote.status !== 'rejected' && quote.status !== 'accepted' && quote.status !== 'archived' &&
+    quote.status !== 'rejected' && quote.status !== 'accepted' && quote.status !== 'sms_accepted' && quote.status !== 'archived' &&
     (quote.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
      quote.quote_number.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   const acceptedQuotes = quotes.filter(quote => {
-    // Inclure seulement les devis acceptés mais pas encore terminés ni archivés
-    const isAccepted = quote.status === 'accepted';
+    // Inclure les devis acceptés (par magasin ou par client via SMS) en attente de transformation
+    const isAccepted = quote.status === 'accepted' || quote.status === 'sms_accepted';
     const isNotCompleted = quote.status !== 'completed' && quote.status !== 'archived';
     const matchesSearch = quote.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          quote.quote_number.toLowerCase().includes(searchTerm.toLowerCase());
