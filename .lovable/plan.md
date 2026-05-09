@@ -1,48 +1,69 @@
-## Diagnostic
+## Objectif
 
-Logs edge `quote-public` confirment : `Quote f54974d4... updated to status: sms_accepted` ✅
-Notification cloche reçue ✅ (table `notifications` est branchée sur son propre realtime).
-**Mais** la table `public.quotes` n'est **pas** dans la publication `supabase_realtime` :
+1. Tracer l'envoi du questionnaire de satisfaction dans la conversation (chat + SMS) du SAV avec date/heure.
+2. Mettre en évidence visuellement la zone "Description du problème" dans le formulaire de devis, comme c'est fait sur la fiche SAV.
 
+---
+
+## 1. Trace du questionnaire de satisfaction
+
+**Fichier** : `src/components/sav/SatisfactionRequestButton.tsx`
+
+Après l'envoi réussi du SMS de satisfaction (dans `sendSatisfactionRequest`, juste après `if (smsSent)`), insérer un message système dans la table `sav_messages` via `supabase.from('sav_messages').insert(...)` :
+
+- `sav_case_id` : prop `savCaseId`
+- `shop_id` : prop `shopId`
+- `sender_type` : `'shop'`
+- `sender_name` : `'Système'`
+- `message` : `📋 Questionnaire de satisfaction envoyé par SMS le {date} à {heure} au {customerPhone}` (date/heure formatées en `fr-FR`)
+- `read_by_shop: true`, `read_by_client: false`
+
+Ainsi le message apparaît automatiquement dans `SAVMessaging` / `MessagingInterface` (qui lit `sav_messages`), avec horodatage natif `created_at`.
+
+Aucun changement de schéma nécessaire — la table `sav_messages` existe déjà et est utilisée pareil pour les SMS.
+
+---
+
+## 2. Mise en évidence du champ "Description du problème" dans le devis
+
+**Fichier** : `src/components/quotes/QuoteForm.tsx` (lignes 538–554)
+
+Réutiliser le composant existant `ProblemDescriptionField` de `src/components/sav/ProblemDescriptionHighlight.tsx` (déjà utilisé sur la fiche SAV — même charte visuelle : bordure gauche primary, fond dégradé, icône, badge "requis").
+
+Remplacer le bloc actuel `<div><Label>...<Textarea/></div>` par :
+
+```tsx
+<ProblemDescriptionField
+  required
+  action={
+    <AITextReformulator
+      text={deviceInfo.problemDescription}
+      context="problem_description"
+      onReformulated={(t) => setDeviceInfo({ ...deviceInfo, problemDescription: t })}
+    />
+  }
+>
+  <Textarea
+    id="problemDescription"
+    value={deviceInfo.problemDescription}
+    onChange={(e) => setDeviceInfo({ ...deviceInfo, problemDescription: e.target.value })}
+    placeholder="Décrivez le problème rencontré..."
+    required
+  />
+</ProblemDescriptionField>
 ```
-pg_publication_tables (supabase_realtime) →
-  sav_cases, sav_parts, sav_status_history, sav_messages, support_*
-  ❌ quotes absent
-  ❌ notifications absent (mais géré ailleurs)
-```
 
-Conséquence : le canal `quotes-changes` (`useQuotes.ts` ligne 111) ne reçoit aucun événement quand l'edge function modifie le statut. L'UI ne bouge donc pas tant qu'on ne recharge pas la page. C'est aussi pour ça que le badge "Accepté par le client" n'apparaît pas : la carte n'est jamais re-rendue avec le nouveau statut `sms_accepted`.
+Ajouter l'import en haut du fichier.
 
-## Plan
+---
 
-### 1. Migration DB — activer realtime sur `quotes`
+## Hors périmètre
 
-```sql
-ALTER TABLE public.quotes REPLICA IDENTITY FULL;
-ALTER PUBLICATION supabase_realtime ADD TABLE public.quotes;
-```
+- Pas de migration DB.
+- Pas de modification de `MessagingInterface` (le rendu des messages système existants suffit).
+- Pas de changement sur les autres champs du formulaire devis.
 
-`REPLICA IDENTITY FULL` permet au payload `UPDATE` realtime de contenir toutes les colonnes (sinon le filtre côté client ne marche pas correctement).
+## Vérification
 
-### 2. Filet de sécurité côté front (`src/pages/Quotes.tsx`)
-
-Ajouter un `refetch()` de `useQuotes` au focus de la fenêtre **et** quand une nouvelle notification de type `quote_accepted` (ou message contenant "devis accepté") arrive via `useNotifications`. Implémentation simple : `useEffect` qui écoute `window.addEventListener('focus', refetch)`.
-
-Ainsi, même si realtime tarde, dès que l'utilisateur revient sur l'onglet la liste se met à jour.
-
-### 3. Vérification
-
-- Accepter un devis test depuis la page publique SMS.
-- Sans recharger : la carte doit basculer de "Devis actifs" vers "Devis acceptés" et afficher le badge "Accepté par le client le …".
-- Le compteur d'onglet et le badge sidebar doivent s'incrémenter en direct.
-
-### Fichiers touchés
-
-- Migration SQL (publication realtime + replica identity).
-- `src/pages/Quotes.tsx` (refetch on focus, ~5 lignes).
-
-### Hors scope
-
-- Aucun changement UI / couleurs.
-- Aucun changement edge function (déjà OK).
-- Le devis `DEV-2026-05-08-001` mentionné par l'utilisateur n'est pas en base (introuvable, dernier devis = `DEV-2026-05-07-001`). Le problème observé est bien le bug realtime, pas un problème de données.
+- Clôturer un SAV → envoyer le questionnaire → vérifier qu'une ligne horodatée apparaît dans l'onglet Chat du SAV.
+- Ouvrir/créer un devis → la zone "Description du problème" est visuellement encadrée comme sur le SAV.

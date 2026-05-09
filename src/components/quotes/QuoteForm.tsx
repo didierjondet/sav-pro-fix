@@ -13,6 +13,7 @@ import { QuoteItem, Quote } from '@/hooks/useQuotes';
 import { CustomerSearch } from '@/components/customers/CustomerSearch';
 import { FileUpload } from '@/components/parts/FileUpload';
 import { AITextReformulator } from '@/components/sav/AITextReformulator';
+import { ProblemDescriptionField } from '@/components/sav/ProblemDescriptionHighlight';
 import { PartDiscountManager, PartDiscountInfo } from '@/components/ui/part-discount-manager';
 import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
@@ -535,15 +536,16 @@ const updateUnitPurchasePrice = (partId: string, unitPrice: number) => {
                 />
               </div>
             </div>
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <Label htmlFor="problemDescription">Description du problème *</Label>
+            <ProblemDescriptionField
+              required
+              action={
                 <AITextReformulator
                   text={deviceInfo.problemDescription}
                   context="problem_description"
                   onReformulated={(reformulatedText) => setDeviceInfo({ ...deviceInfo, problemDescription: reformulatedText })}
                 />
-              </div>
+              }
+            >
               <Textarea
                 id="problemDescription"
                 value={deviceInfo.problemDescription}
@@ -551,8 +553,8 @@ const updateUnitPurchasePrice = (partId: string, unitPrice: number) => {
                 placeholder="Décrivez le problème rencontré..."
                 required
               />
-            </div>
-            
+            </ProblemDescriptionField>
+
             <FileUpload
               files={deviceInfo.attachments}
               onFilesChange={(files) => setDeviceInfo({ ...deviceInfo, attachments: files })}
