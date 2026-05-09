@@ -13,6 +13,7 @@ import { QuoteItem, Quote } from '@/hooks/useQuotes';
 import { CustomerSearch } from '@/components/customers/CustomerSearch';
 import { FileUpload } from '@/components/parts/FileUpload';
 import { AITextReformulator } from '@/components/sav/AITextReformulator';
+import { ProblemDescriptionField } from '@/components/sav/ProblemDescriptionHighlight';
 import { PartDiscountManager, PartDiscountInfo } from '@/components/ui/part-discount-manager';
 import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
