@@ -536,15 +536,16 @@ const updateUnitPurchasePrice = (partId: string, unitPrice: number) => {
                 />
               </div>
             </div>
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <Label htmlFor="problemDescription">Description du problème *</Label>
+            <ProblemDescriptionField
+              required
+              action={
                 <AITextReformulator
                   text={deviceInfo.problemDescription}
                   context="problem_description"
                   onReformulated={(reformulatedText) => setDeviceInfo({ ...deviceInfo, problemDescription: reformulatedText })}
                 />
-              </div>
+              }
+            >
               <Textarea
                 id="problemDescription"
                 value={deviceInfo.problemDescription}
@@ -552,8 +553,8 @@ const updateUnitPurchasePrice = (partId: string, unitPrice: number) => {
                 placeholder="Décrivez le problème rencontré..."
                 required
               />
-            </div>
-            
+            </ProblemDescriptionField>
+
             <FileUpload
               files={deviceInfo.attachments}
               onFilesChange={(files) => setDeviceInfo({ ...deviceInfo, attachments: files })}
