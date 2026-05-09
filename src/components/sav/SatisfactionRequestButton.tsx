@@ -90,6 +90,25 @@ export function SatisfactionRequestButton({
 
       if (smsSent) {
         setSent(true);
+
+        // Trace dans le chat du SAV
+        try {
+          const now = new Date();
+          const dateStr = now.toLocaleDateString('fr-FR');
+          const timeStr = now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+          await supabase.from('sav_messages').insert({
+            sav_case_id: savCaseId,
+            shop_id: shopId,
+            sender_type: 'shop',
+            sender_name: 'Système',
+            message: `📋 Questionnaire de satisfaction envoyé par SMS le ${dateStr} à ${timeStr} au ${customerPhone}`,
+            read_by_shop: true,
+            read_by_client: false,
+          });
+        } catch (logError) {
+          console.error('Error logging satisfaction message:', logError);
+        }
+
         toast({
           title: "Questionnaire envoyé",
           description: `Le questionnaire de satisfaction a été envoyé à ${customerName}.`
