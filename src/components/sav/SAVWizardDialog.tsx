@@ -152,6 +152,7 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
   // Build actual steps based on type config
   const activeSteps = STEPS.filter(s => {
     if (s.key === 'client') return currentTypeInfo.show_customer_info;
+    if (s.key === 'initials') return collectInitials;
     return true;
   });
 
