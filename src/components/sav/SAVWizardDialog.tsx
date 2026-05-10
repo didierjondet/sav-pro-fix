@@ -34,6 +34,7 @@ import { PartDiscountManager, PartDiscountInfo } from '@/components/ui/part-disc
 import { supabase } from '@/integrations/supabase/client';
 import { useShopSAVStatuses } from '@/hooks/useShopSAVStatuses';
 import { useShopSAVTypes } from '@/hooks/useShopSAVTypes';
+import { useShopSettings } from '@/hooks/useShopSettings';
 import { SecurityCodesSection, SecurityCodes } from './SecurityCodesSection';
 import { AITextReformulator } from './AITextReformulator';
 
