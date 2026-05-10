@@ -619,6 +619,14 @@ export const generateSAVRestitutionPDF = async (savCase: SAVCase, shop?: Shop, o
           <p>Date: ${new Date().toLocaleDateString('fr-FR')}</p>
         </div>
         
+        ${savCase.customer ? `
+        <div style="margin: 12px 0; padding: 14px 18px; background: linear-gradient(90deg, #eaf2ff 0%, #f8fbff 100%); border-left: 5px solid #0066cc; border-radius: 6px;">
+          <div style="font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: #555; margin-bottom: 4px;">Client</div>
+          <div style="font-size: 22px; font-weight: 800; color: #0a2540; line-height: 1.1;">${savCase.customer.first_name} ${savCase.customer.last_name}</div>
+          ${savCase.customer.phone ? `<div style="font-size: 12px; color: #0066cc; margin-top: 4px; font-weight: 600;">📞 ${savCase.customer.phone}</div>` : ''}
+        </div>
+        ` : ''}
+
         <div class="case-info">
           <h3>Informations du dossier</h3>
           <div class="info-grid">
