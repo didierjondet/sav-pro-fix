@@ -441,10 +441,9 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
       case 'problem':
         if (!deviceInfo.problemDescription.trim()) return { ok: false, message: 'La description du problème est obligatoire.' };
         return { ok: true, message: '' };
-      default:
+      case 'initials':
+        if (collectInitials && !technicianInitials.trim()) return { ok: false, message: 'Les initiales de l\'opérateur sont obligatoires.' };
         return { ok: true, message: '' };
-    }
-  };
 
   const canProceed = (): boolean => validateStep(currentStepKey).ok;
   const getValidationMessage = (): string => validateStep(currentStepKey).message;
