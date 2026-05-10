@@ -132,6 +132,9 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
   const [forceCreateNewCustomer, setForceCreateNewCustomer] = useState(false);
   const [debouncedFirstName, setDebouncedFirstName] = useState('');
   const [debouncedLastName, setDebouncedLastName] = useState('');
+  const [technicianInitials, setTechnicianInitials] = useState('');
+  const { settings: shopSettings } = useShopSettings();
+  const collectInitials = shopSettings?.collect_technician_initials ?? false;
 
   const printButtonRef = useRef<SAVPrintButtonRef>(null);
   const { user } = useAuth();
