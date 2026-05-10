@@ -73,6 +73,7 @@ const STEPS = [
   { key: 'accessories', label: 'Accessoires & Codes', icon: Shield },
   { key: 'parts', label: 'Pièces', icon: Package },
   { key: 'summary', label: 'Récapitulatif', icon: ClipboardList },
+  { key: 'initials', label: 'Initiales', icon: User },
 ];
 
 const COLOR_OPTIONS = [
