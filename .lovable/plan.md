@@ -1,69 +1,23 @@
-## Objectif
+## Mettre en évidence le nom du client sur la fiche de restitution SAV
 
-1. Tracer l'envoi du questionnaire de satisfaction dans la conversation (chat + SMS) du SAV avec date/heure.
-2. Mettre en évidence visuellement la zone "Description du problème" dans le formulaire de devis, comme c'est fait sur la fiche SAV.
+Sur le PDF de restitution généré (`src/utils/pdfGenerator.ts`, fonction `generateSAVRestitutionPDF`), le nom du client apparaît actuellement comme une simple ligne dans la grille "Informations du dossier", au même format que les autres champs.
 
----
+### Modification proposée
 
-## 1. Trace du questionnaire de satisfaction
+Ajouter, juste avant le bloc "Informations du dossier" (ligne ~622), un bandeau dédié bien visible affichant le nom du client en grand, uniquement quand un client est renseigné :
 
-**Fichier** : `src/components/sav/SatisfactionRequestButton.tsx`
+- Nom complet en grande taille (≈ 22-24px), gras
+- Légère bande de fond colorée (utilisant la couleur primaire du PDF déjà en place) avec coins arrondis
+- Libellé discret "Client" au-dessus
+- Si pas de client : on n'affiche pas le bandeau (on garde la ligne actuelle "Non renseigné" dans la grille)
 
-Après l'envoi réussi du SMS de satisfaction (dans `sendSatisfactionRequest`, juste après `if (smsSent)`), insérer un message système dans la table `sav_messages` via `supabase.from('sav_messages').insert(...)` :
+La ligne "Client" actuelle dans la grille reste en place pour ne pas casser la mise en page (ou on peut la retirer pour éviter la redondance — à confirmer si souhaité, sinon on la laisse).
 
-- `sav_case_id` : prop `savCaseId`
-- `shop_id` : prop `shopId`
-- `sender_type` : `'shop'`
-- `sender_name` : `'Système'`
-- `message` : `📋 Questionnaire de satisfaction envoyé par SMS le {date} à {heure} au {customerPhone}` (date/heure formatées en `fr-FR`)
-- `read_by_shop: true`, `read_by_client: false`
+### Fichier touché
 
-Ainsi le message apparaît automatiquement dans `SAVMessaging` / `MessagingInterface` (qui lit `sav_messages`), avec horodatage natif `created_at`.
+- `src/utils/pdfGenerator.ts` — ajout d'un bloc HTML/CSS dans le template de `generateSAVRestitutionPDF`
 
-Aucun changement de schéma nécessaire — la table `sav_messages` existe déjà et est utilisée pareil pour les SMS.
+### Hors périmètre
 
----
-
-## 2. Mise en évidence du champ "Description du problème" dans le devis
-
-**Fichier** : `src/components/quotes/QuoteForm.tsx` (lignes 538–554)
-
-Réutiliser le composant existant `ProblemDescriptionField` de `src/components/sav/ProblemDescriptionHighlight.tsx` (déjà utilisé sur la fiche SAV — même charte visuelle : bordure gauche primary, fond dégradé, icône, badge "requis").
-
-Remplacer le bloc actuel `<div><Label>...<Textarea/></div>` par :
-
-```tsx
-<ProblemDescriptionField
-  required
-  action={
-    <AITextReformulator
-      text={deviceInfo.problemDescription}
-      context="problem_description"
-      onReformulated={(t) => setDeviceInfo({ ...deviceInfo, problemDescription: t })}
-    />
-  }
->
-  <Textarea
-    id="problemDescription"
-    value={deviceInfo.problemDescription}
-    onChange={(e) => setDeviceInfo({ ...deviceInfo, problemDescription: e.target.value })}
-    placeholder="Décrivez le problème rencontré..."
-    required
-  />
-</ProblemDescriptionField>
-```
-
-Ajouter l'import en haut du fichier.
-
----
-
-## Hors périmètre
-
-- Pas de migration DB.
-- Pas de modification de `MessagingInterface` (le rendu des messages système existants suffit).
-- Pas de changement sur les autres champs du formulaire devis.
-
-## Vérification
-
-- Clôturer un SAV → envoyer le questionnaire → vérifier qu'une ligne horodatée apparaît dans l'onglet Chat du SAV.
-- Ouvrir/créer un devis → la zone "Description du problème" est visuellement encadrée comme sur le SAV.
+- Pas de changement sur le PDF de devis ni sur la liste SAV imprimée
+- Pas de changement sur l'UI de l'app (juste le PDF)
