@@ -960,6 +960,30 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
           </div>
         );
 
+      case 'initials':
+        return (
+          <div className="space-y-6 py-4">
+            <div className="rounded-lg border-2 border-primary/40 bg-primary/5 p-6 text-center space-y-4">
+              <User className="h-10 w-10 text-primary mx-auto" />
+              <div>
+                <Label className="text-base font-semibold">Initiales de l'opérateur *</Label>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Saisissez vos initiales pour tracer la prise en charge de ce SAV.
+                </p>
+              </div>
+              <Input
+                value={technicianInitials}
+                onChange={(e) => setTechnicianInitials(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 4))}
+                maxLength={4}
+                placeholder="Ex: JD"
+                className="text-center text-3xl font-bold tracking-widest h-16 max-w-[200px] mx-auto bg-background"
+                autoFocus
+              />
+              <p className="text-xs text-muted-foreground">1 à 4 caractères (lettres ou chiffres)</p>
+            </div>
+          </div>
+        );
+
       default:
         return null;
     }
