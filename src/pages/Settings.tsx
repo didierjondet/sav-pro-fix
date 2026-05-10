@@ -174,7 +174,8 @@ export default function Settings() {
     sidebar_late_sav_visible: true,
     ai_market_prices_enabled: false,
     ai_daily_assistant_enabled: true,
-    ai_helpbot_enabled: true
+    ai_helpbot_enabled: true,
+    collect_technician_initials: false
   });
   const [profileForm, setProfileForm] = useState({
     first_name: '',
