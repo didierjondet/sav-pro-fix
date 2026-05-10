@@ -305,6 +305,7 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
           icloud_password: securityCodes.icloud_password || null,
           sim_pin: securityCodes.sim_pin || null,
         } : null,
+        taken_over_by: collectInitials && technicianInitials.trim() ? technicianInitials.trim().toUpperCase() : null,
       });
       
       if (caseError) throw caseError;
