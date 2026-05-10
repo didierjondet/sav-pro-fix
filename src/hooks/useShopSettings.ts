@@ -11,6 +11,7 @@ export interface ShopSettings {
   sav_warning_enabled: boolean;
   sav_delay_alerts_enabled: boolean;
   hide_empty_sav_types: boolean;
+  collect_technician_initials: boolean;
 }
 
 export function useShopSettings() {
