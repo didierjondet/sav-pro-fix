@@ -1344,6 +1344,37 @@ export default function Settings() {
                 </CardContent>
               </Card>
 
+              {/* Prise en charge SAV — collecte des initiales opérateur */}
+              {isAdmin && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Users className="h-5 w-5" />
+                      Prise en charge SAV
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex items-center justify-between gap-4 p-4 rounded-lg border">
+                      <div className="space-y-1">
+                        <Label className="text-base font-medium">Collecter les initiales de l'opérateur</Label>
+                        <p className="text-sm text-muted-foreground">
+                          À l'activation, une étape supplémentaire demandera les initiales de l'opérateur à la fin de la création de chaque SAV. Elles seront mises en évidence sur le dossier.
+                        </p>
+                      </div>
+                      <Switch
+                        checked={shopForm.collect_technician_initials}
+                        onCheckedChange={(checked) => setShopForm({ ...shopForm, collect_technician_initials: checked })}
+                      />
+                    </div>
+                    <div className="flex justify-end">
+                      <Button onClick={handleSaveShop} disabled={saving}>
+                        {saving ? 'Sauvegarde...' : 'Enregistrer'}
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
               {/* Menu Configuration */}
               <MenuConfigurationTab />
 
