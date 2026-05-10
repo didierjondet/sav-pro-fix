@@ -327,6 +327,11 @@ export default function SAVDetail() {
                     <Badge variant={getStatusInfo(savCase.status)?.variant || 'secondary'} className="text-sm">
                       {getStatusInfo(savCase.status)?.label || savCase.status}
                     </Badge>
+                    {(savCase as any).taken_over_by && (
+                      <Badge className="text-sm bg-primary text-primary-foreground border-2 border-primary px-3 py-1 font-bold tracking-widest">
+                        👤 {(savCase as any).taken_over_by}
+                      </Badge>
+                    )}
                     {(savCase.device_brand || savCase.device_model) && (
                       <span className="text-muted-foreground text-sm font-medium">
                         {[savCase.device_brand, savCase.device_model].filter(Boolean).join(' — ')}
