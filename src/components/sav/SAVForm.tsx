@@ -220,7 +220,12 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
-    
+
+    if (collectInitials && !technicianInitials.trim()) {
+      toast({ title: "Initiales manquantes", description: "Les initiales de l'opérateur sont obligatoires.", variant: "destructive" });
+      return;
+    }
+
     // Validation des coordonnées client basée sur les paramètres du type SAV
     if (currentTypeInfo.show_customer_info) {
       if (!selectedCustomer && (!customerInfo.firstName.trim() || !customerInfo.lastName.trim())) {
