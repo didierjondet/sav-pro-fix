@@ -233,6 +233,10 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
   const handleSubmit = () => {
     if (!user) return;
     if (!checkAndShowLimitDialog('sav')) return;
+    if (collectInitials && !technicianInitials.trim()) {
+      toast({ title: "Initiales manquantes", description: "Les initiales de l'opérateur sont obligatoires.", variant: "destructive" });
+      return;
+    }
 
     if (currentTypeInfo.show_customer_info) {
       if (!selectedCustomer && (!customerInfo.firstName.trim() || !customerInfo.lastName.trim())) {
