@@ -1162,6 +1162,24 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
         </CardContent>
         </Card>
 
+        {collectInitials && (
+          <Card className="border-2 border-primary/40 bg-primary/5">
+            <CardHeader>
+              <CardTitle className="text-base">Initiales de l'opérateur *</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Input
+                value={technicianInitials}
+                onChange={(e) => setTechnicianInitials(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 4))}
+                maxLength={4}
+                placeholder="Ex: JD"
+                className="text-center text-2xl font-bold tracking-widest h-14 max-w-[200px] mx-auto bg-background"
+              />
+              <p className="text-xs text-muted-foreground text-center mt-2">1 à 4 caractères (lettres ou chiffres)</p>
+            </CardContent>
+          </Card>
+        )}
+
         <div className="flex justify-end space-x-2">
           <Button type="button" variant="outline">
             Annuler
