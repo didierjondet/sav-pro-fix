@@ -227,7 +227,8 @@ export default function Settings() {
         sidebar_late_sav_visible: (shop as any).sidebar_late_sav_visible ?? true,
         ai_market_prices_enabled: (shop as any).ai_market_prices_enabled ?? false,
         ai_daily_assistant_enabled: aiModulesConfig.daily_assistant_enabled ?? true,
-        ai_helpbot_enabled: aiModulesConfig.helpbot_enabled ?? true
+        ai_helpbot_enabled: aiModulesConfig.helpbot_enabled ?? true,
+        collect_technician_initials: (shop as any).collect_technician_initials ?? false
       });
     }
   }, [shop, savTypes]);
