@@ -444,6 +444,10 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
       case 'initials':
         if (collectInitials && !technicianInitials.trim()) return { ok: false, message: 'Les initiales de l\'opérateur sont obligatoires.' };
         return { ok: true, message: '' };
+      default:
+        return { ok: true, message: '' };
+    }
+  };
 
   const canProceed = (): boolean => validateStep(currentStepKey).ok;
   const getValidationMessage = (): string => validateStep(currentStepKey).message;
