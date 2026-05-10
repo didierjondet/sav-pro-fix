@@ -390,6 +390,7 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
     setSecurityCodes({ unlock_code: '', icloud_id: '', icloud_password: '', sim_pin: '' });
     setSelectedParts([]);
     setDepositAmount(0);
+    setTechnicianInitials('');
     setShowPrintDialog(false);
     setCreatedSAVCase(null);
     setForceCreateNewCustomer(false);
