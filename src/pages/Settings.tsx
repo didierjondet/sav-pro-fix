@@ -174,7 +174,8 @@ export default function Settings() {
     sidebar_late_sav_visible: true,
     ai_market_prices_enabled: false,
     ai_daily_assistant_enabled: true,
-    ai_helpbot_enabled: true
+    ai_helpbot_enabled: true,
+    collect_technician_initials: false
   });
   const [profileForm, setProfileForm] = useState({
     first_name: '',
@@ -226,7 +227,8 @@ export default function Settings() {
         sidebar_late_sav_visible: (shop as any).sidebar_late_sav_visible ?? true,
         ai_market_prices_enabled: (shop as any).ai_market_prices_enabled ?? false,
         ai_daily_assistant_enabled: aiModulesConfig.daily_assistant_enabled ?? true,
-        ai_helpbot_enabled: aiModulesConfig.helpbot_enabled ?? true
+        ai_helpbot_enabled: aiModulesConfig.helpbot_enabled ?? true,
+        collect_technician_initials: (shop as any).collect_technician_initials ?? false
       });
     }
   }, [shop, savTypes]);
@@ -1341,6 +1343,37 @@ export default function Settings() {
                   </div>
                 </CardContent>
               </Card>
+
+              {/* Prise en charge SAV — collecte des initiales opérateur */}
+              {isAdmin && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Users className="h-5 w-5" />
+                      Prise en charge SAV
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="flex items-center justify-between gap-4 p-4 rounded-lg border">
+                      <div className="space-y-1">
+                        <Label className="text-base font-medium">Collecter les initiales de l'opérateur</Label>
+                        <p className="text-sm text-muted-foreground">
+                          À l'activation, une étape supplémentaire demandera les initiales de l'opérateur à la fin de la création de chaque SAV. Elles seront mises en évidence sur le dossier.
+                        </p>
+                      </div>
+                      <Switch
+                        checked={shopForm.collect_technician_initials}
+                        onCheckedChange={(checked) => setShopForm({ ...shopForm, collect_technician_initials: checked })}
+                      />
+                    </div>
+                    <div className="flex justify-end">
+                      <Button onClick={handleSaveShop} disabled={saving}>
+                        {saving ? 'Sauvegarde...' : 'Enregistrer'}
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
 
               {/* Menu Configuration */}
               <MenuConfigurationTab />

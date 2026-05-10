@@ -34,6 +34,7 @@ import { PartDiscountManager, PartDiscountInfo } from '@/components/ui/part-disc
 import { supabase } from '@/integrations/supabase/client';
 import { useShopSAVStatuses } from '@/hooks/useShopSAVStatuses';
 import { useShopSAVTypes } from '@/hooks/useShopSAVTypes';
+import { useShopSettings } from '@/hooks/useShopSettings';
 import { SecurityCodesSection, SecurityCodes } from './SecurityCodesSection';
 import { AITextReformulator } from './AITextReformulator';
 
@@ -72,6 +73,7 @@ const STEPS = [
   { key: 'accessories', label: 'Accessoires & Codes', icon: Shield },
   { key: 'parts', label: 'Pièces', icon: Package },
   { key: 'summary', label: 'Récapitulatif', icon: ClipboardList },
+  { key: 'initials', label: 'Initiales', icon: User },
 ];
 
 const COLOR_OPTIONS = [
@@ -130,6 +132,9 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
   const [forceCreateNewCustomer, setForceCreateNewCustomer] = useState(false);
   const [debouncedFirstName, setDebouncedFirstName] = useState('');
   const [debouncedLastName, setDebouncedLastName] = useState('');
+  const [technicianInitials, setTechnicianInitials] = useState('');
+  const { settings: shopSettings } = useShopSettings();
+  const collectInitials = shopSettings?.collect_technician_initials ?? false;
 
   const printButtonRef = useRef<SAVPrintButtonRef>(null);
   const { user } = useAuth();
@@ -147,6 +152,7 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
   // Build actual steps based on type config
   const activeSteps = STEPS.filter(s => {
     if (s.key === 'client') return currentTypeInfo.show_customer_info;
+    if (s.key === 'initials') return collectInitials;
     return true;
   });
 
@@ -227,6 +233,10 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
   const handleSubmit = () => {
     if (!user) return;
     if (!checkAndShowLimitDialog('sav')) return;
+    if (collectInitials && !technicianInitials.trim()) {
+      toast({ title: "Initiales manquantes", description: "Les initiales de l'opérateur sont obligatoires.", variant: "destructive" });
+      return;
+    }
 
     if (currentTypeInfo.show_customer_info) {
       if (!selectedCustomer && (!customerInfo.firstName.trim() || !customerInfo.lastName.trim())) {
@@ -306,6 +316,7 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
         security_codes: !noUnlockCode && (securityCodes.unlock_code || securityCodes.icloud_id || securityCodes.icloud_password || securityCodes.sim_pin)
           ? { unlock_code: securityCodes.unlock_code || null, icloud_id: securityCodes.icloud_id || null, icloud_password: securityCodes.icloud_password || null, sim_pin: securityCodes.sim_pin || null }
           : null,
+        taken_over_by: collectInitials && technicianInitials.trim() ? technicianInitials.trim().toUpperCase() : null,
       });
 
       if (caseError) throw caseError;
@@ -383,6 +394,7 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
     setSecurityCodes({ unlock_code: '', icloud_id: '', icloud_password: '', sim_pin: '' });
     setSelectedParts([]);
     setDepositAmount(0);
+    setTechnicianInitials('');
     setShowPrintDialog(false);
     setCreatedSAVCase(null);
     setForceCreateNewCustomer(false);
@@ -432,6 +444,9 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
         return { ok: true, message: '' };
       case 'problem':
         if (!deviceInfo.problemDescription.trim()) return { ok: false, message: 'La description du problème est obligatoire.' };
+        return { ok: true, message: '' };
+      case 'initials':
+        if (collectInitials && !technicianInitials.trim()) return { ok: false, message: 'Les initiales de l\'opérateur sont obligatoires.' };
         return { ok: true, message: '' };
       default:
         return { ok: true, message: '' };
@@ -945,6 +960,30 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
               <NumberInput  min="0" step="0.01" value={depositAmount}
                 onChange={(e) => setDepositAmount(parseFloat(e.target.value) || 0)}
                 placeholder="0.00" className="text-right" />
+            </div>
+          </div>
+        );
+
+      case 'initials':
+        return (
+          <div className="space-y-6 py-4">
+            <div className="rounded-lg border-2 border-primary/40 bg-primary/5 p-6 text-center space-y-4">
+              <User className="h-10 w-10 text-primary mx-auto" />
+              <div>
+                <Label className="text-base font-semibold">Initiales de l'opérateur *</Label>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Saisissez vos initiales pour tracer la prise en charge de ce SAV.
+                </p>
+              </div>
+              <Input
+                value={technicianInitials}
+                onChange={(e) => setTechnicianInitials(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 4))}
+                maxLength={4}
+                placeholder="Ex: JD"
+                className="text-center text-3xl font-bold tracking-widest h-16 max-w-[200px] mx-auto bg-background"
+                autoFocus
+              />
+              <p className="text-xs text-muted-foreground">1 à 4 caractères (lettres ou chiffres)</p>
             </div>
           </div>
         );

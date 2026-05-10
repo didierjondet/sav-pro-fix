@@ -30,6 +30,7 @@ import { PartDiscountManager, PartDiscountInfo } from '@/components/ui/part-disc
 import { supabase } from '@/integrations/supabase/client';
 import { useShopSAVStatuses } from '@/hooks/useShopSAVStatuses';
 import { useShopSAVTypes } from '@/hooks/useShopSAVTypes';
+import { useShopSettings } from '@/hooks/useShopSettings';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AITextReformulator } from '@/components/sav/AITextReformulator';
 import { ProblemDescriptionField } from '@/components/sav/ProblemDescriptionHighlight';
@@ -117,6 +118,9 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
   const [selectedParts, setSelectedParts] = useState<SelectedPart[]>([]);
   const [depositAmount, setDepositAmount] = useState<number>(0);
   const [loading, setLoading] = useState(false);
+  const [technicianInitials, setTechnicianInitials] = useState('');
+  const { settings: shopSettings } = useShopSettings();
+  const collectInitials = shopSettings?.collect_technician_initials ?? false;
   const [searchTerm, setSearchTerm] = useState('');
   const [recentlyAddedParts, setRecentlyAddedParts] = useState<string[]>([]);
   const [showPrintDialog, setShowPrintDialog] = useState(false);
@@ -216,7 +220,12 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
-    
+
+    if (collectInitials && !technicianInitials.trim()) {
+      toast({ title: "Initiales manquantes", description: "Les initiales de l'opérateur sont obligatoires.", variant: "destructive" });
+      return;
+    }
+
     // Validation des coordonnées client basée sur les paramètres du type SAV
     if (currentTypeInfo.show_customer_info) {
       if (!selectedCustomer && (!customerInfo.firstName.trim() || !customerInfo.lastName.trim())) {
@@ -296,6 +305,7 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
           icloud_password: securityCodes.icloud_password || null,
           sim_pin: securityCodes.sim_pin || null,
         } : null,
+        taken_over_by: collectInitials && technicianInitials.trim() ? technicianInitials.trim().toUpperCase() : null,
       });
       
       if (caseError) throw caseError;
@@ -1151,6 +1161,24 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
           )}
         </CardContent>
         </Card>
+
+        {collectInitials && (
+          <Card className="border-2 border-primary/40 bg-primary/5">
+            <CardHeader>
+              <CardTitle className="text-base">Initiales de l'opérateur *</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Input
+                value={technicianInitials}
+                onChange={(e) => setTechnicianInitials(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 4))}
+                maxLength={4}
+                placeholder="Ex: JD"
+                className="text-center text-2xl font-bold tracking-widest h-14 max-w-[200px] mx-auto bg-background"
+              />
+              <p className="text-xs text-muted-foreground text-center mt-2">1 à 4 caractères (lettres ou chiffres)</p>
+            </CardContent>
+          </Card>
+        )}
 
         <div className="flex justify-end space-x-2">
           <Button type="button" variant="outline">

@@ -11,6 +11,7 @@ export interface ShopSettings {
   sav_warning_enabled: boolean;
   sav_delay_alerts_enabled: boolean;
   hide_empty_sav_types: boolean;
+  collect_technician_initials: boolean;
 }
 
 export function useShopSettings() {
@@ -49,7 +50,7 @@ export function useShopSettings() {
         // Récupérer les paramètres du magasin
         const { data: shopData, error: shopError } = await supabase
           .from('shops')
-          .select('subscription_menu_visible, sms_credits_allocated, sms_credits_used, subscription_tier, sav_warning_enabled, sav_delay_alerts_enabled, hide_empty_sav_types')
+          .select('subscription_menu_visible, sms_credits_allocated, sms_credits_used, subscription_tier, sav_warning_enabled, sav_delay_alerts_enabled, hide_empty_sav_types, collect_technician_initials')
           .eq('id', profileData.shop_id)
           .single();
 
@@ -66,7 +67,8 @@ export function useShopSettings() {
             subscription_tier: shopData.subscription_tier || 'free',
             sav_warning_enabled: shopData.sav_warning_enabled ?? true,
             sav_delay_alerts_enabled: shopData.sav_delay_alerts_enabled ?? false,
-            hide_empty_sav_types: shopData.hide_empty_sav_types ?? false
+            hide_empty_sav_types: shopData.hide_empty_sav_types ?? false,
+            collect_technician_initials: (shopData as any).collect_technician_initials ?? false
           });
         }
       }
@@ -80,7 +82,8 @@ export function useShopSettings() {
         subscription_tier: 'free',
         sav_warning_enabled: true,
         sav_delay_alerts_enabled: false,
-        hide_empty_sav_types: false
+        hide_empty_sav_types: false,
+        collect_technician_initials: false
       });
     } finally {
       setLoading(false);
