@@ -118,6 +118,9 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
   const [selectedParts, setSelectedParts] = useState<SelectedPart[]>([]);
   const [depositAmount, setDepositAmount] = useState<number>(0);
   const [loading, setLoading] = useState(false);
+  const [technicianInitials, setTechnicianInitials] = useState('');
+  const { settings: shopSettings } = useShopSettings();
+  const collectInitials = shopSettings?.collect_technician_initials ?? false;
   const [searchTerm, setSearchTerm] = useState('');
   const [recentlyAddedParts, setRecentlyAddedParts] = useState<string[]>([]);
   const [showPrintDialog, setShowPrintDialog] = useState(false);
