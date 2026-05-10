@@ -312,6 +312,7 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
         security_codes: !noUnlockCode && (securityCodes.unlock_code || securityCodes.icloud_id || securityCodes.icloud_password || securityCodes.sim_pin)
           ? { unlock_code: securityCodes.unlock_code || null, icloud_id: securityCodes.icloud_id || null, icloud_password: securityCodes.icloud_password || null, sim_pin: securityCodes.sim_pin || null }
           : null,
+        taken_over_by: collectInitials && technicianInitials.trim() ? technicianInitials.trim().toUpperCase() : null,
       });
 
       if (caseError) throw caseError;
