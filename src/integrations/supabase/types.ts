@@ -1824,6 +1824,7 @@ export type Database = {
           status: string
           taken_over: boolean
           taken_over_at: string | null
+          taken_over_by: string | null
           takeover_amount: number | null
           technician_comments: string | null
           technician_id: string | null
@@ -1861,6 +1862,7 @@ export type Database = {
           status?: string
           taken_over?: boolean
           taken_over_at?: string | null
+          taken_over_by?: string | null
           takeover_amount?: number | null
           technician_comments?: string | null
           technician_id?: string | null
@@ -1898,6 +1900,7 @@ export type Database = {
           status?: string
           taken_over?: boolean
           taken_over_at?: string | null
+          taken_over_by?: string | null
           takeover_amount?: number | null
           technician_comments?: string | null
           technician_id?: string | null
@@ -2689,6 +2692,7 @@ export type Database = {
           ai_market_prices_enabled: boolean | null
           ai_modules_config: Json | null
           auto_review_enabled: boolean
+          collect_technician_initials: boolean
           created_at: string
           custom_notification_sound_url: string | null
           custom_review_chat_message: string | null
@@ -2745,6 +2749,7 @@ export type Database = {
           ai_market_prices_enabled?: boolean | null
           ai_modules_config?: Json | null
           auto_review_enabled?: boolean
+          collect_technician_initials?: boolean
           created_at?: string
           custom_notification_sound_url?: string | null
           custom_review_chat_message?: string | null
@@ -2801,6 +2806,7 @@ export type Database = {
           ai_market_prices_enabled?: boolean | null
           ai_modules_config?: Json | null
           auto_review_enabled?: boolean
+          collect_technician_initials?: boolean
           created_at?: string
           custom_notification_sound_url?: string | null
           custom_review_chat_message?: string | null
