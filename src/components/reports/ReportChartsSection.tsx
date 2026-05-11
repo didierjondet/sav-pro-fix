@@ -405,6 +405,15 @@ export function ReportChartsSection({ selectedWidgets, dateRange, reportData }: 
             totalGrowth={totalGrowth}
             bestMonth={bestMonth}
             worstMonth={worstMonth}
+            referenceMonthIndex={(() => {
+              const now = new Date();
+              const endYear = dateRange.end.getFullYear();
+              const endMonth = dateRange.end.getMonth();
+              if (selectedYear === now.getFullYear()) {
+                return Math.min(endMonth + 1, now.getMonth());
+              }
+              return endMonth + 1;
+            })()}
           />
         ) : null;
       
