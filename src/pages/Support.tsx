@@ -158,8 +158,8 @@ export default function Support() {
         <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
         <div className="flex-1 flex flex-col overflow-hidden">
           <Header onMenuClick={() => setSidebarOpen(true)} isMobileMenuOpen={sidebarOpen} />
-          <main className="flex-1 overflow-hidden p-6">
-            <div className="max-w-7xl mx-auto h-full">
+          <main className="flex-1 overflow-y-auto p-6">
+            <div className="max-w-7xl mx-auto h-full min-h-[600px]">
               <div className="flex justify-between items-center mb-6">
                 <div>
                   <h1 className="text-2xl font-bold">Support technique</h1>
