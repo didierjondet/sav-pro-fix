@@ -66,9 +66,95 @@ export function WidgetManager({ onClose }: WidgetManagerProps) {
     setDeleteWidgetId(null);
   };
 
+  const customSection = (
+    <div className="rounded-lg border border-purple-200/60 dark:border-purple-800/40 bg-purple-50/40 dark:bg-purple-950/10 p-4">
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h3 className="text-lg font-semibold flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-purple-500" />
+            Widgets personnalisés
+          </h3>
+          <p className="text-sm text-muted-foreground mt-1">
+            Créez des widgets sur-mesure avec l'IA, adaptés à vos besoins.
+          </p>
+        </div>
+        <Button
+          variant={(showCreator || editingWidget) ? "ghost" : "default"}
+          onClick={() => {
+            if (showCreator || editingWidget) {
+              setShowCreator(false);
+              setEditingWidget(null);
+            } else {
+              setShowCreator(true);
+            }
+          }}
+          disabled={!!editingWidget}
+        >
+          {(showCreator || editingWidget) ? (
+            <><X className="mr-2 h-4 w-4" />Annuler</>
+          ) : (
+            <><Plus className="mr-2 h-4 w-4" />Créer un widget</>
+          )}
+        </Button>
+      </div>
+
+      {showCreator && (
+        <div className="mb-4 p-4 border rounded-lg bg-background">
+          <AIWidgetCreator
+            onSuccess={async () => {
+              await refetch();
+              setShowCreator(false);
+              toast.success('Widget créé avec succès !');
+            }}
+            onCancel={() => setShowCreator(false)}
+          />
+        </div>
+      )}
+
+      {editingWidget && (
+        <div className="mb-4 p-4 border rounded-lg bg-background">
+          <AIWidgetEditor
+            widget={editingWidget}
+            onSuccess={async () => {
+              await refetch();
+              setEditingWidget(null);
+              toast.success('Widget modifié avec succès !');
+            }}
+            onCancel={() => setEditingWidget(null)}
+          />
+        </div>
+      )}
+
+      <CustomWidgetList
+        widgets={customWidgets.map(m => ({
+          id: m.customWidgetId!,
+          name: m.name,
+          description: m.description,
+          original_prompt: m.originalPrompt!,
+          enabled: m.enabled,
+          widget_type: m.widget_type!,
+          chart_type: m.chart_type,
+          data_config: m.data_config,
+          display_config: m.display_config
+        }))}
+        onEdit={(widget) => {
+          setShowCreator(false);
+          setEditingWidget(widget);
+        }}
+        onDelete={setDeleteWidgetId}
+        onToggle={(id, enabled) => updateModule(`custom-${id}`, { enabled })}
+      />
+    </div>
+  );
+
   return (
     <div className="space-y-6 max-h-[70vh] overflow-y-auto pr-2">
-      {/* Section 1 : Widgets Dashboard */}
+      {/* Section 1 : Widgets personnalisés (mis en avant) */}
+      {customSection}
+
+      <Separator />
+
+      {/* Section 2 : Widgets Dashboard */}
       <div>
         <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
           📊 Widgets Dashboard

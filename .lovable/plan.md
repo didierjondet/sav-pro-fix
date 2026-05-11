@@ -1,36 +1,27 @@
-# Correction du widget "Comparaison mensuelle"
+## Réorganisation de l'onglet "Gestion des widgets"
 
-## Problème constaté
-Sur la page Rapports, le bloc "Récapitulatif des 3 derniers mois" du widget *Comparaison mensuelle* affiche toujours **Octobre, Novembre, Décembre**, alors qu'en mai 2026 on attend **Février, Mars, Avril**.
+Dans `src/components/statistics/WidgetManager.tsx`, réordonner les sections et différencier visuellement les widgets personnalisés.
 
-## Cause
-Dans `src/components/statistics/advanced/MonthlyComparisonWidget.tsx`, le récapitulatif utilise :
-```ts
-data.slice(-3)
-```
-Or `data` contient systématiquement les 12 mois de l'année (Janvier → Décembre, voir `useMonthlyStatistics`). `slice(-3)` renvoie donc toujours les 3 derniers mois du **calendrier** (Oct/Nov/Déc), pas les 3 derniers mois **réels**.
+### Nouvel ordre d'affichage
 
-## Correctif
+1. **Widgets personnalisés** (déplacé en haut)
+   - Titre + bouton "Créer un widget" bien visible
+   - Encadré avec un fond légèrement teinté (ex: `bg-purple-50/30 dark:bg-purple-950/10`) et bordure `border-purple-200` pour signaler visuellement qu'il s'agit d'une zone spéciale
+   - Cartes des widgets custom existants conservant un accent violet (cohérent avec l'icône Sparkles déjà présente)
+2. **Widgets Dashboard** (inchangé en contenu)
+3. **Widgets Statistiques Avancés** (inchangé)
+4. **Widgets Statistiques** (inchangé)
 
-### 1. `MonthlyComparisonWidget.tsx`
-- Calculer dynamiquement les 3 derniers mois pertinents :
-  - Si l'année des données = année en cours : prendre les 3 mois qui précèdent le mois courant (mai 2026 → Fév/Mar/Avr).
-  - Si année passée : conserver les 3 derniers mois de l'année (Oct/Nov/Déc).
-- Pour cela, accepter une prop optionnelle `referenceMonthIndex?: number` (index 0–11) avec fallback sur `new Date().getMonth()` quand l'année correspond à l'année courante. À défaut, garder le comportement actuel.
-- Remplacer `data.slice(-3)` par une slice basée sur cet index : `data.slice(Math.max(0, refIndex - 3), refIndex)` (3 mois complets précédant le mois courant).
+### Différenciation visuelle des widgets personnalisés
 
-### 2. `ReportChartsSection.tsx`
-- Lors de l'appel du widget, transmettre `referenceMonthIndex` calculé à partir de `dateRange.end` (mois de fin de la période sélectionnée), avec garde si l'année = année courante : `min(end.getMonth(), currentMonth)`.
+- Wrapper de la section custom : `rounded-lg border border-purple-200/60 bg-purple-50/30 dark:bg-purple-950/10 p-4`
+- Les `Card` à l'intérieur (rendues par `CustomWidgetList`) utiliseront déjà ce contraste de fond. Si besoin, ajout d'un léger ring violet pour renforcer la distinction avec les widgets standards (fond neutre).
+- Les sections standards conservent leur style actuel (fond neutre, séparateurs entre elles).
 
-### 3. `DragDropStatistics.tsx`
-- Même chose : passer `referenceMonthIndex = new Date().getMonth()` pour rester cohérent côté tableau de bord.
+### Détails techniques
 
-## Hors périmètre
-- Pas de modification du hook `useMonthlyStatistics` (les données restent sur 12 mois).
-- Pas de changement du graphe principal (ComposedChart) ni des KPI Croissance / Meilleur mois / Mois difficile.
-- Pas de changement de design system / tokens.
-
-## Fichiers modifiés
-- `src/components/statistics/advanced/MonthlyComparisonWidget.tsx`
-- `src/components/reports/ReportChartsSection.tsx`
-- `src/components/statistics/DragDropStatistics.tsx`
+Fichier modifié : `src/components/statistics/WidgetManager.tsx` uniquement.
+- Déplacer le bloc "Section 4 : Widgets personnalisés" tout en haut.
+- Ajouter le wrapper coloré autour de cette section.
+- Ajuster les `<Separator />` pour refléter le nouvel ordre (séparateur après la section custom, puis entre les autres sections).
+- Aucune modification de logique métier, de hooks, ni de la base de données.
