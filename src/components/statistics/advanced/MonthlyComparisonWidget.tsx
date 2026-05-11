@@ -182,7 +182,8 @@ export const MonthlyComparisonWidget = ({
                   </Badge>
                 </div>
               </div>
-            ))}
+              ));
+            })()}
           </div>
         </div>
       </CardContent>
