@@ -336,6 +336,7 @@ export const DragDropStatistics = ({ period, onPeriodChange }: DragDropStatistic
               totalGrowth={realTotalGrowth}
               bestMonth={realBestMonth}
               worstMonth={realWorstMonth}
+              referenceMonthIndex={new Date().getMonth()}
             />
           </div>
         );
