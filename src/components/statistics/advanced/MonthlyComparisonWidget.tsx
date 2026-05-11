@@ -21,13 +21,16 @@ interface MonthlyComparisonWidgetProps {
   totalGrowth: number | null;
   bestMonth: string;
   worstMonth: string;
+  /** Index (0-11) du mois courant servant de référence pour le récapitulatif "3 derniers mois". */
+  referenceMonthIndex?: number;
 }
 
 export const MonthlyComparisonWidget = ({
   data,
   totalGrowth,
   bestMonth,
-  worstMonth
+  worstMonth,
+  referenceMonthIndex
 }: MonthlyComparisonWidgetProps) => {
   const formatCurrency = (value: number) => 
     new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(value || 0);
