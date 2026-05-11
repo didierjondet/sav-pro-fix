@@ -223,7 +223,7 @@ export default function Support() {
                 </Dialog>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-[calc(100vh-200px)]">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-[calc(100vh-200px)] min-h-[500px]">
                 {/* Liste des tickets */}
                 <Card className="flex flex-col">
                   <CardHeader className="pb-3">
