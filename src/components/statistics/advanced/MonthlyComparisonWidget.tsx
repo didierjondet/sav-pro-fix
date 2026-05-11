@@ -155,7 +155,14 @@ export const MonthlyComparisonWidget = ({
         <div className="border-t pt-3">
           <h4 className="text-xs font-medium text-muted-foreground mb-2">Récapitulatif des 3 derniers mois</h4>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-            {data.slice(-3).map((month) => (
+            {(() => {
+              // Si referenceMonthIndex est fourni, on prend les 3 mois précédant ce mois (mois complets).
+              // Sinon fallback : 3 derniers mois du tableau (compatibilité).
+              const refIdx = typeof referenceMonthIndex === 'number' ? referenceMonthIndex : data.length;
+              const start = Math.max(0, refIdx - 3);
+              const end = Math.max(start, Math.min(refIdx, data.length));
+              const recap = data.slice(start, end);
+              return recap.map((month) => (
               <div key={month.month} className="flex sm:flex-col items-center sm:items-stretch justify-between gap-2 rounded-lg border p-2.5">
                 <span className="font-medium text-sm capitalize sm:text-center">{month.monthName}</span>
                 <div className="flex sm:flex-col gap-3 sm:gap-1 text-xs">
