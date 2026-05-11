@@ -1,57 +1,36 @@
-## Système optionnel de saisie des initiales de l'opérateur à la création d'un SAV
+# Correction du widget "Comparaison mensuelle"
 
-### Objectif
-Permettre à chaque magasin d'activer (ou non) une étape finale de saisie des initiales de l'opérateur lors de la création d'un SAV, et afficher ces initiales en évidence sur le dossier SAV.
+## Problème constaté
+Sur la page Rapports, le bloc "Récapitulatif des 3 derniers mois" du widget *Comparaison mensuelle* affiche toujours **Octobre, Novembre, Décembre**, alors qu'en mai 2026 on attend **Février, Mars, Avril**.
 
-### 1. Base de données (migration)
+## Cause
+Dans `src/components/statistics/advanced/MonthlyComparisonWidget.tsx`, le récapitulatif utilise :
+```ts
+data.slice(-3)
+```
+Or `data` contient systématiquement les 12 mois de l'année (Janvier → Décembre, voir `useMonthlyStatistics`). `slice(-3)` renvoie donc toujours les 3 derniers mois du **calendrier** (Oct/Nov/Déc), pas les 3 derniers mois **réels**.
 
-Ajouter deux colonnes :
-- `shops.collect_technician_initials` (boolean, défaut `false`) — switch d'activation par magasin
-- `sav_cases.taken_over_by` (text, nullable) — initiales saisies à la création
+## Correctif
 
-### 2. Réglage dans Paramètres → Apparence
+### 1. `MonthlyComparisonWidget.tsx`
+- Calculer dynamiquement les 3 derniers mois pertinents :
+  - Si l'année des données = année en cours : prendre les 3 mois qui précèdent le mois courant (mai 2026 → Fév/Mar/Avr).
+  - Si année passée : conserver les 3 derniers mois de l'année (Oct/Nov/Déc).
+- Pour cela, accepter une prop optionnelle `referenceMonthIndex?: number` (index 0–11) avec fallback sur `new Date().getMonth()` quand l'année correspond à l'année courante. À défaut, garder le comportement actuel.
+- Remplacer `data.slice(-3)` par une slice basée sur cet index : `data.slice(Math.max(0, refIndex - 3), refIndex)` (3 mois complets précédant le mois courant).
 
-Dans `src/pages/Settings.tsx` (onglet `appearance`, après le bloc Thème), ajouter une nouvelle Card :
-- Titre : « Prise en charge SAV »
-- Switch « Collecter les initiales de l'opérateur »
-- Description : « À l'activation, une étape supplémentaire demandera les initiales de l'opérateur à la fin de la création de chaque SAV »
-- Sauvegarde via update sur `shops.collect_technician_initials`
+### 2. `ReportChartsSection.tsx`
+- Lors de l'appel du widget, transmettre `referenceMonthIndex` calculé à partir de `dateRange.end` (mois de fin de la période sélectionnée), avec garde si l'année = année courante : `min(end.getMonth(), currentMonth)`.
 
-Étendre `useShopSettings` pour exposer `collect_technician_initials`.
+### 3. `DragDropStatistics.tsx`
+- Même chose : passer `referenceMonthIndex = new Date().getMonth()` pour rester cohérent côté tableau de bord.
 
-### 3. Création SAV — mode assisté (Wizard)
+## Hors périmètre
+- Pas de modification du hook `useMonthlyStatistics` (les données restent sur 12 mois).
+- Pas de changement du graphe principal (ComposedChart) ni des KPI Croissance / Meilleur mois / Mois difficile.
+- Pas de changement de design system / tokens.
 
-Dans `src/components/sav/SAVWizardDialog.tsx` :
-- Ajouter une étape conditionnelle `{ key: 'initials', label: 'Initiales', icon: User }` à la fin de `STEPS`
-- Filtrer cette étape via le flag `collect_technician_initials` (comme déjà fait pour `client`)
-- Ajouter un state `technicianInitials`
-- Rendu : champ centré, gros (uppercase, max 4 caractères), avec aperçu visuel
-- Validation : `collect_technician_initials` activé ⇒ initiales requises (1-4 caractères)
-- Inclure `taken_over_by: technicianInitials` dans l'appel `createCase`
-
-### 4. Création SAV — mode formulaire classique
-
-Dans `src/components/sav/SAVForm.tsx` :
-- Ajouter un state `technicianInitials`
-- Si `collect_technician_initials` activé, afficher en bas du formulaire (juste avant le bouton Valider) un champ « Initiales de l'opérateur » mis en évidence (border primary, gros input)
-- Validation au submit, transmis dans `createCase`
-
-### 5. Mise en évidence sur le dossier SAV
-
-- `src/pages/SAVDetail.tsx` : badge bien visible dans l'en-tête du dossier (ex. pastille primary avec « Pris en charge par : XX »)
-- `src/components/sav/SAVCard*` (vue liste) : petit badge discret avec les initiales si présentes
-- PDF de restitution (`src/utils/pdfGenerator.ts`, `generateSAVRestitutionPDF`) : ligne « Pris en charge par : XX » dans le bloc infos du dossier
-
-### Fichiers touchés
-- Migration SQL (nouvelles colonnes)
-- `src/hooks/useShopSettings.ts` (exposer le flag)
-- `src/pages/Settings.tsx` (onglet Apparence, nouveau switch)
-- `src/components/sav/SAVWizardDialog.tsx` (étape Initiales conditionnelle)
-- `src/components/sav/SAVForm.tsx` (champ Initiales conditionnel)
-- `src/pages/SAVDetail.tsx` (affichage en évidence)
-- `src/components/sav/SAVCard*` ou équivalent liste (badge)
-- `src/utils/pdfGenerator.ts` (ligne sur PDF)
-
-### Hors périmètre
-- Pas de gestion d'historique des opérateurs (champ libre simple)
-- Pas de modification a posteriori dans cette itération (pourra être ajoutée à `EditSAVDetailsDialog` si demandé)
+## Fichiers modifiés
+- `src/components/statistics/advanced/MonthlyComparisonWidget.tsx`
+- `src/components/reports/ReportChartsSection.tsx`
+- `src/components/statistics/DragDropStatistics.tsx`
