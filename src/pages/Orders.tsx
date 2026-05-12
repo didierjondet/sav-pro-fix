@@ -26,7 +26,7 @@ import {
 export default function Orders() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeFilter, setActiveFilter] = useState<'all' | 'sav' | 'quotes' | 'reception'>('sav');
+  const [activeFilter, setActiveFilter] = useState<'all' | 'sav' | 'reception'>('sav');
   const [receiveDialogOpen, setReceiveDialogOpen] = useState(false);
   const [selectedOrderItem, setSelectedOrderItem] = useState<OrderItemWithPart | null>(null);
   const navigate = useNavigate();
