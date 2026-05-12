@@ -90,7 +90,7 @@ export default function Orders() {
 
   const getEmptyMessage = () => {
     switch (activeFilter) {
-      case 'sav': return 'Aucune pièce manquante pour les SAV';
+      case 'sav': return 'Aucune pièce en pré-commande';
       case 'all': return 'Aucune pièce en dessous du stock minimum';
       case 'reception': return 'Aucune commande en attente de réception';
       default: return 'Aucune pièce trouvée';
