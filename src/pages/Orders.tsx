@@ -229,7 +229,7 @@ export default function Orders() {
               {/* Filtres */}
               <Tabs value={activeFilter} onValueChange={(value) => setActiveFilter(value as any)} className="mb-6">
                 <TabsList className="grid w-full grid-cols-3">
-                  <TabsTrigger value="sav">SAV</TabsTrigger>
+                  <TabsTrigger value="sav">Pré-commande</TabsTrigger>
                   <TabsTrigger value="all">Stock minimum</TabsTrigger>
                   <TabsTrigger 
                     value="reception" 
