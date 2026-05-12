@@ -301,6 +301,9 @@ export function useSAVCases() {
 
   const deleteCase = async (caseId: string) => {
     try {
+      // Nettoyer les commandes liées avant suppression
+      await supabase.from('order_items').delete().eq('sav_case_id', caseId);
+
       const { error } = await supabase
         .from('sav_cases')
         .delete()
