@@ -665,7 +665,7 @@ export function useOrders() {
     }
   };
 
-  const getOrdersByFilter = (filter: 'all' | 'sav' | 'quotes' | 'reception') => {
+  const getOrdersByFilter = (filter: 'all' | 'sav' | 'reception') => {
     console.log(`🔍 getOrdersByFilter called with filter: ${filter}`);
     console.log(`📊 orderItems length: ${orderItems.length}`);
     console.log(`📊 partsNeededForSAV length: ${partsNeededForSAV.length}`);
