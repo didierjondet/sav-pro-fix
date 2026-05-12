@@ -665,7 +665,7 @@ export function useOrders() {
     }
   };
 
-  const getOrdersByFilter = (filter: 'all' | 'sav' | 'quotes' | 'reception') => {
+  const getOrdersByFilter = (filter: 'all' | 'sav' | 'reception') => {
     console.log(`🔍 getOrdersByFilter called with filter: ${filter}`);
     console.log(`📊 orderItems length: ${orderItems.length}`);
     console.log(`📊 partsNeededForSAV length: ${partsNeededForSAV.length}`);
@@ -677,10 +677,6 @@ export function useOrders() {
         // Ne retourner QUE les items générés dynamiquement pour SAV
         console.log(`🎯 SAV filter - returning partsNeededForSAV:`, partsNeededForSAV.map(p => p.part_name));
         return partsNeededForSAV;
-      case 'quotes':
-        // Ne retourner QUE les items générés dynamiquement pour devis
-        console.log(`🎯 QUOTES filter - returning partsNeededForQuotes:`, partsNeededForQuotes.map(p => p.part_name));
-        return partsNeededForQuotes;
       case 'all':
         // Ne retourner QUE les items générés dynamiquement pour stock minimum
         console.log(`🎯 ALL filter - returning partsNeedingRestock:`, partsNeedingRestock.map(p => p.part_name));

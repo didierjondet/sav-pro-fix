@@ -135,12 +135,28 @@ export function SAVPartsRequirements({ savCaseId, onPartsUpdated }: SAVPartsRequ
 
   const removePart = async (partId: string, partName: string) => {
     try {
+      // Récupérer le sav_part pour connaître le part_id avant suppression
+      const { data: savPart } = await supabase
+        .from('sav_parts')
+        .select('part_id, sav_case_id')
+        .eq('id', partId)
+        .maybeSingle();
+
       const { error } = await supabase
         .from('sav_parts')
         .delete()
         .eq('id', partId);
 
       if (error) throw error;
+
+      // Nettoyer les commandes en attente de réception liées à cette pièce
+      if (savPart?.part_id && savPart?.sav_case_id) {
+        await supabase
+          .from('order_items')
+          .delete()
+          .eq('sav_case_id', savPart.sav_case_id)
+          .eq('part_id', savPart.part_id);
+      }
 
       // Recalculer le coût total après suppression
       const { data: remainingParts, error: fetchError } = await supabase

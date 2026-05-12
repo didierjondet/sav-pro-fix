@@ -206,6 +206,62 @@ export function useSAVCases() {
 
       if (error) throw error;
 
+      // Synchronisation avec la page Commandes (onglet Réception)
+      try {
+        const wasOrdered = currentCase.status === 'parts_ordered';
+        const isNowOrdered = status === 'parts_ordered';
+
+        if (isNowOrdered && !wasOrdered) {
+          // Créer les lignes order_items (ordered=true) pour chaque pièce en stock insuffisant
+          const { data: savParts } = await supabase
+            .from('sav_parts')
+            .select('part_id, quantity, custom_part_name, parts(name, reference, quantity)')
+            .eq('sav_case_id', caseId);
+
+          if (savParts && currentCase.shop_id) {
+            // Récupérer les commandes existantes pour éviter les doublons
+            const { data: existingOrders } = await supabase
+              .from('order_items')
+              .select('part_id')
+              .eq('sav_case_id', caseId)
+              .eq('ordered', true);
+
+            const existingPartIds = new Set((existingOrders || []).map(o => o.part_id));
+
+            for (const sp of savParts) {
+              if (!sp.part_id) continue;
+              if (existingPartIds.has(sp.part_id)) continue;
+
+              const part = sp.parts as any;
+              const physicalStock = part?.quantity || 0;
+              const missing = Math.max(0, sp.quantity - physicalStock);
+              if (missing <= 0) continue;
+
+              await supabase.from('order_items').insert({
+                part_id: sp.part_id,
+                part_name: part?.name || sp.custom_part_name || 'Pièce',
+                part_reference: part?.reference || null,
+                quantity_needed: missing,
+                sav_case_id: caseId,
+                reason: 'sav_stock_zero',
+                priority: 'high',
+                shop_id: currentCase.shop_id,
+                ordered: true,
+              });
+            }
+          }
+        } else if (wasOrdered && !isNowOrdered) {
+          // Nettoyer les commandes en attente de réception (le statut a changé via la card)
+          await supabase
+            .from('order_items')
+            .delete()
+            .eq('sav_case_id', caseId)
+            .eq('ordered', true);
+        }
+      } catch (syncErr) {
+        console.error('Erreur synchronisation order_items:', syncErr);
+      }
+
       // Add to status history
       await supabase
         .from('sav_status_history')
@@ -245,6 +301,9 @@ export function useSAVCases() {
 
   const deleteCase = async (caseId: string) => {
     try {
+      // Nettoyer les commandes liées avant suppression
+      await supabase.from('order_items').delete().eq('sav_case_id', caseId);
+
       const { error } = await supabase
         .from('sav_cases')
         .delete()

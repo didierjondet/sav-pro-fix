@@ -26,7 +26,7 @@ import {
 export default function Orders() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeFilter, setActiveFilter] = useState<'all' | 'sav' | 'quotes' | 'reception'>('sav');
+  const [activeFilter, setActiveFilter] = useState<'all' | 'sav' | 'reception'>('sav');
   const [receiveDialogOpen, setReceiveDialogOpen] = useState(false);
   const [selectedOrderItem, setSelectedOrderItem] = useState<OrderItemWithPart | null>(null);
   const navigate = useNavigate();
@@ -91,7 +91,6 @@ export default function Orders() {
   const getEmptyMessage = () => {
     switch (activeFilter) {
       case 'sav': return 'Aucune pièce manquante pour les SAV';
-      case 'quotes': return 'Aucune pièce manquante pour les devis';
       case 'all': return 'Aucune pièce en dessous du stock minimum';
       case 'reception': return 'Aucune commande en attente de réception';
       default: return 'Aucune pièce trouvée';
@@ -229,9 +228,8 @@ export default function Orders() {
 
               {/* Filtres */}
               <Tabs value={activeFilter} onValueChange={(value) => setActiveFilter(value as any)} className="mb-6">
-                <TabsList className="grid w-full grid-cols-4">
+                <TabsList className="grid w-full grid-cols-3">
                   <TabsTrigger value="sav">SAV</TabsTrigger>
-                  <TabsTrigger value="quotes">Devis</TabsTrigger>
                   <TabsTrigger value="all">Stock minimum</TabsTrigger>
                   <TabsTrigger 
                     value="reception" 
