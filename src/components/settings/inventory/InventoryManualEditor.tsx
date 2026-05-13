@@ -51,6 +51,11 @@ interface InventoryManualEditorProps {
   onMarkMissing: (item: InventorySessionItem) => Promise<unknown> | unknown;
   activeFilter: 'all' | 'pending' | 'found' | 'missing' | 'adjusted';
   onActiveFilterChange: (value: 'all' | 'pending' | 'found' | 'missing' | 'adjusted') => void;
+  compact?: boolean;
+}
+
+function fmtCurrency(v: number) {
+  return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 }).format(v || 0);
 }
 
 const filterLabels: Array<{ key: InventoryManualEditorProps['activeFilter']; label: string }> = [
