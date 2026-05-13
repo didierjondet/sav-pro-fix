@@ -20,6 +20,8 @@ import {
   ShieldAlert,
   Trash2,
 } from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { ChevronDown } from 'lucide-react';
 import { printInventoryDocument } from '@/lib/inventoryPrint';
 import { InventoryJournalDialog } from './InventoryJournalDialog';
 import { InventoryManualEditor, type InventoryReviewTab } from './InventoryManualEditor';
