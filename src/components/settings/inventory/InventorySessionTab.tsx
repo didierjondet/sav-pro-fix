@@ -276,14 +276,13 @@ export function InventorySessionTab(props: InventorySessionTabProps) {
             {currency(session.variance_total_cost)}</div></CardContent></Card>
       </div>
 
-      {/* BLOC 1 : RAPPROCHEMENT (déplacé en premier) — voir plus bas */}
-      {/* BLOC 1 : RAPPROCHEMENT — analyse avant validation */}
+      {/* BLOC 1 : RAPPROCHEMENT — analyse & écarts */}
       <Card>
         <CardHeader className="border-b bg-muted/30">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <CardTitle className="text-base flex items-center gap-2">
-              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">2</span>
-              Rapprochement — analyse avant validation
+              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">1</span>
+              Analyse &amp; rapprochement
             </CardTitle>
             <div className="flex flex-wrap gap-2">
               <Button size="sm" variant="outline" onClick={() => printInventoryDocument({ session, items, variant: 'summary' })}>
