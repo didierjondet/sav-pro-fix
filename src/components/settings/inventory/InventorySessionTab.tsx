@@ -401,6 +401,98 @@ export function InventorySessionTab(props: InventorySessionTabProps) {
         </CardContent>
       </Card>
 
+      {/* BLOC 2 : COMPTAGE / saisie terrain — replié si l'inventaire est clos */}
+      {(() => {
+        const countingBody = (
+          <CardContent className="pt-4">
+            <Tabs defaultValue="manual" className="space-y-4">
+              <TabsList>
+                <TabsTrigger value="manual">Saisie manuelle</TabsTrigger>
+                {session.mode === 'scan' && <TabsTrigger value="scan">Scan code-barres</TabsTrigger>}
+              </TabsList>
+
+              <TabsContent value="manual" className="mt-0">
+                <InventoryManualEditor
+                  items={filteredItems}
+                  editable={canEditSession}
+                  searchTerm={search}
+                  onSearchTermChange={setSearch}
+                  draftQuantities={draftQuantities}
+                  onDraftQuantityChange={onDraftQuantityChange}
+                  draftNotes={draftNotes}
+                  onDraftNoteChange={onDraftNoteChange}
+                  onApplyQuantity={onApplyQuantity}
+                  onMarkFound={onMarkFound}
+                  onMarkMissing={onMarkMissing}
+                  activeFilter={filter}
+                  onActiveFilterChange={setFilter}
+                  compact={!canEditSession}
+                />
+              </TabsContent>
+
+              {session.mode === 'scan' && (
+                <TabsContent value="scan" className="mt-0 space-y-4">
+                  <Textarea
+                    value={scanCodes}
+                    onChange={(e) => onScanCodesChange(e.target.value)}
+                    placeholder="Scannez ou collez une succession de SKU"
+                    rows={5}
+                    disabled={!canEditSession}
+                  />
+                  <Button onClick={onScan} disabled={!canEditSession}>
+                    <Barcode className="h-4 w-4" />Traiter les codes
+                  </Button>
+                  {lastScanBatch && (
+                    <div className="rounded-md border p-3 text-sm text-muted-foreground">
+                      <div className="font-medium text-foreground">Dernier lot</div>
+                      <div className="mt-1">
+                        {lastScanBatch.totalCodes} code(s) · {lastScanBatch.matchedCodes.length} reconnu(s)
+                      </div>
+                      {!!lastScanBatch.unknownCodes.length && (
+                        <div className="mt-1">Inconnus : {lastScanBatch.unknownCodes.join(', ')}</div>
+                      )}
+                    </div>
+                  )}
+                </TabsContent>
+              )}
+            </Tabs>
+          </CardContent>
+        );
+
+        if (canEditSession) {
+          return (
+            <Card>
+              <CardHeader className="border-b bg-muted/30">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">2</span>
+                  Comptage / saisie terrain
+                </CardTitle>
+              </CardHeader>
+              {countingBody}
+            </Card>
+          );
+        }
+
+        return (
+          <Card>
+            <Collapsible defaultOpen={false}>
+              <CollapsibleTrigger asChild>
+                <CardHeader className="border-b bg-muted/30 cursor-pointer hover:bg-muted/50 transition-colors">
+                  <CardTitle className="text-base flex items-center justify-between gap-2">
+                    <span className="flex items-center gap-2">
+                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-muted text-muted-foreground text-xs font-bold">2</span>
+                      Voir la saisie terrain (lecture seule)
+                    </span>
+                    <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform" />
+                  </CardTitle>
+                </CardHeader>
+              </CollapsibleTrigger>
+              <CollapsibleContent>{countingBody}</CollapsibleContent>
+            </Collapsible>
+          </Card>
+        );
+      })()}
+
       {/* Validation finale */}
       {session.status === 'completed' && (
         <Card className="border-primary/40 bg-primary/5">
