@@ -96,6 +96,7 @@ export function InventoryManualEditor({
   onMarkMissing,
   activeFilter,
   onActiveFilterChange,
+  compact = false,
 }: InventoryManualEditorProps) {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [busyAction, setBusyAction] = useState<PendingActionType | null>(null);
