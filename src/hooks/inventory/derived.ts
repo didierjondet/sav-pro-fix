@@ -28,7 +28,9 @@ export function getInventoryDerivedData(
   const missingItems = items.filter(
     (item) =>
       item.line_status !== 'pending' &&
-      (item.line_status === 'missing' || item.is_missing || (item.counted_quantity ?? 0) === 0),
+      (item.line_status === 'missing' ||
+        item.is_missing ||
+        ((item.counted_quantity ?? 0) === 0 && item.expected_quantity > 0)),
   );
   const adjustedItems = items.filter(
     (item) => item.counted_quantity !== null && item.line_status !== 'pending' && item.variance_quantity !== 0,
