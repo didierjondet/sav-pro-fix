@@ -236,29 +236,36 @@ export function InventoryManualEditor({
                   </div>
                 </div>
 
-                <div className="grid gap-2 sm:grid-cols-[150px_1fr]">
-                  <div>
-                    <label className="text-xs text-muted-foreground">Quantité</label>
-                    <NumberInput
-                      min="0"
-                      value={currentQuantity}
-                      disabled={!editable || isBusy}
-                      onChange={(event) => onDraftQuantityChange(item.id, event.target.value)}
-                      className="mt-1"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs text-muted-foreground">Note (auto-enregistrée)</label>
-                    <Input
-                      value={currentNote}
-                      disabled={!editable || isBusy}
-                      onChange={(event) => onDraftNoteChange(item.id, event.target.value)}
-                      placeholder="Note rapide"
-                      className="mt-1"
-                    />
-                  </div>
+                <div className="rounded-md bg-muted/30 px-2 py-1.5 text-[11px] text-muted-foreground flex flex-wrap gap-x-3 gap-y-0.5">
+                  <span>Achat&nbsp;u.&nbsp;: <span className="font-medium text-foreground">{fmtCurrency(item.unit_cost)}</span></span>
+                  <span>Total&nbsp;théo.&nbsp;: <span className="font-medium text-foreground">{fmtCurrency(item.unit_cost * item.expected_quantity)}</span></span>
+                  <span>Total&nbsp;compté&nbsp;: <span className="font-medium text-foreground">{fmtCurrency(item.unit_cost * (item.counted_quantity ?? 0))}</span></span>
                 </div>
 
+                {editable && (
+                  <div className="grid gap-2 sm:grid-cols-[150px_1fr]">
+                    <div>
+                      <label className="text-xs text-muted-foreground">Quantité</label>
+                      <NumberInput
+                        min="0"
+                        value={currentQuantity}
+                        disabled={!editable || isBusy}
+                        onChange={(event) => onDraftQuantityChange(item.id, event.target.value)}
+                        className="mt-1"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-muted-foreground">Note (auto-enregistrée)</label>
+                      <Input
+                        value={currentNote}
+                        disabled={!editable || isBusy}
+                        onChange={(event) => onDraftNoteChange(item.id, event.target.value)}
+                        placeholder="Note rapide"
+                        className="mt-1"
+                      />
+                    </div>
+                  </div>
+                )}
                 {editable ? (
                   <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
                     <Button
