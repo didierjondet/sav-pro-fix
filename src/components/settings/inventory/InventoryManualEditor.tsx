@@ -266,7 +266,7 @@ export function InventoryManualEditor({
                     </div>
                   </div>
                 )}
-                {editable ? (
+                {editable && (
                   <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
                     <Button
                       onClick={() => handleFound(item)}
@@ -306,8 +306,6 @@ export function InventoryManualEditor({
                       Ajuster
                     </Button>
                   </div>
-                ) : (
-                  <span className="text-xs text-muted-foreground">Lecture seule</span>
                 )}
               </div>
             );
