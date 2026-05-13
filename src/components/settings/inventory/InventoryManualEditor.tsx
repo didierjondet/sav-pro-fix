@@ -190,7 +190,7 @@ export function InventoryManualEditor({
         </div>
       </div>
 
-      <ScrollArea className="h-[60vh] min-h-[420px]">
+      <ScrollArea className={cn(compact ? 'h-[280px]' : 'h-[60vh] min-h-[420px]')}>
         <div className="grid gap-3 pr-2 sm:grid-cols-1 xl:grid-cols-2">
           {items.map((item) => {
             const currentQuantity = draftQuantities[item.id] ?? (item.counted_quantity ?? '').toString();
