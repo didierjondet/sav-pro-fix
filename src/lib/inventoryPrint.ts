@@ -180,7 +180,9 @@ export function printInventoryDocument({
           <div class="box"><div class="label">Références</div><div class="value">${filteredItems.length}</div></div>
           <div class="box"><div class="label">Qté théorique</div><div class="value">${totalExpected}</div></div>
           <div class="box"><div class="label">Qté inventoriée</div><div class="value">${totalCounted}</div></div>
-          <div class="box"><div class="label">Valeur non retrouvée</div><div class="value" style="color:#dc2626">${escapeHtml(currency(displayMissingValue))}</div></div>
+          ${variant === 'missing'
+            ? `<div class="box"><div class="label">Valeur non retrouvée</div><div class="value" style="color:#dc2626">${escapeHtml(currency(displayMissingValue))}</div></div>`
+            : `<div class="box"><div class="label">Écart global</div><div class="value" style="color:${ecartColor}">${ecartGlobal >= 0 ? '+ ' : ''}${escapeHtml(currency(ecartGlobal))}</div></div>`}
         </div>
         ${variant === 'summary' ? `
           <div class="meta" style="grid-template-columns: repeat(3, minmax(0, 1fr));">
