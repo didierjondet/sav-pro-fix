@@ -116,28 +116,37 @@ export function printInventoryDocument({
     missing: `Produits non retrouvés - ${session.name}`,
   } as const;
 
-  const filteredItems =
-    variant === 'missing'
-      ? items.filter((item) => item.line_status === 'missing')
-      : items;
+  // Helpers robustes au statut `applied` (qui écrase line_status après application)
+  const isMissing = (item: InventorySessionItem) =>
+    item.is_missing === true ||
+    item.line_status === 'missing' ||
+    ((item.counted_quantity ?? 0) === 0 && item.expected_quantity > 0 && item.variance_quantity < 0);
+  const isAdjustedPositive = (item: InventorySessionItem) => item.variance_quantity > 0;
+
+  const filteredItems = variant === 'missing' ? items.filter(isMissing) : items;
 
   const totalCounted = filteredItems.reduce((sum, item) => sum + (item.counted_quantity ?? 0), 0);
   const totalExpected = filteredItems.reduce((sum, item) => sum + item.expected_quantity, 0);
 
   // Bilan financier basé sur la totalité des items (pour la synthèse)
   const totalMissingValue = items
-    .filter((item) => item.line_status === 'missing')
+    .filter(isMissing)
     .reduce((sum, item) => sum + item.unit_cost * item.expected_quantity, 0);
 
   const totalAdjustedPositiveValue = items
-    .filter((item) => item.line_status === 'adjusted' && item.variance_quantity > 0)
+    .filter(isAdjustedPositive)
     .reduce((sum, item) => sum + item.unit_cost * item.variance_quantity, 0);
 
   const bilanNet = totalAdjustedPositiveValue - totalMissingValue;
   const bilanColor = bilanNet >= 0 ? '#16a34a' : '#dc2626';
 
-  // Pour le variant 'missing', recalcule la valeur des manquants sur la liste filtrée
-  const displayMissingValue = variant === 'missing' ? totalMissingValue : totalMissingValue;
+  // Écart global = somme des variance_value (cohérent avec le tableau)
+  const ecartGlobal = items.reduce((sum, item) => sum + (item.variance_value || 0), 0);
+  const ecartColor = ecartGlobal >= 0 ? '#16a34a' : '#dc2626';
+
+  const displayMissingValue = variant === 'missing'
+    ? filteredItems.reduce((sum, item) => sum + item.unit_cost * item.expected_quantity, 0)
+    : totalMissingValue;
 
   const popup = window.open('', '_blank', 'width=1100,height=800');
   if (!popup) return;
