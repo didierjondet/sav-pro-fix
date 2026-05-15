@@ -1,86 +1,59 @@
+## Problème
 
-# Refonte de la page Inventaire — onglet "Général"
+Trois sources calculent le taux de retard avec **trois logiques différentes**, d'où les écarts (34,9% / 4,8% / 0%) :
 
-## Objectifs
+| Fichier | Widget | Logique actuelle |
+|---|---|---|
+| `src/hooks/useStatistics.ts` | "Taux de retard" (Stats + SAVDashboard) | SAV **actifs** (non clôturés) créés dans la période, dont `created_at + max_processing_days < now` |
+| `src/hooks/useCustomWidgetData.ts` | Widget custom `late_rate_percentage` | Idem (SAV actifs vs `now`) |
+| `src/hooks/useMonthlyLateRate.ts` | "Évolution du taux de retard" | SAV **clôturés** attribués au **mois de création**, comparant `closure_date` vs `created_at + max_processing_days` |
 
-- Mettre la **vue générale des inventaires en haut** et le **bloc de synthèse (KPI + graphique) en dessous**.
-- Synthèse filtrable sur une **période personnalisable** (défaut : année en cours, presets + plage personnalisée).
-- Ajouter un **centre d'impression** : sélection multi-inventaires + génération PDF (synthèse + manquants).
-- Filtres puissants sur l'historique (statut, mode, période, recherche par nom).
-- Présentation moderne, dense mais lisible, ergonomique.
+→ Aucun ne correspond à la nouvelle règle demandée, et le déploiement publié peut afficher 0% si aucun SAV actif n'est en retard à l'instant T.
 
-## Nouvelle structure de la page (de haut en bas)
+## Nouvelle règle unique (demandée)
 
-```text
-┌────────────────────────────────────────────────────────────────────┐
-│ En-tête : titre + actions [Journal global] [Imprimer] [+ Nouvel.] │
-├────────────────────────────────────────────────────────────────────┤
-│ BLOC 1 — Inventaires en cours / à clôturer (cards)                 │
-├────────────────────────────────────────────────────────────────────┤
-│ BLOC 2 — Historique des inventaires clôturés                       │
-│  Toolbar : recherche · statut · mode · période · [Imprimer sélec.] │
-│  Liste : checkbox + accordéon (détails + logs + actions PDF/Open)  │
-├────────────────────────────────────────────────────────────────────┤
-│ BLOC 3 — Synthèse & analyse (déplacé en bas)                       │
-│  Sélecteur période : [Année courante ▼] [Du __/__/____ au __/__]  │
-│   presets : Mois en cours · Trimestre · Année · 12 derniers mois   │
-│  4 KPI (filtrés période) : Validés · Écart cumulé · Manquants · %  │
-│  Graphique évolution sur la période                                │
-└────────────────────────────────────────────────────────────────────┘
+Le **taux de retard d'un mois M** = parmi les SAV **clôturés pendant M** (date de clôture dans M), ceux dont la durée réelle (`closure_date − created_at`) a dépassé le `max_processing_days` configuré pour leur type.
+
+- Attribution = **mois de clôture** (plus mois de création).
+- Périmètre = uniquement SAV avec un statut final (`is_final_status`).
+- Exclusions : types `exclude_from_stats`, types avec `max_processing_days = 0` (internes), statuts en pause non concernés (puisqu'on regarde la clôture effective).
+- Date de clôture = dernier `closure_history[*].closed_at`, fallback `updated_at`.
+- Formule : `lateRate = lateClosed / totalClosed * 100`.
+
+## Implémentation
+
+### 1. `src/hooks/useStatistics.ts`
+- Ajouter une **seconde requête** sur `sav_cases` filtrée par statut final `is_final_status` (récupérer aussi `shop_sav_statuses.is_final_status`), sur la même fenêtre `[start, end]`, mais en filtrant **côté JS** sur la date de clôture (extraite de `closure_history` ou `updated_at`).
+  - Pour éviter de tout télécharger : requête sur `created_at >= start − N jours` où N = max(`max_processing_days`) configuré (ex. 60), puis filtrage JS sur date de clôture ∈ `[start, end]`.
+- Calculer `lateCount` / `totalClosed` selon la nouvelle règle.
+- Remplacer la valeur `lateRate` exposée dans `savStats.lateRate`.
+- Construire `lateRateChart` (par jour/bucket) à partir des SAV clôturés bucketisés par leur date de clôture.
+
+### 2. `src/hooks/useMonthlyLateRate.ts`
+- Récupérer SAV via `created_at >= startOfYear − maxProcessingDaysBuffer` pour ne pas manquer les clôtures de janvier issues de SAV ouverts en décembre N-1.
+- Bucketiser par **mois de la date de clôture** (au lieu de `created_at`).
+- Pour chaque mois, `totalCount` = SAV clôturés ce mois, `lateCount` = ceux dont `(closureDate − createdAt) > max_processing_days`.
+
+### 3. `src/hooks/useCustomWidgetData.ts`
+- Remplacer le calcul actuel de `late_rate_percentage` (basé sur SAV actifs) par la même logique : SAV clôturés dans la période / parmi eux ceux qui ont dépassé `max_processing_days`.
+- Garder un `activeSavCount` séparé si d'autres métriques l'utilisent (vérification rapide).
+
+### 4. Helper partagé (optionnel mais recommandé)
+Extraire dans `src/lib/lateRate.ts` deux helpers :
+```ts
+getClosureDate(sav): Date            // closure_history[last].closed_at ?? updated_at
+isClosedLate(sav, maxDays): boolean  // (closureDate - createdAt) > maxDays
 ```
+Réutilisés par les 3 hooks pour garantir la cohérence.
 
-## Fonctionnalités détaillées
+### 5. Mémoire projet
+Mettre à jour `mem://reports/late-rate-calculation-logic` : règle = attribution **mois de clôture** (et plus mois de création).
 
-### 1) Sélecteur de période (BLOC 3)
-- Composant `PeriodPicker` réutilisable avec presets : *Mois courant, Trimestre, Année courante (défaut), 12 derniers mois, Personnalisé*.
-- En mode "Personnalisé" : deux date pickers (du / au).
-- Filtre appliqué aux KPI **et** au graphique. Le graphique adapte sa granularité (jour / semaine / mois) selon la durée.
+## Hors scope
+- Aucune modification de DB, RLS, edge function ou autres widgets non liés au retard.
+- `useSAVDelay.ts` (badge "en retard" sur la liste SAV) reste inchangé : il s'applique aux SAV en cours, pas au taux statistique.
+- `check-sav-delays` (notifications temps réel) reste inchangé.
 
-### 2) Toolbar de l'historique (BLOC 2)
-- Recherche texte (nom de session).
-- Filtre statut (Validé / Annulé / Tous).
-- Filtre mode (Assisté / Scan / Manuel / Tous).
-- Filtre période (réutilise `PeriodPicker`, indépendant du bloc synthèse).
-- Tri (date ↓/↑, écart, nom).
-- Compteur "X inventaires sélectionnés" + bouton **Imprimer la sélection**.
-
-### 3) Centre d'impression
-- Bouton "Imprimer" en en-tête → ouvre un **dialog** :
-  - Étape 1 : choix des inventaires (multi-select, pré-coché si sélection courante).
-  - Étape 2 : choix du document :
-    - **Synthèse globale** (1 PDF agrégeant les sessions choisies : KPI globaux + tableau récap par session).
-    - **Synthèse détaillée** (1 PDF par session avec totaux corrects — réutilise `inventoryPrint.ts` variant `summary`).
-    - **Manquants** (1 PDF par session, variant `missing`).
-    - **Pack ZIP** (option) : tout en un.
-  - Étape 3 : génération + téléchargement.
-- La sélection multi est aussi accessible via les checkbox de l'historique (bouton "Imprimer sélection" dans la toolbar).
-
-### 4) Présentation / ergonomie
-- Cards compactes au design cohérent (bord léger, hover, badges sémantiques).
-- KPI : icônes Lucide à gauche, valeur en grand, sous-texte "vs période précédente" (delta coloré).
-- Graphique : `ComposedChart` (barres = nb d'inventaires, ligne = valeur d'écart cumulée).
-- Toolbar sticky en haut de l'historique pour rester accessible au scroll.
-- États vides illustrés par section.
-- Responsive : KPI en 2 colonnes sur mobile, 4 sur desktop ; toolbar wrap.
-
-## Détails techniques
-
-- **Fichiers modifiés** :
-  - `src/components/settings/inventory/InventoryGeneralTab.tsx` — réorganisation des blocs, intégration toolbar, PeriodPicker, sélection multi.
-- **Fichiers créés** :
-  - `src/components/settings/inventory/InventoryPeriodPicker.tsx` — composant période avec presets + plage custom.
-  - `src/components/settings/inventory/InventoryPrintDialog.tsx` — dialog multi-étapes pour impression groupée.
-  - `src/lib/inventoryPrintAggregate.ts` — génération HTML/PDF pour la synthèse globale multi-sessions (réutilise les helpers existants de `inventoryPrint.ts`).
-- **Logique** :
-  - Filtre période sur `applied_at || completed_at || created_at`.
-  - KPI delta : compare période N vs N-1 de même durée.
-  - Graphique : bucket dynamique via `date-fns` (`eachDayOfInterval`, `eachWeekOfInterval`, `eachMonthOfInterval`).
-  - Pour la synthèse globale multi : on charge `inventory_session_items` à la demande (lazy via `useQuery`) pour chaque session sélectionnée afin d'avoir les valeurs d'écart correctes (réutilise les helpers `isMissing` / `ecartGlobal` déjà introduits).
-  - ZIP optionnel : utiliser `jszip` (déjà dans le projet ? sinon ajout).
-- **Aucun changement DB**. Aucune RPC nouvelle. UI / présentation uniquement.
-
-## Hors périmètre
-
-- Pas de modification de la logique de calcul des écarts (déjà corrigée).
-- Pas de modification de l'onglet d'une session ouverte.
-- Pas de modification du schéma Supabase.
+## Vérification post-implémentation
+- Mois en cours : la valeur du widget "Taux de retard" doit correspondre à la barre du mois courant dans "Évolution du taux de retard" (au pourcentage près).
+- Tester en local + version publiée (mêmes données, même résultat).
