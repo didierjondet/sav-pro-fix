@@ -402,49 +402,31 @@ export function useStatistics(
           }
         };
 
-        // D'abord calculer les retards sur TOUS les SAV actifs
-        activeSavCases.forEach((savCase: any) => {
-          // Vérifier si le statut actuel met le timer en pause
-          const statusConfig = shopSavStatuses?.find(s => s.status_key === savCase.status);
-          if (statusConfig?.pause_timer) {
-            console.log(`⏸️ SAV ${savCase.case_number}: Timer en pause (statut: ${savCase.status})`);
-            return; // Ne pas compter comme en retard
-          }
+        // === NOUVEAU TAUX DE RETARD ===
+        // Logique : SAV CLÔTURÉS dont la date de clôture est dans la période
+        // (attribution = mois de clôture). Late si (closure - created) > max_processing_days.
+        const closedInPeriod = (closedSavRaw || []).filter((c: any) => {
+          if (excludedFromStatsTypes.includes(c.sav_type)) return false;
+          const maxDays = getMaxProcessingDays(c.sav_type, shopSavTypes);
+          if (maxDays === 0) return false;
+          const closureDate = getClosureDate(c);
+          return closureDate >= start && closureDate <= end;
+        });
 
-          // Trouver la configuration du type SAV
-          const typeConfig = shopSavTypes?.find(t => t.type_key === savCase.sav_type);
-          const processingDays = typeConfig?.max_processing_days || getDefaultProcessingDays(savCase.sav_type);
-          
-          // Ignorer les SAV internes (processingDays = 0)
-          if (processingDays === 0) {
-            return;
+        let totalClosedForRate = 0;
+        closedInPeriod.forEach((sav: any) => {
+          totalClosedForRate++;
+          const maxDays = getMaxProcessingDays(sav.sav_type, shopSavTypes);
+          const closureDate = getClosureDate(sav);
+          const dateKey = format(closureDate, 'yyyy-MM-dd');
+          if (!dailyData[dateKey]) {
+            dailyData[dateKey] = { revenue: 0, expenses: 0, count: 0, completed: 0, lateCount: 0, activeCount: 0 };
           }
-
-          // Utiliser created_at comme date de référence
-          const startDate = new Date(savCase.created_at);
-          const theoreticalEndDate = new Date(startDate);
-          theoreticalEndDate.setDate(theoreticalEndDate.getDate() + processingDays);
-          
-          const dateKey = format(new Date(savCase.created_at), 'yyyy-MM-dd');
-          if (dailyData[dateKey]) {
-            dailyData[dateKey].activeCount++;
-            
-            if (currentDate > theoreticalEndDate) {
-              dailyData[dateKey].lateCount++;
-              lateCount++;
-            }
+          dailyData[dateKey].activeCount++;
+          if (isClosedLate(sav, maxDays)) {
+            dailyData[dateKey].lateCount++;
+            lateCount++;
           }
-          
-          console.log(`🔍 SAV ${savCase.case_number}:`, {
-            status: savCase.status,
-            sav_type: savCase.sav_type,
-            processing_days_config: processingDays,
-            created_at: savCase.created_at,
-            startDate: startDate.toISOString(),
-            theoreticalEnd: theoreticalEndDate.toISOString(),
-            isLate: currentDate > theoreticalEndDate,
-            daysDiff: Math.floor((currentDate.getTime() - theoreticalEndDate.getTime()) / (1000 * 60 * 60 * 24))
-          });
         });
 
         readySavCases.forEach((savCase: any) => {
