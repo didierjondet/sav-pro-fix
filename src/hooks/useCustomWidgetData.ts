@@ -145,14 +145,21 @@ export const useCustomWidgetData = ({ metrics, filters, groupBy }: UseCustomWidg
           .filter(t => t.exclude_from_stats || (t.exclude_purchase_costs && t.exclude_sales_revenue))
           .map(t => t.type_key);
 
-        // Récupérer les statuts SAV avec pause_timer
+        // Récupérer les statuts SAV avec pause_timer + is_final_status
         const { data: shopSavStatuses, error: statusesError } = await supabase
           .from('shop_sav_statuses')
-          .select('status_key, pause_timer')
+          .select('status_key, pause_timer, is_final_status')
           .eq('shop_id', shop.id)
           .eq('is_active', true);
 
         if (statusesError) throw statusesError;
+
+        const finalStatusKeys = (shopSavStatuses || [])
+          .filter(s => s.is_final_status)
+          .map(s => s.status_key);
+        const effectiveFinalStatuses = finalStatusKeys.length > 0
+          ? finalStatusKeys
+          : ['ready', 'cancelled', 'delivered'];
 
         // Récupérer les SAV cases avec leurs pièces
         const { data: savCases, error: savError } = await supabase
