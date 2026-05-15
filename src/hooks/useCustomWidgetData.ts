@@ -286,41 +286,17 @@ export const useCustomWidgetData = ({ metrics, filters, groupBy }: UseCustomWidg
             }
           }
 
-          // Taux de retard (pour les SAV actifs)
-          if (sav.status !== 'ready' && sav.status !== 'delivered' && sav.status !== 'cancelled') {
-            // Vérifier si le statut actuel met le timer en pause
-            const statusConfig = shopSavStatuses?.find(s => s.status_key === sav.status);
-            if (statusConfig?.pause_timer) {
-              return; // Ne pas compter comme SAV actif si timer en pause
-            }
-
-            // Trouver la configuration du type SAV
-            const typeConfig = shopSavTypes?.find(t => t.type_key === sav.sav_type);
-            const getDefaultProcessingDays = (savType: string): number => {
-              // Pas de calcul de retard pour types exclus
-              if (excludedFromStatsTypes.includes(savType)) return 0;
-              switch (savType) {
-                case 'external': return 7;
-                case 'client': return 7;
-                default: return 7;
+          // Taux de retard : SAV CLÔTURÉS dans la période, late si (closure - created) > max_processing_days
+          if (effectiveFinalStatuses.includes(sav.status) && !excludedFromStatsTypes.includes(sav.sav_type)) {
+            const maxDays = getMaxProcessingDays(sav.sav_type, shopSavTypes);
+            if (maxDays > 0) {
+              const closureDate = getClosureDate(sav);
+              if (closureDate >= startDate && closureDate <= endDate) {
+                activeSavCount++; // = total clôturés
+                if (isClosedLate(sav, maxDays)) {
+                  lateSavCount++;
+                }
               }
-            };
-            const processingDays = typeConfig?.max_processing_days || getDefaultProcessingDays(sav.sav_type);
-            
-            // Ignorer les SAV internes
-            if (processingDays === 0) {
-              return;
-            }
-
-            activeSavCount++;
-            
-            // Calculer le retard basé sur created_at + processing days configurés
-            const createdDate = new Date(sav.created_at);
-            const expectedDate = new Date(createdDate);
-            expectedDate.setDate(expectedDate.getDate() + processingDays);
-            
-            if (new Date() > expectedDate) {
-              lateSavCount++;
             }
           }
 
