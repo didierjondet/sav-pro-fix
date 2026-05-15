@@ -35,12 +35,14 @@ export function useMonthlyLateRate(year?: number) {
         const currentMonth = now.getMonth();
         const isCurrentYear = currentYear === now.getFullYear();
 
-        // Récupérer tous les SAV de l'année
+        // Récupérer tous les SAV pouvant être clôturés cette année
+        // (buffer de 90j sur created_at pour ne pas manquer les SAV ouverts fin N-1 et clôturés en janvier N)
+        const fetchStart = new Date(yearStart.getTime() - 90 * 24 * 60 * 60 * 1000);
         const { data: savCases, error } = await supabase
           .from('sav_cases')
           .select('id, case_number, created_at, updated_at, status, sav_type, closure_history')
           .eq('shop_id', shop.id)
-          .gte('created_at', yearStart.toISOString())
+          .gte('created_at', fetchStart.toISOString())
           .order('created_at', { ascending: true });
 
         if (error) throw error;
