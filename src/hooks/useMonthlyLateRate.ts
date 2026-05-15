@@ -35,12 +35,14 @@ export function useMonthlyLateRate(year?: number) {
         const currentMonth = now.getMonth();
         const isCurrentYear = currentYear === now.getFullYear();
 
-        // Récupérer tous les SAV de l'année
+        // Récupérer tous les SAV pouvant être clôturés cette année
+        // (buffer de 90j sur created_at pour ne pas manquer les SAV ouverts fin N-1 et clôturés en janvier N)
+        const fetchStart = new Date(yearStart.getTime() - 90 * 24 * 60 * 60 * 1000);
         const { data: savCases, error } = await supabase
           .from('sav_cases')
           .select('id, case_number, created_at, updated_at, status, sav_type, closure_history')
           .eq('shop_id', shop.id)
-          .gte('created_at', yearStart.toISOString())
+          .gte('created_at', fetchStart.toISOString())
           .order('created_at', { ascending: true });
 
         if (error) throw error;
@@ -75,35 +77,14 @@ export function useMonthlyLateRate(year?: number) {
           const monthStart = startOfMonth(new Date(currentYear, month, 1));
           const monthEnd = endOfMonth(monthStart);
 
-          // Filtrer les SAV CRÉÉS dans ce mois, CLÔTURÉS (statut final), hors types exclus
-          const closedSavsCreatedThisMonth = (savCases || []).filter((sav: any) => {
-            const createdAt = new Date(sav.created_at);
-            
-            // Créé dans ce mois ?
-            if (createdAt < monthStart || createdAt > monthEnd) return false;
-            
-            // Exclure les types exclus des stats
+          // Filtrer les SAV CLÔTURÉS dans ce mois (date de clôture dans le mois)
+          // Attribution = mois de clôture (et plus mois de création).
+          const closedSavsThisMonth = (savCases || []).filter((sav: any) => {
             if (excludedTypes.includes(sav.sav_type)) return false;
-            
-            // Exclure les types avec max_processing_days = 0 (internes)
             const maxDays = getMaxProcessingDays(sav.sav_type);
             if (maxDays === 0) return false;
-            
-            // Doit avoir un statut final (clôturé)
             if (!finalStatusKeys.includes(sav.status)) return false;
-            
-            return true;
-          });
 
-          // Calculer les retards parmi les SAV clôturés
-          let lateCount = 0;
-          closedSavsCreatedThisMonth.forEach((sav: any) => {
-            const maxDays = getMaxProcessingDays(sav.sav_type);
-            const createdAt = new Date(sav.created_at);
-            const deadline = new Date(createdAt);
-            deadline.setDate(deadline.getDate() + maxDays);
-            
-            // Extraire la date de clôture depuis closure_history
             const closureHistory = sav.closure_history as any[] | null;
             const lastClosure = closureHistory && closureHistory.length > 0
               ? closureHistory[closureHistory.length - 1]
@@ -111,13 +92,32 @@ export function useMonthlyLateRate(year?: number) {
             const closureDate = lastClosure?.closed_at
               ? new Date(lastClosure.closed_at)
               : new Date(sav.updated_at);
-            
+
+            return closureDate >= monthStart && closureDate <= monthEnd;
+          });
+
+          // Calculer les retards parmi les SAV clôturés ce mois
+          let lateCount = 0;
+          closedSavsThisMonth.forEach((sav: any) => {
+            const maxDays = getMaxProcessingDays(sav.sav_type);
+            const createdAt = new Date(sav.created_at);
+            const deadline = new Date(createdAt);
+            deadline.setDate(deadline.getDate() + maxDays);
+
+            const closureHistory = sav.closure_history as any[] | null;
+            const lastClosure = closureHistory && closureHistory.length > 0
+              ? closureHistory[closureHistory.length - 1]
+              : null;
+            const closureDate = lastClosure?.closed_at
+              ? new Date(lastClosure.closed_at)
+              : new Date(sav.updated_at);
+
             if (closureDate > deadline) {
               lateCount++;
             }
           });
 
-          const totalCount = closedSavsCreatedThisMonth.length;
+          const totalCount = closedSavsThisMonth.length;
           const lateRate = totalCount > 0 ? (lateCount / totalCount) * 100 : 0;
 
           monthlyData.push({

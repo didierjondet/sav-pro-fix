@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useShop } from './useShop';
 import { format, subDays, subMonths, startOfDay, endOfDay, startOfMonth } from 'date-fns';
 import { useQueryClient } from '@tanstack/react-query';
+import { getClosureDate, isClosedLate, getMaxProcessingDays } from '@/lib/lateRate';
 
 interface ProductCategoryRevenue {
   category: string;
@@ -242,16 +243,16 @@ export function useStatistics(
         .filter(t => t.exclude_from_stats || (t.exclude_purchase_costs && t.exclude_sales_revenue))
         .map(t => t.type_key);
 
-      // Récupérer les statuts SAV avec pause_timer
+      // Récupérer les statuts SAV avec pause_timer + is_final_status
       const { data: shopSavStatuses, error: statusesError } = await supabase
         .from('shop_sav_statuses')
-        .select('status_key, pause_timer')
+        .select('status_key, pause_timer, is_final_status')
         .eq('shop_id', shop.id)
         .eq('is_active', true);
 
       if (statusesError) throw statusesError;
 
-      // Récupérer les SAV de la période
+      // Récupérer les SAV de la période (par created_at)
       const { data: savCasesRaw, error: savError } = await supabase
         .from('sav_cases')
         .select(`
@@ -264,6 +265,27 @@ export function useStatistics(
         .lte('created_at', end.toISOString());
 
       if (savError) throw savError;
+
+      // Récupérer les SAV CLÔTURÉS dont la date de clôture tombe dans la période
+      // (peuvent avoir été créés bien avant). Buffer large sur created_at.
+      const maxCfgDays = Math.max(60, ...((shopSavTypes || []).map(t => t.max_processing_days || 0)));
+      const closedFetchStart = new Date(start.getTime() - (maxCfgDays + 30) * 24 * 60 * 60 * 1000);
+      const finalStatusKeys = (shopSavStatuses || [])
+        .filter(s => s.is_final_status)
+        .map(s => s.status_key);
+      const effectiveFinalStatuses = finalStatusKeys.length > 0
+        ? finalStatusKeys
+        : ['ready', 'cancelled', 'delivered'];
+
+      const { data: closedSavRaw, error: closedSavError } = await supabase
+        .from('sav_cases')
+        .select('id, case_number, sav_type, status, created_at, updated_at, closure_history')
+        .eq('shop_id', shop.id)
+        .in('status', effectiveFinalStatuses)
+        .gte('updated_at', closedFetchStart.toISOString())
+        .lte('updated_at', end.toISOString());
+
+      if (closedSavError) throw closedSavError;
 
         // Appliquer les filtres de configuration (statuts / types SAV)
         const savCases = (savCasesRaw || []).filter((savCase: any) => {
@@ -380,49 +402,31 @@ export function useStatistics(
           }
         };
 
-        // D'abord calculer les retards sur TOUS les SAV actifs
-        activeSavCases.forEach((savCase: any) => {
-          // Vérifier si le statut actuel met le timer en pause
-          const statusConfig = shopSavStatuses?.find(s => s.status_key === savCase.status);
-          if (statusConfig?.pause_timer) {
-            console.log(`⏸️ SAV ${savCase.case_number}: Timer en pause (statut: ${savCase.status})`);
-            return; // Ne pas compter comme en retard
-          }
+        // === NOUVEAU TAUX DE RETARD ===
+        // Logique : SAV CLÔTURÉS dont la date de clôture est dans la période
+        // (attribution = mois de clôture). Late si (closure - created) > max_processing_days.
+        const closedInPeriod = (closedSavRaw || []).filter((c: any) => {
+          if (excludedFromStatsTypes.includes(c.sav_type)) return false;
+          const maxDays = getMaxProcessingDays(c.sav_type, shopSavTypes);
+          if (maxDays === 0) return false;
+          const closureDate = getClosureDate(c);
+          return closureDate >= start && closureDate <= end;
+        });
 
-          // Trouver la configuration du type SAV
-          const typeConfig = shopSavTypes?.find(t => t.type_key === savCase.sav_type);
-          const processingDays = typeConfig?.max_processing_days || getDefaultProcessingDays(savCase.sav_type);
-          
-          // Ignorer les SAV internes (processingDays = 0)
-          if (processingDays === 0) {
-            return;
+        let totalClosedForRate = 0;
+        closedInPeriod.forEach((sav: any) => {
+          totalClosedForRate++;
+          const maxDays = getMaxProcessingDays(sav.sav_type, shopSavTypes);
+          const closureDate = getClosureDate(sav);
+          const dateKey = format(closureDate, 'yyyy-MM-dd');
+          if (!dailyData[dateKey]) {
+            dailyData[dateKey] = { revenue: 0, expenses: 0, count: 0, completed: 0, lateCount: 0, activeCount: 0 };
           }
-
-          // Utiliser created_at comme date de référence
-          const startDate = new Date(savCase.created_at);
-          const theoreticalEndDate = new Date(startDate);
-          theoreticalEndDate.setDate(theoreticalEndDate.getDate() + processingDays);
-          
-          const dateKey = format(new Date(savCase.created_at), 'yyyy-MM-dd');
-          if (dailyData[dateKey]) {
-            dailyData[dateKey].activeCount++;
-            
-            if (currentDate > theoreticalEndDate) {
-              dailyData[dateKey].lateCount++;
-              lateCount++;
-            }
+          dailyData[dateKey].activeCount++;
+          if (isClosedLate(sav, maxDays)) {
+            dailyData[dateKey].lateCount++;
+            lateCount++;
           }
-          
-          console.log(`🔍 SAV ${savCase.case_number}:`, {
-            status: savCase.status,
-            sav_type: savCase.sav_type,
-            processing_days_config: processingDays,
-            created_at: savCase.created_at,
-            startDate: startDate.toISOString(),
-            theoreticalEnd: theoreticalEndDate.toISOString(),
-            isLate: currentDate > theoreticalEndDate,
-            daysDiff: Math.floor((currentDate.getTime() - theoreticalEndDate.getTime()) / (1000 * 60 * 60 * 24))
-          });
         });
 
         readySavCases.forEach((savCase: any) => {
@@ -482,12 +486,12 @@ export function useStatistics(
           productCategoryData[category].count += 1;
         });
 
-        // Calculer le taux de retard sur TOUS les SAV actifs
-        const lateRate = activeSavCases.length > 0 ? (lateCount / activeSavCases.length) * 100 : 0;
-        
+        // Calculer le taux de retard sur les SAV CLÔTURÉS dans la période
+        const lateRate = totalClosedForRate > 0 ? (lateCount / totalClosedForRate) * 100 : 0;
+
         console.log('🔍 Debug retard - Résultat final:', {
           lateCount,
-          totalActiveSav: activeSavCases.length,
+          totalClosedForRate,
           lateRate: lateRate.toFixed(2) + '%'
         });
 
