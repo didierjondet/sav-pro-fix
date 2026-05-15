@@ -243,16 +243,16 @@ export function useStatistics(
         .filter(t => t.exclude_from_stats || (t.exclude_purchase_costs && t.exclude_sales_revenue))
         .map(t => t.type_key);
 
-      // Récupérer les statuts SAV avec pause_timer
+      // Récupérer les statuts SAV avec pause_timer + is_final_status
       const { data: shopSavStatuses, error: statusesError } = await supabase
         .from('shop_sav_statuses')
-        .select('status_key, pause_timer')
+        .select('status_key, pause_timer, is_final_status')
         .eq('shop_id', shop.id)
         .eq('is_active', true);
 
       if (statusesError) throw statusesError;
 
-      // Récupérer les SAV de la période
+      // Récupérer les SAV de la période (par created_at)
       const { data: savCasesRaw, error: savError } = await supabase
         .from('sav_cases')
         .select(`
@@ -265,6 +265,27 @@ export function useStatistics(
         .lte('created_at', end.toISOString());
 
       if (savError) throw savError;
+
+      // Récupérer les SAV CLÔTURÉS dont la date de clôture tombe dans la période
+      // (peuvent avoir été créés bien avant). Buffer large sur created_at.
+      const maxCfgDays = Math.max(60, ...((shopSavTypes || []).map(t => t.max_processing_days || 0)));
+      const closedFetchStart = new Date(start.getTime() - (maxCfgDays + 30) * 24 * 60 * 60 * 1000);
+      const finalStatusKeys = (shopSavStatuses || [])
+        .filter(s => s.is_final_status)
+        .map(s => s.status_key);
+      const effectiveFinalStatuses = finalStatusKeys.length > 0
+        ? finalStatusKeys
+        : ['ready', 'cancelled', 'delivered'];
+
+      const { data: closedSavRaw, error: closedSavError } = await supabase
+        .from('sav_cases')
+        .select('id, case_number, sav_type, status, created_at, updated_at, closure_history')
+        .eq('shop_id', shop.id)
+        .in('status', effectiveFinalStatuses)
+        .gte('updated_at', closedFetchStart.toISOString())
+        .lte('updated_at', end.toISOString());
+
+      if (closedSavError) throw closedSavError;
 
         // Appliquer les filtres de configuration (statuts / types SAV)
         const savCases = (savCasesRaw || []).filter((savCase: any) => {
