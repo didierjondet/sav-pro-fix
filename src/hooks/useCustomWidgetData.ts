@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useShop } from '@/contexts/ShopContext';
 import { supabase } from '@/integrations/supabase/client';
+import { getClosureDate, isClosedLate, getMaxProcessingDays } from '@/lib/lateRate';
 
 export interface MetricDefinition {
   key: string;
