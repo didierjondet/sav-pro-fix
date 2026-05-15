@@ -486,12 +486,12 @@ export function useStatistics(
           productCategoryData[category].count += 1;
         });
 
-        // Calculer le taux de retard sur TOUS les SAV actifs
-        const lateRate = activeSavCases.length > 0 ? (lateCount / activeSavCases.length) * 100 : 0;
-        
+        // Calculer le taux de retard sur les SAV CLÔTURÉS dans la période
+        const lateRate = totalClosedForRate > 0 ? (lateCount / totalClosedForRate) * 100 : 0;
+
         console.log('🔍 Debug retard - Résultat final:', {
           lateCount,
-          totalActiveSav: activeSavCases.length,
+          totalClosedForRate,
           lateRate: lateRate.toFixed(2) + '%'
         });
 
