@@ -400,6 +400,7 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
     setTechnicianInitials('');
     setShowPrintDialog(false);
     setCreatedSAVCase(null);
+    persistedCaseRef.current = null;
     setForceCreateNewCustomer(false);
     onOpenChange(false);
     onSuccess?.();
