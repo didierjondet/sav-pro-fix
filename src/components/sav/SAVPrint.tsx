@@ -114,7 +114,7 @@ export const SAVPrintButton = React.forwardRef<SAVPrintButtonRef, SAVPrintButton
         })
       );
 
-      const trackingUrl = generateTrackingUrl();
+      const trackingUrl = savCase?.tracking_slug ? generateShortTrackingUrl(savCase.tracking_slug) : "";
       const qrCodeUrl = trackingUrl
         ? `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(trackingUrl)}`
         : "";
