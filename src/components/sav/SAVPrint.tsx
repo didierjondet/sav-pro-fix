@@ -11,7 +11,7 @@ import { generateShortTrackingUrl } from '@/utils/trackingUtils';
 import { fetchBillingConfig, aggregateTotals, buildVatHtmlBlock } from '@/utils/pdfVatHelpers';
 
 interface SAVPrintButtonRef {
-  print: () => void;
+  print: (override?: SAVPrintButtonProps['savCase']) => void;
 }
 
 export type { SAVPrintButtonRef };
@@ -23,7 +23,7 @@ interface SAVPrintButtonProps {
   variant?: "default" | "outline" | "secondary" | "ghost" | "link" | "destructive";
 }
 
-export const SAVPrintButton = React.forwardRef<SAVPrintButtonRef, SAVPrintButtonProps>(({ savCase, className, size = "sm", variant = "outline" }, ref) => {
+export const SAVPrintButton = React.forwardRef<SAVPrintButtonRef, SAVPrintButtonProps>(({ savCase: savCaseProp, className, size = "sm", variant = "outline" }, ref) => {
   const { shop } = useShop();
   const { getStatusInfo } = useShopSAVStatuses();
   const { getTypeInfo } = useShopSAVTypes();
@@ -31,16 +31,12 @@ export const SAVPrintButton = React.forwardRef<SAVPrintButtonRef, SAVPrintButton
 
   // Exposer la méthode print via useImperativeHandle
   useImperativeHandle(ref, () => ({
-    print: handlePrint
-  }), []);
+    print: (override?: typeof savCaseProp) => handlePrint(override)
+  }), [savCaseProp]);
 
-  const generateTrackingUrl = () => {
-    if (!savCase?.tracking_slug) return "";
-    return generateShortTrackingUrl(savCase.tracking_slug);
-  };
-
-  const handlePrint = async () => {
+  const handlePrint = async (override?: typeof savCaseProp) => {
     if (printing) return;
+    const savCase = override ?? savCaseProp;
     setPrinting(true);
     try {
       // Récupérer les pièces
@@ -118,7 +114,7 @@ export const SAVPrintButton = React.forwardRef<SAVPrintButtonRef, SAVPrintButton
         })
       );
 
-      const trackingUrl = generateTrackingUrl();
+      const trackingUrl = savCase?.tracking_slug ? generateShortTrackingUrl(savCase.tracking_slug) : "";
       const qrCodeUrl = trackingUrl
         ? `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(trackingUrl)}`
         : "";
@@ -426,7 +422,7 @@ export const SAVPrintButton = React.forwardRef<SAVPrintButtonRef, SAVPrintButton
   };
 
   return (
-    <Button variant={variant} size={size} onClick={handlePrint} className={className} disabled={printing}>
+    <Button variant={variant} size={size} onClick={() => handlePrint()} className={className} disabled={printing}>
       <Printer className="h-4 w-4 mr-2" />
       {printing ? "Préparation..." : "Imprimer"}
     </Button>

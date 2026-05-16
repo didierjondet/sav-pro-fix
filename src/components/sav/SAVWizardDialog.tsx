@@ -137,6 +137,7 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
   const collectInitials = shopSettings?.collect_technician_initials ?? false;
 
   const printButtonRef = useRef<SAVPrintButtonRef>(null);
+  const persistedCaseRef = useRef<any>(null);
   const { user } = useAuth();
   const { profile } = useProfile();
   const { createCase } = useSAVCases();
@@ -364,6 +365,7 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
       }
 
       setCreatedSAVCase(enrichedCase);
+      persistedCaseRef.current = enrichedCase;
       return enrichedCase;
     } catch (error: any) {
       console.error('Error creating SAV case:', error);
@@ -375,7 +377,8 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
   };
 
   const handlePrintConfirm = () => {
-    if (printButtonRef.current) printButtonRef.current.print();
+    const caseToPrint = persistedCaseRef.current ?? createdSAVCase;
+    if (printButtonRef.current) printButtonRef.current.print(caseToPrint);
     resetAndClose();
   };
 
@@ -397,6 +400,7 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
     setTechnicianInitials('');
     setShowPrintDialog(false);
     setCreatedSAVCase(null);
+    persistedCaseRef.current = null;
     setForceCreateNewCustomer(false);
     onOpenChange(false);
     onSuccess?.();
