@@ -377,7 +377,8 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
   };
 
   const handlePrintConfirm = () => {
-    if (printButtonRef.current) printButtonRef.current.print();
+    const caseToPrint = persistedCaseRef.current ?? createdSAVCase;
+    if (printButtonRef.current) printButtonRef.current.print(caseToPrint);
     resetAndClose();
   };
 
