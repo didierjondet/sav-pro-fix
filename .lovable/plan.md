@@ -1,59 +1,41 @@
-## Problème
+# Correction : impression vierge depuis le popup "Validation du dossier SAV" (mode simplifié)
 
-Trois sources calculent le taux de retard avec **trois logiques différentes**, d'où les écarts (34,9% / 4,8% / 0%) :
+## Symptôme
+Dans le wizard simplifié (`SAVWizardDialog`), au dernier popup `PrintConfirmDialog`, cliquer sur **Imprimer** sort une feuille vide. En revanche, si on clique sur **Valider** puis qu'on imprime depuis la fiche SAV, le document est correct. Le problème est surtout visible sur les SAV **internes** (et potentiellement présent sur tout type sans client), beaucoup moins visible sur **externe/client** car ces fiches affichent au moins les infos client du brouillon.
 
-| Fichier | Widget | Logique actuelle |
-|---|---|---|
-| `src/hooks/useStatistics.ts` | "Taux de retard" (Stats + SAVDashboard) | SAV **actifs** (non clôturés) créés dans la période, dont `created_at + max_processing_days < now` |
-| `src/hooks/useCustomWidgetData.ts` | Widget custom `late_rate_percentage` | Idem (SAV actifs vs `now`) |
-| `src/hooks/useMonthlyLateRate.ts` | "Évolution du taux de retard" | SAV **clôturés** attribués au **mois de création**, comparant `closure_date` vs `created_at + max_processing_days` |
+## Cause racine
+Dans `SAVWizardDialog.tsx` :
 
-→ Aucun ne correspond à la nouvelle règle demandée, et le déploiement publié peut afficher 0% si aucun SAV actif n'est en retard à l'instant T.
+1. Avant la persistance, on injecte un **brouillon** dans l'état : `setCreatedSAVCase(draftCase)` (sans `id`, sans `case_number`, sans `tracking_slug`, et sans `customer` pour les types qui ne demandent pas d'info client → cas SAV interne).
+2. `<SAVPrintButton savCase={createdSAVCase} ref={printButtonRef} />` est monté avec ce brouillon.
+3. À l'appui sur **Imprimer**, `PrintConfirmDialog` exécute d'abord `onPersistBeforeAction` (= `persistSAV`) puis appelle immédiatement `onConfirm` (= `handlePrintConfirm` → `printButtonRef.current.print()`).
+4. Bien que `persistSAV` fasse `setCreatedSAVCase(enrichedCase)`, React n'a pas eu le temps de re-rendre `SAVPrintButton` avec le nouveau `savCase`. De plus, dans `SAVPrint.tsx`, `useImperativeHandle(ref, () => ({ print: handlePrint }), [])` est figé sur la **closure initiale** (deps vides), donc même après le re-render, l'appel `print()` exécute toujours l'ancien `handlePrint` qui voit le **brouillon**.
+5. `handlePrint` requête `sav_parts` avec `savCase.id` = `undefined` → 0 ligne ; et rend le HTML avec un `case_number` vide, sans client (interne) → **feuille vierge**.
 
-## Nouvelle règle unique (demandée)
+L'externe « semble » fonctionner uniquement parce que le brouillon contient au moins les coordonnées client saisies, mais en réalité il manque aussi case_number, tracking, pièces, totaux : le bug est universel, juste plus discret.
 
-Le **taux de retard d'un mois M** = parmi les SAV **clôturés pendant M** (date de clôture dans M), ceux dont la durée réelle (`closure_date − created_at`) a dépassé le `max_processing_days` configuré pour leur type.
+## Correctif (ciblé, sans casser le reste)
 
-- Attribution = **mois de clôture** (plus mois de création).
-- Périmètre = uniquement SAV avec un statut final (`is_final_status`).
-- Exclusions : types `exclude_from_stats`, types avec `max_processing_days = 0` (internes), statuts en pause non concernés (puisqu'on regarde la clôture effective).
-- Date de clôture = dernier `closure_history[*].closed_at`, fallback `updated_at`.
-- Formule : `lateRate = lateClosed / totalClosed * 100`.
+Deux ajustements minimaux et complémentaires :
 
-## Implémentation
+### 1. `src/components/sav/SAVPrint.tsx`
+- Permettre à la méthode exposée d'accepter un `savCase` en paramètre, et corriger les deps de `useImperativeHandle` pour qu'elle suive le prop courant.
+- Signature : `print: (override?: SAVCase) => void` ; en interne, `handlePrint` utilise `override ?? savCase`.
+- Deps : `[savCase]` (au lieu de `[]`).
 
-### 1. `src/hooks/useStatistics.ts`
-- Ajouter une **seconde requête** sur `sav_cases` filtrée par statut final `is_final_status` (récupérer aussi `shop_sav_statuses.is_final_status`), sur la même fenêtre `[start, end]`, mais en filtrant **côté JS** sur la date de clôture (extraite de `closure_history` ou `updated_at`).
-  - Pour éviter de tout télécharger : requête sur `created_at >= start − N jours` où N = max(`max_processing_days`) configuré (ex. 60), puis filtrage JS sur date de clôture ∈ `[start, end]`.
-- Calculer `lateCount` / `totalClosed` selon la nouvelle règle.
-- Remplacer la valeur `lateRate` exposée dans `savStats.lateRate`.
-- Construire `lateRateChart` (par jour/bucket) à partir des SAV clôturés bucketisés par leur date de clôture.
+### 2. `src/components/sav/SAVWizardDialog.tsx`
+- Conserver le retour de `persistSAV` (déjà fait) et le passer directement à l'impression.
+- `handlePrintConfirm` devient : reçoit le `enrichedCase` via une `ref` (`persistedCaseRef.current`) renseignée à la fin de `persistSAV`, et appelle `printButtonRef.current?.print(persistedCaseRef.current ?? createdSAVCase)`.
+- Aucun changement de logique métier (persistance, parts, commandes), uniquement le câblage d'impression.
 
-### 2. `src/hooks/useMonthlyLateRate.ts`
-- Récupérer SAV via `created_at >= startOfYear − maxProcessingDaysBuffer` pour ne pas manquer les clôtures de janvier issues de SAV ouverts en décembre N-1.
-- Bucketiser par **mois de la date de clôture** (au lieu de `created_at`).
-- Pour chaque mois, `totalCount` = SAV clôturés ce mois, `lateCount` = ceux dont `(closureDate − createdAt) > max_processing_days`.
+### Effets de bord vérifiés
+- `SAVForm.tsx` utilise aussi `SAVPrintButton` mais via le clic direct sur le bouton (pas via `ref.print()`) → comportement inchangé.
+- `SAVDetail`/réimpression : utilise le bouton standard → inchangé.
+- Le paramètre `override` est optionnel : tous les appelants existants restent compatibles.
 
-### 3. `src/hooks/useCustomWidgetData.ts`
-- Remplacer le calcul actuel de `late_rate_percentage` (basé sur SAV actifs) par la même logique : SAV clôturés dans la période / parmi eux ceux qui ont dépassé `max_processing_days`.
-- Garder un `activeSavCount` séparé si d'autres métriques l'utilisent (vérification rapide).
+## Fichiers modifiés
+- `src/components/sav/SAVPrint.tsx` (signature `print`, deps de `useImperativeHandle`).
+- `src/components/sav/SAVWizardDialog.tsx` (ref `persistedCaseRef`, `handlePrintConfirm`).
 
-### 4. Helper partagé (optionnel mais recommandé)
-Extraire dans `src/lib/lateRate.ts` deux helpers :
-```ts
-getClosureDate(sav): Date            // closure_history[last].closed_at ?? updated_at
-isClosedLate(sav, maxDays): boolean  // (closureDate - createdAt) > maxDays
-```
-Réutilisés par les 3 hooks pour garantir la cohérence.
-
-### 5. Mémoire projet
-Mettre à jour `mem://reports/late-rate-calculation-logic` : règle = attribution **mois de clôture** (et plus mois de création).
-
-## Hors scope
-- Aucune modification de DB, RLS, edge function ou autres widgets non liés au retard.
-- `useSAVDelay.ts` (badge "en retard" sur la liste SAV) reste inchangé : il s'applique aux SAV en cours, pas au taux statistique.
-- `check-sav-delays` (notifications temps réel) reste inchangé.
-
-## Vérification post-implémentation
-- Mois en cours : la valeur du widget "Taux de retard" doit correspondre à la barre du mois courant dans "Évolution du taux de retard" (au pourcentage près).
-- Tester en local + version publiée (mêmes données, même résultat).
+## Hors périmètre
+- Pas de modification de `PrintConfirmDialog`, de la persistance, des hooks SAV, ni de la logique d'impression côté HTML/PDF.
