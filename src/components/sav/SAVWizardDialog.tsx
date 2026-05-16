@@ -137,6 +137,7 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
   const collectInitials = shopSettings?.collect_technician_initials ?? false;
 
   const printButtonRef = useRef<SAVPrintButtonRef>(null);
+  const persistedCaseRef = useRef<any>(null);
   const { user } = useAuth();
   const { profile } = useProfile();
   const { createCase } = useSAVCases();
