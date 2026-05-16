@@ -422,7 +422,7 @@ export const SAVPrintButton = React.forwardRef<SAVPrintButtonRef, SAVPrintButton
   };
 
   return (
-    <Button variant={variant} size={size} onClick={handlePrint} className={className} disabled={printing}>
+    <Button variant={variant} size={size} onClick={() => handlePrint()} className={className} disabled={printing}>
       <Printer className="h-4 w-4 mr-2" />
       {printing ? "Préparation..." : "Imprimer"}
     </Button>
