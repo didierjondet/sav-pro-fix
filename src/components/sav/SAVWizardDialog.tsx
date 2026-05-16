@@ -365,6 +365,7 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
       }
 
       setCreatedSAVCase(enrichedCase);
+      persistedCaseRef.current = enrichedCase;
       return enrichedCase;
     } catch (error: any) {
       console.error('Error creating SAV case:', error);
