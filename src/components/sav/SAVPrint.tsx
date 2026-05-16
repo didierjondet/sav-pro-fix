@@ -31,16 +31,17 @@ export const SAVPrintButton = React.forwardRef<SAVPrintButtonRef, SAVPrintButton
 
   // Exposer la méthode print via useImperativeHandle
   useImperativeHandle(ref, () => ({
-    print: handlePrint
-  }), []);
+    print: (override?: typeof savCase) => handlePrint(override)
+  }), [savCase]);
 
   const generateTrackingUrl = () => {
     if (!savCase?.tracking_slug) return "";
     return generateShortTrackingUrl(savCase.tracking_slug);
   };
 
-  const handlePrint = async () => {
+  const handlePrint = async (override?: typeof savCase) => {
     if (printing) return;
+    const activeCase = override ?? savCase;
     setPrinting(true);
     try {
       // Récupérer les pièces
