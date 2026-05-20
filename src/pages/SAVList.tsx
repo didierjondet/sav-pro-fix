@@ -603,10 +603,29 @@ export default function SAVList() {
                   return (
                     <Card 
                       key={savCase.id} 
-                      className={`hover:shadow-md transition-all cursor-pointer ${borderClass}`}
+                      className={`relative hover:shadow-md transition-all cursor-pointer ${borderClass}`}
                       style={{ backgroundColor: `${typeInfo.color}15` }}
                       onClick={() => navigate(`/sav/${savCase.id}`)}
                     >
+                      {nextAppt && (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div
+                                className={`absolute -top-2 -right-2 z-10 h-14 w-14 rounded-full border-2 shadow-md flex flex-col items-center justify-center leading-none ${apptColorClass}`}
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <Calendar className="h-3 w-3 mb-0.5" />
+                                <span className="text-[10px] font-bold">{format(new Date(nextAppt.start_datetime), 'dd/MM', { locale: fr })}</span>
+                                <span className="text-[10px] font-semibold">{format(new Date(nextAppt.start_datetime), 'HH:mm', { locale: fr })}</span>
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              RDV · {apptConfirmed ? 'Confirmé' : 'En attente de confirmation'}
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      )}
                       <CardContent className="p-3">
                         <div className="flex items-center justify-between mb-1.5">
                           <div className="flex items-center gap-2 min-w-0 flex-1">
