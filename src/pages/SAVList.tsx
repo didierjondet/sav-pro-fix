@@ -50,8 +50,11 @@ import {
   MessageCircle,
   LayoutGrid,
   LayoutList,
-  RotateCcw
+  RotateCcw,
+  Calendar
 } from 'lucide-react';
+import { useSAVAppointments } from '@/hooks/useSAVAppointments';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 const STORAGE_KEY = 'fixway_sav_filters';
 
@@ -178,6 +181,7 @@ export default function SAVList() {
   // Hook pour récupérer les visites des SAV
   const savCaseIds = useMemo(() => cases?.map(c => c.id) || [], [cases]);
   const { getVisitCount, loading: visitsLoading, refetch: refetchVisits } = useSAVVisits(savCaseIds);
+  const { appointmentsByCase } = useSAVAppointments(savCaseIds);
 
   // Mise à jour en temps réel des statuts SAV et des visites
   useEffect(() => {
@@ -586,6 +590,11 @@ export default function SAVList() {
                 if (viewMode === 'compact') {
                   const statusInfo = getStatusInfo(savCase.status);
                   const typeInfo = getTypeInfo(savCase.sav_type);
+                  const nextAppt = appointmentsByCase.get(savCase.id);
+                  const apptConfirmed = nextAppt?.status === 'confirmed';
+                  const apptColorClass = apptConfirmed
+                    ? 'bg-green-100 text-green-700 border-green-200'
+                    : 'bg-amber-100 text-amber-700 border-amber-200';
                   return (
                     <Card 
                       key={savCase.id} 
@@ -624,6 +633,16 @@ export default function SAVList() {
                           </span>
                         </div>
 
+                        {nextAppt && (
+                          <div className="mb-1.5">
+                            <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${apptColorClass}`}>
+                              <Calendar className="h-3 w-3 mr-1" />
+                              RDV {format(new Date(nextAppt.start_datetime), 'dd/MM HH:mm', { locale: fr })}
+                            </Badge>
+                          </div>
+                        )}
+
+
                         <div className="flex items-center justify-between text-xs">
                           <Badge 
                             variant="outline" 
@@ -655,6 +674,14 @@ export default function SAVList() {
 
                 // Standard view
                 const typeInfo = getTypeInfo(savCase.sav_type);
+                const nextAppt = appointmentsByCase.get(savCase.id);
+                const apptConfirmed = nextAppt?.status === 'confirmed';
+                const apptColorClass = apptConfirmed
+                  ? 'bg-green-100 text-green-700 border-green-200'
+                  : 'bg-amber-100 text-amber-700 border-amber-200';
+                const apptTypeLabels: Record<string, string> = {
+                  deposit: 'Dépôt', pickup: 'Récupération', diagnostic: 'Diagnostic', repair: 'Réparation'
+                };
                 
                 return (
                 <Card key={savCase.id} className={`hover:shadow-md transition-shadow ${borderClass}`} style={{ backgroundColor: `${typeInfo.color}15` }}>
@@ -743,7 +770,23 @@ export default function SAVList() {
                             SKU: {savCase.sku}
                           </Badge>
                         )}
+                        {nextAppt && (
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Badge variant="outline" className={`text-xs ${apptColorClass}`}>
+                                  <Calendar className="h-3 w-3 mr-1" />
+                                  RDV {format(new Date(nextAppt.start_datetime), "EEE d MMM HH'h'mm", { locale: fr })}
+                                </Badge>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                {apptTypeLabels[nextAppt.appointment_type] || nextAppt.appointment_type} · {nextAppt.duration_minutes} min · {apptConfirmed ? 'Confirmé' : 'En attente de confirmation'}
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        )}
                       </div>
+
 
                       {/* Ligne 4 : Description */}
                       {savCase.problem_description && (
