@@ -50,8 +50,11 @@ import {
   MessageCircle,
   LayoutGrid,
   LayoutList,
-  RotateCcw
+  RotateCcw,
+  Calendar
 } from 'lucide-react';
+import { useSAVAppointments } from '@/hooks/useSAVAppointments';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 const STORAGE_KEY = 'fixway_sav_filters';
 
