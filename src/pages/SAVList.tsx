@@ -181,6 +181,7 @@ export default function SAVList() {
   // Hook pour récupérer les visites des SAV
   const savCaseIds = useMemo(() => cases?.map(c => c.id) || [], [cases]);
   const { getVisitCount, loading: visitsLoading, refetch: refetchVisits } = useSAVVisits(savCaseIds);
+  const { appointmentsByCase } = useSAVAppointments(savCaseIds);
 
   // Mise à jour en temps réel des statuts SAV et des visites
   useEffect(() => {
