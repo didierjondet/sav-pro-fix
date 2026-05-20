@@ -488,6 +488,20 @@ export function AppointmentDialog({ open, onClose, appointment, defaultDate, sav
             </div>
           )}
 
+          {/* Attach SAV (when none linked yet) */}
+          {appointment && !appointment.sav_case_id && ['proposed', 'confirmed', 'counter_proposed'].includes(appointment.status) && (
+            <div className="p-3 border border-dashed rounded-lg space-y-2">
+              <p className="text-sm text-muted-foreground">
+                Aucun dossier SAV rattaché à ce rendez-vous.
+              </p>
+              <AttachSAVToAppointmentPopover
+                appointmentId={appointment.id}
+                customerId={appointment.customer_id}
+                onAttached={onClose}
+              />
+            </div>
+          )}
+
           {/* SAV Details section */}
           {appointment?.sav_case && (
             <div className="p-3 border rounded-lg space-y-3">
@@ -525,19 +539,34 @@ export function AppointmentDialog({ open, onClose, appointment, defaultDate, sav
                 </div>
               )}
 
-              {/* Link to SAV */}
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full"
-                onClick={() => {
-                  onClose();
-                  navigate(`/sav/${appointment.sav_case!.id}`);
-                }}
-              >
-                <ExternalLink className="h-4 w-4 mr-2" />
-                Ouvrir le dossier SAV
-              </Button>
+              <div className="flex gap-2">
+                {/* Link to SAV */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-1"
+                  onClick={() => {
+                    onClose();
+                    navigate(`/sav/${appointment.sav_case!.id}`);
+                  }}
+                >
+                  <ExternalLink className="h-4 w-4 mr-2" />
+                  Ouvrir le dossier SAV
+                </Button>
+                {/* Detach SAV */}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={async () => {
+                    await updateAppointment({ id: appointment.id, data: { sav_case_id: null } });
+                    onClose();
+                  }}
+                  title="Détacher ce dossier SAV du rendez-vous"
+                >
+                  <X className="h-4 w-4 mr-1" />
+                  Détacher
+                </Button>
+              </div>
             </div>
           )}
         </div>
