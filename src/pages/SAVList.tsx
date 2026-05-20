@@ -805,21 +805,6 @@ export default function SAVList() {
                             SKU: {savCase.sku}
                           </Badge>
                         )}
-                        {nextAppt && (
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Badge variant="outline" className={`text-xs ${apptColorClass}`}>
-                                  <Calendar className="h-3 w-3 mr-1" />
-                                  RDV {format(new Date(nextAppt.start_datetime), "EEE d MMM HH'h'mm", { locale: fr })}
-                                </Badge>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                {apptTypeLabels[nextAppt.appointment_type] || nextAppt.appointment_type} · {nextAppt.duration_minutes} min · {apptConfirmed ? 'Confirmé' : 'En attente de confirmation'}
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        )}
                       </div>
 
 
