@@ -69,6 +69,7 @@ export interface UpdateAppointmentData {
   technician_id?: string;
   counter_proposal_datetime?: string;
   counter_proposal_message?: string;
+  sav_case_id?: string | null;
 }
 
 type ViewType = 'day' | 'week' | 'month';
@@ -164,6 +165,7 @@ export function useAppointments(viewType: ViewType = 'week', date: Date = new Da
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['appointments'] });
+      queryClient.invalidateQueries({ queryKey: ['sav-next-appointments'] });
       toast({
         title: 'Rendez-vous modifié',
         description: 'Les modifications ont été enregistrées',
