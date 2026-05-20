@@ -703,7 +703,23 @@ export default function SAVList() {
                 };
                 
                 return (
-                <Card key={savCase.id} className={`hover:shadow-md transition-shadow ${borderClass}`} style={{ backgroundColor: `${typeInfo.color}15` }}>
+                <Card key={savCase.id} className={`relative hover:shadow-md transition-shadow ${borderClass}`} style={{ backgroundColor: `${typeInfo.color}15` }}>
+                  {nextAppt && (
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div className={`absolute -top-3 -right-3 z-10 h-16 w-16 rounded-full border-2 shadow-lg flex flex-col items-center justify-center leading-none ${apptColorClass}`}>
+                            <Calendar className="h-3.5 w-3.5 mb-0.5" />
+                            <span className="text-[11px] font-bold">{format(new Date(nextAppt.start_datetime), 'dd/MM', { locale: fr })}</span>
+                            <span className="text-[11px] font-semibold">{format(new Date(nextAppt.start_datetime), 'HH:mm', { locale: fr })}</span>
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          {apptTypeLabels[nextAppt.appointment_type] || nextAppt.appointment_type} · {nextAppt.duration_minutes} min · {apptConfirmed ? 'Confirmé' : 'En attente de confirmation'}
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  )}
                   <CardContent className="p-4 md:p-5">
                     <div className="flex flex-col gap-3">
                       {/* Ligne 1 : Identité (gauche) + Statut (droite) */}
