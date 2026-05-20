@@ -1,41 +1,45 @@
-# Correction : impression vierge depuis le popup "Validation du dossier SAV" (mode simplifié)
+# Indicateur RDV sur les cartes SAV
 
-## Symptôme
-Dans le wizard simplifié (`SAVWizardDialog`), au dernier popup `PrintConfirmDialog`, cliquer sur **Imprimer** sort une feuille vide. En revanche, si on clique sur **Valider** puis qu'on imprime depuis la fiche SAV, le document est correct. Le problème est surtout visible sur les SAV **internes** (et potentiellement présent sur tout type sans client), beaucoup moins visible sur **externe/client** car ces fiches affichent au moins les infos client du brouillon.
+Ajouter sur les cartes de la liste SAV un badge visible lorsqu'un rendez-vous est programmé pour le dossier (vue standard et vue compacte).
 
-## Cause racine
-Dans `SAVWizardDialog.tsx` :
+## Comportement
 
-1. Avant la persistance, on injecte un **brouillon** dans l'état : `setCreatedSAVCase(draftCase)` (sans `id`, sans `case_number`, sans `tracking_slug`, et sans `customer` pour les types qui ne demandent pas d'info client → cas SAV interne).
-2. `<SAVPrintButton savCase={createdSAVCase} ref={printButtonRef} />` est monté avec ce brouillon.
-3. À l'appui sur **Imprimer**, `PrintConfirmDialog` exécute d'abord `onPersistBeforeAction` (= `persistSAV`) puis appelle immédiatement `onConfirm` (= `handlePrintConfirm` → `printButtonRef.current.print()`).
-4. Bien que `persistSAV` fasse `setCreatedSAVCase(enrichedCase)`, React n'a pas eu le temps de re-rendre `SAVPrintButton` avec le nouveau `savCase`. De plus, dans `SAVPrint.tsx`, `useImperativeHandle(ref, () => ({ print: handlePrint }), [])` est figé sur la **closure initiale** (deps vides), donc même après le re-render, l'appel `print()` exécute toujours l'ancien `handlePrint` qui voit le **brouillon**.
-5. `handlePrint` requête `sav_parts` avec `savCase.id` = `undefined` → 0 ligne ; et rend le HTML avec un `case_number` vide, sans client (interne) → **feuille vierge**.
+- Pour chaque SAV affiché, on cherche le **prochain RDV actif** :
+  - `appointments.sav_case_id = savCase.id`
+  - `status` ∈ (`proposed`, `confirmed`, `counter_proposed`) — on exclut `cancelled`, `completed`, `no_show`
+  - `start_datetime >= now()`
+  - on garde le plus proche dans le temps.
+- Si un RDV existe → afficher un badge sur la carte.
 
-L'externe « semble » fonctionner uniquement parce que le brouillon contient au moins les coordonnées client saisies, mais en réalité il manque aussi case_number, tracking, pièces, totaux : le bug est universel, juste plus discret.
+## Affichage du badge
 
-## Correctif (ciblé, sans casser le reste)
+Vue standard (ligne Métadonnées, à côté des badges existants) :
+- Icône `Calendar` + libellé court : `RDV jeu. 21 mai 14h30`
+- Couleur dépendant du statut :
+  - `confirmed` → vert (bg-green-100 text-green-700 border-green-200)
+  - `proposed` / `counter_proposed` → ambre (bg-amber-100 text-amber-700 border-amber-200)
+- Tooltip : type de RDV (Dépôt / Récupération / Diagnostic / Réparation) + durée.
 
-Deux ajustements minimaux et complémentaires :
+Vue compacte (sous la ligne appareil) :
+- Petit badge compact `text-[10px]` même couleur, format `RDV 21/05 14h30`.
 
-### 1. `src/components/sav/SAVPrint.tsx`
-- Permettre à la méthode exposée d'accepter un `savCase` en paramètre, et corriger les deps de `useImperativeHandle` pour qu'elle suive le prop courant.
-- Signature : `print: (override?: SAVCase) => void` ; en interne, `handlePrint` utilise `override ?? savCase`.
-- Deps : `[savCase]` (au lieu de `[]`).
+## Détails techniques
 
-### 2. `src/components/sav/SAVWizardDialog.tsx`
-- Conserver le retour de `persistSAV` (déjà fait) et le passer directement à l'impression.
-- `handlePrintConfirm` devient : reçoit le `enrichedCase` via une `ref` (`persistedCaseRef.current`) renseignée à la fin de `persistSAV`, et appelle `printButtonRef.current?.print(persistedCaseRef.current ?? createdSAVCase)`.
-- Aucun changement de logique métier (persistance, parts, commandes), uniquement le câblage d'impression.
+1. Nouveau hook `src/hooks/useSAVAppointments.ts`
+   - Input : `savCaseIds: string[]`
+   - Query Supabase unique : `from('appointments').select('id, sav_case_id, start_datetime, duration_minutes, appointment_type, status').in('sav_case_id', ids).in('status', ['proposed','confirmed','counter_proposed']).gte('start_datetime', nowIso).order('start_datetime', { ascending: true })`
+   - Réduction côté client en `Map<sav_case_id, nextAppointment>` (premier rencontré = le plus proche).
+   - `enabled: ids.length > 0`, `staleTime: 60_000`.
 
-### Effets de bord vérifiés
-- `SAVForm.tsx` utilise aussi `SAVPrintButton` mais via le clic direct sur le bouton (pas via `ref.print()`) → comportement inchangé.
-- `SAVDetail`/réimpression : utilise le bouton standard → inchangé.
-- Le paramètre `override` est optionnel : tous les appelants existants restent compatibles.
+2. `src/pages/SAVList.tsx`
+   - Importer le hook + `Calendar` (déjà dispo dans lucide-react).
+   - `const { appointmentsByCase } = useSAVAppointments(savCaseIds);` (réutilise le `savCaseIds` déjà calculé ligne 179).
+   - Dans le rendu compact : insérer le badge entre la ligne appareil et la ligne badge type, uniquement si présent.
+   - Dans le rendu standard : insérer le badge dans le bloc "Ligne 3 : Métadonnées" après les autres badges, uniquement si présent.
+   - Pas de modification de logique métier, juste de la présentation.
 
-## Fichiers modifiés
-- `src/components/sav/SAVPrint.tsx` (signature `print`, deps de `useImperativeHandle`).
-- `src/components/sav/SAVWizardDialog.tsx` (ref `persistedCaseRef`, `handlePrintConfirm`).
+## Hors scope
 
-## Hors périmètre
-- Pas de modification de `PrintConfirmDialog`, de la persistance, des hooks SAV, ni de la logique d'impression côté HTML/PDF.
+- Pas de changement sur la page agenda, ni sur `AppointmentDisplay` du suivi public.
+- Pas de modification des hooks existants `useAppointments` / `usePendingAppointments`.
+- Pas de clic / navigation depuis le badge (peut être ajouté ultérieurement si demandé).
