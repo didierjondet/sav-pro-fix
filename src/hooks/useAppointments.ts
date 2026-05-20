@@ -69,6 +69,7 @@ export interface UpdateAppointmentData {
   technician_id?: string;
   counter_proposal_datetime?: string;
   counter_proposal_message?: string;
+  sav_case_id?: string | null;
 }
 
 type ViewType = 'day' | 'week' | 'month';
