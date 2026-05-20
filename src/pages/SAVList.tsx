@@ -180,8 +180,12 @@ export default function SAVList() {
 
   // Hook pour récupérer les visites des SAV
   const savCaseIds = useMemo(() => cases?.map(c => c.id) || [], [cases]);
+  const customerIds = useMemo(
+    () => Array.from(new Set((cases || []).map(c => c.customer_id).filter(Boolean) as string[])),
+    [cases]
+  );
   const { getVisitCount, loading: visitsLoading, refetch: refetchVisits } = useSAVVisits(savCaseIds);
-  const { appointmentsByCase } = useSAVAppointments(savCaseIds);
+  const { appointmentsByCase, appointmentsByCustomer } = useSAVAppointments(savCaseIds, customerIds);
 
   // Mise à jour en temps réel des statuts SAV et des visites
   useEffect(() => {
@@ -590,7 +594,8 @@ export default function SAVList() {
                 if (viewMode === 'compact') {
                   const statusInfo = getStatusInfo(savCase.status);
                   const typeInfo = getTypeInfo(savCase.sav_type);
-                  const nextAppt = appointmentsByCase.get(savCase.id);
+                  const nextAppt = appointmentsByCase.get(savCase.id)
+                    || (savCase.customer_id ? appointmentsByCustomer.get(savCase.customer_id) : undefined);
                   const apptConfirmed = nextAppt?.status === 'confirmed';
                   const apptColorClass = apptConfirmed
                     ? 'bg-green-100 text-green-700 border-green-200'
@@ -674,7 +679,8 @@ export default function SAVList() {
 
                 // Standard view
                 const typeInfo = getTypeInfo(savCase.sav_type);
-                const nextAppt = appointmentsByCase.get(savCase.id);
+                const nextAppt = appointmentsByCase.get(savCase.id)
+                  || (savCase.customer_id ? appointmentsByCustomer.get(savCase.customer_id) : undefined);
                 const apptConfirmed = nextAppt?.status === 'confirmed';
                 const apptColorClass = apptConfirmed
                   ? 'bg-green-100 text-green-700 border-green-200'
