@@ -590,6 +590,11 @@ export default function SAVList() {
                 if (viewMode === 'compact') {
                   const statusInfo = getStatusInfo(savCase.status);
                   const typeInfo = getTypeInfo(savCase.sav_type);
+                  const nextAppt = appointmentsByCase.get(savCase.id);
+                  const apptConfirmed = nextAppt?.status === 'confirmed';
+                  const apptColorClass = apptConfirmed
+                    ? 'bg-green-100 text-green-700 border-green-200'
+                    : 'bg-amber-100 text-amber-700 border-amber-200';
                   return (
                     <Card 
                       key={savCase.id} 
