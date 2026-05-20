@@ -28,7 +28,7 @@ export function useSAVAppointments(savCaseIds: string[], customerIds: string[] =
         .from('appointments')
         .select('id, sav_case_id, customer_id, start_datetime, duration_minutes, appointment_type, status')
         .in('sav_case_id', savCaseIds)
-        .in('status', ACTIVE_STATUSES as unknown as string[])
+        .in('status', ACTIVE_STATUSES)
         .gte('start_datetime', nowIso)
         .order('start_datetime', { ascending: true });
       if (error) throw error;
@@ -49,7 +49,7 @@ export function useSAVAppointments(savCaseIds: string[], customerIds: string[] =
         .select('id, sav_case_id, customer_id, start_datetime, duration_minutes, appointment_type, status')
         .in('customer_id', customerIds)
         .is('sav_case_id', null)
-        .in('status', ACTIVE_STATUSES as unknown as string[])
+        .in('status', ACTIVE_STATUSES)
         .gte('start_datetime', nowIso)
         .order('start_datetime', { ascending: true });
       if (error) throw error;
