@@ -12,7 +12,7 @@ export interface SAVNextAppointment {
   status: string;
 }
 
-const ACTIVE_STATUSES = ['proposed', 'confirmed', 'counter_proposed'] as Array<'proposed' | 'confirmed' | 'counter_proposed'>;
+const ACTIVE_STATUSES = ['proposed', 'confirmed', 'counter_proposed'] as const;
 
 export function useSAVAppointments(savCaseIds: string[], customerIds: string[] = []) {
   const savKey = useMemo(() => [...savCaseIds].sort().join(','), [savCaseIds]);
