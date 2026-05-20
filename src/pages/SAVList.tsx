@@ -657,14 +657,8 @@ export default function SAVList() {
                           </span>
                         </div>
 
-                        {nextAppt && (
-                          <div className="mb-1.5">
-                            <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${apptColorClass}`}>
-                              <Calendar className="h-3 w-3 mr-1" />
-                              RDV {format(new Date(nextAppt.start_datetime), 'dd/MM HH:mm', { locale: fr })}
-                            </Badge>
-                          </div>
-                        )}
+
+
 
 
                         <div className="flex items-center justify-between text-xs">
