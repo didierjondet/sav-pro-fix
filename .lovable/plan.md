@@ -1,50 +1,39 @@
-# Badge rond RDV visible sur les cartes SAV
+# Attribuer un dossier SAV à un rendez-vous confirmé
 
-Objectif : rendre immédiatement visible un rendez-vous programmé sur chaque carte SAV concernée, sans modifier la logique agenda ni le contenu des dossiers.
+Objectif : depuis la fiche d'un rendez-vous confirmé, pouvoir rattacher un dossier SAV existant (utile quand le RDV a été pris avant la création du SAV).
 
-## Constat
+## Comportement
 
-- Le badge actuel existe dans le code, mais il est trop discret : il est placé dans les métadonnées ou entre deux lignes compactes.
-- La récupération RDV doit rester robuste pour les rendez-vous liés directement au SAV (`sav_case_id`) ou seulement au client (`customer_id`).
-- Le cas actuellement présent en base montre un RDV futur confirmé relié au client, avec `sav_case_id` vide : le badge doit donc pouvoir s’afficher via le client.
+- Dans la fenêtre « Modifier le rendez-vous » (ouverte depuis l'agenda), si le RDV est `confirmed` (ou `proposed` / `counter_proposed`) **et** qu'aucun `sav_case_id` n'est encore relié :
+  - Afficher un bouton « Attribuer un dossier SAV ».
+  - Ce bouton ouvre un sélecteur (popover/command) listant les SAV à choisir :
+    - Si le RDV a déjà un client : on propose en priorité les SAV actifs de ce client (statut différent de `ready`, `cancelled`).
+    - Sinon : champ de recherche libre par numéro de dossier, nom client, marque/modèle.
+  - Validation → mise à jour de `appointments.sav_case_id` pour le RDV courant.
+- Une fois rattaché, la section « Dossier SAV » déjà existante s'affiche normalement (appareil, pièces, bouton « Ouvrir le dossier SAV »).
+- Possibilité de **détacher** le SAV (petit bouton « Détacher ») si on s'est trompé : remet `sav_case_id` à null.
 
-## Changement prévu
+## Détails techniques
 
-### 1. Fiabiliser la sélection du prochain RDV
+1. `src/hooks/useAppointments.ts`
+   - Ajouter `sav_case_id?: string | null` dans `UpdateAppointmentData` pour autoriser l'assignation et le détachement.
 
-- Garder la recherche des rendez-vous actifs futurs : `proposed`, `confirmed`, `counter_proposed`.
-- Conserver la priorité : RDV lié au dossier SAV en premier, puis RDV lié au client si aucun RDV direct n’existe.
-- S’assurer que la correspondance par client remonte bien le prochain rendez-vous.
+2. Nouveau composant `src/components/agenda/AttachSAVToAppointmentPopover.tsx`
+   - Props : `appointmentId`, `customerId?`, `onAttached()`.
+   - Charge :
+     - Si `customerId` : SAV actifs du client (statut hors `ready`, `cancelled`), triés par date décroissante.
+     - Sinon : recherche débouncée dans `sav_cases` (limit 20) filtrée sur le shop courant.
+   - Sur sélection → `updateAppointment({ id, data: { sav_case_id } })` puis `onAttached()`.
 
-### 2. Remplacer l’ancien badge discret par un badge rond visible
-
-Sur les cartes SAV, ajouter un badge rond/compact très visible, positionné sur la carte :
-
-```text
-┌───────────────────────────────┐
-│ Client / SAV            ┌────┐ │
-│ Appareil                │23/05│ │
-│ Métadonnées             │10:00│ │
-│                         └────┘ │
-└───────────────────────────────┘
-```
-
-- Format principal : jour/mois + heure, par exemple `23/05` et `10:00`.
-- Icône calendrier discrète en haut du badge.
-- Couleur selon statut :
-  - confirmé : ton vert
-  - proposé / contre-proposé : ton ambre
-- Badge présent en vue standard et en vue compacte.
-- Ne pas modifier les autres badges, boutons, filtres ou actions des cartes.
-
-### 3. Garder l’information détaillée sans encombrer
-
-- Tooltip au survol du badge rond : type de RDV, durée, statut.
-- Aucun clic ou navigation ajouté.
+3. `src/components/agenda/AppointmentDialog.tsx`
+   - Quand `appointment` existe, statut ∈ {`proposed`, `confirmed`, `counter_proposed`} et `appointment.sav_case_id == null` :
+     - Afficher le bouton + popover de rattachement.
+   - Dans la section « Dossier SAV » existante : ajouter un petit bouton « Détacher » qui appelle `updateAppointment({ id, data: { sav_case_id: null } })`.
+   - Invalider le cache des appointments + des badges SAV (`sav-next-appointments`) après changement.
 
 ## Hors scope
 
-- Pas de changement sur la page Agenda.
-- Pas de changement sur la création/modification des rendez-vous.
-- Pas de migration base de données.
-- Pas de refonte des cartes SAV au-delà du badge RDV.
+- Pas de création de SAV depuis le RDV (un bouton dédié pourra être ajouté ultérieurement).
+- Pas de modification de la création de RDV ni du flux public client.
+- Pas de migration base : la colonne `sav_case_id` existe déjà et est nullable.
+- Pas de changement du badge rond RDV sur les cartes SAV (il bénéficiera automatiquement du rattachement).
