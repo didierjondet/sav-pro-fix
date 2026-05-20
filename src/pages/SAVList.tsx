@@ -180,8 +180,12 @@ export default function SAVList() {
 
   // Hook pour récupérer les visites des SAV
   const savCaseIds = useMemo(() => cases?.map(c => c.id) || [], [cases]);
+  const customerIds = useMemo(
+    () => Array.from(new Set((cases || []).map(c => c.customer?.id).filter(Boolean) as string[])),
+    [cases]
+  );
   const { getVisitCount, loading: visitsLoading, refetch: refetchVisits } = useSAVVisits(savCaseIds);
-  const { appointmentsByCase } = useSAVAppointments(savCaseIds);
+  const { appointmentsByCase, appointmentsByCustomer } = useSAVAppointments(savCaseIds, customerIds);
 
   // Mise à jour en temps réel des statuts SAV et des visites
   useEffect(() => {
