@@ -679,7 +679,8 @@ export default function SAVList() {
 
                 // Standard view
                 const typeInfo = getTypeInfo(savCase.sav_type);
-                const nextAppt = appointmentsByCase.get(savCase.id);
+                const nextAppt = appointmentsByCase.get(savCase.id)
+                  || (savCase.customer_id ? appointmentsByCustomer.get(savCase.customer_id) : undefined);
                 const apptConfirmed = nextAppt?.status === 'confirmed';
                 const apptColorClass = apptConfirmed
                   ? 'bg-green-100 text-green-700 border-green-200'
