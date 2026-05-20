@@ -1,39 +1,30 @@
-# Attribuer un dossier SAV à un rendez-vous confirmé
+# Corriger le macaron RDV sur les cartes SAV
 
-Objectif : depuis la fiche d'un rendez-vous confirmé, pouvoir rattacher un dossier SAV existant (utile quand le RDV a été pris avant la création du SAV).
+Objectif : afficher de façon fiable le macaron rond sur une carte SAV dès qu'un rendez-vous actif est rattaché à ce SAV.
 
-## Comportement
+## Cause probable
 
-- Dans la fenêtre « Modifier le rendez-vous » (ouverte depuis l'agenda), si le RDV est `confirmed` (ou `proposed` / `counter_proposed`) **et** qu'aucun `sav_case_id` n'est encore relié :
-  - Afficher un bouton « Attribuer un dossier SAV ».
-  - Ce bouton ouvre un sélecteur (popover/command) listant les SAV à choisir :
-    - Si le RDV a déjà un client : on propose en priorité les SAV actifs de ce client (statut différent de `ready`, `cancelled`).
-    - Sinon : champ de recherche libre par numéro de dossier, nom client, marque/modèle.
-  - Validation → mise à jour de `appointments.sav_case_id` pour le RDV courant.
-- Une fois rattaché, la section « Dossier SAV » déjà existante s'affiche normalement (appareil, pièces, bouton « Ouvrir le dossier SAV »).
-- Possibilité de **détacher** le SAV (petit bouton « Détacher ») si on s'est trompé : remet `sav_case_id` à null.
+Le rattachement RDV → SAV est bien enregistré via `appointments.sav_case_id`, mais le hook qui alimente les macarons (`useSAVAppointments`) filtre actuellement aussi par `customer_id` avec une requête `.or(...)`. Ce mélange peut empêcher la récupération fiable des rendez-vous rattachés, surtout après assignation ou selon les cas de données.
 
-## Détails techniques
+## Correctif prévu
 
-1. `src/hooks/useAppointments.ts`
-   - Ajouter `sav_case_id?: string | null` dans `UpdateAppointmentData` pour autoriser l'assignation et le détachement.
+1. `src/hooks/useSAVAppointments.ts`
+   - Séparer la récupération en deux requêtes simples :
+     - une requête par `sav_case_id` pour les RDV réellement rattachés au dossier SAV ;
+     - une requête par `customer_id` uniquement pour l'ancien fallback client non rattaché.
+   - Garder uniquement les RDV actifs/futurs (`proposed`, `confirmed`, `counter_proposed`).
+   - Construire `appointmentsByCase` en priorité depuis `sav_case_id`, pour que le badge apparaisse dès qu'un RDV confirmé est rattaché au SAV.
 
-2. Nouveau composant `src/components/agenda/AttachSAVToAppointmentPopover.tsx`
-   - Props : `appointmentId`, `customerId?`, `onAttached()`.
-   - Charge :
-     - Si `customerId` : SAV actifs du client (statut hors `ready`, `cancelled`), triés par date décroissante.
-     - Sinon : recherche débouncée dans `sav_cases` (limit 20) filtrée sur le shop courant.
-   - Sur sélection → `updateAppointment({ id, data: { sav_case_id } })` puis `onAttached()`.
+2. `src/pages/SAVList.tsx`
+   - Garder le rendu actuel du macaron rond, sans changer la carte ni les autres éléments validés.
+   - Ne modifier que si nécessaire l'ordre de priorité : RDV rattaché au SAV d'abord, fallback client ensuite.
 
-3. `src/components/agenda/AppointmentDialog.tsx`
-   - Quand `appointment` existe, statut ∈ {`proposed`, `confirmed`, `counter_proposed`} et `appointment.sav_case_id == null` :
-     - Afficher le bouton + popover de rattachement.
-   - Dans la section « Dossier SAV » existante : ajouter un petit bouton « Détacher » qui appelle `updateAppointment({ id, data: { sav_case_id: null } })`.
-   - Invalider le cache des appointments + des badges SAV (`sav-next-appointments`) après changement.
+3. Validation
+   - Vérifier que la requête des rendez-vous ne génère plus d'erreur et que le badge peut se baser sur `sav_case_id` après rattachement.
 
 ## Hors scope
 
-- Pas de création de SAV depuis le RDV (un bouton dédié pourra être ajouté ultérieurement).
-- Pas de modification de la création de RDV ni du flux public client.
-- Pas de migration base : la colonne `sav_case_id` existe déjà et est nullable.
-- Pas de changement du badge rond RDV sur les cartes SAV (il bénéficiera automatiquement du rattachement).
+- Pas de refonte de la carte SAV.
+- Pas de changement visuel du macaron déjà créé.
+- Pas de modification de la création/confirmation des rendez-vous.
+- Pas de migration base de données.
