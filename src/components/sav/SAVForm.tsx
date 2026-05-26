@@ -664,6 +664,13 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
               />
             </div>
           </div>
+          <ProductHistoryBanner
+            shopId={profile?.shop_id}
+            imei={deviceInfo.imei}
+            sku={deviceInfo.sku}
+            brand={deviceInfo.brand}
+            model={deviceInfo.model}
+          />
 
           {/* Couleur du produit */}
           <div>
