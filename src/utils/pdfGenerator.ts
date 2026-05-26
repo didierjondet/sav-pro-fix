@@ -416,62 +416,62 @@ export const generateSAVRestitutionPDF = async (savCase: SAVCase, shop?: Shop, o
           body {
             font-family: Arial, sans-serif;
             margin: 0;
-            padding: 10px 15px;
+            padding: 6px 10px;
             color: #333;
-            line-height: 1.2;
-            font-size: 11px;
+            line-height: 1.15;
+            font-size: 10px;
           }
           .shop-header {
             text-align: left;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
             border-bottom: 1px solid #0066cc;
-            padding-bottom: 5px;
+            padding-bottom: 3px;
           }
           .shop-logo {
-            max-height: 40px;
-            max-width: 120px;
+            max-height: 32px;
+            max-width: 100px;
             object-fit: contain;
-            margin-bottom: 5px;
+            margin-bottom: 3px;
           }
           .shop-name {
-            font-size: 18px;
+            font-size: 15px;
             font-weight: bold;
             color: #0066cc;
             margin: 0;
           }
           .shop-contact {
-            font-size: 10px;
+            font-size: 9px;
             color: #666;
-            margin-top: 3px;
+            margin-top: 2px;
           }
           .document-header {
             text-align: center;
-            margin-bottom: 15px;
+            margin-bottom: 6px;
           }
           .document-title {
-            font-size: 20px;
+            font-size: 14px;
             font-weight: bold;
             color: #0066cc;
-            margin-bottom: 5px;
+            margin-bottom: 2px;
           }
           .case-info {
             background-color: #f8f9fa;
-            padding: 10px;
-            border-radius: 4px;
-            margin-bottom: 15px;
+            padding: 6px 8px;
+            border-radius: 3px;
+            margin-bottom: 6px;
             border-left: 3px solid #0066cc;
           }
           .case-info h3 {
             margin-top: 0;
-            margin-bottom: 8px;
+            margin-bottom: 4px;
             color: #0066cc;
-            font-size: 14px;
+            font-size: 11px;
           }
           .info-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 8px;
-            margin-bottom: 10px;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 4px;
+            margin-bottom: 4px;
           }
           .info-item {
             display: flex;
@@ -480,42 +480,42 @@ export const generateSAVRestitutionPDF = async (savCase: SAVCase, shop?: Shop, o
           .info-label {
             font-weight: bold;
             color: #333;
-            font-size: 10px;
+            font-size: 9px;
             text-transform: uppercase;
-            margin-bottom: 1px;
+            margin-bottom: 0;
           }
           .info-value {
-            font-size: 11px;
+            font-size: 10px;
             color: #666;
           }
           .parts-section {
-            margin-bottom: 15px;
+            margin-bottom: 6px;
           }
           .section-title {
-            font-size: 14px;
+            font-size: 11px;
             font-weight: bold;
             color: #0066cc;
-            margin-bottom: 8px;
-            padding-bottom: 3px;
+            margin-bottom: 4px;
+            padding-bottom: 2px;
             border-bottom: 1px solid #ddd;
           }
           .parts-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 10px;
-            font-size: 10px;
+            margin-bottom: 5px;
+            font-size: 9px;
           }
           .parts-table th,
           .parts-table td {
             border: 1px solid #ddd;
-            padding: 6px;
+            padding: 3px 5px;
             text-align: left;
           }
           .parts-table th {
             background-color: #0066cc;
             color: white;
             font-weight: bold;
-            font-size: 10px;
+            font-size: 9px;
           }
           .parts-table .text-center {
             text-align: center;
@@ -525,52 +525,52 @@ export const generateSAVRestitutionPDF = async (savCase: SAVCase, shop?: Shop, o
           }
           .total-section {
             background-color: #f8f9fa;
-            padding: 10px;
-            border-radius: 4px;
+            padding: 6px 8px;
+            border-radius: 3px;
             border: 1px solid #0066cc;
-            margin-bottom: 15px;
+            margin-bottom: 6px;
           }
           .total-row {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 5px;
-            font-size: 11px;
+            margin-bottom: 2px;
+            font-size: 10px;
           }
           .total-final {
-            font-size: 14px;
+            font-size: 12px;
             font-weight: bold;
             color: #0066cc;
             border-top: 1px solid #0066cc;
-            padding-top: 5px;
-            margin-top: 5px;
+            padding-top: 3px;
+            margin-top: 3px;
           }
           .takeover-info {
             background-color: #e8f5e8;
-            padding: 8px;
-            border-radius: 4px;
-            margin-bottom: 10px;
+            padding: 5px 8px;
+            border-radius: 3px;
+            margin-bottom: 5px;
             border-left: 3px solid #28a745;
-            font-size: 10px;
+            font-size: 9px;
           }
           .no-charge-info {
             background-color: #fff3cd;
-            padding: 8px;
-            border-radius: 4px;
-            margin-bottom: 10px;
+            padding: 5px 8px;
+            border-radius: 3px;
+            margin-bottom: 5px;
             border-left: 3px solid #ffc107;
             text-align: center;
-            font-size: 11px;
+            font-size: 10px;
           }
           .footer {
-            margin-top: 20px;
+            margin-top: 6px;
             text-align: center;
-            font-size: 9px;
+            font-size: 8px;
             color: #666;
             border-top: 1px solid #ddd;
-            padding-top: 10px;
+            padding-top: 4px;
           }
           .signature-section {
-            margin-top: 20px;
+            margin-top: 8px;
             display: flex;
             justify-content: space-between;
           }
@@ -580,24 +580,25 @@ export const generateSAVRestitutionPDF = async (savCase: SAVCase, shop?: Shop, o
           }
           .signature-line {
             border-bottom: 1px solid #333;
-            height: 40px;
-            margin-bottom: 5px;
+            height: 22px;
+            margin-bottom: 3px;
           }
           .signature-box p {
-            font-size: 9px;
+            font-size: 8px;
             margin: 0;
           }
           .discount-info {
             background-color: #fff3cd;
-            padding: 8px;
-            border-radius: 4px;
-            margin-bottom: 10px;
+            padding: 5px 8px;
+            border-radius: 3px;
+            margin-bottom: 5px;
             border-left: 3px solid #ffc107;
-            font-size: 10px;
+            font-size: 9px;
           }
           @media print {
-            body { margin: 0; padding: 10px; font-size: 11px; }
+            body { margin: 0; padding: 6px 10px; font-size: 10px; }
             .no-print { display: none; }
+            .photos-block { page-break-inside: avoid; }
           }
         </style>
       </head>
@@ -620,16 +621,16 @@ export const generateSAVRestitutionPDF = async (savCase: SAVCase, shop?: Shop, o
         </div>
         
         ${savCase.customer ? `
-        <div style="margin: 12px 0; padding: 14px 18px; background: linear-gradient(90deg, #eaf2ff 0%, #f8fbff 100%); border-left: 5px solid #0066cc; border-radius: 6px;">
-          <div style="font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: #555; margin-bottom: 4px;">Client</div>
-          <div style="font-size: 22px; font-weight: 800; color: #0a2540; line-height: 1.1;">${savCase.customer.first_name} ${savCase.customer.last_name}</div>
-          ${savCase.customer.phone ? `<div style="font-size: 12px; color: #0066cc; margin-top: 4px; font-weight: 600;">📞 ${savCase.customer.phone}</div>` : ''}
+        <div style="margin: 6px 0; padding: 6px 10px; background: linear-gradient(90deg, #eaf2ff 0%, #f8fbff 100%); border-left: 4px solid #0066cc; border-radius: 4px;">
+          <div style="font-size: 9px; text-transform: uppercase; letter-spacing: 1px; color: #555; margin-bottom: 2px;">Client</div>
+          <div style="font-size: 15px; font-weight: 800; color: #0a2540; line-height: 1.1;">${savCase.customer.first_name} ${savCase.customer.last_name}</div>
+          ${savCase.customer.phone ? `<div style="font-size: 10px; color: #0066cc; margin-top: 2px; font-weight: 600;">📞 ${savCase.customer.phone}</div>` : ''}
         </div>
         ` : ''}
         ${(savCase as any).taken_over_by ? `
-        <div style="margin: 8px 0; padding: 10px 14px; background: #fff7e6; border: 2px solid #f59e0b; border-radius: 6px; display: inline-block;">
-          <span style="font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: #92400e;">Pris en charge par</span>
-          <span style="font-size: 18px; font-weight: 800; color: #92400e; margin-left: 8px; letter-spacing: 2px;">${(savCase as any).taken_over_by}</span>
+        <div style="margin: 4px 0; padding: 4px 8px; background: #fff7e6; border: 2px solid #f59e0b; border-radius: 4px; display: inline-block;">
+          <span style="font-size: 9px; text-transform: uppercase; letter-spacing: 1px; color: #92400e;">Pris en charge par</span>
+          <span style="font-size: 13px; font-weight: 800; color: #92400e; margin-left: 6px; letter-spacing: 1px;">${(savCase as any).taken_over_by}</span>
         </div>
         ` : ''}
 
@@ -671,18 +672,18 @@ export const generateSAVRestitutionPDF = async (savCase: SAVCase, shop?: Shop, o
           <h3 class="section-title">Détail de l'intervention</h3>
           
           ${savCase.problem_description ? `
-            <div style="margin-bottom: 20px;">
+            <div style="margin-bottom: 6px;">
               <strong>Problème signalé :</strong>
-              <p style="margin: 5px 0; padding: 10px; background-color: #f8f9fa; border-radius: 4px;">
+              <p style="margin: 2px 0; padding: 4px 6px; background-color: #f8f9fa; border-radius: 3px; font-size: 10px;">
                 ${savCase.problem_description}
               </p>
             </div>
           ` : ''}
 
           ${savCase.repair_notes ? `
-            <div style="margin-bottom: 20px;">
+            <div style="margin-bottom: 6px;">
               <strong>Notes de réparation :</strong>
-              <p style="margin: 5px 0; padding: 10px; background-color: #f8f9fa; border-radius: 4px;">
+              <p style="margin: 2px 0; padding: 4px 6px; background-color: #f8f9fa; border-radius: 3px; font-size: 10px;">
                 ${savCase.repair_notes}
               </p>
             </div>
@@ -863,22 +864,27 @@ export const generateSAVRestitutionPDF = async (savCase: SAVCase, shop?: Shop, o
         </div>
 
         ${options?.includeAttachments && (savCase as any).attachments && Array.isArray((savCase as any).attachments) && ((savCase as any).attachments as any[]).length > 0 ? `
-          <div style="page-break-before: always; margin-top: 15px;">
-            <h4 style="color: #0066cc; border-bottom: 1px solid #0066cc; padding-bottom: 3px; margin: 8px 0 5px 0; font-size: 12px;">
+          <div class="photos-block" style="margin-top: 8px;">
+            <h4 style="color: #0066cc; border-bottom: 1px solid #0066cc; padding-bottom: 2px; margin: 6px 0 4px 0; font-size: 11px;">
               Documents et photos joints
             </h4>
-            <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+            <div style="display: flex; flex-wrap: wrap; gap: 6px;">
               ${((savCase as any).attachments as any[]).map((att: any) => {
                 const url = att.url || att;
-                const name = att.name || 'Document';
-                const isImage = typeof url === 'string' && (url.match(/\.(jpg|jpeg|png|gif|webp)/i) || url.includes('image'));
+                const name = att.name || att.file_name || 'Document';
+                const type = (att.type || att.mime_type || att.content_type || '').toString().toLowerCase();
+                const cleanUrl = typeof url === 'string' ? url.split('?')[0].toLowerCase() : '';
+                const isImage =
+                  type.startsWith('image/') ||
+                  /\.(jpg|jpeg|png|gif|webp|bmp|heic|heif)$/i.test(cleanUrl) ||
+                  (typeof url === 'string' && /(\/|%2F)(images?|photos?|attachments?)(\/|%2F)/i.test(url));
                 return isImage ? `
-                  <div style="text-align: center; margin-bottom: 8px;">
-                    <img src="${url}" style="max-width: 200px; max-height: 200px; border: 1px solid #ddd; border-radius: 4px;" />
-                    <p style="font-size: 9px; color: #666; margin-top: 2px;">${name}</p>
+                  <div style="text-align: center; margin-bottom: 4px;">
+                    <img src="${url}" crossorigin="anonymous" style="max-width: 150px; max-height: 150px; border: 1px solid #ddd; border-radius: 3px; display: block;" />
+                    <p style="font-size: 8px; color: #666; margin-top: 1px;">${name}</p>
                   </div>
                 ` : `
-                  <div style="padding: 6px 10px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 4px; font-size: 10px;">
+                  <div style="padding: 4px 8px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 3px; font-size: 9px;">
                     📎 ${name}
                   </div>
                 `;
@@ -911,21 +917,33 @@ export const generateSAVRestitutionPDF = async (savCase: SAVCase, shop?: Shop, o
     iframeDoc.write(htmlContent);
     iframeDoc.close();
     
-    // Attendre un peu avant d'imprimer
-    setTimeout(() => {
+    // Attendre que toutes les images soient chargées avant d'imprimer
+    const waitForImages = async () => {
+      const imgs = Array.from(iframeDoc.images || []);
+      if (imgs.length === 0) return;
+      await Promise.all(
+        imgs.map((img: HTMLImageElement) => {
+          if (img.complete && img.naturalWidth > 0) return Promise.resolve();
+          return new Promise<void>((resolve) => {
+            const done = () => resolve();
+            img.addEventListener('load', done, { once: true });
+            img.addEventListener('error', done, { once: true });
+            setTimeout(done, 4000);
+          });
+        })
+      );
+    };
+
+    waitForImages().then(() => {
       try {
         iframe.contentWindow?.focus();
         iframe.contentWindow?.print();
-        
-        // Nettoyer l'iframe après l'impression
         setTimeout(() => {
           document.body.removeChild(iframe);
         }, 1000);
       } catch (error) {
         console.error('Erreur lors de l\'impression:', error);
         document.body.removeChild(iframe);
-        
-        // Fallback : télécharger en HTML
         const blob = new Blob([htmlContent], { type: 'text/html' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -934,7 +952,7 @@ export const generateSAVRestitutionPDF = async (savCase: SAVCase, shop?: Shop, o
         a.click();
         URL.revokeObjectURL(url);
       }
-    }, 500);
+    });
   }
 };
 
