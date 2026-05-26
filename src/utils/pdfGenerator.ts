@@ -621,16 +621,16 @@ export const generateSAVRestitutionPDF = async (savCase: SAVCase, shop?: Shop, o
         </div>
         
         ${savCase.customer ? `
-        <div style="margin: 12px 0; padding: 14px 18px; background: linear-gradient(90deg, #eaf2ff 0%, #f8fbff 100%); border-left: 5px solid #0066cc; border-radius: 6px;">
-          <div style="font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: #555; margin-bottom: 4px;">Client</div>
-          <div style="font-size: 22px; font-weight: 800; color: #0a2540; line-height: 1.1;">${savCase.customer.first_name} ${savCase.customer.last_name}</div>
-          ${savCase.customer.phone ? `<div style="font-size: 12px; color: #0066cc; margin-top: 4px; font-weight: 600;">📞 ${savCase.customer.phone}</div>` : ''}
+        <div style="margin: 6px 0; padding: 6px 10px; background: linear-gradient(90deg, #eaf2ff 0%, #f8fbff 100%); border-left: 4px solid #0066cc; border-radius: 4px;">
+          <div style="font-size: 9px; text-transform: uppercase; letter-spacing: 1px; color: #555; margin-bottom: 2px;">Client</div>
+          <div style="font-size: 15px; font-weight: 800; color: #0a2540; line-height: 1.1;">${savCase.customer.first_name} ${savCase.customer.last_name}</div>
+          ${savCase.customer.phone ? `<div style="font-size: 10px; color: #0066cc; margin-top: 2px; font-weight: 600;">📞 ${savCase.customer.phone}</div>` : ''}
         </div>
         ` : ''}
         ${(savCase as any).taken_over_by ? `
-        <div style="margin: 8px 0; padding: 10px 14px; background: #fff7e6; border: 2px solid #f59e0b; border-radius: 6px; display: inline-block;">
-          <span style="font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: #92400e;">Pris en charge par</span>
-          <span style="font-size: 18px; font-weight: 800; color: #92400e; margin-left: 8px; letter-spacing: 2px;">${(savCase as any).taken_over_by}</span>
+        <div style="margin: 4px 0; padding: 4px 8px; background: #fff7e6; border: 2px solid #f59e0b; border-radius: 4px; display: inline-block;">
+          <span style="font-size: 9px; text-transform: uppercase; letter-spacing: 1px; color: #92400e;">Pris en charge par</span>
+          <span style="font-size: 13px; font-weight: 800; color: #92400e; margin-left: 6px; letter-spacing: 1px;">${(savCase as any).taken_over_by}</span>
         </div>
         ` : ''}
 
