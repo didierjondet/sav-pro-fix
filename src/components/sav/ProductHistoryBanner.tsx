@@ -47,7 +47,7 @@ export function ProductHistoryBanner({ shopId, imei, sku, brand, model, excludeS
           <p className="text-xs text-muted-foreground mt-0.5">
             {isExact
               ? "Cet IMEI a déjà été enregistré dans votre boutique. Consultez l'historique avant de créer un nouveau SAV."
-              : "Un produit avec le même SKU ou modèle est déjà passé. Vérifiez s'il s'agit du même appareil."}
+              : "Un produit avec le même SKU est déjà passé. Vérifiez s'il s'agit du même appareil."}
           </p>
         </div>
         <Button
