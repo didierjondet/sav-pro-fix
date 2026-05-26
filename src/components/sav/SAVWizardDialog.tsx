@@ -660,6 +660,13 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
                 }} maxLength={13} placeholder="Numérique (13 max)" />
               </div>
             </div>
+            <ProductHistoryBanner
+              shopId={profile?.shop_id}
+              imei={deviceInfo.imei}
+              sku={deviceInfo.sku}
+              brand={deviceInfo.brand}
+              model={deviceInfo.model}
+            />
             <div>
               <Label className="mb-2 block">Couleur</Label>
               <div className="flex flex-wrap gap-2">
