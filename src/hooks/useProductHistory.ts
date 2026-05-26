@@ -104,10 +104,10 @@ export function useProductHistory({ shopId, imei, sku, brand, model, excludeSavI
     },
   });
 
-  // 3) Suggestion par SKU / marque+modèle (sans IMEI fiable)
+  // 3) Suggestion par SKU exact uniquement (si pas de match IMEI fiable)
   const suggestionsQuery = useQuery({
-    queryKey: ['product-suggestions', shopId, cleanSku, cleanBrand, cleanModel, excludeSavId],
-    enabled: !!shopId && !hasValidImei && (cleanSku.length >= 3 || (cleanBrand.length >= 2 && cleanModel.length >= 2)),
+    queryKey: ['product-suggestions', shopId, cleanSku, excludeSavId],
+    enabled: !!shopId && !hasValidImei && cleanSku.length >= 3,
     staleTime: 60_000,
     queryFn: async (): Promise<PreviousSAVCase[]> => {
       let query = supabase
@@ -119,14 +119,9 @@ export function useProductHistory({ shopId, imei, sku, brand, model, excludeSavI
           customer:customers(first_name, last_name)
         `)
         .eq('shop_id', shopId!)
+        .eq('sku', cleanSku)
         .order('created_at', { ascending: false })
         .limit(10);
-
-      if (cleanSku.length >= 3) {
-        query = query.eq('sku', cleanSku);
-      } else {
-        query = query.ilike('device_brand', cleanBrand).ilike('device_model', cleanModel);
-      }
 
       if (excludeSavId) {
         query = query.neq('id', excludeSavId);
