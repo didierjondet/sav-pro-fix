@@ -1830,6 +1830,7 @@ export type Database = {
           technician_id: string | null
           total_cost: number | null
           total_time_minutes: number | null
+          tracked_product_id: string | null
           tracking_slug: string | null
           unlock_pattern: Json | null
           updated_at: string
@@ -1868,6 +1869,7 @@ export type Database = {
           technician_id?: string | null
           total_cost?: number | null
           total_time_minutes?: number | null
+          tracked_product_id?: string | null
           tracking_slug?: string | null
           unlock_pattern?: Json | null
           updated_at?: string
@@ -1906,6 +1908,7 @@ export type Database = {
           technician_id?: string | null
           total_cost?: number | null
           total_time_minutes?: number | null
+          tracked_product_id?: string | null
           tracking_slug?: string | null
           unlock_pattern?: Json | null
           updated_at?: string
@@ -1931,6 +1934,13 @@ export type Database = {
             columns: ["technician_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sav_cases_tracked_product_id_fkey"
+            columns: ["tracked_product_id"]
+            isOneToOne: false
+            referencedRelation: "tracked_products"
             referencedColumns: ["id"]
           },
         ]
@@ -3377,6 +3387,69 @@ export type Database = {
         }
         Relationships: []
       }
+      tracked_products: {
+        Row: {
+          created_at: string
+          device_brand: string | null
+          device_imei: string | null
+          device_model: string | null
+          first_seen_at: string
+          id: string
+          last_customer_id: string | null
+          last_seen_at: string
+          notes: string | null
+          sav_count: number
+          shop_id: string
+          sku: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          device_brand?: string | null
+          device_imei?: string | null
+          device_model?: string | null
+          first_seen_at?: string
+          id?: string
+          last_customer_id?: string | null
+          last_seen_at?: string
+          notes?: string | null
+          sav_count?: number
+          shop_id: string
+          sku?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          device_brand?: string | null
+          device_imei?: string | null
+          device_model?: string | null
+          first_seen_at?: string
+          id?: string
+          last_customer_id?: string | null
+          last_seen_at?: string
+          notes?: string | null
+          sav_count?: number
+          shop_id?: string
+          sku?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tracked_products_last_customer_id_fkey"
+            columns: ["last_customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tracked_products_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       twilio_alert_config: {
         Row: {
           alert_phone: string
@@ -3551,6 +3624,17 @@ export type Database = {
           shop_id_param: string
         }
         Returns: Json
+      }
+      find_or_create_tracked_product: {
+        Args: {
+          p_brand: string
+          p_customer_id: string
+          p_imei: string
+          p_model: string
+          p_shop_id: string
+          p_sku: string
+        }
+        Returns: string
       }
       generate_case_number: { Args: never; Returns: string }
       generate_invite_code: { Args: never; Returns: string }
