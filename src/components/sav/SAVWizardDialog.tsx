@@ -28,6 +28,7 @@ import { FileUpload } from '@/components/parts/FileUpload';
 import { useLimitDialogContext } from '@/contexts/LimitDialogContext';
 import { useToast } from '@/hooks/use-toast';
 import { PrintConfirmDialog } from '@/components/dialogs/PrintConfirmDialog';
+import { ProductHistoryBanner } from '@/components/sav/ProductHistoryBanner';
 import { SAVPrintButton, type SAVPrintButtonRef } from '@/components/sav/SAVPrint';
 import { PatternLock } from '@/components/sav/PatternLock';
 import { PartDiscountManager, PartDiscountInfo } from '@/components/ui/part-discount-manager';
@@ -659,6 +660,13 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
                 }} maxLength={13} placeholder="Numérique (13 max)" />
               </div>
             </div>
+            <ProductHistoryBanner
+              shopId={profile?.shop_id}
+              imei={deviceInfo.imei}
+              sku={deviceInfo.sku}
+              brand={deviceInfo.brand}
+              model={deviceInfo.model}
+            />
             <div>
               <Label className="mb-2 block">Couleur</Label>
               <div className="flex flex-wrap gap-2">

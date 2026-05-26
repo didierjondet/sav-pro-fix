@@ -23,6 +23,7 @@ import { LimitAlert } from '@/components/subscription/LimitAlert';
 import { useLimitDialogContext } from '@/contexts/LimitDialogContext';
 import { useToast } from '@/hooks/use-toast';
 import { PrintConfirmDialog } from '@/components/dialogs/PrintConfirmDialog';
+import { ProductHistoryBanner } from '@/components/sav/ProductHistoryBanner';
 import { SAVPrintButton, type SAVPrintButtonRef } from '@/components/sav/SAVPrint';
 import { PatternLock } from '@/components/sav/PatternLock';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -663,6 +664,13 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
               />
             </div>
           </div>
+          <ProductHistoryBanner
+            shopId={profile?.shop_id}
+            imei={deviceInfo.imei}
+            sku={deviceInfo.sku}
+            brand={deviceInfo.brand}
+            model={deviceInfo.model}
+          />
 
           {/* Couleur du produit */}
           <div>

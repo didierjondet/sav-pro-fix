@@ -37,6 +37,7 @@ import { EditSAVDetailsDialog } from '@/components/sav/EditSAVDetailsDialog';
 import { AppointmentProposalDialog } from '@/components/agenda/AppointmentProposalDialog';
 import { useProfile } from '@/hooks/useProfile';
 import { logSAVChange, getCurrentUserName } from '@/hooks/useSAVAuditLog';
+import { ProductRecurrenceBadge } from '@/components/sav/ProductRecurrenceBadge';
 export default function SAVDetail() {
   const {
     id
@@ -548,8 +549,13 @@ export default function SAVDetail() {
                   <div>
                     <strong>Appareil:</strong> {savCase.device_brand} {savCase.device_model}
                   </div>
-                  {savCase.device_imei && <div>
-                      <strong>IMEI:</strong> {savCase.device_imei}
+                  {savCase.device_imei && <div className="flex items-center gap-2 flex-wrap">
+                      <span><strong>IMEI:</strong> {savCase.device_imei}</span>
+                      <ProductRecurrenceBadge
+                        shopId={(savCase as any).shop_id}
+                        imei={savCase.device_imei}
+                        excludeSavId={savCase.id}
+                      />
                     </div>}
                   {savCase.sku && <div>
                       <strong>SKU:</strong> {savCase.sku}
