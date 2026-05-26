@@ -917,21 +917,33 @@ export const generateSAVRestitutionPDF = async (savCase: SAVCase, shop?: Shop, o
     iframeDoc.write(htmlContent);
     iframeDoc.close();
     
-    // Attendre un peu avant d'imprimer
-    setTimeout(() => {
+    // Attendre que toutes les images soient chargées avant d'imprimer
+    const waitForImages = async () => {
+      const imgs = Array.from(iframeDoc.images || []);
+      if (imgs.length === 0) return;
+      await Promise.all(
+        imgs.map((img: HTMLImageElement) => {
+          if (img.complete && img.naturalWidth > 0) return Promise.resolve();
+          return new Promise<void>((resolve) => {
+            const done = () => resolve();
+            img.addEventListener('load', done, { once: true });
+            img.addEventListener('error', done, { once: true });
+            setTimeout(done, 4000);
+          });
+        })
+      );
+    };
+
+    waitForImages().then(() => {
       try {
         iframe.contentWindow?.focus();
         iframe.contentWindow?.print();
-        
-        // Nettoyer l'iframe après l'impression
         setTimeout(() => {
           document.body.removeChild(iframe);
         }, 1000);
       } catch (error) {
         console.error('Erreur lors de l\'impression:', error);
         document.body.removeChild(iframe);
-        
-        // Fallback : télécharger en HTML
         const blob = new Blob([htmlContent], { type: 'text/html' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -940,7 +952,7 @@ export const generateSAVRestitutionPDF = async (savCase: SAVCase, shop?: Shop, o
         a.click();
         URL.revokeObjectURL(url);
       }
-    }, 500);
+    });
   }
 };
 
