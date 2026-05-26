@@ -864,22 +864,27 @@ export const generateSAVRestitutionPDF = async (savCase: SAVCase, shop?: Shop, o
         </div>
 
         ${options?.includeAttachments && (savCase as any).attachments && Array.isArray((savCase as any).attachments) && ((savCase as any).attachments as any[]).length > 0 ? `
-          <div style="page-break-before: always; margin-top: 15px;">
-            <h4 style="color: #0066cc; border-bottom: 1px solid #0066cc; padding-bottom: 3px; margin: 8px 0 5px 0; font-size: 12px;">
+          <div class="photos-block" style="margin-top: 8px;">
+            <h4 style="color: #0066cc; border-bottom: 1px solid #0066cc; padding-bottom: 2px; margin: 6px 0 4px 0; font-size: 11px;">
               Documents et photos joints
             </h4>
-            <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+            <div style="display: flex; flex-wrap: wrap; gap: 6px;">
               ${((savCase as any).attachments as any[]).map((att: any) => {
                 const url = att.url || att;
-                const name = att.name || 'Document';
-                const isImage = typeof url === 'string' && (url.match(/\.(jpg|jpeg|png|gif|webp)/i) || url.includes('image'));
+                const name = att.name || att.file_name || 'Document';
+                const type = (att.type || att.mime_type || att.content_type || '').toString().toLowerCase();
+                const cleanUrl = typeof url === 'string' ? url.split('?')[0].toLowerCase() : '';
+                const isImage =
+                  type.startsWith('image/') ||
+                  /\.(jpg|jpeg|png|gif|webp|bmp|heic|heif)$/i.test(cleanUrl) ||
+                  (typeof url === 'string' && /(\/|%2F)(images?|photos?|attachments?)(\/|%2F)/i.test(url));
                 return isImage ? `
-                  <div style="text-align: center; margin-bottom: 8px;">
-                    <img src="${url}" style="max-width: 200px; max-height: 200px; border: 1px solid #ddd; border-radius: 4px;" />
-                    <p style="font-size: 9px; color: #666; margin-top: 2px;">${name}</p>
+                  <div style="text-align: center; margin-bottom: 4px;">
+                    <img src="${url}" crossorigin="anonymous" style="max-width: 150px; max-height: 150px; border: 1px solid #ddd; border-radius: 3px; display: block;" />
+                    <p style="font-size: 8px; color: #666; margin-top: 1px;">${name}</p>
                   </div>
                 ` : `
-                  <div style="padding: 6px 10px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 4px; font-size: 10px;">
+                  <div style="padding: 4px 8px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 3px; font-size: 9px;">
                     📎 ${name}
                   </div>
                 `;
