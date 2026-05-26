@@ -416,62 +416,62 @@ export const generateSAVRestitutionPDF = async (savCase: SAVCase, shop?: Shop, o
           body {
             font-family: Arial, sans-serif;
             margin: 0;
-            padding: 10px 15px;
+            padding: 6px 10px;
             color: #333;
-            line-height: 1.2;
-            font-size: 11px;
+            line-height: 1.15;
+            font-size: 10px;
           }
           .shop-header {
             text-align: left;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
             border-bottom: 1px solid #0066cc;
-            padding-bottom: 5px;
+            padding-bottom: 3px;
           }
           .shop-logo {
-            max-height: 40px;
-            max-width: 120px;
+            max-height: 32px;
+            max-width: 100px;
             object-fit: contain;
-            margin-bottom: 5px;
+            margin-bottom: 3px;
           }
           .shop-name {
-            font-size: 18px;
+            font-size: 15px;
             font-weight: bold;
             color: #0066cc;
             margin: 0;
           }
           .shop-contact {
-            font-size: 10px;
+            font-size: 9px;
             color: #666;
-            margin-top: 3px;
+            margin-top: 2px;
           }
           .document-header {
             text-align: center;
-            margin-bottom: 15px;
+            margin-bottom: 6px;
           }
           .document-title {
-            font-size: 20px;
+            font-size: 14px;
             font-weight: bold;
             color: #0066cc;
-            margin-bottom: 5px;
+            margin-bottom: 2px;
           }
           .case-info {
             background-color: #f8f9fa;
-            padding: 10px;
-            border-radius: 4px;
-            margin-bottom: 15px;
+            padding: 6px 8px;
+            border-radius: 3px;
+            margin-bottom: 6px;
             border-left: 3px solid #0066cc;
           }
           .case-info h3 {
             margin-top: 0;
-            margin-bottom: 8px;
+            margin-bottom: 4px;
             color: #0066cc;
-            font-size: 14px;
+            font-size: 11px;
           }
           .info-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 8px;
-            margin-bottom: 10px;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 4px;
+            margin-bottom: 4px;
           }
           .info-item {
             display: flex;
@@ -480,42 +480,42 @@ export const generateSAVRestitutionPDF = async (savCase: SAVCase, shop?: Shop, o
           .info-label {
             font-weight: bold;
             color: #333;
-            font-size: 10px;
+            font-size: 9px;
             text-transform: uppercase;
-            margin-bottom: 1px;
+            margin-bottom: 0;
           }
           .info-value {
-            font-size: 11px;
+            font-size: 10px;
             color: #666;
           }
           .parts-section {
-            margin-bottom: 15px;
+            margin-bottom: 6px;
           }
           .section-title {
-            font-size: 14px;
+            font-size: 11px;
             font-weight: bold;
             color: #0066cc;
-            margin-bottom: 8px;
-            padding-bottom: 3px;
+            margin-bottom: 4px;
+            padding-bottom: 2px;
             border-bottom: 1px solid #ddd;
           }
           .parts-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 10px;
-            font-size: 10px;
+            margin-bottom: 5px;
+            font-size: 9px;
           }
           .parts-table th,
           .parts-table td {
             border: 1px solid #ddd;
-            padding: 6px;
+            padding: 3px 5px;
             text-align: left;
           }
           .parts-table th {
             background-color: #0066cc;
             color: white;
             font-weight: bold;
-            font-size: 10px;
+            font-size: 9px;
           }
           .parts-table .text-center {
             text-align: center;
@@ -525,52 +525,52 @@ export const generateSAVRestitutionPDF = async (savCase: SAVCase, shop?: Shop, o
           }
           .total-section {
             background-color: #f8f9fa;
-            padding: 10px;
-            border-radius: 4px;
+            padding: 6px 8px;
+            border-radius: 3px;
             border: 1px solid #0066cc;
-            margin-bottom: 15px;
+            margin-bottom: 6px;
           }
           .total-row {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 5px;
-            font-size: 11px;
+            margin-bottom: 2px;
+            font-size: 10px;
           }
           .total-final {
-            font-size: 14px;
+            font-size: 12px;
             font-weight: bold;
             color: #0066cc;
             border-top: 1px solid #0066cc;
-            padding-top: 5px;
-            margin-top: 5px;
+            padding-top: 3px;
+            margin-top: 3px;
           }
           .takeover-info {
             background-color: #e8f5e8;
-            padding: 8px;
-            border-radius: 4px;
-            margin-bottom: 10px;
+            padding: 5px 8px;
+            border-radius: 3px;
+            margin-bottom: 5px;
             border-left: 3px solid #28a745;
-            font-size: 10px;
+            font-size: 9px;
           }
           .no-charge-info {
             background-color: #fff3cd;
-            padding: 8px;
-            border-radius: 4px;
-            margin-bottom: 10px;
+            padding: 5px 8px;
+            border-radius: 3px;
+            margin-bottom: 5px;
             border-left: 3px solid #ffc107;
             text-align: center;
-            font-size: 11px;
+            font-size: 10px;
           }
           .footer {
-            margin-top: 20px;
+            margin-top: 6px;
             text-align: center;
-            font-size: 9px;
+            font-size: 8px;
             color: #666;
             border-top: 1px solid #ddd;
-            padding-top: 10px;
+            padding-top: 4px;
           }
           .signature-section {
-            margin-top: 20px;
+            margin-top: 8px;
             display: flex;
             justify-content: space-between;
           }
@@ -580,24 +580,25 @@ export const generateSAVRestitutionPDF = async (savCase: SAVCase, shop?: Shop, o
           }
           .signature-line {
             border-bottom: 1px solid #333;
-            height: 40px;
-            margin-bottom: 5px;
+            height: 22px;
+            margin-bottom: 3px;
           }
           .signature-box p {
-            font-size: 9px;
+            font-size: 8px;
             margin: 0;
           }
           .discount-info {
             background-color: #fff3cd;
-            padding: 8px;
-            border-radius: 4px;
-            margin-bottom: 10px;
+            padding: 5px 8px;
+            border-radius: 3px;
+            margin-bottom: 5px;
             border-left: 3px solid #ffc107;
-            font-size: 10px;
+            font-size: 9px;
           }
           @media print {
-            body { margin: 0; padding: 10px; font-size: 11px; }
+            body { margin: 0; padding: 6px 10px; font-size: 10px; }
             .no-print { display: none; }
+            .photos-block { page-break-inside: avoid; }
           }
         </style>
       </head>
