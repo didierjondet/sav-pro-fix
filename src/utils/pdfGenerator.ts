@@ -672,18 +672,18 @@ export const generateSAVRestitutionPDF = async (savCase: SAVCase, shop?: Shop, o
           <h3 class="section-title">Détail de l'intervention</h3>
           
           ${savCase.problem_description ? `
-            <div style="margin-bottom: 20px;">
+            <div style="margin-bottom: 6px;">
               <strong>Problème signalé :</strong>
-              <p style="margin: 5px 0; padding: 10px; background-color: #f8f9fa; border-radius: 4px;">
+              <p style="margin: 2px 0; padding: 4px 6px; background-color: #f8f9fa; border-radius: 3px; font-size: 10px;">
                 ${savCase.problem_description}
               </p>
             </div>
           ` : ''}
 
           ${savCase.repair_notes ? `
-            <div style="margin-bottom: 20px;">
+            <div style="margin-bottom: 6px;">
               <strong>Notes de réparation :</strong>
-              <p style="margin: 5px 0; padding: 10px; background-color: #f8f9fa; border-radius: 4px;">
+              <p style="margin: 2px 0; padding: 4px 6px; background-color: #f8f9fa; border-radius: 3px; font-size: 10px;">
                 ${savCase.repair_notes}
               </p>
             </div>
