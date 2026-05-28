@@ -144,15 +144,17 @@ export function SAVCloseDialog({ isOpen, onClose, onConfirm, savCase, shop }: SA
           >
             {isProcessing ? 'Traitement...' : 'Clôturer le dossier'}
           </Button>
-          <Button
-            onClick={handlePrintDocument}
-            disabled={isProcessing || isPrintingDocument}
-            variant="secondary"
-            className="w-full sm:w-auto"
-          >
-            <Printer className="h-4 w-4 mr-2" />
-            {isPrintingDocument ? 'Génération...' : 'Imprimer le document'}
-          </Button>
+          {restitutionEnabled && (
+            <Button
+              onClick={handlePrintDocument}
+              disabled={isProcessing || isPrintingDocument}
+              variant="secondary"
+              className="w-full sm:w-auto"
+            >
+              <Printer className="h-4 w-4 mr-2" />
+              {isPrintingDocument ? 'Génération...' : 'Imprimer le document'}
+            </Button>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>
