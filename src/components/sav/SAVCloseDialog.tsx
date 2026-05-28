@@ -27,6 +27,8 @@ export function SAVCloseDialog({ isOpen, onClose, onConfirm, savCase, shop }: SA
   const { sendMessage } = useSAVMessages(savCase.id);
   const { updateTechnicianComments } = useSAVCases();
   const { profile } = useProfile();
+  const { getTypeInfo } = useShopSAVTypes();
+  const restitutionEnabled = getTypeInfo(savCase.sav_type).enable_restitution_pdf !== false;
 
   const handleConfirm = async () => {
     setIsProcessing(true);
