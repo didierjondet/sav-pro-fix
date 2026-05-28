@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+// React imports retirés : plus de useEffect (realtime supprimé pour stabilité visuelle)
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -66,30 +66,9 @@ export function useShopSAVTypes() {
     placeholderData: (prev) => prev,
   });
 
-  useEffect(() => {
-    if (!user) return;
-
-    // Set up real-time subscription for SAV types
-    const channel = supabase
-      .channel('shop-sav-types-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'shop_sav_types'
-        },
-        (payload) => {
-          console.log('Shop SAV Type change detected:', payload);
-          queryClient.invalidateQueries({ queryKey: ['shop-sav-types'] });
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user, queryClient]);
+  // Realtime désactivé : la table shop_sav_types ne change que depuis Réglages,
+  // l'invalidation manuelle via refetch() dans SAVTypesManager suffit.
+  // Évite des re-rendus globaux sur toutes les pages (Sidebar monte ce hook).
 
   // Fonction pour obtenir les informations d'un type
   const getTypeInfo = (typeKey: string) => {

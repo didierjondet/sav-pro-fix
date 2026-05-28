@@ -167,7 +167,7 @@ export default function Customers() {
     }
   };
 
-  if (loading) {
+  if (loading && customers.length === 0) {
     return (
       <div className="min-h-screen bg-background">
         <div className="flex h-screen">

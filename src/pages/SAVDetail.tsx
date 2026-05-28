@@ -248,7 +248,7 @@ export default function SAVDetail() {
       attachments: newAttachments
     });
   };
-  if (loading) {
+  if (loading && !savCase && cases.length === 0) {
     return <div className="min-h-screen bg-background">
         <div className="flex h-screen">
           <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />

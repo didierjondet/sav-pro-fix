@@ -181,7 +181,7 @@ export default function Orders() {
     cancelOrder(itemId);
   };
 
-  if (loading) {
+  if (loading && orderItems.length === 0) {
     return (
       <div className="min-h-screen bg-background">
         <div className="flex h-screen">

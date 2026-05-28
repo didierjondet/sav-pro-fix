@@ -1,34 +1,57 @@
+## Symptôme
 
-## Objectif
+À chaque clic sur un lien du menu : page visible un instant → barre de chargement + page blanche → page revient. Ressenti sur toutes les pages.
 
-Ajouter une option par type de SAV (Paramètres > Types de SAV) permettant d'activer/désactiver la génération du bon de restitution. Le réglage s'applique à tous les SAV existants et futurs de ce type.
+## Diagnostic
 
-## Modifications
+D'après l'analyse du code et des logs console :
 
-### 1. Base de données
-Migration ajoutant une colonne sur `shop_sav_types` :
-- `enable_restitution_pdf BOOLEAN NOT NULL DEFAULT true`
+1. `App.tsx` impose globalement `refetchOnMount: true` et `refetchOnWindowFocus: true`.
+2. La plupart des pages (`SAVList`, `Parts`, `Quotes`, `Customers`, `Orders`, `SAVDetail`…) font `if (loading) return <Loader plein écran />`.
+3. `useParts` utilise un `useState(true)` local au lieu de React Query → à chaque remount, `loading` redevient `true` → écran blanc garanti.
+4. `useShopSAVTypes` (monté dans la Sidebar, donc présent sur toutes les pages) ouvre un **canal realtime** sur `shop_sav_types` à chaque mount. Combiné aux refetch sur focus/mount, ça multiplie les re-rendus visibles dans les logs (`Polling activé` x3, `Shop data` x3, `Cleanup` répétés).
+5. Les modifications récentes (switch « Bon de restitution ») n'ont pas introduit le bug elles-mêmes, mais l'ajout d'une colonne sur `shop_sav_types` et les re-renders sur ce hook l'ont rendu plus visible.
 
-Valeur par défaut `true` pour préserver le comportement actuel (les SAV externe et client continuent de générer le bon automatiquement).
+Ce n'est donc pas un seul coupable mais la combinaison `loading plein écran` + `refetchOnMount` agressif + `realtime sur un hook global`.
 
-### 2. Hook `src/hooks/useShopSAVTypes.ts`
-- Ajouter `enable_restitution_pdf: boolean` dans l'interface `ShopSAVType`.
-- L'exposer dans `getTypeInfo()` (fallback `true`).
+## Correction proposée (minimale, ciblée)
 
-### 3. UI `src/components/sav/SAVTypesManager.tsx`
-Ajouter un nouveau Switch dans le formulaire d'édition/création de type de SAV, à côté des options existantes (ex. après "Enquête de satisfaction") :
-- Label : **« Bon de restitution »**
-- Description : « Générer automatiquement un bon de restitution à la clôture et autoriser son impression »
-- Lié à `formData.enable_restitution_pdf` (init `true`)
-- Persisté à la création et à la mise à jour
+Aucune modification UI, aucun changement fonctionnel — uniquement la stabilité d'affichage.
 
-### 4. Gating de la génération PDF
-Conditionner sur `getTypeInfo(savCase.sav_type).enable_restitution_pdf` :
+### 1. `src/hooks/useShopSAVTypes.ts`
+- Supprimer la souscription realtime (`useEffect` lignes 69–92). La table change uniquement depuis Réglages → on garde une invalidation manuelle déjà présente dans `SAVTypesManager` via `refetch()`.
+- Conserver `placeholderData: (prev) => prev` déjà en place.
 
-- `src/components/sav/SAVCloseUnifiedDialog.tsx` (ligne ~331) : ne pas générer/imprimer automatiquement le bon à la clôture si l'option est `false`. Le message chat « 📄 Document de restitution généré… » n'est pas envoyé non plus.
-- `src/components/sav/SAVCloseDialog.tsx` : même logique pour la branche legacy, et masquage du bloc « Document de restitution disponible ».
-- `src/pages/SAVDetail.tsx` (ligne ~346) : masquer le bouton **« Imprimer restitution »** si l'option est `false`.
+### 2. `src/App.tsx`
+- Conserver `refetchOnWindowFocus: true` (utile multi-session).
+- Garder `refetchOnMount: true` mais aucun changement nécessaire ici si le point 3 est fait.
 
-### Hors périmètre
-- Pas de modification visuelle des cartes SAV, du PDF lui-même, ni des autres options de type.
-- Pas de changement de logique métier autre que le gating PDF.
+### 3. Pages avec `if (loading) return <Loader />`
+N'afficher le loader plein écran QUE lors du tout premier chargement (pas de données en cache). Modification ciblée sur les pages réellement concernées par le flash :
+- `src/pages/SAVList.tsx` ligne 363
+- `src/pages/Parts.tsx` ligne 148
+- `src/pages/Quotes.tsx` ligne 684
+- `src/pages/Customers.tsx` ligne 170
+- `src/pages/Orders.tsx` ligne 184
+- `src/pages/SAVDetail.tsx` ligne 251
+
+Pattern :
+```text
+if (loading && data.length === 0) return <Loader />;
+```
+(adapté à la donnée principale de chaque page : `cases`, `parts`, `quotes`, `customers`, `orders`, `savCase`)
+
+### 4. `src/hooks/useParts.ts`
+Refactor minimal : migrer le `useState(true)` initial vers `useState(false)` quand `shop?.id` est connu et qu'on a déjà des données en mémoire — ou ajouter une garde `if (parts.length === 0 && loading)` côté `Parts.tsx` (option moins invasive, retenue).
+
+## Hors scope
+
+- Aucun changement de comportement métier.
+- Aucune modification visuelle des cartes, formulaires, sidebar, header.
+- Aucune modification de la fonctionnalité « Bon de restitution » récemment ajoutée.
+
+## Validation
+
+Après application :
+- Naviguer entre Dashboard → SAV → Parts → Quotes → Customers : l'ancienne page doit rester visible jusqu'à ce que la nouvelle soit prête, sans flash blanc.
+- Vérifier dans les logs que `Polling activé` et `Shop data` ne se répètent plus 3 fois par navigation.
