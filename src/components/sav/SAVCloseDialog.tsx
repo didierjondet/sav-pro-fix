@@ -105,24 +105,27 @@ export function SAVCloseDialog({ isOpen, onClose, onConfirm, savCase, shop }: SA
             </p>
           </div>
           
-          <div className="bg-muted/50 p-4 rounded-lg">
-            <div className="flex items-center gap-2 mb-3">
-              <Download className="h-4 w-4 text-primary" />
-              <span className="text-sm font-medium">Document de restitution disponible</span>
+          {restitutionEnabled && (
+            <div className="bg-muted/50 p-4 rounded-lg">
+              <div className="flex items-center gap-2 mb-3">
+                <Download className="h-4 w-4 text-primary" />
+                <span className="text-sm font-medium">Document de restitution disponible</span>
+              </div>
+              <ul className="text-xs text-muted-foreground space-y-1 ml-6 mb-3">
+                <li>• Informations du magasin et du client</li>
+                <li>• Détail des pièces remplacées avec prix</li>
+                <li>• Commentaires technicien</li>
+                <li>• Prises en charge et remises éventuelles</li>
+                <li>• Coût final à régler</li>
+                <li>• Récapitulatif de l'intervention</li>
+              </ul>
+              <p className="text-xs text-muted-foreground">
+                Le document sera archivé dans la discussion du SAV si généré.
+              </p>
             </div>
-            <ul className="text-xs text-muted-foreground space-y-1 ml-6 mb-3">
-              <li>• Informations du magasin et du client</li>
-              <li>• Détail des pièces remplacées avec prix</li>
-              <li>• Commentaires technicien</li>
-              <li>• Prises en charge et remises éventuelles</li>
-              <li>• Coût final à régler</li>
-              <li>• Récapitulatif de l'intervention</li>
-            </ul>
-            <p className="text-xs text-muted-foreground">
-              Le document sera archivé dans la discussion du SAV si généré.
-            </p>
-          </div>
+          )}
         </div>
+
 
         <DialogFooter className="flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-2">
           <Button
