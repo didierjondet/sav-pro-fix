@@ -32,6 +32,7 @@ export interface SAVType {
   exclude_purchase_costs: boolean;
   exclude_sales_revenue: boolean;
   show_satisfaction_survey: boolean;
+  enable_restitution_pdf: boolean;
   created_at: string;
   updated_at: string;
 }
