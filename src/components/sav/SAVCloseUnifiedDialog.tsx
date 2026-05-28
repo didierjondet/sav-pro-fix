@@ -328,7 +328,8 @@ export function SAVCloseUnifiedDialog({
       // Confirmer la clôture
       onConfirm(selectedStatus);
       
-      // Générer et imprimer automatiquement le document de restitution
+      // Générer et imprimer automatiquement le document de restitution (si activé pour ce type)
+      if (savTypeInfo.enable_restitution_pdf !== false) {
       try {
         // Petit délai pour laisser la clôture s'enregistrer en base
         await new Promise(resolve => setTimeout(resolve, 1000));
