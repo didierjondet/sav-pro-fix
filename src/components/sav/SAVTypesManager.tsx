@@ -7,7 +7,7 @@ import { NumberInput } from "@/components/ui/number-input";
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Edit, Trash2, Plus, Info, Clock, Users, Sidebar, AlertTriangle, BarChart3, TrendingDown, TrendingUp, Star } from 'lucide-react';
+import { Edit, Trash2, Plus, Info, Clock, Users, Sidebar, AlertTriangle, BarChart3, TrendingDown, TrendingUp, Star, FileText } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
