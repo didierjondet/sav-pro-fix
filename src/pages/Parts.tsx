@@ -145,7 +145,7 @@ export default function Parts() {
     }
   };
 
-  if (loading) {
+  if (loading && parts.length === 0) {
     return (
       <div className="min-h-screen bg-background">
         <div className="flex h-screen">
