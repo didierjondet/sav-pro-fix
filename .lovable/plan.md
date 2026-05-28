@@ -1,58 +1,34 @@
-## Diagnostic
 
-Dans `src/components/parts/PartForm.tsx`, les champs **Prix d'achat HT** et **Prix public TTC** utilisent `<NumberInput>` (composant **contrôlé** via un state interne, `src/components/ui/number-input.tsx` L33/L91) combiné à `{...register('purchase_price', { valueAsNumber: true })}` de react-hook-form.
+## Objectif
 
-Problème : `register()` ne renvoie pas de prop `value`, seulement `{ onChange, onBlur, ref, name }`. Or NumberInput est strictement contrôlé (`value={internal}` avec `internal` initialisé depuis `externalToDisplay(value)` = `""` quand `value` est `undefined`). React écrase donc systématiquement la valeur que RHF tente d'écrire via le ref avec `defaultValues`. Résultat : le champ s'affiche vide / 0 à l'ouverture, alors que la donnée existe bien dans le state RHF (et la card l'affiche correctement). Le comportement intermittent observé vient d'un effet de race entre l'écriture ref RHF et le premier render contrôlé de React.
+Ajouter une option par type de SAV (Paramètres > Types de SAV) permettant d'activer/désactiver la génération du bon de restitution. Le réglage s'applique à tous les SAV existants et futurs de ce type.
 
-Les autres NumberInput (`quantity`, `min_stock`, `time_minutes`, `labor_cost`) ont le même problème théorique, mais l'utilisateur ne remarque pas parce qu'ils valent souvent 0 par défaut. **Hors scope** : on ne touche qu'aux deux champs de prix conformément à la demande.
+## Modifications
 
-## Correctif
+### 1. Base de données
+Migration ajoutant une colonne sur `shop_sav_types` :
+- `enable_restitution_pdf BOOLEAN NOT NULL DEFAULT true`
 
-Remplacer `register()` par `<Controller>` (RHF) pour les deux NumberInput de prix, afin de passer une vraie prop `value` à NumberInput.
+Valeur par défaut `true` pour préserver le comportement actuel (les SAV externe et client continuent de générer le bon automatiquement).
 
-### Fichier modifié
+### 2. Hook `src/hooks/useShopSAVTypes.ts`
+- Ajouter `enable_restitution_pdf: boolean` dans l'interface `ShopSAVType`.
+- L'exposer dans `getTypeInfo()` (fallback `true`).
 
-**`src/components/parts/PartForm.tsx`** uniquement.
+### 3. UI `src/components/sav/SAVTypesManager.tsx`
+Ajouter un nouveau Switch dans le formulaire d'édition/création de type de SAV, à côté des options existantes (ex. après "Enquête de satisfaction") :
+- Label : **« Bon de restitution »**
+- Description : « Générer automatiquement un bon de restitution à la clôture et autoriser son impression »
+- Lié à `formData.enable_restitution_pdf` (init `true`)
+- Persisté à la création et à la mise à jour
 
-1. Ajouter `control` au retour de `useForm()` (L56-L77).
-2. Importer `Controller` depuis `react-hook-form`.
-3. Remplacer (L306-L313 et L329-L337) :
+### 4. Gating de la génération PDF
+Conditionner sur `getTypeInfo(savCase.sav_type).enable_restitution_pdf` :
 
-```tsx
-<NumberInput
-  id="purchase_price"
-  step="0.01"
-  min="0"
-  {...register('purchase_price', { valueAsNumber: true })}
-  placeholder="0.00"
-/>
-```
+- `src/components/sav/SAVCloseUnifiedDialog.tsx` (ligne ~331) : ne pas générer/imprimer automatiquement le bon à la clôture si l'option est `false`. Le message chat « 📄 Document de restitution généré… » n'est pas envoyé non plus.
+- `src/components/sav/SAVCloseDialog.tsx` : même logique pour la branche legacy, et masquage du bloc « Document de restitution disponible ».
+- `src/pages/SAVDetail.tsx` (ligne ~346) : masquer le bouton **« Imprimer restitution »** si l'option est `false`.
 
-par :
-
-```tsx
-<Controller
-  name="purchase_price"
-  control={control}
-  render={({ field }) => (
-    <NumberInput
-      id="purchase_price"
-      step="0.01"
-      min="0"
-      placeholder="0.00"
-      value={field.value ?? 0}
-      onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-      onBlur={field.onBlur}
-      ref={field.ref}
-    />
-  )}
-/>
-```
-
-Idem pour `selling_price` (en conservant `readOnly={useMargin}`).
-
-## Hors scope
-
-- Pas de modification de NumberInput, ni des autres champs (quantity, min_stock, time_minutes, labor_cost).
-- Pas de changement visuel, ni de logique métier, ni de DB, ni du hook `useParts`.
-- Pas de modification du layout, marges, labels ou aide affichée.
+### Hors périmètre
+- Pas de modification visuelle des cartes SAV, du PDF lui-même, ni des autres options de type.
+- Pas de changement de logique métier autre que le gating PDF.
