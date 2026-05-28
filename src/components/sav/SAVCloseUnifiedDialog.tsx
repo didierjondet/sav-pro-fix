@@ -328,8 +328,7 @@ export function SAVCloseUnifiedDialog({
       // Confirmer la clôture
       onConfirm(selectedStatus);
       
-      // Générer et imprimer automatiquement le document de restitution (si activé pour ce type)
-      if (savTypeInfo.enable_restitution_pdf !== false) {
+      // Générer et imprimer automatiquement le document de restitution
       try {
         // Petit délai pour laisser la clôture s'enregistrer en base
         await new Promise(resolve => setTimeout(resolve, 1000));
@@ -357,13 +356,10 @@ export function SAVCloseUnifiedDialog({
       } catch (docError) {
         console.error('Erreur génération document:', docError);
       }
-      }
-
       
-      const docNote = savTypeInfo.enable_restitution_pdf !== false ? ' et document généré' : '';
       toast({
         title: "Dossier clôturé",
-        description: sendSMS ? `Dossier clôturé, SMS envoyé${docNote}` : `Dossier clôturé${docNote}`,
+        description: sendSMS ? "Dossier clôturé, SMS envoyé et document généré" : "Dossier clôturé et document généré",
       });
     } catch (error) {
       console.error('Erreur lors de la clôture:', error);

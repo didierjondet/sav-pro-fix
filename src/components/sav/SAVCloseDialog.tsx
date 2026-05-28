@@ -10,7 +10,6 @@ import { useProfile } from '@/hooks/useProfile';
 import { FileText, Download, Printer, MessageSquare } from 'lucide-react';
 import { SAVCase } from '@/hooks/useSAVCases';
 import { Shop } from '@/hooks/useShop';
-import { useShopSAVTypes } from '@/hooks/useShopSAVTypes';
 
 interface SAVCloseDialogProps {
   isOpen: boolean;
@@ -27,8 +26,6 @@ export function SAVCloseDialog({ isOpen, onClose, onConfirm, savCase, shop }: SA
   const { sendMessage } = useSAVMessages(savCase.id);
   const { updateTechnicianComments } = useSAVCases();
   const { profile } = useProfile();
-  const { getTypeInfo } = useShopSAVTypes();
-  const restitutionEnabled = getTypeInfo(savCase.sav_type).enable_restitution_pdf !== false;
 
   const handleConfirm = async () => {
     setIsProcessing(true);
@@ -105,27 +102,24 @@ export function SAVCloseDialog({ isOpen, onClose, onConfirm, savCase, shop }: SA
             </p>
           </div>
           
-          {restitutionEnabled && (
-            <div className="bg-muted/50 p-4 rounded-lg">
-              <div className="flex items-center gap-2 mb-3">
-                <Download className="h-4 w-4 text-primary" />
-                <span className="text-sm font-medium">Document de restitution disponible</span>
-              </div>
-              <ul className="text-xs text-muted-foreground space-y-1 ml-6 mb-3">
-                <li>• Informations du magasin et du client</li>
-                <li>• Détail des pièces remplacées avec prix</li>
-                <li>• Commentaires technicien</li>
-                <li>• Prises en charge et remises éventuelles</li>
-                <li>• Coût final à régler</li>
-                <li>• Récapitulatif de l'intervention</li>
-              </ul>
-              <p className="text-xs text-muted-foreground">
-                Le document sera archivé dans la discussion du SAV si généré.
-              </p>
+          <div className="bg-muted/50 p-4 rounded-lg">
+            <div className="flex items-center gap-2 mb-3">
+              <Download className="h-4 w-4 text-primary" />
+              <span className="text-sm font-medium">Document de restitution disponible</span>
             </div>
-          )}
+            <ul className="text-xs text-muted-foreground space-y-1 ml-6 mb-3">
+              <li>• Informations du magasin et du client</li>
+              <li>• Détail des pièces remplacées avec prix</li>
+              <li>• Commentaires technicien</li>
+              <li>• Prises en charge et remises éventuelles</li>
+              <li>• Coût final à régler</li>
+              <li>• Récapitulatif de l'intervention</li>
+            </ul>
+            <p className="text-xs text-muted-foreground">
+              Le document sera archivé dans la discussion du SAV si généré.
+            </p>
+          </div>
         </div>
-
 
         <DialogFooter className="flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-2">
           <Button
@@ -144,17 +138,15 @@ export function SAVCloseDialog({ isOpen, onClose, onConfirm, savCase, shop }: SA
           >
             {isProcessing ? 'Traitement...' : 'Clôturer le dossier'}
           </Button>
-          {restitutionEnabled && (
-            <Button
-              onClick={handlePrintDocument}
-              disabled={isProcessing || isPrintingDocument}
-              variant="secondary"
-              className="w-full sm:w-auto"
-            >
-              <Printer className="h-4 w-4 mr-2" />
-              {isPrintingDocument ? 'Génération...' : 'Imprimer le document'}
-            </Button>
-          )}
+          <Button
+            onClick={handlePrintDocument}
+            disabled={isProcessing || isPrintingDocument}
+            variant="secondary"
+            className="w-full sm:w-auto"
+          >
+            <Printer className="h-4 w-4 mr-2" />
+            {isPrintingDocument ? 'Génération...' : 'Imprimer le document'}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

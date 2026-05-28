@@ -248,7 +248,7 @@ export default function SAVDetail() {
       attachments: newAttachments
     });
   };
-  if (loading && !savCase && cases.length === 0) {
+  if (loading) {
     return <div className="min-h-screen bg-background">
         <div className="flex h-screen">
           <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
@@ -343,7 +343,7 @@ export default function SAVDetail() {
 
                 {/* Ligne 2 : Boutons d'action */}
                 <div className="flex items-center gap-2 flex-wrap">
-                  {isReadyStatus(savCase.status) && getTypeInfo(savCase.sav_type).enable_restitution_pdf !== false && <Button variant="outline" size="sm" onClick={async () => {
+                  {isReadyStatus(savCase.status) && <Button variant="outline" size="sm" onClick={async () => {
                   try {
                     const { data: freshCase } = await supabase
                       .from('sav_cases')

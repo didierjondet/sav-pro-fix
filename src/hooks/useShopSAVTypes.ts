@@ -1,4 +1,4 @@
-// React imports retirés : plus de useEffect (realtime supprimé pour stabilité visuelle)
+import { useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -22,7 +22,6 @@ export interface ShopSAVType {
   exclude_purchase_costs: boolean;
   exclude_sales_revenue: boolean;
   show_satisfaction_survey: boolean;
-  enable_restitution_pdf: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -66,9 +65,30 @@ export function useShopSAVTypes() {
     placeholderData: (prev) => prev,
   });
 
-  // Realtime désactivé : la table shop_sav_types ne change que depuis Réglages,
-  // l'invalidation manuelle via refetch() dans SAVTypesManager suffit.
-  // Évite des re-rendus globaux sur toutes les pages (Sidebar monte ce hook).
+  useEffect(() => {
+    if (!user) return;
+
+    // Set up real-time subscription for SAV types
+    const channel = supabase
+      .channel('shop-sav-types-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'shop_sav_types'
+        },
+        (payload) => {
+          console.log('Shop SAV Type change detected:', payload);
+          queryClient.invalidateQueries({ queryKey: ['shop-sav-types'] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, queryClient]);
 
   // Fonction pour obtenir les informations d'un type
   const getTypeInfo = (typeKey: string) => {
@@ -87,7 +107,6 @@ export function useShopSAVTypes() {
         exclude_purchase_costs: customType.exclude_purchase_costs,
         exclude_sales_revenue: customType.exclude_sales_revenue,
         show_satisfaction_survey: customType.show_satisfaction_survey ?? true,
-        enable_restitution_pdf: customType.enable_restitution_pdf ?? true,
       };
     }
 
@@ -105,7 +124,6 @@ export function useShopSAVTypes() {
       exclude_purchase_costs: false,
       exclude_sales_revenue: false,
       show_satisfaction_survey: true,
-      enable_restitution_pdf: true,
     };
   };
 

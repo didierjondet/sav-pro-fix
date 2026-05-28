@@ -360,7 +360,7 @@ export default function SAVList() {
     setCurrentPage(1);
   }, [searchTerm, filterType, statusFilter, colorFilter, gradeFilter, sortOrder]);
 
-  if (loading && cases.length === 0) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-background">
         <div className="flex h-screen">

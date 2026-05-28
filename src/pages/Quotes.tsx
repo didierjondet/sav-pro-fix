@@ -681,7 +681,7 @@ export default function Quotes() {
     </Card>
   );
 
-  if (loading && quotes.length === 0) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-background">
         <div className="flex h-screen">
