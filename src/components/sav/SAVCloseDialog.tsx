@@ -10,6 +10,7 @@ import { useProfile } from '@/hooks/useProfile';
 import { FileText, Download, Printer, MessageSquare } from 'lucide-react';
 import { SAVCase } from '@/hooks/useSAVCases';
 import { Shop } from '@/hooks/useShop';
+import { useShopSAVTypes } from '@/hooks/useShopSAVTypes';
 
 interface SAVCloseDialogProps {
   isOpen: boolean;
