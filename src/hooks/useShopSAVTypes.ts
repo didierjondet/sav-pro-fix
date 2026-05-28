@@ -108,6 +108,7 @@ export function useShopSAVTypes() {
         exclude_purchase_costs: customType.exclude_purchase_costs,
         exclude_sales_revenue: customType.exclude_sales_revenue,
         show_satisfaction_survey: customType.show_satisfaction_survey ?? true,
+        enable_restitution_pdf: customType.enable_restitution_pdf ?? true,
       };
     }
 
