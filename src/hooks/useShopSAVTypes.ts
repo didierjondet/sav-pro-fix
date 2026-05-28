@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+// React imports retirés : plus de useEffect (realtime supprimé pour stabilité visuelle)
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
