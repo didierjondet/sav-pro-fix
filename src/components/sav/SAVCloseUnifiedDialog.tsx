@@ -357,6 +357,8 @@ export function SAVCloseUnifiedDialog({
       } catch (docError) {
         console.error('Erreur génération document:', docError);
       }
+      }
+
       
       toast({
         title: "Dossier clôturé",
