@@ -360,9 +360,10 @@ export function SAVCloseUnifiedDialog({
       }
 
       
+      const docNote = savTypeInfo.enable_restitution_pdf !== false ? ' et document généré' : '';
       toast({
         title: "Dossier clôturé",
-        description: sendSMS ? "Dossier clôturé, SMS envoyé et document généré" : "Dossier clôturé et document généré",
+        description: sendSMS ? `Dossier clôturé, SMS envoyé${docNote}` : `Dossier clôturé${docNote}`,
       });
     } catch (error) {
       console.error('Erreur lors de la clôture:', error);
