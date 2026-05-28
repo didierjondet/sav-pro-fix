@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { NumberInput } from "@/components/ui/number-input";
@@ -59,6 +59,7 @@ export function PartForm({ initialData, onSubmit, onCancel, isEdit = false, find
     formState: { errors },
     watch,
     setValue,
+    control,
   } = useForm({
     defaultValues: {
       name: initialData?.name || '',
@@ -303,13 +304,21 @@ export function PartForm({ initialData, onSubmit, onCancel, isEdit = false, find
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="purchase_price">Prix d'achat HT (€)</Label>
-              <NumberInput
-                id="purchase_price"
-                
-                step="0.01"
-                min="0"
-                {...register('purchase_price', { valueAsNumber: true })}
-                placeholder="0.00"
+              <Controller
+                name="purchase_price"
+                control={control}
+                render={({ field }) => (
+                  <NumberInput
+                    id="purchase_price"
+                    step="0.01"
+                    min="0"
+                    placeholder="0.00"
+                    value={field.value ?? 0}
+                    onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                    onBlur={field.onBlur}
+                    ref={field.ref}
+                  />
+                )}
               />
               {initialData?.price_last_updated && (
                 <p className="text-xs text-muted-foreground mt-1">
@@ -326,14 +335,22 @@ export function PartForm({ initialData, onSubmit, onCancel, isEdit = false, find
 
             <div>
               <Label htmlFor="selling_price">Prix public TTC (€)</Label>
-              <NumberInput
-                id="selling_price"
-                
-                step="0.01"
-                min="0"
-                {...register('selling_price', { valueAsNumber: true })}
-                placeholder="0.00"
-                readOnly={useMargin}
+              <Controller
+                name="selling_price"
+                control={control}
+                render={({ field }) => (
+                  <NumberInput
+                    id="selling_price"
+                    step="0.01"
+                    min="0"
+                    placeholder="0.00"
+                    readOnly={useMargin}
+                    value={field.value ?? 0}
+                    onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                    onBlur={field.onBlur}
+                    ref={field.ref}
+                  />
+                )}
               />
               {initialData?.price_last_updated && (
                 <p className="text-xs text-muted-foreground mt-1">
