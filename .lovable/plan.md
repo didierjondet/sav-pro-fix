@@ -1,35 +1,32 @@
 ## Problème
 
-Dans `src/components/layout/Sidebar.tsx` (L108-125), le badge rouge à côté du menu **Devis** ne compte que les statuts `draft`, `sent`, `viewed`. Les devis au statut `accepted` (validés en attente de transformation) ne sont comptés dans aucun badge visible. Résultat : pour Easycash Agde (qui n'a actuellement que des devis `accepted`/`archived`/`completed`/`rejected`), aucun badge n'apparaît, alors que la page `/quotes` affiche bien des devis dans les onglets Actifs/Validés.
+Le badge rouge à côté du menu **Devis** affiche actuellement tous les devis non terminés (incluant `accepted` et `sms_accepted`). Or l'utilisateur veut que ce badge corresponde exactement au contenu de l'onglet **"Devis actifs"** de la page `/quotes`, qui exclut aussi les devis acceptés.
+
+Filtre actuel de l'onglet "Devis actifs" (`src/pages/Quotes.tsx` L115-119) :
+- Exclut : `rejected`, `accepted`, `sms_accepted`, `archived`
+- Inclut donc : `draft`, `sent`, `viewed`, `expired`, `completed`
 
 ## Correctif
 
-Élargir la définition du compteur `inProgress` à **tous les devis sauf** `rejected`, `archived`, `completed`. Cela inclut donc : `draft`, `sent`, `viewed`, `accepted`, `sms_accepted`, `expired`.
+Aligner le compteur `inProgress` du Sidebar sur le même filtre que l'onglet "Devis actifs".
 
 ### Fichier modifié
 
-**`src/components/layout/Sidebar.tsx`** (uniquement la logique du `reduce` L108-125)
+**`src/components/layout/Sidebar.tsx`** (L108-126, uniquement la définition de `inactiveStatuses`)
 
 Avant :
 ```ts
-const activeStatuses = ['draft', 'sent', 'viewed'];
-if (q.status === 'sms_accepted') acc.clientAccepted++;
-else if (q.status === 'accepted') acc.accepted++;
-else if (q.status === 'rejected') acc.rejected++;
-else if (activeStatuses.includes(q.status)) acc.inProgress++;
+const inactiveStatuses = ['rejected', 'archived', 'completed'];
 ```
 
 Après :
 ```ts
-const inactiveStatuses = ['rejected', 'archived', 'completed'];
-if (!inactiveStatuses.includes(q.status)) acc.inProgress++;
-if (q.status === 'sms_accepted') acc.clientAccepted++;
+const inactiveStatuses = ['rejected', 'archived', 'accepted', 'sms_accepted'];
 ```
 
-Le badge rouge `inProgress` reflètera tous les devis encore actifs (Agde : 1 `accepted` → badge "1"). Le badge vert `clientAccepted` (sms_accepted) reste inchangé pour signaler les acceptations client à traiter.
+Résultat : le badge rouge affichera exactement le même nombre que `(Devis actifs)` dans la page `/quotes`. Les compteurs `clientAccepted` (badge vert SMS) et `rejected` restent inchangés.
 
 ## Hors scope
 
-- Aucune modification de la page `/quotes`, des onglets, ou du hook `useQuotes`.
-- Aucun changement visuel autre que la réapparition du badge.
-- Aucune modification de logique métier ou de DB.
+- Aucune modification de la page `/quotes`, du hook `useQuotes`, ou de la DB.
+- Aucun changement visuel sur les autres badges.

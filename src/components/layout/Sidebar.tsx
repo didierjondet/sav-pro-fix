@@ -106,7 +106,7 @@ export function Sidebar({
     quotes
   } = useQuotes();
   const quoteCounts = (quotes || []).reduce((acc, q) => {
-    const inactiveStatuses = ['rejected', 'archived', 'completed'];
+    const inactiveStatuses = ['rejected', 'archived', 'accepted', 'sms_accepted'];
     if (!inactiveStatuses.includes(q.status)) {
       acc.inProgress++;
     }
