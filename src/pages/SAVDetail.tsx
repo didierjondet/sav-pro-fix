@@ -343,7 +343,7 @@ export default function SAVDetail() {
 
                 {/* Ligne 2 : Boutons d'action */}
                 <div className="flex items-center gap-2 flex-wrap">
-                  {isReadyStatus(savCase.status) && <Button variant="outline" size="sm" onClick={async () => {
+                  {isReadyStatus(savCase.status) && getTypeInfo(savCase.sav_type).enable_restitution_pdf !== false && <Button variant="outline" size="sm" onClick={async () => {
                   try {
                     const { data: freshCase } = await supabase
                       .from('sav_cases')
