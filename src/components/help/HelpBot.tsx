@@ -11,7 +11,7 @@ import { useOnboardingProgress } from '@/hooks/useOnboardingProgress';
 import OnboardingPanel from '@/components/help/OnboardingPanel';
 import { useLocation } from 'react-router-dom';
 
-const PUBLIC_EXACT = ['/', '/landing', '/features', '/about', '/contact', '/auth', '/test', '/chrome-extension-download'];
+const PUBLIC_EXACT = ['/', '/landing', '/features', '/about', '/contact', '/auth', '/test'];
 const PUBLIC_PREFIX = ['/track/', '/quote/', '/satisfaction/', '/rdv/', '/shop/'];
 
 function renderSimpleMarkdown(text: string) {
