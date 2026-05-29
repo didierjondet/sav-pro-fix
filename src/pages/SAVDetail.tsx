@@ -117,17 +117,19 @@ export default function SAVDetail() {
     }, payload => {
       console.log('SAV case updated:', payload);
       if (payload.eventType === 'UPDATE' && payload.new) {
-        setSavCase((prevCase: any) => ({
-          ...prevCase,
-          ...payload.new,
-          // Conserver la relation customer seulement si customer_id n'a pas changé
-          customer: payload.new.customer_id === prevCase?.customer_id ? prevCase?.customer : prevCase?.customer
-        }));
-        // Si customer_id a changé, recharger les infos client
-        if (payload.new.customer_id !== undefined) {
-          // Comparaison faite à l'intérieur via prev state, on déclenche systématiquement un refresh ciblé
-          refreshSavCustomer();
-        }
+        setSavCase((prevCase: any) => {
+          const customerChanged = payload.new.customer_id !== prevCase?.customer_id;
+          if (customerChanged) {
+            // Recharge ciblée des infos client
+            refreshSavCustomer();
+          }
+          return {
+            ...prevCase,
+            ...payload.new,
+            // Conserver la relation customer si customer_id inchangé, sinon laisser refreshSavCustomer la repeupler
+            customer: customerChanged ? undefined : prevCase?.customer,
+          };
+        });
         // Mettre à jour les commentaires privés si ils ont changé
         if (payload.new.private_comments !== undefined) {
           setPrivateComments(payload.new.private_comments || '');
