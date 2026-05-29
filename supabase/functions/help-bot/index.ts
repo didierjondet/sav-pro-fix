@@ -530,8 +530,14 @@ Deno.serve(async (req) => {
 
 
     let shopDataContext = ''
+    let lookupContext = ''
     if (shopId) {
-      shopDataContext = await fetchShopData(supabaseAdmin, shopId)
+      const [data, lookup] = await Promise.all([
+        fetchShopData(supabaseAdmin, shopId),
+        performDataLookup(supabaseAdmin, shopId, message),
+      ])
+      shopDataContext = data
+      lookupContext = lookup
     }
 
     let knowledgeContext = ''
@@ -576,6 +582,7 @@ Deno.serve(async (req) => {
 
     const fullSystemPrompt = SYSTEM_PROMPT + 
       (shopDataContext ? `\n\n# DONNÉES EN TEMPS RÉEL DU MAGASIN\n\n${shopDataContext}` : '') +
+      (lookupContext ? `\n\n${lookupContext}` : '') +
       knowledgeContext
 
     const messages: any[] = [
