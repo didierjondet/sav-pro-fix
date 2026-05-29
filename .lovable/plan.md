@@ -1,60 +1,43 @@
-## Phase 6 — Rapports : Performance fournisseurs
+## Objectif
 
-Ajouter une section « Performance fournisseurs » dans la page Rapports, respectant la période et les filtres déjà actifs (types/statuts), avec export Excel.
+Améliorer le rendu PDF du rapport et permettre d'inclure/exclure la section « Performance fournisseurs » comme les autres métriques.
 
-### 1. Étendre `useReportData.ts`
+## 1. Switch « Performance fournisseurs » dans le sélecteur
 
-Modifier la requête `sav_parts` pour récupérer le fournisseur lié à la pièce :
+`Reports.tsx` :
 
-```ts
-sav_parts(
-  quantity,
-  unit_price,
-  purchase_price,
-  custom_part_name,
-  part:parts(name, supplier_id, supplier:suppliers(id, name))
-)
-```
+- Ajouter un état `includeSuppliers` (bool, défaut `true`).
+- Dans la grille existante « Graphiques à inclure dans le rapport » (lignes 533-565), ajouter une case à cocher « Performance fournisseurs » à la suite des widgets, branchée sur `includeSuppliers`.
+- Le rendu de `<SupplierPerformanceSection>` (et l'ajout de la feuille « Fournisseurs » dans l'export Excel) ne se fait que si `includeSuppliers === true`.
+- Mettre à jour le résumé d'en-tête imprimable (ligne 367-368) pour mentionner « Performance fournisseurs » quand activé.
+- Les boutons « Tout sélectionner / désélectionner » couvrent aussi ce switch.
 
-Étendre `ReportPartItem` avec `supplier_id: string | null` et `supplier_name: string | null` (fallback `null` pour pièces sans fournisseur ou pièces personnalisées).
+## 2. Mise en page PDF — éviter les coupures et aérer
 
-Conserver le comportement existant (les exclusions `exclude_purchase_costs` / `exclude_sales_revenue` du type de SAV s'appliquent aussi aux dépenses/CA fournisseur, pour cohérence avec le reste du rapport).
+Dans le bloc `@media print` de `exportToPDF()` :
 
-### 2. Nouveau hook `useSupplierReportData.ts`
+- Augmenter légèrement la respiration : `font-size` tableau 9px (au lieu de 8), `padding` cellules 4-5px, hauteur de ligne 1.3.
+- Forcer chaque carte de section (types SAV, Performance fournisseurs, graphiques) à `page-break-inside: avoid` **uniquement si elle tient sur une page** ; sinon autoriser la coupure mais avec :
+  - `thead { display: table-header-group }` pour répéter l'en-tête sur chaque page,
+  - `tfoot { display: table-footer-group }` pour les totaux,
+  - `tr { page-break-inside: avoid }` (déjà présent, à garder),
+  - `caption-side` du titre de carte : ajouter `break-after: avoid` sur les `CardHeader` pour qu'un titre ne reste pas seul en bas de page.
+- Pour la section Performance fournisseurs spécifiquement, ajouter une classe stable `print-supplier-section` sur le composant et appliquer :
+  - `break-before: auto` mais `break-inside: avoid` si la carte fait moins d'une page (laisser le navigateur décider via `break-inside: avoid` + thead/tfoot repeat pour le cas tableau long).
+- Élargir un peu les marges `@page` (10mm au lieu de 8mm) pour de vraies « pages pleines » sans textes collés au bord.
+- Ajouter `orphans: 3; widows: 3` sur les `tr` pour limiter les lignes orphelines.
 
-Pure agrégation côté client à partir de `reportData.items` (pas de nouvelle requête réseau) :
+## 3. Composant `SupplierPerformanceSection`
 
-Pour chaque pièce de chaque SAV :
-- Clé = `supplier_id` (ou bucket spécial « Sans fournisseur »)
-- **Dépenses** += `purchase_price × quantity` (à 0 si type exclut les coûts)
-- **CA** += `unit_price × quantity × ratio` où `ratio` reflète prise en charge totale/partielle du SAV (réutiliser la même logique que `useReportData`)
-- **Marge** = CA − Dépenses
-- Compteur de pièces et SAV uniques
+Ajouter `className="print-supplier-section"` sur la `Card` racine (pas de changement visuel à l'écran), pour cibler la section en CSS print.
 
-Renvoyer `{ rows: SupplierReportRow[], totals }` trié par marge desc.
+## Hors périmètre
 
-### 3. Composant `SupplierPerformanceSection.tsx` dans `src/components/reports/`
+- Pas de changement du rendu écran des sections existantes.
+- Pas de refonte de la palette ni des autres widgets.
+- Pas de modification de la requête de données.
 
-- Card avec titre « Performance fournisseurs » et sous-titre rappelant la période.
-- Tableau colonnes : Fournisseur, Pièces utilisées, SAV concernés, Dépenses, CA généré, Marge (avec couleur conditionnelle), % marge.
-- Ligne « Sans fournisseur » grisée si applicable.
-- Pied de tableau : totaux globaux.
-- État vide si aucune pièce sur la période.
+## Fichiers touchés
 
-### 4. Intégration `Reports.tsx`
-
-- Importer `SupplierPerformanceSection` et l'afficher sous `ReportChartsSection`.
-- Dans `exportToExcel()`, ajouter une feuille « Fournisseurs » avec les mêmes colonnes que le tableau + ligne totaux.
-
-### Hors périmètre
-
-- Pas de filtre « par fournisseur » sur la page Rapports (la section est descriptive, pas filtrante).
-- Pas de drill-down vers la liste des SAV par fournisseur (ajoutable plus tard si besoin).
-- Pas de modification des autres widgets / sections existantes.
-
-### Fichiers touchés
-
-- `src/hooks/useReportData.ts` (étendre requête + interface)
-- `src/hooks/useSupplierReportData.ts` (nouveau)
-- `src/components/reports/SupplierPerformanceSection.tsx` (nouveau)
-- `src/pages/Reports.tsx` (intégration + feuille Excel)
+- `src/pages/Reports.tsx` (état switch + condition de rendu + ajustement CSS print + résumé d'en-tête)
+- `src/components/reports/SupplierPerformanceSection.tsx` (ajout d'une classe CSS print)
