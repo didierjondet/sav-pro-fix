@@ -214,6 +214,28 @@ export function MessagingProvidersManager() {
     }
   };
 
+  const handleSyncBrevo = async (provider: MessagingProvider) => {
+    setSyncingId(provider.id);
+    try {
+      const { data, error } = await supabase.functions.invoke('brevo-sms-balance', { body: {} });
+      if (error) {
+        let msg = error.message;
+        try {
+          const ctx = (error as any).context;
+          if (ctx) { const b = await ctx.json?.() || ctx; msg = b?.error || msg; }
+        } catch {}
+        throw new Error(msg);
+      }
+      if (data?.error) throw new Error(data.error);
+      setBrevoBalances(prev => ({ ...prev, [provider.id]: { balance: data.balance, at: data.last_sync_at } }));
+      toast({ title: 'Synchronisation Brevo OK', description: `${data.balance} SMS disponibles chez Brevo.` });
+    } catch (e: any) {
+      toast({ title: 'Erreur Brevo', description: e.message, variant: 'destructive' });
+    } finally {
+      setSyncingId(null);
+    }
+  };
+
   const renderProviderCard = (provider: MessagingProvider) => {
     const def = getProviderDef(provider.type, provider.provider);
     return (
