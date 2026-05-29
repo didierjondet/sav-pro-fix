@@ -21,6 +21,8 @@ import { useShopSAVStatuses } from '@/hooks/useShopSAVStatuses';
 import { useRolePermissions } from '@/hooks/useRolePermissions';
 import { cn } from '@/lib/utils';
 import { ReportChartsSection, AVAILABLE_REPORT_WIDGETS } from '@/components/reports/ReportChartsSection';
+import { SupplierPerformanceSection } from '@/components/reports/SupplierPerformanceSection';
+import { useSupplierReportData } from '@/hooks/useSupplierReportData';
 import { Label } from '@/components/ui/label';
 
 export default function Reports() {
