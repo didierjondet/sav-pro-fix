@@ -2337,6 +2337,7 @@ export type Database = {
           alert_days: number | null
           created_at: string
           display_order: number
+          enable_restitution_pdf: boolean
           exclude_from_stats: boolean
           exclude_purchase_costs: boolean
           exclude_sales_revenue: boolean
@@ -2359,6 +2360,7 @@ export type Database = {
           alert_days?: number | null
           created_at?: string
           display_order?: number
+          enable_restitution_pdf?: boolean
           exclude_from_stats?: boolean
           exclude_purchase_costs?: boolean
           exclude_sales_revenue?: boolean
@@ -2381,6 +2383,7 @@ export type Database = {
           alert_days?: number | null
           created_at?: string
           display_order?: number
+          enable_restitution_pdf?: boolean
           exclude_from_stats?: boolean
           exclude_purchase_costs?: boolean
           exclude_sales_revenue?: boolean
