@@ -9,57 +9,30 @@ export interface WidgetDimensions {
 }
 
 export const WIDGET_SIZES: Record<WidgetSize, WidgetDimensions> = {
-  // 1 colonne - KPIs simples
-  small: {
-    size: 'small',
-    cols: 1,
-    height: 'min-h-[180px]'
-  },
-  
-  // 2 colonnes - Graphiques moyens
-  medium: {
-    size: 'medium', 
-    cols: 2,
-    height: 'min-h-[320px]'
-  },
-  
-  // 4 colonnes - Graphiques détaillés
-  large: {
-    size: 'large',
-    cols: 4, 
-    height: 'min-h-[450px]'
-  },
-  
-  // 4 colonnes - Dashboards complets
-  full: {
-    size: 'full',
-    cols: 4,
-    height: 'min-h-[400px]'
-  }
+  small:  { size: 'small',  cols: 1, height: '' },
+  medium: { size: 'medium', cols: 2, height: '' },
+  large:  { size: 'large',  cols: 4, height: '' },
+  full:   { size: 'full',   cols: 4, height: '' },
 };
 
-// Classes CSS pour chaque taille (responsive)
+// Classes CSS (col + row span) pour densifier la grille (auto-rows ~160px)
 export const getWidgetGridClasses = (size: WidgetSize): string => {
-  const dimensions = WIDGET_SIZES[size];
-  
-  // Mobile: toujours pleine largeur
-  // Tablette (sm): 2 colonnes max
-  // Desktop (lg): 4 colonnes
-  switch (dimensions.cols) {
-    case 1:
-      return 'col-span-1 sm:col-span-1 lg:col-span-1';
-    case 2:
-      return 'col-span-1 sm:col-span-1 lg:col-span-2';
-    case 4:
-      return 'col-span-1 sm:col-span-2 lg:col-span-4';
+  switch (size) {
+    case 'small':
+      return 'col-span-1 sm:col-span-1 lg:col-span-1 sm:row-span-1';
+    case 'medium':
+      return 'col-span-1 sm:col-span-1 lg:col-span-2 sm:row-span-2';
+    case 'large':
+      return 'col-span-1 sm:col-span-2 lg:col-span-4 sm:row-span-2';
+    case 'full':
+      return 'col-span-1 sm:col-span-2 lg:col-span-4 sm:row-span-3';
     default:
       return 'col-span-1';
   }
 };
 
-export const getWidgetHeightClass = (size: WidgetSize): string => {
-  return WIDGET_SIZES[size].height;
-};
+export const getWidgetHeightClass = (_size: WidgetSize): string => '';
+
 
 // Configuration des modules avec leurs tailles
 export interface ModuleSizeConfig {

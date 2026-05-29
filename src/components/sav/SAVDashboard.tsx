@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, HardDrive, Calendar, Info, Medal, Trophy, Award } from 'lucide-react';
+import { Plus, HardDrive, Calendar, Info, Medal, Trophy, Award, Lock, LockOpen } from 'lucide-react';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as ChartTooltip, ResponsiveContainer, Legend, LineChart, Line } from 'recharts';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -80,6 +80,13 @@ function DashboardWidgetContainer({ widgetId, children }: DashboardWidgetContain
 export function SAVDashboard() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isWidgetDialogOpen, setIsWidgetDialogOpen] = useState(false);
+  const [isLayoutUnlocked, setIsLayoutUnlocked] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    return localStorage.getItem('fixway_dashboard_layout_unlocked') === 'true';
+  });
+  useEffect(() => {
+    try { localStorage.setItem('fixway_dashboard_layout_unlocked', String(isLayoutUnlocked)); } catch {}
+  }, [isLayoutUnlocked]);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const { cases, loading } = useSAVCases();
   const { shop } = useShop();
@@ -1075,6 +1082,25 @@ export function SAVDashboard() {
         }).slice(1)}
         </h2>
         <div className="flex gap-2">
+          <TooltipProvider delayDuration={200}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setIsLayoutUnlocked((v) => !v)}
+                  className={isLayoutUnlocked ? 'text-primary ring-2 ring-primary/40' : ''}
+                  aria-label={isLayoutUnlocked ? 'Verrouiller la disposition' : 'Déverrouiller la disposition'}
+                >
+                  {isLayoutUnlocked ? <LockOpen className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                {isLayoutUnlocked ? 'Verrouiller la disposition' : 'Déverrouiller pour réorganiser'}
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+
           <Dialog open={isWidgetDialogOpen} onOpenChange={(open) => {
             if (!open) {
               refetch();
@@ -1096,6 +1122,7 @@ export function SAVDashboard() {
               />
             </DialogContent>
           </Dialog>
+
           
           <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
             <DialogTrigger asChild>
@@ -1116,11 +1143,12 @@ export function SAVDashboard() {
 
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={sortedModules.map(m => m.id)} strategy={rectSortingStrategy}>
-          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 auto-rows-auto">
+          <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 sm:auto-rows-[160px] [grid-auto-flow:dense]">
             {sortedModules.map((m) => (
               <SortableBlock 
                 key={m.id} 
                 id={m.id}
+                editable={isLayoutUnlocked}
                 onRemove={() => handleRemoveWidget(m.id)}
               >
                 {m.isCustom ? (
@@ -1133,6 +1161,7 @@ export function SAVDashboard() {
           </div>
         </SortableContext>
       </DndContext>
+
     </div>
   );
 }

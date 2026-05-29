@@ -13,10 +13,11 @@ interface SortableBlockProps {
   id: string;
   children: ReactNode;
   onRemove?: () => void;
+  editable?: boolean;
 }
 
-export const SortableBlock = ({ id, children, onRemove }: SortableBlockProps) => {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+export const SortableBlock = ({ id, children, onRemove, editable = false }: SortableBlockProps) => {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id, disabled: !editable });
   const { config } = useWidgetConfiguration(id);
   const { statuses } = useShopSAVStatuses();
   const { types } = useShopSAVTypes();
@@ -25,6 +26,7 @@ export const SortableBlock = ({ id, children, onRemove }: SortableBlockProps) =>
   const widgetSize = DEFAULT_MODULE_SIZES[id] || 'medium';
   const gridClasses = getWidgetGridClasses(widgetSize);
   const heightClass = getWidgetHeightClass(widgetSize);
+
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -67,13 +69,13 @@ export const SortableBlock = ({ id, children, onRemove }: SortableBlockProps) =>
       ref={setNodeRef} 
       style={style} 
       className={cn(
-        "relative overflow-hidden",
+        "relative overflow-hidden h-full",
         gridClasses,
         heightClass,
         isDragging && "opacity-70 z-50"
       )}
     >
-      {onRemove && (
+      {editable && onRemove && (
         <button
           onClick={onRemove}
           className="absolute top-2 left-2 z-10 rounded p-1 bg-background/80 border hover:bg-destructive hover:text-destructive-foreground cursor-pointer transition-colors"
@@ -110,18 +112,20 @@ export const SortableBlock = ({ id, children, onRemove }: SortableBlockProps) =>
           </TooltipProvider>
         )}
 
-        <button
-          {...attributes}
-          {...listeners}
-          className="rounded p-1 bg-background/80 border hover:bg-accent cursor-grab active:cursor-grabbing"
-          aria-label="Déplacer la section"
-          title="Glisser pour réorganiser"
-        >
-          <GripVertical className="w-4 h-4 text-muted-foreground" />
-        </button>
+        {editable && (
+          <button
+            {...attributes}
+            {...listeners}
+            className="rounded p-1 bg-background/80 border hover:bg-accent cursor-grab active:cursor-grabbing"
+            aria-label="Déplacer la section"
+            title="Glisser pour réorganiser"
+          >
+            <GripVertical className="w-4 h-4 text-muted-foreground" />
+          </button>
+        )}
       </div>
 
-      <div className="w-full">
+      <div className="w-full h-full">
         {children}
       </div>
     </div>
