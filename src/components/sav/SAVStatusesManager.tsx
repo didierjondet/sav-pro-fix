@@ -44,7 +44,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { Plus, Edit, Trash2, GripVertical, Flag } from 'lucide-react';
+import { Plus, Edit, Trash2, GripVertical, Flag, BarChart3 } from 'lucide-react';
 
 interface SortableStatusRowProps {
   status: SAVStatus;
@@ -119,6 +119,11 @@ function SortableStatusRow({
         {status.is_final_status && (
           <Badge variant="outline" className="text-xs border-green-500 text-green-700">
             🏁 Final
+          </Badge>
+        )}
+        {status.include_in_metrics && (
+          <Badge variant="outline" className="text-xs border-purple-500 text-purple-700">
+            📊 Compté
           </Badge>
         )}
       </div>
@@ -214,6 +219,24 @@ function SortableStatusRow({
                   }
                 />
               </div>
+              <div className="flex items-center justify-between pt-2 border-t">
+                <div className="flex-1">
+                  <Label htmlFor="edit_include_in_metrics" className="text-sm font-medium flex items-center gap-2">
+                    <BarChart3 className="h-4 w-4 text-purple-600" />
+                    Compter dans les métriques
+                  </Label>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Les SAV avec ce statut sont inclus dans le tableau de bord, les rapports et les statistiques (CA, marge, etc.).
+                  </p>
+                </div>
+                <Switch
+                  id="edit_include_in_metrics"
+                  checked={formData.include_in_metrics}
+                  onCheckedChange={(checked) =>
+                    setFormData(prev => ({ ...prev, include_in_metrics: checked }))
+                  }
+                />
+              </div>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setEditingStatus(null)}>
@@ -272,7 +295,8 @@ export function SAVStatusesManager() {
     status_color: '#6b7280',
     pause_timer: false,
     show_in_sidebar: false,
-    is_final_status: false
+    is_final_status: false,
+    include_in_metrics: false
   });
 
   // Sync local state with hook state (from realtime/refetch)
@@ -287,7 +311,8 @@ export function SAVStatusesManager() {
       status_color: '#6b7280',
       pause_timer: false,
       show_in_sidebar: false,
-      is_final_status: false
+      is_final_status: false,
+      include_in_metrics: false
     });
   };
 
@@ -365,7 +390,8 @@ export function SAVStatusesManager() {
         is_active: true,
         pause_timer: formData.pause_timer,
         show_in_sidebar: formData.show_in_sidebar,
-        is_final_status: formData.is_final_status
+        is_final_status: formData.is_final_status,
+        include_in_metrics: formData.include_in_metrics
       });
       
       setIsCreateDialogOpen(false);
@@ -384,7 +410,8 @@ export function SAVStatusesManager() {
         status_color: formData.status_color,
         pause_timer: formData.pause_timer,
         show_in_sidebar: formData.show_in_sidebar,
-        is_final_status: formData.is_final_status
+        is_final_status: formData.is_final_status,
+        include_in_metrics: formData.include_in_metrics
       });
       
       setEditingStatus(null);
@@ -419,7 +446,8 @@ export function SAVStatusesManager() {
       status_color: status.status_color,
       pause_timer: status.pause_timer,
       show_in_sidebar: status.show_in_sidebar,
-      is_final_status: status.is_final_status
+      is_final_status: status.is_final_status,
+      include_in_metrics: status.include_in_metrics
     });
   };
 
@@ -526,6 +554,24 @@ export function SAVStatusesManager() {
                     checked={formData.is_final_status}
                     onCheckedChange={(checked) => 
                       setFormData(prev => ({ ...prev, is_final_status: checked }))
+                    }
+                  />
+                </div>
+                <div className="flex items-center justify-between pt-2 border-t">
+                  <div className="flex-1">
+                    <Label htmlFor="include_in_metrics" className="text-sm font-medium flex items-center gap-2">
+                      <BarChart3 className="h-4 w-4 text-purple-600" />
+                      Compter dans les métriques
+                    </Label>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Les SAV avec ce statut sont inclus dans le tableau de bord, les rapports et les statistiques (CA, marge, etc.).
+                    </p>
+                  </div>
+                  <Switch
+                    id="include_in_metrics"
+                    checked={formData.include_in_metrics}
+                    onCheckedChange={(checked) =>
+                      setFormData(prev => ({ ...prev, include_in_metrics: checked }))
                     }
                   />
                 </div>
