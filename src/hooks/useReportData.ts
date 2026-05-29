@@ -209,7 +209,9 @@ export function useReportData({
         name: p.custom_part_name || p.part?.name || 'Pièce inconnue',
         quantity: p.quantity || 1,
         purchase_price: p.purchase_price || 0,
-        unit_price: p.unit_price || 0
+        unit_price: p.unit_price || 0,
+        supplier_id: p.part?.supplier_id || p.part?.supplier?.id || null,
+        supplier_name: p.part?.supplier?.name || null
       }));
 
       return {
