@@ -130,6 +130,8 @@ export function SuppliersManager() {
 
       <SupplierForm open={formOpen} onOpenChange={setFormOpen} initial={editing} />
 
+      <SupplierDetailDialog open={detailOpen} onOpenChange={setDetailOpen} supplier={detail} />
+
       <AlertDialog open={!!deleting} onOpenChange={(o) => !o && setDeleting(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
