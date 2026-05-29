@@ -653,7 +653,7 @@ export default function Reports() {
                     </CardHeader>
                     <CardContent className="p-0">
                       <div className="overflow-x-auto">
-                        <Table>
+                        <Table className="sav-table">
                           <TableHeader>
                             <TableRow>
                               <TableHead>N° SAV</TableHead>
