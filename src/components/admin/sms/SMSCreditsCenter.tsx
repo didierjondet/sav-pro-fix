@@ -447,7 +447,7 @@ function ShopRowEditor({ row, busy, onAdd, onRemove, onReset, usageBadge }: {
             <PopoverContent className="w-56 p-3 space-y-2">
               <Label className="text-xs">Retirer des SMS admin</Label>
               <p className="text-xs text-muted-foreground">Max : {row.admin_added}. Réinjectés dans le pot global.</p>
-              <NumberInput value={removeAmt} onChange={(v) => setRemoveAmt(v || 0)} min={1} max={row.admin_added} />
+              <NumberInput value={removeAmt} onChange={(e) => setRemoveAmt(Number(e.target.value) || 0)} min={1} max={row.admin_added} />
               <Button size="sm" variant="destructive" className="w-full" onClick={() => onRemove(Math.min(removeAmt, row.admin_added))} disabled={busy}>
                 Retirer
               </Button>
