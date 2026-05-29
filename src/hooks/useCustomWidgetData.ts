@@ -159,7 +159,7 @@ export const useCustomWidgetData = ({ metrics, filters, groupBy }: UseCustomWidg
           .map(s => s.status_key);
         const effectiveFinalStatuses = finalStatusKeys.length > 0
           ? finalStatusKeys
-          : ['ready', 'cancelled', 'delivered'];
+          : ['ready', 'pret_et_cloture', 'cancelled', 'delivered'];
 
         // Récupérer les SAV cases avec leurs pièces
         const { data: savCases, error: savError } = await supabase
@@ -241,7 +241,7 @@ export const useCustomWidgetData = ({ metrics, filters, groupBy }: UseCustomWidg
           }
 
           // Calculer le revenu (uniquement pour les SAV ready, hors types exclus des revenus)
-          if (sav.status === 'ready' && !excludeRevenue) {
+          if ((sav.status === 'ready' || sav.status === 'pret_et_cloture') && !excludeRevenue) {
             // Ajuster le revenu selon la prise en charge
             if (sav.partial_takeover && sav.takeover_amount) {
               const denom = Number(sav.total_cost) || 1;
@@ -274,7 +274,7 @@ export const useCustomWidgetData = ({ metrics, filters, groupBy }: UseCustomWidg
           }
 
           // Temps moyen basé sur les temps des pièces
-          if (sav.status === 'ready') {
+          if (sav.status === 'ready' || sav.status === 'pret_et_cloture') {
             let totalMinutes = 0;
             sav.sav_parts?.forEach((savPart: any) => {
               const time = (savPart.part?.time_minutes || 15) * (savPart.quantity || 0);

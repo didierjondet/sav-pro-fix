@@ -211,7 +211,7 @@ serve(async (req) => {
         const part = sp.part;
         return part && (part.quantity - (part.reserved_quantity || 0)) >= sp.quantity;
       });
-      return allPartsAvailable && sav.status !== 'ready';
+      return allPartsAvailable && sav.status !== 'ready' && sav.status !== 'pret_et_cloture';
     }) || [];
 
     const waitingForParts = savCases.data?.filter(sav => {

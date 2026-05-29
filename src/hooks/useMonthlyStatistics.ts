@@ -57,7 +57,7 @@ export function useMonthlyStatistics(year: number) {
             sav_parts(*, parts(*))
           `)
           .eq('shop_id', shop.id)
-          .eq('status', 'ready')
+          .in('status', ['ready', 'pret_et_cloture'])
           .gte('created_at', yearStart.toISOString())
           .lte('created_at', yearEnd.toISOString());
 
@@ -153,7 +153,7 @@ export function useMonthlyStatistics(year: number) {
           .from('sav_cases')
           .select('*')
           .eq('shop_id', shop.id)
-          .in('status', ['ready', 'delivered'])
+          .in('status', ['ready', 'pret_et_cloture', 'delivered'])
           .gte('created_at', yearStart.toISOString())
           .lte('created_at', yearEnd.toISOString());
 
