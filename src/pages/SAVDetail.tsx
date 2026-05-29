@@ -451,7 +451,7 @@ export default function SAVDetail() {
                         currentCustomerId={savCase.customer_id}
                         currentCustomerName={savCase.customer ? `${savCase.customer.first_name} ${savCase.customer.last_name}` : undefined}
                         onCustomerUpdated={() => {
-                          // Le realtime se charge de la mise à jour
+                          refreshSavCustomer();
                         }}
                       />
                     </CardTitle>
