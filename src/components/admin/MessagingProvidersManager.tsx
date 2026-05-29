@@ -266,10 +266,21 @@ export function MessagingProvidersManager() {
                 Activer
               </Button>
             )}
+            {provider.provider === 'brevo_sms' && (
+              <Button size="sm" variant="outline" onClick={() => handleSyncBrevo(provider)} disabled={syncingId === provider.id}>
+                {syncingId === provider.id ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <RefreshCw className="h-3 w-3 mr-1" />}
+                Synchroniser Brevo
+              </Button>
+            )}
             <Button size="sm" variant="destructive" onClick={() => handleDelete(provider)} disabled={deletingId === provider.id}>
               {deletingId === provider.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
             </Button>
           </div>
+          {brevoBalances[provider.id] && (
+            <p className="text-xs text-slate-600 mt-2">
+              Solde Brevo : <span className="font-semibold">{brevoBalances[provider.id].balance}</span> SMS disponibles
+            </p>
+          )}
         </CardContent>
       </Card>
     );
