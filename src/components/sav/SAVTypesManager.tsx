@@ -311,24 +311,7 @@ export default function SAVTypesManager({ types, loading, onRefresh }: SAVTypesM
               
               <div className="flex-1 overflow-y-auto space-y-4 pr-2">
                 <div>
-                  <Label htmlFor="type_key">Clé du type</Label>
-                  <Input
-                    id="type_key"
-                    value={formData.type_key}
-                    onChange={(e) => {
-                      // Convertir automatiquement les espaces en underscores
-                      const value = e.target.value.replace(/\s+/g, '_');
-                      setFormData({ ...formData, type_key: value });
-                    }}
-                    placeholder="ex: reparation_ecran"
-                    disabled={!!editingType?.is_default}
-                  />
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Utilisée en interne. Les espaces sont automatiquement convertis en underscores.
-                  </p>
-                </div>
-                
-                <div>
+
                   <Label htmlFor="type_label">Libellé</Label>
                   <Input
                     id="type_label"
