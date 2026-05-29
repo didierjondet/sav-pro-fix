@@ -115,6 +115,30 @@ export default function Reports() {
       XLSX.utils.book_append_sheet(wb, ws, typeInfo.label.substring(0, 31)); // Excel sheet name max 31 chars
     });
 
+    // Suppliers sheet
+    if (supplierReport.rows.length > 0) {
+      const supplierSheet = supplierReport.rows.map(r => ({
+        'Fournisseur': r.supplier_name,
+        'Pièces': r.parts_count,
+        'SAV': r.sav_count,
+        'Dépenses (€)': Number(r.expenses.toFixed(2)),
+        'CA généré (€)': Number(r.revenue.toFixed(2)),
+        'Marge (€)': Number(r.margin.toFixed(2)),
+        '% Marge': r.revenue > 0 ? Number(r.margin_pct.toFixed(1)) : 0
+      }));
+      supplierSheet.push({
+        'Fournisseur': 'TOTAL',
+        'Pièces': supplierReport.totals.parts_count,
+        'SAV': supplierReport.totals.sav_count,
+        'Dépenses (€)': Number(supplierReport.totals.expenses.toFixed(2)),
+        'CA généré (€)': Number(supplierReport.totals.revenue.toFixed(2)),
+        'Marge (€)': Number(supplierReport.totals.margin.toFixed(2)),
+        '% Marge': supplierReport.totals.revenue > 0 ? Number(supplierReport.totals.margin_pct.toFixed(1)) : 0
+      });
+      const supplierWs = XLSX.utils.json_to_sheet(supplierSheet);
+      XLSX.utils.book_append_sheet(wb, supplierWs, 'Fournisseurs');
+    }
+
     // Create synthesis sheet
     const synthesisData = [
       { 'Métrique': 'Nombre total de SAV', 'Valeur': data.totals.count },
