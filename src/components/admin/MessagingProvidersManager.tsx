@@ -71,6 +71,8 @@ export function MessagingProvidersManager() {
   const [saving, setSaving] = useState(false);
   const [activatingId, setActivatingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [syncingId, setSyncingId] = useState<string | null>(null);
+  const [brevoBalances, setBrevoBalances] = useState<Record<string, { balance: number; at: string }>>({});
 
   // Form state
   const [formType, setFormType] = useState<'sms' | 'email'>('sms');
