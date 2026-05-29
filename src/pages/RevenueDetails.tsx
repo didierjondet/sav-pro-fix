@@ -48,7 +48,7 @@ export default function RevenueDetails() {
         .from('sav_cases')
         .select('*, customer:customers(*), sav_parts(*, part:parts(*))')
         .eq('shop_id', shop.id)
-        .eq('status', 'ready')
+        .in('status', ['ready', 'pret_et_cloture'])
         .neq('sav_type', 'internal')
         .gte('created_at', start.toISOString())
         .lte('created_at', end.toISOString())

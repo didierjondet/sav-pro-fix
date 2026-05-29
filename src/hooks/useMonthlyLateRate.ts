@@ -58,7 +58,7 @@ export function useMonthlyLateRate(year?: number) {
           .map(s => s.status_key);
         
         if (finalStatusKeys.length === 0) {
-          finalStatusKeys.push('ready', 'cancelled', 'delivered');
+          finalStatusKeys.push('ready', 'pret_et_cloture', 'cancelled', 'delivered');
         }
 
         // Fonction pour obtenir les jours max de traitement

@@ -32,7 +32,7 @@ export default function Reports() {
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
-  const [selectedStatuses, setSelectedStatuses] = useState<string[]>(['ready']);
+  const [selectedStatuses, setSelectedStatuses] = useState<string[]>(['ready', 'pret_et_cloture']);
   const [selectedWidgets, setSelectedWidgets] = useState<string[]>(['monthly-comparison']);
   const [includeSuppliers, setIncludeSuppliers] = useState<boolean>(true);
 
@@ -473,8 +473,8 @@ export default function Reports() {
                     <div className="max-h-[250px] overflow-y-auto p-3">
                       <div className="space-y-2">
                         {[...allStatuses].sort((a, b) => {
-                          const aIsReady = a.status_key === 'ready' || a.status_label.toLowerCase() === 'prêt';
-                          const bIsReady = b.status_key === 'ready' || b.status_label.toLowerCase() === 'prêt';
+                          const aIsReady = a.status_key === 'ready' || a.status_key === 'pret_et_cloture' || a.status_label.toLowerCase().includes('prêt');
+                          const bIsReady = b.status_key === 'ready' || b.status_key === 'pret_et_cloture' || b.status_label.toLowerCase().includes('prêt');
                           if (aIsReady && !bIsReady) return -1;
                           if (!aIsReady && bIsReady) return 1;
                           return 0;

@@ -275,7 +275,7 @@ export function useStatistics(
         .map(s => s.status_key);
       const effectiveFinalStatuses = finalStatusKeys.length > 0
         ? finalStatusKeys
-        : ['ready', 'cancelled', 'delivered'];
+        : ['ready', 'pret_et_cloture', 'cancelled', 'delivered'];
 
       const { data: closedSavRaw, error: closedSavError } = await supabase
         .from('sav_cases')
@@ -300,13 +300,14 @@ export function useStatistics(
           return statusOk && typeOk;
         });
 
-        // Séparer les SAV pour les calculs financiers (ready uniquement, hors types exclus)
+        // Séparer les SAV pour les calculs financiers (ready/pret_et_cloture uniquement, hors types exclus)
         // et pour les retards (tous les SAV actifs, hors types exclus)
+        const READY_STATUSES = ['ready', 'pret_et_cloture'];
         const readySavCases = (savCases || []).filter((c: any) => 
-          c.status === 'ready' && !excludedFromStatsTypes.includes(c.sav_type)
+          READY_STATUSES.includes(c.status) && !excludedFromStatsTypes.includes(c.sav_type)
         );
         const activeSavCases = (savCases || []).filter((c: any) => 
-          c.status !== 'ready' && c.status !== 'delivered' && c.status !== 'cancelled' && !excludedFromStatsTypes.includes(c.sav_type)
+          !READY_STATUSES.includes(c.status) && c.status !== 'delivered' && c.status !== 'cancelled' && !excludedFromStatsTypes.includes(c.sav_type)
         );
         const completedSavCases = (savCases || []).filter((c: any) => 
           c.status === 'delivered' && !excludedFromStatsTypes.includes(c.sav_type)
@@ -520,6 +521,7 @@ export function useStatistics(
           name: name === 'pending' ? 'En attente' : 
                 name === 'in_progress' ? 'En cours' :
                 name === 'ready' ? 'Prêt' :
+                name === 'pret_et_cloture' ? 'Prêt et cloturé' :
                 name === 'delivered' ? 'Livré' :
                 name === 'cancelled' ? 'Annulé' : name,
           value
@@ -544,7 +546,7 @@ export function useStatistics(
         // Fallback si aucun statut trouvé
         const closedStatusKeys = [...readyStatusKeys, ...cancelledStatusKeys];
         if (closedStatusKeys.length === 0) {
-          closedStatusKeys.push('ready', 'cancelled');
+          closedStatusKeys.push('ready', 'pret_et_cloture', 'cancelled');
         }
 
         // Filtrer les SAV fermés (prêt ou annulé)

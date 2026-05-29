@@ -197,7 +197,7 @@ export function ReportChartsSection({ selectedWidgets, dateRange, reportData }: 
     return distribution.map((item: { name: string; value: number }) => ({
       name: item.name,
       value: item.value,
-      color: item.name === 'ready' ? 'hsl(var(--success))' : 
+      color: (item.name === 'ready' || item.name === 'Prêt' || item.name === 'pret_et_cloture' || item.name === 'Prêt et cloturé') ? 'hsl(var(--success))' : 
              item.name === 'delivered' ? 'hsl(var(--muted-foreground))' : 
              item.name === 'pending' ? 'hsl(var(--warning))' : 'hsl(var(--info))'
     }));
