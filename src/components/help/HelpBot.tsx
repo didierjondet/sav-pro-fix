@@ -3,6 +3,7 @@ import { X, Send, RotateCcw, TicketCheck, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import FixyMascot from '@/components/help/FixyMascot';
+import { useFixyReactions } from '@/hooks/useFixyReactions';
 
 import { useHelpBot } from '@/hooks/useHelpBot';
 import { useAuth } from '@/contexts/AuthContext';
@@ -61,6 +62,7 @@ const HelpBot: React.FC = () => {
   const { pendingCount, isDismissed, isFullyConfigured, isOnboardingExpired } = useOnboardingProgress();
 
   const userContext = getUserContext();
+  const fixyEvent = useFixyReactions();
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -112,18 +114,34 @@ const HelpBot: React.FC = () => {
   return (
     <>
       {!isOpen && (
-        <button
-          onClick={() => setIsOpen(true)}
-          className={`fixed bottom-4 right-4 z-50 h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-lg hover:opacity-90 hover:scale-105 transition-all flex items-center justify-center ${shakeNow ? 'animate-wiggle-attention' : ''}`}
-          aria-label="Ouvrir l'assistant Fixy"
-        >
-          <FixyMascot size={36} waving idle />
-          {canSeeOnboarding && pendingCount > 0 && !isFullyConfigured && (
-            <span className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center border-2 border-background">
-              {pendingCount}
-            </span>
+        <div className="fixed bottom-4 right-4 z-50 flex flex-col items-end gap-2">
+          {fixyEvent && (
+            <div
+              key={fixyEvent.id}
+              className="animate-mascot-bubble-in relative max-w-[200px] rounded-2xl bg-background border shadow-lg px-3 py-2 text-xs font-medium text-foreground"
+            >
+              {fixyEvent.bubble}
+              <span className="absolute -bottom-1 right-5 w-2 h-2 bg-background border-r border-b rotate-45" />
+            </div>
           )}
-        </button>
+          <button
+            onClick={() => setIsOpen(true)}
+            className={`relative h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-lg hover:opacity-90 hover:scale-105 transition-all flex items-center justify-center ${shakeNow ? 'animate-wiggle-attention' : ''}`}
+            aria-label="Ouvrir l'assistant Fixy"
+          >
+            <FixyMascot
+              size={36}
+              waving={!fixyEvent}
+              idle={!fixyEvent}
+              reaction={fixyEvent?.reaction ?? null}
+            />
+            {canSeeOnboarding && pendingCount > 0 && !isFullyConfigured && (
+              <span className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center border-2 border-background">
+                {pendingCount}
+              </span>
+            )}
+          </button>
+        </div>
       )}
 
       {isOpen && (

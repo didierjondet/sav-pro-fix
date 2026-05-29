@@ -146,6 +146,39 @@ export default {
 			'mascot-antenna': {
 				'0%, 100%': { opacity: '0.6', transform: 'scale(1)' },
 				'50%': { opacity: '1', transform: 'scale(1.4)' }
+			},
+			'mascot-cheer': {
+				'0%, 100%': { transform: 'translateY(0) rotate(0deg)' },
+				'20%': { transform: 'translateY(-10px) rotate(-8deg)' },
+				'40%': { transform: 'translateY(-14px) rotate(8deg)' },
+				'60%': { transform: 'translateY(-10px) rotate(-5deg)' },
+				'80%': { transform: 'translateY(-4px) rotate(3deg)' }
+			},
+			'mascot-alert': {
+				'0%, 100%': { transform: 'translateX(0)' },
+				'15%, 45%, 75%': { transform: 'translateX(-5px)' },
+				'30%, 60%, 90%': { transform: 'translateX(5px)' }
+			},
+			'mascot-nod': {
+				'0%, 100%': { transform: 'rotate(0deg)' },
+				'25%': { transform: 'rotate(-12deg)' },
+				'50%': { transform: 'rotate(0deg)' },
+				'75%': { transform: 'rotate(12deg)' }
+			},
+			'mascot-spin': {
+				'0%': { transform: 'rotate(0deg) scale(1)' },
+				'50%': { transform: 'rotate(180deg) scale(1.1)' },
+				'100%': { transform: 'rotate(360deg) scale(1)' }
+			},
+			'mascot-love': {
+				'0%, 100%': { transform: 'scale(1)' },
+				'25%, 75%': { transform: 'scale(1.15)' },
+				'50%': { transform: 'scale(0.95)' }
+			},
+			'mascot-bubble-in': {
+				'0%': { transform: 'translateY(8px) scale(0.6)', opacity: '0' },
+				'60%': { transform: 'translateY(-2px) scale(1.05)', opacity: '1' },
+				'100%': { transform: 'translateY(0) scale(1)', opacity: '1' }
 			}
 		},
 		animation: {
@@ -159,7 +192,13 @@ export default {
 			'mascot-bounce': 'mascot-bounce 3s ease-in-out infinite',
 			'mascot-wave': 'mascot-wave 6s ease-in-out infinite',
 			'mascot-blink': 'mascot-blink 5s ease-in-out infinite',
-			'mascot-antenna': 'mascot-antenna 1.2s ease-in-out infinite'
+			'mascot-antenna': 'mascot-antenna 1.2s ease-in-out infinite',
+			'mascot-cheer': 'mascot-cheer 1.4s ease-in-out',
+			'mascot-alert': 'mascot-alert 0.6s ease-in-out 3',
+			'mascot-nod': 'mascot-nod 1.2s ease-in-out',
+			'mascot-spin': 'mascot-spin 1s ease-in-out',
+			'mascot-love': 'mascot-love 1.2s ease-in-out 2',
+			'mascot-bubble-in': 'mascot-bubble-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards'
 		}
 		}
 	},
