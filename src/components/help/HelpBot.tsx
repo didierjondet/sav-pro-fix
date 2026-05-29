@@ -114,10 +114,10 @@ const HelpBot: React.FC = () => {
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className={`fixed bottom-4 right-4 z-50 h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-lg hover:opacity-90 transition-all flex items-center justify-center ${shakeNow ? 'animate-wiggle-attention' : ''}`}
-          aria-label="Ouvrir l'assistant"
+          className={`fixed bottom-4 right-4 z-50 h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-lg hover:opacity-90 hover:scale-105 transition-all flex items-center justify-center ${shakeNow ? 'animate-wiggle-attention' : ''}`}
+          aria-label="Ouvrir l'assistant Fixy"
         >
-          <MessageCircleQuestion className="h-6 w-6" />
+          <FixyMascot size={36} waving idle />
           {canSeeOnboarding && pendingCount > 0 && !isFullyConfigured && (
             <span className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center border-2 border-background">
               {pendingCount}
