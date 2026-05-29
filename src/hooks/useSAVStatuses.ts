@@ -15,6 +15,7 @@ export interface SAVStatus {
   pause_timer: boolean;
   show_in_sidebar: boolean;
   is_final_status: boolean;
+  include_in_metrics: boolean;
   created_at: string;
   updated_at: string;
 }
