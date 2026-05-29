@@ -325,7 +325,7 @@ export function SMSCreditsCenter() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label className="text-xs">Seuil (SMS)</Label>
-                <NumberInput value={alertThreshold} onChange={(v) => setAlertThreshold(v || 0)} min={0} />
+                <NumberInput value={alertThreshold} onChange={(e) => setAlertThreshold(Number(e.target.value) || 0)} min={0} />
               </div>
               <div>
                 <Label className="text-xs">Téléphone</Label>
