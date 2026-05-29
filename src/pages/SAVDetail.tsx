@@ -56,7 +56,6 @@ export default function SAVDetail() {
     loading,
     updateTechnicianComments,
     updatePrivateComments,
-    refetch
   } = useSAVCases();
 
   const refreshSavCustomer = async () => {
@@ -77,8 +76,8 @@ export default function SAVDetail() {
       newCustomer = cust || undefined;
     }
     setSavCase((prev: any) => prev ? { ...prev, customer_id: newCustomerId, customer: newCustomer } : prev);
-    refetch();
   };
+
   const {
     shop
   } = useShop();
