@@ -29,6 +29,8 @@ export interface ReportSAVItem {
   margin: number;
   parts: ReportPartItem[];
   technician_comments: string | null;
+  revenue_ratio: number;
+  purchase_cost_excluded: boolean;
 }
 
 export interface ReportData {
