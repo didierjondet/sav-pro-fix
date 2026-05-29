@@ -178,8 +178,9 @@ export function useReportData({
       // Calculer les coûts bruts
       let purchase_cost = parts.reduce((sum: number, p: any) => 
         sum + ((p.purchase_price || 0) * (p.quantity || 1)), 0);
-      let selling_price = parts.reduce((sum: number, p: any) => 
+      const rawSelling = parts.reduce((sum: number, p: any) => 
         sum + ((p.unit_price || 0) * (p.quantity || 1)), 0);
+      let selling_price = rawSelling;
       
       // Ajuster le CA selon la prise en charge
       if (sav.taken_over && !sav.partial_takeover) {
@@ -200,6 +201,7 @@ export function useReportData({
       }
       
       const margin = selling_price - purchase_cost;
+      const revenue_ratio = rawSelling > 0 ? selling_price / rawSelling : 0;
 
       const customer = sav.customer;
       const customer_name = customer 
@@ -231,7 +233,9 @@ export function useReportData({
         selling_price,
         margin,
         parts: mappedParts,
-        technician_comments: sav.technician_comments || null
+        technician_comments: sav.technician_comments || null,
+        revenue_ratio,
+        purchase_cost_excluded: !!typeInfo.exclude_purchase_costs
       };
     });
 
