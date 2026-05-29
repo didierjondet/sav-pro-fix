@@ -479,6 +479,12 @@ export function PartForm({ initialData, onSubmit, onCancel, isEdit = false, find
           </div>
         </form>
       </CardContent>
+
+      <SupplierForm
+        open={supplierFormOpen}
+        onOpenChange={setSupplierFormOpen}
+        onSaved={(s) => setSupplierId(s.id)}
+      />
     </Card>
   );
 }
