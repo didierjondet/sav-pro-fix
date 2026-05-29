@@ -21,27 +21,30 @@ async function decryptApiKey(encrypted: string): Promise<string> {
 }
 
 async function getAIConfig(supabaseClient: any) {
+  const fallback = { provider: "lovable", url: "https://ai.gateway.lovable.dev/v1/chat/completions", apiKey: Deno.env.get("LOVABLE_API_KEY"), model: "google/gemini-3-flash-preview" };
   try {
     const { data } = await supabaseClient.from("ai_engine_config").select("*").eq("is_active", true).maybeSingle();
     if (!data || data.provider === "lovable") {
-      return { url: "https://ai.gateway.lovable.dev/v1/chat/completions", apiKey: Deno.env.get("LOVABLE_API_KEY"), model: data?.model || "google/gemini-3-flash-preview" };
+      return { ...fallback, model: data?.model || fallback.model };
     }
     let apiKey: string | undefined;
     if (data.encrypted_api_key) {
       try { apiKey = await decryptApiKey(data.encrypted_api_key); } catch (e) { console.error("Decrypt failed:", e); }
     }
     if (!apiKey) apiKey = Deno.env.get(data.api_key_name);
-    if (!apiKey) {
-      return { url: "https://ai.gateway.lovable.dev/v1/chat/completions", apiKey: Deno.env.get("LOVABLE_API_KEY"), model: "google/gemini-3-flash-preview" };
-    }
+    // Garde-fou: si pas de clé pour le provider, ne PAS envoyer la clé Lovable à l'URL du provider tiers
+    if (!apiKey) return fallback;
     switch (data.provider) {
-      case "openai": return { url: "https://api.openai.com/v1/chat/completions", apiKey, model: data.model };
-      case "gemini": return { url: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", apiKey, model: data.model };
-      default: return { url: "https://ai.gateway.lovable.dev/v1/chat/completions", apiKey: Deno.env.get("LOVABLE_API_KEY"), model: data.model };
+      case "openai":
+        return { provider: "openai", url: "https://api.openai.com/v1/chat/completions", apiKey, model: data.model };
+      case "gemini":
+        return { provider: "gemini", url: `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(data.model)}:generateContent`, apiKey, model: data.model };
+      default:
+        return fallback;
     }
   } catch (e) {
     console.error("getAIConfig error:", e);
-    return { url: "https://ai.gateway.lovable.dev/v1/chat/completions", apiKey: Deno.env.get("LOVABLE_API_KEY"), model: "google/gemini-3-flash-preview" };
+    return fallback;
   }
 }
 
@@ -415,7 +418,59 @@ async function performDataLookup(supabaseAdmin: any, shopId: string, message: st
   const msg = message.toLowerCase()
 
   try {
-    // 1. Numéro de dossier SAV (SAV-XXXX, dossier 123, #123)
+    // 0. RÉPONSES FACTUELLES DIRECTES (calculées serveur, garanties exactes)
+
+    // 0a. Question "stock" globale: combien de pièces, inventaire, quantité totale...
+    const stockGlobal = /(combien|nombre|total|inventaire|quantit[ée]|valeur)/i.test(msg)
+      && /(pi[èe]ce|stock|r[ée]f[ée]rence|inventaire)/i.test(msg)
+    if (stockGlobal) {
+      const [statsRes, allPartsRes, lowRes] = await Promise.all([
+        supabaseAdmin.rpc('get_parts_statistics', { p_shop_id: shopId }),
+        supabaseAdmin.from('parts').select('name, reference, quantity, selling_price, purchase_price').eq('shop_id', shopId).order('quantity', { ascending: false }).limit(15),
+        supabaseAdmin.from('parts').select('name, reference, quantity, min_stock').eq('shop_id', shopId).not('min_stock', 'is', null),
+      ])
+      const stats = Array.isArray(statsRes.data) ? statsRes.data[0] : statsRes.data
+      const lowStock = (lowRes.data || []).filter((p: any) => p.quantity != null && p.min_stock != null && p.quantity <= p.min_stock)
+      const lines: string[] = []
+      if (stats) {
+        lines.push(`- **Quantité totale en stock** : ${stats.total_quantity} pièces`)
+        lines.push(`- **Nombre de références distinctes** : ${stats.total_parts ?? (allPartsRes.data?.length ?? '?')}`)
+        lines.push(`- **Valeur totale du stock** : ${Number(stats.total_value || 0).toFixed(2)}€`)
+        lines.push(`- **Pièces en stock bas** : ${stats.low_stock_count}`)
+      } else if (allPartsRes.data) {
+        const total = allPartsRes.data.reduce((s: number, p: any) => s + (Number(p.quantity) || 0), 0)
+        lines.push(`- **Quantité totale en stock** : ${total} pièces`)
+        lines.push(`- **Nombre de références** : ${allPartsRes.data.length}`)
+      }
+      if (allPartsRes.data?.length) {
+        lines.push(`\n**Top pièces en stock :**\n${allPartsRes.data.slice(0, 10).map((p: any) => `  • ${p.name} (réf ${p.reference || '—'}) : ${p.quantity} en stock`).join('\n')}`)
+      }
+      if (lowStock.length) {
+        lines.push(`\n**⚠️ Alertes stock bas (${lowStock.length}) :**\n${lowStock.slice(0, 10).map((p: any) => `  • ${p.name} (réf ${p.reference || '—'}) : ${p.quantity} ≤ ${p.min_stock}`).join('\n')}`)
+      }
+      blocks.push(`### 📦 Réponse factuelle – Stock du magasin (données live)\n${lines.join('\n')}`)
+    }
+
+    // 0b. Question "SAV" globale: combien de SAV en cours / en retard / par statut
+    const savGlobal = /(combien|nombre|total|liste)/i.test(msg) && /(sav|dossier|r[ée]paration)/i.test(msg)
+    if (savGlobal) {
+      const { data: allSavs } = await supabaseAdmin
+        .from('sav_cases')
+        .select('case_number, status, sav_type, device_brand, device_model, created_at')
+        .eq('shop_id', shopId)
+      if (allSavs?.length) {
+        const byStatus: Record<string, number> = {}
+        for (const s of allSavs) byStatus[s.status] = (byStatus[s.status] || 0) + 1
+        const lines = [
+          `- **Total SAV** : ${allSavs.length}`,
+          `- **Répartition par statut** :`,
+          ...Object.entries(byStatus).map(([s, c]) => `  • ${s} : ${c}`),
+        ]
+        blocks.push(`### 🛠️ Réponse factuelle – SAV du magasin (données live)\n${lines.join('\n')}`)
+      }
+    }
+
+
     const caseMatches = message.match(/\b(SAV-\d{2,4}-?\d{0,6}|#?\d{3,8})\b/gi) || []
     for (const raw of caseMatches.slice(0, 3)) {
       const term = raw.replace('#', '').trim()
@@ -580,55 +635,64 @@ Deno.serve(async (req) => {
       console.error('Knowledge search error:', e)
     }
 
-    const fullSystemPrompt = SYSTEM_PROMPT + 
-      (shopDataContext ? `\n\n# DONNÉES EN TEMPS RÉEL DU MAGASIN\n\n${shopDataContext}` : '') +
-      (lookupContext ? `\n\n${lookupContext}` : '') +
-      knowledgeContext
-
-    const messages: any[] = [
-      { role: 'system', content: fullSystemPrompt }
-    ]
-
-    if (userContext) {
-      messages.push({
-        role: 'system',
-        content: `Contexte utilisateur :
+    const userContextBlock = userContext ? `\n\n## Contexte utilisateur courant
 - Profil rempli : ${userContext.profileComplete ? 'Oui' : 'Non (suggérer de compléter dans Paramètres → Profil)'}
 - Boutique configurée : ${userContext.shopComplete ? 'Oui' : 'Non (suggérer de configurer dans Paramètres → Boutique)'}
 - Rôle : ${userContext.role || 'inconnu'}
-- Nom boutique : ${userContext.shopName || 'non configuré'}`
+- Nom boutique : ${userContext.shopName || 'non configuré'}` : ''
+
+    const fullSystemPrompt = SYSTEM_PROMPT +
+      (shopDataContext ? `\n\n# DONNÉES EN TEMPS RÉEL DU MAGASIN\n\n${shopDataContext}` : '') +
+      (lookupContext ? `\n\n${lookupContext}` : '') +
+      knowledgeContext +
+      userContextBlock
+
+    // Diagnostic
+    console.log(`[help-bot] provider=${aiConfig.provider} model=${aiConfig.model} shopId=${shopId || 'none'} systemPromptChars=${fullSystemPrompt.length} shopDataChars=${shopDataContext.length} lookupChars=${lookupContext.length}`)
+
+    // Rappel injecté côté user pour forcer l'IA à exploiter le contexte (utile pour Gemini)
+    const userMessageWithHint = shopDataContext
+      ? `${message}\n\n[Rappel système: utilise impérativement les DONNÉES EN TEMPS RÉEL DU MAGASIN ci-dessus pour répondre avec des chiffres exacts. Ne réponds jamais "consultez votre ERP" — tu ES l'ERP.]`
+      : message
+
+    // Construction des messages
+    const chatHistory = (history && Array.isArray(history))
+      ? history.slice(-10).map((m: any) => ({ role: m.role === 'user' ? 'user' : 'assistant', content: m.content }))
+      : []
+
+    let response: Response
+    if (aiConfig.provider === 'gemini') {
+      // Endpoint natif Gemini avec systemInstruction (gère mieux les gros contextes)
+      const geminiContents = [
+        ...chatHistory.map((m: any) => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] })),
+        { role: 'user', parts: [{ text: userMessageWithHint }] },
+      ]
+      response = await fetch(`${aiConfig.url}?key=${encodeURIComponent(aiConfig.apiKey)}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text: fullSystemPrompt }] },
+          contents: geminiContents,
+          generationConfig: { temperature: 0.5, maxOutputTokens: 2000 },
+        }),
+      })
+    } else {
+      const messages: any[] = [
+        { role: 'system', content: fullSystemPrompt },
+        ...chatHistory,
+        { role: 'user', content: userMessageWithHint },
+      ]
+      response = await fetch(aiConfig.url, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${aiConfig.apiKey}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model: aiConfig.model, messages, temperature: 0.5, max_tokens: 2000 }),
       })
     }
-
-    if (history && Array.isArray(history)) {
-      for (const msg of history.slice(-10)) {
-        messages.push({
-          role: msg.role === 'user' ? 'user' : 'assistant',
-          content: msg.content
-        })
-      }
-    }
-
-    messages.push({ role: 'user', content: message })
-
-    const response = await fetch(aiConfig.url, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${aiConfig.apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: aiConfig.model,
-        messages,
-        temperature: 0.5,
-        max_tokens: 2000,
-      }),
-    })
 
 
     if (!response.ok) {
       const errorText = await response.text()
-      console.error('AI API error:', response.status, errorText)
+      console.error(`[help-bot] AI API error provider=${aiConfig.provider} status=${response.status}:`, errorText.slice(0, 500))
       
       if (response.status === 429) {
         return new Response(JSON.stringify({
@@ -656,7 +720,9 @@ Deno.serve(async (req) => {
     }
 
     const data = await response.json()
-    const content = data.choices?.[0]?.message?.content || "Désolé, je n'ai pas pu traiter votre demande."
+    const content = aiConfig.provider === 'gemini'
+      ? (data.candidates?.[0]?.content?.parts?.map((p: any) => p.text).filter(Boolean).join('\n') || "Désolé, je n'ai pas pu traiter votre demande.")
+      : (data.choices?.[0]?.message?.content || "Désolé, je n'ai pas pu traiter votre demande.")
 
     const shouldEscalate = content.startsWith('[ESCALATE]')
     let cleanMessage = content
