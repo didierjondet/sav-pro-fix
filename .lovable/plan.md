@@ -1,92 +1,48 @@
+## Problème constaté
 
-# Objectif
+Sur le magasin d'Agde (moteur IA réglé sur **Gemini 2.5 Flash**), la question "combien j'ai de pièces en stock ?" reçoit une réponse 100% générique ("consultez votre ERP..."). Donc le contexte temps réel injecté dans le prompt n'arrive pas (ou n'est pas pris en compte) par Gemini.
 
-Rendre l'assistant IA (HelpBot + assistants associés) :
-1. **Omniscient sur le logiciel** : connaît toutes les fonctionnalités, pages, règles métier Fixway.
-2. **Capable d'interroger les données réelles** du magasin (SAV, pièces, clients, devis, agenda, finances).
-3. **Compétent comme technicien réparateur** (smartphones, tablettes, consoles, objets hi-tech) pour aider au diagnostic.
-4. **Indépendant du moteur IA choisi** (Lovable, OpenAI, Gemini) — toutes les capacités s'appliquent quel que soit le provider.
+Causes probables identifiées dans `supabase/functions/help-bot/index.ts` :
 
-L'architecture multi-provider existe déjà (`getAIConfig` dans chaque edge function). On enrichit donc le **contenu** envoyé aux IA (prompts + contexte de données), pas le routage.
+1. **Endpoint Gemini "OpenAI-compatible"** (`/v1beta/openai/chat/completions`) gère mal les `system` messages volumineux et **deux messages `system` séparés** (SYSTEM_PROMPT + userContext). Les ~36 KB de prompt + ~20 KB de données magasin peuvent être tronqués/ignorés silencieusement.
+2. Aucun **log** ne permet de vérifier si `shopId` est bien transmis, si `fetchShopData` réussit, ni quel provider/URL/model a finalement été appelé.
+3. Si `decryptApiKey` échoue, on retombe sur `LOVABLE_API_KEY` envoyé à l'URL Gemini → 401 silencieux côté UI (toast générique).
+4. Les questions "stock" ne déclenchent **aucune** recherche ciblée dans `performDataLookup` (le regex couvre vitre/écran/batterie mais pas les questions globales type "combien de pièces").
 
-# Modifications
+## Plan de correction
 
-## 1. `supabase/functions/help-bot/index.ts` (assistant principal)
+### 1. `supabase/functions/help-bot/index.ts`
 
-### a) Enrichir `SYSTEM_PROMPT` avec un volet "Technicien expert"
+- **Logs de diagnostic** (visibles dans Edge Function Logs) :
+  - provider/model/URL retenus par `getAIConfig`
+  - `shopId` reçu, taille du `shopDataContext`, présence de `lookupContext`
+  - statut HTTP de la réponse Gemini + 200 premiers caractères en cas d'erreur
+- **Fusion en un seul `system` message** : concaténer `SYSTEM_PROMPT + DONNÉES MAGASIN + lookup + userContext` pour éviter le bug multi-system de Gemini.
+- **Renforcement Gemini natif** : quand `provider === 'gemini'`, appeler l'endpoint natif `v1beta/models/{model}:generateContent` avec un champ `systemInstruction` dédié (gère correctement les gros contextes) au lieu de la couche OpenAI-compat.
+- **Réinjection des données dans le tour utilisateur** : préfixer le message user par un rappel court "[Contexte magasin disponible : X SAV, Y pièces, Z € de stock, …]" pour forcer Gemini à s'y référer.
+- **Détecteur "stock global"** dans `performDataLookup` : si le message contient `stock`, `pièce(s)`, `inventaire`, `combien`, `quantité`, on injecte directement un bloc "## RÉPONSE FACTUELLE STOCK" calculé serveur (total quantité, valeur totale, nb références, top 10, alertes basses) — la réponse devient alors évidente même si Gemini ignore le reste.
+- **Détecteur "SAV global"** identique pour les questions type "combien de SAV en cours / en retard".
+- **Garde-fou clé API** : si `decryptApiKey` échoue ET `Deno.env.get(api_key_name)` est vide, **rester sur Lovable AI** (URL + clé Lovable) au lieu d'envoyer la clé Lovable à l'URL Gemini.
 
-Ajouter une grande section **"## 🔧 Compétences techniques (réparateur expert)"** au prompt avec :
+### 2. `supabase/functions/daily-assistant/index.ts` et `ai-data-assistant/index.ts`
 
-- **Marques & modèles** : Apple (iPhone 6 → 17 Pro Max, iPad, MacBook), Samsung (S/A/Note/Z Fold/Flip), Xiaomi/Redmi/Poco, Huawei, Oppo, Google Pixel, OnePlus, consoles (Switch, PS4/5, Xbox), montres connectées.
-- **Pannes courantes par catégorie** :
-  - Écran (LCD/OLED, tactile, vitre, true tone iPhone, point bleu Samsung)
-  - Batterie (gonflement, autonomie, cycles, calibration, message "service")
-  - Charge (connecteur Lightning/USB-C/micro-USB, nappe, IC charge)
-  - Audio (haut-parleur, écouteur, micro, jack)
-  - Caméra (avant/arrière, autofocus, capteur, vitre objectif)
-  - Boutons (power, volume, home/Touch ID, Face ID)
-  - Connectique (Wi-Fi, Bluetooth, SIM, Face ID, NFC)
-  - Logique (court-circuit, oxydation, désoudage, BGA)
-  - Logiciel (iCloud lock, FRP, bootloop, restauration DFU, root)
-- **Procédures de diagnostic** : checklist standard (alimentation → écran → tactile → composants), tests à effectuer avant démontage, mesures multimètre courantes (tensions batterie, lignes d'alim), interprétation des codes erreurs (Apple Diags, Samsung *#0*#).
-- **Pièces & qualité** : OEM vs compatible, grades (Original/Refurb/Soft OLED/Hard OLED/Incell), risques d'incompatibilité (true tone, capteur de luminosité, Face ID après changement écran iPhone).
-- **Estimation de durée** : temps moyens par intervention (écran iPhone 30-45min, batterie 20-30min, connecteur de charge 45-60min, désoudage 1-2h).
-- **Sécurité** : précautions ESD, batteries Li-ion (perçage = feu), oxydation (ne pas charger), données client (sauvegarde avant DFU).
-- **Conseils au technicien** : poser les bonnes questions au client (chute ? eau ? depuis quand ? fonctionne en partie ?), différencier garantie vs hors-garantie, justifier un devis refusé.
+Mêmes correctifs ciblés et minimaux :
+- même garde-fou clé API,
+- fusion en un seul `system` message,
+- bascule endpoint natif Gemini quand `provider === 'gemini'`,
+- logs identiques.
 
-L'assistant pourra ainsi répondre à des questions comme :
-- "Le tactile ne répond plus en haut de l'écran d'un iPhone 11, que vérifier ?"
-- "Combien facturer un changement de connecteur de charge sur S22 ?"
-- "Quel grade d'écran pour un iPhone 13 Pro ?"
+### 3. Vérification
 
-### b) Élargir `fetchShopData` (contexte données temps réel)
-
-Ajouter aux requêtes parallèles :
-- **SAV avec détails complets** : top 20 actifs avec problème, IMEI, accessoires, total pièces (pas juste les 10 derniers basiques).
-- **Pièces les plus utilisées** (top 15 via `get_parts_statistics`).
-- **Agenda du jour + 7 prochains jours** (`appointments`).
-- **Messages clients non lus** (`sav_messages` côté client).
-- **Devis en attente d'acceptation** (statut "sent").
-- **Satisfaction récente** (`satisfaction_surveys` 30 derniers jours, note moyenne).
-- **Finances mensuelles** : CA, marge, coût pièces (réutiliser logique `useStatistics`).
-- **Fournisseurs actifs** (`suppliers`).
-- **Techniciens du magasin** (`profiles` du shop, rôle, dernière connexion).
-
-### c) Mécanisme d'interrogation à la demande (data lookup)
-
-Ajouter une fonction `performDataLookup(message, shopId)` exécutée **avant** l'appel IA :
-- Détecte les patterns dans la question utilisateur (regex sur mots-clés : "SAV SAV-2024-", "client Dupont", "pièce vitre iPhone 13", "stock", "facture", "RDV demain").
-- Lance des requêtes Supabase ciblées (recherche par `case_number`, `customer.last_name`, `parts.name ilike`, etc.).
-- Injecte les résultats dans un bloc `## 🔍 Données spécifiques à la question` ajouté au system prompt.
-
-Avantage : pas besoin de function calling (compatibilité multi-provider garantie), réponses précises sur des entités nommées.
-
-## 2. `supabase/functions/daily-assistant/index.ts` & `supabase/functions/ai-data-assistant/index.ts`
-
-Mêmes ajouts ciblés :
-- Inclure le **volet technicien** dans leur system prompt (version condensée — leur rôle est l'analyse, pas le diagnostic, mais ils doivent comprendre la nature des SAV).
-- Le `daily-assistant` génère ainsi des recommandations plus pertinentes (ex: "3 SAV iPhone 14 Pro Max attendent un écran soft OLED — regrouper la commande chez X fournisseur").
-- Le `ai-data-assistant` peut interpréter techniquement les chiffres (ex: "taux de retour élevé sur les batteries compatibles").
-
-## 3. Compatibilité multi-provider
-
-Le code actuel utilise déjà `getAIConfig` partout. Aucun changement de routage. On vérifie juste que :
-- Le format `messages` envoyé reste OpenAI-compatible (Gemini via endpoint OpenAI-compat l'accepte).
-- On limite `max_tokens` à 2000 (au lieu de 1500) pour permettre des réponses techniques détaillées.
-- On garde `temperature: 0.5` (équilibre précision/créativité).
+- Déployer les 3 functions.
+- Tester depuis le HelpBot avec moteur Gemini actif sur Agde :
+  - "Combien j'ai de pièces en stock ?" → doit renvoyer un nombre réel.
+  - "Quels SAV en retard ?" → doit lister des numéros de dossier réels.
+  - "Détaille SAV-..." → fiche dossier complète.
+- Vérifier les logs (provider=gemini, shopId présent, taille prompt, statut 200).
 
 ## Hors périmètre
 
-- Pas de nouveau provider IA.
-- Pas de modification de l'UI (HelpBot, DailyAssistant restent identiques).
-- Pas de schéma DB modifié.
-- Pas de fine-tuning : les compétences sont injectées via prompt (suffisant pour GPT-5/Gemini).
-- Pas de RAG/embeddings (la recherche à la demande couvre le besoin sans complexité supplémentaire).
-
-## Validation
-
-Tester avec chaque provider configuré (Lovable, OpenAI, Gemini) ces questions :
-1. "Combien de SAV ouverts ai-je actuellement ?" → utilise les données.
-2. "Comment réparer un iPhone 12 qui ne s'allume plus ?" → utilise les compétences techniques.
-3. "Quelles pièces commander en priorité ?" → croise stock bas + commandes en cours + SAV en attente.
-4. "Détaille le dossier SAV-2024-00042" → data lookup ciblé.
+- Pas de changement UI, pas de migration DB, pas de nouveau provider IA.
+- Pas de modification du sélecteur de moteur IA ni de l'écran Réglages.
+- Aucun changement sur les autres fonctionnalités du logiciel.
