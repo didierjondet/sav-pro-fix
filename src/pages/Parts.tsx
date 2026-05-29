@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useParts, Part } from '@/hooks/useParts';
 import { usePartCategories } from '@/hooks/usePartCategories';
+import { useSuppliersDirectory } from '@/hooks/useSuppliersDirectory';
 import { PartForm } from '@/components/parts/PartForm';
 import { StockAdjustment } from '@/components/parts/StockAdjustment';
 import { ImportStock } from '@/components/parts/ImportStock';
@@ -48,6 +49,7 @@ export default function Parts() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [supplierFilter, setSupplierFilter] = useState<string>('all');
   const [typeFilter, setTypeFilter] = useState<'all' | 'parts' | 'services'>('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(20);
@@ -61,6 +63,7 @@ export default function Parts() {
 
   const { parts, loading, statistics, createPart, updatePart, deletePart, adjustStock, findSimilarParts, refetch } = useParts();
   const { categories } = usePartCategories();
+  const { suppliers } = useSuppliersDirectory();
   const { lastInventoryByPart } = useLastInventoryByPart();
   const navigate = useNavigate();
   const categoryById = useMemo(() => {
@@ -68,6 +71,11 @@ export default function Parts() {
     categories.forEach((c) => map.set(c.id, c));
     return map;
   }, [categories]);
+  const supplierById = useMemo(() => {
+    const map = new Map<string, typeof suppliers[number]>();
+    suppliers.forEach((s) => map.set(s.id, s));
+    return map;
+  }, [suppliers]);
 
   // Filtrage côté client (recherche + catégorie)
   const filteredParts = useMemo(() => {
@@ -84,11 +92,18 @@ export default function Parts() {
         list = list.filter((p) => p.category_id === categoryFilter);
       }
     }
+    if (supplierFilter !== 'all') {
+      if (supplierFilter === 'none') {
+        list = list.filter((p) => !(p as any).supplier_id);
+      } else {
+        list = list.filter((p) => (p as any).supplier_id === supplierFilter);
+      }
+    }
     if (!searchTerm.trim()) return list;
     return list.filter(part =>
       multiWordSearch(searchTerm, part.name, part.reference, part.sku, part.supplier, part.notes)
     );
-  }, [parts, searchTerm, categoryFilter, typeFilter]);
+  }, [parts, searchTerm, categoryFilter, supplierFilter, typeFilter]);
 
   // Pagination après filtrage
   const displayedParts = filteredParts;
