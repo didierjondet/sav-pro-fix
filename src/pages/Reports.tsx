@@ -181,71 +181,44 @@ export default function Reports() {
     
     printStyle.textContent = `
       @media print {
-        body * {
-          visibility: hidden;
-        }
-        .print-report-area, .print-report-area * {
-          visibility: visible;
-        }
+        body * { visibility: hidden; }
+        .print-report-area, .print-report-area * { visibility: visible; }
         .print-report-area {
           position: absolute;
           left: 0;
           top: 0;
           width: 100%;
           padding: 0 !important;
-          font-size: 9px !important;
+          font-size: 10px !important;
+          line-height: 1.35 !important;
         }
         .no-print, header, nav, .sidebar, button, [data-sidebar] {
           display: none !important;
         }
-        .print-only {
-          display: block !important;
-        }
-        
-        /* Tableau - mise en page optimisée */
+        .print-only { display: block !important; }
+
         .print-report-area table {
           width: 100% !important;
           table-layout: fixed !important;
-          font-size: 8px !important;
+          font-size: 9px !important;
           border-collapse: collapse !important;
         }
         .print-report-area th,
         .print-report-area td {
-          padding: 3px 4px !important;
-          font-size: 8px !important;
+          padding: 4px 5px !important;
+          font-size: 9px !important;
+          line-height: 1.3 !important;
           word-wrap: break-word !important;
           word-break: break-word !important;
           white-space: normal !important;
           overflow-wrap: break-word !important;
           vertical-align: top !important;
         }
-        
-        /* Largeurs fixes des colonnes */
-        .print-report-area th:nth-child(1),
-        .print-report-area td:nth-child(1) { width: 8% !important; } /* N° SAV */
-        .print-report-area th:nth-child(2),
-        .print-report-area td:nth-child(2) { width: 7% !important; } /* Date */
-        .print-report-area th:nth-child(3),
-        .print-report-area td:nth-child(3) { width: 12% !important; } /* Client */
-        .print-report-area th:nth-child(4),
-        .print-report-area td:nth-child(4) { width: 8% !important; } /* Statut */
-        .print-report-area th:nth-child(5),
-        .print-report-area td:nth-child(5) { width: 14% !important; } /* Appareil */
-        .print-report-area th:nth-child(6),
-        .print-report-area td:nth-child(6) { width: 10% !important; } /* SKU */
-        .print-report-area th:nth-child(7),
-        .print-report-area td:nth-child(7) { width: 13% !important; } /* IMEI */
-        .print-report-area th:nth-child(8),
-        .print-report-area td:nth-child(8) { width: 9% !important; } /* Coût */
-        .print-report-area th:nth-child(9),
-        .print-report-area td:nth-child(9) { width: 9% !important; } /* Prix */
-        .print-report-area th:nth-child(10),
-        .print-report-area td:nth-child(10) { width: 10% !important; } /* Marge */
-        
-        /* Ligne des pièces - retour à la ligne */
-        .print-report-area td[colspan] {
-          width: 100% !important;
-        }
+
+        .print-report-area thead { display: table-header-group !important; }
+        .print-report-area tfoot { display: table-footer-group !important; }
+
+        .print-report-area td[colspan] { width: 100% !important; }
         .print-report-area .flex-wrap,
         .print-report-area .flex.flex-wrap {
           flex-wrap: wrap !important;
@@ -257,47 +230,45 @@ export default function Reports() {
           white-space: normal !important;
           word-break: break-word !important;
         }
-        
-        /* Éviter les coupures */
+
         .print-report-area tr {
           page-break-inside: avoid !important;
           break-inside: avoid !important;
+          orphans: 3;
+          widows: 3;
         }
         .print-report-area .card,
         .print-report-area [class*="Card"] {
           page-break-inside: avoid !important;
           break-inside: avoid !important;
         }
-        
-        /* En-têtes de sections */
+        .print-report-area .print-supplier-section {
+          page-break-inside: avoid !important;
+          break-inside: avoid !important;
+        }
+
         .print-report-area [class*="CardHeader"] {
-          padding: 6px 8px !important;
-          font-size: 10px !important;
+          padding: 8px 10px !important;
+          font-size: 11px !important;
+          page-break-after: avoid !important;
+          break-after: avoid !important;
         }
-        
-        /* Graphiques */
-        .recharts-wrapper, .recharts-surface, svg {
-          overflow: visible !important;
-        }
-        .recharts-wrapper {
-          width: 100% !important;
-          max-width: 100% !important;
-        }
-        
-        /* Badges et éléments inline */
+
+        .recharts-wrapper, .recharts-surface, svg { overflow: visible !important; }
+        .recharts-wrapper { width: 100% !important; max-width: 100% !important; }
+
         .print-report-area [class*="Badge"] {
-          font-size: 7px !important;
-          padding: 1px 4px !important;
+          font-size: 8px !important;
+          padding: 1px 5px !important;
         }
-        
-        /* Liens */
+
         .print-report-area a {
           text-decoration: none !important;
           color: inherit !important;
         }
-        
+
         @page {
-          margin: 8mm;
+          margin: 12mm;
           size: A4 landscape;
         }
       }
