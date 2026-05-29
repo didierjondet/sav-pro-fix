@@ -34,6 +34,7 @@ export default function Reports() {
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>(['ready']);
   const [selectedWidgets, setSelectedWidgets] = useState<string[]>(['monthly-comparison']);
+  const [includeSuppliers, setIncludeSuppliers] = useState<boolean>(true);
 
   const toggleWidget = (widgetId: string) => {
     setSelectedWidgets(prev => 
