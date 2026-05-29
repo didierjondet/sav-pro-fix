@@ -117,7 +117,7 @@ export default function Reports() {
     });
 
     // Suppliers sheet
-    if (supplierReport.rows.length > 0) {
+    if (includeSuppliers && supplierReport.rows.length > 0) {
       const supplierSheet = supplierReport.rows.map(r => ({
         'Fournisseur': r.supplier_name,
         'Pièces': r.parts_count,
