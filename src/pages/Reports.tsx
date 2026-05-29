@@ -53,6 +53,7 @@ export default function Reports() {
     selectedTypes,
     selectedStatuses
   });
+  const supplierReport = useSupplierReportData(data);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(value);
