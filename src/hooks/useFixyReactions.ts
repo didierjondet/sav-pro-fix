@@ -19,7 +19,7 @@ export interface FixyEvent {
  * afin que Fixy ne réagisse qu'aux variations *nouvelles*.
  */
 export function useFixyReactions(): FixyEvent | null {
-  const { savCases } = useSAVCases();
+  const { cases: savCases } = useSAVCases();
   const { savWithUnreadMessages } = useSAVUnreadMessages();
   const { pendingAppointments } = usePendingAppointments();
 
