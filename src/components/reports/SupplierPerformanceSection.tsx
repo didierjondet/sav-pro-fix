@@ -19,7 +19,7 @@ export function SupplierPerformanceSection({ reportData, dateRange }: Props) {
   const { rows, totals } = useSupplierReportData(reportData);
 
   return (
-    <Card>
+    <Card className="print-supplier-section">
       <CardHeader className="py-3">
         <div className="flex items-center justify-between flex-wrap gap-2">
           <CardTitle className="text-lg flex items-center gap-2">
