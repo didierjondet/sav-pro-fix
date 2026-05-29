@@ -162,7 +162,7 @@ export function useMonthlyStatistics(year: number) {
           .from('sav_cases')
           .select('*')
           .eq('shop_id', shop.id)
-          .in('status', ['ready', 'pret_et_cloture', 'delivered'])
+          .in('status', Array.from(new Set([...metricsStatusKeys, 'delivered'])))
           .gte('created_at', yearStart.toISOString())
           .lte('created_at', yearEnd.toISOString());
 

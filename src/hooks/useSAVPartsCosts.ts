@@ -35,6 +35,15 @@ export function useSAVPartsCosts() {
       const start = startOfMonth(now);
       const end = endOfMonth(now);
 
+      // Statuts à inclure dans le CA (configurable par magasin)
+      const { data: statusCfg } = await supabase
+        .from('shop_sav_statuses')
+        .select('status_key, include_in_metrics')
+        .eq('shop_id', shop.id)
+        .eq('is_active', true);
+      const metricsKeysRaw = (statusCfg || []).filter(s => s.include_in_metrics).map(s => s.status_key);
+      const metricsStatusKeys = metricsKeysRaw.length > 0 ? metricsKeysRaw : ['ready', 'pret_et_cloture'];
+
       // Récupérer la config de facturation pour intégrer la MO si activée
       const { data: billingCfg } = await supabase
         .from('shop_billing_config' as any)
