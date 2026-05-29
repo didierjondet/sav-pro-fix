@@ -511,19 +511,107 @@ ${data.map((c: any) => `- ${c.first_name || ''} ${c.last_name || ''} | ${c.phone
       }
     }
 
-    // 3. Recherche pièce (mots clés stock / pièce / vitre / batterie / écran / connecteur)
-    const partKwMatch = message.match(/(vitre|écran|ecran|batterie|connecteur|nappe|caméra|camera|haut-?parleur|micro|bouton|carte\s+mère|capteur)\s+([\wàâäéèêëïîôùûüÿç0-9\s-]{2,40})/i)
+    // 3. Recherche pièce intelligente : type + modèle => prix achat moyen / min / max + marge + historique 90 j
+    const PART_TYPE_RE = /(vitre|[ée]cran|batterie|connecteur(?:\s+de\s+charge)?|nappe|cam[ée]ra|haut-?parleur|micro|bouton|carte\s+m[èe]re|capteur|ch[âa]ssis|coque|face\s+arri[èe]re|dock|vibreur|lecteur)/i
+    const MODEL_RE = /\b(iphone|ipad|ipod|samsung|galaxy|redmi|xiaomi|poco|pixel|huawei|honor|oppo|oneplus|nokia|sony|xperia|mate|note)\b[\s\w+-]{0,40}/i
+    const partKwMatch = message.match(PART_TYPE_RE)
+    const modelMatch = message.match(MODEL_RE)
+
     if (partKwMatch) {
-      const term = `${partKwMatch[1]} ${partKwMatch[2]}`.trim().slice(0, 60)
-      const { data } = await supabaseAdmin
+      const type = partKwMatch[1]
+      const modelRaw = modelMatch ? modelMatch[0].trim() : ''
+      const modelTokens = modelRaw
+        .toLowerCase()
+        .replace(/[^\wàâäéèêëïîôùûüÿç\s+-]/g, ' ')
+        .split(/\s+/)
+        .filter((t) => t.length >= 2)
+        .slice(0, 5)
+
+      // Filtre : name ILIKE %type% ET (chaque token du modèle présent dans name OU reference)
+      let query = supabaseAdmin
         .from('parts')
-        .select('name, reference, quantity, min_stock, purchase_price, selling_price')
+        .select('id, name, reference, quantity, min_stock, purchase_price, selling_price')
         .eq('shop_id', shopId)
-        .or(`name.ilike.%${partKwMatch[1]}%,reference.ilike.%${partKwMatch[1]}%`)
-        .limit(8)
+        .ilike('name', `%${type}%`)
+      for (const tok of modelTokens) {
+        query = query.or(`name.ilike.%${tok}%,reference.ilike.%${tok}%`)
+      }
+      let { data } = await query.limit(30)
+
+      // Fallback : si modèle fourni mais 0 résultat, on garde uniquement le type
+      let relaxed = false
+      if ((!data || data.length === 0) && modelTokens.length > 0) {
+        const fb = await supabaseAdmin
+          .from('parts')
+          .select('id, name, reference, quantity, min_stock, purchase_price, selling_price')
+          .eq('shop_id', shopId)
+          .ilike('name', `%${type}%`)
+          .limit(20)
+        data = fb.data || []
+        relaxed = true
+      }
+
       if (data?.length) {
-        blocks.push(`### Pièces correspondant à "${term}"
-${data.map((p: any) => `- ${p.name} (réf ${p.reference || '—'}) | Stock: ${p.quantity}${p.min_stock != null ? ` (min ${p.min_stock})` : ''} | Achat ${p.purchase_price ?? '?'}€ / Vente ${p.selling_price ?? '?'}€`).join('\n')}`)
+        const withPurchase = data.filter((p: any) => p.purchase_price != null && Number(p.purchase_price) > 0)
+        const withSelling = data.filter((p: any) => p.selling_price != null && Number(p.selling_price) > 0)
+        const avg = (arr: any[], k: string) => arr.length ? arr.reduce((s: number, p: any) => s + Number(p[k]), 0) / arr.length : null
+        const mn = (arr: any[], k: string) => arr.length ? Math.min(...arr.map((p: any) => Number(p[k]))) : null
+        const mx = (arr: any[], k: string) => arr.length ? Math.max(...arr.map((p: any) => Number(p[k]))) : null
+
+        const avgPurchase = avg(withPurchase, 'purchase_price')
+        const avgSelling = avg(withSelling, 'selling_price')
+        const avgMargin = (avgPurchase != null && avgSelling != null) ? avgSelling - avgPurchase : null
+        const marginPct = (avgMargin != null && avgPurchase && avgPurchase > 0) ? (avgMargin / avgPurchase) * 100 : null
+
+        // Historique 90 j via sav_parts
+        let hist90 = ''
+        try {
+          const partIds = data.map((p: any) => p.id).filter(Boolean)
+          if (partIds.length) {
+            const since = new Date(Date.now() - 90 * 24 * 3600 * 1000).toISOString()
+            const { data: savParts } = await supabaseAdmin
+              .from('sav_parts')
+              .select('purchase_price, unit_price, quantity, created_at')
+              .gte('created_at', since)
+              .in('part_id', partIds)
+              .limit(300)
+            if (savParts?.length) {
+              const pp = savParts.filter((s: any) => s.purchase_price != null && Number(s.purchase_price) > 0)
+              const totalUnits = savParts.reduce((s: number, x: any) => s + (Number(x.quantity) || 0), 0)
+              if (pp.length) {
+                const avgHist = pp.reduce((s: number, x: any) => s + Number(x.purchase_price), 0) / pp.length
+                hist90 = `- **Historique 90 j (prix réellement payés en SAV)** : moyenne ${avgHist.toFixed(2)}€ sur ${pp.length} ligne(s), ${totalUnits} unité(s) utilisée(s)`
+              } else {
+                hist90 = `- **Historique 90 j** : ${totalUnits} unité(s) utilisée(s) (aucun prix d'achat historisé)`
+              }
+            }
+          }
+        } catch (e) {
+          console.error('sav_parts history error', e)
+        }
+
+        const title = modelRaw
+          ? (relaxed
+              ? `${type} (aucune réf exacte pour « ${modelRaw} », résultats élargis au type)`
+              : `${type} ${modelRaw}`)
+          : type
+
+        const lines: string[] = [`- **Références trouvées** : ${data.length}`]
+        if (avgPurchase != null) {
+          lines.push(`- **Prix d'achat moyen** : ${avgPurchase.toFixed(2)}€ (min ${mn(withPurchase, 'purchase_price')!.toFixed(2)}€ / max ${mx(withPurchase, 'purchase_price')!.toFixed(2)}€)`)
+        } else {
+          lines.push(`- **Prix d'achat** : aucun renseigné sur ces références`)
+        }
+        if (avgSelling != null) {
+          lines.push(`- **Prix de vente moyen** : ${avgSelling.toFixed(2)}€ (min ${mn(withSelling, 'selling_price')!.toFixed(2)}€ / max ${mx(withSelling, 'selling_price')!.toFixed(2)}€)`)
+        }
+        if (avgMargin != null) {
+          lines.push(`- **Marge moyenne** : ${avgMargin.toFixed(2)}€${marginPct != null ? ` (${marginPct.toFixed(0)}%)` : ''}`)
+        }
+        if (hist90) lines.push(hist90)
+        lines.push(`\n**Détail :**\n${data.slice(0, 12).map((p: any) => `  • ${p.name} (réf ${p.reference || '—'}) | Stock ${p.quantity} | Achat ${p.purchase_price ?? '?'}€ / Vente ${p.selling_price ?? '?'}€`).join('\n')}`)
+
+        blocks.push(`### 💰 Réponse factuelle – ${title}\n${lines.join('\n')}`)
       }
     }
 
