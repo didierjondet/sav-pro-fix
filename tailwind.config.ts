@@ -131,10 +131,13 @@ export default {
 				'50%': { transform: 'translateY(-4px)' }
 			},
 			'mascot-wave': {
-				'0%, 60%, 100%': { transform: 'rotate(0deg)' },
-				'70%': { transform: 'rotate(-25deg)' },
-				'80%': { transform: 'rotate(20deg)' },
-				'90%': { transform: 'rotate(-15deg)' }
+				'0%, 55%, 100%': { transform: 'rotate(0deg)' },
+				'60%': { transform: 'rotate(-45deg)' },
+				'67%': { transform: 'rotate(-15deg)' },
+				'74%': { transform: 'rotate(-45deg)' },
+				'81%': { transform: 'rotate(-15deg)' },
+				'88%': { transform: 'rotate(-45deg)' },
+				'95%': { transform: 'rotate(0deg)' }
 			},
 			'mascot-blink': {
 				'0%, 92%, 100%': { transform: 'scaleY(1)' },
