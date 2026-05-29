@@ -297,20 +297,21 @@ Deno.serve(async (req) => {
       })
     }
 
-    const apiKey = Deno.env.get('LOVABLE_API_KEY')
-    if (!apiKey) {
-      return new Response(JSON.stringify({ 
-        message: "Le service IA n'est pas configuré. Contactez l'administrateur.",
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    )
+
+    const aiConfig = await getAIConfig(supabaseAdmin)
+    if (!aiConfig.apiKey) {
+      return new Response(JSON.stringify({
+        message: "Le service IA n'est pas configuré. Contactez l'administrateur (Super Admin → Moteur IA).",
         escalate: false,
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
 
-    const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    )
 
     let shopDataContext = ''
     if (shopId) {
