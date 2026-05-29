@@ -1082,6 +1082,25 @@ export function SAVDashboard() {
         }).slice(1)}
         </h2>
         <div className="flex gap-2">
+          <TooltipProvider delayDuration={200}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setIsLayoutUnlocked((v) => !v)}
+                  className={isLayoutUnlocked ? 'text-primary ring-2 ring-primary/40' : ''}
+                  aria-label={isLayoutUnlocked ? 'Verrouiller la disposition' : 'Déverrouiller la disposition'}
+                >
+                  {isLayoutUnlocked ? <LockOpen className="h-4 w-4" /> : <Lock className="h-4 w-4" />}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                {isLayoutUnlocked ? 'Verrouiller la disposition' : 'Déverrouiller pour réorganiser'}
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+
           <Dialog open={isWidgetDialogOpen} onOpenChange={(open) => {
             if (!open) {
               refetch();
@@ -1103,6 +1122,7 @@ export function SAVDashboard() {
               />
             </DialogContent>
           </Dialog>
+
           
           <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
             <DialogTrigger asChild>
