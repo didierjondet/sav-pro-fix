@@ -11,8 +11,9 @@ import { generateShortTrackingUrl } from '@/utils/trackingUtils';
 import { fetchBillingConfig, aggregateTotals, buildVatHtmlBlock } from '@/utils/pdfVatHelpers';
 
 interface SAVPrintButtonRef {
-  print: (override?: SAVPrintButtonProps['savCase']) => void;
+  print: (override?: SAVPrintButtonProps['savCase']) => Promise<void>;
 }
+
 
 export type { SAVPrintButtonRef };
 
