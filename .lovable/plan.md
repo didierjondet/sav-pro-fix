@@ -1,89 +1,48 @@
-# Plan — Assistant plus performant + mascotte animée
+# Verrouillage de la mise en page + tassage des widgets
 
-## 1. Recherche pièce améliorée (prix d'achat moyen)
+## 1. Bouton cadenas à côté de "Gestion widget"
 
-Problème actuel : quand on demande "prix d'achat moyen d'un écran iPhone 13", la fonction `performDataLookup` (help-bot) ne filtre que sur le mot-clé `écran` sans tenir compte du modèle, et ne calcule aucune moyenne.
+Dans `src/components/sav/SAVDashboard.tsx` (header du tableau de bord, à côté du bouton "Gestion widget") :
 
-### Modifications dans `supabase/functions/help-bot/index.ts`
+- Ajouter un état `isLayoutUnlocked` (par défaut **false** = verrouillé) persisté dans `localStorage` sous `fixway_dashboard_layout_unlocked`.
+- Ajouter un `Button variant="outline" size="icon"` affichant :
+  - `Lock` (lucide) quand verrouillé (état par défaut)
+  - `LockOpen` (lucide) quand déverrouillé, avec un style accent (`text-primary` + anneau) pour bien signaler le mode édition.
+- Tooltip : « Verrouiller / Déverrouiller la disposition ».
+- Passer `isLayoutUnlocked` en prop à chaque `SortableBlock` et au `DndContext` (sensors désactivés quand verrouillé, soit en ne passant pas les sensors, soit via un `modifiers`/`disabled` côté `useSortable`).
 
-**a) Extraction enrichie des entités dans la question**
-- Détecter le **type de pièce** (écran, vitre, batterie, connecteur, nappe, caméra, haut-parleur, châssis, etc.)
-- Détecter la **marque/modèle** via regex étendue : `iphone 13 pro max`, `iphone 13`, `samsung s23`, `galaxy a54`, `redmi note 12`, `pixel 8`, etc.
-- Détecter l'**intention** : moyenne / minimum / maximum / dernier prix (`moyen`, `moyenne`, `prix d'achat`, `coût moyen`, `combien coûte`, `dernier prix`)
+## 2. SortableBlock conditionnel
 
-**b) Nouveau bloc factuel "Prix d'achat / vente"**
+Dans `src/components/statistics/SortableBlock.tsx` :
 
-Quand pièce + modèle sont détectés :
-1. Requête `parts` filtrée par `name ILIKE %type%` **ET** `name ILIKE %modele%` (chaque mot du modèle en AND), incluant `quantity, purchase_price, selling_price, supplier`.
-2. Requête complémentaire sur `sav_parts` joint à `parts` (historique réel des prix payés sur les SAV récents — souvent plus représentatif que `parts.purchase_price` actuel).
-3. Calculs serveur :
-   - Prix d'achat **moyen** (pondéré par quantité achetée si dispo, sinon simple)
-   - Prix d'achat **min / max**
-   - Prix de vente **moyen / min / max**
-   - **Marge moyenne** (€ et %)
-   - Nombre de références trouvées et nombre d'unités vendues sur 90 j
-4. Injecter un bloc Markdown garanti dans le prompt :
+- Ajouter une prop `editable?: boolean`.
+- Ne rendre la croix `X` (top-left) **que si** `editable && onRemove`.
+- Ne rendre le bouton « grip » (6 points, top-right) **que si** `editable`. L'icône `Info` de configuration reste toujours visible.
+- Passer `disabled: !editable` à `useSortable({ id, disabled: !editable })` pour neutraliser le drag.
+- Quand verrouillé : pas de `cursor-grab`, pas de halo de drag.
 
-```
-### 💰 Réponse factuelle – Écran iPhone 13 (5 réfs trouvées)
-- Prix d'achat moyen : 42.30 €
-- Min / Max : 35.00 € / 58.00 €
-- Prix de vente moyen : 119.00 €
-- Marge moyenne : 76.70 € (64 %)
-- Historique 90 j : 12 unités utilisées en SAV
-- Détail par référence : …
-```
+## 3. Normalisation des tailles / tassage
 
-**c) Fallback intelligent**
+Dans `src/components/statistics/StatisticsWidgetSizes.ts` et la grille de `SAVDashboard.tsx` :
 
-Si aucune pièce ne matche le modèle exact :
-- Élargir avec uniquement le type de pièce + recherche fuzzy (mots-clés du modèle séparés)
-- Indiquer explicitement dans le bloc : *"Aucune référence exacte pour iPhone 13, voici les écrans iPhone toutes générations"*
+- Passer la grille à `grid-cols-4 auto-rows-[160px] gap-3` avec `grid-auto-flow: dense` (classe `[grid-auto-flow:dense]`) pour combler les trous automatiquement.
+- Remplacer `min-h-[…]` par des `row-span-N` cohérents :
+  - `small` → `col-span-1 row-span-1` (160px)
+  - `medium` → `col-span-2 row-span-2` (≈ 328px avec gap)
+  - `large` → `col-span-4 row-span-2`
+  - `full` → `col-span-4 row-span-3`
+- Mobile : `col-span-1` partout, hauteur auto (les `row-span` n'ont d'effet qu'à partir de `sm:`).
+- Mettre à jour `getWidgetGridClasses` / `getWidgetHeightClass` pour retourner combinés `col-span-* row-span-*` et plus de `min-h-*` pour éliminer les blancs.
+- Vérifier visuellement les widgets `finance-kpis` (medium) et KPIs `small` qui contiennent peu de contenu — ajouter un `h-full` au contenu interne si nécessaire pour qu'ils remplissent leur cellule.
 
-**d) Renforcer le rappel système**
+## 4. Hors-scope
 
-Dans `handleGemini` / handlers OpenAI, ajouter au "rappel système" déjà présent : *"Si un bloc « Réponse factuelle » est présent ci-dessus, utilise EXCLUSIVEMENT ces chiffres, ne réponds jamais « je ne sais pas » quand le bloc existe."*
+- Aucune modification du contenu des widgets, des hooks de données, ou du `WidgetManager`.
+- Le bouton « Nouveau SAV » et la logique métier restent inchangés.
+- Pas de changement sur la page Statistiques (uniquement le tableau de bord SAV).
 
-### Reproduire dans `ai-data-assistant/index.ts`
+## Fichiers touchés
 
-Même logique d'extraction + bloc factuel, pour cohérence quel que soit l'assistant utilisé.
-
----
-
-## 2. Mascotte animée à la place de l'icône `?`
-
-Remplacer le `MessageCircleQuestion` du bouton flottant et du header du chat (`src/components/help/HelpBot.tsx`) par une **petite mascotte SVG animée** : un robot rond et mignon ("Fixy") avec antenne, yeux qui clignent et bras qui fait coucou.
-
-### Création `src/components/help/FixyMascot.tsx`
-- Composant SVG inline 100% CSS/Tailwind (pas de dépendance, pas d'asset image — instantané, scalable)
-- Forme : tête ronde bleue (couleur `primary`), antenne avec point lumineux, 2 yeux, bouche souriante, 2 petits bras
-- Props : `size`, `waving?: boolean`, `idle?: boolean`
-- Animations (keyframes ajoutés dans `tailwind.config.ts`) :
-  - `mascot-bounce` : léger rebond permanent (idle) toutes les 3 s
-  - `mascot-wave` : bras droit qui fait coucou (rotation -20° ↔ +20°) déclenché toutes les 8–10 s sur le bouton fermé
-  - `mascot-blink` : clignement des yeux (scaleY 1 → 0.1) toutes les 4–6 s
-  - `mascot-antenna-pulse` : point d'antenne qui pulse quand `isLoading`
-- Au survol du bouton fermé : la mascotte penche la tête + sourit plus grand
-
-### Intégration dans `HelpBot.tsx`
-- Bouton flottant fermé : remplacer `<MessageCircleQuestion>` par `<FixyMascot size={40} waving idle />` + petite bulle "Coucou !" qui apparaît brièvement toutes les 15 s pour engager
-- Header du chat ouvert : remplacer la 2ᵉ icône par `<FixyMascot size={28} idle />` (penche la tête quand l'IA réfléchit)
-- État vide (avant le 1er message) : afficher la mascotte en grand au centre avec bulle *"Salut ! Je suis Fixy, ton assistant Fixway 👋"*
-
-### Aucun changement
-- Pas de modif du backend pour la mascotte
-- Pas de dépendance ajoutée (SVG + CSS uniquement)
-- Comportement, FAQ, escalade, persistance : inchangés
-
----
-
-## Périmètre exclu
-- Pas de nouvelle table, pas de migration
-- Pas de modif des autres edge functions (`daily-assistant` reste tel quel)
-- Pas de refonte du design global du chat — uniquement l'icône → mascotte
-
-## Validation
-- "Prix d'achat moyen d'un écran iPhone 13 ?" → réponse avec moyenne chiffrée
-- "Combien coûte une batterie Samsung S22 ?" → moyenne + min/max
-- Bouton flottant : mascotte rebondit doucement, fait coucou périodiquement
-- Chat ouvert : mascotte cligne des yeux dans le header
+- `src/components/sav/SAVDashboard.tsx` (header + props + état lock)
+- `src/components/statistics/SortableBlock.tsx` (prop editable + rendu conditionnel)
+- `src/components/statistics/StatisticsWidgetSizes.ts` (row-span / col-span normalisés)
