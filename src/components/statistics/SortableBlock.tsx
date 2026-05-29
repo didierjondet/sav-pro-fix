@@ -13,10 +13,11 @@ interface SortableBlockProps {
   id: string;
   children: ReactNode;
   onRemove?: () => void;
+  editable?: boolean;
 }
 
-export const SortableBlock = ({ id, children, onRemove }: SortableBlockProps) => {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+export const SortableBlock = ({ id, children, onRemove, editable = false }: SortableBlockProps) => {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id, disabled: !editable });
   const { config } = useWidgetConfiguration(id);
   const { statuses } = useShopSAVStatuses();
   const { types } = useShopSAVTypes();
@@ -25,6 +26,7 @@ export const SortableBlock = ({ id, children, onRemove }: SortableBlockProps) =>
   const widgetSize = DEFAULT_MODULE_SIZES[id] || 'medium';
   const gridClasses = getWidgetGridClasses(widgetSize);
   const heightClass = getWidgetHeightClass(widgetSize);
+
 
   const style = {
     transform: CSS.Transform.toString(transform),
