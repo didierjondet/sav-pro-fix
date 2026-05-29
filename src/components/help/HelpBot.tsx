@@ -130,8 +130,8 @@ const HelpBot: React.FC = () => {
         <div className="fixed bottom-4 right-4 z-50 w-[calc(100vw-2rem)] sm:w-[380px] max-h-[calc(100vh-2rem)] sm:max-h-[560px] flex flex-col rounded-2xl border bg-background shadow-2xl">
           <div className="flex items-center justify-between px-4 py-3 border-b bg-primary rounded-t-2xl text-primary-foreground">
             <div className="flex items-center gap-2">
-              <MessageCircleQuestion className="h-5 w-5" />
-              <span className="font-semibold text-sm">Assistant Fixway</span>
+              <FixyMascot size={28} idle thinking={isLoading} />
+              <span className="font-semibold text-sm">Fixy — Assistant Fixway</span>
             </div>
             <div className="flex items-center gap-1">
               <Button variant="ghost" size="icon" className="h-7 w-7 text-primary-foreground hover:bg-primary-foreground/20" onClick={clearMessages}>
