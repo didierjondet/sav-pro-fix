@@ -38,7 +38,24 @@ export const SAVPrintButton = React.forwardRef<SAVPrintButtonRef, SAVPrintButton
     if (printing) return;
     const savCase = override ?? savCaseProp;
     setPrinting(true);
+
+    // Ouvrir la fenêtre SYNCHRONEMENT, avant tout await, pour préserver le geste utilisateur
+    // (sinon les navigateurs bloquent la popup).
+    const printWindow = window.open("", "_blank");
+    if (printWindow) {
+      try {
+        printWindow.document.open();
+        printWindow.document.write(
+          '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Préparation de l\'impression…</title></head><body style="font-family:system-ui,sans-serif;padding:24px;color:#333;">Préparation de l\'impression…</body></html>'
+        );
+        printWindow.document.close();
+      } catch (_) {
+        // ignore
+      }
+    }
+
     try {
+
       // Récupérer les pièces
       const { data: partsData } = await supabase
         .from("sav_parts")
