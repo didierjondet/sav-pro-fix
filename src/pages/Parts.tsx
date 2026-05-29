@@ -492,12 +492,18 @@ export default function Parts() {
                                      </div>
                                    )}
                                    
-                                    {part.supplier && (
-                                      <div className="mt-2 text-sm text-muted-foreground">
-                                        <span className="font-medium">Fournisseur: </span>
-                                        <span>{part.supplier}</span>
-                                      </div>
-                                    )}
+                                    {(() => {
+                                      const sid = (part as any).supplier_id as string | null | undefined;
+                                      const supName = sid ? supplierById.get(sid)?.name : null;
+                                      const display = supName || part.supplier;
+                                      if (!display) return null;
+                                      return (
+                                        <div className="mt-2 text-sm text-muted-foreground">
+                                          <span className="font-medium">Fournisseur: </span>
+                                          <span>{display}</span>
+                                        </div>
+                                      );
+                                    })()}
 
                                     {(() => {
                                       const lastInv = lastInventoryByPart.get(part.id);
