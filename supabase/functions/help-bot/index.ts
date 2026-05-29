@@ -739,8 +739,8 @@ Deno.serve(async (req) => {
     console.log(`[help-bot] provider=${aiConfig.provider} model=${aiConfig.model} shopId=${shopId || 'none'} systemPromptChars=${fullSystemPrompt.length} shopDataChars=${shopDataContext.length} lookupChars=${lookupContext.length}`)
 
     // Rappel injecté côté user pour forcer l'IA à exploiter le contexte (utile pour Gemini)
-    const userMessageWithHint = shopDataContext
-      ? `${message}\n\n[Rappel système: utilise impérativement les DONNÉES EN TEMPS RÉEL DU MAGASIN ci-dessus pour répondre avec des chiffres exacts. Ne réponds jamais "consultez votre ERP" — tu ES l'ERP.]`
+    const userMessageWithHint = (shopDataContext || lookupContext)
+      ? `${message}\n\n[Rappel système: utilise impérativement les DONNÉES EN TEMPS RÉEL DU MAGASIN et les blocs « Réponse factuelle » ci-dessus pour répondre avec des chiffres exacts. Si un bloc « Réponse factuelle » est présent, cite EXCLUSIVEMENT ces chiffres — ne dis jamais « je ne sais pas » ni « consultez votre ERP » : tu ES l'ERP.]`
       : message
 
     // Construction des messages
