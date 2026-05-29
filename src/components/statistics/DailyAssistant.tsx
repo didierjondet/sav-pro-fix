@@ -106,6 +106,16 @@ export function DailyAssistant() {
       }
       // Regular paragraphs
       if (line.trim()) {
+        return (
+          <p key={index} className="mb-2 text-sm">
+            {line}
+          </p>
+        );
+      }
+      return null;
+    });
+  };
+
   const escapeHtml = (s: string) =>
     s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;').replace(/'/g, '&#039;');
@@ -169,16 +179,7 @@ export function DailyAssistant() {
   };
 
   return (
-          <p key={index} className="mb-2 text-sm">
-            {line}
-          </p>
-        );
-      }
-      return null;
-    });
-  };
 
-  return (
     <Card className="p-4 mb-4 bg-gradient-to-br from-primary/5 via-background to-background border-primary/20">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
