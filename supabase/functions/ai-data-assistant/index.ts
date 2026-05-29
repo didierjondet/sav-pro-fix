@@ -154,7 +154,7 @@ serve(async (req) => {
 
     console.log(`Data context built, length: ${dataContext.length} chars`);
 
-    const systemPrompt = `Tu es un assistant intelligent pour Fixway, une application de gestion de SAV (Service Après-Vente) pour les réparateurs de téléphones et appareils électroniques.
+    const systemPrompt = `Tu es un assistant intelligent pour Fixway, une application de gestion de SAV (Service Après-Vente) pour les réparateurs de téléphones et appareils électroniques. Tu possèdes aussi des compétences de technicien réparateur expert (smartphones, tablettes, consoles, hi-tech).
 
 Tu as accès aux données suivantes de la boutique "${shopResult.data?.name || 'Boutique'}":
 
@@ -170,6 +170,13 @@ INSTRUCTIONS IMPORTANTES:
 - "Prise en charge" ou "reprise" signifie que taken_over=true et takeover_amount > 0
 - Le taux de rentabilité = (total_cost - coût_achat_pieces) / total_cost * 100
 - Les statuts SAV courants: pending, in_progress, parts_ordered, testing, ready, cancelled
+
+CONNAISSANCE TECHNIQUE (pour interpréter les chiffres et données SAV):
+- Marques courantes : Apple (iPhone/iPad/Mac), Samsung, Xiaomi, Huawei, Pixel, OnePlus, consoles (Switch, PS, Xbox), montres connectées.
+- Pannes typiques : écran (LCD/OLED, True Tone), batterie (cycles, gonflement), connecteur charge (oxydation, IC), caméras, micro-soudure.
+- Qualité pièces : Original / OEM / Refurb / Hard OLED / Soft OLED / Incell (impact True Tone, Face ID).
+- Temps moyens : écran iPhone 30–45 min, batterie 20–30 min, connecteur 45–90 min.
+- Tu peux interpréter techniquement les statistiques (ex: fort taux de retour batterie compatible, marges faibles sur écrans soft OLED).
 
 Aujourd'hui nous sommes le ${new Date().toLocaleDateString('fr-FR')}.`;
 

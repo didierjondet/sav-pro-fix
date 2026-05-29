@@ -171,39 +171,118 @@ Tu as accès en temps réel aux données du magasin. Utilise-les pour des répon
 - **Abonnement** : /subscription
 - **Support** : /support
 
+## 🔧 Compétences techniques (expert réparateur smartphone / hi-tech)
+
+Tu es aussi un **technicien réparateur expérimenté**. Tu aides au diagnostic, à l'estimation, au choix de pièces et aux procédures sur :
+
+### Marques & catégories maîtrisées
+- **Apple** : iPhone (5s → 17 Pro Max), iPad (toutes générations), Apple Watch, AirPods, MacBook (Intel + Apple Silicon).
+- **Samsung** : Galaxy S, Note, A, M, Z Fold / Flip, Tab, Watch.
+- **Xiaomi / Redmi / Poco**, **Huawei / Honor**, **Oppo / Realme**, **OnePlus**, **Google Pixel**, **Sony Xperia**, **Nokia**.
+- **Consoles** : Nintendo Switch (V1/V2/OLED/Lite), PS4 / PS5, Xbox Series, Steam Deck, manettes (drift, gâchettes).
+- **Hi-tech divers** : montres connectées, drones, écouteurs sans fil, GoPro, e-trottinettes/VAE (batteries, contrôleurs).
+
+### Pannes courantes et premiers réflexes
+- **Écran** : vitre fissurée vs LCD/OLED HS, tactile partiel (souvent nappe), lignes/colorations (driver IC), point bleu Samsung (OLED brûlé), True Tone perdu (transfert puce nécessaire iPhone), pose d'OCA pour vitre seule.
+- **Batterie** : autonomie faible, gonflement (DANGER → ne pas percer, isoler), message "Service" iPhone (puce TI à reprogrammer ou batterie originale), cycles > 800 = remplacement conseillé.
+- **Charge** : nappe / connecteur (Lightning, USB-C, micro-USB) — souvent oxydation ou broches tordues ; tester avec chargeur + câble certifiés ; si rien après nappe → IC charge (Tristar/Tigris sur iPhone, PMIC Samsung).
+- **Audio** : écouteur interne (souvent grille bouchée), HP buzzer, micro (vérifier mémo vocal), jack (oxydation, faux contact).
+- **Caméra** : autofocus HS (module entier), vitre objectif fissurée seule (kit vitre arrière), capteur noir = module ; capteur Face ID : tout changement = perte Face ID sur iPhone récents.
+- **Boutons** : power/volume nappes, Home iPhone (Touch ID lié au CPU → pas de remplacement = perte Touch ID), bouton Action.
+- **Connectique** : Wi-Fi/BT (souvent côté logique), antenne GPS, lecteur SIM, NFC (Apple Pay).
+- **Carte mère / logique** : court-circuit (consommation anormale au démarrage), oxydation (nettoyage US + alcool isopropylique 99%), reballing CPU/NAND, micro-soudure sur lignes alim.
+- **Logiciel** : iCloud Lock (refuser le SAV si non débloqué), FRP Samsung, bootloop, restauration DFU (iPhone), Odin (Samsung), Mi Flash (Xiaomi).
+- **Consoles** : Joy-Con drift (potentiomètre ou module Hall), HDMI PS4/PS5 (refonte fréquente), eMMC Switch.
+
+### Procédure diagnostic standard
+1. Interroger le client : chute ? eau ? depuis quand ? intermittent ou permanent ?
+2. Test à l'allumage : démarre / écran noir / vibre / pomme/loading boucle.
+3. Test sous chargeur certifié 10 min.
+4. Test écran : appui, multi-touch, couleurs, luminosité.
+5. Test fonctions : haut-parleur, micro, caméras avant/arrière, Wi-Fi, BT, capteurs.
+6. Si carte mère suspecte : mesurer consommation à l'alimentation de labo (court-circuit = trop d'ampérage).
+
+### Pièces & qualité
+- **Original / OEM Service Pack** : meilleure compatibilité (True Tone, Face ID), prix le plus élevé.
+- **Refurb (reconditionné)** : châssis original + nouvelle vitre, bonne qualité.
+- **Soft OLED** : copie OLED économique (couleurs fades, sensible aux chocs).
+- **Hard OLED** : copie OLED renforcée (meilleur compromis).
+- **Incell LCD** (iPhone) : économique, pas de True Tone, contraste correct.
+- Toujours signaler au client les incompatibilités potentielles (True Tone, capteur de luminosité, Face ID).
+
+### Temps d'intervention indicatifs
+- Écran iPhone : 30–45 min ; écran Samsung collé : 45–90 min (chauffe).
+- Batterie iPhone : 20–30 min ; batterie Samsung Z Fold : 1h30+.
+- Connecteur de charge : 45–60 min (90 min sur iPhone à dessouder à partir du 8).
+- Vitre arrière iPhone (laser/chauffe) : 1–2 h.
+- Joy-Con drift : 20 min.
+- Reballing/micro-soudure : 1–3 h selon complexité.
+
+### Sécurité
+- ESD : bracelet antistatique obligatoire avant ouverture.
+- Batteries Li-ion : ne jamais percer / plier ; en cas de gonflement, décharger lentement.
+- Oxydation : ne pas tenter de charger ; ouvrir, nettoyer aux ultrasons.
+- Données client : proposer sauvegarde avant DFU / reset.
+
 ## Règles
-1. Utilise les DONNÉES RÉELLES du magasin fournies ci-dessous pour répondre.
-2. Si la question est hors périmètre Fixway, réponds poliment que tu ne peux aider que pour Fixway et commence par [ESCALATE] suivi d'un résumé.
-3. Si le profil ou la boutique est incomplet, suggère de compléter (Paramètres → Profil / Boutique).
-4. Fais des recommandations basées sur les données : SAV en retard, stock à commander, devis en attente, etc.
-5. Quand l'utilisateur demande "comment faire X", guide-le vers la bonne page et explique les étapes.`
+1. Utilise les DONNÉES RÉELLES du magasin fournies ci-dessous (statistiques, SAV, stock, agenda, finances) pour répondre.
+2. Tu réponds aussi aux questions **techniques de réparation** (diagnostic, choix de pièces, procédures, estimations). Ces questions ne sont PAS hors périmètre.
+3. N'escalade ([ESCALATE]) que pour les sujets totalement hors logiciel ET hors réparation hi-tech (ex: comptabilité personnelle, juridique non lié au SAV, sujets non techniques).
+4. Si le profil ou la boutique est incomplet, suggère de compléter (Paramètres → Profil / Boutique).
+5. Fais des recommandations basées sur les données : SAV en retard, stock à commander, devis en attente, regroupement de commandes fournisseur, etc.
+6. Quand l'utilisateur demande "comment faire X" dans le logiciel, guide-le vers la bonne page et explique les étapes.
+7. Pour un diagnostic, propose une **checklist ordonnée** et chiffrée (temps, coût pièce estimé) quand pertinent.`
 
 async function fetchShopData(supabaseAdmin: any, shopId: string) {
   const context: string[] = []
 
   try {
+    const now = new Date()
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString()
+    const in7Days = new Date(now.getTime() + 7 * 24 * 3600 * 1000).toISOString()
+    const last30 = new Date(now.getTime() - 30 * 24 * 3600 * 1000).toISOString()
+
     const [
       shopResult,
       savCountsResult,
       recentSavsResult,
+      activeSavsResult,
       partsStatsResult,
       lowStockResult,
+      topPartsResult,
       customersCountResult,
       quotesResult,
+      pendingQuotesResult,
       savTypesResult,
       savStatusesResult,
       ordersResult,
+      appointmentsResult,
+      unreadMsgsResult,
+      satisfactionResult,
+      monthlyFinanceResult,
+      suppliersResult,
+      techniciansResult,
     ] = await Promise.all([
       supabaseAdmin.from('shops').select('name, email, phone, address, subscription_tier, monthly_sav_count, monthly_sms_used, sms_credits_allocated, active_sav_count').eq('id', shopId).single(),
       supabaseAdmin.from('sav_cases').select('status').eq('shop_id', shopId),
       supabaseAdmin.from('sav_cases').select('case_number, status, device_brand, device_model, sav_type, created_at, total_cost').eq('shop_id', shopId).order('created_at', { ascending: false }).limit(10),
+      supabaseAdmin.from('sav_cases').select('case_number, status, device_brand, device_model, device_imei, sav_type, problem_description, created_at, total_cost, taken_over').eq('shop_id', shopId).order('created_at', { ascending: false }).limit(20),
       supabaseAdmin.rpc('get_parts_statistics', { p_shop_id: shopId }),
-      supabaseAdmin.from('parts').select('name, quantity, min_stock, reference').eq('shop_id', shopId).not('min_stock', 'is', null).limit(20),
+      supabaseAdmin.from('parts').select('name, quantity, min_stock, reference').eq('shop_id', shopId).not('min_stock', 'is', null).limit(30),
+      supabaseAdmin.from('parts').select('name, reference, quantity, selling_price, purchase_price').eq('shop_id', shopId).order('quantity', { ascending: false }).limit(15),
       supabaseAdmin.from('customers').select('id', { count: 'exact', head: true }).eq('shop_id', shopId),
       supabaseAdmin.from('quotes').select('quote_number, status, customer_name, total_amount, created_at').eq('shop_id', shopId).order('created_at', { ascending: false }).limit(5),
+      supabaseAdmin.from('quotes').select('quote_number, customer_name, total_amount, created_at').eq('shop_id', shopId).eq('status', 'sent').order('created_at', { ascending: false }).limit(10),
       supabaseAdmin.from('shop_sav_types').select('type_key, type_label, type_color, is_active, max_processing_days, alert_days').eq('shop_id', shopId).eq('is_active', true).order('display_order'),
       supabaseAdmin.from('shop_sav_statuses').select('status_key, status_label, status_color, is_active, is_final_status, pause_timer').eq('shop_id', shopId).eq('is_active', true).order('display_order'),
-      supabaseAdmin.from('order_items').select('part_name, quantity_needed, priority, ordered').eq('shop_id', shopId).eq('ordered', false).limit(10),
+      supabaseAdmin.from('order_items').select('part_name, quantity_needed, priority, ordered').eq('shop_id', shopId).eq('ordered', false).limit(15),
+      supabaseAdmin.from('appointments').select('title, appointment_type, start_at, end_at, status, customer_name').eq('shop_id', shopId).gte('start_at', todayStart).lte('start_at', in7Days).order('start_at').limit(20),
+      supabaseAdmin.from('sav_messages').select('sav_case_id, sender_type, created_at').eq('shop_id', shopId).eq('sender_type', 'client').eq('read_by_shop', false).limit(20),
+      supabaseAdmin.from('satisfaction_surveys').select('rating, created_at').eq('shop_id', shopId).gte('created_at', last30).not('rating', 'is', null),
+      supabaseAdmin.from('sav_cases').select('total_cost, sav_type, status').eq('shop_id', shopId).gte('created_at', monthStart),
+      supabaseAdmin.from('suppliers').select('name, contact_email, contact_phone').eq('shop_id', shopId).eq('active', true).limit(20),
+      supabaseAdmin.from('profiles').select('first_name, last_name, role, last_sign_in_at').eq('shop_id', shopId).limit(20),
     ])
 
     if (shopResult.data) {
@@ -228,9 +307,12 @@ async function fetchShopData(supabaseAdmin: any, shopId: string) {
 ${Object.entries(statusCounts).map(([s, c]) => `- ${s}: ${c}`).join('\n')}`)
     }
 
-    if (recentSavsResult.data?.length) {
+    if (activeSavsResult.data?.length) {
+      context.push(`## SAV récents (top 20 — détails)
+${activeSavsResult.data.map((s: any) => `- ${s.case_number} | ${s.status} | ${s.device_brand || ''} ${s.device_model || ''} ${s.device_imei ? `(IMEI ${s.device_imei})` : ''} | Type: ${s.sav_type} | Coût: ${s.total_cost ?? 'N/A'}€ | Pris en charge: ${s.taken_over ? 'oui' : 'non'} | Problème: ${(s.problem_description || '').slice(0, 120)}`).join('\n')}`)
+    } else if (recentSavsResult.data?.length) {
       context.push(`## 10 derniers SAV
-${recentSavsResult.data.map((s: any) => `- ${s.case_number} | ${s.status} | ${s.device_brand || ''} ${s.device_model || ''} | Type: ${s.sav_type} | Coût: ${s.total_cost ?? 'N/A'}€ | Créé: ${new Date(s.created_at).toLocaleDateString('fr-FR')}`).join('\n')}`)
+${recentSavsResult.data.map((s: any) => `- ${s.case_number} | ${s.status} | ${s.device_brand || ''} ${s.device_model || ''} | Type: ${s.sav_type} | Coût: ${s.total_cost ?? 'N/A'}€`).join('\n')}`)
     }
 
     if (partsStatsResult.data) {
@@ -251,12 +333,22 @@ ${lowStock.map((p: any) => `- ${p.name} (réf: ${p.reference || 'N/A'}) : ${p.qu
       }
     }
 
+    if (topPartsResult.data?.length) {
+      context.push(`## Top pièces en stock
+${topPartsResult.data.map((p: any) => `- ${p.name} (réf: ${p.reference || 'N/A'}) : ${p.quantity} | achat ${p.purchase_price ?? '?'}€ / vente ${p.selling_price ?? '?'}€`).join('\n')}`)
+    }
+
     context.push(`## Clients
 - Nombre total : ${customersCountResult.count ?? 0}`)
 
     if (quotesResult.data?.length) {
       context.push(`## 5 derniers devis
 ${quotesResult.data.map((q: any) => `- ${q.quote_number} | ${q.status} | ${q.customer_name} | ${q.total_amount}€ | ${new Date(q.created_at).toLocaleDateString('fr-FR')}`).join('\n')}`)
+    }
+
+    if (pendingQuotesResult.data?.length) {
+      context.push(`## Devis en attente d'acceptation
+${pendingQuotesResult.data.map((q: any) => `- ${q.quote_number} | ${q.customer_name} | ${q.total_amount}€ | envoyé le ${new Date(q.created_at).toLocaleDateString('fr-FR')}`).join('\n')}`)
     }
 
     if (savTypesResult.data?.length) {
@@ -274,12 +366,136 @@ ${savStatusesResult.data.map((s: any) => `- ${s.status_label} (clé: ${s.status_
 ${ordersResult.data.map((o: any) => `- ${o.part_name} x${o.quantity_needed} | Priorité: ${o.priority}`).join('\n')}`)
     }
 
+    if (appointmentsResult.data?.length) {
+      context.push(`## Agenda (7 prochains jours)
+${appointmentsResult.data.map((a: any) => `- ${new Date(a.start_at).toLocaleString('fr-FR')} → ${new Date(a.end_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })} | ${a.appointment_type} | ${a.customer_name || a.title} | ${a.status}`).join('\n')}`)
+    }
+
+    if (unreadMsgsResult.data?.length) {
+      context.push(`## 📩 Messages clients non lus : ${unreadMsgsResult.data.length}`)
+    }
+
+    if (satisfactionResult.data?.length) {
+      const ratings = satisfactionResult.data.map((s: any) => Number(s.rating)).filter((r: number) => !isNaN(r))
+      if (ratings.length) {
+        const avg = ratings.reduce((a: number, b: number) => a + b, 0) / ratings.length
+        context.push(`## Satisfaction client (30j) : ${avg.toFixed(2)}/5 sur ${ratings.length} avis`)
+      }
+    }
+
+    if (monthlyFinanceResult.data?.length) {
+      const total = monthlyFinanceResult.data.reduce((sum: number, s: any) => sum + (Number(s.total_cost) || 0), 0)
+      const finals = monthlyFinanceResult.data.filter((s: any) => s.total_cost != null).length
+      context.push(`## Finance mois en cours
+- CA SAV facturé (cumul total_cost) : ${total.toFixed(2)}€
+- SAV avec montant : ${finals} / ${monthlyFinanceResult.data.length}`)
+    }
+
+    if (suppliersResult.data?.length) {
+      context.push(`## Fournisseurs actifs
+${suppliersResult.data.map((s: any) => `- ${s.name}${s.contact_email ? ` | ${s.contact_email}` : ''}${s.contact_phone ? ` | ${s.contact_phone}` : ''}`).join('\n')}`)
+    }
+
+    if (techniciansResult.data?.length) {
+      context.push(`## Équipe du magasin
+${techniciansResult.data.map((p: any) => `- ${p.first_name || ''} ${p.last_name || ''} (${p.role})${p.last_sign_in_at ? ` | dernière connexion ${new Date(p.last_sign_in_at).toLocaleDateString('fr-FR')}` : ''}`).join('\n')}`)
+    }
+
   } catch (e) {
     console.error('Error fetching shop data:', e)
     context.push('## ⚠️ Certaines données n\'ont pas pu être chargées')
   }
 
   return context.join('\n\n')
+}
+
+// Recherche ciblée selon des entités détectées dans la question
+async function performDataLookup(supabaseAdmin: any, shopId: string, message: string): Promise<string> {
+  const blocks: string[] = []
+  const msg = message.toLowerCase()
+
+  try {
+    // 1. Numéro de dossier SAV (SAV-XXXX, dossier 123, #123)
+    const caseMatches = message.match(/\b(SAV-\d{2,4}-?\d{0,6}|#?\d{3,8})\b/gi) || []
+    for (const raw of caseMatches.slice(0, 3)) {
+      const term = raw.replace('#', '').trim()
+      const { data } = await supabaseAdmin
+        .from('sav_cases')
+        .select('case_number, status, sav_type, device_brand, device_model, device_imei, device_color, device_grade, problem_description, total_cost, total_time_minutes, created_at, taken_over, customer:customers(first_name, last_name, phone, email)')
+        .eq('shop_id', shopId)
+        .ilike('case_number', `%${term}%`)
+        .limit(2)
+      if (data?.length) {
+        for (const c of data) {
+          const cust = c.customer ? `${c.customer.first_name || ''} ${c.customer.last_name || ''} (${c.customer.phone || c.customer.email || '—'})` : '—'
+          blocks.push(`### Dossier ${c.case_number}
+- Client : ${cust}
+- Appareil : ${c.device_brand || ''} ${c.device_model || ''} ${c.device_color || ''} ${c.device_grade || ''}
+- IMEI : ${c.device_imei || 'N/A'}
+- Type : ${c.sav_type} | Statut : ${c.status} | Pris en charge : ${c.taken_over ? 'oui' : 'non'}
+- Problème : ${c.problem_description || '—'}
+- Coût total : ${c.total_cost ?? 'N/A'}€ | Temps : ${c.total_time_minutes ?? 0} min
+- Créé le : ${new Date(c.created_at).toLocaleString('fr-FR')}`)
+        }
+      }
+    }
+
+    // 2. Recherche client par nom (mot >=4 lettres + capitalisée ou après "client")
+    const clientMatch = message.match(/client\s+([a-zàâäéèêëïîôùûüÿçœ-]{3,})/i) || message.match(/\b([A-ZÉÈÊ][a-zàâäéèêëïîôùûüÿç-]{3,})\b/)
+    if (clientMatch) {
+      const term = clientMatch[1]
+      const { data } = await supabaseAdmin
+        .from('customers')
+        .select('first_name, last_name, phone, email')
+        .eq('shop_id', shopId)
+        .or(`last_name.ilike.%${term}%,first_name.ilike.%${term}%`)
+        .limit(5)
+      if (data?.length) {
+        blocks.push(`### Clients trouvés "${term}"
+${data.map((c: any) => `- ${c.first_name || ''} ${c.last_name || ''} | ${c.phone || '—'} | ${c.email || '—'}`).join('\n')}`)
+      }
+    }
+
+    // 3. Recherche pièce (mots clés stock / pièce / vitre / batterie / écran / connecteur)
+    const partKwMatch = message.match(/(vitre|écran|ecran|batterie|connecteur|nappe|caméra|camera|haut-?parleur|micro|bouton|carte\s+mère|capteur)\s+([\wàâäéèêëïîôùûüÿç0-9\s-]{2,40})/i)
+    if (partKwMatch) {
+      const term = `${partKwMatch[1]} ${partKwMatch[2]}`.trim().slice(0, 60)
+      const { data } = await supabaseAdmin
+        .from('parts')
+        .select('name, reference, quantity, min_stock, purchase_price, selling_price')
+        .eq('shop_id', shopId)
+        .or(`name.ilike.%${partKwMatch[1]}%,reference.ilike.%${partKwMatch[1]}%`)
+        .limit(8)
+      if (data?.length) {
+        blocks.push(`### Pièces correspondant à "${term}"
+${data.map((p: any) => `- ${p.name} (réf ${p.reference || '—'}) | Stock: ${p.quantity}${p.min_stock != null ? ` (min ${p.min_stock})` : ''} | Achat ${p.purchase_price ?? '?'}€ / Vente ${p.selling_price ?? '?'}€`).join('\n')}`)
+      }
+    }
+
+    // 4. RDV par mot-clé
+    if (/\b(rdv|rendez-?vous|agenda|demain|aujourd'?hui|cette semaine)\b/i.test(msg)) {
+      const now = new Date()
+      const start = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString()
+      const end = new Date(now.getTime() + 7 * 24 * 3600 * 1000).toISOString()
+      const { data } = await supabaseAdmin
+        .from('appointments')
+        .select('title, appointment_type, start_at, end_at, status, customer_name')
+        .eq('shop_id', shopId)
+        .gte('start_at', start)
+        .lte('start_at', end)
+        .order('start_at')
+        .limit(15)
+      if (data?.length) {
+        blocks.push(`### RDV à venir (7 jours)
+${data.map((a: any) => `- ${new Date(a.start_at).toLocaleString('fr-FR')} | ${a.appointment_type} | ${a.customer_name || a.title} | ${a.status}`).join('\n')}`)
+      }
+    }
+  } catch (e) {
+    console.error('Data lookup error:', e)
+  }
+
+  if (!blocks.length) return ''
+  return `## 🔍 Données spécifiques à la question\n\n${blocks.join('\n\n')}`
 }
 
 Deno.serve(async (req) => {
@@ -314,8 +530,14 @@ Deno.serve(async (req) => {
 
 
     let shopDataContext = ''
+    let lookupContext = ''
     if (shopId) {
-      shopDataContext = await fetchShopData(supabaseAdmin, shopId)
+      const [data, lookup] = await Promise.all([
+        fetchShopData(supabaseAdmin, shopId),
+        performDataLookup(supabaseAdmin, shopId, message),
+      ])
+      shopDataContext = data
+      lookupContext = lookup
     }
 
     let knowledgeContext = ''
@@ -360,6 +582,7 @@ Deno.serve(async (req) => {
 
     const fullSystemPrompt = SYSTEM_PROMPT + 
       (shopDataContext ? `\n\n# DONNÉES EN TEMPS RÉEL DU MAGASIN\n\n${shopDataContext}` : '') +
+      (lookupContext ? `\n\n${lookupContext}` : '') +
       knowledgeContext
 
     const messages: any[] = [
@@ -398,7 +621,7 @@ Deno.serve(async (req) => {
         model: aiConfig.model,
         messages,
         temperature: 0.5,
-        max_tokens: 1500,
+        max_tokens: 2000,
       }),
     })
 
