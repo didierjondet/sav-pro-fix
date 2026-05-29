@@ -388,19 +388,20 @@ Deno.serve(async (req) => {
 
     messages.push({ role: 'user', content: message })
 
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    const response = await fetch(aiConfig.url, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${apiKey}`,
+        'Authorization': `Bearer ${aiConfig.apiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-3-flash-preview',
+        model: aiConfig.model,
         messages,
         temperature: 0.5,
         max_tokens: 1500,
       }),
     })
+
 
     if (!response.ok) {
       const errorText = await response.text()
