@@ -418,7 +418,59 @@ async function performDataLookup(supabaseAdmin: any, shopId: string, message: st
   const msg = message.toLowerCase()
 
   try {
-    // 1. Numéro de dossier SAV (SAV-XXXX, dossier 123, #123)
+    // 0. RÉPONSES FACTUELLES DIRECTES (calculées serveur, garanties exactes)
+
+    // 0a. Question "stock" globale: combien de pièces, inventaire, quantité totale...
+    const stockGlobal = /(combien|nombre|total|inventaire|quantit[ée]|valeur)/i.test(msg)
+      && /(pi[èe]ce|stock|r[ée]f[ée]rence|inventaire)/i.test(msg)
+    if (stockGlobal) {
+      const [statsRes, allPartsRes, lowRes] = await Promise.all([
+        supabaseAdmin.rpc('get_parts_statistics', { p_shop_id: shopId }),
+        supabaseAdmin.from('parts').select('name, reference, quantity, selling_price, purchase_price').eq('shop_id', shopId).order('quantity', { ascending: false }).limit(15),
+        supabaseAdmin.from('parts').select('name, reference, quantity, min_stock').eq('shop_id', shopId).not('min_stock', 'is', null),
+      ])
+      const stats = Array.isArray(statsRes.data) ? statsRes.data[0] : statsRes.data
+      const lowStock = (lowRes.data || []).filter((p: any) => p.quantity != null && p.min_stock != null && p.quantity <= p.min_stock)
+      const lines: string[] = []
+      if (stats) {
+        lines.push(`- **Quantité totale en stock** : ${stats.total_quantity} pièces`)
+        lines.push(`- **Nombre de références distinctes** : ${stats.total_parts ?? (allPartsRes.data?.length ?? '?')}`)
+        lines.push(`- **Valeur totale du stock** : ${Number(stats.total_value || 0).toFixed(2)}€`)
+        lines.push(`- **Pièces en stock bas** : ${stats.low_stock_count}`)
+      } else if (allPartsRes.data) {
+        const total = allPartsRes.data.reduce((s: number, p: any) => s + (Number(p.quantity) || 0), 0)
+        lines.push(`- **Quantité totale en stock** : ${total} pièces`)
+        lines.push(`- **Nombre de références** : ${allPartsRes.data.length}`)
+      }
+      if (allPartsRes.data?.length) {
+        lines.push(`\n**Top pièces en stock :**\n${allPartsRes.data.slice(0, 10).map((p: any) => `  • ${p.name} (réf ${p.reference || '—'}) : ${p.quantity} en stock`).join('\n')}`)
+      }
+      if (lowStock.length) {
+        lines.push(`\n**⚠️ Alertes stock bas (${lowStock.length}) :**\n${lowStock.slice(0, 10).map((p: any) => `  • ${p.name} (réf ${p.reference || '—'}) : ${p.quantity} ≤ ${p.min_stock}`).join('\n')}`)
+      }
+      blocks.push(`### 📦 Réponse factuelle – Stock du magasin (données live)\n${lines.join('\n')}`)
+    }
+
+    // 0b. Question "SAV" globale: combien de SAV en cours / en retard / par statut
+    const savGlobal = /(combien|nombre|total|liste)/i.test(msg) && /(sav|dossier|r[ée]paration)/i.test(msg)
+    if (savGlobal) {
+      const { data: allSavs } = await supabaseAdmin
+        .from('sav_cases')
+        .select('case_number, status, sav_type, device_brand, device_model, created_at')
+        .eq('shop_id', shopId)
+      if (allSavs?.length) {
+        const byStatus: Record<string, number> = {}
+        for (const s of allSavs) byStatus[s.status] = (byStatus[s.status] || 0) + 1
+        const lines = [
+          `- **Total SAV** : ${allSavs.length}`,
+          `- **Répartition par statut** :`,
+          ...Object.entries(byStatus).map(([s, c]) => `  • ${s} : ${c}`),
+        ]
+        blocks.push(`### 🛠️ Réponse factuelle – SAV du magasin (données live)\n${lines.join('\n')}`)
+      }
+    }
+
+
     const caseMatches = message.match(/\b(SAV-\d{2,4}-?\d{0,6}|#?\d{3,8})\b/gi) || []
     for (const raw of caseMatches.slice(0, 3)) {
       const term = raw.replace('#', '').trim()
