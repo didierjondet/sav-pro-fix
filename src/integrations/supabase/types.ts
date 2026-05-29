@@ -1404,6 +1404,7 @@ export type Database = {
           shop_id: string | null
           sku: string | null
           supplier: string | null
+          supplier_id: string | null
           time_minutes: number
           updated_at: string
         }
@@ -1427,6 +1428,7 @@ export type Database = {
           shop_id?: string | null
           sku?: string | null
           supplier?: string | null
+          supplier_id?: string | null
           time_minutes?: number
           updated_at?: string
         }
@@ -1450,6 +1452,7 @@ export type Database = {
           shop_id?: string | null
           sku?: string | null
           supplier?: string | null
+          supplier_id?: string | null
           time_minutes?: number
           updated_at?: string
         }
@@ -1466,6 +1469,13 @@ export type Database = {
             columns: ["shop_id"]
             isOneToOne: false
             referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "parts_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
             referencedColumns: ["id"]
           },
         ]
@@ -2600,56 +2610,6 @@ export type Database = {
         }
         Relationships: []
       }
-      shop_suppliers: {
-        Row: {
-          created_at: string | null
-          id: string
-          is_enabled: boolean | null
-          last_sync_at: string | null
-          password_encrypted: string | null
-          price_coefficient: number | null
-          shop_id: string
-          supplier_name: string
-          supplier_url: string
-          updated_at: string | null
-          username: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          is_enabled?: boolean | null
-          last_sync_at?: string | null
-          password_encrypted?: string | null
-          price_coefficient?: number | null
-          shop_id: string
-          supplier_name: string
-          supplier_url: string
-          updated_at?: string | null
-          username?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          is_enabled?: boolean | null
-          last_sync_at?: string | null
-          password_encrypted?: string | null
-          price_coefficient?: number | null
-          shop_id?: string
-          supplier_name?: string
-          supplier_url?: string
-          updated_at?: string | null
-          username?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "shop_suppliers_shop_id_fkey"
-            columns: ["shop_id"]
-            isOneToOne: false
-            referencedRelation: "shops"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       shop_working_hours: {
         Row: {
           break_end: string | null
@@ -3250,6 +3210,59 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      suppliers: {
+        Row: {
+          address: string | null
+          contact_name: string | null
+          created_at: string
+          email: string | null
+          id: string
+          is_active: boolean
+          name: string
+          notes: string | null
+          phone: string | null
+          shop_id: string
+          updated_at: string
+          website: string | null
+        }
+        Insert: {
+          address?: string | null
+          contact_name?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          notes?: string | null
+          phone?: string | null
+          shop_id: string
+          updated_at?: string
+          website?: string | null
+        }
+        Update: {
+          address?: string | null
+          contact_name?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          shop_id?: string
+          updated_at?: string
+          website?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "suppliers_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       support_messages: {
         Row: {

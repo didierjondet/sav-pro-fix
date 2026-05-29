@@ -37,13 +37,14 @@ export function useOnboardingProgress() {
     staleTime: 60_000,
     queryFn: async () => {
       if (!shopId) return null;
-      const [savTypes, customStatuses, parts, savCases, workingHours, members] = await Promise.all([
+      const [savTypes, customStatuses, parts, savCases, workingHours, members, suppliersRes] = await Promise.all([
         supabase.from('shop_sav_types').select('id', { count: 'exact', head: true }).eq('shop_id', shopId).eq('is_default', false),
         supabase.from('shop_sav_statuses').select('id', { count: 'exact', head: true }).eq('shop_id', shopId).eq('is_default', false),
         supabase.from('parts').select('id', { count: 'exact', head: true }).eq('shop_id', shopId),
         supabase.from('sav_cases').select('id', { count: 'exact', head: true }).eq('shop_id', shopId),
         supabase.from('shop_working_hours').select('id', { count: 'exact', head: true }).eq('shop_id', shopId),
         supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('shop_id', shopId),
+        supabase.from('suppliers' as any).select('id', { count: 'exact', head: true }).eq('shop_id', shopId),
       ]);
       return {
         customSavTypes: savTypes.count ?? 0,
@@ -52,6 +53,7 @@ export function useOnboardingProgress() {
         savCases: savCases.count ?? 0,
         workingHours: workingHours.count ?? 0,
         members: members.count ?? 0,
+        suppliers: suppliersRes.count ?? 0,
       };
     },
   });
@@ -124,6 +126,15 @@ export function useOnboardingProgress() {
         actionRoute: '/settings?tab=sav-statuses',
         helpQuestion: 'Comment ajouter ou modifier mes statuts SAV ?',
         category: 'sav',
+      },
+      {
+        id: 'first_supplier',
+        label: 'Enregistrer un premier fournisseur',
+        description: 'Créez vos fournisseurs avant d\'ajouter vos pièces pour bien attribuer chaque produit.',
+        status: (counts?.suppliers ?? 0) > 0 ? 'done' : 'pending',
+        actionRoute: '/settings?tab=suppliers',
+        helpQuestion: 'Comment ajouter un fournisseur ?',
+        category: 'inventory',
       },
       {
         id: 'first_part',

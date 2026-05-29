@@ -10,10 +10,13 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Part } from '@/hooks/useParts';
 import { usePartCategories } from '@/hooks/usePartCategories';
+import { useSuppliersDirectory } from '@/hooks/useSuppliersDirectory';
+import { SupplierForm } from '@/components/settings/SupplierForm';
 import { SimilarPartsAlert } from './SimilarPartsAlert';
 import { PartPhotoUpload } from './PartPhotoUpload';
 import { cn } from '@/lib/utils';
 import { useBillingConfig } from '@/hooks/useBillingConfig';
+import { Plus } from 'lucide-react';
 
 const PART_COLORS = [
   { value: 'black', label: 'Noir', color: '#000000' },
@@ -50,7 +53,10 @@ export function PartForm({ initialData, onSubmit, onCancel, isEdit = false, find
   const [selectedColor, setSelectedColor] = useState<string | null>((initialData as any)?.color || null);
   const [categoryId, setCategoryId] = useState<string | null>((initialData as any)?.category_id || null);
   const [isService, setIsService] = useState<boolean>((initialData as any)?.is_service ?? defaultIsService);
+  const [supplierId, setSupplierId] = useState<string | null>((initialData as any)?.supplier_id ?? null);
+  const [supplierFormOpen, setSupplierFormOpen] = useState(false);
   const { categories } = usePartCategories();
+  const { activeSuppliers } = useSuppliersDirectory();
   const { config: billing } = useBillingConfig();
   
   const {
@@ -122,6 +128,7 @@ export function PartForm({ initialData, onSubmit, onCancel, isEdit = false, find
         photo_url: photoUrl,
         color: selectedColor,
         category_id: categoryId,
+        supplier_id: supplierId,
         is_service: isService,
       };
 
@@ -217,11 +224,27 @@ export function PartForm({ initialData, onSubmit, onCancel, isEdit = false, find
 
             <div>
               <Label htmlFor="supplier">Fournisseur</Label>
-              <Input
-                id="supplier"
-                {...register('supplier')}
-                placeholder="Ex: Fournisseur ABC"
-              />
+              <div className="flex gap-2">
+                <Select value={supplierId ?? 'none'} onValueChange={(v) => setSupplierId(v === 'none' ? null : v)}>
+                  <SelectTrigger id="supplier" className="flex-1">
+                    <SelectValue placeholder="Sélectionner un fournisseur" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Aucun fournisseur</SelectItem>
+                    {activeSuppliers.map((s) => (
+                      <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button type="button" variant="outline" size="icon" onClick={() => setSupplierFormOpen(true)} title="Nouveau fournisseur">
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+              {activeSuppliers.length === 0 && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Aucun fournisseur enregistré. Créez-en un via le bouton +.
+                </p>
+              )}
             </div>
           </div>
 
@@ -456,6 +479,12 @@ export function PartForm({ initialData, onSubmit, onCancel, isEdit = false, find
           </div>
         </form>
       </CardContent>
+
+      <SupplierForm
+        open={supplierFormOpen}
+        onOpenChange={setSupplierFormOpen}
+        onSaved={(s) => setSupplierId(s.id)}
+      />
     </Card>
   );
 }

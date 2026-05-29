@@ -48,7 +48,7 @@ import Notifications from "./pages/Notifications";
 import QuotePublic from "./pages/QuotePublic";
 import Satisfaction from "./pages/Satisfaction";
 import Reports from "./pages/Reports";
-import ChromeExtensionDownload from "./pages/ChromeExtensionDownload";
+
 import Agenda from "./pages/Agenda";
 import AppointmentConfirm from "./pages/AppointmentConfirm";
 import SAVLogs from "./pages/SAVLogs";
@@ -165,7 +165,7 @@ const App = () => {
                 <Route path="/about" element={<About />} />
                 <Route path="/contact" element={<Contact />} />
                 <Route path="/shop/:slug" element={<ShopWebsite />} />
-                <Route path="/chrome-extension-download" element={<ChromeExtensionDownload />} />
+                
                 <Route path="*" element={<NotFound />} />
               </Routes>
               <HelpBot />
