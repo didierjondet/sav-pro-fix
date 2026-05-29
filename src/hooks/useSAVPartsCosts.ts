@@ -115,7 +115,7 @@ export function useSAVPartsCosts() {
           }
 
           // Calcul du CA uniquement pour les SAV prêts et non internes
-          if ((savCase.status === 'ready' || savCase.status === 'pret_et_cloture') && savCase.sav_type !== 'internal') {
+          if (metricsStatusKeys.includes(savCase.status) && savCase.sav_type !== 'internal') {
             let revenuePart = partRevenue;
             if (savCase.partial_takeover && savCase.takeover_amount) {
               // Prise en charge partielle : calculer la part payée par le client
