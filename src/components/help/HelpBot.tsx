@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { MessageCircleQuestion, X, Send, RotateCcw, TicketCheck, XCircle } from 'lucide-react';
+import { X, Send, RotateCcw, TicketCheck, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import FixyMascot from '@/components/help/FixyMascot';
 
 import { useHelpBot } from '@/hooks/useHelpBot';
 import { useAuth } from '@/contexts/AuthContext';
