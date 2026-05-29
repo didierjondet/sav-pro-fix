@@ -80,6 +80,13 @@ function DashboardWidgetContainer({ widgetId, children }: DashboardWidgetContain
 export function SAVDashboard() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isWidgetDialogOpen, setIsWidgetDialogOpen] = useState(false);
+  const [isLayoutUnlocked, setIsLayoutUnlocked] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    return localStorage.getItem('fixway_dashboard_layout_unlocked') === 'true';
+  });
+  useEffect(() => {
+    try { localStorage.setItem('fixway_dashboard_layout_unlocked', String(isLayoutUnlocked)); } catch {}
+  }, [isLayoutUnlocked]);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const { cases, loading } = useSAVCases();
   const { shop } = useShop();
