@@ -62,6 +62,7 @@ const HelpBot: React.FC = () => {
   const { pendingCount, isDismissed, isFullyConfigured, isOnboardingExpired } = useOnboardingProgress();
 
   const userContext = getUserContext();
+  const fixyEvent = useFixyReactions();
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
