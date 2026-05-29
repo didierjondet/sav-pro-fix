@@ -560,9 +560,6 @@ export default function SAVTypesManager({ types, loading, onRefresh }: SAVTypesM
                         </Badge>
                       )}
                     </div>
-                    <p className="text-sm text-muted-foreground">
-                      Clé: {type.type_key}
-                    </p>
                     <div className="flex items-center space-x-3 mt-2">
                       <div className="flex items-center space-x-1 text-xs">
                         <Users className="w-3 h-3" />
