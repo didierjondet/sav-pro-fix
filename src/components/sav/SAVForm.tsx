@@ -443,13 +443,15 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
     }
   };
 
-  const handlePrintConfirm = () => {
-    // Lancer l'impression via la méthode exposée
+  const handlePrintConfirm = async () => {
+    // Lancer l'impression via la méthode exposée et attendre sa fin
+    // pour éviter le démontage du bouton pendant l'ouverture de la fenêtre.
     if (printButtonRef.current) {
-      printButtonRef.current.print();
+      await printButtonRef.current.print();
     }
     onSuccess?.();
   };
+
 
   const handlePrintCancel = () => {
     // Redirection sans impression
