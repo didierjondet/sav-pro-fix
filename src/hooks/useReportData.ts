@@ -9,6 +9,8 @@ export interface ReportPartItem {
   quantity: number;
   purchase_price: number;
   unit_price: number;
+  supplier_id: string | null;
+  supplier_name: string | null;
 }
 
 export interface ReportSAVItem {
