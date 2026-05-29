@@ -11,8 +11,9 @@ import { generateShortTrackingUrl } from '@/utils/trackingUtils';
 import { fetchBillingConfig, aggregateTotals, buildVatHtmlBlock } from '@/utils/pdfVatHelpers';
 
 interface SAVPrintButtonRef {
-  print: (override?: SAVPrintButtonProps['savCase']) => void;
+  print: (override?: SAVPrintButtonProps['savCase']) => Promise<void>;
 }
+
 
 export type { SAVPrintButtonRef };
 
@@ -38,7 +39,24 @@ export const SAVPrintButton = React.forwardRef<SAVPrintButtonRef, SAVPrintButton
     if (printing) return;
     const savCase = override ?? savCaseProp;
     setPrinting(true);
+
+    // Ouvrir la fenêtre SYNCHRONEMENT, avant tout await, pour préserver le geste utilisateur
+    // (sinon les navigateurs bloquent la popup).
+    const printWindow = window.open("", "_blank");
+    if (printWindow) {
+      try {
+        printWindow.document.open();
+        printWindow.document.write(
+          '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Préparation de l\'impression…</title></head><body style="font-family:system-ui,sans-serif;padding:24px;color:#333;">Préparation de l\'impression…</body></html>'
+        );
+        printWindow.document.close();
+      } catch (_) {
+        // ignore
+      }
+    }
+
     try {
+
       // Récupérer les pièces
       const { data: partsData } = await supabase
         .from("sav_parts")
@@ -383,7 +401,6 @@ export const SAVPrintButton = React.forwardRef<SAVPrintButtonRef, SAVPrintButton
 </body>
 </html>`;
 
-      const printWindow = window.open("", "_blank");
       if (!printWindow) {
         console.error("Popup bloquée ou erreur lors de l'ouverture de la fenêtre d'impression");
         // Fallback: télécharger le fichier HTML
@@ -398,24 +415,28 @@ export const SAVPrintButton = React.forwardRef<SAVPrintButtonRef, SAVPrintButton
         URL.revokeObjectURL(url);
         return;
       }
-      
+
+      // Réécrire le document avec le contenu final
+      printWindow.document.open();
       printWindow.document.write(html);
       printWindow.document.close();
-      
+
       // Attendre que le contenu soit chargé avant d'imprimer
-      if (printWindow.document.readyState === 'complete') {
-        setTimeout(() => {
-          printWindow.print();
-          printWindow.close();
-        }, 500);
-      } else {
-        printWindow.onload = () => {
+      await new Promise<void>((resolve) => {
+        const launch = () => {
           setTimeout(() => {
-            printWindow.print();
-            printWindow.close();
+            try { printWindow.print(); } catch (_) {}
+            try { printWindow.close(); } catch (_) {}
+            resolve();
           }, 500);
         };
-      }
+        if (printWindow.document.readyState === 'complete') {
+          launch();
+        } else {
+          printWindow.onload = launch;
+        }
+      });
+
     } finally {
       setPrinting(false);
     }

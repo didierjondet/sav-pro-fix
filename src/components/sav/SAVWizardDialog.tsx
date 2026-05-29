@@ -377,11 +377,14 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
     }
   };
 
-  const handlePrintConfirm = () => {
+  const handlePrintConfirm = async () => {
     const caseToPrint = persistedCaseRef.current ?? createdSAVCase;
-    if (printButtonRef.current) printButtonRef.current.print(caseToPrint);
+    if (printButtonRef.current) {
+      await printButtonRef.current.print(caseToPrint);
+    }
     resetAndClose();
   };
+
 
   const handlePrintCancel = () => resetAndClose();
 

@@ -1,47 +1,45 @@
-# Masquer la « clé du type » lors de la création d'un type SAV
+# Réparer l'impression à la fin de la création d'un SAV (wizard + form classique)
 
-## Objectif
-Aligner la création des types SAV sur le comportement des statuts : l'utilisateur ne saisit que le **Libellé**, la clé technique (`type_key`) est générée automatiquement et de manière transparente côté code.
+## Symptôme
+Après création d'un SAV (par le wizard simplifié OU le formulaire classique), un clic sur « Imprimer » dans la popup de confirmation ferme la popup **sans lancer l'impression**. L'utilisateur doit ouvrir le SAV nouvellement créé pour le réimprimer.
 
-## Fichier modifié
-`src/components/sav/SAVTypesManager.tsx` uniquement (aucun changement BDD, aucun autre composant impacté).
+## Cause technique
+Deux problèmes cumulés dans `SAVPrint.tsx` + `SAVWizardDialog.tsx` + `SAVForm.tsx` :
 
-## Changements
+1. **Popup bloquée par le navigateur** — `SAVPrint.handlePrint()` exécute plusieurs `await` (chargement des pièces, config TVA) *avant* d'appeler `window.open("", "_blank")`. À ce moment-là, le geste utilisateur est « consommé » : la plupart des navigateurs bloquent silencieusement la nouvelle fenêtre. Pas de fenêtre = pas d'impression.
 
-### 1. Slugification automatique du libellé
-Ajouter un helper local :
-```ts
-const slugifyLabel = (label: string) =>
-  label.trim().toLowerCase()
-    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')   // retire accents
-    .replace(/[^a-z0-9]+/g, '_')                         // non alphanum -> _
-    .replace(/^_+|_+$/g, '')                             // trim _
-    .slice(0, 50);
-```
+2. **Démontage immédiat du bouton d'impression** — `handlePrintConfirm` lance `printButtonRef.current.print()` en *fire-and-forget* puis appelle aussitôt `resetAndClose()` (wizard) ou `onSuccess?.()` (form classique). Ces deux fonctions démontent le composant `<SAVPrintButton>` pendant que son `await` interne tourne encore → la fenêtre enfant peut être fermée par le navigateur quand son parent disparaît.
 
-### 2. Création (`handleCreate`)
-- Calculer `type_key = slugifyLabel(formData.type_label)` au moment de l'insert.
-- En cas de collision possible (même libellé deux fois), suffixer par un compteur basé sur les `types` existants : `reparation_ecran`, `reparation_ecran_2`, etc.
-- Garder un garde-fou : si `type_label` vide → toast d'erreur "Le libellé est requis".
+## Correctifs
 
-### 3. Édition (`handleEdit`)
-- Ne plus permettre de modifier la clé. La clé reste celle existante (`editingType.type_key`) → préserve toute la cohérence avec les SAV déjà créés.
-- Pour les types par défaut : aucun changement (clé déjà figée).
+### 1. `src/components/sav/SAVPrint.tsx`
+- Ouvrir la nouvelle fenêtre **synchronement, tout au début de `handlePrint`** (avant tout `await`) avec un HTML minimal « Préparation de l'impression… ». Conserver la ref `printWindow`.
+- Si `window.open` renvoie `null` (popup bloquée navigateur), conserver le fallback actuel : téléchargement du fichier HTML.
+- Après les `await` (Supabase + billing), faire `printWindow.document.open(); write(html); close();` puis lancer `printWindow.print()` comme aujourd'hui.
+- `handlePrint` est déjà `async` → `print()` exposé via `useImperativeHandle` retournera la Promise (signature : `print: (override?) => Promise<void>`). Mettre à jour l'interface `SAVPrintButtonRef` en conséquence.
 
-### 4. UI du dialog (lignes ~293-309)
-- Supprimer entièrement le champ « Clé du type » et son texte d'aide.
-- Le champ « Libellé » devient le premier champ du formulaire.
+### 2. `src/components/sav/SAVWizardDialog.tsx`
+- Rendre `handlePrintConfirm` `async` et **attendre** la fin de l'impression avant de réinitialiser :
+  ```ts
+  const handlePrintConfirm = async () => {
+    const caseToPrint = persistedCaseRef.current ?? createdSAVCase;
+    if (printButtonRef.current) {
+      await printButtonRef.current.print(caseToPrint);
+    }
+    resetAndClose();
+  };
+  ```
 
-### 5. Affichage de la liste (ligne ~561)
-- Retirer la mention `Clé: {type.type_key}` du rendu liste (information technique inutile pour l'utilisateur). Le libellé et la couleur suffisent.
+### 3. `src/components/sav/SAVForm.tsx`
+- Même correctif : `handlePrintConfirm` passe en `async`, `await printButtonRef.current.print()`, puis `onSuccess?.()`.
 
-## Hors-scope
-- Aucune migration BDD : la colonne `type_key` reste indispensable (utilisée partout dans les hooks, rapports, widgets, filtres).
-- Aucun changement sur `SAVStatusesManager`, déjà conforme à ce modèle.
-- Aucun renommage rétroactif des clés existantes.
+## Hors-scope (rien d'autre n'est touché)
+- Aucun changement de mise en page, de styles, ni du contenu HTML imprimé.
+- Aucune modification de `PrintConfirmDialog`, de `persistSAV`, du flux SMS ou « Valider ».
+- Aucune migration BDD, aucun autre composant.
 
 ## Validation
-1. Créer un type "Réparation écran" → enregistré avec `type_key = reparation_ecran`, visible en liste sans afficher la clé.
-2. Créer un second type "Réparation écran" → `type_key = reparation_ecran_2` (pas d'erreur d'unicité).
-3. Modifier un type existant → la clé reste inchangée, seul le libellé/couleur/options sont éditables.
-4. Les SAV existants liés à un type continuent de fonctionner (rapports, widgets, statistiques inchangés).
+1. Wizard : créer un SAV → cliquer « Imprimer » → la fenêtre d'aperçu d'impression du navigateur s'ouvre immédiatement avec le contenu du SAV ; la popup wizard se ferme proprement ensuite.
+2. Formulaire classique (`/sav/new`) : même comportement.
+3. Si le navigateur bloque la popup malgré tout, le fichier HTML se télécharge en fallback (comportement préservé).
+4. Les boutons « Valider » et « Envoyer SMS » restent inchangés.
