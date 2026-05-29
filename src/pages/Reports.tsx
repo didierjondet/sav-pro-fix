@@ -626,6 +626,11 @@ export default function Reports() {
             />
           )}
 
+          {/* Supplier performance */}
+          {!loading && data.items.length > 0 && (
+            <SupplierPerformanceSection reportData={data} dateRange={dateRange} />
+          )}
+
           {/* Data table grouped by type */}
           {loading ? (
             <Card>
