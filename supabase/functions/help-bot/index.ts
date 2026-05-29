@@ -635,55 +635,64 @@ Deno.serve(async (req) => {
       console.error('Knowledge search error:', e)
     }
 
-    const fullSystemPrompt = SYSTEM_PROMPT + 
-      (shopDataContext ? `\n\n# DONNÉES EN TEMPS RÉEL DU MAGASIN\n\n${shopDataContext}` : '') +
-      (lookupContext ? `\n\n${lookupContext}` : '') +
-      knowledgeContext
-
-    const messages: any[] = [
-      { role: 'system', content: fullSystemPrompt }
-    ]
-
-    if (userContext) {
-      messages.push({
-        role: 'system',
-        content: `Contexte utilisateur :
+    const userContextBlock = userContext ? `\n\n## Contexte utilisateur courant
 - Profil rempli : ${userContext.profileComplete ? 'Oui' : 'Non (suggérer de compléter dans Paramètres → Profil)'}
 - Boutique configurée : ${userContext.shopComplete ? 'Oui' : 'Non (suggérer de configurer dans Paramètres → Boutique)'}
 - Rôle : ${userContext.role || 'inconnu'}
-- Nom boutique : ${userContext.shopName || 'non configuré'}`
+- Nom boutique : ${userContext.shopName || 'non configuré'}` : ''
+
+    const fullSystemPrompt = SYSTEM_PROMPT +
+      (shopDataContext ? `\n\n# DONNÉES EN TEMPS RÉEL DU MAGASIN\n\n${shopDataContext}` : '') +
+      (lookupContext ? `\n\n${lookupContext}` : '') +
+      knowledgeContext +
+      userContextBlock
+
+    // Diagnostic
+    console.log(`[help-bot] provider=${aiConfig.provider} model=${aiConfig.model} shopId=${shopId || 'none'} systemPromptChars=${fullSystemPrompt.length} shopDataChars=${shopDataContext.length} lookupChars=${lookupContext.length}`)
+
+    // Rappel injecté côté user pour forcer l'IA à exploiter le contexte (utile pour Gemini)
+    const userMessageWithHint = shopDataContext
+      ? `${message}\n\n[Rappel système: utilise impérativement les DONNÉES EN TEMPS RÉEL DU MAGASIN ci-dessus pour répondre avec des chiffres exacts. Ne réponds jamais "consultez votre ERP" — tu ES l'ERP.]`
+      : message
+
+    // Construction des messages
+    const chatHistory = (history && Array.isArray(history))
+      ? history.slice(-10).map((m: any) => ({ role: m.role === 'user' ? 'user' : 'assistant', content: m.content }))
+      : []
+
+    let response: Response
+    if (aiConfig.provider === 'gemini') {
+      // Endpoint natif Gemini avec systemInstruction (gère mieux les gros contextes)
+      const geminiContents = [
+        ...chatHistory.map((m: any) => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] })),
+        { role: 'user', parts: [{ text: userMessageWithHint }] },
+      ]
+      response = await fetch(`${aiConfig.url}?key=${encodeURIComponent(aiConfig.apiKey)}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text: fullSystemPrompt }] },
+          contents: geminiContents,
+          generationConfig: { temperature: 0.5, maxOutputTokens: 2000 },
+        }),
+      })
+    } else {
+      const messages: any[] = [
+        { role: 'system', content: fullSystemPrompt },
+        ...chatHistory,
+        { role: 'user', content: userMessageWithHint },
+      ]
+      response = await fetch(aiConfig.url, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${aiConfig.apiKey}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model: aiConfig.model, messages, temperature: 0.5, max_tokens: 2000 }),
       })
     }
-
-    if (history && Array.isArray(history)) {
-      for (const msg of history.slice(-10)) {
-        messages.push({
-          role: msg.role === 'user' ? 'user' : 'assistant',
-          content: msg.content
-        })
-      }
-    }
-
-    messages.push({ role: 'user', content: message })
-
-    const response = await fetch(aiConfig.url, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${aiConfig.apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: aiConfig.model,
-        messages,
-        temperature: 0.5,
-        max_tokens: 2000,
-      }),
-    })
 
 
     if (!response.ok) {
       const errorText = await response.text()
-      console.error('AI API error:', response.status, errorText)
+      console.error(`[help-bot] AI API error provider=${aiConfig.provider} status=${response.status}:`, errorText.slice(0, 500))
       
       if (response.status === 429) {
         return new Response(JSON.stringify({
@@ -711,7 +720,9 @@ Deno.serve(async (req) => {
     }
 
     const data = await response.json()
-    const content = data.choices?.[0]?.message?.content || "Désolé, je n'ai pas pu traiter votre demande."
+    const content = aiConfig.provider === 'gemini'
+      ? (data.candidates?.[0]?.content?.parts?.map((p: any) => p.text).filter(Boolean).join('\n') || "Désolé, je n'ai pas pu traiter votre demande.")
+      : (data.choices?.[0]?.message?.content || "Désolé, je n'ai pas pu traiter votre demande.")
 
     const shouldEscalate = content.startsWith('[ESCALATE]')
     let cleanMessage = content
