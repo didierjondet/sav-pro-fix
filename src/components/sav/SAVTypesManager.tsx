@@ -81,13 +81,37 @@ export default function SAVTypesManager({ types, loading, onRefresh }: SAVTypesM
     setEditingType(null);
   };
 
+  const slugifyLabel = (label: string) =>
+    label.trim().toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '_')
+      .replace(/^_+|_+$/g, '')
+      .slice(0, 50);
+
+  const generateUniqueKey = (label: string) => {
+    const base = slugifyLabel(label) || 'type';
+    const existing = new Set(types.map(t => t.type_key));
+    if (!existing.has(base)) return base;
+    let i = 2;
+    while (existing.has(`${base}_${i}`)) i++;
+    return `${base}_${i}`;
+  };
+
   const handleCreate = async () => {
     if (!profile?.shop_id) return;
 
+    if (!formData.type_label.trim()) {
+      toast({
+        title: "Libellé requis",
+        description: "Veuillez saisir un libellé pour le type de SAV.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       const maxOrder = Math.max(...types.map(t => t.display_order), 0);
-      // Normaliser le type_key : trim + remplacer espaces par underscores
-      const normalizedTypeKey = formData.type_key.trim().replace(/\s+/g, '_');
+      const normalizedTypeKey = generateUniqueKey(formData.type_label);
       
         const { error } = await supabase
           .from('shop_sav_types')
@@ -132,13 +156,9 @@ export default function SAVTypesManager({ types, loading, onRefresh }: SAVTypesM
     if (!editingType) return;
 
     try {
-      // Normaliser le type_key : trim + remplacer espaces par underscores
-      const normalizedTypeKey = formData.type_key.trim().replace(/\s+/g, '_');
-      
       const { error } = await supabase
         .from('shop_sav_types')
         .update({
-          type_key: normalizedTypeKey,
           type_label: formData.type_label,
           type_color: formData.type_color,
           show_customer_info: formData.show_customer_info,
@@ -291,24 +311,7 @@ export default function SAVTypesManager({ types, loading, onRefresh }: SAVTypesM
               
               <div className="flex-1 overflow-y-auto space-y-4 pr-2">
                 <div>
-                  <Label htmlFor="type_key">Clé du type</Label>
-                  <Input
-                    id="type_key"
-                    value={formData.type_key}
-                    onChange={(e) => {
-                      // Convertir automatiquement les espaces en underscores
-                      const value = e.target.value.replace(/\s+/g, '_');
-                      setFormData({ ...formData, type_key: value });
-                    }}
-                    placeholder="ex: reparation_ecran"
-                    disabled={!!editingType?.is_default}
-                  />
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Utilisée en interne. Les espaces sont automatiquement convertis en underscores.
-                  </p>
-                </div>
-                
-                <div>
+
                   <Label htmlFor="type_label">Libellé</Label>
                   <Input
                     id="type_label"
@@ -557,9 +560,6 @@ export default function SAVTypesManager({ types, loading, onRefresh }: SAVTypesM
                         </Badge>
                       )}
                     </div>
-                    <p className="text-sm text-muted-foreground">
-                      Clé: {type.type_key}
-                    </p>
                     <div className="flex items-center space-x-3 mt-2">
                       <div className="flex items-center space-x-1 text-xs">
                         <Users className="w-3 h-3" />

@@ -1,42 +1,47 @@
-# Switch « Compter dans les métriques » par statut SAV
+# Masquer la « clé du type » lors de la création d'un type SAV
 
-## Concept
-Chaque statut SAV reçoit un nouveau réglage `include_in_metrics` (booléen). Lorsqu'il est activé, les SAV portant ce statut sont comptés dans le tableau de bord, les rapports, les détails CA/dépenses, les widgets et statistiques mensuelles. Chaque magasin peut ainsi décider finement quels statuts entrent dans son chiffre d'affaires.
+## Objectif
+Aligner la création des types SAV sur le comportement des statuts : l'utilisateur ne saisit que le **Libellé**, la clé technique (`type_key`) est générée automatiquement et de manière transparente côté code.
 
-## Migration base de données
-- Ajouter la colonne `include_in_metrics BOOLEAN NOT NULL DEFAULT false` sur `shop_sav_statuses`.
-- Pré-remplissage : `UPDATE shop_sav_statuses SET include_in_metrics = true WHERE status_key IN ('ready', 'pret_et_cloture')` → tous les magasins existants gardent exactement leurs chiffres actuels (`ready` est déjà compté partout, `pret_et_cloture` n'existe que chez Agde).
-- Trigger / seed des nouveaux magasins : lors de la création des statuts par défaut, `ready` est créé avec `include_in_metrics = true` (les autres restent `false`). Aucun changement sur la logique de clôture par défaut.
+## Fichier modifié
+`src/components/sav/SAVTypesManager.tsx` uniquement (aucun changement BDD, aucun autre composant impacté).
 
-## UI — `src/components/sav/SAVStatusesManager.tsx`
-Ajouter un Switch « Compter dans les métriques » à côté des switches existants (`pause_timer`, `is_final_status`, `show_in_sidebar`). Mêmes patterns visuels — pas de modification de mise en page.
+## Changements
 
-## Hook source de vérité — `src/hooks/useShopSAVStatuses.ts`
-Exposer un helper `getMetricsStatusKeys()` qui renvoie la liste des `status_key` où `include_in_metrics = true`.
+### 1. Slugification automatique du libellé
+Ajouter un helper local :
+```ts
+const slugifyLabel = (label: string) =>
+  label.trim().toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')   // retire accents
+    .replace(/[^a-z0-9]+/g, '_')                         // non alphanum -> _
+    .replace(/^_+|_+$/g, '')                             // trim _
+    .slice(0, 50);
+```
 
-## Refactor des filtres hardcodés
-Remplacer partout `['ready', 'pret_et_cloture']` ajouté précédemment par la liste dynamique issue de `useShopSAVStatuses` :
+### 2. Création (`handleCreate`)
+- Calculer `type_key = slugifyLabel(formData.type_label)` au moment de l'insert.
+- En cas de collision possible (même libellé deux fois), suffixer par un compteur basé sur les `types` existants : `reparation_ecran`, `reparation_ecran_2`, etc.
+- Garder un garde-fou : si `type_label` vide → toast d'erreur "Le libellé est requis".
 
-- `src/hooks/useStatistics.ts` (READY_STATUSES ligne ~305, fallback ligne ~547)
-- `src/hooks/useCustomWidgetData.ts` (lignes ~244, ~277)
-- `src/hooks/useSAVPartsCosts.ts` (ligne ~109)
-- `src/hooks/useMonthlyStatistics.ts` (lignes ~60, ~156) — devient `.in('status', metricsStatusKeys)`
-- `src/pages/RevenueDetails.tsx` (ligne ~51)
-- `src/pages/ExpensesDetails.tsx` (ligne ~50)
-- `src/pages/Reports.tsx` (ligne 35) — pré-sélection = `metricsStatusKeys` du magasin courant
-- `src/components/sav/SAVDashboard.tsx` (ligne ~188) — lien filtré sur la liste
+### 3. Édition (`handleEdit`)
+- Ne plus permettre de modifier la clé. La clé reste celle existante (`editingType.type_key`) → préserve toute la cohérence avec les SAV déjà créés.
+- Pour les types par défaut : aucun changement (clé déjà figée).
 
-**Fallback de sécurité** : si la requête n'a pas encore chargé ou si aucun statut n'est marqué, on retombe sur `['ready', 'pret_et_cloture']` pour ne jamais montrer un tableau vide.
+### 4. UI du dialog (lignes ~293-309)
+- Supprimer entièrement le champ « Clé du type » et son texte d'aide.
+- Le champ « Libellé » devient le premier champ du formulaire.
 
-## Hors-scope (inchangé)
-- `is_final_status` reste indépendant (utilisé pour stopper les compteurs de retard).
-- `daily-assistant` continue d'utiliser `['ready','pret_et_cloture']` car c'est un service serveur non lié à la configuration UI par magasin.
-- Aucune modification des labels, couleurs, ordre d'affichage ou autres réglages existants.
+### 5. Affichage de la liste (ligne ~561)
+- Retirer la mention `Clé: {type.type_key}` du rendu liste (information technique inutile pour l'utilisateur). Le libellé et la couleur suffisent.
 
-## Garanties pour les autres magasins
-Après migration : `ready` est marqué `include_in_metrics = true` partout → comportement strictement identique à aujourd'hui. Aucun chiffre ne bouge. Seul Agde voit en plus `pret_et_cloture` compté (ce qui est déjà le cas depuis le dernier déploiement).
+## Hors-scope
+- Aucune migration BDD : la colonne `type_key` reste indispensable (utilisée partout dans les hooks, rapports, widgets, filtres).
+- Aucun changement sur `SAVStatusesManager`, déjà conforme à ce modèle.
+- Aucun renommage rétroactif des clés existantes.
 
 ## Validation
-1. Magasin standard : tableau de bord affiche les mêmes chiffres qu'avant.
-2. Agde : tableau de bord affiche `ready` + `pret_et_cloture`, identique à maintenant.
-3. Désactiver le switch sur `ready` pour un magasin test → ses chiffres tombent à 0, preuve que la logique est bien pilotée par le réglage.
+1. Créer un type "Réparation écran" → enregistré avec `type_key = reparation_ecran`, visible en liste sans afficher la clé.
+2. Créer un second type "Réparation écran" → `type_key = reparation_ecran_2` (pas d'erreur d'unicité).
+3. Modifier un type existant → la clé reste inchangée, seul le libellé/couleur/options sont éditables.
+4. Les SAV existants liés à un type continuent de fonctionner (rapports, widgets, statistiques inchangés).
