@@ -515,20 +515,27 @@ export default function Reports() {
                       <span className="text-sm">{widget.name}</span>
                     </label>
                   ))}
+                  <label className="flex items-center gap-2 cursor-pointer hover:bg-accent p-2 rounded">
+                    <Checkbox
+                      checked={includeSuppliers}
+                      onCheckedChange={(v) => setIncludeSuppliers(!!v)}
+                    />
+                    <span className="text-sm">Performance fournisseurs</span>
+                  </label>
                 </div>
-                {selectedWidgets.length > 0 && (
+                {(selectedWidgets.length > 0 || includeSuppliers) && (
                   <div className="mt-3 flex gap-2">
                     <Button 
                       variant="ghost" 
                       size="sm"
-                      onClick={() => setSelectedWidgets([])}
+                      onClick={() => { setSelectedWidgets([]); setIncludeSuppliers(false); }}
                     >
                       Tout désélectionner
                     </Button>
                     <Button 
                       variant="ghost" 
                       size="sm"
-                      onClick={() => setSelectedWidgets(AVAILABLE_REPORT_WIDGETS.map(w => w.id))}
+                      onClick={() => { setSelectedWidgets(AVAILABLE_REPORT_WIDGETS.map(w => w.id)); setIncludeSuppliers(true); }}
                     >
                       Tout sélectionner
                     </Button>
