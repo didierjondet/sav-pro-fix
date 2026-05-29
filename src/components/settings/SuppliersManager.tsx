@@ -8,6 +8,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Edit, Plus, Search, Trash2, Truck, Globe, Mail, Phone } from 'lucide-react';
 import { Supplier, useSuppliersDirectory } from '@/hooks/useSuppliersDirectory';
 import { SupplierForm } from './SupplierForm';
+import { SupplierDetailDialog } from './SupplierDetailDialog';
 
 export function SuppliersManager() {
   const { suppliers, isLoading, deleteSupplier } = useSuppliersDirectory();
