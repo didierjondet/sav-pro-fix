@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, HardDrive, Calendar, Info, Medal, Trophy, Award } from 'lucide-react';
+import { Plus, HardDrive, Calendar, Info, Medal, Trophy, Award, Lock, LockOpen } from 'lucide-react';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as ChartTooltip, ResponsiveContainer, Legend, LineChart, Line } from 'recharts';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
