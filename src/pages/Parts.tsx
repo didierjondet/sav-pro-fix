@@ -278,6 +278,18 @@ export default function Parts() {
                         ))}
                       </SelectContent>
                     </Select>
+                    <Select value={supplierFilter} onValueChange={setSupplierFilter}>
+                      <SelectTrigger className="sm:w-56">
+                        <SelectValue placeholder="Tous les fournisseurs" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Tous les fournisseurs</SelectItem>
+                        <SelectItem value="none">Sans fournisseur</SelectItem>
+                        {suppliers.map((s) => (
+                          <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
 
                    {/* Liste des pièces */}
