@@ -75,7 +75,11 @@ export function SuppliersManager() {
               </TableHeader>
               <TableBody>
                 {filtered.map((s) => (
-                  <TableRow key={s.id}>
+                  <TableRow
+                    key={s.id}
+                    className="cursor-pointer hover:bg-muted/50"
+                    onClick={() => { setDetail(s); setDetailOpen(true); }}
+                  >
                     <TableCell className="font-medium">{s.name}</TableCell>
                     <TableCell>{s.contact_name || '—'}</TableCell>
                     <TableCell>
@@ -89,7 +93,7 @@ export function SuppliersManager() {
                         {!s.email && !s.phone && '—'}
                       </div>
                     </TableCell>
-                    <TableCell>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
                       {s.website ? (
                         <a
                           href={s.website.startsWith('http') ? s.website : `https://${s.website}`}
@@ -106,7 +110,7 @@ export function SuppliersManager() {
                         {s.is_active ? 'Actif' : 'Inactif'}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                       <div className="flex gap-1 justify-end">
                         <Button size="sm" variant="outline" onClick={() => { setEditing(s); setFormOpen(true); }}>
                           <Edit className="h-3.5 w-3.5" />
