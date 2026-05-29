@@ -3539,6 +3539,19 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_add_sms_credits: {
+        Args: { p_amount: number; p_shop_id: string }
+        Returns: Json
+      }
+      admin_remove_sms_credits: {
+        Args: { p_amount: number; p_shop_id: string }
+        Returns: Json
+      }
+      admin_reset_all_monthly_sms: { Args: never; Returns: undefined }
+      admin_reset_shop_monthly_sms: {
+        Args: { p_shop_id: string }
+        Returns: undefined
+      }
       apply_inventory_session: {
         Args: { _session_id: string }
         Returns: {

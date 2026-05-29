@@ -19,8 +19,7 @@ import { StatisticsView } from '@/components/admin/dashboard/StatisticsView';
 import SubscriptionPlansManager from '@/components/admin/SubscriptionPlansManager';
 import SupportTicketManager from '@/components/admin/SupportTicketManager';
 import { SupportTicketsOverview } from '@/components/admin/SupportTicketsOverview';
-import { SMSCreditManager } from '@/components/admin/SMSCreditManager';
-import { TwilioCreditsManager } from '@/components/admin/TwilioCreditsManager';
+import { SMSCreditsCenter } from '@/components/admin/sms/SMSCreditsCenter';
 import { SEOConfigTab } from '@/components/seo/SEOConfigTab';
 import { BrandingManager } from '@/components/admin/BrandingManager';
 import { LandingPageManager } from '@/components/admin/LandingPageManager';
@@ -291,12 +290,7 @@ export default function SuperAdmin() {
       case 'plans':
         return <SubscriptionPlansManager />;
       case 'sms':
-        return (
-          <div className="space-y-6">
-            <TwilioCreditsManager />
-            <SMSCreditManager onUpdate={fetchData} />
-          </div>
-        );
+        return <SMSCreditsCenter />;
       case 'invoices':
         return <InvoiceManagement />;
       case 'support':
