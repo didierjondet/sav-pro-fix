@@ -156,13 +156,9 @@ export default function SAVTypesManager({ types, loading, onRefresh }: SAVTypesM
     if (!editingType) return;
 
     try {
-      // Normaliser le type_key : trim + remplacer espaces par underscores
-      const normalizedTypeKey = formData.type_key.trim().replace(/\s+/g, '_');
-      
       const { error } = await supabase
         .from('shop_sav_types')
         .update({
-          type_key: normalizedTypeKey,
           type_label: formData.type_label,
           type_color: formData.type_color,
           show_customer_info: formData.show_customer_info,
