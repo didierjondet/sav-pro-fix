@@ -69,13 +69,13 @@ export const SortableBlock = ({ id, children, onRemove, editable = false }: Sort
       ref={setNodeRef} 
       style={style} 
       className={cn(
-        "relative overflow-hidden",
+        "relative overflow-hidden h-full",
         gridClasses,
         heightClass,
         isDragging && "opacity-70 z-50"
       )}
     >
-      {onRemove && (
+      {editable && onRemove && (
         <button
           onClick={onRemove}
           className="absolute top-2 left-2 z-10 rounded p-1 bg-background/80 border hover:bg-destructive hover:text-destructive-foreground cursor-pointer transition-colors"
@@ -112,18 +112,20 @@ export const SortableBlock = ({ id, children, onRemove, editable = false }: Sort
           </TooltipProvider>
         )}
 
-        <button
-          {...attributes}
-          {...listeners}
-          className="rounded p-1 bg-background/80 border hover:bg-accent cursor-grab active:cursor-grabbing"
-          aria-label="Déplacer la section"
-          title="Glisser pour réorganiser"
-        >
-          <GripVertical className="w-4 h-4 text-muted-foreground" />
-        </button>
+        {editable && (
+          <button
+            {...attributes}
+            {...listeners}
+            className="rounded p-1 bg-background/80 border hover:bg-accent cursor-grab active:cursor-grabbing"
+            aria-label="Déplacer la section"
+            title="Glisser pour réorganiser"
+          >
+            <GripVertical className="w-4 h-4 text-muted-foreground" />
+          </button>
+        )}
       </div>
 
-      <div className="w-full">
+      <div className="w-full h-full">
         {children}
       </div>
     </div>
