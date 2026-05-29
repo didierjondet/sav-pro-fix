@@ -246,11 +246,19 @@ export function useStatistics(
       // Récupérer les statuts SAV avec pause_timer + is_final_status
       const { data: shopSavStatuses, error: statusesError } = await supabase
         .from('shop_sav_statuses')
-        .select('status_key, pause_timer, is_final_status')
+        .select('status_key, pause_timer, is_final_status, include_in_metrics')
         .eq('shop_id', shop.id)
         .eq('is_active', true);
 
       if (statusesError) throw statusesError;
+
+      // Statuts à inclure dans les métriques (CA, marge, dépenses)
+      const metricsStatusKeysRaw = (shopSavStatuses || [])
+        .filter(s => s.include_in_metrics)
+        .map(s => s.status_key);
+      const metricsStatusKeys = metricsStatusKeysRaw.length > 0
+        ? metricsStatusKeysRaw
+        : ['ready', 'pret_et_cloture'];
 
       // Récupérer les SAV de la période (par created_at)
       const { data: savCasesRaw, error: savError } = await supabase
@@ -300,14 +308,13 @@ export function useStatistics(
           return statusOk && typeOk;
         });
 
-        // Séparer les SAV pour les calculs financiers (ready/pret_et_cloture uniquement, hors types exclus)
+        // Séparer les SAV pour les calculs financiers (statuts marqués include_in_metrics)
         // et pour les retards (tous les SAV actifs, hors types exclus)
-        const READY_STATUSES = ['ready', 'pret_et_cloture'];
         const readySavCases = (savCases || []).filter((c: any) => 
-          READY_STATUSES.includes(c.status) && !excludedFromStatsTypes.includes(c.sav_type)
+          metricsStatusKeys.includes(c.status) && !excludedFromStatsTypes.includes(c.sav_type)
         );
         const activeSavCases = (savCases || []).filter((c: any) => 
-          !READY_STATUSES.includes(c.status) && c.status !== 'delivered' && c.status !== 'cancelled' && !excludedFromStatsTypes.includes(c.sav_type)
+          !metricsStatusKeys.includes(c.status) && c.status !== 'delivered' && c.status !== 'cancelled' && !excludedFromStatsTypes.includes(c.sav_type)
         );
         const completedSavCases = (savCases || []).filter((c: any) => 
           c.status === 'delivered' && !excludedFromStatsTypes.includes(c.sav_type)
