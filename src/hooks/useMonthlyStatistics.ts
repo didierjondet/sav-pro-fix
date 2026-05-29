@@ -31,6 +31,15 @@ export function useMonthlyStatistics(year: number) {
         const yearStart = startOfYear(new Date(year, 0, 1));
         const yearEnd = endOfYear(new Date(year, 0, 1));
 
+        // Statuts à inclure dans les métriques (configurable par magasin)
+        const { data: statusCfg } = await supabase
+          .from('shop_sav_statuses')
+          .select('status_key, include_in_metrics')
+          .eq('shop_id', shop.id)
+          .eq('is_active', true);
+        const metricsKeysRaw = (statusCfg || []).filter(s => s.include_in_metrics).map(s => s.status_key);
+        const metricsStatusKeys = metricsKeysRaw.length > 0 ? metricsKeysRaw : ['ready', 'pret_et_cloture'];
+
         // Initialiser les données pour tous les mois
         const monthlyData: MonthlyData[] = [];
         for (let i = 0; i < 12; i++) {
@@ -57,7 +66,7 @@ export function useMonthlyStatistics(year: number) {
             sav_parts(*, parts(*))
           `)
           .eq('shop_id', shop.id)
-          .in('status', ['ready', 'pret_et_cloture'])
+          .in('status', metricsStatusKeys)
           .gte('created_at', yearStart.toISOString())
           .lte('created_at', yearEnd.toISOString());
 
