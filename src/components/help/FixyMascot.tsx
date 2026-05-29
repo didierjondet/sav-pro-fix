@@ -1,31 +1,39 @@
 import React from 'react';
 
+export type FixyReaction = 'cheer' | 'alert' | 'nod' | 'spin' | 'love' | null;
+
 interface FixyMascotProps {
   size?: number;
   waving?: boolean;
   idle?: boolean;
   thinking?: boolean;
+  reaction?: FixyReaction;
   className?: string;
 }
 
 /**
  * Fixy — mascotte de l'assistant Fixway.
- * Petit robot blanc/crème avec accents colorés, ombres et reflets pour ressortir
- * sur un fond bleu primary. Bras droit anime un vrai "coucou" périodique.
+ * `reaction` joue une animation transitoire (cheer / alert / nod / spin / love)
+ * en remplacement temporaire du léger idle bounce.
  */
 const FixyMascot: React.FC<FixyMascotProps> = ({
   size = 40,
   waving = false,
   idle = false,
   thinking = false,
+  reaction = null,
   className = '',
 }) => {
+  const wrapperAnim = reaction
+    ? `animate-mascot-${reaction}`
+    : (idle ? 'animate-mascot-bounce' : '');
   return (
     <div
-      className={`inline-block ${idle ? 'animate-mascot-bounce' : ''} ${className}`}
+      className={`inline-block ${wrapperAnim} ${className}`}
       style={{ width: size, height: size, filter: 'drop-shadow(0 2px 3px rgba(0,0,0,0.35))' }}
       aria-hidden="true"
     >
+
       <svg
         viewBox="0 0 72 72"
         width={size}
