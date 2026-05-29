@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Mail, MessageSquare, Check, X, Loader2, Eye, EyeOff, Zap, Trash2, Power, Plus } from 'lucide-react';
+import { Mail, MessageSquare, Check, X, Loader2, Eye, EyeOff, Zap, Trash2, Power, Plus, RefreshCw } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
@@ -71,6 +71,8 @@ export function MessagingProvidersManager() {
   const [saving, setSaving] = useState(false);
   const [activatingId, setActivatingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [syncingId, setSyncingId] = useState<string | null>(null);
+  const [brevoBalances, setBrevoBalances] = useState<Record<string, { balance: number; at: string }>>({});
 
   // Form state
   const [formType, setFormType] = useState<'sms' | 'email'>('sms');
@@ -212,6 +214,28 @@ export function MessagingProvidersManager() {
     }
   };
 
+  const handleSyncBrevo = async (provider: MessagingProvider) => {
+    setSyncingId(provider.id);
+    try {
+      const { data, error } = await supabase.functions.invoke('brevo-sms-balance', { body: {} });
+      if (error) {
+        let msg = error.message;
+        try {
+          const ctx = (error as any).context;
+          if (ctx) { const b = await ctx.json?.() || ctx; msg = b?.error || msg; }
+        } catch {}
+        throw new Error(msg);
+      }
+      if (data?.error) throw new Error(data.error);
+      setBrevoBalances(prev => ({ ...prev, [provider.id]: { balance: data.balance, at: data.last_sync_at } }));
+      toast({ title: 'Synchronisation Brevo OK', description: `${data.balance} SMS disponibles chez Brevo.` });
+    } catch (e: any) {
+      toast({ title: 'Erreur Brevo', description: e.message, variant: 'destructive' });
+    } finally {
+      setSyncingId(null);
+    }
+  };
+
   const renderProviderCard = (provider: MessagingProvider) => {
     const def = getProviderDef(provider.type, provider.provider);
     return (
@@ -242,10 +266,21 @@ export function MessagingProvidersManager() {
                 Activer
               </Button>
             )}
+            {provider.provider === 'brevo_sms' && (
+              <Button size="sm" variant="outline" onClick={() => handleSyncBrevo(provider)} disabled={syncingId === provider.id}>
+                {syncingId === provider.id ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <RefreshCw className="h-3 w-3 mr-1" />}
+                Synchroniser Brevo
+              </Button>
+            )}
             <Button size="sm" variant="destructive" onClick={() => handleDelete(provider)} disabled={deletingId === provider.id}>
               {deletingId === provider.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
             </Button>
           </div>
+          {brevoBalances[provider.id] && (
+            <p className="text-xs text-slate-600 mt-2">
+              Solde Brevo : <span className="font-semibold">{brevoBalances[provider.id].balance}</span> SMS disponibles
+            </p>
+          )}
         </CardContent>
       </Card>
     );
