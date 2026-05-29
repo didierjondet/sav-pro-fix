@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Sparkles, RefreshCw, AlertCircle, TrendingUp, Settings } from 'lucide-react';
+import { Sparkles, RefreshCw, AlertCircle, TrendingUp, Settings, Printer } from 'lucide-react';
 import { DailyAssistantConfigDialog } from './DailyAssistantConfigDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
