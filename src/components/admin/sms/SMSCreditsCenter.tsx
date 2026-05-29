@@ -433,7 +433,7 @@ function ShopRowEditor({ row, busy, onAdd, onRemove, onReset, usageBadge }: {
             </PopoverTrigger>
             <PopoverContent className="w-56 p-3 space-y-2">
               <Label className="text-xs">Ajouter des SMS</Label>
-              <NumberInput value={addAmt} onChange={(v) => setAddAmt(v || 0)} min={1} />
+              <NumberInput value={addAmt} onChange={(e) => setAddAmt(Number(e.target.value) || 0)} min={1} />
               <Button size="sm" className="w-full" onClick={() => onAdd(addAmt)} disabled={busy}>Ajouter {addAmt}</Button>
             </PopoverContent>
           </Popover>
