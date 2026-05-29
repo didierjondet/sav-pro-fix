@@ -131,7 +131,7 @@ export function useReportData({
               unit_price,
               purchase_price,
               custom_part_name,
-              part:parts(name)
+              part:parts(name, supplier_id, supplier:suppliers(id, name))
             )
           `)
           .eq('shop_id', shop.id)
