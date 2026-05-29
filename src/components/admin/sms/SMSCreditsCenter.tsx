@@ -388,14 +388,14 @@ export function SMSCreditsCenter() {
                 ))}
               </TableBody>
               {!loading && filteredShops.length > 0 && (
-                <tfoot>
+                <TableFooter>
                   <TableRow className="bg-muted/30 font-medium">
                     <TableCell colSpan={4} className="text-right">TOTAUX</TableCell>
                     <TableCell className="text-center">{totals.remaining} / {totals.allocated}</TableCell>
                     <TableCell className="text-center">{totals.allocated > 0 ? Math.round((totals.reserved / totals.allocated) * 100) : 0}%</TableCell>
                     <TableCell />
                   </TableRow>
-                </tfoot>
+                </TableFooter>
               )}
             </Table>
           </div>
