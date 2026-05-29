@@ -69,7 +69,7 @@ Deno.serve(async (req) => {
     // Récupérer le provider Brevo SMS actif
     const { data: providers, error: provErr } = await admin
       .from('messaging_providers')
-      .select('id, provider, config_encrypted')
+      .select('id, provider, encrypted_config')
       .eq('type', 'sms')
       .eq('provider', 'brevo_sms')
       .eq('is_active', true)
@@ -83,9 +83,12 @@ Deno.serve(async (req) => {
       });
     }
 
-    const config = await decryptConfig((providers[0] as any).config_encrypted);
+    const encData = (providers[0] as any).encrypted_config?.data;
+    if (!encData) throw new Error('Configuration Brevo absente ou non chiffrée. Réenregistrez le provider dans SMS / Mail.');
+    const config = await decryptConfig(encData);
     const apiKey = config.api_key;
     if (!apiKey) throw new Error('Clé API Brevo introuvable dans la configuration');
+
 
     // Appeler l'API Brevo
     const brevoResp = await fetch('https://api.brevo.com/v3/account', {
