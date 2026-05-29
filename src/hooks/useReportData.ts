@@ -9,6 +9,8 @@ export interface ReportPartItem {
   quantity: number;
   purchase_price: number;
   unit_price: number;
+  supplier_id: string | null;
+  supplier_name: string | null;
 }
 
 export interface ReportSAVItem {
@@ -27,6 +29,8 @@ export interface ReportSAVItem {
   margin: number;
   parts: ReportPartItem[];
   technician_comments: string | null;
+  revenue_ratio: number;
+  purchase_cost_excluded: boolean;
 }
 
 export interface ReportData {
@@ -129,7 +133,7 @@ export function useReportData({
               unit_price,
               purchase_price,
               custom_part_name,
-              part:parts(name)
+              part:parts(name, supplier_id, supplier:suppliers(id, name))
             )
           `)
           .eq('shop_id', shop.id)
@@ -174,8 +178,9 @@ export function useReportData({
       // Calculer les coûts bruts
       let purchase_cost = parts.reduce((sum: number, p: any) => 
         sum + ((p.purchase_price || 0) * (p.quantity || 1)), 0);
-      let selling_price = parts.reduce((sum: number, p: any) => 
+      const rawSelling = parts.reduce((sum: number, p: any) => 
         sum + ((p.unit_price || 0) * (p.quantity || 1)), 0);
+      let selling_price = rawSelling;
       
       // Ajuster le CA selon la prise en charge
       if (sav.taken_over && !sav.partial_takeover) {
@@ -196,6 +201,7 @@ export function useReportData({
       }
       
       const margin = selling_price - purchase_cost;
+      const revenue_ratio = rawSelling > 0 ? selling_price / rawSelling : 0;
 
       const customer = sav.customer;
       const customer_name = customer 
@@ -207,7 +213,9 @@ export function useReportData({
         name: p.custom_part_name || p.part?.name || 'Pièce inconnue',
         quantity: p.quantity || 1,
         purchase_price: p.purchase_price || 0,
-        unit_price: p.unit_price || 0
+        unit_price: p.unit_price || 0,
+        supplier_id: p.part?.supplier_id || p.part?.supplier?.id || null,
+        supplier_name: p.part?.supplier?.name || null
       }));
 
       return {
@@ -225,7 +233,9 @@ export function useReportData({
         selling_price,
         margin,
         parts: mappedParts,
-        technician_comments: sav.technician_comments || null
+        technician_comments: sav.technician_comments || null,
+        revenue_ratio,
+        purchase_cost_excluded: !!typeInfo.exclude_purchase_costs
       };
     });
 

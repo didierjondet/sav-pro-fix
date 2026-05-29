@@ -21,6 +21,8 @@ import { useShopSAVStatuses } from '@/hooks/useShopSAVStatuses';
 import { useRolePermissions } from '@/hooks/useRolePermissions';
 import { cn } from '@/lib/utils';
 import { ReportChartsSection, AVAILABLE_REPORT_WIDGETS } from '@/components/reports/ReportChartsSection';
+import { SupplierPerformanceSection } from '@/components/reports/SupplierPerformanceSection';
+import { useSupplierReportData } from '@/hooks/useSupplierReportData';
 import { Label } from '@/components/ui/label';
 
 export default function Reports() {
@@ -51,6 +53,7 @@ export default function Reports() {
     selectedTypes,
     selectedStatuses
   });
+  const supplierReport = useSupplierReportData(data);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(value);
@@ -111,6 +114,30 @@ export default function Reports() {
       const ws = XLSX.utils.json_to_sheet(sheetData);
       XLSX.utils.book_append_sheet(wb, ws, typeInfo.label.substring(0, 31)); // Excel sheet name max 31 chars
     });
+
+    // Suppliers sheet
+    if (supplierReport.rows.length > 0) {
+      const supplierSheet = supplierReport.rows.map(r => ({
+        'Fournisseur': r.supplier_name,
+        'Pièces': r.parts_count,
+        'SAV': r.sav_count,
+        'Dépenses (€)': Number(r.expenses.toFixed(2)),
+        'CA généré (€)': Number(r.revenue.toFixed(2)),
+        'Marge (€)': Number(r.margin.toFixed(2)),
+        '% Marge': r.revenue > 0 ? Number(r.margin_pct.toFixed(1)) : 0
+      }));
+      supplierSheet.push({
+        'Fournisseur': 'TOTAL',
+        'Pièces': supplierReport.totals.parts_count,
+        'SAV': supplierReport.totals.sav_count,
+        'Dépenses (€)': Number(supplierReport.totals.expenses.toFixed(2)),
+        'CA généré (€)': Number(supplierReport.totals.revenue.toFixed(2)),
+        'Marge (€)': Number(supplierReport.totals.margin.toFixed(2)),
+        '% Marge': supplierReport.totals.revenue > 0 ? Number(supplierReport.totals.margin_pct.toFixed(1)) : 0
+      });
+      const supplierWs = XLSX.utils.json_to_sheet(supplierSheet);
+      XLSX.utils.book_append_sheet(wb, supplierWs, 'Fournisseurs');
+    }
 
     // Create synthesis sheet
     const synthesisData = [
@@ -597,6 +624,11 @@ export default function Reports() {
               dateRange={dateRange}
               reportData={data}
             />
+          )}
+
+          {/* Supplier performance */}
+          {!loading && data.items.length > 0 && (
+            <SupplierPerformanceSection reportData={data} dateRange={dateRange} />
           )}
 
           {/* Data table grouped by type */}
