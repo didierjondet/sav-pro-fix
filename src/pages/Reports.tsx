@@ -609,7 +609,7 @@ export default function Reports() {
           )}
 
           {/* Supplier performance */}
-          {!loading && data.items.length > 0 && (
+          {includeSuppliers && !loading && data.items.length > 0 && (
             <SupplierPerformanceSection reportData={data} dateRange={dateRange} />
           )}
 
