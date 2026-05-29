@@ -32,7 +32,8 @@ export default function Reports() {
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
-  const [selectedStatuses, setSelectedStatuses] = useState<string[]>(['ready', 'pret_et_cloture']);
+  const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
+  const [statusesInitialized, setStatusesInitialized] = useState(false);
   const [selectedWidgets, setSelectedWidgets] = useState<string[]>(['monthly-comparison']);
   const [includeSuppliers, setIncludeSuppliers] = useState<boolean>(true);
 
@@ -46,6 +47,16 @@ export default function Reports() {
 
   const { types: allTypes } = useShopSAVTypes();
   const { statuses: allStatuses, getStatusInfo } = useShopSAVStatuses();
+
+  // Pré-sélectionner par défaut les statuts marqués "Compter dans les métriques" du magasin
+  useEffect(() => {
+    if (statusesInitialized) return;
+    if (!allStatuses || allStatuses.length === 0) return;
+    const metricsKeys = allStatuses.filter(s => s.include_in_metrics).map(s => s.status_key);
+    const fallback = allStatuses.filter(s => s.status_key === 'ready' || s.status_key === 'pret_et_cloture').map(s => s.status_key);
+    setSelectedStatuses(metricsKeys.length > 0 ? metricsKeys : fallback);
+    setStatusesInitialized(true);
+  }, [allStatuses, statusesInitialized]);
 
   const { data, loading, dateRange, getTypeInfo } = useReportData({
     periodType,
