@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Sparkles, RefreshCw, AlertCircle, TrendingUp, Settings } from 'lucide-react';
+import { Sparkles, RefreshCw, AlertCircle, TrendingUp, Settings, Printer } from 'lucide-react';
 import { DailyAssistantConfigDialog } from './DailyAssistantConfigDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -116,7 +116,70 @@ export function DailyAssistant() {
     });
   };
 
+  const escapeHtml = (s: string) =>
+    s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+
+  const handlePrint = () => {
+    if (!recommendations) return;
+    const printWindow = window.open('', '_blank', 'width=900,height=1000');
+    if (!printWindow) {
+      toast({
+        title: 'Popup bloquée',
+        description: "Autorisez les popups pour imprimer le rapport.",
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const dateStr = new Date().toLocaleDateString('fr-FR', {
+      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+    });
+
+    const lines = recommendations.split('\n');
+    const bodyHtml = lines.map((line) => {
+      const t = line.trim();
+      if (!t) return '';
+      if (/^[0-9]+\./.test(t)) return `<h3>${escapeHtml(t)}</h3>`;
+      if (t.startsWith('-')) return `<p class="bullet">${escapeHtml(t)}</p>`;
+      return `<p>${escapeHtml(t)}</p>`;
+    }).join('\n');
+
+    const badgesHtml = stats ? `
+      <div class="badges">
+        ${stats.late_savs_count > 0 ? `<span class="badge red">⚠ ${stats.late_savs_count} en retard</span>` : ''}
+        ${stats.ready_to_repair_count > 0 ? `<span class="badge green">↗ ${stats.ready_to_repair_count} prêts</span>` : ''}
+        ${stats.total_potential_revenue > 0 ? `<span class="badge gray">💰 ${stats.total_potential_revenue}€ potentiel</span>` : ''}
+      </div>` : '';
+
+    printWindow.document.write(`<!doctype html><html lang="fr"><head><meta charset="utf-8"/>
+      <title>Rapport Quotidien IA - ${escapeHtml(dateStr)}</title>
+      <style>
+        @page { size: A4; margin: 15mm; }
+        body { font-family: Arial, sans-serif; color: #111827; margin: 0; padding: 20px; font-size: 12px; line-height: 1.5; }
+        h1 { font-size: 20px; margin: 0 0 4px; }
+        .subtitle { font-size: 12px; color: #6b7280; margin-bottom: 16px; text-transform: capitalize; }
+        h3 { font-size: 14px; margin: 14px 0 6px; color: #1f2937; border-bottom: 1px solid #e5e7eb; padding-bottom: 4px; }
+        p { margin: 4px 0; }
+        p.bullet { margin-left: 16px; color: #374151; }
+        .badges { margin: 12px 0 16px; }
+        .badge { display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 11px; margin-right: 6px; border: 1px solid #d1d5db; }
+        .badge.red { background: #fee2e2; color: #991b1b; border-color: #fecaca; }
+        .badge.green { background: #dcfce7; color: #166534; border-color: #bbf7d0; }
+        .badge.gray { background: #f3f4f6; color: #374151; }
+        @media print { body { padding: 0; } }
+      </style></head><body>
+      <h1>Rapport Quotidien IA</h1>
+      <div class="subtitle">${escapeHtml(dateStr)}</div>
+      ${badgesHtml}
+      ${bodyHtml}
+      <script>window.onload = () => { setTimeout(() => window.print(), 200); };</script>
+    </body></html>`);
+    printWindow.document.close();
+  };
+
   return (
+
     <Card className="p-4 mb-4 bg-gradient-to-br from-primary/5 via-background to-background border-primary/20">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
@@ -126,6 +189,12 @@ export function DailyAssistant() {
           <h2 className="text-base font-semibold">Assistant Quotidien IA</h2>
         </div>
         <div className="flex items-center gap-2">
+          {recommendations && !loading && (
+            <Button variant="outline" size="sm" onClick={handlePrint}>
+              <Printer className="h-4 w-4 mr-2" />
+              Imprimer
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="sm"
