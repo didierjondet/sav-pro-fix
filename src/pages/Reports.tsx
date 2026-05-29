@@ -339,6 +339,9 @@ export default function Reports() {
               {selectedWidgets.length > 0 && (
                 <p><strong>Graphiques inclus :</strong> {selectedWidgets.map(w => AVAILABLE_REPORT_WIDGETS.find(aw => aw.id === w)?.name).join(', ')}</p>
               )}
+              {includeSuppliers && (
+                <p><strong>Section incluse :</strong> Performance fournisseurs</p>
+              )}
             </div>
           </div>
 
