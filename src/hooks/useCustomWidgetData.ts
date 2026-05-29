@@ -148,7 +148,7 @@ export const useCustomWidgetData = ({ metrics, filters, groupBy }: UseCustomWidg
         // Récupérer les statuts SAV avec pause_timer + is_final_status
         const { data: shopSavStatuses, error: statusesError } = await supabase
           .from('shop_sav_statuses')
-          .select('status_key, pause_timer, is_final_status')
+          .select('status_key, pause_timer, is_final_status, include_in_metrics')
           .eq('shop_id', shop.id)
           .eq('is_active', true);
 
@@ -160,6 +160,13 @@ export const useCustomWidgetData = ({ metrics, filters, groupBy }: UseCustomWidg
         const effectiveFinalStatuses = finalStatusKeys.length > 0
           ? finalStatusKeys
           : ['ready', 'pret_et_cloture', 'cancelled', 'delivered'];
+
+        const metricsKeysRaw = (shopSavStatuses || [])
+          .filter(s => s.include_in_metrics)
+          .map(s => s.status_key);
+        const metricsStatusKeys = metricsKeysRaw.length > 0
+          ? metricsKeysRaw
+          : ['ready', 'pret_et_cloture'];
 
         // Récupérer les SAV cases avec leurs pièces
         const { data: savCases, error: savError } = await supabase
@@ -241,7 +248,7 @@ export const useCustomWidgetData = ({ metrics, filters, groupBy }: UseCustomWidg
           }
 
           // Calculer le revenu (uniquement pour les SAV ready, hors types exclus des revenus)
-          if ((sav.status === 'ready' || sav.status === 'pret_et_cloture') && !excludeRevenue) {
+          if (metricsStatusKeys.includes(sav.status) && !excludeRevenue) {
             // Ajuster le revenu selon la prise en charge
             if (sav.partial_takeover && sav.takeover_amount) {
               const denom = Number(sav.total_cost) || 1;
@@ -274,7 +281,7 @@ export const useCustomWidgetData = ({ metrics, filters, groupBy }: UseCustomWidg
           }
 
           // Temps moyen basé sur les temps des pièces
-          if (sav.status === 'ready' || sav.status === 'pret_et_cloture') {
+          if (metricsStatusKeys.includes(sav.status)) {
             let totalMinutes = 0;
             sav.sav_parts?.forEach((savPart: any) => {
               const time = (savPart.part?.time_minutes || 15) * (savPart.quantity || 0);

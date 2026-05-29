@@ -15,6 +15,7 @@ export interface ShopSAVStatus {
   pause_timer: boolean;
   show_in_sidebar: boolean;
   is_final_status: boolean;
+  include_in_metrics: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -194,6 +195,13 @@ export function useShopSAVStatuses() {
     return !isFinalStatus(statusKey);
   };
 
+  // Liste des clés de statuts à inclure dans les métriques (tableau de bord, rapports)
+  // Fallback: ['ready', 'pret_et_cloture'] si rien n'est configuré
+  const getMetricsStatusKeys = (): string[] => {
+    const keys = statuses.filter(s => s.include_in_metrics).map(s => s.status_key);
+    return keys.length > 0 ? keys : ['ready', 'pret_et_cloture'];
+  };
+
   return {
     statuses,
     loading,
@@ -205,6 +213,7 @@ export function useShopSAVStatuses() {
     isCancelledStatus,
     isPauseTimerStatus,
     isActiveStatus,
+    getMetricsStatusKeys,
     refetch
   };
 }

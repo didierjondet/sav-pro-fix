@@ -44,11 +44,18 @@ export default function RevenueDetails() {
     const fetchData = async () => {
       setLoading(true);
       const { start, end } = getDateRange();
+      const { data: statusCfg } = await supabase
+        .from('shop_sav_statuses')
+        .select('status_key, include_in_metrics')
+        .eq('shop_id', shop.id)
+        .eq('is_active', true);
+      const metricsKeysRaw = (statusCfg || []).filter(s => s.include_in_metrics).map(s => s.status_key);
+      const metricsStatusKeys = metricsKeysRaw.length > 0 ? metricsKeysRaw : ['ready', 'pret_et_cloture'];
       const { data, error } = await supabase
         .from('sav_cases')
         .select('*, customer:customers(*), sav_parts(*, part:parts(*))')
         .eq('shop_id', shop.id)
-        .in('status', ['ready', 'pret_et_cloture'])
+        .in('status', metricsStatusKeys)
         .neq('sav_type', 'internal')
         .gte('created_at', start.toISOString())
         .lte('created_at', end.toISOString())

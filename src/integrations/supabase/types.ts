@@ -2291,6 +2291,7 @@ export type Database = {
           created_at: string
           display_order: number
           id: string
+          include_in_metrics: boolean
           is_active: boolean
           is_default: boolean
           is_final_status: boolean
@@ -2306,6 +2307,7 @@ export type Database = {
           created_at?: string
           display_order?: number
           id?: string
+          include_in_metrics?: boolean
           is_active?: boolean
           is_default?: boolean
           is_final_status?: boolean
@@ -2321,6 +2323,7 @@ export type Database = {
           created_at?: string
           display_order?: number
           id?: string
+          include_in_metrics?: boolean
           is_active?: boolean
           is_default?: boolean
           is_final_status?: boolean
