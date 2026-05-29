@@ -16,6 +16,8 @@ export function SuppliersManager() {
   const [editing, setEditing] = useState<Supplier | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [deleting, setDeleting] = useState<Supplier | null>(null);
+  const [detail, setDetail] = useState<Supplier | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
