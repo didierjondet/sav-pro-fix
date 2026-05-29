@@ -55,8 +55,30 @@ export default function SAVDetail() {
     cases,
     loading,
     updateTechnicianComments,
-    updatePrivateComments
+    updatePrivateComments,
+    refetch
   } = useSAVCases();
+
+  const refreshSavCustomer = async () => {
+    if (!id) return;
+    const { data: caseRow } = await supabase
+      .from('sav_cases')
+      .select('customer_id')
+      .eq('id', id)
+      .maybeSingle();
+    const newCustomerId = caseRow?.customer_id || null;
+    let newCustomer: any = undefined;
+    if (newCustomerId) {
+      const { data: cust } = await supabase
+        .from('customers')
+        .select('first_name, last_name, email, phone, address')
+        .eq('id', newCustomerId)
+        .maybeSingle();
+      newCustomer = cust || undefined;
+    }
+    setSavCase((prev: any) => prev ? { ...prev, customer_id: newCustomerId, customer: newCustomer } : prev);
+    refetch();
+  };
   const {
     shop
   } = useShop();
@@ -95,12 +117,19 @@ export default function SAVDetail() {
     }, payload => {
       console.log('SAV case updated:', payload);
       if (payload.eventType === 'UPDATE' && payload.new) {
-        setSavCase((prevCase: any) => ({
-          ...prevCase,
-          ...payload.new,
-          // Conserver les données de relation customer si elles existent
-          customer: prevCase?.customer
-        }));
+        setSavCase((prevCase: any) => {
+          const customerChanged = payload.new.customer_id !== prevCase?.customer_id;
+          if (customerChanged) {
+            // Recharge ciblée des infos client
+            refreshSavCustomer();
+          }
+          return {
+            ...prevCase,
+            ...payload.new,
+            // Conserver la relation customer si customer_id inchangé, sinon laisser refreshSavCustomer la repeupler
+            customer: customerChanged ? undefined : prevCase?.customer,
+          };
+        });
         // Mettre à jour les commentaires privés si ils ont changé
         if (payload.new.private_comments !== undefined) {
           setPrivateComments(payload.new.private_comments || '');
@@ -422,7 +451,7 @@ export default function SAVDetail() {
                         currentCustomerId={savCase.customer_id}
                         currentCustomerName={savCase.customer ? `${savCase.customer.first_name} ${savCase.customer.last_name}` : undefined}
                         onCustomerUpdated={() => {
-                          // Le realtime se charge de la mise à jour
+                          refreshSavCustomer();
                         }}
                       />
                     </CardTitle>
