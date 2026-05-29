@@ -290,12 +290,7 @@ export default function SuperAdmin() {
       case 'plans':
         return <SubscriptionPlansManager />;
       case 'sms':
-        return (
-          <div className="space-y-6">
-            <TwilioCreditsManager />
-            <SMSCreditManager onUpdate={fetchData} />
-          </div>
-        );
+        return <SMSCreditsCenter />;
       case 'invoices':
         return <InvoiceManagement />;
       case 'support':
