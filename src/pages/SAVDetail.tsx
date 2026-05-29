@@ -55,8 +55,30 @@ export default function SAVDetail() {
     cases,
     loading,
     updateTechnicianComments,
-    updatePrivateComments
+    updatePrivateComments,
+    refetch
   } = useSAVCases();
+
+  const refreshSavCustomer = async () => {
+    if (!id) return;
+    const { data: caseRow } = await supabase
+      .from('sav_cases')
+      .select('customer_id')
+      .eq('id', id)
+      .maybeSingle();
+    const newCustomerId = caseRow?.customer_id || null;
+    let newCustomer: any = undefined;
+    if (newCustomerId) {
+      const { data: cust } = await supabase
+        .from('customers')
+        .select('first_name, last_name, email, phone, address')
+        .eq('id', newCustomerId)
+        .maybeSingle();
+      newCustomer = cust || undefined;
+    }
+    setSavCase((prev: any) => prev ? { ...prev, customer_id: newCustomerId, customer: newCustomer } : prev);
+    refetch();
+  };
   const {
     shop
   } = useShop();
