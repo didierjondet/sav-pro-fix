@@ -1,42 +1,42 @@
-# Inclusion du statut « Prêt et cloturé » dans toutes les métriques
+# Switch « Compter dans les métriques » par statut SAV
 
-## Contexte
-Suite à la migration des SAV d'Agde vers le nouveau statut `pret_et_cloture` (statut final), tous les calculs métiers qui filtraient sur `status = 'ready'` excluent désormais ces 776 dossiers. Résultat : tableau de bord, statistiques et rapports affichent des chiffres vides.
+## Concept
+Chaque statut SAV reçoit un nouveau réglage `include_in_metrics` (booléen). Lorsqu'il est activé, les SAV portant ce statut sont comptés dans le tableau de bord, les rapports, les détails CA/dépenses, les widgets et statistiques mensuelles. Chaque magasin peut ainsi décider finement quels statuts entrent dans son chiffre d'affaires.
 
-Il faut traiter `ready` ET `pret_et_cloture` comme équivalents partout où un SAV « terminé / facturable » est compté.
+## Migration base de données
+- Ajouter la colonne `include_in_metrics BOOLEAN NOT NULL DEFAULT false` sur `shop_sav_statuses`.
+- Pré-remplissage : `UPDATE shop_sav_statuses SET include_in_metrics = true WHERE status_key IN ('ready', 'pret_et_cloture')` → tous les magasins existants gardent exactement leurs chiffres actuels (`ready` est déjà compté partout, `pret_et_cloture` n'existe que chez Agde).
+- Trigger / seed des nouveaux magasins : lors de la création des statuts par défaut, `ready` est créé avec `include_in_metrics = true` (les autres restent `false`). Aucun changement sur la logique de clôture par défaut.
 
-## Fichiers à modifier
+## UI — `src/components/sav/SAVStatusesManager.tsx`
+Ajouter un Switch « Compter dans les métriques » à côté des switches existants (`pause_timer`, `is_final_status`, `show_in_sidebar`). Mêmes patterns visuels — pas de modification de mise en page.
 
-### Frontend — Hooks de calcul
-- `src/hooks/useStatistics.ts` (lignes 278, 306, 309, 522, 537, 547) — KPIs financiers, comptage « Prêt », exclusions
-- `src/hooks/useMonthlyStatistics.ts` (lignes 60, 156) — CA mensuel et SAV en retard
-- `src/hooks/useMonthlyLateRate.ts` (ligne 61) — clés de statuts finaux
-- `src/hooks/useSAVPartsCosts.ts` (ligne 109) — coûts pièces
-- `src/hooks/useCustomWidgetData.ts` (lignes 162, 244, 277) — widgets personnalisés
+## Hook source de vérité — `src/hooks/useShopSAVStatuses.ts`
+Exposer un helper `getMetricsStatusKeys()` qui renvoie la liste des `status_key` où `include_in_metrics = true`.
 
-### Frontend — Pages
-- `src/pages/Reports.tsx` (ligne 35) — pré-sélection des statuts inclut `pret_et_cloture` par défaut ; (lignes 476-477) — tri liste statuts
-- `src/pages/RevenueDetails.tsx` (ligne 51) — détail CA
-- `src/pages/ExpensesDetails.tsx` (ligne 50) — détail dépenses
-- `src/components/sav/SAVDashboard.tsx` (ligne 188) — lien vers liste SAV « prêts »
-- `src/components/reports/ReportChartsSection.tsx` (ligne 200) — couleur graphique
+## Refactor des filtres hardcodés
+Remplacer partout `['ready', 'pret_et_cloture']` ajouté précédemment par la liste dynamique issue de `useShopSAVStatuses` :
 
-### Backend — Edge functions
-- `supabase/functions/daily-assistant/index.ts` (ligne 214) — assistant quotidien
-- `supabase/functions/generate-custom-widget/index.ts` (lignes 52, 80) — doc prompt IA
+- `src/hooks/useStatistics.ts` (READY_STATUSES ligne ~305, fallback ligne ~547)
+- `src/hooks/useCustomWidgetData.ts` (lignes ~244, ~277)
+- `src/hooks/useSAVPartsCosts.ts` (ligne ~109)
+- `src/hooks/useMonthlyStatistics.ts` (lignes ~60, ~156) — devient `.in('status', metricsStatusKeys)`
+- `src/pages/RevenueDetails.tsx` (ligne ~51)
+- `src/pages/ExpensesDetails.tsx` (ligne ~50)
+- `src/pages/Reports.tsx` (ligne 35) — pré-sélection = `metricsStatusKeys` du magasin courant
+- `src/components/sav/SAVDashboard.tsx` (ligne ~188) — lien filtré sur la liste
 
-## Approche technique
-Remplacement systématique de :
-- `.eq('status', 'ready')` → `.in('status', ['ready', 'pret_et_cloture'])`
-- `c.status === 'ready'` → `['ready','pret_et_cloture'].includes(c.status)`
-- `.in('status', ['ready', ...])` → ajouter `'pret_et_cloture'` à la liste
-- Pour les labels d'affichage (`name === 'ready' ? 'Prêt' : ...`) : ajouter une branche `'pret_et_cloture' → 'Prêt et cloturé'`
+**Fallback de sécurité** : si la requête n'a pas encore chargé ou si aucun statut n'est marqué, on retombe sur `['ready', 'pret_et_cloture']` pour ne jamais montrer un tableau vide.
 
-Aucun changement de schéma DB, aucun changement UI, aucun changement de logique métier — uniquement étendre les filtres existants.
+## Hors-scope (inchangé)
+- `is_final_status` reste indépendant (utilisé pour stopper les compteurs de retard).
+- `daily-assistant` continue d'utiliser `['ready','pret_et_cloture']` car c'est un service serveur non lié à la configuration UI par magasin.
+- Aucune modification des labels, couleurs, ordre d'affichage ou autres réglages existants.
 
-## Hors-scope
-- `check-sav-delays` : `'ready'` y est utilisé pour EXCLURE des alertes retard. `pret_et_cloture` étant déjà final (`is_final_status=true`), il est déjà exclu dynamiquement → pas de modification nécessaire.
-- `SAVList.tsx`, `TrackSAV.tsx`, `SAVDetail.tsx`, `SuperAdmin.tsx`, `Sidebar.tsx`, `ImportSAVs.tsx`, `useSAVCases.ts`, `useShopSAVStatuses.ts`, `useSAVUnreadMessages.ts`, `useOrders.ts`, `pdfGenerator.ts` : usages liés à l'affichage/navigation, pas aux métriques → à laisser.
+## Garanties pour les autres magasins
+Après migration : `ready` est marqué `include_in_metrics = true` partout → comportement strictement identique à aujourd'hui. Aucun chiffre ne bouge. Seul Agde voit en plus `pret_et_cloture` compté (ce qui est déjà le cas depuis le dernier déploiement).
 
 ## Validation
-Après modification, rechargement du tableau de bord magasin Agde : les 776 SAV `pret_et_cloture` doivent réapparaître dans CA, marge, compteurs « Prêt » et rapports mensuels.
+1. Magasin standard : tableau de bord affiche les mêmes chiffres qu'avant.
+2. Agde : tableau de bord affiche `ready` + `pret_et_cloture`, identique à maintenant.
+3. Désactiver le switch sur `ready` pour un magasin test → ses chiffres tombent à 0, preuve que la logique est bien pilotée par le réglage.
