@@ -157,7 +157,7 @@ export default {
 			'fade-in': 'fade-in 0.4s ease-out forwards',
 			'wiggle-attention': 'wiggle-attention 1.2s ease-in-out',
 			'mascot-bounce': 'mascot-bounce 3s ease-in-out infinite',
-			'mascot-wave': 'mascot-wave 4s ease-in-out infinite',
+			'mascot-wave': 'mascot-wave 6s ease-in-out infinite',
 			'mascot-blink': 'mascot-blink 5s ease-in-out infinite',
 			'mascot-antenna': 'mascot-antenna 1.2s ease-in-out infinite'
 		}
