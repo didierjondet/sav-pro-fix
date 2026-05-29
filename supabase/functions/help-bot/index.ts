@@ -21,27 +21,30 @@ async function decryptApiKey(encrypted: string): Promise<string> {
 }
 
 async function getAIConfig(supabaseClient: any) {
+  const fallback = { provider: "lovable", url: "https://ai.gateway.lovable.dev/v1/chat/completions", apiKey: Deno.env.get("LOVABLE_API_KEY"), model: "google/gemini-3-flash-preview" };
   try {
     const { data } = await supabaseClient.from("ai_engine_config").select("*").eq("is_active", true).maybeSingle();
     if (!data || data.provider === "lovable") {
-      return { url: "https://ai.gateway.lovable.dev/v1/chat/completions", apiKey: Deno.env.get("LOVABLE_API_KEY"), model: data?.model || "google/gemini-3-flash-preview" };
+      return { ...fallback, model: data?.model || fallback.model };
     }
     let apiKey: string | undefined;
     if (data.encrypted_api_key) {
       try { apiKey = await decryptApiKey(data.encrypted_api_key); } catch (e) { console.error("Decrypt failed:", e); }
     }
     if (!apiKey) apiKey = Deno.env.get(data.api_key_name);
-    if (!apiKey) {
-      return { url: "https://ai.gateway.lovable.dev/v1/chat/completions", apiKey: Deno.env.get("LOVABLE_API_KEY"), model: "google/gemini-3-flash-preview" };
-    }
+    // Garde-fou: si pas de clé pour le provider, ne PAS envoyer la clé Lovable à l'URL du provider tiers
+    if (!apiKey) return fallback;
     switch (data.provider) {
-      case "openai": return { url: "https://api.openai.com/v1/chat/completions", apiKey, model: data.model };
-      case "gemini": return { url: "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", apiKey, model: data.model };
-      default: return { url: "https://ai.gateway.lovable.dev/v1/chat/completions", apiKey: Deno.env.get("LOVABLE_API_KEY"), model: data.model };
+      case "openai":
+        return { provider: "openai", url: "https://api.openai.com/v1/chat/completions", apiKey, model: data.model };
+      case "gemini":
+        return { provider: "gemini", url: `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(data.model)}:generateContent`, apiKey, model: data.model };
+      default:
+        return fallback;
     }
   } catch (e) {
     console.error("getAIConfig error:", e);
-    return { url: "https://ai.gateway.lovable.dev/v1/chat/completions", apiKey: Deno.env.get("LOVABLE_API_KEY"), model: "google/gemini-3-flash-preview" };
+    return fallback;
   }
 }
 
