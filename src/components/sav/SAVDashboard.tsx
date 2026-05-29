@@ -1143,11 +1143,12 @@ export function SAVDashboard() {
 
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={sortedModules.map(m => m.id)} strategy={rectSortingStrategy}>
-          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 auto-rows-auto">
+          <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 sm:auto-rows-[160px] [grid-auto-flow:dense]">
             {sortedModules.map((m) => (
               <SortableBlock 
                 key={m.id} 
                 id={m.id}
+                editable={isLayoutUnlocked}
                 onRemove={() => handleRemoveWidget(m.id)}
               >
                 {m.isCustom ? (
@@ -1160,6 +1161,7 @@ export function SAVDashboard() {
           </div>
         </SortableContext>
       </DndContext>
+
     </div>
   );
 }
