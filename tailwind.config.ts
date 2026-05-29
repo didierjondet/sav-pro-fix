@@ -125,6 +125,24 @@ export default {
 				'50%': { transform: 'rotate(-6deg) scale(1.03)' },
 				'60%': { transform: 'rotate(6deg) scale(1.03)' },
 				'70%': { transform: 'rotate(0deg) scale(1)' }
+			},
+			'mascot-bounce': {
+				'0%, 100%': { transform: 'translateY(0)' },
+				'50%': { transform: 'translateY(-4px)' }
+			},
+			'mascot-wave': {
+				'0%, 60%, 100%': { transform: 'rotate(0deg)' },
+				'70%': { transform: 'rotate(-25deg)' },
+				'80%': { transform: 'rotate(20deg)' },
+				'90%': { transform: 'rotate(-15deg)' }
+			},
+			'mascot-blink': {
+				'0%, 92%, 100%': { transform: 'scaleY(1)' },
+				'95%, 97%': { transform: 'scaleY(0.1)' }
+			},
+			'mascot-antenna': {
+				'0%, 100%': { opacity: '0.6', transform: 'scale(1)' },
+				'50%': { opacity: '1', transform: 'scale(1.4)' }
 			}
 		},
 		animation: {
@@ -134,7 +152,11 @@ export default {
 			'confetti': 'confetti-fall 3s ease-in forwards',
 			'firework': 'firework-rise 2.5s ease-out forwards',
 			'fade-in': 'fade-in 0.4s ease-out forwards',
-			'wiggle-attention': 'wiggle-attention 1.2s ease-in-out'
+			'wiggle-attention': 'wiggle-attention 1.2s ease-in-out',
+			'mascot-bounce': 'mascot-bounce 3s ease-in-out infinite',
+			'mascot-wave': 'mascot-wave 4s ease-in-out infinite',
+			'mascot-blink': 'mascot-blink 5s ease-in-out infinite',
+			'mascot-antenna': 'mascot-antenna 1.2s ease-in-out infinite'
 		}
 		}
 	},

@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { MessageCircleQuestion, X, Send, RotateCcw, TicketCheck, XCircle } from 'lucide-react';
+import { X, Send, RotateCcw, TicketCheck, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import FixyMascot from '@/components/help/FixyMascot';
 
 import { useHelpBot } from '@/hooks/useHelpBot';
 import { useAuth } from '@/contexts/AuthContext';
@@ -113,10 +114,10 @@ const HelpBot: React.FC = () => {
       {!isOpen && (
         <button
           onClick={() => setIsOpen(true)}
-          className={`fixed bottom-4 right-4 z-50 h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-lg hover:opacity-90 transition-all flex items-center justify-center ${shakeNow ? 'animate-wiggle-attention' : ''}`}
-          aria-label="Ouvrir l'assistant"
+          className={`fixed bottom-4 right-4 z-50 h-14 w-14 rounded-full bg-primary text-primary-foreground shadow-lg hover:opacity-90 hover:scale-105 transition-all flex items-center justify-center ${shakeNow ? 'animate-wiggle-attention' : ''}`}
+          aria-label="Ouvrir l'assistant Fixy"
         >
-          <MessageCircleQuestion className="h-6 w-6" />
+          <FixyMascot size={36} waving idle />
           {canSeeOnboarding && pendingCount > 0 && !isFullyConfigured && (
             <span className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center border-2 border-background">
               {pendingCount}
@@ -129,8 +130,8 @@ const HelpBot: React.FC = () => {
         <div className="fixed bottom-4 right-4 z-50 w-[calc(100vw-2rem)] sm:w-[380px] max-h-[calc(100vh-2rem)] sm:max-h-[560px] flex flex-col rounded-2xl border bg-background shadow-2xl">
           <div className="flex items-center justify-between px-4 py-3 border-b bg-primary rounded-t-2xl text-primary-foreground">
             <div className="flex items-center gap-2">
-              <MessageCircleQuestion className="h-5 w-5" />
-              <span className="font-semibold text-sm">Assistant Fixway</span>
+              <FixyMascot size={28} idle thinking={isLoading} />
+              <span className="font-semibold text-sm">Fixy — Assistant Fixway</span>
             </div>
             <div className="flex items-center gap-1">
               <Button variant="ghost" size="icon" className="h-7 w-7 text-primary-foreground hover:bg-primary-foreground/20" onClick={clearMessages}>
