@@ -120,9 +120,14 @@ export default function SAVDetail() {
         setSavCase((prevCase: any) => ({
           ...prevCase,
           ...payload.new,
-          // Conserver les données de relation customer si elles existent
-          customer: prevCase?.customer
+          // Conserver la relation customer seulement si customer_id n'a pas changé
+          customer: payload.new.customer_id === prevCase?.customer_id ? prevCase?.customer : prevCase?.customer
         }));
+        // Si customer_id a changé, recharger les infos client
+        if (payload.new.customer_id !== undefined) {
+          // Comparaison faite à l'intérieur via prev state, on déclenche systématiquement un refresh ciblé
+          refreshSavCustomer();
+        }
         // Mettre à jour les commentaires privés si ils ont changé
         if (payload.new.private_comments !== undefined) {
           setPrivateComments(payload.new.private_comments || '');
