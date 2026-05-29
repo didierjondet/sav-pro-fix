@@ -1,29 +1,19 @@
 ## Problème
 
-Sur la page SAV Détail, quand on ajoute/modifie/supprime le client via la popup `EditSAVCustomerDialog`, la popup se ferme mais le bloc « Coordonnées du client » continue d'afficher l'ancienne valeur (souvent vide) jusqu'à un reload manuel.
+Depuis la dernière modification de `src/pages/SAVDetail.tsx`, la page « clignote » à chaque mise à jour client : le Sidebar et le Header disparaissent puis réapparaissent.
 
 ## Cause
 
-Dans `src/pages/SAVDetail.tsx` :
-- Le callback `onCustomerUpdated` du `EditSAVCustomerDialog` est vide (commentaire « Le realtime se charge de la mise à jour »).
-- Le listener realtime sur `sav_cases` met bien à jour `customer_id`, mais il conserve volontairement `customer: prevCase?.customer` (la relation jointe). Donc le nom du client affiché ne change jamais sans reload.
-- `useSAVCases().refetch` n'est pas exposé dans la déstructuration et n'est jamais appelé.
+Dans `refreshSavCustomer()`, l'appel à `refetch()` (de `useSAVCases`) relance le chargement global des SAV. Pendant ce refetch, `loading` passe à `true`, ce qui déclenche le loader plein écran de `SAVDetail` et démonte Sidebar + Header. C'est exactement le comportement à éviter (cf. mémoire « Navigation Stability »).
 
-## Correction (uniquement le rafraîchissement, aucune autre modification)
+## Correction
 
 Fichier : `src/pages/SAVDetail.tsx`
 
-1. Ajouter `refetch` à la déstructuration de `useSAVCases()`.
-2. Brancher `onCustomerUpdated` du `EditSAVCustomerDialog` sur une fonction qui :
-   - récupère le `customer` à jour (`first_name, last_name, email, phone, address`) depuis Supabase à partir du `customer_id` courant du SAV (relu en base pour couvrir aussi le cas suppression : `customer_id` devenu `null`),
-   - met à jour le `savCase` local avec le nouveau `customer_id` et l'objet `customer` correspondant (ou `undefined` si supprimé),
-   - appelle `refetch()` pour synchroniser la liste globale (et donc la pastille, la liste SAV, etc.).
-3. Corriger le listener realtime existant : si `payload.new.customer_id !== prevCase?.customer_id`, ne pas conserver `prevCase.customer` ; déclencher un refetch ciblé du customer (même helper que ci-dessus) au lieu de garder l'ancien.
-
-Aucun changement sur le dialog lui-même, sur le style, ni sur les autres champs.
+1. Retirer l'appel `refetch()` à la fin de `refreshSavCustomer`.
+2. Retirer `refetch` de la déstructuration de `useSAVCases()` (plus utilisé).
+3. Garder le reste intact : la mise à jour locale via `setSavCase({ ...prev, customer_id, customer })` suffit à rafraîchir le bloc « Coordonnées du client » sans recharger la page. La pastille et la liste SAV se mettront à jour via le realtime déjà en place sur `sav_cases`.
 
 ## Hors périmètre
 
-- Pas de modification de `EditSAVCustomerDialog.tsx`.
-- Pas de modification du changement de type de SAV (`updateSavType`) qui fonctionne déjà via `setSavCase`.
-- Pas de modification visuelle.
+- Aucune modification du Sidebar, du Header, du dialog client, du realtime listener, ni du style.
