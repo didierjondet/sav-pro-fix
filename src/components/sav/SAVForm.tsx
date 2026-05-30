@@ -325,7 +325,22 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
           email: selectedCustomer?.email || customerInfo.email,
         } : null
       };
-      
+
+      // Créer le prêt de matériel si demandé
+      if (loanerSelection.enabled && loanerSelection.equipment && newCase?.id) {
+        try {
+          await createLoan({
+            equipment_id: loanerSelection.equipment.id,
+            sav_case_id: newCase.id,
+            customer_id: customerId || null,
+            expected_return_at: loanerSelection.expectedReturnAt || null,
+            loan_condition: loanerSelection.notes || null,
+          });
+        } catch (err) {
+          console.error('Erreur création prêt matériel:', err);
+        }
+      }
+
         // Sauvegarder les pièces sélectionnées avec leurs remises
         if (selectedParts.length > 0) {
           // Identifier les pièces avec stock insuffisant
