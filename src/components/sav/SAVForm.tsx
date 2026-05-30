@@ -874,7 +874,7 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
       </Card>
 
       {/* Prêt de matériel */}
-      <LoanerSection value={loanerSelection} onChange={setLoanerSelection} />
+      <LoanerSection value={loanerSelection} onChange={setLoanerSelectionTouched} />
 
 
 
