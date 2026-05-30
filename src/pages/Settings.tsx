@@ -2027,5 +2027,5 @@ export default function Settings() {
           onClose={() => setImportDialog({ open: false, type: null })}
         />
       )}
-    </>;
+    </>);
 }
