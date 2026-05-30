@@ -124,49 +124,52 @@ const App = () => {
                   <BrowserRouter>
               <Routes>
                 <Route path="/" element={<Landing />} />
-                <Route path="/dashboard" element={<Index />} />
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
-                <Route path="/settings" element={<Settings />} />
-                <Route path="/sav" element={<SAVList />} />
-                <Route path="/sav/new" element={<NewSAV />} />
-                <Route path="/sav/:id" element={<SAVDetail />} />
-                <Route path="/sav/:id/logs" element={<SAVLogs />} />
                 <Route path="/track/:slug" element={<TrackSAV />} />
-                <Route path="/parts" element={<Parts />} />
-                <Route path="/quotes" element={<Quotes />} />
                 <Route path="/quote/:id" element={<QuotePublic />} />
                 <Route path="/satisfaction/:token" element={<Satisfaction />} />
-                <Route path="/orders" element={<Orders />} />
-                <Route path="/inventory" element={<Inventory />} />
-                <Route path="/customers" element={<Customers />} />
-                <Route path="/client-chats" element={<ClientChats />} />
-                <Route path="/client-chats/*" element={<ClientChats />} />
-                <Route path="/chats" element={<ClientChats />} />
-                <Route path="/statistics" element={<Statistics />} />
-                <Route path="/reports" element={<Reports />} />
-                <Route path="/agenda" element={<Agenda />} />
                 <Route path="/rdv/:token" element={<AppointmentConfirm />} />
-                <Route path="/statistics/revenue" element={<RevenueDetails />} />
-                <Route path="/statistics/revenue/*" element={<RevenueDetails />} />
-                <Route path="/statistics/expenses" element={<ExpensesDetails />} />
-                <Route path="/statistics/expenses/*" element={<ExpensesDetails />} />
-                <Route path="/stats/revenue" element={<RevenueDetails />} />
-                <Route path="/stats/revenue/*" element={<RevenueDetails />} />
-                <Route path="/stats/expenses" element={<ExpensesDetails />} />
-                <Route path="/stats/expenses/*" element={<ExpensesDetails />} />
-                <Route path="/notifications" element={<Notifications />} />
-                <Route path="/support" element={<Support />} />
                 <Route path="/test" element={<TestLanding />} />
-                <Route path="/subscription-success" element={<SubscriptionSuccess />} />
                 <Route path="/super-admin" element={<SuperAdmin />} />
-                <Route path="/subscription" element={<Subscription />} />
                 <Route path="/landing" element={<Landing />} />
                 <Route path="/features" element={<Features />} />
                 <Route path="/about" element={<About />} />
                 <Route path="/contact" element={<Contact />} />
                 <Route path="/shop/:slug" element={<ShopWebsite />} />
-                
+
+                <Route element={<AppLayout />}>
+                  <Route path="/dashboard" element={<Index />} />
+                  <Route path="/settings" element={<Settings />} />
+                  <Route path="/sav" element={<SAVList />} />
+                  <Route path="/sav/new" element={<NewSAV />} />
+                  <Route path="/sav/:id" element={<SAVDetail />} />
+                  <Route path="/sav/:id/logs" element={<SAVLogs />} />
+                  <Route path="/parts" element={<Parts />} />
+                  <Route path="/quotes" element={<Quotes />} />
+                  <Route path="/orders" element={<Orders />} />
+                  <Route path="/inventory" element={<Inventory />} />
+                  <Route path="/customers" element={<Customers />} />
+                  <Route path="/client-chats" element={<ClientChats />} />
+                  <Route path="/client-chats/*" element={<ClientChats />} />
+                  <Route path="/chats" element={<ClientChats />} />
+                  <Route path="/statistics" element={<Statistics />} />
+                  <Route path="/reports" element={<Reports />} />
+                  <Route path="/agenda" element={<Agenda />} />
+                  <Route path="/statistics/revenue" element={<RevenueDetails />} />
+                  <Route path="/statistics/revenue/*" element={<RevenueDetails />} />
+                  <Route path="/statistics/expenses" element={<ExpensesDetails />} />
+                  <Route path="/statistics/expenses/*" element={<ExpensesDetails />} />
+                  <Route path="/stats/revenue" element={<RevenueDetails />} />
+                  <Route path="/stats/revenue/*" element={<RevenueDetails />} />
+                  <Route path="/stats/expenses" element={<ExpensesDetails />} />
+                  <Route path="/stats/expenses/*" element={<ExpensesDetails />} />
+                  <Route path="/notifications" element={<Notifications />} />
+                  <Route path="/support" element={<Support />} />
+                  <Route path="/subscription-success" element={<SubscriptionSuccess />} />
+                  <Route path="/subscription" element={<Subscription />} />
+                </Route>
+
                 <Route path="*" element={<NotFound />} />
               </Routes>
               <HelpBot />
