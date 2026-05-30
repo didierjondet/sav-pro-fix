@@ -997,12 +997,21 @@ Deno.serve(async (req) => {
     return new Response('ok', { headers: corsHeaders })
   }
   try {
-    const { message, history, userContext, shopId } = await req.json()
+    const { message, history, userContext, shopId, attachments } = await req.json()
     if (!message || typeof message !== 'string') {
       return new Response(JSON.stringify({ error: 'Message requis' }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
+    // Safety cap on attachments: max 4 files, each <= ~6 MB base64
+    const safeAttachments = Array.isArray(attachments)
+      ? attachments.slice(0, 4).filter((a: any) =>
+          a && typeof a.data_base64 === 'string' && a.data_base64.length < 8_000_000 &&
+          typeof a.mime_type === 'string' &&
+          (a.mime_type.startsWith('image/') || a.mime_type === 'application/pdf')
+        )
+      : []
+
     const supa = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
 
     const aiConfig = await getAIConfig(supa)
@@ -1026,11 +1035,11 @@ Deno.serve(async (req) => {
       ? history.slice(-10).map((m: any) => ({ role: m.role === 'user' ? 'user' : 'assistant', content: m.content }))
       : []
 
-    console.log(`[help-bot] provider=${aiConfig.provider} model=${aiConfig.model} shopId=${shopId || 'none'} sysChars=${fullSystem.length}`)
+    console.log(`[help-bot] provider=${aiConfig.provider} model=${aiConfig.model} shopId=${shopId || 'none'} sysChars=${fullSystem.length} attachments=${safeAttachments.length}`)
 
-    let content: string
+    let result: { text: string; reports: any[] }
     try {
-      content = await callAIWithTools(aiConfig, fullSystem, chatHistory, message, supa, shopId || '')
+      result = await callAIWithTools(aiConfig, fullSystem, chatHistory, message, supa, shopId || '', safeAttachments)
     } catch (e: any) {
       console.error('[help-bot] AI call failed:', e)
       const status = e?.status
@@ -1049,6 +1058,7 @@ Deno.serve(async (req) => {
       })
     }
 
+    const content = result.text
     const shouldEscalate = content.startsWith('[ESCALATE]')
     let cleanMessage = content
     let escalateSummary: string | null = null
@@ -1062,6 +1072,7 @@ Deno.serve(async (req) => {
       message: cleanMessage,
       escalate: shouldEscalate,
       escalate_summary: escalateSummary,
+      reports: result.reports,
     }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
   } catch (error) {
     console.error('Help bot error:', error)
