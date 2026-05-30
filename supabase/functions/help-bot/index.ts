@@ -394,23 +394,48 @@ async function runTool(name: string, args: any, supa: any, shopId: string): Prom
       }
 
       case 'get_sav_case_detail': {
-        let q = supa.from('sav_cases')
-          .select('*, customer:customers(*), sav_parts(*, part:parts(name,reference)), sav_messages(id,sender_type,message,created_at)')
-          .eq('shop_id', shopId)
-          .limit(1)
-        if (args.id) q = q.eq('id', args.id)
-        else if (args.case_number) q = q.ilike('case_number', `%${args.case_number}%`)
-        else return { error: 'case_number ou id requis' }
-        const { data, error } = await q.maybeSingle()
-        if (error) return { error: error.message }
-        if (!data) return { error: 'introuvable' }
-        // limit messages to last 20
-        if (Array.isArray(data.sav_messages)) {
-          data.sav_messages = data.sav_messages
-            .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-            .slice(0, 20)
+        // Step 1: locate the case (exact match first, fallback ilike). Avoid heavy joins that may fail silently.
+        let caseRow: any = null
+        if (args.id) {
+          const r = await supa.from('sav_cases').select('*').eq('shop_id', shopId).eq('id', args.id).maybeSingle()
+          if (r.error) return { error: `sav_cases: ${r.error.message}` }
+          caseRow = r.data
+        } else if (args.case_number) {
+          const raw = String(args.case_number).trim().replace(/^#/, '')
+          let r = await supa.from('sav_cases').select('*').eq('shop_id', shopId).eq('case_number', raw).maybeSingle()
+          if (!r.data && !r.error) {
+            r = await supa.from('sav_cases').select('*').eq('shop_id', shopId).ilike('case_number', `%${raw}%`).order('created_at', { ascending: false }).limit(1).maybeSingle()
+          }
+          if (r.error) return { error: `sav_cases: ${r.error.message}` }
+          caseRow = r.data
+        } else {
+          return { error: 'case_number ou id requis' }
         }
-        return data
+        if (!caseRow) return { error: 'dossier introuvable dans cette boutique' }
+
+        // Step 2: fetch related data in parallel, each independent so one failure doesn't block the rest.
+        const [custR, partsR, msgsR, apptsR, quotesR] = await Promise.all([
+          caseRow.customer_id
+            ? supa.from('customers').select('id, first_name, last_name').eq('id', caseRow.customer_id).maybeSingle()
+            : Promise.resolve({ data: null, error: null }),
+          supa.from('sav_parts').select('id, quantity, unit_price, purchase_price, time_minutes, part:parts(name, reference, sku)').eq('sav_case_id', caseRow.id),
+          supa.from('sav_messages').select('id, sender_type, sender_name, message, created_at').eq('sav_case_id', caseRow.id).order('created_at', { ascending: false }).limit(30),
+          supa.from('appointments').select('id, start_datetime, duration_minutes, status, appointment_type, notes').eq('shop_id', shopId).eq('sav_case_id', caseRow.id).order('start_datetime', { ascending: false }).limit(10),
+          supa.from('quotes').select('quote_number, status, total_amount, created_at').eq('shop_id', shopId).eq('sav_case_id', caseRow.id).order('created_at', { ascending: false }).limit(10),
+        ])
+
+        // Step 3: strip client PII (phone, email, address) from response.
+        const cust = custR.data ? { first_name: custR.data.first_name, last_name: custR.data.last_name } : null
+        const { customer_id, technician_id, ...caseSafe } = caseRow
+
+        return {
+          case: caseSafe,
+          customer: cust,
+          parts: partsR.data || [],
+          messages: (msgsR.data || []).slice(0, 20),
+          appointments: apptsR.data || [],
+          quotes: quotesR.data || [],
+        }
       }
 
       case 'search_parts': {
