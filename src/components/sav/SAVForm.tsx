@@ -136,6 +136,18 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
   });
   const [savLimits, setSavLimits] = useState<{ allowed: boolean; reason: string; action: string | null }>({ allowed: true, reason: '', action: null });
   const [loanerSelection, setLoanerSelection] = useState<LoanerSelection>(EMPTY_LOANER_SELECTION);
+  const loanerTouchedRef = React.useRef(false);
+  const setLoanerSelectionTouched = (v: LoanerSelection | ((p: LoanerSelection) => LoanerSelection)) => {
+    loanerTouchedRef.current = true;
+    setLoanerSelection(v as any);
+  };
+  React.useEffect(() => {
+    if (loanerTouchedRef.current) return;
+    if (currentTypeInfo?.loaner_enabled) {
+      setLoanerSelection((prev) => prev.enabled ? prev : { ...prev, enabled: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [savType, currentTypeInfo?.loaner_enabled]);
   const { createLoan } = useLoanerLoans();
   const printButtonRef = React.useRef<SAVPrintButtonRef>(null);
   
