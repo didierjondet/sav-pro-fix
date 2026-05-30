@@ -504,7 +504,7 @@ async function runTool(name: string, args: any, supa: any, shopId: string): Prom
         const [savs, quotes, appts] = await Promise.all([
           supa.from('sav_cases').select('case_number,status,sav_type,device_brand,device_model,total_cost,created_at').eq('shop_id', shopId).eq('customer_id', args.customer_id).order('created_at', { ascending: false }).limit(100),
           supa.from('quotes').select('quote_number,status,total_amount,created_at').eq('shop_id', shopId).eq('customer_id', args.customer_id).order('created_at', { ascending: false }).limit(50),
-          supa.from('appointments').select('title,appointment_type,start_at,status').eq('shop_id', shopId).eq('customer_id', args.customer_id).order('start_at', { ascending: false }).limit(50),
+          supa.from('appointments').select('id, appointment_type, start_datetime, duration_minutes, status, notes').eq('shop_id', shopId).eq('customer_id', args.customer_id).order('start_datetime', { ascending: false }).limit(50),
         ])
         return { savs: savs.data || [], quotes: quotes.data || [], appointments: appts.data || [] }
       }
@@ -528,15 +528,46 @@ async function runTool(name: string, args: any, supa: any, shopId: string): Prom
         const from = args.date_from || new Date().toISOString()
         const to = args.date_to || new Date(Date.now() + 30 * 86400000).toISOString()
         let q = supa.from('appointments')
-          .select('title,appointment_type,start_at,end_at,status,customer_name')
+          .select('id, appointment_type, start_datetime, duration_minutes, status, notes, sav_case_id, technician_id, customer:customers(first_name,last_name)')
           .eq('shop_id', shopId)
-          .gte('start_at', from).lte('start_at', to)
-          .order('start_at').limit(100)
+          .gte('start_datetime', from).lte('start_datetime', to)
+          .order('start_datetime').limit(100)
         if (args.status) q = q.eq('status', args.status)
         if (args.appointment_type) q = q.eq('appointment_type', args.appointment_type)
+        if (args.technician_id) q = q.eq('technician_id', args.technician_id)
         const { data, error } = await q
         if (error) return { error: error.message }
-        return { count: data?.length || 0, appointments: data || [] }
+        const appts = (data || []).map((a: any) => ({
+          id: a.id,
+          appointment_type: a.appointment_type,
+          start_datetime: a.start_datetime,
+          duration_minutes: a.duration_minutes,
+          status: a.status,
+          notes: a.notes,
+          sav_case_id: a.sav_case_id,
+          technician_id: a.technician_id,
+          customer_name: a.customer ? `${a.customer.first_name || ''} ${a.customer.last_name || ''}`.trim() : null,
+        }))
+        return { count: appts.length, appointments: appts }
+      }
+
+      case 'get_appointment_detail': {
+        if (!args.id) return { error: 'id requis' }
+        const { data, error } = await supa.from('appointments')
+          .select('*, customer:customers(first_name,last_name), sav_case:sav_cases(case_number,status,sav_type,device_brand,device_model,problem_description), technician:profiles(first_name,last_name)')
+          .eq('shop_id', shopId).eq('id', args.id).maybeSingle()
+        if (error) return { error: error.message }
+        if (!data) return { error: 'rendez-vous introuvable' }
+        // Strip PII columns if any leaked
+        const { customer_id, ...safe } = data as any
+        if (safe.customer) safe.customer = { first_name: safe.customer.first_name, last_name: safe.customer.last_name }
+        return safe
+      }
+
+      case 'generate_printable_report': {
+        // Generates a printable A4 HTML report (no PII). Returns html ready to open/print.
+        const r = await buildPrintableReport(supa, shopId, args)
+        return r
       }
 
       case 'get_finance_summary': {
