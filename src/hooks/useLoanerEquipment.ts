@@ -18,6 +18,7 @@ export interface LoanerEquipment {
   color: string | null;
   notes: string | null;
   photo_url: string | null;
+  condition_photos: string[] | null;
   status: LoanerStatus;
   created_at: string;
   updated_at: string;
