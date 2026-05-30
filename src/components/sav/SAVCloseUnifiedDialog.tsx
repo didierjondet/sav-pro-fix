@@ -399,6 +399,45 @@ export function SAVCloseUnifiedDialog({
   };
 
   return (
+    <>
+    <AlertDialog open={loanerAlertOpen} onOpenChange={setLoanerAlertOpen}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle className="flex items-center gap-2 text-amber-700">
+            <PackageOpen className="h-5 w-5" />
+            Matériel de prêt à récupérer
+          </AlertDialogTitle>
+          <AlertDialogDescription asChild>
+            <div className="space-y-2 text-sm">
+              <p>
+                Un matériel a été prêté au client pour ce SAV. Vérifiez son état et récupérez-le avant de clôturer le dossier.
+              </p>
+              {activeLoan?.equipment && (
+                <div className="rounded-md border border-amber-300 bg-amber-50 p-3 space-y-1">
+                  <div><strong>Matériel :</strong> {activeLoan.equipment.name}</div>
+                  {activeLoan.equipment.brand && <div><strong>Marque :</strong> {activeLoan.equipment.brand}</div>}
+                  {activeLoan.equipment.model && <div><strong>Modèle :</strong> {activeLoan.equipment.model}</div>}
+                  {activeLoan.equipment.imei && <div><strong>IMEI :</strong> {activeLoan.equipment.imei}</div>}
+                  {activeLoan.equipment.serial_number && <div><strong>N° série :</strong> {activeLoan.equipment.serial_number}</div>}
+                  {activeLoan.loan_condition && <div><strong>État au prêt :</strong> {activeLoan.loan_condition}</div>}
+                </div>
+              )}
+              <p className="text-xs text-muted-foreground">
+                Pensez à enregistrer le retour du matériel via la fiche SAV après clôture.
+              </p>
+            </div>
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel onClick={() => { setLoanerAlertOpen(false); onClose(); }}>
+            Annuler
+          </AlertDialogCancel>
+          <AlertDialogAction onClick={() => { setLoanerAlertAcknowledged(true); setLoanerAlertOpen(false); }}>
+            J'ai récupéré le matériel
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
