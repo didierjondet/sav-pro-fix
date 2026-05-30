@@ -22,6 +22,7 @@ export interface ShopSAVType {
   exclude_purchase_costs: boolean;
   exclude_sales_revenue: boolean;
   show_satisfaction_survey: boolean;
+  loaner_enabled?: boolean;
   created_at: string;
   updated_at: string;
 }
