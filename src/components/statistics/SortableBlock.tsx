@@ -22,30 +22,52 @@ export const SortableBlock = ({ id, children, onRemove, editable = false }: Sort
   const { statuses } = useShopSAVStatuses();
   const { types } = useShopSAVTypes();
 
-  // Taille imposée par widget (catalogue par id)
   const gridClasses = getWidgetGridClasses(id);
   const minHStyle = getWidgetMinHeightStyle(id);
-
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
     ...minHStyle,
   } as React.CSSProperties;
-...
+
+  const getTemporalityLabel = (temp: string | null | undefined) => {
+    switch (temp) {
+      case 'monthly': return 'Mensuel glissant (30 derniers jours)';
+      case 'monthly_calendar': return 'Mensuel calendaire (depuis le 1er du mois)';
+      case 'quarterly': return 'Trimestriel (3 derniers mois)';
+      case 'yearly': return 'Annuel (12 derniers mois)';
+      default: return 'Non configuré';
+    }
+  };
+
+  const getStatusLabels = (statusKeys: string[] | null | undefined) => {
+    if (!statusKeys || statusKeys.length === 0) return 'Tous les statuts';
+    return statusKeys
+      .map((key) => statuses.find((s) => s.status_key === key)?.status_label)
+      .filter(Boolean)
+      .join(', ');
+  };
+
+  const getTypeLabels = (typeKeys: string[] | null | undefined) => {
+    if (!typeKeys || typeKeys.length === 0) return 'Tous les types';
+    return typeKeys
+      .map((key) => types.find((t) => t.type_key === key)?.type_label)
+      .filter(Boolean)
+      .join(', ');
+  };
+
   return (
-    <div 
-      ref={setNodeRef} 
-      style={style} 
+    <div
+      ref={setNodeRef}
+      style={style}
       className={cn(
         "relative min-w-0 isolate flex flex-col",
-        // Hauteur MINIMALE responsive (le contenu peut grandir, jamais être coupé)
         "min-h-[var(--w-min-h-sm)] lg:min-h-[var(--w-min-h-lg)]",
         gridClasses,
         isDragging ? "z-50 opacity-70" : "z-0"
       )}
     >
-
       {editable && onRemove && (
         <button
           onClick={onRemove}
