@@ -12,6 +12,7 @@ import {
   LOANER_STATUSES,
   useLoanerEquipment,
 } from '@/hooks/useLoanerEquipment';
+import { LoanerConditionPhotos } from './LoanerConditionPhotos';
 
 interface Props {
   open: boolean;
