@@ -1656,6 +1656,12 @@ export default function Settings() {
               </TabsContent>
             )}
 
+            {isAdmin && (
+              <TabsContent value="loaners" className="space-y-6">
+                <LoanerEquipmentManager />
+              </TabsContent>
+            )}
+
             <TabsContent value="ai" className="space-y-6">
               <Card>
                 <CardHeader>
