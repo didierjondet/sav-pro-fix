@@ -84,9 +84,6 @@ const Index = () => {
   if (!profile) {
     return <ProfileSetup onComplete={() => { refetchProfile(); refetchShop(); }} />;
   }
-  const handleMenuClick = () => {
-    setIsMobileMenuOpen(!isMobileMenuOpen);
-  };
   // Vérifier si les modules IA sont activés
   // Fail-closed: n'afficher les assistants que si shop est chargé ET la config est explicitement active
   const aiModulesConfig = shop ? (shop as any)?.ai_modules_config : null;
