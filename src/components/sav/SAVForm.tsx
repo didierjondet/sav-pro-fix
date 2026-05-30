@@ -861,6 +861,11 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
         </CardContent>
       </Card>
 
+      {/* Prêt de matériel */}
+      <LoanerSection value={loanerSelection} onChange={setLoanerSelection} />
+
+
+
       {/* Codes de sécurité */}
       <SecurityCodesSection 
         codes={securityCodes}
