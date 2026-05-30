@@ -50,6 +50,10 @@ const HelpBot: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState('');
   const [shakeNow, setShakeNow] = useState(false);
+  const [attachments, setAttachments] = useState<BotAttachmentInput[]>([]);
+  const [isRecording, setIsRecording] = useState(false);
+  const recognitionRef = useRef<any>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { user } = useAuth();
   const { shop } = useShop();
   const { profile } = useProfile();
@@ -100,13 +104,75 @@ const HelpBot: React.FC = () => {
     return () => clearInterval(id);
   }, [shouldAttract]);
 
+  const speechSupported = typeof window !== 'undefined' && (
+    (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+  );
+
   if (!user || isPublicRoute || !helpbotEnabled) return null;
+
+  const toggleRecording = () => {
+    const SR: any = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SR) { toast.error("La dictée vocale n'est pas disponible sur ce navigateur."); return; }
+    if (isRecording) {
+      try { recognitionRef.current?.stop(); } catch {}
+      setIsRecording(false);
+      return;
+    }
+    const rec = new SR();
+    rec.lang = 'fr-FR';
+    rec.interimResults = true;
+    rec.continuous = false;
+    let finalText = '';
+    rec.onresult = (e: any) => {
+      let interim = '';
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const t = e.results[i][0].transcript;
+        if (e.results[i].isFinal) finalText += t;
+        else interim += t;
+      }
+      setInput((finalText + interim).trim());
+    };
+    rec.onerror = () => { setIsRecording(false); };
+    rec.onend = () => { setIsRecording(false); };
+    recognitionRef.current = rec;
+    setIsRecording(true);
+    try { rec.start(); } catch { setIsRecording(false); }
+  };
+
+  const handleFiles = async (files: FileList | null) => {
+    if (!files) return;
+    const next: BotAttachmentInput[] = [];
+    for (const file of Array.from(files).slice(0, 4 - attachments.length)) {
+      if (!file.type.startsWith('image/') && file.type !== 'application/pdf') {
+        toast.error(`Type non supporté : ${file.name}`); continue;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error(`Fichier trop volumineux (max 5 Mo) : ${file.name}`); continue;
+      }
+      const data_base64 = await new Promise<string>((resolve, reject) => {
+        const r = new FileReader();
+        r.onload = () => resolve(String(r.result).split(',')[1] || '');
+        r.onerror = reject;
+        r.readAsDataURL(file);
+      });
+      next.push({ name: file.name, mime_type: file.type, data_base64 });
+    }
+    if (next.length) setAttachments(prev => [...prev, ...next]);
+  };
+
+  const printReport = (html: string) => {
+    const w = window.open('', '_blank');
+    if (!w) { toast.error('Ouverture bloquée par le navigateur'); return; }
+    w.document.open(); w.document.write(html); w.document.close();
+  };
 
   const handleSend = async () => {
     const trimmed = input.trim();
-    if (!trimmed || isLoading) return;
+    if ((!trimmed && attachments.length === 0) || isLoading) return;
+    const toSend = attachments;
     setInput('');
-    await sendMessage(trimmed);
+    setAttachments([]);
+    await sendMessage(trimmed || 'Analyse les fichiers joints.', toSend);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -120,6 +186,7 @@ const HelpBot: React.FC = () => {
     await incrementFAQClick(faq.id);
     await sendMessage(faq.question);
   };
+
 
   return (
     <>
