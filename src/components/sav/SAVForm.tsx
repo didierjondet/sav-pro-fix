@@ -450,6 +450,7 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
       setNoUnlockCode(false);
       setSelectedParts([]);
       setDepositAmount(0);
+      setLoanerSelection(EMPTY_LOANER_SELECTION);
     } catch (error: any) {
       console.error('Error creating SAV case:', error);
       toast({
