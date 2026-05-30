@@ -49,6 +49,7 @@ interface SAVCaseData {
 export default function TrackSAV() {
   const { slug } = useParams<{ slug: string }>();
   const [savCase, setSavCase] = useState<SAVCaseData | null>(null);
+  const [loanerInfo, setLoanerInfo] = useState<{ name: string; brand: string | null; model: string | null; color: string | null; loaned_at: string | null; expected_return_at: string | null } | null>(null);
   const [loading, setLoading] = useState(true);
   const [isRealTimeConnected, setIsRealTimeConnected] = useState(false);
   const { toast } = useToast();
