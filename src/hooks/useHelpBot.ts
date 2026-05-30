@@ -4,11 +4,25 @@ import { useShop } from './useShop';
 import { useProfile } from './useProfile';
 import { toast } from 'sonner';
 
+export interface BotReport {
+  title: string;
+  html: string;
+  report_type?: string;
+}
+
+export interface BotAttachmentInput {
+  name: string;
+  mime_type: string;
+  data_base64: string;
+}
+
 export interface ChatMessage {
   id: string;
   role: 'user' | 'assistant';
   content: string;
   timestamp: Date;
+  reports?: BotReport[];
+  attachments?: { name: string; mime_type: string }[];
 }
 
 export interface FAQItem {
