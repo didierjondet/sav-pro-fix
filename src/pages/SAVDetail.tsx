@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import Header from '@/components/layout/Header';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { SAVMessaging } from '@/components/sav/SAVMessaging';
+import { SAVLoanerCard } from '@/components/loaner/SAVLoanerCard';
 import { SAVStatusManager } from '@/components/sav/SAVStatusManager';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
