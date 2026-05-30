@@ -1,7 +1,5 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import Header from '@/components/layout/Header';
-import { Sidebar } from '@/components/layout/Sidebar';
 import { SAVMessaging } from '@/components/sav/SAVMessaging';
 import { SAVLoanerCard } from '@/components/loaner/SAVLoanerCard';
 import { SAVStatusManager } from '@/components/sav/SAVStatusManager';
@@ -49,7 +47,6 @@ export default function SAVDetail() {
   const {
     toast
   } = useToast();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [privateComments, setPrivateComments] = useState('');
   const [savingComments, setSavingComments] = useState(false);
   const {
@@ -278,25 +275,12 @@ export default function SAVDetail() {
     });
   };
   if (loading) {
-    return <div className="min-h-screen bg-background">
-        <div className="flex h-screen">
-          <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-          <div className="flex-1 flex flex-col overflow-hidden">
-            <Header onMenuClick={() => setSidebarOpen(true)} isMobileMenuOpen={sidebarOpen} />
-            <main className="flex-1 overflow-y-auto p-6">
+    return <main className="flex-1 overflow-y-auto p-6">
               <div className="text-center">Chargement...</div>
-            </main>
-          </div>
-        </div>
-      </div>;
+            </main>;
   }
   if (!savCase) {
-    return <div className="min-h-screen bg-background">
-        <div className="flex h-screen">
-          <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-          <div className="flex-1 flex flex-col overflow-hidden">
-            <Header onMenuClick={() => setSidebarOpen(true)} isMobileMenuOpen={sidebarOpen} />
-            <main className="flex-1 overflow-y-auto p-6">
+    return <main className="flex-1 overflow-y-auto p-6">
               <div className="text-center">
                 <h1 className="text-2xl font-bold mb-4">Dossier SAV introuvable</h1>
                 <Button onClick={() => navigate('/sav')}>
@@ -304,10 +288,7 @@ export default function SAVDetail() {
                   Retour à la liste
                 </Button>
               </div>
-            </main>
-          </div>
-        </div>
-      </div>;
+            </main>;
   }
   const statusConfig = {
     pending: {
@@ -335,12 +316,7 @@ export default function SAVDetail() {
       variant: 'destructive' as const
     }
   };
-  return <div className="min-h-screen bg-background">
-      <div className="flex h-screen">
-        <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <Header onMenuClick={() => setSidebarOpen(true)} isMobileMenuOpen={sidebarOpen} />
-          <main className="flex-1 overflow-y-auto p-6">
+  return <main className="flex-1 overflow-y-auto p-6">
             <div className="max-w-6xl mx-auto space-y-6">
               {/* En-tête du dossier SAV */}
               <div className="space-y-3">
@@ -825,8 +801,5 @@ export default function SAVDetail() {
                 />
               </div>
             </div>
-          </main>
-        </div>
-      </div>
-    </div>;
+          </main>;
 }

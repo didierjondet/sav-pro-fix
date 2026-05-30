@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import Header from '@/components/layout/Header';
-import { Sidebar } from '@/components/layout/Sidebar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -66,7 +64,6 @@ const priorityConfig = {
   }
 };
 export default function Support() {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [showNewTicketDialog, setShowNewTicketDialog] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
@@ -141,24 +138,11 @@ export default function Support() {
     }, 1000);
   };
   if (loading) {
-    return <div className="min-h-screen bg-background">
-        <div className="flex h-screen">
-          <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-          <div className="flex-1 flex flex-col overflow-hidden">
-            <Header onMenuClick={() => setSidebarOpen(true)} isMobileMenuOpen={sidebarOpen} />
-            <main className="flex-1 overflow-y-auto p-6">
+    return <main className="flex-1 overflow-y-auto p-6">
               <div className="text-center py-8">Chargement...</div>
-            </main>
-          </div>
-        </div>
-      </div>;
+            </main>;
   }
-  return <div className="min-h-screen bg-background">
-      <div className="flex h-screen">
-        <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <Header onMenuClick={() => setSidebarOpen(true)} isMobileMenuOpen={sidebarOpen} />
-          <main className="flex-1 overflow-y-auto p-6">
+  return <main className="flex-1 overflow-y-auto p-6">
             <div className="max-w-7xl mx-auto h-full min-h-[600px]">
               <div className="flex justify-between items-center mb-6">
                 <div>
@@ -345,8 +329,5 @@ export default function Support() {
                 </Card>
               </div>
             </div>
-          </main>
-        </div>
-      </div>
-    </div>;
+          </main>;
 }

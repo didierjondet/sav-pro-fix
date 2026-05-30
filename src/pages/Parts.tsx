@@ -1,7 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
 import { multiWordSearch } from '@/utils/searchUtils';
-import Header from '@/components/layout/Header';
-import { Sidebar } from '@/components/layout/Sidebar';
 import { PaginationControls } from '@/components/ui/pagination-controls';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -46,7 +44,6 @@ import { useLastInventoryByPart } from '@/hooks/useLastInventoryByPart';
 import { useNavigate } from 'react-router-dom';
 
 export default function Parts() {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [supplierFilter, setSupplierFilter] = useState<string>('all');
@@ -162,27 +159,14 @@ export default function Parts() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background">
-        <div className="flex h-screen">
-          <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-          <div className="flex-1 flex flex-col overflow-hidden">
-            <Header onMenuClick={() => setSidebarOpen(true)} isMobileMenuOpen={sidebarOpen} />
-            <main className="flex-1 overflow-y-auto p-6">
+      <main className="flex-1 overflow-y-auto p-6">
               <div className="text-center py-8">Chargement...</div>
             </main>
-          </div>
-        </div>
-      </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="flex h-screen">
-        <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <Header onMenuClick={() => setSidebarOpen(true)} isMobileMenuOpen={sidebarOpen} />
-          <main className="flex-1 overflow-y-auto p-6">
+    <main className="flex-1 overflow-y-auto p-6">
             <div className="max-w-7xl mx-auto">
               {!showForm && !editingPart && !showImport ? (
                 <>
@@ -633,8 +617,5 @@ export default function Parts() {
               )}
             </div>
           </main>
-        </div>
-      </div>
-    </div>
   );
 }
