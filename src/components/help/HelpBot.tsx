@@ -288,12 +288,38 @@ const HelpBot: React.FC = () => {
                       ? 'bg-primary text-primary-foreground'
                       : 'bg-muted'
                   }`}>
+                    {msg.attachments && msg.attachments.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mb-1">
+                        {msg.attachments.map((a, i) => (
+                          <span key={i} className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-background/30">
+                            {a.mime_type.startsWith('image/') ? <ImageIcon className="h-3 w-3" /> : <FileText className="h-3 w-3" />}
+                            {a.name}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                     {msg.role === 'assistant' ? (
                       <div className="prose prose-sm dark:prose-invert max-w-none [&>p]:m-0">
                         {renderSimpleMarkdown(msg.content)}
                       </div>
                     ) : (
                       <p className="whitespace-pre-wrap">{msg.content}</p>
+                    )}
+                    {msg.reports && msg.reports.length > 0 && (
+                      <div className="mt-2 space-y-1">
+                        {msg.reports.map((r, i) => (
+                          <Button
+                            key={i}
+                            size="sm"
+                            variant="secondary"
+                            className="w-full justify-start gap-2 h-8"
+                            onClick={() => printReport(r.html)}
+                          >
+                            <Printer className="h-3.5 w-3.5" />
+                            <span className="truncate">{r.title || 'Rapport imprimable'}</span>
+                          </Button>
+                        ))}
+                      </div>
                     )}
                   </div>
                 </div>
