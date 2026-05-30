@@ -183,12 +183,13 @@ export function useHelpBot() {
     setMessages(prev => [...prev, msg]);
   }, []);
 
-  const sendMessage = useCallback(async (content: string) => {
+  const sendMessage = useCallback(async (content: string, attachments: BotAttachmentInput[] = []) => {
     const userMessage: ChatMessage = {
       id: crypto.randomUUID(),
       role: 'user',
       content,
       timestamp: new Date(),
+      attachments: attachments.map(a => ({ name: a.name, mime_type: a.mime_type })),
     };
 
     setMessages(prev => [...prev, userMessage]);
@@ -203,6 +204,7 @@ export function useHelpBot() {
           history,
           userContext: getUserContext(),
           shopId: shop?.id,
+          attachments,
         },
       });
 
@@ -213,6 +215,7 @@ export function useHelpBot() {
         role: 'assistant',
         content: data.message || "Désolé, je n'ai pas pu traiter votre demande.",
         timestamp: new Date(),
+        reports: Array.isArray(data.reports) ? data.reports : undefined,
       };
 
       const updatedMsgs = [...messages, userMessage, assistantMessage];
@@ -240,7 +243,7 @@ export function useHelpBot() {
     } finally {
       setIsLoading(false);
     }
-  }, [messages, getUserContext]);
+  }, [messages, getUserContext, shop?.id, persistConversation]);
 
   const clearMessages = useCallback(() => {
     setMessages([]);
