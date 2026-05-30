@@ -1,0 +1,23 @@
+import { useState } from 'react';
+import { Outlet } from 'react-router-dom';
+import Header from './Header';
+import { Sidebar } from './Sidebar';
+
+export default function AppLayout() {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  return (
+    <div className="flex h-screen overflow-hidden flex-col">
+      <div className="flex flex-1 overflow-hidden">
+        <Sidebar isOpen={isMobileMenuOpen} onClose={() => setIsMobileMenuOpen(false)} />
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <Header
+            onMenuClick={() => setIsMobileMenuOpen((v) => !v)}
+            isMobileMenuOpen={isMobileMenuOpen}
+          />
+          <Outlet />
+        </div>
+      </div>
+    </div>
+  );
+}
