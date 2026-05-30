@@ -870,6 +870,6 @@ export default function SAVList() {
         onOpenChange={setShowWizard}
         onSuccess={() => refetch()}
       />
-    </div>
+    </>
   );
 }
