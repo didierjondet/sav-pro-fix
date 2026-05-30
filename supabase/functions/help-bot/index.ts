@@ -243,15 +243,41 @@ const TOOL_DEFS = [
     type: 'function',
     function: {
       name: 'list_appointments',
-      description: 'Liste des RDV sur une plage de dates.',
+      description: 'Liste des RDV sur une plage de dates (filtres optionnels : status, type, technicien).',
       parameters: {
         type: 'object',
         properties: {
           date_from: { type: 'string', description: 'ISO date.' },
           date_to: { type: 'string', description: 'ISO date.' },
-          status: { type: 'string' },
-          appointment_type: { type: 'string' },
+          status: { type: 'string', description: 'proposed, confirmed, counter_proposed, cancelled, completed, no_show' },
+          appointment_type: { type: 'string', description: 'deposit, pickup, diagnostic, repair' },
+          technician_id: { type: 'string' },
         },
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'get_appointment_detail',
+      description: 'Détail complet d\'un RDV : SAV lié, technicien, notes, contre-proposition.',
+      parameters: { type: 'object', properties: { id: { type: 'string' } }, required: ['id'] },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'generate_printable_report',
+      description: 'Génère un rapport HTML imprimable A4 (sans coordonnées client). Types: non_repairability (non-réparabilité), diagnostic, sav_summary. Le rapport est renvoyé à l\'utilisateur sous forme de bouton Imprimer.',
+      parameters: {
+        type: 'object',
+        properties: {
+          report_type: { type: 'string', enum: ['non_repairability', 'diagnostic', 'sav_summary'] },
+          case_number: { type: 'string', description: 'Numéro de dossier SAV à inclure (sans #).' },
+          conclusion: { type: 'string', description: 'Conclusion / motif rédigé par Fixy (ex: cause de non-réparabilité, diagnostic technique).' },
+          tests_performed: { type: 'string', description: 'Liste des tests effectués (texte libre).' },
+        },
+        required: ['report_type'],
       },
     },
   },
