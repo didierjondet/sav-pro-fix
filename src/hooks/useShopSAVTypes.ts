@@ -126,6 +126,7 @@ export function useShopSAVTypes() {
       exclude_purchase_costs: false,
       exclude_sales_revenue: false,
       show_satisfaction_survey: true,
+      loaner_enabled: false,
     };
   };
 
