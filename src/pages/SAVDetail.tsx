@@ -436,6 +436,8 @@ export default function SAVDetail() {
                 </div>
               </div>
 
+              <SAVLoanerCard savCaseId={savCase.id} customerId={savCase.customer_id} />
+
               {/* Contact Information - For types that require customer info */}
               {getTypeInfo(savCase.sav_type).show_customer_info && <Card>
                   <CardHeader>
