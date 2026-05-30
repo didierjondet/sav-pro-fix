@@ -189,7 +189,8 @@ export default function Customers() {
   }
 
   return (
-    <main className="flex-1 overflow-y-auto p-6">
+    <>
+      <main className="flex-1 overflow-y-auto p-6">
             <div className="max-w-7xl mx-auto">
               <div className="flex justify-between items-center mb-6">
                 <div className="flex items-center gap-4">
@@ -277,7 +278,7 @@ export default function Customers() {
           </div>
             </div>
           </main>
-      
+
       {/* Dialog de confirmation de suppression */}
       <AlertDialog open={!!deletingCustomer} onOpenChange={() => setDeletingCustomer(null)}>
         <AlertDialogContent>
@@ -311,7 +312,7 @@ export default function Customers() {
         onOpenChange={setShowDuplicateManager}
         onMergeComplete={refetch}
       />
-    </div>
+    </>
   );
 }
 
