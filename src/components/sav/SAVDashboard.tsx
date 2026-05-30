@@ -1143,7 +1143,7 @@ export function SAVDashboard() {
 
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={sortedModules.map(m => m.id)} strategy={rectSortingStrategy}>
-          <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 sm:auto-rows-[80px] [grid-auto-flow:dense]">
+          <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 sm:auto-rows-[120px] [grid-auto-flow:dense]">
             {sortedModules.map((m) => (
               <SortableBlock 
                 key={m.id} 
