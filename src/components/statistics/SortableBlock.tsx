@@ -68,12 +68,13 @@ export const SortableBlock = ({ id, children, onRemove, editable = false }: Sort
       ref={setNodeRef} 
       style={style} 
       className={cn(
-        "relative h-full min-w-0",
+        "relative h-full min-w-0 overflow-hidden",
         gridClasses,
         heightClass,
         isDragging && "opacity-70 z-50"
       )}
     >
+
       {editable && onRemove && (
         <button
           onClick={onRemove}
