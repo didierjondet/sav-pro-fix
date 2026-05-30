@@ -63,17 +63,20 @@ Tu DOIS appeler ces outils dès que la question porte sur des données réelles 
 - \`get_part_history\` — historique d'usage / prix payés d'une pièce sur N jours.
 - \`search_customers\` / \`get_customer_history\` — fiche client + tout son historique.
 - \`search_quotes\` — devis (statut, dates, client…).
-- \`list_appointments\` — agenda sur une plage de dates.
+- \`list_appointments\` / \`get_appointment_detail\` — agenda (RDV, statuts, contre-propositions, technicien, SAV lié).
 - \`get_finance_summary\` — CA, marge, nombre SAV, taux retard sur une période.
 - \`get_late_savs\` — SAV actuellement en retard selon les règles métier de la boutique.
 - \`get_business_rules\` — statuts, types SAV, horaires, limites.
 - \`get_product_return_rate\` — taux de retour d'un appareil tracké (par IMEI ou SKU).
+- \`generate_printable_report\` — produit un rapport imprimable (non-réparabilité, diagnostic, synthèse SAV). À utiliser dès qu'on te demande un rapport, un PDF, ou un document à imprimer.
 
 Règles d'usage :
 1. Question chiffrée / liste / fiche → **appelle l'outil**, ne devine pas.
 2. Avant de chiffrer une réparation, appelle \`search_parts\` pour citer le prix réel boutique + marge.
 3. Si un IMEI/SKU est mentionné → \`get_product_return_rate\` pour signaler une récidive.
-4. Tu peux enchaîner plusieurs outils (max 4 tours).
+4. **Ne renvoie JAMAIS les coordonnées clients** (téléphone, email, adresse). Le nom/prénom seul est OK.
+5. Tu peux enchaîner plusieurs outils (max 4 tours).
+6. Si l'utilisateur joint une image ou un PDF, analyse-le et croise avec les outils si pertinent.
 
 ## Compétences techniques (réparateur expert)
 
@@ -243,15 +246,41 @@ const TOOL_DEFS = [
     type: 'function',
     function: {
       name: 'list_appointments',
-      description: 'Liste des RDV sur une plage de dates.',
+      description: 'Liste des RDV sur une plage de dates (filtres optionnels : status, type, technicien).',
       parameters: {
         type: 'object',
         properties: {
           date_from: { type: 'string', description: 'ISO date.' },
           date_to: { type: 'string', description: 'ISO date.' },
-          status: { type: 'string' },
-          appointment_type: { type: 'string' },
+          status: { type: 'string', description: 'proposed, confirmed, counter_proposed, cancelled, completed, no_show' },
+          appointment_type: { type: 'string', description: 'deposit, pickup, diagnostic, repair' },
+          technician_id: { type: 'string' },
         },
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'get_appointment_detail',
+      description: 'Détail complet d\'un RDV : SAV lié, technicien, notes, contre-proposition.',
+      parameters: { type: 'object', properties: { id: { type: 'string' } }, required: ['id'] },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'generate_printable_report',
+      description: 'Génère un rapport HTML imprimable A4 (sans coordonnées client). Types: non_repairability (non-réparabilité), diagnostic, sav_summary. Le rapport est renvoyé à l\'utilisateur sous forme de bouton Imprimer.',
+      parameters: {
+        type: 'object',
+        properties: {
+          report_type: { type: 'string', enum: ['non_repairability', 'diagnostic', 'sav_summary'] },
+          case_number: { type: 'string', description: 'Numéro de dossier SAV à inclure (sans #).' },
+          conclusion: { type: 'string', description: 'Conclusion / motif rédigé par Fixy (ex: cause de non-réparabilité, diagnostic technique).' },
+          tests_performed: { type: 'string', description: 'Liste des tests effectués (texte libre).' },
+        },
+        required: ['report_type'],
       },
     },
   },
@@ -394,23 +423,48 @@ async function runTool(name: string, args: any, supa: any, shopId: string): Prom
       }
 
       case 'get_sav_case_detail': {
-        let q = supa.from('sav_cases')
-          .select('*, customer:customers(*), sav_parts(*, part:parts(name,reference)), sav_messages(id,sender_type,message,created_at)')
-          .eq('shop_id', shopId)
-          .limit(1)
-        if (args.id) q = q.eq('id', args.id)
-        else if (args.case_number) q = q.ilike('case_number', `%${args.case_number}%`)
-        else return { error: 'case_number ou id requis' }
-        const { data, error } = await q.maybeSingle()
-        if (error) return { error: error.message }
-        if (!data) return { error: 'introuvable' }
-        // limit messages to last 20
-        if (Array.isArray(data.sav_messages)) {
-          data.sav_messages = data.sav_messages
-            .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-            .slice(0, 20)
+        // Step 1: locate the case (exact match first, fallback ilike). Avoid heavy joins that may fail silently.
+        let caseRow: any = null
+        if (args.id) {
+          const r = await supa.from('sav_cases').select('*').eq('shop_id', shopId).eq('id', args.id).maybeSingle()
+          if (r.error) return { error: `sav_cases: ${r.error.message}` }
+          caseRow = r.data
+        } else if (args.case_number) {
+          const raw = String(args.case_number).trim().replace(/^#/, '')
+          let r = await supa.from('sav_cases').select('*').eq('shop_id', shopId).eq('case_number', raw).maybeSingle()
+          if (!r.data && !r.error) {
+            r = await supa.from('sav_cases').select('*').eq('shop_id', shopId).ilike('case_number', `%${raw}%`).order('created_at', { ascending: false }).limit(1).maybeSingle()
+          }
+          if (r.error) return { error: `sav_cases: ${r.error.message}` }
+          caseRow = r.data
+        } else {
+          return { error: 'case_number ou id requis' }
         }
-        return data
+        if (!caseRow) return { error: 'dossier introuvable dans cette boutique' }
+
+        // Step 2: fetch related data in parallel, each independent so one failure doesn't block the rest.
+        const [custR, partsR, msgsR, apptsR, quotesR] = await Promise.all([
+          caseRow.customer_id
+            ? supa.from('customers').select('id, first_name, last_name').eq('id', caseRow.customer_id).maybeSingle()
+            : Promise.resolve({ data: null, error: null }),
+          supa.from('sav_parts').select('id, quantity, unit_price, purchase_price, time_minutes, part:parts(name, reference, sku)').eq('sav_case_id', caseRow.id),
+          supa.from('sav_messages').select('id, sender_type, sender_name, message, created_at').eq('sav_case_id', caseRow.id).order('created_at', { ascending: false }).limit(30),
+          supa.from('appointments').select('id, start_datetime, duration_minutes, status, appointment_type, notes').eq('shop_id', shopId).eq('sav_case_id', caseRow.id).order('start_datetime', { ascending: false }).limit(10),
+          supa.from('quotes').select('quote_number, status, total_amount, created_at').eq('shop_id', shopId).eq('sav_case_id', caseRow.id).order('created_at', { ascending: false }).limit(10),
+        ])
+
+        // Step 3: strip client PII (phone, email, address) from response.
+        const cust = custR.data ? { first_name: custR.data.first_name, last_name: custR.data.last_name } : null
+        const { customer_id, technician_id, ...caseSafe } = caseRow
+
+        return {
+          case: caseSafe,
+          customer: cust,
+          parts: partsR.data || [],
+          messages: (msgsR.data || []).slice(0, 20),
+          appointments: apptsR.data || [],
+          quotes: quotesR.data || [],
+        }
       }
 
       case 'search_parts': {
@@ -479,7 +533,7 @@ async function runTool(name: string, args: any, supa: any, shopId: string): Prom
         const [savs, quotes, appts] = await Promise.all([
           supa.from('sav_cases').select('case_number,status,sav_type,device_brand,device_model,total_cost,created_at').eq('shop_id', shopId).eq('customer_id', args.customer_id).order('created_at', { ascending: false }).limit(100),
           supa.from('quotes').select('quote_number,status,total_amount,created_at').eq('shop_id', shopId).eq('customer_id', args.customer_id).order('created_at', { ascending: false }).limit(50),
-          supa.from('appointments').select('title,appointment_type,start_at,status').eq('shop_id', shopId).eq('customer_id', args.customer_id).order('start_at', { ascending: false }).limit(50),
+          supa.from('appointments').select('id, appointment_type, start_datetime, duration_minutes, status, notes').eq('shop_id', shopId).eq('customer_id', args.customer_id).order('start_datetime', { ascending: false }).limit(50),
         ])
         return { savs: savs.data || [], quotes: quotes.data || [], appointments: appts.data || [] }
       }
@@ -503,15 +557,46 @@ async function runTool(name: string, args: any, supa: any, shopId: string): Prom
         const from = args.date_from || new Date().toISOString()
         const to = args.date_to || new Date(Date.now() + 30 * 86400000).toISOString()
         let q = supa.from('appointments')
-          .select('title,appointment_type,start_at,end_at,status,customer_name')
+          .select('id, appointment_type, start_datetime, duration_minutes, status, notes, sav_case_id, technician_id, customer:customers(first_name,last_name)')
           .eq('shop_id', shopId)
-          .gte('start_at', from).lte('start_at', to)
-          .order('start_at').limit(100)
+          .gte('start_datetime', from).lte('start_datetime', to)
+          .order('start_datetime').limit(100)
         if (args.status) q = q.eq('status', args.status)
         if (args.appointment_type) q = q.eq('appointment_type', args.appointment_type)
+        if (args.technician_id) q = q.eq('technician_id', args.technician_id)
         const { data, error } = await q
         if (error) return { error: error.message }
-        return { count: data?.length || 0, appointments: data || [] }
+        const appts = (data || []).map((a: any) => ({
+          id: a.id,
+          appointment_type: a.appointment_type,
+          start_datetime: a.start_datetime,
+          duration_minutes: a.duration_minutes,
+          status: a.status,
+          notes: a.notes,
+          sav_case_id: a.sav_case_id,
+          technician_id: a.technician_id,
+          customer_name: a.customer ? `${a.customer.first_name || ''} ${a.customer.last_name || ''}`.trim() : null,
+        }))
+        return { count: appts.length, appointments: appts }
+      }
+
+      case 'get_appointment_detail': {
+        if (!args.id) return { error: 'id requis' }
+        const { data, error } = await supa.from('appointments')
+          .select('*, customer:customers(first_name,last_name), sav_case:sav_cases(case_number,status,sav_type,device_brand,device_model,problem_description), technician:profiles(first_name,last_name)')
+          .eq('shop_id', shopId).eq('id', args.id).maybeSingle()
+        if (error) return { error: error.message }
+        if (!data) return { error: 'rendez-vous introuvable' }
+        // Strip PII columns if any leaked
+        const { customer_id, ...safe } = data as any
+        if (safe.customer) safe.customer = { first_name: safe.customer.first_name, last_name: safe.customer.last_name }
+        return safe
+      }
+
+      case 'generate_printable_report': {
+        // Generates a printable A4 HTML report (no PII). Returns html ready to open/print.
+        const r = await buildPrintableReport(supa, shopId, args)
+        return r
       }
 
       case 'get_finance_summary': {
@@ -630,17 +715,126 @@ async function runTool(name: string, args: any, supa: any, shopId: string): Prom
   }
 }
 
+// ===================== Printable report builder =====================
+function escapeHtml(s: any): string {
+  return String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!))
+}
+
+async function buildPrintableReport(supa: any, shopId: string, args: any): Promise<any> {
+  const reportType: string = args.report_type
+  const titles: Record<string, string> = {
+    non_repairability: 'Rapport de non-réparabilité',
+    diagnostic: 'Rapport de diagnostic',
+    sav_summary: 'Synthèse de dossier SAV',
+  }
+  const title = titles[reportType] || 'Rapport SAV'
+
+  let caseRow: any = null
+  let cust: any = null
+  let parts: any[] = []
+  if (args.case_number) {
+    const raw = String(args.case_number).trim().replace(/^#/, '')
+    let r = await supa.from('sav_cases').select('*').eq('shop_id', shopId).eq('case_number', raw).maybeSingle()
+    if (!r.data) r = await supa.from('sav_cases').select('*').eq('shop_id', shopId).ilike('case_number', `%${raw}%`).limit(1).maybeSingle()
+    caseRow = r.data
+    if (caseRow?.customer_id) {
+      const c = await supa.from('customers').select('first_name,last_name').eq('id', caseRow.customer_id).maybeSingle()
+      cust = c.data
+    }
+    const p = await supa.from('sav_parts').select('quantity, unit_price, part:parts(name, reference)').eq('sav_case_id', caseRow?.id || '')
+    parts = p.data || []
+  }
+  const { data: shop } = await supa.from('shops').select('name, address, email, phone, logo_url').eq('id', shopId).maybeSingle()
+
+  const today = new Date().toLocaleDateString('fr-FR')
+  const partsRows = parts.map((p: any) => `<tr><td>${escapeHtml(p.part?.name || '-')}</td><td>${escapeHtml(p.part?.reference || '-')}</td><td style="text-align:right">${p.quantity}</td><td style="text-align:right">${Number(p.unit_price || 0).toFixed(2)} €</td></tr>`).join('')
+
+  const html = `<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>${escapeHtml(title)} ${caseRow ? '#' + escapeHtml(caseRow.case_number) : ''}</title>
+<style>
+  @page { size: A4; margin: 14mm; }
+  body { font-family: -apple-system, Segoe UI, Roboto, sans-serif; color: #111; font-size: 12px; margin: 0; }
+  header { display:flex; justify-content:space-between; align-items:flex-start; border-bottom: 2px solid #111; padding-bottom: 8px; margin-bottom: 14px; }
+  header h1 { font-size: 18px; margin: 0 0 4px; }
+  .shop { text-align:right; font-size: 11px; line-height: 1.4; }
+  h2 { font-size: 13px; margin: 16px 0 6px; border-bottom: 1px solid #ccc; padding-bottom: 2px; }
+  .grid { display:grid; grid-template-columns: 1fr 1fr; gap: 4px 16px; }
+  .grid div b { display:inline-block; min-width: 110px; }
+  table { width:100%; border-collapse: collapse; margin-top: 6px; }
+  th, td { border: 1px solid #ddd; padding: 4px 6px; font-size: 11px; }
+  th { background:#f3f4f6; text-align:left; }
+  .block { background:#f9fafb; border:1px solid #e5e7eb; padding: 8px; border-radius: 4px; white-space:pre-wrap; }
+  footer { margin-top: 24px; display:flex; justify-content:space-between; font-size:11px; }
+  .sig { margin-top: 30px; width: 45%; border-top: 1px solid #999; padding-top: 4px; text-align:center; }
+  .noprint { margin: 12px 0; }
+  @media print { .noprint { display:none; } }
+</style></head><body>
+<div class="noprint" style="text-align:right"><button onclick="window.print()" style="padding:8px 16px;font-size:14px;background:#111;color:#fff;border:0;border-radius:4px;cursor:pointer">Imprimer / Enregistrer en PDF</button></div>
+<header>
+  <div>
+    ${shop?.logo_url ? `<img src="${escapeHtml(shop.logo_url)}" style="max-height:50px;margin-bottom:6px"/><br>` : ''}
+    <h1>${escapeHtml(title)}</h1>
+    <div>Date d'édition : <b>${today}</b></div>
+    ${caseRow ? `<div>Dossier : <b>#${escapeHtml(caseRow.case_number)}</b></div>` : ''}
+  </div>
+  <div class="shop">
+    <b>${escapeHtml(shop?.name || '')}</b><br>
+    ${escapeHtml(shop?.address || '')}<br>
+    ${escapeHtml(shop?.phone || '')}<br>
+    ${escapeHtml(shop?.email || '')}
+  </div>
+</header>
+
+${caseRow ? `<h2>Dossier SAV</h2>
+<div class="grid">
+  <div><b>Numéro</b> #${escapeHtml(caseRow.case_number)}</div>
+  <div><b>Statut</b> ${escapeHtml(caseRow.status || '-')}</div>
+  <div><b>Type</b> ${escapeHtml(caseRow.sav_type || '-')}</div>
+  <div><b>Créé le</b> ${new Date(caseRow.created_at).toLocaleDateString('fr-FR')}</div>
+  <div><b>Marque</b> ${escapeHtml(caseRow.device_brand || '-')}</div>
+  <div><b>Modèle</b> ${escapeHtml(caseRow.device_model || '-')}</div>
+  <div><b>IMEI / SN</b> ${escapeHtml(caseRow.device_imei || '-')}</div>
+  <div><b>SKU</b> ${escapeHtml(caseRow.sku || '-')}</div>
+  ${cust ? `<div><b>Client</b> ${escapeHtml((cust.first_name || '') + ' ' + (cust.last_name || ''))}</div>` : ''}
+</div>
+
+<h2>Panne déclarée</h2>
+<div class="block">${escapeHtml(caseRow.problem_description || '—')}</div>
+
+${caseRow.repair_notes ? `<h2>Notes techniques</h2><div class="block">${escapeHtml(caseRow.repair_notes)}</div>` : ''}
+` : ''}
+
+${args.tests_performed ? `<h2>Tests effectués</h2><div class="block">${escapeHtml(args.tests_performed)}</div>` : ''}
+
+${args.conclusion ? `<h2>${reportType === 'non_repairability' ? 'Motif de non-réparabilité' : 'Conclusion'}</h2><div class="block">${escapeHtml(args.conclusion)}</div>` : ''}
+
+${parts.length ? `<h2>Pièces concernées</h2>
+<table><thead><tr><th>Pièce</th><th>Référence</th><th style="text-align:right">Qté</th><th style="text-align:right">PU TTC</th></tr></thead>
+<tbody>${partsRows}</tbody></table>` : ''}
+
+<footer>
+  <div class="sig">Signature du technicien</div>
+  <div class="sig">Signature du client</div>
+</footer>
+</body></html>`
+
+  return { ok: true, report_type: reportType, title: title + (caseRow ? ` — #${caseRow.case_number}` : ''), html }
+}
+
 // ===================== Compact realtime context =====================
 async function buildCompactContext(supa: any, shopId: string): Promise<string> {
   try {
     const now = new Date()
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
-    const [shopR, savCountsR, lowStockR, unreadR, monthRevR] = await Promise.all([
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString()
+    const tomorrowEnd = new Date(now.getTime() + 2 * 86400000).toISOString()
+    const [shopR, savCountsR, lowStockR, unreadR, monthRevR, apptsR, pendingApptsR] = await Promise.all([
       supa.from('shops').select('name, subscription_tier, monthly_sav_count, active_sav_count, monthly_sms_used, sms_credits_allocated').eq('id', shopId).single(),
       supa.from('sav_cases').select('status').eq('shop_id', shopId),
       supa.from('parts').select('name, quantity, min_stock').eq('shop_id', shopId).not('min_stock', 'is', null),
       supa.from('sav_messages').select('id').eq('shop_id', shopId).eq('sender_type', 'client').eq('read_by_shop', false).limit(50),
       supa.from('sav_cases').select('total_cost').eq('shop_id', shopId).gte('created_at', monthStart),
+      supa.from('appointments').select('status').eq('shop_id', shopId).gte('start_datetime', todayStart).lte('start_datetime', tomorrowEnd),
+      supa.from('appointments').select('id').eq('shop_id', shopId).in('status', ['proposed', 'counter_proposed']).limit(50),
     ])
     const out: string[] = []
     if (shopR.data) {
@@ -661,6 +855,8 @@ async function buildCompactContext(supa: any, shopId: string): Promise<string> {
       const total = monthRevR.data.reduce((s: number, r: any) => s + (Number(r.total_cost) || 0), 0)
       out.push(`CA SAV mois: ${total.toFixed(2)}€ sur ${monthRevR.data.length} dossier(s)`)
     }
+    if (apptsR.data) out.push(`RDV aujourd'hui + demain: ${apptsR.data.length}`)
+    if (pendingApptsR.data?.length) out.push(`RDV en attente client (proposed/counter_proposed): ${pendingApptsR.data.length}`)
     return out.length ? `## État live du magasin (résumé compact — détails via outils)\n${out.map((l) => `- ${l}`).join('\n')}` : ''
   } catch (e) {
     console.error('compact context error', e)
@@ -669,11 +865,24 @@ async function buildCompactContext(supa: any, shopId: string): Promise<string> {
 }
 
 // ===================== AI call with tool loop =====================
-async function callAIWithTools(aiConfig: any, systemPrompt: string, history: any[], userMessage: string, supa: any, shopId: string): Promise<string> {
+// attachments: [{ name, mime_type, data_base64 }]
+async function callAIWithTools(
+  aiConfig: any, systemPrompt: string, history: any[], userMessage: string,
+  supa: any, shopId: string, attachments: any[] = []
+): Promise<{ text: string; reports: any[] }> {
   const MAX_TURNS = 4
+  const reports: any[] = []
+  const collect = (name: string, result: any) => {
+    if (name === 'generate_printable_report' && result?.ok && result?.html) {
+      reports.push({ title: result.title, html: result.html, report_type: result.report_type })
+      // Replace heavy html before sending back to model to keep tokens low.
+      return { ok: true, title: result.title, report_type: result.report_type, message: 'Rapport généré et prêt à imprimer côté utilisateur.' }
+    }
+    return result
+  }
+
   // Gemini native vs OpenAI-compatible
   if (aiConfig.provider === 'gemini') {
-    // Gemini native function declarations
     const tools = [{
       functionDeclarations: TOOL_DEFS.map((t) => ({
         name: t.function.name,
@@ -681,9 +890,15 @@ async function callAIWithTools(aiConfig: any, systemPrompt: string, history: any
         parameters: t.function.parameters,
       })),
     }]
+    const userParts: any[] = [{ text: userMessage }]
+    for (const a of attachments) {
+      if (a?.data_base64 && a?.mime_type) {
+        userParts.push({ inlineData: { mimeType: a.mime_type, data: a.data_base64 } })
+      }
+    }
     const contents: any[] = [
       ...history.map((m: any) => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] })),
-      { role: 'user', parts: [{ text: userMessage }] },
+      { role: 'user', parts: userParts },
     ]
     for (let turn = 0; turn < MAX_TURNS; turn++) {
       const resp = await fetch(`${aiConfig.url}?key=${encodeURIComponent(aiConfig.apiKey)}`, {
@@ -704,25 +919,38 @@ async function callAIWithTools(aiConfig: any, systemPrompt: string, history: any
       const parts = cand?.content?.parts || []
       const fnCalls = parts.filter((p: any) => p.functionCall).map((p: any) => p.functionCall)
       if (fnCalls.length === 0) {
-        return parts.map((p: any) => p.text).filter(Boolean).join('\n') || "Désolé, je n'ai pas pu traiter votre demande."
+        const text = parts.map((p: any) => p.text).filter(Boolean).join('\n') || "Désolé, je n'ai pas pu traiter votre demande."
+        return { text, reports }
       }
       contents.push({ role: 'model', parts })
       const responsesParts: any[] = []
       for (const fc of fnCalls) {
-        const result = await runTool(fc.name, fc.args || {}, supa, shopId)
+        const raw = await runTool(fc.name, fc.args || {}, supa, shopId)
+        const result = collect(fc.name, raw)
         console.log(`[help-bot] gemini tool=${fc.name} ok`)
         responsesParts.push({ functionResponse: { name: fc.name, response: { result } } })
       }
       contents.push({ role: 'user', parts: responsesParts })
     }
-    return "Désolé, je n'ai pas pu finaliser la réponse (trop d'appels d'outils)."
+    return { text: "Désolé, je n'ai pas pu finaliser la réponse (trop d'appels d'outils).", reports }
   }
 
   // OpenAI / Lovable gateway / OpenAI-compatible
+  const userContent: any = attachments.length
+    ? [
+        { type: 'text', text: userMessage },
+        ...attachments
+          .filter((a: any) => a?.mime_type?.startsWith('image/') && a?.data_base64)
+          .map((a: any) => ({ type: 'image_url', image_url: { url: `data:${a.mime_type};base64,${a.data_base64}` } })),
+        ...attachments
+          .filter((a: any) => !a?.mime_type?.startsWith('image/'))
+          .map((a: any) => ({ type: 'text', text: `\n[Pièce jointe non-image reçue: ${a?.name || 'fichier'} (${a?.mime_type})]` })),
+      ]
+    : userMessage
   const messages: any[] = [
     { role: 'system', content: systemPrompt },
     ...history,
-    { role: 'user', content: userMessage },
+    { role: 'user', content: userContent },
   ]
   for (let turn = 0; turn < MAX_TURNS; turn++) {
     const resp = await fetch(aiConfig.url, {
@@ -742,15 +970,16 @@ async function callAIWithTools(aiConfig: any, systemPrompt: string, history: any
     }
     const data = await resp.json()
     const msg = data.choices?.[0]?.message
-    if (!msg) return "Désolé, je n'ai pas pu traiter votre demande."
+    if (!msg) return { text: "Désolé, je n'ai pas pu traiter votre demande.", reports }
     if (!msg.tool_calls || msg.tool_calls.length === 0) {
-      return msg.content || "Désolé, je n'ai pas pu traiter votre demande."
+      return { text: msg.content || "Désolé, je n'ai pas pu traiter votre demande.", reports }
     }
     messages.push(msg)
     for (const tc of msg.tool_calls) {
       let args = {}
       try { args = JSON.parse(tc.function.arguments || '{}') } catch {}
-      const result = await runTool(tc.function.name, args, supa, shopId)
+      const raw = await runTool(tc.function.name, args, supa, shopId)
+      const result = collect(tc.function.name, raw)
       console.log(`[help-bot] tool=${tc.function.name} ok`)
       messages.push({
         role: 'tool',
@@ -759,7 +988,7 @@ async function callAIWithTools(aiConfig: any, systemPrompt: string, history: any
       })
     }
   }
-  return "Désolé, je n'ai pas pu finaliser la réponse (trop d'appels d'outils)."
+  return { text: "Désolé, je n'ai pas pu finaliser la réponse (trop d'appels d'outils).", reports }
 }
 
 // ===================== Entry point =====================
@@ -768,12 +997,21 @@ Deno.serve(async (req) => {
     return new Response('ok', { headers: corsHeaders })
   }
   try {
-    const { message, history, userContext, shopId } = await req.json()
+    const { message, history, userContext, shopId, attachments } = await req.json()
     if (!message || typeof message !== 'string') {
       return new Response(JSON.stringify({ error: 'Message requis' }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
+    // Safety cap on attachments: max 4 files, each <= ~6 MB base64
+    const safeAttachments = Array.isArray(attachments)
+      ? attachments.slice(0, 4).filter((a: any) =>
+          a && typeof a.data_base64 === 'string' && a.data_base64.length < 8_000_000 &&
+          typeof a.mime_type === 'string' &&
+          (a.mime_type.startsWith('image/') || a.mime_type === 'application/pdf')
+        )
+      : []
+
     const supa = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
 
     const aiConfig = await getAIConfig(supa)
@@ -797,11 +1035,11 @@ Deno.serve(async (req) => {
       ? history.slice(-10).map((m: any) => ({ role: m.role === 'user' ? 'user' : 'assistant', content: m.content }))
       : []
 
-    console.log(`[help-bot] provider=${aiConfig.provider} model=${aiConfig.model} shopId=${shopId || 'none'} sysChars=${fullSystem.length}`)
+    console.log(`[help-bot] provider=${aiConfig.provider} model=${aiConfig.model} shopId=${shopId || 'none'} sysChars=${fullSystem.length} attachments=${safeAttachments.length}`)
 
-    let content: string
+    let result: { text: string; reports: any[] }
     try {
-      content = await callAIWithTools(aiConfig, fullSystem, chatHistory, message, supa, shopId || '')
+      result = await callAIWithTools(aiConfig, fullSystem, chatHistory, message, supa, shopId || '', safeAttachments)
     } catch (e: any) {
       console.error('[help-bot] AI call failed:', e)
       const status = e?.status
@@ -820,6 +1058,7 @@ Deno.serve(async (req) => {
       })
     }
 
+    const content = result.text
     const shouldEscalate = content.startsWith('[ESCALATE]')
     let cleanMessage = content
     let escalateSummary: string | null = null
@@ -833,6 +1072,7 @@ Deno.serve(async (req) => {
       message: cleanMessage,
       escalate: shouldEscalate,
       escalate_summary: escalateSummary,
+      reports: result.reports,
     }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
   } catch (error) {
     console.error('Help bot error:', error)
