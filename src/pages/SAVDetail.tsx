@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import Header from '@/components/layout/Header';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { SAVMessaging } from '@/components/sav/SAVMessaging';
+import { SAVLoanerCard } from '@/components/loaner/SAVLoanerCard';
 import { SAVStatusManager } from '@/components/sav/SAVStatusManager';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -435,6 +436,8 @@ export default function SAVDetail() {
                   )}
                 </div>
               </div>
+
+              <SAVLoanerCard savCaseId={savCase.id} customerId={savCase.customer_id} />
 
               {/* Contact Information - For types that require customer info */}
               {getTypeInfo(savCase.sav_type).show_customer_info && <Card>

@@ -36,6 +36,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { AITextReformulator } from '@/components/sav/AITextReformulator';
 import { ProblemDescriptionField } from '@/components/sav/ProblemDescriptionHighlight';
 import { SecurityCodesSection, SecurityCodes } from './SecurityCodesSection';
+import { LoanerSection, EMPTY_LOANER_SELECTION, type LoanerSelection } from '@/components/loaner/LoanerSection';
+import { useLoanerLoans } from '@/hooks/useLoanerLoans';
 
 interface CustomerInfo {
   firstName: string;
@@ -133,6 +135,8 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
     sim_pin: '',
   });
   const [savLimits, setSavLimits] = useState<{ allowed: boolean; reason: string; action: string | null }>({ allowed: true, reason: '', action: null });
+  const [loanerSelection, setLoanerSelection] = useState<LoanerSelection>(EMPTY_LOANER_SELECTION);
+  const { createLoan } = useLoanerLoans();
   const printButtonRef = React.useRef<SAVPrintButtonRef>(null);
   
   const { user } = useAuth();
@@ -321,7 +325,22 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
           email: selectedCustomer?.email || customerInfo.email,
         } : null
       };
-      
+
+      // Créer le prêt de matériel si demandé
+      if (loanerSelection.enabled && loanerSelection.equipment && newCase?.id) {
+        try {
+          await createLoan({
+            equipment_id: loanerSelection.equipment.id,
+            sav_case_id: newCase.id,
+            customer_id: customerId || null,
+            expected_return_at: loanerSelection.expectedReturnAt || null,
+            loan_condition: loanerSelection.notes || null,
+          });
+        } catch (err) {
+          console.error('Erreur création prêt matériel:', err);
+        }
+      }
+
         // Sauvegarder les pièces sélectionnées avec leurs remises
         if (selectedParts.length > 0) {
           // Identifier les pièces avec stock insuffisant
@@ -431,6 +450,7 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
       setNoUnlockCode(false);
       setSelectedParts([]);
       setDepositAmount(0);
+      setLoanerSelection(EMPTY_LOANER_SELECTION);
     } catch (error: any) {
       console.error('Error creating SAV case:', error);
       toast({
@@ -840,6 +860,11 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
           </div>
         </CardContent>
       </Card>
+
+      {/* Prêt de matériel */}
+      <LoanerSection value={loanerSelection} onChange={setLoanerSelection} />
+
+
 
       {/* Codes de sécurité */}
       <SecurityCodesSection 

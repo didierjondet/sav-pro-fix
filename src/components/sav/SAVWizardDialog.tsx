@@ -38,6 +38,8 @@ import { useShopSAVTypes } from '@/hooks/useShopSAVTypes';
 import { useShopSettings } from '@/hooks/useShopSettings';
 import { SecurityCodesSection, SecurityCodes } from './SecurityCodesSection';
 import { AITextReformulator } from './AITextReformulator';
+import { LoanerSection, EMPTY_LOANER_SELECTION, type LoanerSelection } from '@/components/loaner/LoanerSection';
+import { useLoanerLoans } from '@/hooks/useLoanerLoans';
 
 interface CustomerInfo {
   firstName: string;
@@ -134,6 +136,8 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
   const [debouncedFirstName, setDebouncedFirstName] = useState('');
   const [debouncedLastName, setDebouncedLastName] = useState('');
   const [technicianInitials, setTechnicianInitials] = useState('');
+  const [loanerSelection, setLoanerSelection] = useState<LoanerSelection>(EMPTY_LOANER_SELECTION);
+  const { createLoan } = useLoanerLoans();
   const { settings: shopSettings } = useShopSettings();
   const collectInitials = shopSettings?.collect_technician_initials ?? false;
 
@@ -333,6 +337,22 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
         } : null,
       };
 
+      if (loanerSelection.enabled && loanerSelection.equipment && newCase?.id) {
+        try {
+          await createLoan({
+            equipment_id: loanerSelection.equipment.id,
+            sav_case_id: newCase.id,
+            customer_id: customerId || null,
+            expected_return_at: loanerSelection.expectedReturnAt || null,
+            loan_condition: loanerSelection.notes || null,
+          });
+        } catch (err) {
+          console.error('Erreur création prêt matériel:', err);
+        }
+      }
+
+
+
       if (selectedParts.length > 0) {
         const partsWithInsufficientStock = selectedParts
           .filter(part => !part.isCustom && part.part_id)
@@ -402,6 +422,7 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
     setSelectedParts([]);
     setDepositAmount(0);
     setTechnicianInitials('');
+    setLoanerSelection(EMPTY_LOANER_SELECTION);
     setShowPrintDialog(false);
     setCreatedSAVCase(null);
     persistedCaseRef.current = null;
@@ -831,6 +852,8 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
                 <PatternLock pattern={unlockPattern} onChange={setUnlockPattern} />
               </div>
             </div>
+            <Separator />
+            <LoanerSection value={loanerSelection} onChange={setLoanerSelection} />
           </div>
         );
       }

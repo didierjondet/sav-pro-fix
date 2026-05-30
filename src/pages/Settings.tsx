@@ -49,13 +49,15 @@ import {
   Volume2,
   Sparkles,
   ClipboardList,
-  Truck
+  Truck,
+  PackageOpen
 } from 'lucide-react';
 
 import { MenuConfigurationTab } from '@/components/settings/MenuConfigurationTab';
 import { RolePermissionsManager } from '@/components/settings/RolePermissionsManager';
 import { PartCategoriesManager } from '@/components/settings/PartCategoriesManager';
 import { SuppliersManager } from '@/components/settings/SuppliersManager';
+import { LoanerEquipmentManager } from '@/components/settings/loaner/LoanerEquipmentManager';
 import { SMSPackagesDisplay } from '@/components/subscription/SMSPackagesDisplay';
 import { BillingInvoices } from '@/components/billing/BillingInvoices';
 import { BillingVatTab } from '@/components/settings/BillingVatTab';
@@ -670,6 +672,7 @@ export default function Settings() {
     ...(isAdmin && rolePermissions.settings_users ? ['users'] : []),
     ...(rolePermissions.settings_part_categories ? ['part-categories'] : []),
     ...(isAdmin ? ['suppliers'] : []),
+    ...(isAdmin ? ['loaners'] : []),
   ];
   const safeActiveTab = availableTabs.includes(activeTab) ? activeTab : availableTabs[0];
   useEffect(() => {
@@ -795,6 +798,12 @@ export default function Settings() {
                 <TabsTrigger value="suppliers" className="flex items-center gap-2 px-3 py-2 shrink-0">
                   <Truck className="h-4 w-4 shrink-0" />
                   <span className="hidden sm:inline">Fournisseurs</span>
+                </TabsTrigger>
+              )}
+              {isAdmin && (
+                <TabsTrigger value="loaners" className="flex items-center gap-2 px-3 py-2 shrink-0">
+                  <PackageOpen className="h-4 w-4 shrink-0" />
+                  <span className="hidden sm:inline">Matériel de prêt</span>
                 </TabsTrigger>
               )}
             </TabsList>
@@ -1644,6 +1653,12 @@ export default function Settings() {
             {isAdmin && (
               <TabsContent value="suppliers" className="space-y-6">
                 <SuppliersManager />
+              </TabsContent>
+            )}
+
+            {isAdmin && (
+              <TabsContent value="loaners" className="space-y-6">
+                <LoanerEquipmentManager />
               </TabsContent>
             )}
 
