@@ -136,6 +136,8 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
   const [debouncedFirstName, setDebouncedFirstName] = useState('');
   const [debouncedLastName, setDebouncedLastName] = useState('');
   const [technicianInitials, setTechnicianInitials] = useState('');
+  const [loanerSelection, setLoanerSelection] = useState<LoanerSelection>(EMPTY_LOANER_SELECTION);
+  const { createLoan } = useLoanerLoans();
   const { settings: shopSettings } = useShopSettings();
   const collectInitials = shopSettings?.collect_technician_initials ?? false;
 
