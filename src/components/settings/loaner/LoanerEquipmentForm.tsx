@@ -51,6 +51,7 @@ export function LoanerEquipmentForm({ open, onOpenChange, initial }: Props) {
             color: initial.color || '',
             notes: initial.notes || '',
             status: initial.status,
+            condition_photos: initial.condition_photos || [],
           }
         : EMPTY);
     }
