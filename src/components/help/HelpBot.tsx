@@ -369,20 +369,67 @@ const HelpBot: React.FC = () => {
             </div>
           </div>
 
-          <div className="border-t p-3">
-            <div className="flex gap-2 items-end">
+          <div className="border-t p-3 space-y-2">
+            {attachments.length > 0 && (
+              <div className="flex flex-wrap gap-1">
+                {attachments.map((a, i) => (
+                  <span key={i} className="inline-flex items-center gap-1 text-[11px] px-2 py-1 rounded bg-muted border">
+                    {a.mime_type.startsWith('image/') ? <ImageIcon className="h-3 w-3" /> : <FileText className="h-3 w-3" />}
+                    <span className="max-w-[120px] truncate">{a.name}</span>
+                    <button
+                      onClick={() => setAttachments(prev => prev.filter((_, j) => j !== i))}
+                      className="ml-1 text-muted-foreground hover:text-foreground"
+                      aria-label="Retirer"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+            <div className="flex gap-1 items-end">
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                accept="image/*,application/pdf"
+                className="hidden"
+                onChange={e => { handleFiles(e.target.files); e.target.value = ''; }}
+              />
+              <Button
+                size="icon"
+                variant="ghost"
+                className="shrink-0 h-10 w-10"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isLoading || attachments.length >= 4}
+                aria-label="Joindre un fichier"
+              >
+                <Paperclip className="h-4 w-4" />
+              </Button>
+              {speechSupported && (
+                <Button
+                  size="icon"
+                  variant={isRecording ? 'destructive' : 'ghost'}
+                  className={`shrink-0 h-10 w-10 ${isRecording ? 'animate-pulse' : ''}`}
+                  onClick={toggleRecording}
+                  disabled={isLoading}
+                  aria-label="Dictée vocale"
+                >
+                  {isRecording ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+                </Button>
+              )}
               <Textarea
                 value={input}
                 onChange={e => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Posez votre question..."
+                placeholder={isRecording ? 'Parlez maintenant…' : 'Posez votre question…'}
                 className="min-h-[40px] max-h-[100px] resize-none text-sm"
                 rows={1}
               />
               <Button
                 size="icon"
                 onClick={handleSend}
-                disabled={!input.trim() || isLoading}
+                disabled={(!input.trim() && attachments.length === 0) || isLoading}
                 className="shrink-0 h-10 w-10"
               >
                 <Send className="h-4 w-4" />
