@@ -1,17 +1,27 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { X, Send, RotateCcw, TicketCheck, XCircle } from 'lucide-react';
+import { X, Send, RotateCcw, TicketCheck, XCircle, Mic, MicOff, Paperclip, Printer, FileText, Image as ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import FixyMascot from '@/components/help/FixyMascot';
 import { useFixyReactions } from '@/hooks/useFixyReactions';
 
-import { useHelpBot } from '@/hooks/useHelpBot';
+import { useHelpBot, type BotAttachmentInput } from '@/hooks/useHelpBot';
 import { useAuth } from '@/contexts/AuthContext';
 import { useShop } from '@/hooks/useShop';
 import { useProfile } from '@/hooks/useProfile';
 import { useOnboardingProgress } from '@/hooks/useOnboardingProgress';
 import OnboardingPanel from '@/components/help/OnboardingPanel';
 import { useLocation } from 'react-router-dom';
+import { toast } from 'sonner';
+
+const ADVANCED_EXAMPLES = [
+  "Génère un rapport de non-réparabilité imprimable pour le SAV #2026-05-22-001.",
+  "Lis cette photo/PDF et donne-moi un diagnostic + pièces à commander.",
+  "Quels RDV ai-je demain, avec le SAV associé et le technicien ?",
+  "Diagnostic : iPhone 13 écran noir après chute, tests et pièces en stock ?",
+  "Liste les SAV en retard, raison probable et action à faire aujourd'hui.",
+  "Taux de retour de l'IMEI XXXXXXX, même panne et autres pannes.",
+];
 
 const PUBLIC_EXACT = ['/', '/landing', '/features', '/about', '/contact', '/auth', '/test'];
 const PUBLIC_PREFIX = ['/track/', '/quote/', '/satisfaction/', '/rdv/', '/shop/'];
