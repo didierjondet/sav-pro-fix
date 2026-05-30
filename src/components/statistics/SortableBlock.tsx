@@ -6,7 +6,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { useWidgetConfiguration } from '@/hooks/useWidgetConfiguration';
 import { useShopSAVStatuses } from '@/hooks/useShopSAVStatuses';
 import { useShopSAVTypes } from '@/hooks/useShopSAVTypes';
-import { getWidgetGridClasses } from './StatisticsWidgetSizes';
+import { getWidgetGridClasses, getWidgetMinHeightStyle } from './StatisticsWidgetSizes';
 import { cn } from '@/lib/utils';
 
 interface SortableBlockProps {
@@ -22,28 +22,22 @@ export const SortableBlock = ({ id, children, onRemove, editable = false }: Sort
   const { statuses } = useShopSAVStatuses();
   const { types } = useShopSAVTypes();
 
-  // Taille imposée par widget (catalogue par id)
   const gridClasses = getWidgetGridClasses(id);
-  const heightClass = '';
-
+  const minHStyle = getWidgetMinHeightStyle(id);
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
+    ...minHStyle,
   } as React.CSSProperties;
 
   const getTemporalityLabel = (temp: string | null | undefined) => {
     switch (temp) {
-      case 'monthly':
-        return 'Mensuel glissant (30 derniers jours)';
-      case 'monthly_calendar':
-        return 'Mensuel calendaire (depuis le 1er du mois)';
-      case 'quarterly':
-        return 'Trimestriel (3 derniers mois)';
-      case 'yearly':
-        return 'Annuel (12 derniers mois)';
-      default:
-        return 'Non configuré';
+      case 'monthly': return 'Mensuel glissant (30 derniers jours)';
+      case 'monthly_calendar': return 'Mensuel calendaire (depuis le 1er du mois)';
+      case 'quarterly': return 'Trimestriel (3 derniers mois)';
+      case 'yearly': return 'Annuel (12 derniers mois)';
+      default: return 'Non configuré';
     }
   };
 
@@ -64,17 +58,16 @@ export const SortableBlock = ({ id, children, onRemove, editable = false }: Sort
   };
 
   return (
-    <div 
-      ref={setNodeRef} 
-      style={style} 
+    <div
+      ref={setNodeRef}
+      style={style}
       className={cn(
-        "relative h-full min-w-0 overflow-hidden",
+        "relative min-w-0 isolate flex flex-col",
+        "min-h-[var(--w-min-h-sm)] lg:min-h-[var(--w-min-h-lg)]",
         gridClasses,
-        heightClass,
-        isDragging && "opacity-70 z-50"
+        isDragging ? "z-50 opacity-70" : "z-0"
       )}
     >
-
       {editable && onRemove && (
         <button
           onClick={onRemove}
@@ -125,7 +118,7 @@ export const SortableBlock = ({ id, children, onRemove, editable = false }: Sort
         )}
       </div>
 
-      <div className="w-full h-full">
+      <div className="w-full flex-1 min-h-0 flex flex-col">
         {children}
       </div>
     </div>
