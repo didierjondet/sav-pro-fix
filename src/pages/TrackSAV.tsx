@@ -49,6 +49,7 @@ interface SAVCaseData {
 export default function TrackSAV() {
   const { slug } = useParams<{ slug: string }>();
   const [savCase, setSavCase] = useState<SAVCaseData | null>(null);
+  const [loanerInfo, setLoanerInfo] = useState<{ name: string; brand: string | null; model: string | null; color: string | null; loaned_at: string | null; expected_return_at: string | null } | null>(null);
   const [loading, setLoading] = useState(true);
   const [isRealTimeConnected, setIsRealTimeConnected] = useState(false);
   const { toast } = useToast();
@@ -147,6 +148,20 @@ export default function TrackSAV() {
           logo_url: String(trackingInfo.shop_logo_url || '')
         }
       };
+
+      if (trackingInfo.loaner_name) {
+        setLoanerInfo({
+          name: String(trackingInfo.loaner_name),
+          brand: trackingInfo.loaner_brand ? String(trackingInfo.loaner_brand) : null,
+          model: trackingInfo.loaner_model ? String(trackingInfo.loaner_model) : null,
+          color: trackingInfo.loaner_color ? String(trackingInfo.loaner_color) : null,
+          loaned_at: trackingInfo.loaner_loaned_at ? String(trackingInfo.loaner_loaned_at) : null,
+          expected_return_at: trackingInfo.loaner_expected_return_at ? String(trackingInfo.loaner_expected_return_at) : null,
+        });
+      } else {
+        setLoanerInfo(null);
+      }
+
 
       console.log('✅ [TrackSAV] SAV case data retrieved:', savCaseData);
       setSavCase(savCaseData);

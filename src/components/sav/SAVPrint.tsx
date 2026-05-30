@@ -75,6 +75,34 @@ export const SAVPrintButton = React.forwardRef<SAVPrintButtonRef, SAVPrintButton
         labor_cost: p.parts?.labor_cost ?? null,
       }));
 
+      // Récupérer le prêt de matériel actif lié à ce SAV
+      const { data: loanData } = await supabase
+        .from('loaner_loans' as any)
+        .select('loaned_at, expected_return_at, loan_condition, notes, equipment:loaner_equipment(name, category, brand, model, imei, serial_number, color)')
+        .eq('sav_case_id', savCase.id)
+        .is('returned_at', null)
+        .order('loaned_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      const loan: any = loanData;
+      const loanerBlock = loan && loan.equipment ? `
+        <div class="block" style="border:2px solid #d97706;background:#fffbeb;">
+          <div class="block-title" style="color:#92400e;">📦 Matériel prêté au client</div>
+          <div class="grid">
+            <div><span class="label">Désignation:</span> <strong>${loan.equipment.name || ''}</strong></div>
+            <div><span class="label">Type:</span> ${loan.equipment.category || ''}</div>
+            ${loan.equipment.brand ? `<div><span class="label">Marque:</span> ${loan.equipment.brand}</div>` : ''}
+            ${loan.equipment.model ? `<div><span class="label">Modèle:</span> ${loan.equipment.model}</div>` : ''}
+            ${loan.equipment.color ? `<div><span class="label">Couleur:</span> ${loan.equipment.color}</div>` : ''}
+            ${loan.equipment.imei ? `<div><span class="label">IMEI:</span> ${loan.equipment.imei}</div>` : ''}
+            ${loan.equipment.serial_number ? `<div><span class="label">N° série:</span> ${loan.equipment.serial_number}</div>` : ''}
+            <div><span class="label">Prêté le:</span> ${loan.loaned_at ? new Date(loan.loaned_at).toLocaleDateString() : '-'}</div>
+            ${loan.expected_return_at ? `<div><span class="label">Retour prévu:</span> ${new Date(loan.expected_return_at).toLocaleDateString()}</div>` : ''}
+            ${loan.loan_condition ? `<div class="col-span-2"><span class="label">État au prêt:</span> ${loan.loan_condition}</div>` : ''}
+          </div>
+          <div style="margin-top:6px;font-size:10px;color:#92400e;font-style:italic;">Le client s'engage à restituer ce matériel en bon état lors de la récupération de son appareil.</div>
+        </div>` : '';
+
       const billingConfig = await fetchBillingConfig((shop as any)?.id);
       const vatTotals = aggregateTotals(
         parts.map((p) => ({
@@ -371,6 +399,7 @@ export const SAVPrintButton = React.forwardRef<SAVPrintButtonRef, SAVPrintButton
     ${repairNotesBlock}
     ${technicianCommentsBlock}
     ${partsTable}
+    ${loanerBlock}
     ${closureHistoryBlock}
     ${attachmentsBlock}
     ${qrBlock}
@@ -393,6 +422,7 @@ export const SAVPrintButton = React.forwardRef<SAVPrintButtonRef, SAVPrintButton
     ${repairNotesBlock}
     ${technicianCommentsBlock}
     ${partsTable}
+    ${loanerBlock}
     ${closureHistoryBlock}
     ${attachmentsBlock}
     

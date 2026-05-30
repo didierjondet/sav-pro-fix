@@ -32,6 +32,7 @@ export interface SAVType {
   exclude_purchase_costs: boolean;
   exclude_sales_revenue: boolean;
   show_satisfaction_survey: boolean;
+  loaner_enabled?: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -61,7 +62,10 @@ export default function SAVTypesManager({ types, loading, onRefresh }: SAVTypesM
     exclude_purchase_costs: false,
     exclude_sales_revenue: false,
     show_satisfaction_survey: true,
+    loaner_enabled: false,
   });
+
+
 
   const resetForm = () => {
     setFormData({
@@ -77,6 +81,7 @@ export default function SAVTypesManager({ types, loading, onRefresh }: SAVTypesM
       exclude_purchase_costs: false,
       exclude_sales_revenue: false,
       show_satisfaction_survey: true,
+      loaner_enabled: false,
     });
     setEditingType(null);
   };
@@ -130,6 +135,7 @@ export default function SAVTypesManager({ types, loading, onRefresh }: SAVTypesM
             exclude_purchase_costs: formData.exclude_purchase_costs,
             exclude_sales_revenue: formData.exclude_sales_revenue,
             show_satisfaction_survey: formData.show_satisfaction_survey,
+            loaner_enabled: formData.loaner_enabled,
           });
 
       if (error) throw error;
@@ -170,6 +176,7 @@ export default function SAVTypesManager({ types, loading, onRefresh }: SAVTypesM
           exclude_purchase_costs: formData.exclude_purchase_costs,
           exclude_sales_revenue: formData.exclude_sales_revenue,
           show_satisfaction_survey: formData.show_satisfaction_survey,
+          loaner_enabled: formData.loaner_enabled,
         })
         .eq('id', editingType.id);
 
@@ -242,6 +249,7 @@ export default function SAVTypesManager({ types, loading, onRefresh }: SAVTypesM
       exclude_purchase_costs: type.exclude_purchase_costs ?? false,
       exclude_sales_revenue: type.exclude_sales_revenue ?? false,
       show_satisfaction_survey: type.show_satisfaction_survey ?? true,
+      loaner_enabled: type.loaner_enabled ?? false,
     });
     setDialogOpen(true);
   };
@@ -491,6 +499,25 @@ export default function SAVTypesManager({ types, loading, onRefresh }: SAVTypesM
                       }
                     />
                   </div>
+
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label className="text-sm font-normal flex items-center gap-2">
+                        <PackageOpen className="w-4 h-4" />
+                        Proposer un prêt de matériel
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        Active automatiquement la section "Prêt de matériel" lors de la création d'un SAV de ce type
+                      </p>
+                    </div>
+                    <Switch
+                      checked={formData.loaner_enabled}
+                      onCheckedChange={(checked) =>
+                        setFormData({ ...formData, loaner_enabled: checked })
+                      }
+                    />
+                  </div>
+
 
                   {(formData.exclude_purchase_costs !== formData.exclude_sales_revenue) && (
                     <p className="text-xs text-amber-600 bg-amber-50 p-2 rounded">

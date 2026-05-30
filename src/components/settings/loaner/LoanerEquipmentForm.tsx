@@ -12,6 +12,7 @@ import {
   LOANER_STATUSES,
   useLoanerEquipment,
 } from '@/hooks/useLoanerEquipment';
+import { LoanerConditionPhotos } from './LoanerConditionPhotos';
 
 interface Props {
   open: boolean;
@@ -29,6 +30,7 @@ const EMPTY: LoanerEquipmentInput = {
   color: '',
   notes: '',
   status: 'available',
+  condition_photos: [],
 };
 
 export function LoanerEquipmentForm({ open, onOpenChange, initial }: Props) {
@@ -49,6 +51,7 @@ export function LoanerEquipmentForm({ open, onOpenChange, initial }: Props) {
             color: initial.color || '',
             notes: initial.notes || '',
             status: initial.status,
+            condition_photos: initial.condition_photos || [],
           }
         : EMPTY);
     }
@@ -135,6 +138,12 @@ export function LoanerEquipmentForm({ open, onOpenChange, initial }: Props) {
                 value={form.notes || ''}
                 onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
                 placeholder="État, accessoires fournis, etc."
+              />
+            </div>
+            <div className="col-span-2">
+              <LoanerConditionPhotos
+                value={form.condition_photos || []}
+                onChange={(next) => setForm((f) => ({ ...f, condition_photos: next }))}
               />
             </div>
           </div>

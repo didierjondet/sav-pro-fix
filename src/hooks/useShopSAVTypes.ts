@@ -22,6 +22,7 @@ export interface ShopSAVType {
   exclude_purchase_costs: boolean;
   exclude_sales_revenue: boolean;
   show_satisfaction_survey: boolean;
+  loaner_enabled?: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -107,6 +108,7 @@ export function useShopSAVTypes() {
         exclude_purchase_costs: customType.exclude_purchase_costs,
         exclude_sales_revenue: customType.exclude_sales_revenue,
         show_satisfaction_survey: customType.show_satisfaction_survey ?? true,
+        loaner_enabled: customType.loaner_enabled ?? false,
       };
     }
 
@@ -124,6 +126,7 @@ export function useShopSAVTypes() {
       exclude_purchase_costs: false,
       exclude_sales_revenue: false,
       show_satisfaction_survey: true,
+      loaner_enabled: false,
     };
   };
 

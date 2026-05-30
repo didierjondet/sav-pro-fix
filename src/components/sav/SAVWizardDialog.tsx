@@ -137,6 +137,11 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
   const [debouncedLastName, setDebouncedLastName] = useState('');
   const [technicianInitials, setTechnicianInitials] = useState('');
   const [loanerSelection, setLoanerSelection] = useState<LoanerSelection>(EMPTY_LOANER_SELECTION);
+  const loanerTouchedRef = React.useRef(false);
+  const handleLoanerChange = (v: LoanerSelection) => {
+    loanerTouchedRef.current = true;
+    setLoanerSelection(v);
+  };
   const { createLoan } = useLoanerLoans();
   const { settings: shopSettings } = useShopSettings();
   const collectInitials = shopSettings?.collect_technician_initials ?? false;
@@ -154,6 +159,14 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
   const { toast } = useToast();
 
   const currentTypeInfo = getTypeInfo(savType);
+
+  React.useEffect(() => {
+    if (loanerTouchedRef.current) return;
+    if (currentTypeInfo?.loaner_enabled) {
+      setLoanerSelection((prev) => prev.enabled ? prev : { ...prev, enabled: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [savType, currentTypeInfo?.loaner_enabled]);
 
   // Build actual steps based on type config
   const activeSteps = STEPS.filter(s => {
@@ -853,7 +866,7 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
               </div>
             </div>
             <Separator />
-            <LoanerSection value={loanerSelection} onChange={setLoanerSelection} />
+            <LoanerSection value={loanerSelection} onChange={handleLoanerChange} />
           </div>
         );
       }
