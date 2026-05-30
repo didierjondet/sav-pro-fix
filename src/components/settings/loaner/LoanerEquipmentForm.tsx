@@ -30,6 +30,7 @@ const EMPTY: LoanerEquipmentInput = {
   color: '',
   notes: '',
   status: 'available',
+  condition_photos: [],
 };
 
 export function LoanerEquipmentForm({ open, onOpenChange, initial }: Props) {
