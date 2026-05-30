@@ -670,6 +670,7 @@ export default function Settings() {
     ...(isAdmin && rolePermissions.settings_users ? ['users'] : []),
     ...(rolePermissions.settings_part_categories ? ['part-categories'] : []),
     ...(isAdmin ? ['suppliers'] : []),
+    ...(isAdmin ? ['loaners'] : []),
   ];
   const safeActiveTab = availableTabs.includes(activeTab) ? activeTab : availableTabs[0];
   useEffect(() => {
