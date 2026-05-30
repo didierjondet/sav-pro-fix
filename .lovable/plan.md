@@ -1,70 +1,57 @@
-## Système de prêt de matériel aux clients
+# Plan — Prêt de matériel : intégration au workflow SAV
 
-### Objectif
-Permettre à l'atelier d'enregistrer un parc de matériel de prêt (téléphone, ordi, TV, etc.) et de le rattacher à un SAV pendant la durée de la réparation, avec suivi des retours.
+## 1. Switch "Prêt de matériel" sur les types de SAV
 
-### 1. Base de données (migration)
+**DB** — `shop_sav_types`
+- Ajout `loaner_enabled BOOLEAN DEFAULT false`
 
-**Table `loaner_equipment`** (parc de prêt par boutique)
-- `shop_id` (FK shops)
-- `name` (libellé), `category` (telephone | ordinateur | tablette | tv | console | autre)
-- `brand`, `model`, `imei`, `serial_number`, `color`, `notes`
-- `status` (available | loaned | maintenance | retired)
-- `photo_url` (optionnel)
-- `created_at`, `updated_at`
+**Settings → Types SAV** (`SAVTypesManager.tsx`)
+- Nouveau switch "Proposer un prêt de matériel par défaut" dans le formulaire d'édition d'un type, à côté de "Code de déverrouillage requis" / "Exclure des stats".
+- Sauvegarde du champ via le hook existant.
 
-**Table `loaner_loans`** (historique des prêts)
-- `shop_id`, `equipment_id` (FK), `sav_case_id` (FK, nullable), `customer_id` (FK, nullable)
-- `loaned_at`, `expected_return_at`, `returned_at`
-- `loan_condition`, `return_condition`, `notes`
-- `created_by` (user_id)
+**Création SAV** (`SAVForm.tsx`, `SAVWizardDialog.tsx`)
+- Quand l'utilisateur sélectionne un type SAV avec `loaner_enabled = true`, la section `LoanerSection` s'active automatiquement (toggle `enabled = true` une fois). L'utilisateur reste libre de la désactiver manuellement.
+- Si `loaner_enabled = false`, comportement inchangé (toggle off par défaut).
 
-**RLS** : isolation par `shop_id` via `get_current_user_shop_id()`. GRANT `authenticated` + `service_role`.
+## 2. Photos multiples d'état du matériel (paramètres)
 
-**Trigger** : à l'insertion d'un `loaner_loans` sans `returned_at`, passer l'équipement à `loaned`. À la mise à jour avec `returned_at`, repasser à `available`.
+**DB** — `loaner_equipment`
+- Ajout `condition_photos TEXT[] NOT NULL DEFAULT '{}'` (chemins storage). `photo_url` conservé pour rétro-compat.
+- Nouveau bucket Storage `loaner-photos` (privé, URLs signées), avec policies RLS scopées au shop (lecture pour membres du shop, upload/delete pour admins shop).
 
-### 2. Page de configuration — Paramètres
+**`LoanerEquipmentForm.tsx`**
+- Nouvelle zone "Photos de l'état du matériel" sous Notes : grille d'aperçus + bouton "Ajouter une photo" (multi-upload, max 6, 2 MB chacune), suppression individuelle.
+- Composant inspiré de `PartPhotoUpload.tsx`.
 
-Ajouter un nouvel onglet **"Matériel de prêt"** dans `src/pages/Settings.tsx` :
-- Tableau du parc (filtre par catégorie + statut + recherche IMEI/SN)
-- Bouton "Ajouter un matériel" → dialog avec tous les champs
-- Édition / suppression / changement de statut
-- Badge visuel par catégorie + statut
-- Compteur (X disponibles / Y prêtés)
+## 3. Visibilité sur le bon imprimé client (`SAVPrint.tsx`)
 
-Composants à créer :
-- `src/components/settings/loaner/LoanerEquipmentManager.tsx`
-- `src/components/settings/loaner/LoanerEquipmentForm.tsx`
-- `src/hooks/useLoanerEquipment.ts` (CRUD + realtime)
-- `src/hooks/useLoanerLoans.ts`
+- Récupération du prêt actif lié au SAV à l'impression.
+- Nouveau bloc "Matériel prêté" dans le bon, encadré et visible : nom, marque/modèle, IMEI / n° série, couleur, date de prêt, date de retour prévue, état au prêt (notes).
+- Mention en bas du bon : « Le client s'engage à restituer le matériel prêté lors de la récupération de son appareil. »
 
-### 3. Intégration côté SAV
+## 4. Visibilité sur la page publique QR client (`TrackSAV.tsx`)
 
-**Dans `SAVForm.tsx` (vue normale) ET `SAVWizardDialog.tsx` (vue simplifiée)** :
-- Nouvelle case à cocher **"Prêt de matériel"**
-- Si cochée → bouton "Choisir un matériel à prêter" qui ouvre un sélecteur (`LoanerPickerDialog`) listant uniquement les équipements `available`
-- Champ optionnel "Date de retour prévue"
-- À la sauvegarde du SAV, créer la ligne `loaner_loans` correspondante
+**DB** — RPC `get_tracking_info`
+- Étendre la réponse pour inclure le prêt actif (jointure `loaner_loans` + `loaner_equipment`). Seuls les champs non sensibles : nom, marque, modèle, couleur, date de prêt, date de retour prévue. **Pas d'IMEI/série** côté public.
 
-**Dans `SAVDetail.tsx`** :
-- Encart "Matériel prêté" affichant l'équipement + date de prêt + date de retour prévue
-- Bouton "Marquer comme rendu" (renseigne `returned_at` + état de retour)
-- Possibilité d'ajouter/changer le matériel prêté après-coup
+**`TrackSAV.tsx`**
+- Nouvelle Card "Matériel prêté" si un prêt actif est présent, avec rappel de la date de retour prévue.
 
-**Fermeture du SAV** : si un prêt est encore actif au moment de la clôture (`SAVCloseUnifiedDialog`), afficher un avertissement + obliger à confirmer le retour du matériel.
+## 5. Alerte popup à la restitution (`SAVCloseUnifiedDialog.tsx`)
 
-### 4. Composants partagés
-- `src/components/loaner/LoanerPickerDialog.tsx` (sélection d'un équipement disponible)
-- `src/components/loaner/LoanerStatusBadge.tsx`
-- `src/components/loaner/ActiveLoanCard.tsx` (encart affiché dans SAVDetail)
+- À l'ouverture du dialog de clôture/restitution : si `useLoanerLoans(savCaseId).activeLoan` existe, afficher un `AlertDialog` bloquant en premier :
+  > « ⚠️ Matériel de prêt à récupérer : {nom équipement} (IMEI/série {…}). Vérifiez l'état avant clôture. »
+  - Boutons : "J'ai récupéré le matériel" (continue la restitution) / "Annuler".
+- Optionnel : au clic "J'ai récupéré", pré-cocher l'option "Marquer le prêt comme rendu" dans la suite du flow (le retour effectif reste fait via `SAVLoanerCard` ou directement ici).
 
-### 5. Permissions
-- Lecture du parc : tous les rôles de la boutique
-- Création/édition du parc : `admin` uniquement (via RLS `is_shop_admin`)
-- Prêt/retour : tous rôles ayant accès aux SAV (technicien inclus)
+## 6. Détails techniques
 
-### Récapitulatif des fichiers
-**Migration** : 1 (2 tables + RLS + triggers)
-**Nouveaux composants** : 7
-**Nouveaux hooks** : 2
-**Fichiers modifiés** : `Settings.tsx`, `SAVForm.tsx`, `SAVWizardDialog.tsx`, `SAVDetail.tsx`, `SAVCloseUnifiedDialog.tsx`
+- Migration SQL unique : colonnes + bucket + policies storage + remplacement de la fonction `get_tracking_info`.
+- Types Supabase régénérés automatiquement après migration.
+- Aucune modification de la mise en page validée du dashboard / sidebar / header.
+- Composant photos réutilisable : `LoanerConditionPhotos.tsx` dans `src/components/settings/loaner/`.
+
+## Fichiers impactés
+- **Migration** : 1 nouveau fichier SQL
+- **Modifiés** : `SAVTypesManager.tsx`, `useShopSAVTypes.ts`, `SAVForm.tsx`, `SAVWizardDialog.tsx`, `LoanerSection.tsx` (auto-enable via prop), `LoanerEquipmentForm.tsx`, `SAVPrint.tsx`, `TrackSAV.tsx`, `SAVCloseUnifiedDialog.tsx`
+- **Créés** : `src/components/settings/loaner/LoanerConditionPhotos.tsx`
