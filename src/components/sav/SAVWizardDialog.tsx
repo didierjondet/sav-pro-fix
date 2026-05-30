@@ -38,6 +38,8 @@ import { useShopSAVTypes } from '@/hooks/useShopSAVTypes';
 import { useShopSettings } from '@/hooks/useShopSettings';
 import { SecurityCodesSection, SecurityCodes } from './SecurityCodesSection';
 import { AITextReformulator } from './AITextReformulator';
+import { LoanerSection, EMPTY_LOANER_SELECTION, type LoanerSelection } from '@/components/loaner/LoanerSection';
+import { useLoanerLoans } from '@/hooks/useLoanerLoans';
 
 interface CustomerInfo {
   firstName: string;
