@@ -14,14 +14,6 @@ import OnboardingPanel from '@/components/help/OnboardingPanel';
 import { useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
 
-const ADVANCED_EXAMPLES = [
-  "Génère un rapport de non-réparabilité imprimable pour le SAV #2026-05-22-001.",
-  "Lis cette photo/PDF et donne-moi un diagnostic + pièces à commander.",
-  "Quels RDV ai-je demain, avec le SAV associé et le technicien ?",
-  "Diagnostic : iPhone 13 écran noir après chute, tests et pièces en stock ?",
-  "Liste les SAV en retard, raison probable et action à faire aujourd'hui.",
-  "Taux de retour de l'IMEI XXXXXXX, même panne et autres pannes.",
-];
 
 const PUBLIC_EXACT = ['/', '/landing', '/features', '/about', '/contact', '/auth', '/test'];
 const PUBLIC_PREFIX = ['/track/', '/quote/', '/satisfaction/', '/rdv/', '/shop/'];
@@ -248,36 +240,10 @@ const HelpBot: React.FC = () => {
               )}
 
               {messages.length === 0 && (
-                <div className="space-y-3">
-                  <p className="text-sm text-muted-foreground">
-                    Bonjour ! Je suis Fixy, votre technicien réparateur high-tech. Demandez-moi un diagnostic, un rapport, ou analyser une photo/PDF.
+                <div className="space-y-2">
+                  <p className="text-sm text-foreground leading-relaxed">
+                    ⚡ Je suis <strong className="text-primary font-bold">Fixy</strong>, votre assistant surdoué. J'ai réponse à tout, j'accède à toute votre base, je garde la mémoire de nos échanges et je vous assiste de bout en bout dans la résolution d'un SAV — diagnostic, pièces, RDV, rapports, analyse de photo/PDF.
                   </p>
-                  <div className="space-y-2">
-                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Essayez ces demandes avancées</p>
-                    {ADVANCED_EXAMPLES.map((ex, i) => (
-                      <button
-                        key={i}
-                        onClick={() => sendMessage(ex)}
-                        className="w-full text-left text-sm px-3 py-2 rounded-lg border bg-muted/50 hover:bg-muted transition-colors"
-                      >
-                        {ex}
-                      </button>
-                    ))}
-                  </div>
-                  {faqItems.length > 0 && (
-                    <div className="space-y-2">
-                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Questions fréquentes</p>
-                      {faqItems.slice(0, 3).map(faq => (
-                        <button
-                          key={faq.id}
-                          onClick={() => handleFAQClick(faq)}
-                          className="w-full text-left text-xs px-3 py-2 rounded-lg border bg-muted/30 hover:bg-muted transition-colors"
-                        >
-                          {faq.question}
-                        </button>
-                      ))}
-                    </div>
-                  )}
                 </div>
               )}
 
