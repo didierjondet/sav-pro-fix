@@ -6,7 +6,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { useWidgetConfiguration } from '@/hooks/useWidgetConfiguration';
 import { useShopSAVStatuses } from '@/hooks/useShopSAVStatuses';
 import { useShopSAVTypes } from '@/hooks/useShopSAVTypes';
-import { DEFAULT_MODULE_SIZES, getWidgetGridClasses, getWidgetHeightClass } from './StatisticsWidgetSizes';
+import { getWidgetGridClasses } from './StatisticsWidgetSizes';
 import { cn } from '@/lib/utils';
 
 interface SortableBlockProps {
@@ -22,10 +22,9 @@ export const SortableBlock = ({ id, children, onRemove, editable = false }: Sort
   const { statuses } = useShopSAVStatuses();
   const { types } = useShopSAVTypes();
 
-  // Récupérer la taille du widget
-  const widgetSize = DEFAULT_MODULE_SIZES[id] || 'medium';
-  const gridClasses = getWidgetGridClasses(widgetSize);
-  const heightClass = getWidgetHeightClass(widgetSize);
+  // Taille imposée par widget (catalogue par id)
+  const gridClasses = getWidgetGridClasses(id);
+  const heightClass = '';
 
 
   const style = {
