@@ -81,6 +81,7 @@ export default function SAVTypesManager({ types, loading, onRefresh }: SAVTypesM
       exclude_purchase_costs: false,
       exclude_sales_revenue: false,
       show_satisfaction_survey: true,
+      loaner_enabled: false,
     });
     setEditingType(null);
   };
