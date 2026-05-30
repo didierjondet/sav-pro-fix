@@ -800,6 +800,12 @@ export default function Settings() {
                   <span className="hidden sm:inline">Fournisseurs</span>
                 </TabsTrigger>
               )}
+              {isAdmin && (
+                <TabsTrigger value="loaners" className="flex items-center gap-2 px-3 py-2 shrink-0">
+                  <PackageOpen className="h-4 w-4 shrink-0" />
+                  <span className="hidden sm:inline">Matériel de prêt</span>
+                </TabsTrigger>
+              )}
             </TabsList>
 
             <TabsContent value="shop" className="space-y-6">
