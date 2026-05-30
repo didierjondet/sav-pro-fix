@@ -140,6 +140,12 @@ export function LoanerEquipmentForm({ open, onOpenChange, initial }: Props) {
                 placeholder="État, accessoires fournis, etc."
               />
             </div>
+            <div className="col-span-2">
+              <LoanerConditionPhotos
+                value={form.condition_photos || []}
+                onChange={(next) => setForm((f) => ({ ...f, condition_photos: next }))}
+              />
+            </div>
           </div>
         </div>
 
