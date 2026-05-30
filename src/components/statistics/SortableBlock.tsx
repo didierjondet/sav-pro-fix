@@ -68,7 +68,7 @@ export const SortableBlock = ({ id, children, onRemove, editable = false }: Sort
       ref={setNodeRef} 
       style={style} 
       className={cn(
-        "relative overflow-hidden h-full",
+        "relative h-full min-w-0",
         gridClasses,
         heightClass,
         isDragging && "opacity-70 z-50"
