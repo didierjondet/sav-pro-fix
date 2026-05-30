@@ -36,6 +36,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { AITextReformulator } from '@/components/sav/AITextReformulator';
 import { ProblemDescriptionField } from '@/components/sav/ProblemDescriptionHighlight';
 import { SecurityCodesSection, SecurityCodes } from './SecurityCodesSection';
+import { LoanerSection, EMPTY_LOANER_SELECTION, type LoanerSelection } from '@/components/loaner/LoanerSection';
+import { useLoanerLoans } from '@/hooks/useLoanerLoans';
 
 interface CustomerInfo {
   firstName: string;
