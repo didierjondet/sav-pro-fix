@@ -715,17 +715,126 @@ async function runTool(name: string, args: any, supa: any, shopId: string): Prom
   }
 }
 
+// ===================== Printable report builder =====================
+function escapeHtml(s: any): string {
+  return String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!))
+}
+
+async function buildPrintableReport(supa: any, shopId: string, args: any): Promise<any> {
+  const reportType: string = args.report_type
+  const titles: Record<string, string> = {
+    non_repairability: 'Rapport de non-réparabilité',
+    diagnostic: 'Rapport de diagnostic',
+    sav_summary: 'Synthèse de dossier SAV',
+  }
+  const title = titles[reportType] || 'Rapport SAV'
+
+  let caseRow: any = null
+  let cust: any = null
+  let parts: any[] = []
+  if (args.case_number) {
+    const raw = String(args.case_number).trim().replace(/^#/, '')
+    let r = await supa.from('sav_cases').select('*').eq('shop_id', shopId).eq('case_number', raw).maybeSingle()
+    if (!r.data) r = await supa.from('sav_cases').select('*').eq('shop_id', shopId).ilike('case_number', `%${raw}%`).limit(1).maybeSingle()
+    caseRow = r.data
+    if (caseRow?.customer_id) {
+      const c = await supa.from('customers').select('first_name,last_name').eq('id', caseRow.customer_id).maybeSingle()
+      cust = c.data
+    }
+    const p = await supa.from('sav_parts').select('quantity, unit_price, part:parts(name, reference)').eq('sav_case_id', caseRow?.id || '')
+    parts = p.data || []
+  }
+  const { data: shop } = await supa.from('shops').select('name, address, email, phone, logo_url').eq('id', shopId).maybeSingle()
+
+  const today = new Date().toLocaleDateString('fr-FR')
+  const partsRows = parts.map((p: any) => `<tr><td>${escapeHtml(p.part?.name || '-')}</td><td>${escapeHtml(p.part?.reference || '-')}</td><td style="text-align:right">${p.quantity}</td><td style="text-align:right">${Number(p.unit_price || 0).toFixed(2)} €</td></tr>`).join('')
+
+  const html = `<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>${escapeHtml(title)} ${caseRow ? '#' + escapeHtml(caseRow.case_number) : ''}</title>
+<style>
+  @page { size: A4; margin: 14mm; }
+  body { font-family: -apple-system, Segoe UI, Roboto, sans-serif; color: #111; font-size: 12px; margin: 0; }
+  header { display:flex; justify-content:space-between; align-items:flex-start; border-bottom: 2px solid #111; padding-bottom: 8px; margin-bottom: 14px; }
+  header h1 { font-size: 18px; margin: 0 0 4px; }
+  .shop { text-align:right; font-size: 11px; line-height: 1.4; }
+  h2 { font-size: 13px; margin: 16px 0 6px; border-bottom: 1px solid #ccc; padding-bottom: 2px; }
+  .grid { display:grid; grid-template-columns: 1fr 1fr; gap: 4px 16px; }
+  .grid div b { display:inline-block; min-width: 110px; }
+  table { width:100%; border-collapse: collapse; margin-top: 6px; }
+  th, td { border: 1px solid #ddd; padding: 4px 6px; font-size: 11px; }
+  th { background:#f3f4f6; text-align:left; }
+  .block { background:#f9fafb; border:1px solid #e5e7eb; padding: 8px; border-radius: 4px; white-space:pre-wrap; }
+  footer { margin-top: 24px; display:flex; justify-content:space-between; font-size:11px; }
+  .sig { margin-top: 30px; width: 45%; border-top: 1px solid #999; padding-top: 4px; text-align:center; }
+  .noprint { margin: 12px 0; }
+  @media print { .noprint { display:none; } }
+</style></head><body>
+<div class="noprint" style="text-align:right"><button onclick="window.print()" style="padding:8px 16px;font-size:14px;background:#111;color:#fff;border:0;border-radius:4px;cursor:pointer">Imprimer / Enregistrer en PDF</button></div>
+<header>
+  <div>
+    ${shop?.logo_url ? `<img src="${escapeHtml(shop.logo_url)}" style="max-height:50px;margin-bottom:6px"/><br>` : ''}
+    <h1>${escapeHtml(title)}</h1>
+    <div>Date d'édition : <b>${today}</b></div>
+    ${caseRow ? `<div>Dossier : <b>#${escapeHtml(caseRow.case_number)}</b></div>` : ''}
+  </div>
+  <div class="shop">
+    <b>${escapeHtml(shop?.name || '')}</b><br>
+    ${escapeHtml(shop?.address || '')}<br>
+    ${escapeHtml(shop?.phone || '')}<br>
+    ${escapeHtml(shop?.email || '')}
+  </div>
+</header>
+
+${caseRow ? `<h2>Dossier SAV</h2>
+<div class="grid">
+  <div><b>Numéro</b> #${escapeHtml(caseRow.case_number)}</div>
+  <div><b>Statut</b> ${escapeHtml(caseRow.status || '-')}</div>
+  <div><b>Type</b> ${escapeHtml(caseRow.sav_type || '-')}</div>
+  <div><b>Créé le</b> ${new Date(caseRow.created_at).toLocaleDateString('fr-FR')}</div>
+  <div><b>Marque</b> ${escapeHtml(caseRow.device_brand || '-')}</div>
+  <div><b>Modèle</b> ${escapeHtml(caseRow.device_model || '-')}</div>
+  <div><b>IMEI / SN</b> ${escapeHtml(caseRow.device_imei || '-')}</div>
+  <div><b>SKU</b> ${escapeHtml(caseRow.sku || '-')}</div>
+  ${cust ? `<div><b>Client</b> ${escapeHtml((cust.first_name || '') + ' ' + (cust.last_name || ''))}</div>` : ''}
+</div>
+
+<h2>Panne déclarée</h2>
+<div class="block">${escapeHtml(caseRow.problem_description || '—')}</div>
+
+${caseRow.repair_notes ? `<h2>Notes techniques</h2><div class="block">${escapeHtml(caseRow.repair_notes)}</div>` : ''}
+` : ''}
+
+${args.tests_performed ? `<h2>Tests effectués</h2><div class="block">${escapeHtml(args.tests_performed)}</div>` : ''}
+
+${args.conclusion ? `<h2>${reportType === 'non_repairability' ? 'Motif de non-réparabilité' : 'Conclusion'}</h2><div class="block">${escapeHtml(args.conclusion)}</div>` : ''}
+
+${parts.length ? `<h2>Pièces concernées</h2>
+<table><thead><tr><th>Pièce</th><th>Référence</th><th style="text-align:right">Qté</th><th style="text-align:right">PU TTC</th></tr></thead>
+<tbody>${partsRows}</tbody></table>` : ''}
+
+<footer>
+  <div class="sig">Signature du technicien</div>
+  <div class="sig">Signature du client</div>
+</footer>
+</body></html>`
+
+  return { ok: true, report_type: reportType, title: title + (caseRow ? ` — #${caseRow.case_number}` : ''), html }
+}
+
 // ===================== Compact realtime context =====================
 async function buildCompactContext(supa: any, shopId: string): Promise<string> {
   try {
     const now = new Date()
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
-    const [shopR, savCountsR, lowStockR, unreadR, monthRevR] = await Promise.all([
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString()
+    const tomorrowEnd = new Date(now.getTime() + 2 * 86400000).toISOString()
+    const [shopR, savCountsR, lowStockR, unreadR, monthRevR, apptsR, pendingApptsR] = await Promise.all([
       supa.from('shops').select('name, subscription_tier, monthly_sav_count, active_sav_count, monthly_sms_used, sms_credits_allocated').eq('id', shopId).single(),
       supa.from('sav_cases').select('status').eq('shop_id', shopId),
       supa.from('parts').select('name, quantity, min_stock').eq('shop_id', shopId).not('min_stock', 'is', null),
       supa.from('sav_messages').select('id').eq('shop_id', shopId).eq('sender_type', 'client').eq('read_by_shop', false).limit(50),
       supa.from('sav_cases').select('total_cost').eq('shop_id', shopId).gte('created_at', monthStart),
+      supa.from('appointments').select('status').eq('shop_id', shopId).gte('start_datetime', todayStart).lte('start_datetime', tomorrowEnd),
+      supa.from('appointments').select('id').eq('shop_id', shopId).in('status', ['proposed', 'counter_proposed']).limit(50),
     ])
     const out: string[] = []
     if (shopR.data) {
@@ -746,6 +855,8 @@ async function buildCompactContext(supa: any, shopId: string): Promise<string> {
       const total = monthRevR.data.reduce((s: number, r: any) => s + (Number(r.total_cost) || 0), 0)
       out.push(`CA SAV mois: ${total.toFixed(2)}€ sur ${monthRevR.data.length} dossier(s)`)
     }
+    if (apptsR.data) out.push(`RDV aujourd'hui + demain: ${apptsR.data.length}`)
+    if (pendingApptsR.data?.length) out.push(`RDV en attente client (proposed/counter_proposed): ${pendingApptsR.data.length}`)
     return out.length ? `## État live du magasin (résumé compact — détails via outils)\n${out.map((l) => `- ${l}`).join('\n')}` : ''
   } catch (e) {
     console.error('compact context error', e)
