@@ -3862,7 +3862,34 @@ export type Database = {
         }[]
       }
       get_total_sms_credits: { Args: { p_shop_id: string }; Returns: number }
-      get_tracking_info: { Args: { p_tracking_slug: string }; Returns: Json }
+      get_tracking_info: {
+        Args: { p_tracking_slug: string }
+        Returns: {
+          case_number: string
+          created_at: string
+          customer_first_name: string
+          device_brand: string
+          device_model: string
+          loaner_brand: string
+          loaner_category: string
+          loaner_color: string
+          loaner_expected_return_at: string
+          loaner_loaned_at: string
+          loaner_model: string
+          loaner_name: string
+          max_sav_processing_days_client: number
+          max_sav_processing_days_internal: number
+          sav_case_id: string
+          sav_type: string
+          shop_address: string
+          shop_email: string
+          shop_logo_url: string
+          shop_name: string
+          shop_phone: string
+          status: string
+          total_cost: number
+        }[]
+      }
       get_tracking_messages: {
         Args: { p_tracking_slug: string }
         Returns: {
