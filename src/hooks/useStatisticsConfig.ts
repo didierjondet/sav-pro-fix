@@ -47,8 +47,10 @@ const DEFAULT_MODULES: StatisticModule[] = [
   { id: 'monthly-comparison', name: 'Comparaison mensuelle', description: 'Comparatif mois par mois', enabled: false, order: 19 },
   { id: 'revenue-breakdown', name: 'Répartition du CA', description: 'Analyse détaillée des revenus', enabled: true, order: 20 },
   { id: 'customer-satisfaction', name: 'Satisfaction client', description: 'Indicateurs de satisfaction', enabled: true, order: 21 },
-  { id: 'quote-rejections', name: 'Raisons de refus devis', description: 'Analyse des devis refusés', enabled: false, order: 22 }
+  { id: 'quote-rejections', name: 'Raisons de refus devis', description: 'Analyse des devis refusés', enabled: false, order: 22 },
+  { id: 'product-return-rate', name: 'Taux de retour produit', description: 'Récurrence des réparations sur un même produit (même panne ou autre)', enabled: true, order: 23 }
 ];
+
 
 const STORAGE_KEY = 'statisticsConfig';
 
