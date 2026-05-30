@@ -1,65 +1,31 @@
-## Objectif
+Objectif : supprimer les deux comportements interdits sur le dashboard : widgets coupés et widgets qui passent au-dessus d’autres widgets, sans changer la logique métier ni le reste de l’interface.
 
-Le tableau de bord doit avoir des widgets qui :
-- s'emboîtent comme des briques (proportions imposées, pas de tailles "hors gabarit"),
-- ne se chevauchent jamais quel que soit l'écran,
-- réduisent l'espace blanc entre eux,
-- s'agrandissent ou se réduisent dans leur emplacement selon la taille de l'écran, en gardant 100% du contenu visible.
+Plan d’intervention :
 
-## Pourquoi il y a chevauchement aujourd'hui
+1. Stabiliser la grille du dashboard
+- Retirer le placement dense `[grid-auto-flow:dense]`, car il peut repositionner les widgets dans les trous et accentuer les superpositions visuelles avec le drag/drop.
+- Garder une grille simple et prévisible : 1 colonne mobile, 2 colonnes tablette, 4 colonnes desktop.
+- Augmenter légèrement l’espacement entre widgets pour garantir une séparation visuelle constante.
 
-Dans `SAVDashboard.tsx`, la grille utilise `sm:auto-rows-[80px]` + `[grid-auto-flow:dense]`. Chaque widget réserve un nombre de rangées fixe (`row-span-N`). Quand le contenu interne d'une carte (titres + KPI + graphique + légende) dépasse `N × 80px`, la carte déborde visuellement sur la rangée du widget voisin → chevauchement.
-De plus, `SortableBlock.tsx` a retiré `overflow-hidden`, donc le débordement n'est plus contenu.
+2. Remplacer les hauteurs trop rigides par des hauteurs minimales sûres
+- Ne plus forcer tous les widgets à tenir strictement dans une hauteur trop courte.
+- Conserver les proportions imposées par gabarit, mais utiliser des `min-height` responsives plutôt qu’un `h-full` qui coupe le contenu.
+- Les widgets pourront donc grandir si leur contenu réel est plus haut, au lieu de chevaucher ou devenir illisibles.
 
-## Plan
+3. Corriger le wrapper commun `SortableBlock`
+- Retirer le `overflow-hidden` au niveau du bloc principal, qui masque encore des informations.
+- Ajouter une isolation/z-index propre pour éviter qu’un widget normal passe au-dessus d’un autre.
+- Garder un z-index élevé uniquement pendant le glisser-déposer.
 
-### 1. Catalogue de tailles "modulaires" imposées
-Dans `StatisticsWidgetSizes.ts`, ne garder que 4 gabarits autorisés, tous multiples du même module de base :
+4. Uniformiser les cartes internes des widgets principaux
+- Appliquer `h-full min-h-0 flex flex-col` aux widgets qui contiennent graphiques, listes ou plusieurs sections.
+- Adapter les zones de graphiques pour qu’elles utilisent l’espace disponible sans pousser la carte hors de sa case.
+- Cibler uniquement les widgets du dashboard concernés : KPIs financiers, comparaison mensuelle, répartition CA, satisfaction client, performance SAV, stats annuelles, retards mensuels, stockage/devis/top appareils si nécessaire.
 
-```text
-S  : 1 col × 2 unités  (KPI compact)
-M  : 2 col × 3 unités  (graphe medium)
-L  : 4 col × 3 unités  (bandeau)
-XL : 4 col × 5 unités  (gros graphique)
-```
+5. Ajuster les widgets très chargés
+- Les widgets comme `revenue-breakdown`, `customer-satisfaction`, `top-devices`, `annual-stats` et `monthly-comparison` auront un gabarit plus haut si leur contenu ne tient pas.
+- Le but est de voir 100% des informations, pas de forcer une compression illisible.
 
-- Chaque `widgetId` est associé à un gabarit S/M/L/XL — pas de combinaisons hybrides.
-- Recalibrer `WIDGET_DIMENSIONS` pour que chaque widget rentre dans le gabarit le plus juste (mesuré sur la carte réelle, pas estimé).
-- Sur tablette, les gabarits 4 col passent à 2 col automatiquement avec une hauteur recalculée.
-
-### 2. Grille du dashboard avec rangées plus hautes
-Dans `SAVDashboard.tsx` :
-- Passer `sm:auto-rows-[80px]` → `sm:auto-rows-[120px]` (unité de base plus grande, donc moins de rangées par widget, et marge interne suffisante).
-- Conserver `gap-3` et `grid-auto-flow:dense` pour limiter l'espace blanc.
-
-### 3. Contenir le débordement dans chaque widget
-Dans `SortableBlock.tsx`, remettre une contention stricte mais sans couper le contenu utile :
-- wrapper : `h-full min-w-0 overflow-hidden`
-- enfant interne : `h-full w-full flex flex-col` puis pour le contenu après le header : `flex-1 min-h-0` (les graphes Recharts `ResponsiveContainer` s'adaptent alors à la place disponible au lieu de pousser la carte).
-
-Cela garantit que la carte respecte l'emplacement de la grille (donc pas de chevauchement), et que le contenu se redimensionne dans cet emplacement.
-
-### 4. Adapter les cartes internes pour 100% de contenu visible
-Sur les widgets sensibles, s'assurer que la `Card` a `h-full flex flex-col` et que le `CardContent` est `flex-1 min-h-0 overflow-hidden` :
-- `FinanceKPIsWidget` (grille interne)
-- `MonthlyComparisonWidget`
-- `RevenueBreakdownWidget`
-- `CustomerSatisfactionWidget`
-- `AnnualStatsWidget` ("Statistiques 2026")
-- `MonthlyLateRateChart`
-
-Cela ne change pas le contenu, seulement le squelette flex pour que Recharts/legends prennent la place disponible au lieu de déborder.
-
-### 5. Vérification visuelle
-- Viewport actuel (~971×696).
-- Mobile (~390 largeur).
-- Desktop large (~1440).
-
-Vérifier sur chaque viewport :
-- aucun widget ne déborde sur son voisin,
-- toutes les valeurs/légendes sont visibles,
-- l'espace blanc entre widgets est minimal et régulier (gap-3 partout).
-
-### Hors périmètre
-- Pas de modification de la logique métier ni des hooks.
-- Pas de changement de `WidgetManager` ni de la persistance.
+6. Vérification ciblée
+- Vérifier le comportement sur la largeur actuelle 971×696, puis sur mobile et desktop.
+- Confirmer visuellement qu’aucun widget n’est coupé et qu’aucun ne chevauche un autre.

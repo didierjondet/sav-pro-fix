@@ -1,24 +1,26 @@
 // Gabarits modulaires stricts — 4 tailles uniquement.
-// Unité de base : 1 col (mobile=1, tablette=max 2, desktop=4) × 120px de hauteur.
-// Chaque widget snap sur l'un des 4 gabarits, garantissant un assemblage régulier.
+// On impose des colonnes fixes + une hauteur MINIMALE (le contenu peut grandir
+// pour rester 100% lisible, sans chevaucher les autres widgets).
 
 export type WidgetSize = 'small' | 'medium' | 'large' | 'full';
 
 export interface WidgetDimensions {
   cols: 1 | 2 | 4;
-  smRows: number; // hauteur en tablette (2 col max) — généralement plus haute car contenu wrap
-  lgRows: number; // hauteur en desktop
+  /** Hauteur mini en tablette (≤ lg) — en px */
+  smMinH: number;
+  /** Hauteur mini en desktop (≥ lg) — en px */
+  lgMinH: number;
 }
 
 // 4 gabarits autorisés
 const TEMPLATES: Record<WidgetSize, WidgetDimensions> = {
-  small:  { cols: 1, smRows: 2, lgRows: 2 }, // 1col × 240px : KPI compact
-  medium: { cols: 2, smRows: 4, lgRows: 3 }, // 2col × 360-480px : graphe medium
-  large:  { cols: 4, smRows: 5, lgRows: 3 }, // 4col × 360-600px : bandeau large
-  full:   { cols: 4, smRows: 7, lgRows: 5 }, // 4col × 600-840px : gros graphique
+  small:  { cols: 1, smMinH: 200, lgMinH: 200 },
+  medium: { cols: 2, smMinH: 360, lgMinH: 340 },
+  large:  { cols: 4, smMinH: 420, lgMinH: 360 },
+  full:   { cols: 4, smMinH: 720, lgMinH: 560 },
 };
 
-// Mapping widgetId -> gabarit S/M/L/XL (aucune dimension hybride)
+// Mapping widgetId -> gabarit S/M/L/XL
 const WIDGET_TO_TEMPLATE: Record<string, WidgetSize> = {
   // KPI compacts (S)
   'kpi-revenue':       'small',
@@ -31,18 +33,18 @@ const WIDGET_TO_TEMPLATE: Record<string, WidgetSize> = {
   // Graphes / blocs medium (M)
   'top-parts-chart':       'medium',
   'late-rate-chart':       'medium',
-  'customer-satisfaction': 'medium',
   'storage-usage':         'medium',
   'quote-rejections':      'medium',
   'top-devices':           'medium',
 
   // Bandeaux larges (L)
-  'finance-kpis':       'large',
-  'monthly-comparison': 'large',
-  'sav-performance':    'large',
-  'annual-stats':       'large',
+  'finance-kpis':          'large',
+  'sav-performance':       'large',
+  'customer-satisfaction': 'large',
 
   // Très grands widgets (XL)
+  'monthly-comparison':    'full',
+  'annual-stats':          'full',
   'revenue-breakdown':     'full',
   'sav-metrics-combined':  'full',
   'financial-overview':    'full',
@@ -55,12 +57,11 @@ export const getWidgetDimensions = (widgetId: string): WidgetDimensions => {
   return TEMPLATES[tpl];
 };
 
-// Catalogue exporté (compat).
 export const WIDGET_DIMENSIONS: Record<string, WidgetDimensions> = Object.fromEntries(
   Object.entries(WIDGET_TO_TEMPLATE).map(([id, size]) => [id, TEMPLATES[size]])
 );
 
-// Tables de classes littérales (Tailwind purge a besoin de chaînes complètes).
+// Classes col-span littérales (Tailwind purge)
 const COL_LG: Record<1 | 2 | 4, string> = {
   1: 'lg:col-span-1',
   2: 'lg:col-span-2',
@@ -73,35 +74,30 @@ const COL_SM: Record<1 | 2 | 4, string> = {
   4: 'sm:col-span-2', // tablette : max 2 colonnes
 };
 
-const ROW_SM: Record<number, string> = {
-  1: 'sm:row-span-1',  2: 'sm:row-span-2',  3: 'sm:row-span-3',
-  4: 'sm:row-span-4',  5: 'sm:row-span-5',  6: 'sm:row-span-6',
-  7: 'sm:row-span-7',  8: 'sm:row-span-8',  9: 'sm:row-span-9',
-  10: 'sm:row-span-10',
-};
-
-const ROW_LG: Record<number, string> = {
-  1: 'lg:row-span-1',  2: 'lg:row-span-2',  3: 'lg:row-span-3',
-  4: 'lg:row-span-4',  5: 'lg:row-span-5',  6: 'lg:row-span-6',
-  7: 'lg:row-span-7',  8: 'lg:row-span-8',  9: 'lg:row-span-9',
-  10: 'lg:row-span-10',
-};
-
 /**
- * Retourne les classes col-span/row-span modulaires.
- * Mobile : 1 colonne, hauteur auto.
- * Tablette : max 2 cols, hauteur smRows × 120px.
- * Desktop : cols natifs, hauteur lgRows × 120px.
+ * Classes col-span uniquement. La hauteur minimale est appliquée via getWidgetMinHeightStyle.
+ * Plus de row-span : on évite ainsi les chevauchements quand le contenu dépasse.
  */
 export const getWidgetGridClasses = (widgetIdOrSize: string): string => {
   const legacyTpl = (TEMPLATES as Record<string, WidgetDimensions>)[widgetIdOrSize];
   const dims = legacyTpl ?? getWidgetDimensions(widgetIdOrSize);
-  return `col-span-1 ${COL_SM[dims.cols]} ${COL_LG[dims.cols]} ${ROW_SM[dims.smRows]} ${ROW_LG[dims.lgRows]}`;
+  return `col-span-1 ${COL_SM[dims.cols]} ${COL_LG[dims.cols]}`;
+};
+
+/** Style inline pour imposer une hauteur minimale responsive via CSS var. */
+export const getWidgetMinHeightStyle = (widgetIdOrSize: string): React.CSSProperties => {
+  const legacyTpl = (TEMPLATES as Record<string, WidgetDimensions>)[widgetIdOrSize];
+  const dims = legacyTpl ?? getWidgetDimensions(widgetIdOrSize);
+  return {
+    // var consommée par une classe utilitaire (min-h) dans SortableBlock
+    ['--w-min-h-sm' as any]: `${dims.smMinH}px`,
+    ['--w-min-h-lg' as any]: `${dims.lgMinH}px`,
+  };
 };
 
 export const getWidgetHeightClass = (_widgetIdOrSize: string): string => '';
 
-// Conservé pour rétro-compat avec WidgetManager / DragDropStatistics.
+// Conservé pour rétro-compat
 export const WIDGET_SIZES: Record<WidgetSize, { size: WidgetSize; cols: 1 | 2 | 4; height: string }> = {
   small:  { size: 'small',  cols: 1, height: '' },
   medium: { size: 'medium', cols: 2, height: '' },
