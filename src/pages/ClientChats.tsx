@@ -1,6 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import Header from '@/components/layout/Header';
-import { Sidebar } from '@/components/layout/Sidebar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -20,7 +18,6 @@ interface SelectedChat {
 }
 
 export default function ClientChats() {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const { savWithUnreadMessages, loading } = useSAVUnreadMessages();
   const { profile } = useProfile();
   const [selected, setSelected] = useState<SelectedChat | null>(null);
@@ -132,12 +129,7 @@ export default function ClientChats() {
   }, [query, savWithUnreadMessages]);
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="flex h-screen">
-        <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <Header onMenuClick={() => setSidebarOpen(true)} isMobileMenuOpen={sidebarOpen} />
-          <main className="flex-1 overflow-hidden p-6">
+    <main className="flex-1 overflow-hidden p-6">
             <h1 className="sr-only">Chat clients - discussions ouvertes et fil de discussion</h1>
             <div className="max-w-7xl mx-auto h-full grid grid-cols-1 md:grid-cols-[320px_1fr] gap-6">
               {/* Left: Open chats list */}
@@ -276,8 +268,5 @@ export default function ClientChats() {
               </div>
             </div>
           </main>
-        </div>
-      </div>
-    </div>
   );
 }

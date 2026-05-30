@@ -2,8 +2,6 @@ import { useState, useMemo, useEffect, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { multiWordSearch } from '@/utils/searchUtils';
-import Header from '@/components/layout/Header';
-import { Sidebar } from '@/components/layout/Sidebar';
 import { SAVDashboard } from '@/components/sav/SAVDashboard';
 import { SAVTimeline } from '@/components/sav/SAVTimeline';
 import { PaginationControls } from '@/components/ui/pagination-controls';
@@ -88,7 +86,6 @@ const isFilterModified = (key: keyof typeof DEFAULT_FILTERS, value: string | num
   value !== DEFAULT_FILTERS[key];
 
 export default function SAVList() {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const saved = useMemo(() => loadSavedFilters(), []);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState(saved?.filterType ?? DEFAULT_FILTERS.filterType);
@@ -362,27 +359,14 @@ export default function SAVList() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background">
-        <div className="flex h-screen">
-          <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-          <div className="flex-1 flex flex-col overflow-hidden">
-            <Header onMenuClick={() => setSidebarOpen(true)} isMobileMenuOpen={sidebarOpen} />
-            <main className="flex-1 overflow-y-auto p-6">
+      <main className="flex-1 overflow-y-auto p-6">
               <div className="text-center py-8">Chargement...</div>
             </main>
-          </div>
-        </div>
-      </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="flex h-screen">
-        <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <Header onMenuClick={() => setSidebarOpen(true)} isMobileMenuOpen={sidebarOpen} />
-          <main className="flex-1 overflow-y-auto p-6">
+    <main className="flex-1 overflow-y-auto p-6">
             <div className="max-w-7xl mx-auto">
               <div className="flex justify-between items-center mb-6">
                 <h1 className="text-2xl font-bold">Dossiers SAV</h1>
@@ -875,8 +859,6 @@ export default function SAVList() {
           </div>
             </div>
           </main>
-        </div>
-      </div>
       <SAVPrintFilterDialog
         isOpen={showPrintDialog}
         onClose={() => setShowPrintDialog(false)}

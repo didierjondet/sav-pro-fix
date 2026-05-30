@@ -4,9 +4,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useProfile } from '@/hooks/useProfile';
 import { useShop } from '@/contexts/ShopContext';
 import { useRolePermissions } from '@/hooks/useRolePermissions';
-import Header from '@/components/layout/Header';
-import { Sidebar } from '@/components/layout/Sidebar';
-
 import { SAVDashboard } from '@/components/sav/SAVDashboard';
 import { SAVForm } from '@/components/sav/SAVForm';
 import { ProfileSetup } from '@/components/auth/ProfileSetup';
@@ -31,7 +28,6 @@ const Index = () => {
   } = useShop();
   const { rolePermissions, loading: permLoading } = useRolePermissions();
   const navigate = useNavigate();
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [currentView, setCurrentView] = useState<'dashboard' | 'new-sav'>('dashboard');
   
   useEffect(() => {
@@ -121,14 +117,7 @@ const Index = () => {
     }
   };
   return (
-    <div className="flex h-screen overflow-hidden flex-col">
-      <div className="flex flex-1 overflow-hidden">
-        <Sidebar isOpen={isMobileMenuOpen} onClose={() => setIsMobileMenuOpen(false)} />
-        
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <Header onMenuClick={handleMenuClick} isMobileMenuOpen={isMobileMenuOpen} />
-          
-          <main className="flex-1 overflow-y-auto p-6">
+    <main className="flex-1 overflow-y-auto p-6">
             {renderContent()}
 
             {showShopNamePrompt && (
@@ -147,10 +136,6 @@ const Index = () => {
               </div>
             )}
           </main>
-        </div>
-      </div>
-      
-    </div>
   );
 };
 export default Index;

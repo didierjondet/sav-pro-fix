@@ -1,6 +1,4 @@
 import { useState, useEffect, useMemo } from 'react';
-import Header from '@/components/layout/Header';
-import { Sidebar } from '@/components/layout/Sidebar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -36,7 +34,6 @@ import {
 } from 'lucide-react';
 
 export default function Customers() {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [deletingCustomer, setDeletingCustomer] = useState<Customer | null>(null);
@@ -169,28 +166,15 @@ export default function Customers() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background">
-        <div className="flex h-screen">
-          <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-          <div className="flex-1 flex flex-col overflow-hidden">
-            <Header onMenuClick={() => setSidebarOpen(true)} isMobileMenuOpen={sidebarOpen} />
-            <main className="flex-1 overflow-y-auto p-6">
+      <main className="flex-1 overflow-y-auto p-6">
               <div className="text-center py-8">Chargement...</div>
             </main>
-          </div>
-        </div>
-      </div>
     );
   }
 
   if (showForm || editingCustomer) {
     return (
-      <div className="min-h-screen bg-background">
-        <div className="flex h-screen">
-          <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-          <div className="flex-1 flex flex-col overflow-hidden">
-            <Header onMenuClick={() => setSidebarOpen(true)} isMobileMenuOpen={sidebarOpen} />
-            <main className="flex-1 overflow-y-auto p-6">
+      <main className="flex-1 overflow-y-auto p-6">
               <CustomerForm
                 customer={editingCustomer || undefined}
                 onSubmit={editingCustomer ? handleUpdateCustomer : handleCreateCustomer}
@@ -201,19 +185,11 @@ export default function Customers() {
                 isEdit={!!editingCustomer}
               />
             </main>
-          </div>
-        </div>
-      </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="flex h-screen">
-        <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <Header onMenuClick={() => setSidebarOpen(true)} isMobileMenuOpen={sidebarOpen} />
-          <main className="flex-1 overflow-y-auto p-6">
+    <main className="flex-1 overflow-y-auto p-6">
             <div className="max-w-7xl mx-auto">
               <div className="flex justify-between items-center mb-6">
                 <div className="flex items-center gap-4">
@@ -301,8 +277,6 @@ export default function Customers() {
           </div>
             </div>
           </main>
-        </div>
-      </div>
       
       {/* Dialog de confirmation de suppression */}
       <AlertDialog open={!!deletingCustomer} onOpenChange={() => setDeletingCustomer(null)}>

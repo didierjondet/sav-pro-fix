@@ -3,8 +3,6 @@ import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import * as XLSX from 'xlsx';
-import Header from '@/components/layout/Header';
-import { Sidebar } from '@/components/layout/Sidebar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -27,7 +25,6 @@ import { Label } from '@/components/ui/label';
 
 export default function Reports() {
   const { rolePermissions } = useRolePermissions();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [periodType, setPeriodType] = useState<PeriodType>('current_month');
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
@@ -315,12 +312,7 @@ export default function Reports() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="flex h-screen">
-        <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <Header onMenuClick={() => setSidebarOpen(true)} isMobileMenuOpen={sidebarOpen} />
-          <main className="flex-1 overflow-y-auto p-4 md:p-6">
+    <main className="flex-1 overflow-y-auto p-4 md:p-6">
             <div className="max-w-7xl mx-auto space-y-6">
           {/* Header */}
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 no-print">
@@ -813,8 +805,5 @@ export default function Reports() {
           )}
             </div>
           </main>
-        </div>
-      </div>
-    </div>
   );
 }

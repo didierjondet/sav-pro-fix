@@ -3,8 +3,6 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useProfile } from '@/hooks/useProfile';
 import { useRolePermissions } from '@/hooks/useRolePermissions';
-import Header from '@/components/layout/Header';
-import { Sidebar } from '@/components/layout/Sidebar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -30,7 +28,6 @@ export default function SAVLogs() {
   const navigate = useNavigate();
   const { profile, actualProfile } = useProfile();
   const { rolePermissions } = useRolePermissions();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [caseNumber, setCaseNumber] = useState('');
@@ -93,12 +90,7 @@ export default function SAVLogs() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="flex h-screen">
-        <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <Header onMenuClick={() => setSidebarOpen(true)} isMobileMenuOpen={sidebarOpen} />
-          <main className="flex-1 overflow-y-auto p-4 md:p-6">
+    <main className="flex-1 overflow-y-auto p-4 md:p-6">
             <div className="max-w-4xl mx-auto space-y-4">
               <div className="flex items-center gap-3">
                 <Button variant="outline" size="sm" onClick={() => navigate(`/sav/${id}`)}>
@@ -175,8 +167,5 @@ export default function SAVLogs() {
               </Card>
             </div>
           </main>
-        </div>
-      </div>
-    </div>
   );
 }

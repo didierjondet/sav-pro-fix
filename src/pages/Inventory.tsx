@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import Header from '@/components/layout/Header';
-import { Sidebar } from '@/components/layout/Sidebar';
 import { Card, CardContent } from '@/components/ui/card';
 import { ClipboardList, ShieldAlert } from 'lucide-react';
 import { InventoryManager } from '@/components/settings/inventory/InventoryManager';
@@ -8,7 +6,6 @@ import { useRolePermissions } from '@/hooks/useRolePermissions';
 import { useProfile } from '@/hooks/useProfile';
 
 export default function Inventory() {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const { rolePermissions, loading } = useRolePermissions();
   const { profile } = useProfile();
 
@@ -17,12 +14,7 @@ export default function Inventory() {
   const canApplyStock = isSuperAdmin || (rolePermissions as any)?.inventory_apply_stock === true;
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="flex h-screen">
-        <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <Header onMenuClick={() => setSidebarOpen(true)} isMobileMenuOpen={sidebarOpen} />
-          <main className="flex-1 overflow-y-auto p-6">
+    <main className="flex-1 overflow-y-auto p-6">
             <div className="max-w-7xl mx-auto space-y-6">
               <div className="flex items-center gap-3">
                 <div className="h-10 w-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
@@ -57,8 +49,5 @@ export default function Inventory() {
               )}
             </div>
           </main>
-        </div>
-      </div>
-    </div>
   );
 }

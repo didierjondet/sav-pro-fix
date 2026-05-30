@@ -1,7 +1,5 @@
 import { useMemo, useState, useEffect } from 'react';
 import { useLocation, Link } from 'react-router-dom';
-import Header from '@/components/layout/Header';
-import { Sidebar } from '@/components/layout/Sidebar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { useShop } from '@/hooks/useShop';
@@ -15,7 +13,6 @@ function useQuery() {
 }
 
 export default function ExpensesDetails() {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const query = useQuery();
   const initialPeriod = (query.get('period') as Period) || '30d';
   const [period, setPeriod] = useState<Period>(initialPeriod);
@@ -104,12 +101,7 @@ export default function ExpensesDetails() {
   const fmt = (v:number) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(v||0);
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="flex h-screen">
-        <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <Header onMenuClick={() => setSidebarOpen(true)} isMobileMenuOpen={sidebarOpen} />
-          <main className="flex-1 overflow-y-auto p-6">
+    <main className="flex-1 overflow-y-auto p-6">
             <div className="max-w-7xl mx-auto">
               <div className="flex items-center justify-between mb-6">
                 <h1 className="text-2xl font-bold">Dépenses: pièces utilisées</h1>
@@ -165,8 +157,5 @@ export default function ExpensesDetails() {
               </Card>
             </div>
           </main>
-        </div>
-      </div>
-    </div>
   );
 }

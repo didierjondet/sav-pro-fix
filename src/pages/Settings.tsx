@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import Header from '@/components/layout/Header';
-import { Sidebar } from '@/components/layout/Sidebar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
@@ -114,7 +112,6 @@ export default function Settings() {
   }, [searchParams, navigate]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const {
     shop,
     updateShop: updateShopData
@@ -685,21 +682,13 @@ export default function Settings() {
     });
   }, [activeTab, safeActiveTab, setSearchParams]);
   if (loading || rolePermissionsLoading) {
-    return <div className="min-h-screen bg-background">
-        <div className="flex h-screen">
-          <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-          <div className="flex-1 flex flex-col overflow-hidden">
-            <Header onMenuClick={() => setSidebarOpen(true)} isMobileMenuOpen={sidebarOpen} />
-            <main className="flex-1 overflow-y-auto p-6">
+    return <main className="flex-1 overflow-y-auto p-6">
               <div className="flex items-center gap-2 mb-6">
                 <SettingsIcon className="h-6 w-6" />
                 <h1 className="text-2xl font-bold">Paramètres</h1>
               </div>
               <div className="text-center py-8">Chargement...</div>
-            </main>
-          </div>
-        </div>
-      </div>;
+            </main>;
   }
   // Block access if menu_settings is false
   if (!rolePermissions.menu_settings) {
@@ -709,12 +698,7 @@ export default function Settings() {
       </div>
     );
   }
-  return <div className="min-h-screen bg-background">
-      <div className="flex h-screen">
-        <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <Header onMenuClick={() => setSidebarOpen(true)} isMobileMenuOpen={sidebarOpen} />
-          <main className="flex-1 overflow-y-auto p-6">
+  return <main className="flex-1 overflow-y-auto p-6">
             <div className="max-w-4xl mx-auto">
               <div className="flex items-center gap-2 mb-6">
                 <SettingsIcon className="h-6 w-6" />
@@ -2028,8 +2012,6 @@ export default function Settings() {
           </Tabs>
             </div>
           </main>
-        </div>
-      </div>
       
       {importDialog.open && importDialog.type && (
         <ImportDialog

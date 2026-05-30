@@ -6,8 +6,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Sidebar } from '@/components/layout/Sidebar';
-import Header from '@/components/layout/Header';
 import { Loader2, Crown, Zap, Infinity, MessageSquare, AlertTriangle, CheckCircle, CreditCard } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 export default function Subscription() {
@@ -21,7 +19,6 @@ export default function Subscription() {
     openCustomerPortal,
     refetch
   } = useSubscription();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   useEffect(() => {
     if (user) {
       refetch();
@@ -164,24 +161,14 @@ export default function Subscription() {
     return 'text-green-500';
   };
   if (loading || plansLoading) {
-    return <div className="min-h-screen flex">
-      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-        <div className="flex-1">
-          <Header onMenuClick={() => setSidebarOpen(!sidebarOpen)} isMobileMenuOpen={sidebarOpen} />
-          <main className="p-6">
+    return <main className="p-6">
             <div className="flex items-center justify-center h-64">
               <Loader2 className="h-8 w-8 animate-spin" />
             </div>
-          </main>
-        </div>
-      </div>;
+          </main>;
   }
   const currentPlan = getCurrentPlan();
-  return <div className="min-h-screen flex">
-      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      <div className="flex-1">
-        <Header onMenuClick={() => setSidebarOpen(!sidebarOpen)} isMobileMenuOpen={sidebarOpen} />
-        <main className="p-6 space-y-6">
+  return <main className="p-6 space-y-6">
           <div className="flex justify-between items-center">
             <div>
               <h1 className="text-3xl font-bold">Abonnement MySAV</h1>
@@ -366,7 +353,5 @@ export default function Subscription() {
                 </p>
               </CardContent>
             </Card>}
-        </main>
-      </div>
-    </div>;
+        </main>;
 }

@@ -1,7 +1,4 @@
 import { useState } from 'react';
-import Header from '@/components/layout/Header';
-import { Sidebar } from '@/components/layout/Sidebar';
-
 import { AgendaCalendar } from '@/components/agenda/AgendaCalendar';
 import { AppointmentDialog } from '@/components/agenda/AppointmentDialog';
 import { WorkingHoursConfig } from '@/components/agenda/WorkingHoursConfig';
@@ -14,7 +11,6 @@ import { usePendingAppointments } from '@/hooks/usePendingAppointments';
 import { useAppointmentNotifications } from '@/hooks/useAppointmentNotifications';
 
 export default function Agenda() {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
@@ -44,14 +40,7 @@ export default function Agenda() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="flex h-screen">
-        <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-        
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <Header onMenuClick={() => setSidebarOpen(true)} isMobileMenuOpen={sidebarOpen} />
-          
-          <main className="flex-1 overflow-y-auto p-4 md:p-6">
+    <main className="flex-1 overflow-y-auto p-4 md:p-6">
             <div className="max-w-7xl mx-auto space-y-6">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
@@ -103,8 +92,6 @@ export default function Agenda() {
               </Tabs>
             </div>
           </main>
-        </div>
-      </div>
       
       <AppointmentDialog
         open={isDialogOpen}
