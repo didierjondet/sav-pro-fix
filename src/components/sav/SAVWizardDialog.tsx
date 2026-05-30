@@ -866,7 +866,7 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
               </div>
             </div>
             <Separator />
-            <LoanerSection value={loanerSelection} onChange={setLoanerSelection} />
+            <LoanerSection value={loanerSelection} onChange={handleLoanerChange} />
           </div>
         );
       }
