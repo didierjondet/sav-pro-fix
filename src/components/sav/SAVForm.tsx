@@ -135,6 +135,8 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
     sim_pin: '',
   });
   const [savLimits, setSavLimits] = useState<{ allowed: boolean; reason: string; action: string | null }>({ allowed: true, reason: '', action: null });
+  const [loanerSelection, setLoanerSelection] = useState<LoanerSelection>(EMPTY_LOANER_SELECTION);
+  const { createLoan } = useLoanerLoans();
   const printButtonRef = React.useRef<SAVPrintButtonRef>(null);
   
   const { user } = useAuth();
