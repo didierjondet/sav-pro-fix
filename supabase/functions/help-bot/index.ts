@@ -865,11 +865,24 @@ async function buildCompactContext(supa: any, shopId: string): Promise<string> {
 }
 
 // ===================== AI call with tool loop =====================
-async function callAIWithTools(aiConfig: any, systemPrompt: string, history: any[], userMessage: string, supa: any, shopId: string): Promise<string> {
+// attachments: [{ name, mime_type, data_base64 }]
+async function callAIWithTools(
+  aiConfig: any, systemPrompt: string, history: any[], userMessage: string,
+  supa: any, shopId: string, attachments: any[] = []
+): Promise<{ text: string; reports: any[] }> {
   const MAX_TURNS = 4
+  const reports: any[] = []
+  const collect = (name: string, result: any) => {
+    if (name === 'generate_printable_report' && result?.ok && result?.html) {
+      reports.push({ title: result.title, html: result.html, report_type: result.report_type })
+      // Replace heavy html before sending back to model to keep tokens low.
+      return { ok: true, title: result.title, report_type: result.report_type, message: 'Rapport généré et prêt à imprimer côté utilisateur.' }
+    }
+    return result
+  }
+
   // Gemini native vs OpenAI-compatible
   if (aiConfig.provider === 'gemini') {
-    // Gemini native function declarations
     const tools = [{
       functionDeclarations: TOOL_DEFS.map((t) => ({
         name: t.function.name,
@@ -877,9 +890,15 @@ async function callAIWithTools(aiConfig: any, systemPrompt: string, history: any
         parameters: t.function.parameters,
       })),
     }]
+    const userParts: any[] = [{ text: userMessage }]
+    for (const a of attachments) {
+      if (a?.data_base64 && a?.mime_type) {
+        userParts.push({ inlineData: { mimeType: a.mime_type, data: a.data_base64 } })
+      }
+    }
     const contents: any[] = [
       ...history.map((m: any) => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: m.content }] })),
-      { role: 'user', parts: [{ text: userMessage }] },
+      { role: 'user', parts: userParts },
     ]
     for (let turn = 0; turn < MAX_TURNS; turn++) {
       const resp = await fetch(`${aiConfig.url}?key=${encodeURIComponent(aiConfig.apiKey)}`, {
@@ -900,25 +919,38 @@ async function callAIWithTools(aiConfig: any, systemPrompt: string, history: any
       const parts = cand?.content?.parts || []
       const fnCalls = parts.filter((p: any) => p.functionCall).map((p: any) => p.functionCall)
       if (fnCalls.length === 0) {
-        return parts.map((p: any) => p.text).filter(Boolean).join('\n') || "Désolé, je n'ai pas pu traiter votre demande."
+        const text = parts.map((p: any) => p.text).filter(Boolean).join('\n') || "Désolé, je n'ai pas pu traiter votre demande."
+        return { text, reports }
       }
       contents.push({ role: 'model', parts })
       const responsesParts: any[] = []
       for (const fc of fnCalls) {
-        const result = await runTool(fc.name, fc.args || {}, supa, shopId)
+        const raw = await runTool(fc.name, fc.args || {}, supa, shopId)
+        const result = collect(fc.name, raw)
         console.log(`[help-bot] gemini tool=${fc.name} ok`)
         responsesParts.push({ functionResponse: { name: fc.name, response: { result } } })
       }
       contents.push({ role: 'user', parts: responsesParts })
     }
-    return "Désolé, je n'ai pas pu finaliser la réponse (trop d'appels d'outils)."
+    return { text: "Désolé, je n'ai pas pu finaliser la réponse (trop d'appels d'outils).", reports }
   }
 
   // OpenAI / Lovable gateway / OpenAI-compatible
+  const userContent: any = attachments.length
+    ? [
+        { type: 'text', text: userMessage },
+        ...attachments
+          .filter((a: any) => a?.mime_type?.startsWith('image/') && a?.data_base64)
+          .map((a: any) => ({ type: 'image_url', image_url: { url: `data:${a.mime_type};base64,${a.data_base64}` } })),
+        ...attachments
+          .filter((a: any) => !a?.mime_type?.startsWith('image/'))
+          .map((a: any) => ({ type: 'text', text: `\n[Pièce jointe non-image reçue: ${a?.name || 'fichier'} (${a?.mime_type})]` })),
+      ]
+    : userMessage
   const messages: any[] = [
     { role: 'system', content: systemPrompt },
     ...history,
-    { role: 'user', content: userMessage },
+    { role: 'user', content: userContent },
   ]
   for (let turn = 0; turn < MAX_TURNS; turn++) {
     const resp = await fetch(aiConfig.url, {
@@ -938,15 +970,16 @@ async function callAIWithTools(aiConfig: any, systemPrompt: string, history: any
     }
     const data = await resp.json()
     const msg = data.choices?.[0]?.message
-    if (!msg) return "Désolé, je n'ai pas pu traiter votre demande."
+    if (!msg) return { text: "Désolé, je n'ai pas pu traiter votre demande.", reports }
     if (!msg.tool_calls || msg.tool_calls.length === 0) {
-      return msg.content || "Désolé, je n'ai pas pu traiter votre demande."
+      return { text: msg.content || "Désolé, je n'ai pas pu traiter votre demande.", reports }
     }
     messages.push(msg)
     for (const tc of msg.tool_calls) {
       let args = {}
       try { args = JSON.parse(tc.function.arguments || '{}') } catch {}
-      const result = await runTool(tc.function.name, args, supa, shopId)
+      const raw = await runTool(tc.function.name, args, supa, shopId)
+      const result = collect(tc.function.name, raw)
       console.log(`[help-bot] tool=${tc.function.name} ok`)
       messages.push({
         role: 'tool',
@@ -955,7 +988,7 @@ async function callAIWithTools(aiConfig: any, systemPrompt: string, history: any
       })
     }
   }
-  return "Désolé, je n'ai pas pu finaliser la réponse (trop d'appels d'outils)."
+  return { text: "Désolé, je n'ai pas pu finaliser la réponse (trop d'appels d'outils).", reports }
 }
 
 // ===================== Entry point =====================
