@@ -40,65 +40,66 @@ export default function Agenda() {
   };
 
   return (
-    <main className="flex-1 overflow-y-auto p-4 md:p-6">
-            <div className="max-w-7xl mx-auto space-y-6">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                  <h1 className="text-2xl font-bold flex items-center gap-2">
-                    <CalendarIcon className="h-6 w-6 text-primary" />
-                    Agenda
-                  </h1>
-                  <p className="text-muted-foreground">
-                    Gérez vos rendez-vous clients
-                  </p>
-                </div>
-                
-                <Button onClick={() => handleNewAppointment()}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Nouveau RDV
-                </Button>
-              </div>
-
-              <PendingAppointmentsCard />
-
-              <Tabs defaultValue="calendar" className="space-y-4">
-                <TabsList>
-                  <TabsTrigger value="calendar" className="flex items-center gap-2">
-                    <CalendarIcon className="h-4 w-4" />
-                    Calendrier
-                  </TabsTrigger>
-                  <TabsTrigger value="settings" className="flex items-center gap-2">
-                    <Settings className="h-4 w-4" />
-                    Horaires
-                  </TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="calendar" className="space-y-4">
-                  <AgendaCalendar
-                    appointments={appointments}
-                    loading={loading}
-                    viewType={viewType}
-                    selectedDate={selectedDate}
-                    onViewChange={setViewType}
-                    onDateChange={setSelectedDate}
-                    onSlotClick={handleNewAppointment}
-                    onAppointmentClick={handleEditAppointment}
-                  />
-                </TabsContent>
-
-                <TabsContent value="settings">
-                  <WorkingHoursConfig />
-                </TabsContent>
-              </Tabs>
+    <>
+      <main className="flex-1 overflow-y-auto p-4 md:p-6">
+        <div className="max-w-7xl mx-auto space-y-6">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <h1 className="text-2xl font-bold flex items-center gap-2">
+                <CalendarIcon className="h-6 w-6 text-primary" />
+                Agenda
+              </h1>
+              <p className="text-muted-foreground">
+                Gérez vos rendez-vous clients
+              </p>
             </div>
-          </main>
-      
+
+            <Button onClick={() => handleNewAppointment()}>
+              <Plus className="h-4 w-4 mr-2" />
+              Nouveau RDV
+            </Button>
+          </div>
+
+          <PendingAppointmentsCard />
+
+          <Tabs defaultValue="calendar" className="space-y-4">
+            <TabsList>
+              <TabsTrigger value="calendar" className="flex items-center gap-2">
+                <CalendarIcon className="h-4 w-4" />
+                Calendrier
+              </TabsTrigger>
+              <TabsTrigger value="settings" className="flex items-center gap-2">
+                <Settings className="h-4 w-4" />
+                Horaires
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="calendar" className="space-y-4">
+              <AgendaCalendar
+                appointments={appointments}
+                loading={loading}
+                viewType={viewType}
+                selectedDate={selectedDate}
+                onViewChange={setViewType}
+                onDateChange={setSelectedDate}
+                onSlotClick={handleNewAppointment}
+                onAppointmentClick={handleEditAppointment}
+              />
+            </TabsContent>
+
+            <TabsContent value="settings">
+              <WorkingHoursConfig />
+            </TabsContent>
+          </Tabs>
+        </div>
+      </main>
+
       <AppointmentDialog
         open={isDialogOpen}
         onClose={handleCloseDialog}
         appointment={selectedAppointment}
         defaultDate={selectedDate}
       />
-    </div>
+    </>
   );
 }
