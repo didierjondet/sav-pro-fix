@@ -49,13 +49,15 @@ import {
   Volume2,
   Sparkles,
   ClipboardList,
-  Truck
+  Truck,
+  PackageOpen
 } from 'lucide-react';
 
 import { MenuConfigurationTab } from '@/components/settings/MenuConfigurationTab';
 import { RolePermissionsManager } from '@/components/settings/RolePermissionsManager';
 import { PartCategoriesManager } from '@/components/settings/PartCategoriesManager';
 import { SuppliersManager } from '@/components/settings/SuppliersManager';
+import { LoanerEquipmentManager } from '@/components/settings/loaner/LoanerEquipmentManager';
 import { SMSPackagesDisplay } from '@/components/subscription/SMSPackagesDisplay';
 import { BillingInvoices } from '@/components/billing/BillingInvoices';
 import { BillingVatTab } from '@/components/settings/BillingVatTab';
