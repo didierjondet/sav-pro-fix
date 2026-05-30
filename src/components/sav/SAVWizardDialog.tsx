@@ -160,6 +160,14 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
 
   const currentTypeInfo = getTypeInfo(savType);
 
+  React.useEffect(() => {
+    if (loanerTouchedRef.current) return;
+    if (currentTypeInfo?.loaner_enabled) {
+      setLoanerSelection((prev) => prev.enabled ? prev : { ...prev, enabled: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [savType, currentTypeInfo?.loaner_enabled]);
+
   // Build actual steps based on type config
   const activeSteps = STEPS.filter(s => {
     if (s.key === 'client') return currentTypeInfo.show_customer_info;
