@@ -135,6 +135,7 @@ export default function SAVTypesManager({ types, loading, onRefresh }: SAVTypesM
             exclude_purchase_costs: formData.exclude_purchase_costs,
             exclude_sales_revenue: formData.exclude_sales_revenue,
             show_satisfaction_survey: formData.show_satisfaction_survey,
+            loaner_enabled: formData.loaner_enabled,
           });
 
       if (error) throw error;
