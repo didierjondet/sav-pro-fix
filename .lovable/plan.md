@@ -1,31 +1,56 @@
-Objectif : supprimer les deux comportements interdits sur le dashboard : widgets coupés et widgets qui passent au-dessus d’autres widgets, sans changer la logique métier ni le reste de l’interface.
+# Confirmation
 
-Plan d’intervention :
+Oui, le suivi produit est bien en place :
+- Table `tracked_products` (clé IMEI ≥10 caractères, fallback SKU/marque-modèle) avec compteur `sav_count`.
+- Colonne `sav_cases.tracked_product_id` + fonction `find_or_create_tracked_product` appelée à la création d'un SAV.
+- Hooks `useProductHistory` / `useProductHistoryById` qui ramènent la fiche produit + tous les anciens SAV.
+- UI déjà visible : `ProductHistoryBanner`, `ProductRecurrenceBadge`, `ProductHistoryDrawer` lors d'une création/édition de SAV.
 
-1. Stabiliser la grille du dashboard
-- Retirer le placement dense `[grid-auto-flow:dense]`, car il peut repositionner les widgets dans les trous et accentuer les superpositions visuelles avec le drag/drop.
-- Garder une grille simple et prévisible : 1 colonne mobile, 2 colonnes tablette, 4 colonnes desktop.
-- Augmenter légèrement l’espacement entre widgets pour garantir une séparation visuelle constante.
+Donc dès qu'un IMEI (ou à défaut SKU) est reconnu, l'historique complet est rattaché et consultable.
 
-2. Remplacer les hauteurs trop rigides par des hauteurs minimales sûres
-- Ne plus forcer tous les widgets à tenir strictement dans une hauteur trop courte.
-- Conserver les proportions imposées par gabarit, mais utiliser des `min-height` responsives plutôt qu’un `h-full` qui coupe le contenu.
-- Les widgets pourront donc grandir si leur contenu réel est plus haut, au lieu de chevaucher ou devenir illisibles.
+# Ce qu'on ajoute
 
-3. Corriger le wrapper commun `SortableBlock`
-- Retirer le `overflow-hidden` au niveau du bloc principal, qui masque encore des informations.
-- Ajouter une isolation/z-index propre pour éviter qu’un widget normal passe au-dessus d’un autre.
-- Garder un z-index élevé uniquement pendant le glisser-déposer.
+## 1. Calcul "taux de retour" (logique partagée)
 
-4. Uniformiser les cartes internes des widgets principaux
-- Appliquer `h-full min-h-0 flex flex-col` aux widgets qui contiennent graphiques, listes ou plusieurs sections.
-- Adapter les zones de graphiques pour qu’elles utilisent l’espace disponible sans pousser la carte hors de sa case.
-- Cibler uniquement les widgets du dashboard concernés : KPIs financiers, comparaison mensuelle, répartition CA, satisfaction client, performance SAV, stats annuelles, retards mensuels, stockage/devis/top appareils si nécessaire.
+Nouveau helper `src/lib/productReturnRate.ts` qui, à partir de la liste des SAV d'un produit, calcule :
+- **Nb total de passages** = nombre de SAV clôturés sur ce produit.
+- **Retours** = SAV créé < N jours après la clôture d'un SAV précédent du même produit (fenêtre configurable, défaut 90 j).
+- **Retour même panne** = retour dont le `problem_description` partage des mots-clés normalisés avec un SAV précédent (normalisation accents/ponctuation + matching sur tokens significatifs ≥ 4 caractères, seuil ≥ 1 token commun + même famille via heuristique simple). Sinon → **retour autre panne**.
+- Sorties : `{ totalCases, returnCount, sameIssueCount, otherIssueCount, returnRate, sameIssueRate }`.
 
-5. Ajuster les widgets très chargés
-- Les widgets comme `revenue-breakdown`, `customer-satisfaction`, `top-devices`, `annual-stats` et `monthly-comparison` auront un gabarit plus haut si leur contenu ne tient pas.
-- Le but est de voir 100% des informations, pas de forcer une compression illisible.
+Aucune migration nécessaire : tout est dérivé des SAV existants.
 
-6. Vérification ciblée
-- Vérifier le comportement sur la largeur actuelle 971×696, puis sur mobile et desktop.
-- Confirmer visuellement qu’aucun widget n’est coupé et qu’aucun ne chevauche un autre.
+## 2. Affichage dans la fiche produit (drawer existant)
+
+Dans `ProductHistoryDrawer` :
+- Ajouter en haut un bloc compact "Récurrence" avec 3 KPI : Taux de retour global, Taux retour même panne, Nb de réparations.
+- Sur chaque ligne de SAV de l'historique, badge discret : "1er passage", "Retour (même panne)" ou "Retour (autre panne)".
+
+Aucune autre UI modifiée.
+
+## 3. Nouveau widget statistiques "Taux de retour produit"
+
+- Nouveau widget `ProductReturnRateWidget` (taille `large`) listant sur la période sélectionnée :
+  - 3 KPI : retours totaux, retours même panne, retours autre panne (avec %).
+  - Top 5 des produits les plus récurrents (marque/modèle + IMEI masqué + nb retours).
+- Nouvelle entrée dans `StatisticsWidgetSizes.ts` (`DEFAULT_MODULE_SIZES`) et dans la liste de widgets disponibles (`WidgetManager` / registry existant).
+- Données : `sav_cases` joints à `tracked_products` filtrés par `shop_id` et `created_at` dans la période, agrégés avec le helper.
+
+## Hors-scope
+
+- Pas de modification de la grille/dimensionnement des widgets (sujet précédent).
+- Pas de changement de schéma DB.
+- Pas de modification du flow de création SAV ni du matching IMEI/SKU déjà en place.
+
+# Détails techniques
+
+```text
+src/lib/productReturnRate.ts            (nouveau)
+src/components/sav/ProductHistoryDrawer.tsx        (ajout bloc KPI + badges)
+src/components/statistics/widgets/ProductReturnRateWidget.tsx  (nouveau)
+src/components/statistics/StatisticsWidgetSizes.ts (ajout id 'product-return-rate' → 'large')
+src/components/statistics/WidgetManager.tsx        (enregistrement)
+src/hooks/useProductReturnStats.ts                 (nouveau, agrégation période + shop)
+```
+
+Heuristique "même panne" volontairement simple et déterministe (tokens normalisés) pour rester lisible ; ajustable plus tard si besoin.

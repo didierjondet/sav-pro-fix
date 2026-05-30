@@ -43,7 +43,9 @@ import { StorageUsageWidget } from './widgets/StorageUsageWidget';
 import { AnnualStatsWidget } from './widgets/AnnualStatsWidget';
 import { QuoteRejectionWidget } from './widgets/QuoteRejectionWidget';
 import { MonthlyLateRateChart } from './widgets/MonthlyLateRateChart';
+import { ProductReturnRateWidget } from './widgets/ProductReturnRateWidget';
 import { CustomWidgetRenderer } from './CustomWidgetRenderer';
+
 
 interface DragDropStatisticsProps {
   period: '7d' | '30d' | '1m_calendar' | '3m' | '6m' | '1y';
@@ -689,6 +691,14 @@ export const DragDropStatistics = ({ period, onPeriodChange }: DragDropStatistic
             <QuoteRejectionWidget />
           </div>
         );
+
+      case 'product-return-rate':
+        return (
+          <div className={className}>
+            <ProductReturnRateWidget period={period} />
+          </div>
+        );
+
 
       // Widget sav-types-grid supprimé
 

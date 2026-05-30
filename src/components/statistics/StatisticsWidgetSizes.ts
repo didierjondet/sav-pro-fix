@@ -41,6 +41,8 @@ const WIDGET_TO_TEMPLATE: Record<string, WidgetSize> = {
   'finance-kpis':          'large',
   'sav-performance':       'large',
   'customer-satisfaction': 'large',
+  'product-return-rate':   'large',
+
 
   // Très grands widgets (XL)
   'monthly-comparison':    'full',
