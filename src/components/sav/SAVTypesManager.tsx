@@ -500,6 +500,25 @@ export default function SAVTypesManager({ types, loading, onRefresh }: SAVTypesM
                     />
                   </div>
 
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label className="text-sm font-normal flex items-center gap-2">
+                        <PackageOpen className="w-4 h-4" />
+                        Proposer un prêt de matériel
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        Active automatiquement la section "Prêt de matériel" lors de la création d'un SAV de ce type
+                      </p>
+                    </div>
+                    <Switch
+                      checked={formData.loaner_enabled}
+                      onCheckedChange={(checked) =>
+                        setFormData({ ...formData, loaner_enabled: checked })
+                      }
+                    />
+                  </div>
+
+
                   {(formData.exclude_purchase_costs !== formData.exclude_sales_revenue) && (
                     <p className="text-xs text-amber-600 bg-amber-50 p-2 rounded">
                       ⚠️ Note : La marge ne sera pas calculée si l'un des deux prix est exclu.
