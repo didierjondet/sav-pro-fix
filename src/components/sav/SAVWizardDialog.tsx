@@ -851,6 +851,8 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
                 <PatternLock pattern={unlockPattern} onChange={setUnlockPattern} />
               </div>
             </div>
+            <Separator />
+            <LoanerSection value={loanerSelection} onChange={setLoanerSelection} />
           </div>
         );
       }
