@@ -247,6 +247,7 @@ export default function SAVTypesManager({ types, loading, onRefresh }: SAVTypesM
       exclude_purchase_costs: type.exclude_purchase_costs ?? false,
       exclude_sales_revenue: type.exclude_sales_revenue ?? false,
       show_satisfaction_survey: type.show_satisfaction_survey ?? true,
+      loaner_enabled: type.loaner_enabled ?? false,
     });
     setDialogOpen(true);
   };
