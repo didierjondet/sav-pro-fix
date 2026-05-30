@@ -14,7 +14,8 @@ import {
   Smartphone,
   CheckCircle,
   Timer,
-  Wifi
+  Wifi,
+  PackageOpen
 } from 'lucide-react';
 
 interface SAVCaseData {
