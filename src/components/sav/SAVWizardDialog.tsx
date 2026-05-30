@@ -337,6 +337,22 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
         } : null,
       };
 
+      if (loanerSelection.enabled && loanerSelection.equipment && newCase?.id) {
+        try {
+          await createLoan({
+            equipment_id: loanerSelection.equipment.id,
+            sav_case_id: newCase.id,
+            customer_id: customerId || null,
+            expected_return_at: loanerSelection.expectedReturnAt || null,
+            loan_condition: loanerSelection.notes || null,
+          });
+        } catch (err) {
+          console.error('Erreur création prêt matériel:', err);
+        }
+      }
+
+
+
       if (selectedParts.length > 0) {
         const partsWithInsufficientStock = selectedParts
           .filter(part => !part.isCustom && part.part_id)
