@@ -1,56 +1,66 @@
-# Confirmation
 
-Oui, le suivi produit est bien en place :
-- Table `tracked_products` (clé IMEI ≥10 caractères, fallback SKU/marque-modèle) avec compteur `sav_count`.
-- Colonne `sav_cases.tracked_product_id` + fonction `find_or_create_tracked_product` appelée à la création d'un SAV.
-- Hooks `useProductHistory` / `useProductHistoryById` qui ramènent la fiche produit + tous les anciens SAV.
-- UI déjà visible : `ProductHistoryBanner`, `ProductRecurrenceBadge`, `ProductHistoryDrawer` lors d'une création/édition de SAV.
+## Objectif
 
-Donc dès qu'un IMEI (ou à défaut SKU) est reconnu, l'historique complet est rattaché et consultable.
+Lever la limite des 20 derniers SAV et donner à Fixy un accès complet à la base + renforcer son ADN de technicien réparateur hi-tech (priorité smartphone).
 
-# Ce qu'on ajoute
+## Constat
 
-## 1. Calcul "taux de retour" (logique partagée)
+Dans `supabase/functions/help-bot/index.ts` :
+- `fetchShopData` n'expose que 10/20 SAV récents en dur, 15 pièces top, 30 pièces stock bas, etc. → l'IA ne « voit » jamais le reste.
+- `performDataLookup` couvre quelques cas (numéro de dossier, nom client, type+modèle de pièce, RDV), mais l'IA ne peut pas demander activement plus.
+- Le prompt technicien existe déjà mais reste secondaire dans le ton.
 
-Nouveau helper `src/lib/productReturnRate.ts` qui, à partir de la liste des SAV d'un produit, calcule :
-- **Nb total de passages** = nombre de SAV clôturés sur ce produit.
-- **Retours** = SAV créé < N jours après la clôture d'un SAV précédent du même produit (fenêtre configurable, défaut 90 j).
-- **Retour même panne** = retour dont le `problem_description` partage des mots-clés normalisés avec un SAV précédent (normalisation accents/ponctuation + matching sur tokens significatifs ≥ 4 caractères, seuil ≥ 1 token commun + même famille via heuristique simple). Sinon → **retour autre panne**.
-- Sorties : `{ totalCases, returnCount, sameIssueCount, otherIssueCount, returnRate, sameIssueRate }`.
+## Plan
 
-Aucune migration nécessaire : tout est dérivé des SAV existants.
+### 1. Donner à Fixy un accès « illimité » via tool calling
 
-## 2. Affichage dans la fiche produit (drawer existant)
+Ajouter au edge function `help-bot` un mode **function calling** (OpenAI + Gemini) avec des outils typés qui interrogent la base à la demande, sur tout l'historique du shop :
 
-Dans `ProductHistoryDrawer` :
-- Ajouter en haut un bloc compact "Récurrence" avec 3 KPI : Taux de retour global, Taux retour même panne, Nb de réparations.
-- Sur chaque ligne de SAV de l'historique, badge discret : "1er passage", "Retour (même panne)" ou "Retour (autre panne)".
+- `search_sav_cases({ query?, status?, sav_type?, date_from?, date_to?, device_brand?, device_model?, imei?, customer?, limit })` — recherche full historique (pas de cap 20).
+- `get_sav_case_detail({ case_number | id })` — fiche complète + pièces utilisées + messages + historique de clôtures + audit log.
+- `search_parts({ query?, brand?, model?, type?, in_stock?, low_stock?, limit })` — toutes les pièces, prix achat/vente, marge, stock, fournisseur.
+- `get_part_history({ part_id, days })` — historique d'usage en SAV, prix payés, fournisseurs.
+- `search_customers({ query, limit })` + `get_customer_history({ customer_id })` — tous SAV/devis/RDV/messages.
+- `search_quotes({ status?, date_from?, date_to?, query?, limit })`.
+- `list_appointments({ date_from, date_to, status?, type? })`.
+- `get_finance_summary({ period: 'today'|'week'|'month'|'year'|'custom', date_from?, date_to? })` — CA, marge, nombre SAV, taux retard, par type.
+- `get_late_savs({ limit })` — uses business rules `is_final_status` + `pause_timer` + `max_processing_days` par type.
+- `get_business_rules()` — renvoie statuts, types SAV, horaires boutique, configs IA modules, limites abonnement.
+- `get_product_return_rate({ tracked_product_id? | imei? | sku? })` — réutilise `productReturnRate.ts` côté serveur.
 
-Aucune autre UI modifiée.
+Boucle d'appel : max 4 tours (l'IA appelle des tools → on renvoie les résultats → elle synthétise). Chaque tool exécute une requête SQL via service-role déjà strictement filtrée par `shop_id`, jamais d'input brut concaténé.
 
-## 3. Nouveau widget statistiques "Taux de retour produit"
+### 2. Réduire le contexte poussé en système, garder un « état du jour »
 
-- Nouveau widget `ProductReturnRateWidget` (taille `large`) listant sur la période sélectionnée :
-  - 3 KPI : retours totaux, retours même panne, retours autre panne (avec %).
-  - Top 5 des produits les plus récurrents (marque/modèle + IMEI masqué + nb retours).
-- Nouvelle entrée dans `StatisticsWidgetSizes.ts` (`DEFAULT_MODULE_SIZES`) et dans la liste de widgets disponibles (`WidgetManager` / registry existant).
-- Données : `sav_cases` joints à `tracked_products` filtrés par `shop_id` et `created_at` dans la période, agrégés avec le helper.
+Le bloc « DONNÉES EN TEMPS RÉEL » devient un résumé compact (KPI shop, compteurs par statut, alertes stock, messages non lus, RDV 7 j, finance mois) — pas de listes longues. Les détails passent désormais par les tools, ce qui supprime la limite des 20 SAV sans gonfler le prompt.
 
-## Hors-scope
+### 3. Renforcer l'ADN « technicien réparateur hi-tech »
 
-- Pas de modification de la grille/dimensionnement des widgets (sujet précédent).
-- Pas de changement de schéma DB.
-- Pas de modification du flow de création SAV ni du matching IMEI/SKU déjà en place.
+Refondre le `SYSTEM_PROMPT` :
+- Identité d'ouverture : « Tu es Fixy, technicien réparateur hi-tech expert (spécialité smartphones) ET assistant Fixway. »
+- Procédure de diagnostic devient centrale (interrogation client → tests → mesure conso → décision pièce/micro-soudure).
+- Bibliothèque pannes/symptômes étendue par marque (iPhone Face ID/True Tone/Tristar, Samsung point bleu/refusion HDMI, Xiaomi Mi Flash, Pixel modem, Switch Joy-Con Hall, etc.).
+- Règle de réflexe systématique : avant de chiffrer une réparation, appeler `search_parts` pour donner le prix réel de la boutique + marge, et `get_part_history` si dispo.
+- Quand un IMEI/SKU est mentionné : appeler `get_product_return_rate` pour signaler récidive.
+- Sortie type pour un diagnostic : *Symptômes probables → Tests à faire → Pièce(s) candidate(s) avec réf stock + prix → Temps estimé → Risques (True Tone, Face ID, étanchéité)*.
 
-# Détails techniques
+### 4. UI / contrat API : inchangé
 
-```text
-src/lib/productReturnRate.ts            (nouveau)
-src/components/sav/ProductHistoryDrawer.tsx        (ajout bloc KPI + badges)
-src/components/statistics/widgets/ProductReturnRateWidget.tsx  (nouveau)
-src/components/statistics/StatisticsWidgetSizes.ts (ajout id 'product-return-rate' → 'large')
-src/components/statistics/WidgetManager.tsx        (enregistrement)
-src/hooks/useProductReturnStats.ts                 (nouveau, agrégation période + shop)
-```
+Pas de modif côté `HelpBot.tsx` / `useHelpBot.ts`. Mêmes entrées (`message`, `history`, `userContext`, `shopId`), même sortie (`message`, `escalate`, `escalate_summary`).
 
-Heuristique "même panne" volontairement simple et déterministe (tokens normalisés) pour rester lisible ; ajustable plus tard si besoin.
+### 5. Garde-fous
+
+- Tools toujours filtrés par `shop_id` reçu (jamais depuis l'IA).
+- Limites par tool (`limit` borné à 200) pour éviter d'exploser le contexte.
+- Logs `[help-bot] tool=... rows=...` pour traçabilité.
+- Retry 1× sur 429/503 (déjà standard dans le projet).
+
+## Fichiers touchés
+
+- `supabase/functions/help-bot/index.ts` — ajout tool calling + tools DB + refonte prompt + compactage du contexte poussé.
+
+## Hors périmètre
+
+- Pas de migration DB.
+- Pas de changement UI du bot.
+- Pas de changement des autres edge functions (daily-assistant reste tel quel).
