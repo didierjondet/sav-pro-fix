@@ -250,16 +250,28 @@ const HelpBot: React.FC = () => {
               {messages.length === 0 && (
                 <div className="space-y-3">
                   <p className="text-sm text-muted-foreground">
-                    Bonjour ! Je suis votre assistant Fixway. Comment puis-je vous aider ?
+                    Bonjour ! Je suis Fixy, votre technicien réparateur high-tech. Demandez-moi un diagnostic, un rapport, ou analyser une photo/PDF.
                   </p>
+                  <div className="space-y-2">
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Essayez ces demandes avancées</p>
+                    {ADVANCED_EXAMPLES.map((ex, i) => (
+                      <button
+                        key={i}
+                        onClick={() => sendMessage(ex)}
+                        className="w-full text-left text-sm px-3 py-2 rounded-lg border bg-muted/50 hover:bg-muted transition-colors"
+                      >
+                        {ex}
+                      </button>
+                    ))}
+                  </div>
                   {faqItems.length > 0 && (
                     <div className="space-y-2">
                       <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Questions fréquentes</p>
-                      {faqItems.slice(0, 4).map(faq => (
+                      {faqItems.slice(0, 3).map(faq => (
                         <button
                           key={faq.id}
                           onClick={() => handleFAQClick(faq)}
-                          className="w-full text-left text-sm px-3 py-2 rounded-lg border bg-muted/50 hover:bg-muted transition-colors"
+                          className="w-full text-left text-xs px-3 py-2 rounded-lg border bg-muted/30 hover:bg-muted transition-colors"
                         >
                           {faq.question}
                         </button>
