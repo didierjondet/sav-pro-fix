@@ -462,6 +462,36 @@ export default function TrackSAV() {
           </CardContent>
         </Card>
 
+        {/* Matériel prêté */}
+        {loanerInfo && (
+          <Card className="border-2 border-amber-400 bg-amber-50/60">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-amber-800">
+                <PackageOpen className="h-5 w-5" />
+                Matériel prêté
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2 text-sm">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                <div><strong>Nom :</strong> {loanerInfo.name}</div>
+                {loanerInfo.brand && <div><strong>Marque :</strong> {loanerInfo.brand}</div>}
+                {loanerInfo.model && <div><strong>Modèle :</strong> {loanerInfo.model}</div>}
+                {loanerInfo.color && <div><strong>Couleur :</strong> {loanerInfo.color}</div>}
+                {loanerInfo.loaned_at && (
+                  <div><strong>Prêté le :</strong> {new Date(loanerInfo.loaned_at).toLocaleDateString('fr-FR')}</div>
+                )}
+                {loanerInfo.expected_return_at && (
+                  <div><strong>Retour prévu :</strong> {new Date(loanerInfo.expected_return_at).toLocaleDateString('fr-FR')}</div>
+                )}
+              </div>
+              <p className="text-xs text-amber-700 pt-2 border-t border-amber-200">
+                ⚠️ Pensez à rapporter le matériel prêté lors de la récupération de votre appareil.
+              </p>
+            </CardContent>
+          </Card>
+        )}
+
+
         {/* Rendez-vous proposés */}
         {savCase && (
           <AppointmentDisplay 
