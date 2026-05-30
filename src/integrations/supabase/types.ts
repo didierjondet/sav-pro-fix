@@ -1172,6 +1172,145 @@ export type Database = {
         }
         Relationships: []
       }
+      loaner_equipment: {
+        Row: {
+          brand: string | null
+          category: string
+          color: string | null
+          created_at: string
+          id: string
+          imei: string | null
+          model: string | null
+          name: string
+          notes: string | null
+          photo_url: string | null
+          serial_number: string | null
+          shop_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          brand?: string | null
+          category?: string
+          color?: string | null
+          created_at?: string
+          id?: string
+          imei?: string | null
+          model?: string | null
+          name: string
+          notes?: string | null
+          photo_url?: string | null
+          serial_number?: string | null
+          shop_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          brand?: string | null
+          category?: string
+          color?: string | null
+          created_at?: string
+          id?: string
+          imei?: string | null
+          model?: string | null
+          name?: string
+          notes?: string | null
+          photo_url?: string | null
+          serial_number?: string | null
+          shop_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loaner_equipment_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      loaner_loans: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          customer_id: string | null
+          equipment_id: string
+          expected_return_at: string | null
+          id: string
+          loan_condition: string | null
+          loaned_at: string
+          notes: string | null
+          return_condition: string | null
+          returned_at: string | null
+          sav_case_id: string | null
+          shop_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string | null
+          equipment_id: string
+          expected_return_at?: string | null
+          id?: string
+          loan_condition?: string | null
+          loaned_at?: string
+          notes?: string | null
+          return_condition?: string | null
+          returned_at?: string | null
+          sav_case_id?: string | null
+          shop_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          customer_id?: string | null
+          equipment_id?: string
+          expected_return_at?: string | null
+          id?: string
+          loan_condition?: string | null
+          loaned_at?: string
+          notes?: string | null
+          return_condition?: string | null
+          returned_at?: string | null
+          sav_case_id?: string | null
+          shop_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loaner_loans_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loaner_loans_equipment_id_fkey"
+            columns: ["equipment_id"]
+            isOneToOne: false
+            referencedRelation: "loaner_equipment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loaner_loans_sav_case_id_fkey"
+            columns: ["sav_case_id"]
+            isOneToOne: false
+            referencedRelation: "sav_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loaner_loans_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       messaging_providers: {
         Row: {
           created_at: string
