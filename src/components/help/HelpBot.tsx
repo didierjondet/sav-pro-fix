@@ -4,6 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import FixyMascot from '@/components/help/FixyMascot';
 import { useFixyReactions } from '@/hooks/useFixyReactions';
+import { useFixyWelcome } from '@/hooks/useFixyWelcome';
+import { useFixyHourlyTips } from '@/hooks/useFixyHourlyTips';
 
 import { useHelpBot, type BotAttachmentInput } from '@/hooks/useHelpBot';
 import { useAuth } from '@/contexts/AuthContext';
@@ -11,7 +13,7 @@ import { useShop } from '@/hooks/useShop';
 import { useProfile } from '@/hooks/useProfile';
 import { useOnboardingProgress } from '@/hooks/useOnboardingProgress';
 import OnboardingPanel from '@/components/help/OnboardingPanel';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
 
@@ -50,6 +52,7 @@ const HelpBot: React.FC = () => {
   const { shop } = useShop();
   const { profile } = useProfile();
   const location = useLocation();
+  const navigate = useNavigate();
   const bottomRef = useRef<HTMLDivElement>(null);
 
   const {
@@ -68,7 +71,13 @@ const HelpBot: React.FC = () => {
   const { pendingCount, isDismissed, isFullyConfigured, isOnboardingExpired } = useOnboardingProgress();
 
   const userContext = getUserContext();
-  const fixyEvent = useFixyReactions();
+  const reactionEvent = useFixyReactions();
+  const welcomeEvent = useFixyWelcome();
+  const tipEvent = useFixyHourlyTips();
+  // L'évènement actif est le plus récent (id le plus haut)
+  const fixyEvent = [reactionEvent, welcomeEvent, tipEvent]
+    .filter((e): e is NonNullable<typeof e> => !!e)
+    .sort((a, b) => b.id - a.id)[0] ?? null;
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -185,13 +194,25 @@ const HelpBot: React.FC = () => {
       {!isOpen && (
         <div className="fixed bottom-4 right-4 z-50 flex flex-col items-end gap-2">
           {fixyEvent && (
-            <div
-              key={fixyEvent.id}
-              className="animate-mascot-bubble-in relative max-w-[200px] rounded-2xl bg-background border shadow-lg px-3 py-2 text-xs font-medium text-foreground"
-            >
-              {fixyEvent.bubble}
-              <span className="absolute -bottom-1 right-5 w-2 h-2 bg-background border-r border-b rotate-45" />
-            </div>
+            fixyEvent.href ? (
+              <button
+                key={fixyEvent.id}
+                type="button"
+                onClick={() => navigate(fixyEvent.href!)}
+                className="animate-mascot-bubble-in relative max-w-[240px] rounded-2xl bg-background border shadow-lg px-3 py-2 text-xs font-medium text-foreground text-left hover:bg-accent transition-colors cursor-pointer"
+              >
+                {fixyEvent.bubble}
+                <span className="absolute -bottom-1 right-5 w-2 h-2 bg-background border-r border-b rotate-45" />
+              </button>
+            ) : (
+              <div
+                key={fixyEvent.id}
+                className="animate-mascot-bubble-in relative max-w-[240px] rounded-2xl bg-background border shadow-lg px-3 py-2 text-xs font-medium text-foreground"
+              >
+                {fixyEvent.bubble}
+                <span className="absolute -bottom-1 right-5 w-2 h-2 bg-background border-r border-b rotate-45" />
+              </div>
+            )
           )}
           <button
             onClick={() => setIsOpen(true)}

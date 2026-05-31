@@ -179,6 +179,17 @@ export default {
 				'0%': { transform: 'translateY(8px) scale(0.6)', opacity: '0' },
 				'60%': { transform: 'translateY(-2px) scale(1.05)', opacity: '1' },
 				'100%': { transform: 'translateY(0) scale(1)', opacity: '1' }
+			},
+			'mascot-greet': {
+				'0%': { transform: 'translateY(6px) scale(0.9) rotate(-6deg)', opacity: '0.6' },
+				'40%': { transform: 'translateY(-4px) scale(1.08) rotate(4deg)', opacity: '1' },
+				'70%': { transform: 'translateY(0) scale(1.02) rotate(-2deg)' },
+				'100%': { transform: 'translateY(0) scale(1) rotate(0deg)' }
+			},
+			'mascot-tip': {
+				'0%, 100%': { transform: 'scale(1)' },
+				'30%': { transform: 'scale(1.08) translateY(-2px)' },
+				'60%': { transform: 'scale(0.97) translateY(1px)' }
 			}
 		},
 		animation: {
@@ -198,8 +209,11 @@ export default {
 			'mascot-nod': 'mascot-nod 1.2s ease-in-out',
 			'mascot-spin': 'mascot-spin 1s ease-in-out',
 			'mascot-love': 'mascot-love 1.2s ease-in-out 2',
-			'mascot-bubble-in': 'mascot-bubble-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards'
+			'mascot-bubble-in': 'mascot-bubble-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards',
+			'mascot-greet': 'mascot-greet 1.6s ease-in-out',
+			'mascot-tip': 'mascot-tip 1.2s ease-in-out 2'
 		}
+
 		}
 	},
 	plugins: [require("tailwindcss-animate")],
