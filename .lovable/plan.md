@@ -1,57 +1,85 @@
-## Objectif
+## Problème
 
-Rendre Fixy plus chaleureux et utile : remplacer le pop "X nouveaux SAV" à chaque connexion par un accueil personnalisé, puis faire vivre Fixy avec des rappels horaires (tips, SAV qui traîne, suggestion technique).
+À la clôture d'un SAV avec prêt :
+1. l'alerte actuelle est purement informative ; rien n'est consigné en base, le matériel reste « prêté » même si physiquement rendu ;
+2. aucune info sur le prêt (matériel, état au retour, photos) n'apparaît dans le PDF de restitution ;
+3. il n'existe pas d'historique consultable des prêts par appareil (état au prêt/retour, photos, commentaires).
 
-## Diagnostic du comportement actuel
+L'opérateur doit pouvoir **choisir explicitement** : soit valider que le matériel a été rendu (avec état + photos), soit clôturer le SAV en laissant le prêt **toujours actif** (matériel non restitué, suivi à part).
 
-- `src/hooks/useFixyReactions.ts` émet `cheer` "X nouveaux SAV !" dès que la liste augmente. Comme le hook se monte à chaque navigation/connexion, la baseline se recalcule à chaque session → l'utilisateur voit ce pop systématiquement.
-- Aucun mécanisme d'accueil ni de rappel horaire.
-- `daily-assistant` (edge function existante) génère déjà des recommandations IA basées sur les SAV → réutilisable.
+---
 
-## Plan d'action (3 étapes, sans toucher à la BD)
+## Périmètre
 
-### 1. Accueil de session (remplace le pop "X nouveaux SAV")
+### 1. Base de données — mini-migration
 
-Créer un hook `useFixyWelcome` qui, **une fois par session de connexion** (clé `fixway_fixy_welcome_session` en sessionStorage), émet via le canal existant `FixyEvent` :
+Ajout d'une colonne :
+- `loaner_loans.return_photos JSONB DEFAULT '[]'::jsonb` — tableau d'URLs publiques (photos d'état au retour).
 
-- Bulle 1 : salutation contextuelle selon l'heure ("Bonjour Didier ☀️", "Bon après-midi 👋", "Bonsoir 🌙") + prénom depuis `useProfile`.
-- Bulle 2 (chaînée 3 s après) : `N SAV en attente. Voici tes urgences :` puis 3-4 numéros de SAV les plus urgents (tri par retard / proximité du délai max, en réutilisant `useSAVCases` + `useSAVDelay`). Cliquable → navigue vers `/sav/:id`.
+(Les colonnes `loan_condition`, `return_condition`, `notes`, `returned_at` existent déjà ; le trigger `equipment.status` se base déjà sur `returned_at IS NULL`, donc rien à toucher côté disponibilité.)
 
-Désactiver dans `useFixyReactions` l'émission `cheer "X nouveaux SAV"` au profit de cet accueil (les autres réactions — nouveau message, nouveau RDV — restent inchangées car déclenchées par un vrai évènement utilisateur).
+### 2. Storage
 
-### 2. Rappels horaires
+Réutilisation du bucket existant `sav-attachments`, avec chemin :
+`<shop_id>/loaner-returns/<loan_id>/<timestamp>-<filename>`.
 
-Nouveau hook `useFixyHourlyTips` qui, toutes les **60 min** (timer + horodatage persisté dans `localStorage` pour éviter le re-déclenchement à chaque navigation), pousse une bulle Fixy aléatoire parmi :
+### 3. Dialog de clôture — `SAVCloseUnifiedDialog.tsx`
 
-- **Tip logiciel** (pool de ~15 astuces statiques fournies en français, ex. "Tu peux dupliquer un SAV avec le bouton ⋯", "Le QR code de suivi se génère automatiquement"…).
-- **SAV qui traîne** : prend le SAV non clos le plus ancien dépassant le délai max et propose "Le SAV n°XXXX traîne depuis N jours, on regarde ?" → clic = navigation vers le SAV.
-- **Suggestion technique IA** (optionnel, 1 sur 4) : appelle un nouvel edge function léger `fixy-insight` qui prend le SAV "bloqué" sélectionné + son champ `problem_description` + `repair_notes` + commentaires technicien, et renvoie 1-2 questions/pistes courtes ("As-tu testé X ?"). Réutilise la config IA déjà en place (`ai_engine_config`, `daily-assistant` comme modèle de référence).
+Remplacer l'`AlertDialog` actuel par une **modale de décision explicite** affichée tant qu'un prêt actif existe :
 
-### 3. Animation
+Récap du matériel prêté (déjà présent) +  deux choix explicites via radios/segmented :
 
-Fixy possède déjà `animate-mascot-cheer/alert/nod/spin/love` et `idle bounce`. Ajouter dans `tailwind.config.ts` deux keyframes douces :
+- **« Matériel restitué »** (par défaut désélectionné, à choisir manuellement) :
+  - champ « État au retour » (textarea, valeur libre).
+  - upload multi-photos (drag & drop ou bouton).
+  - bouton **« Valider la restitution »** → appelle `returnLoan({ id, return_condition, notes, return_photos })` puis débloque la suite de la clôture.
+- **« Matériel non restitué (le client le garde) »** :
+  - champ « Raison / commentaire » optionnel (stocké dans `notes` du prêt, prêt reste actif).
+  - bouton **« Clôturer le SAV sans restitution »** → ne modifie pas le prêt (reste `returned_at = NULL`, équipement reste indisponible), ajoute une mention dans `closure_history`, débloque la clôture.
+- Bouton **« Annuler »** → ferme la modale sans rien faire.
 
-- `mascot-greet` : petit salut + léger zoom à l'apparition de la bulle d'accueil.
-- `mascot-pulse-tip` : pulsation discrète quand un tip horaire arrive.
+Aucun choix automatique : l'opérateur doit cliquer sur l'un des deux boutons d'action pour avancer.
 
-Aucune refonte visuelle de la mascotte, juste deux nouvelles classes d'animation déclenchées via la prop `reaction` étendue (`greet`, `tip`).
+### 4. Hook — `useLoanerLoans.ts`
 
-## Fichiers touchés (frontend uniquement, sauf 1 edge function optionnelle)
+- Étendre la mutation `returnLoan` pour accepter `return_photos: string[]`.
+- Étendre l'interface `LoanerLoan` avec `return_photos?: string[]`.
 
-- `src/hooks/useFixyReactions.ts` — retirer l'émission "X nouveaux SAV" à l'init.
-- `src/hooks/useFixyWelcome.ts` *(nouveau)* — accueil + urgences.
-- `src/hooks/useFixyHourlyTips.ts` *(nouveau)* — boucle horaire.
-- `src/components/help/FixyMascot.tsx` — accepter `reaction: 'greet' | 'tip'`.
-- `src/components/help/HelpBot.tsx` — consommer les 2 nouveaux hooks (mêmes bulles que `useFixyReactions`).
-- `tailwind.config.ts` — 2 keyframes.
-- *(optionnel)* `supabase/functions/fixy-insight/index.ts` — micro endpoint IA pour la suggestion technique (peut être ajouté en phase 2 si tu valides d'abord les étapes 1 & 2).
+### 5. PDF de restitution — `pdfGenerator.ts`
 
-## Garanties
+Dans `generateSAVRestitutionPDF`, récupérer le prêt lié au SAV (`loaner_loans` + `loaner_equipment`) puis ajouter une section conditionnelle :
 
-- Pas de migration BD.
-- Pas de changement sur les notifications cloche, les emails, le PDF, les RLS, l'auth.
-- L'accueil ne s'affiche qu'**une fois par session navigateur** (sessionStorage), pas à chaque refetch.
-- Les tips horaires restent visuels (bulle Fixy), aucun toast intrusif.
-- Le pop "X nouveaux SAV" actuel disparaît, mais les vraies alertes temps réel (nouveau message client, nouveau RDV) restent.
+- **Si prêt restitué** → section « Matériel de prêt restitué » : désignation/marque/modèle/IMEI/série, date prêt → date retour, état au prêt, **état au retour**, vignettes photos retour (compactes, 2/ligne, A4-friendly).
+- **Si prêt encore actif** → encart **bien visible** : « ⚠ Matériel de prêt non restitué — à récupérer » avec désignation, date de prêt, état au prêt.
+- Si pas de prêt : section omise.
 
-Confirme-moi si je pars sur les 3 étapes d'un coup, ou si tu préfères qu'on valide étape 1 (accueil) avant d'enchaîner sur les tips horaires + suggestion IA.
+### 6. Historique des prêts par appareil — Paramètres › Matériel de prêt
+
+Sur la carte de chaque équipement (composant `LoanerEquipmentManager` / `SAVLoanerCard`) :
+- Ajouter une action **« Historique »** (icône) qui ouvre une modale.
+- Modale liste toutes les lignes de `loaner_loans` pour cet équipement, du plus récent au plus ancien :
+  - n° SAV cliquable (lien vers `/sav/:id`), nom client, date de prêt, date de retour (ou badge « En cours »).
+  - état au prêt + état au retour (texte).
+  - vignettes photos retour cliquables (ouverture taille réelle dans une lightbox simple).
+  - commentaire `notes`.
+- Tri par défaut : `loaned_at DESC`.
+
+Aucune écriture depuis cet écran ; uniquement consultation.
+
+---
+
+## Fichiers touchés
+
+- `supabase/migrations/<nouvelle>.sql` — colonne `return_photos`.
+- `src/hooks/useLoanerLoans.ts` — `return_photos` (interface + mutation).
+- `src/components/sav/SAVCloseUnifiedDialog.tsx` — modale de décision (restitué / non restitué), upload photos.
+- `src/utils/pdfGenerator.ts` — section « Matériel de prêt » dans le PDF.
+- `src/components/settings/loaner/LoanerEquipmentManager.tsx` (+ nouveau `LoanerLoanHistoryDialog.tsx`) — historique par appareil.
+
+## Hors-scope (à confirmer si souhaité plus tard)
+
+- Restitution a posteriori côté espace public client (`/track/...`).
+- Notification SMS automatique au client quand le matériel non restitué dépasse `expected_return_at`.
+- Edition/correction d'un prêt déjà clôturé.
+
+Confirme-moi ce périmètre et je passe en build.
