@@ -1,6 +1,6 @@
 import React from 'react';
 
-export type FixyReaction = 'cheer' | 'alert' | 'nod' | 'spin' | 'love' | null;
+export type FixyReaction = 'cheer' | 'alert' | 'nod' | 'spin' | 'love' | 'greet' | 'tip' | null;
 
 interface FixyMascotProps {
   size?: number;
