@@ -63,8 +63,10 @@ export function useLoanerLoans(savCaseId?: string) {
 
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ['loaner-loans', shopId] });
+    queryClient.invalidateQueries({ queryKey: ['loaner-loans-history', shopId] });
     queryClient.invalidateQueries({ queryKey: ['loaner-equipment', shopId] });
   };
+
 
   const createLoan = useMutation({
     mutationFn: async (input: LoanerLoanInput) => {
