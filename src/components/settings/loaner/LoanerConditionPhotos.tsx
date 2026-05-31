@@ -111,6 +111,7 @@ export function LoanerConditionPhotos({ value, onChange, max = 6, disabled }: Pr
             <input
               type="file"
               accept="image/*"
+              capture="environment"
               multiple
               className="hidden"
               disabled={uploading}
