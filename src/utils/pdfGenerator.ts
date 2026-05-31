@@ -929,7 +929,10 @@ export const generateSAVRestitutionPDF = async (savCase: SAVCase, shop?: Shop, o
           </div>
         ` : ''}
 
+        ${loanerSectionHtml}
+
         <div class="signature-section" style="margin-top: 10px;">
+
           <div class="signature-box">
             <div class="signature-line" style="height: 30px;"></div>
             <p><strong>Signature du client</strong><br>
