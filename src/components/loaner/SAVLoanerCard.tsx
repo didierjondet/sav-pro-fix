@@ -167,7 +167,9 @@ export function SAVLoanerCard({ savCaseId, customerId }: Props) {
                 onChange={(e) => setReturnNotes(e.target.value)}
               />
             </div>
+            <LoanerConditionPhotos value={returnPhotos} onChange={setReturnPhotos} />
           </div>
+
           <DialogFooter>
             <Button variant="outline" onClick={() => setReturnOpen(false)}>Annuler</Button>
             <Button onClick={handleReturn}>Confirmer le retour</Button>
