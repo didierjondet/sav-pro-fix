@@ -9,7 +9,10 @@ export interface FixyEvent {
   bubble: string;
   /** unique id, change every emission so consumers can re-trigger */
   id: number;
+  /** optional internal link triggered when the user clicks the bubble */
+  href?: string;
 }
+
 
 /**
  * Surveille l'activité du site et déclenche des réactions transitoires sur Fixy
