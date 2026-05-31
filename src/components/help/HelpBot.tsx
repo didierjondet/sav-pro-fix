@@ -71,7 +71,13 @@ const HelpBot: React.FC = () => {
   const { pendingCount, isDismissed, isFullyConfigured, isOnboardingExpired } = useOnboardingProgress();
 
   const userContext = getUserContext();
-  const fixyEvent = useFixyReactions();
+  const reactionEvent = useFixyReactions();
+  const welcomeEvent = useFixyWelcome();
+  const tipEvent = useFixyHourlyTips();
+  // L'évènement actif est le plus récent (id le plus haut)
+  const fixyEvent = [reactionEvent, welcomeEvent, tipEvent]
+    .filter((e): e is NonNullable<typeof e> => !!e)
+    .sort((a, b) => b.id - a.id)[0] ?? null;
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
