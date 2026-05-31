@@ -363,6 +363,85 @@ export const generateSAVRestitutionPDF = async (savCase: SAVCase, shop?: Shop, o
     closed_by_name: string;
   }>;
 
+  // Récupérer le prêt de matériel lié au SAV (le plus récent)
+  let loanerSectionHtml = '';
+  try {
+    const { data: loanRows } = await supabase
+      .from('loaner_loans' as any)
+      .select('loaned_at, returned_at, loan_condition, return_condition, notes, return_photos, equipment:loaner_equipment(name, brand, model, imei, serial_number, color, category)')
+      .eq('sav_case_id', savCase.id)
+      .order('loaned_at', { ascending: false })
+      .limit(1);
+    const loan: any = loanRows?.[0];
+    if (loan) {
+      const eq = loan.equipment || {};
+      const eqLine = [eq.brand, eq.model].filter(Boolean).join(' ') || '—';
+      const idLine = [
+        eq.imei ? `IMEI: ${eq.imei}` : null,
+        eq.serial_number ? `SN: ${eq.serial_number}` : null,
+      ].filter(Boolean).join(' · ');
+
+      let photosHtml = '';
+      const photoPaths: string[] = Array.isArray(loan.return_photos) ? loan.return_photos : [];
+      if (photoPaths.length > 0) {
+        const signed = await Promise.all(
+          photoPaths.map(async (p) => {
+            const { data } = await supabase.storage.from('loaner-photos').createSignedUrl(p, 3600);
+            return data?.signedUrl || null;
+          })
+        );
+        const valid = signed.filter(Boolean) as string[];
+        if (valid.length) {
+          photosHtml = `
+            <div style="margin-top: 4px; display: flex; flex-wrap: wrap; gap: 4px;">
+              ${valid.map((u) => `<img src="${u}" style="width: 110px; height: 110px; object-fit: cover; border: 1px solid #ddd; border-radius: 3px;" />`).join('')}
+            </div>
+          `;
+        }
+      }
+
+      if (loan.returned_at) {
+        loanerSectionHtml = `
+          <div style="margin-bottom: 8px;">
+            <h4 style="color: #16a34a; border-bottom: 1px solid #16a34a; padding-bottom: 3px; margin: 8px 0 5px 0; font-size: 12px;">
+              ✓ Matériel de prêt restitué
+            </h4>
+            <div style="background-color: #f0fdf4; padding: 6px 8px; border-left: 3px solid #16a34a; border-radius: 3px; font-size: 10px;">
+              <div><strong>${eq.name || 'Matériel'}</strong>${eqLine !== '—' ? ` — ${eqLine}` : ''}</div>
+              ${idLine ? `<div style="font-family: monospace; color: #555;">${idLine}</div>` : ''}
+              <div style="color: #555;">
+                Prêté le ${new Date(loan.loaned_at).toLocaleDateString('fr-FR')} — Rendu le ${new Date(loan.returned_at).toLocaleDateString('fr-FR')}
+              </div>
+              ${loan.loan_condition ? `<div><strong>État au prêt :</strong> ${loan.loan_condition}</div>` : ''}
+              ${loan.return_condition ? `<div><strong>État au retour :</strong> ${loan.return_condition}</div>` : ''}
+              ${loan.notes ? `<div><strong>Notes :</strong> ${loan.notes}</div>` : ''}
+              ${photosHtml}
+            </div>
+          </div>
+        `;
+      } else {
+        loanerSectionHtml = `
+          <div style="margin-bottom: 8px;">
+            <h4 style="color: #b45309; border-bottom: 1px solid #b45309; padding-bottom: 3px; margin: 8px 0 5px 0; font-size: 12px;">
+              ⚠ Matériel de prêt NON restitué — à récupérer
+            </h4>
+            <div style="background-color: #fffbeb; padding: 6px 8px; border-left: 3px solid #b45309; border-radius: 3px; font-size: 10px;">
+              <div><strong>${eq.name || 'Matériel'}</strong>${eqLine !== '—' ? ` — ${eqLine}` : ''}</div>
+              ${idLine ? `<div style="font-family: monospace; color: #555;">${idLine}</div>` : ''}
+              <div style="color: #555;">Prêté le ${new Date(loan.loaned_at).toLocaleDateString('fr-FR')}</div>
+              ${loan.loan_condition ? `<div><strong>État au prêt :</strong> ${loan.loan_condition}</div>` : ''}
+              ${loan.notes ? `<div><strong>Notes :</strong> ${loan.notes}</div>` : ''}
+            </div>
+          </div>
+        `;
+      }
+    }
+  } catch (e) {
+    console.error('Erreur récupération prêt matériel:', e);
+  }
+
+
+
   // Récupérer les pièces du SAV avec les informations complètes
   let savCaseWithParts = savCase as any;
   let savPartsForVat: any[] = [];
