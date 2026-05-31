@@ -85,10 +85,12 @@ export function useLoanerLoans(savCaseId?: string) {
   });
 
   const returnLoan = useMutation({
-    mutationFn: async ({ id, return_condition, notes }: { id: string; return_condition?: string | null; notes?: string | null }) => {
+    mutationFn: async ({ id, return_condition, notes, return_photos }: { id: string; return_condition?: string | null; notes?: string | null; return_photos?: string[] | null }) => {
+      const payload: any = { returned_at: new Date().toISOString(), return_condition, notes };
+      if (return_photos !== undefined) payload.return_photos = return_photos ?? [];
       const { error } = await supabase
         .from('loaner_loans' as any)
-        .update({ returned_at: new Date().toISOString(), return_condition, notes })
+        .update(payload)
         .eq('id', id);
       if (error) throw error;
     },
@@ -98,6 +100,7 @@ export function useLoanerLoans(savCaseId?: string) {
     },
     onError: (e: any) => toast({ title: 'Erreur', description: e.message, variant: 'destructive' }),
   });
+
 
   const deleteLoan = useMutation({
     mutationFn: async (id: string) => {
