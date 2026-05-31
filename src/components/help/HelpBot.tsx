@@ -52,6 +52,7 @@ const HelpBot: React.FC = () => {
   const { shop } = useShop();
   const { profile } = useProfile();
   const location = useLocation();
+  const navigate = useNavigate();
   const bottomRef = useRef<HTMLDivElement>(null);
 
   const {
