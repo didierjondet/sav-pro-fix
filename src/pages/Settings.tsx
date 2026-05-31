@@ -1,7 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Calendar } from '@/components/ui/calendar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
@@ -49,7 +54,10 @@ import {
   ClipboardList,
   Truck,
   PackageOpen,
-  ScrollText
+  ScrollText,
+  CalendarIcon,
+  Download,
+  RotateCcw
 } from 'lucide-react';
 
 import { MenuConfigurationTab } from '@/components/settings/MenuConfigurationTab';
@@ -57,7 +65,6 @@ import { RolePermissionsManager } from '@/components/settings/RolePermissionsMan
 import { PartCategoriesManager } from '@/components/settings/PartCategoriesManager';
 import { SuppliersManager } from '@/components/settings/SuppliersManager';
 import { LoanerEquipmentManager } from '@/components/settings/loaner/LoanerEquipmentManager';
-import { LogsManager } from '@/components/settings/logs/LogsManager.tsx';
 import { SMSPackagesDisplay } from '@/components/subscription/SMSPackagesDisplay';
 import { BillingInvoices } from '@/components/billing/BillingInvoices';
 import { BillingVatTab } from '@/components/settings/BillingVatTab';
@@ -78,7 +85,9 @@ import { useShopSAVTypes } from '@/hooks/useShopSAVTypes';
 import { useMenuPermissions } from '@/hooks/useMenuPermissions';
 import { useNotificationSound } from '@/hooks/useNotificationSound';
 import { useRolePermissions } from '@/hooks/useRolePermissions';
+import { useActivityLogs, type ActivityLogSource } from '@/hooks/useActivityLogs';
 import { supabase } from '@/integrations/supabase/client';
+import { cn } from '@/lib/utils';
 import * as XLSX from 'xlsx';
 
 interface Profile {
@@ -89,6 +98,224 @@ interface Profile {
   phone: string;
   role: 'admin' | 'technician' | 'super_admin' | 'shop_admin';
   created_at: string;
+}
+
+type LogsMode = 'single' | 'range';
+
+const LOGS_PAGE_SIZE = 50;
+
+const logsSourceLabel: Record<ActivityLogSource, string> = {
+  sav: 'SAV',
+  inventory: 'Inventaire',
+  email: 'Email',
+};
+
+const logsSourceVariant: Record<ActivityLogSource, string> = {
+  sav: 'bg-blue-500/15 text-blue-700 dark:text-blue-300 border-blue-500/30',
+  inventory: 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30',
+  email: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30',
+};
+
+function logsStartOfDay(d: Date) {
+  const x = new Date(d);
+  x.setHours(0, 0, 0, 0);
+  return x;
+}
+
+function logsEndOfDay(d: Date) {
+  const x = new Date(d);
+  x.setHours(23, 59, 59, 999);
+  return x;
+}
+
+function logsAddDays(d: Date, n: number) {
+  const x = new Date(d);
+  x.setDate(x.getDate() + n);
+  return x;
+}
+
+function LogsManager() {
+  const [mode, setMode] = useState<LogsMode>('range');
+  const [singleDate, setSingleDate] = useState<Date>(new Date());
+  const [rangeFrom, setRangeFrom] = useState<Date>(logsAddDays(new Date(), -7));
+  const [rangeTo, setRangeTo] = useState<Date>(new Date());
+  const [page, setPage] = useState(0);
+
+  const { from, to } = useMemo(() => {
+    if (mode === 'single') {
+      return { from: logsStartOfDay(singleDate), to: logsAddDays(logsStartOfDay(singleDate), 1) };
+    }
+    return { from: logsStartOfDay(rangeFrom), to: logsEndOfDay(rangeTo) };
+  }, [mode, singleDate, rangeFrom, rangeTo]);
+
+  const { data: logs = [], isLoading } = useActivityLogs({ from, to });
+  const totalPages = Math.max(1, Math.ceil(logs.length / LOGS_PAGE_SIZE));
+  const pageItems = logs.slice(page * LOGS_PAGE_SIZE, (page + 1) * LOGS_PAGE_SIZE);
+
+  const handleReset = () => {
+    setMode('range');
+    setRangeFrom(logsAddDays(new Date(), -7));
+    setRangeTo(new Date());
+    setPage(0);
+  };
+
+  const handleExport = () => {
+    const header = ['Date', 'Source', 'Utilisateur', 'Action', 'Cible', 'Détails'];
+    const rows = logs.map((l) => [
+      format(new Date(l.timestamp), 'yyyy-MM-dd HH:mm:ss'),
+      logsSourceLabel[l.source],
+      l.actor,
+      l.action,
+      l.target,
+      l.details.replace(/\n/g, ' '),
+    ]);
+    const csv = [header, ...rows]
+      .map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(';'))
+      .join('\n');
+    const blob = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `logs_${format(from, 'yyyyMMdd')}_${format(to, 'yyyyMMdd')}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <ScrollText className="h-5 w-5" />
+          Journal d'activité
+        </CardTitle>
+        <p className="text-sm text-muted-foreground">
+          Historique des actions effectuées dans le logiciel pour votre magasin.
+        </p>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex flex-wrap items-center gap-3">
+          <Tabs value={mode} onValueChange={(v) => { setMode(v as LogsMode); setPage(0); }}>
+            <TabsList>
+              <TabsTrigger value="single">Date unique</TabsTrigger>
+              <TabsTrigger value="range">Intervalle</TabsTrigger>
+            </TabsList>
+          </Tabs>
+
+          {mode === 'single' ? (
+            <LogsDateButton date={singleDate} onChange={(d) => { setSingleDate(d); setPage(0); }} />
+          ) : (
+            <>
+              <LogsDateButton date={rangeFrom} onChange={(d) => { setRangeFrom(d); setPage(0); }} label="Du" />
+              <LogsDateButton date={rangeTo} onChange={(d) => { setRangeTo(d); setPage(0); }} label="Au" />
+            </>
+          )}
+
+          <Button variant="outline" size="sm" onClick={handleReset}>
+            <RotateCcw className="h-4 w-4 mr-2" />
+            Réinitialiser
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleExport} disabled={logs.length === 0}>
+            <Download className="h-4 w-4 mr-2" />
+            Exporter CSV
+          </Button>
+
+          <div className="ml-auto text-sm text-muted-foreground">
+            {isLoading ? 'Chargement…' : `${logs.length} entrée${logs.length > 1 ? 's' : ''}`}
+          </div>
+        </div>
+
+        <div className="border rounded-md overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="whitespace-nowrap">Date / heure</TableHead>
+                <TableHead>Source</TableHead>
+                <TableHead>Utilisateur</TableHead>
+                <TableHead>Action</TableHead>
+                <TableHead>Cible</TableHead>
+                <TableHead>Détails</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {pageItems.length === 0 && !isLoading && (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                    Aucune action sur cette période.
+                  </TableCell>
+                </TableRow>
+              )}
+              {pageItems.map((l) => (
+                <TableRow key={l.id}>
+                  <TableCell className="whitespace-nowrap font-mono text-xs">
+                    {format(new Date(l.timestamp), 'dd/MM/yyyy HH:mm:ss', { locale: fr })}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className={cn('font-normal', logsSourceVariant[l.source])}>
+                      {logsSourceLabel[l.source]}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-sm">{l.actor}</TableCell>
+                  <TableCell className="text-sm">{l.action}</TableCell>
+                  <TableCell className="text-sm">{l.target}</TableCell>
+                  <TableCell className="text-sm text-muted-foreground max-w-md truncate" title={l.details}>
+                    {l.details}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-muted-foreground">
+              Page {page + 1} / {totalPages}
+            </span>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" disabled={page === 0} onClick={() => setPage((p) => p - 1)}>
+                Précédent
+              </Button>
+              <Button variant="outline" size="sm" disabled={page >= totalPages - 1} onClick={() => setPage((p) => p + 1)}>
+                Suivant
+              </Button>
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function LogsDateButton({
+  date,
+  onChange,
+  label,
+}: {
+  date: Date;
+  onChange: (d: Date) => void;
+  label?: string;
+}) {
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button variant="outline" size="sm" className="justify-start font-normal">
+          <CalendarIcon className="h-4 w-4 mr-2" />
+          {label ? `${label} ` : ''}
+          {format(date, 'dd/MM/yyyy', { locale: fr })}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-0" align="start">
+        <Calendar
+          mode="single"
+          selected={date}
+          onSelect={(d) => d && onChange(d)}
+          initialFocus
+          locale={fr}
+          className={cn('p-3 pointer-events-auto')}
+        />
+      </PopoverContent>
+    </Popover>
+  );
 }
 export default function Settings() {
   const {
