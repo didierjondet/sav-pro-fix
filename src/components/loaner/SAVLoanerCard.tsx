@@ -10,6 +10,8 @@ import { PackageOpen, CheckCircle2, Calendar as CalendarIcon, Plus } from 'lucid
 import { useLoanerLoans } from '@/hooks/useLoanerLoans';
 import { LOANER_CATEGORIES } from '@/hooks/useLoanerEquipment';
 import { LoanerPickerDialog } from './LoanerPickerDialog';
+import { LoanerConditionPhotos } from '@/components/settings/loaner/LoanerConditionPhotos';
+
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
