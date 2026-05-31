@@ -13,7 +13,7 @@ import { useShop } from '@/hooks/useShop';
 import { useProfile } from '@/hooks/useProfile';
 import { useOnboardingProgress } from '@/hooks/useOnboardingProgress';
 import OnboardingPanel from '@/components/help/OnboardingPanel';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
 
