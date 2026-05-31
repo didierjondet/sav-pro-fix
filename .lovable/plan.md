@@ -1,57 +1,57 @@
-# Plan — Prêt de matériel : intégration au workflow SAV
+## Objectif
 
-## 1. Switch "Prêt de matériel" sur les types de SAV
+Rendre Fixy plus chaleureux et utile : remplacer le pop "X nouveaux SAV" à chaque connexion par un accueil personnalisé, puis faire vivre Fixy avec des rappels horaires (tips, SAV qui traîne, suggestion technique).
 
-**DB** — `shop_sav_types`
-- Ajout `loaner_enabled BOOLEAN DEFAULT false`
+## Diagnostic du comportement actuel
 
-**Settings → Types SAV** (`SAVTypesManager.tsx`)
-- Nouveau switch "Proposer un prêt de matériel par défaut" dans le formulaire d'édition d'un type, à côté de "Code de déverrouillage requis" / "Exclure des stats".
-- Sauvegarde du champ via le hook existant.
+- `src/hooks/useFixyReactions.ts` émet `cheer` "X nouveaux SAV !" dès que la liste augmente. Comme le hook se monte à chaque navigation/connexion, la baseline se recalcule à chaque session → l'utilisateur voit ce pop systématiquement.
+- Aucun mécanisme d'accueil ni de rappel horaire.
+- `daily-assistant` (edge function existante) génère déjà des recommandations IA basées sur les SAV → réutilisable.
 
-**Création SAV** (`SAVForm.tsx`, `SAVWizardDialog.tsx`)
-- Quand l'utilisateur sélectionne un type SAV avec `loaner_enabled = true`, la section `LoanerSection` s'active automatiquement (toggle `enabled = true` une fois). L'utilisateur reste libre de la désactiver manuellement.
-- Si `loaner_enabled = false`, comportement inchangé (toggle off par défaut).
+## Plan d'action (3 étapes, sans toucher à la BD)
 
-## 2. Photos multiples d'état du matériel (paramètres)
+### 1. Accueil de session (remplace le pop "X nouveaux SAV")
 
-**DB** — `loaner_equipment`
-- Ajout `condition_photos TEXT[] NOT NULL DEFAULT '{}'` (chemins storage). `photo_url` conservé pour rétro-compat.
-- Nouveau bucket Storage `loaner-photos` (privé, URLs signées), avec policies RLS scopées au shop (lecture pour membres du shop, upload/delete pour admins shop).
+Créer un hook `useFixyWelcome` qui, **une fois par session de connexion** (clé `fixway_fixy_welcome_session` en sessionStorage), émet via le canal existant `FixyEvent` :
 
-**`LoanerEquipmentForm.tsx`**
-- Nouvelle zone "Photos de l'état du matériel" sous Notes : grille d'aperçus + bouton "Ajouter une photo" (multi-upload, max 6, 2 MB chacune), suppression individuelle.
-- Composant inspiré de `PartPhotoUpload.tsx`.
+- Bulle 1 : salutation contextuelle selon l'heure ("Bonjour Didier ☀️", "Bon après-midi 👋", "Bonsoir 🌙") + prénom depuis `useProfile`.
+- Bulle 2 (chaînée 3 s après) : `N SAV en attente. Voici tes urgences :` puis 3-4 numéros de SAV les plus urgents (tri par retard / proximité du délai max, en réutilisant `useSAVCases` + `useSAVDelay`). Cliquable → navigue vers `/sav/:id`.
 
-## 3. Visibilité sur le bon imprimé client (`SAVPrint.tsx`)
+Désactiver dans `useFixyReactions` l'émission `cheer "X nouveaux SAV"` au profit de cet accueil (les autres réactions — nouveau message, nouveau RDV — restent inchangées car déclenchées par un vrai évènement utilisateur).
 
-- Récupération du prêt actif lié au SAV à l'impression.
-- Nouveau bloc "Matériel prêté" dans le bon, encadré et visible : nom, marque/modèle, IMEI / n° série, couleur, date de prêt, date de retour prévue, état au prêt (notes).
-- Mention en bas du bon : « Le client s'engage à restituer le matériel prêté lors de la récupération de son appareil. »
+### 2. Rappels horaires
 
-## 4. Visibilité sur la page publique QR client (`TrackSAV.tsx`)
+Nouveau hook `useFixyHourlyTips` qui, toutes les **60 min** (timer + horodatage persisté dans `localStorage` pour éviter le re-déclenchement à chaque navigation), pousse une bulle Fixy aléatoire parmi :
 
-**DB** — RPC `get_tracking_info`
-- Étendre la réponse pour inclure le prêt actif (jointure `loaner_loans` + `loaner_equipment`). Seuls les champs non sensibles : nom, marque, modèle, couleur, date de prêt, date de retour prévue. **Pas d'IMEI/série** côté public.
+- **Tip logiciel** (pool de ~15 astuces statiques fournies en français, ex. "Tu peux dupliquer un SAV avec le bouton ⋯", "Le QR code de suivi se génère automatiquement"…).
+- **SAV qui traîne** : prend le SAV non clos le plus ancien dépassant le délai max et propose "Le SAV n°XXXX traîne depuis N jours, on regarde ?" → clic = navigation vers le SAV.
+- **Suggestion technique IA** (optionnel, 1 sur 4) : appelle un nouvel edge function léger `fixy-insight` qui prend le SAV "bloqué" sélectionné + son champ `problem_description` + `repair_notes` + commentaires technicien, et renvoie 1-2 questions/pistes courtes ("As-tu testé X ?"). Réutilise la config IA déjà en place (`ai_engine_config`, `daily-assistant` comme modèle de référence).
 
-**`TrackSAV.tsx`**
-- Nouvelle Card "Matériel prêté" si un prêt actif est présent, avec rappel de la date de retour prévue.
+### 3. Animation
 
-## 5. Alerte popup à la restitution (`SAVCloseUnifiedDialog.tsx`)
+Fixy possède déjà `animate-mascot-cheer/alert/nod/spin/love` et `idle bounce`. Ajouter dans `tailwind.config.ts` deux keyframes douces :
 
-- À l'ouverture du dialog de clôture/restitution : si `useLoanerLoans(savCaseId).activeLoan` existe, afficher un `AlertDialog` bloquant en premier :
-  > « ⚠️ Matériel de prêt à récupérer : {nom équipement} (IMEI/série {…}). Vérifiez l'état avant clôture. »
-  - Boutons : "J'ai récupéré le matériel" (continue la restitution) / "Annuler".
-- Optionnel : au clic "J'ai récupéré", pré-cocher l'option "Marquer le prêt comme rendu" dans la suite du flow (le retour effectif reste fait via `SAVLoanerCard` ou directement ici).
+- `mascot-greet` : petit salut + léger zoom à l'apparition de la bulle d'accueil.
+- `mascot-pulse-tip` : pulsation discrète quand un tip horaire arrive.
 
-## 6. Détails techniques
+Aucune refonte visuelle de la mascotte, juste deux nouvelles classes d'animation déclenchées via la prop `reaction` étendue (`greet`, `tip`).
 
-- Migration SQL unique : colonnes + bucket + policies storage + remplacement de la fonction `get_tracking_info`.
-- Types Supabase régénérés automatiquement après migration.
-- Aucune modification de la mise en page validée du dashboard / sidebar / header.
-- Composant photos réutilisable : `LoanerConditionPhotos.tsx` dans `src/components/settings/loaner/`.
+## Fichiers touchés (frontend uniquement, sauf 1 edge function optionnelle)
 
-## Fichiers impactés
-- **Migration** : 1 nouveau fichier SQL
-- **Modifiés** : `SAVTypesManager.tsx`, `useShopSAVTypes.ts`, `SAVForm.tsx`, `SAVWizardDialog.tsx`, `LoanerSection.tsx` (auto-enable via prop), `LoanerEquipmentForm.tsx`, `SAVPrint.tsx`, `TrackSAV.tsx`, `SAVCloseUnifiedDialog.tsx`
-- **Créés** : `src/components/settings/loaner/LoanerConditionPhotos.tsx`
+- `src/hooks/useFixyReactions.ts` — retirer l'émission "X nouveaux SAV" à l'init.
+- `src/hooks/useFixyWelcome.ts` *(nouveau)* — accueil + urgences.
+- `src/hooks/useFixyHourlyTips.ts` *(nouveau)* — boucle horaire.
+- `src/components/help/FixyMascot.tsx` — accepter `reaction: 'greet' | 'tip'`.
+- `src/components/help/HelpBot.tsx` — consommer les 2 nouveaux hooks (mêmes bulles que `useFixyReactions`).
+- `tailwind.config.ts` — 2 keyframes.
+- *(optionnel)* `supabase/functions/fixy-insight/index.ts` — micro endpoint IA pour la suggestion technique (peut être ajouté en phase 2 si tu valides d'abord les étapes 1 & 2).
+
+## Garanties
+
+- Pas de migration BD.
+- Pas de changement sur les notifications cloche, les emails, le PDF, les RLS, l'auth.
+- L'accueil ne s'affiche qu'**une fois par session navigateur** (sessionStorage), pas à chaque refetch.
+- Les tips horaires restent visuels (bulle Fixy), aucun toast intrusif.
+- Le pop "X nouveaux SAV" actuel disparaît, mais les vraies alertes temps réel (nouveau message client, nouveau RDV) restent.
+
+Confirme-moi si je pars sur les 3 étapes d'un coup, ou si tu préfères qu'on valide étape 1 (accueil) avant d'enchaîner sur les tips horaires + suggestion IA.
