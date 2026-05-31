@@ -64,6 +64,20 @@ function LoanPhotos({ paths }: { paths: string[] }) {
 
 export function LoanerLoanHistoryDialog({ equipment, open, onOpenChange }: Props) {
   const { data: loans = [], isLoading } = useEquipmentLoanHistory(equipment?.id);
+  const { returnLoan } = useLoanerLoans();
+  const [forceReturnLoanId, setForceReturnLoanId] = useState<string | null>(null);
+  const [frCondition, setFrCondition] = useState('');
+  const [frNotes, setFrNotes] = useState('');
+  const [frPhotos, setFrPhotos] = useState<string[]>([]);
+  const [frBusy, setFrBusy] = useState(false);
+
+  const closeForceReturn = () => {
+    setForceReturnLoanId(null);
+    setFrCondition('');
+    setFrNotes('');
+    setFrPhotos([]);
+  };
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
