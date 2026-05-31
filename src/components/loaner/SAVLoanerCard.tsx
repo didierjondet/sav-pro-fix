@@ -47,11 +47,14 @@ export function SAVLoanerCard({ savCaseId, customerId }: Props) {
       id: activeLoan.id,
       return_condition: returnCondition || null,
       notes: returnNotes || activeLoan.notes,
+      return_photos: returnPhotos,
     });
     setReturnOpen(false);
     setReturnCondition('');
     setReturnNotes('');
+    setReturnPhotos([]);
   };
+
 
   const pastLoans = loans.filter((l) => l.returned_at);
 
