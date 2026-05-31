@@ -105,17 +105,27 @@ export function SAVCloseUnifiedDialog({
   const showSatisfactionSurvey = savTypeInfo?.show_satisfaction_survey ?? true;
 
   // Alerte prêt matériel à récupérer
-  const { activeLoan } = useLoanerLoans(savCase.id);
+  const { activeLoan, returnLoan } = useLoanerLoans(savCase.id);
   const [loanerAlertOpen, setLoanerAlertOpen] = useState(false);
   const [loanerAlertAcknowledged, setLoanerAlertAcknowledged] = useState(false);
+  const [loanerDecision, setLoanerDecision] = useState<'returned' | 'kept' | null>(null);
+  const [loanerReturnCondition, setLoanerReturnCondition] = useState('');
+  const [loanerReturnNotes, setLoanerReturnNotes] = useState('');
+  const [loanerReturnPhotos, setLoanerReturnPhotos] = useState<string[]>([]);
+  const [loanerProcessing, setLoanerProcessing] = useState(false);
   useEffect(() => {
     if (isOpen && activeLoan && !loanerAlertAcknowledged) {
       setLoanerAlertOpen(true);
+      setLoanerDecision(null);
+      setLoanerReturnCondition('');
+      setLoanerReturnNotes('');
+      setLoanerReturnPhotos([]);
     }
     if (!isOpen) {
       setLoanerAlertAcknowledged(false);
     }
   }, [isOpen, activeLoan, loanerAlertAcknowledged]);
+
 
   // Vérifier les avertissements et recharger les commentaires frais à l'ouverture
   useEffect(() => {
