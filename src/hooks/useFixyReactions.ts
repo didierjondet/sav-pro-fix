@@ -63,16 +63,16 @@ export function useFixyReactions(): FixyEvent | null {
       return;
     }
 
-    // Nouveau message > nouveau SAV > nouveau RDV (priorité d'affichage)
+    // Nouveau message > nouveau RDV (priorité d'affichage)
+    // Note : on n'émet plus de cheer "X nouveaux SAV" — l'accueil de session (useFixyWelcome)
+    // s'en charge de manière plus chaleureuse.
     if (unreadTotal > prevUnread.current) {
       const diff = unreadTotal - prevUnread.current;
       emit('alert', diff > 1 ? `${diff} nouveaux messages !` : 'Nouveau message !');
-    } else if (savCount > prevSavCount.current) {
-      const diff = savCount - prevSavCount.current;
-      emit('cheer', diff > 1 ? `${diff} nouveaux SAV !` : 'Nouveau SAV ouvert !');
     } else if (pendingCount > prevPendingAppts.current) {
       emit('nod', 'Nouvelle demande de RDV');
     }
+
 
     prevSavCount.current = savCount;
     prevUnread.current = unreadTotal;
