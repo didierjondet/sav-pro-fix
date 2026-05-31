@@ -131,7 +131,11 @@ export function LoanerEquipmentManager() {
               </TableHeader>
               <TableBody>
                 {filtered.map((e) => (
-                  <TableRow key={e.id}>
+                  <TableRow
+                    key={e.id}
+                    onClick={() => setHistoryFor(e)}
+                    className="cursor-pointer hover:bg-muted/50"
+                  >
                     <TableCell className="font-medium">{e.name}</TableCell>
                     <TableCell>{categoryLabel(e.category)}</TableCell>
                     <TableCell className="text-xs">
@@ -144,7 +148,7 @@ export function LoanerEquipmentManager() {
                       {!e.imei && !e.serial_number && '—'}
                     </TableCell>
                     <TableCell>{statusBadge(e.status)}</TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-right" onClick={(ev) => ev.stopPropagation()}>
                       <div className="flex gap-1 justify-end">
                         <Button size="sm" variant="outline" onClick={() => setHistoryFor(e)} title="Historique des prêts">
                           <History className="h-3.5 w-3.5" />
@@ -162,6 +166,7 @@ export function LoanerEquipmentManager() {
                           <Trash2 className="h-3.5 w-3.5 text-destructive" />
                         </Button>
                       </div>
+
 
                     </TableCell>
                   </TableRow>
