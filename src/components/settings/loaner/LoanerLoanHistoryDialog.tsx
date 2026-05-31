@@ -115,8 +115,18 @@ export function LoanerLoanHistoryDialog({ equipment, open, onOpenChange }: Props
                     {l.returned_at ? (
                       <Badge className="bg-green-600 text-white">Rendu</Badge>
                     ) : (
-                      <Badge className="bg-orange-500 text-white">En cours</Badge>
+                      <div className="flex items-center gap-2">
+                        <Badge className="bg-orange-500 text-white">En cours</Badge>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => { setForceReturnLoanId(l.id); setFrNotes(l.notes || ''); }}
+                        >
+                          <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Forcer le retour
+                        </Button>
+                      </div>
                     )}
+
                   </div>
                   <div className="text-xs text-muted-foreground">
                     Prêté le {format(new Date(l.loaned_at), 'dd/MM/yyyy', { locale: fr })}
