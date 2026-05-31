@@ -107,3 +107,6 @@ verify_jwt = false
 
 [functions.send-app-email]
 verify_jwt = false
+
+[functions.fixy-insight]
+verify_jwt = true
