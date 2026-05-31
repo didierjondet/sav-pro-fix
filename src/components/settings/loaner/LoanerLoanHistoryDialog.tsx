@@ -152,6 +152,52 @@ export function LoanerLoanHistoryDialog({ equipment, open, onOpenChange }: Props
           <Button variant="outline" onClick={() => onOpenChange(false)}>Fermer</Button>
         </div>
       </DialogContent>
+
+      <Dialog open={!!forceReturnLoanId} onOpenChange={(o) => !o && closeForceReturn()}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Forcer le retour du matériel</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 text-sm">
+            <p className="text-xs text-muted-foreground">
+              Marque ce prêt comme rendu maintenant. L'équipement repassera disponible.
+            </p>
+            <div>
+              <Label className="text-xs">État au retour (optionnel)</Label>
+              <Textarea rows={2} value={frCondition} onChange={(e) => setFrCondition(e.target.value)} placeholder="ex. RAS, écran rayé…" />
+            </div>
+            <div>
+              <Label className="text-xs">Notes (optionnel)</Label>
+              <Textarea rows={2} value={frNotes} onChange={(e) => setFrNotes(e.target.value)} />
+            </div>
+            <LoanerConditionPhotos value={frPhotos} onChange={setFrPhotos} />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={closeForceReturn} disabled={frBusy}>Annuler</Button>
+            <Button
+              disabled={frBusy}
+              onClick={async () => {
+                if (!forceReturnLoanId) return;
+                setFrBusy(true);
+                try {
+                  await returnLoan({
+                    id: forceReturnLoanId,
+                    return_condition: frCondition || null,
+                    notes: frNotes || null,
+                    return_photos: frPhotos,
+                  });
+                  closeForceReturn();
+                } finally {
+                  setFrBusy(false);
+                }
+              }}
+            >
+              Confirmer le retour
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Dialog>
   );
 }
+
