@@ -9,7 +9,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Edit, Plus, Search, Trash2, PackageOpen } from 'lucide-react';
+import { Edit, Plus, Search, Trash2, PackageOpen, History } from 'lucide-react';
 import {
   LoanerEquipment,
   LOANER_CATEGORIES,
@@ -17,6 +17,8 @@ import {
   useLoanerEquipment,
 } from '@/hooks/useLoanerEquipment';
 import { LoanerEquipmentForm } from './LoanerEquipmentForm';
+import { LoanerLoanHistoryDialog } from './LoanerLoanHistoryDialog';
+
 
 export function LoanerEquipmentManager() {
   const { equipment, isLoading, deleteEquipment } = useLoanerEquipment();
