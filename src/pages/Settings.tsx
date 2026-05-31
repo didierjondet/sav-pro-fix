@@ -48,7 +48,8 @@ import {
   Sparkles,
   ClipboardList,
   Truck,
-  PackageOpen
+  PackageOpen,
+  ScrollText
 } from 'lucide-react';
 
 import { MenuConfigurationTab } from '@/components/settings/MenuConfigurationTab';
@@ -56,6 +57,7 @@ import { RolePermissionsManager } from '@/components/settings/RolePermissionsMan
 import { PartCategoriesManager } from '@/components/settings/PartCategoriesManager';
 import { SuppliersManager } from '@/components/settings/SuppliersManager';
 import { LoanerEquipmentManager } from '@/components/settings/loaner/LoanerEquipmentManager';
+import { LogsManager } from '@/components/settings/logs/LogsManager';
 import { SMSPackagesDisplay } from '@/components/subscription/SMSPackagesDisplay';
 import { BillingInvoices } from '@/components/billing/BillingInvoices';
 import { BillingVatTab } from '@/components/settings/BillingVatTab';
@@ -670,6 +672,7 @@ export default function Settings() {
     ...(rolePermissions.settings_part_categories ? ['part-categories'] : []),
     ...(isAdmin ? ['suppliers'] : []),
     ...(isAdmin ? ['loaners'] : []),
+    ...(isAdmin ? ['logs'] : []),
   ];
   const safeActiveTab = availableTabs.includes(activeTab) ? activeTab : availableTabs[0];
   useEffect(() => {
@@ -788,6 +791,12 @@ export default function Settings() {
                 <TabsTrigger value="loaners" className="flex items-center gap-2 px-3 py-2 shrink-0">
                   <PackageOpen className="h-4 w-4 shrink-0" />
                   <span className="hidden sm:inline">Matériel de prêt</span>
+                </TabsTrigger>
+              )}
+              {isAdmin && (
+                <TabsTrigger value="logs" className="flex items-center gap-2 px-3 py-2 shrink-0">
+                  <ScrollText className="h-4 w-4 shrink-0" />
+                  <span className="hidden sm:inline">Logs</span>
                 </TabsTrigger>
               )}
             </TabsList>
@@ -1643,6 +1652,12 @@ export default function Settings() {
             {isAdmin && (
               <TabsContent value="loaners" className="space-y-6">
                 <LoanerEquipmentManager />
+              </TabsContent>
+            )}
+
+            {isAdmin && (
+              <TabsContent value="logs" className="space-y-6">
+                <LogsManager />
               </TabsContent>
             )}
 
