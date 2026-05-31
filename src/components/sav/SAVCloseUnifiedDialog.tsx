@@ -410,44 +410,133 @@ export function SAVCloseUnifiedDialog({
 
   return (
     <>
-    <AlertDialog open={loanerAlertOpen} onOpenChange={setLoanerAlertOpen}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle className="flex items-center gap-2 text-amber-700">
+    <Dialog open={loanerAlertOpen} onOpenChange={(o) => { if (!o && !loanerAlertAcknowledged) { setLoanerAlertOpen(false); onClose(); } else { setLoanerAlertOpen(o); } }}>
+      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-amber-700">
             <PackageOpen className="h-5 w-5" />
-            Matériel de prêt à récupérer
-          </AlertDialogTitle>
-          <AlertDialogDescription asChild>
-            <div className="space-y-2 text-sm">
-              <p>
-                Un matériel a été prêté au client pour ce SAV. Vérifiez son état et récupérez-le avant de clôturer le dossier.
-              </p>
-              {activeLoan?.equipment && (
-                <div className="rounded-md border border-amber-300 bg-amber-50 p-3 space-y-1">
-                  <div><strong>Matériel :</strong> {activeLoan.equipment.name}</div>
-                  {activeLoan.equipment.brand && <div><strong>Marque :</strong> {activeLoan.equipment.brand}</div>}
-                  {activeLoan.equipment.model && <div><strong>Modèle :</strong> {activeLoan.equipment.model}</div>}
-                  {activeLoan.equipment.imei && <div><strong>IMEI :</strong> {activeLoan.equipment.imei}</div>}
-                  {activeLoan.equipment.serial_number && <div><strong>N° série :</strong> {activeLoan.equipment.serial_number}</div>}
-                  {activeLoan.loan_condition && <div><strong>État au prêt :</strong> {activeLoan.loan_condition}</div>}
-                </div>
-              )}
-              <p className="text-xs text-muted-foreground">
-                Pensez à enregistrer le retour du matériel via la fiche SAV après clôture.
+            Matériel de prêt — décision requise
+          </DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3 text-sm">
+          <p className="text-muted-foreground">
+            Un matériel a été prêté au client. Indiquez s'il a été restitué avant de clôturer le dossier.
+          </p>
+          {activeLoan?.equipment && (
+            <div className="rounded-md border border-amber-300 bg-amber-50 p-3 space-y-1 text-xs">
+              <div><strong>Matériel :</strong> {activeLoan.equipment.name}</div>
+              {activeLoan.equipment.brand && <div><strong>Marque :</strong> {activeLoan.equipment.brand}</div>}
+              {activeLoan.equipment.model && <div><strong>Modèle :</strong> {activeLoan.equipment.model}</div>}
+              {activeLoan.equipment.imei && <div><strong>IMEI :</strong> {activeLoan.equipment.imei}</div>}
+              {activeLoan.equipment.serial_number && <div><strong>N° série :</strong> {activeLoan.equipment.serial_number}</div>}
+              {activeLoan.loan_condition && <div><strong>État au prêt :</strong> {activeLoan.loan_condition}</div>}
+            </div>
+          )}
+
+          <div className="grid grid-cols-2 gap-2">
+            <Button
+              type="button"
+              variant={loanerDecision === 'returned' ? 'default' : 'outline'}
+              onClick={() => setLoanerDecision('returned')}
+              className="h-auto py-2 flex-col items-start"
+            >
+              <span className="font-semibold">✓ Matériel restitué</span>
+              <span className="text-[10px] opacity-80">Le client a rendu l'appareil</span>
+            </Button>
+            <Button
+              type="button"
+              variant={loanerDecision === 'kept' ? 'default' : 'outline'}
+              onClick={() => setLoanerDecision('kept')}
+              className="h-auto py-2 flex-col items-start"
+            >
+              <span className="font-semibold">⚠ Non restitué</span>
+              <span className="text-[10px] opacity-80">Le client garde l'appareil</span>
+            </Button>
+          </div>
+
+          {loanerDecision === 'returned' && (
+            <div className="space-y-2 border rounded-md p-3 bg-background">
+              <div>
+                <Label className="text-xs">État au retour</Label>
+                <Textarea
+                  rows={2}
+                  value={loanerReturnCondition}
+                  onChange={(e) => setLoanerReturnCondition(e.target.value)}
+                  placeholder="ex. RAS, écran rayé…"
+                />
+              </div>
+              <div>
+                <Label className="text-xs">Notes (optionnel)</Label>
+                <Textarea
+                  rows={2}
+                  value={loanerReturnNotes}
+                  onChange={(e) => setLoanerReturnNotes(e.target.value)}
+                />
+              </div>
+              <LoanerReturnPhotosPicker value={loanerReturnPhotos} onChange={setLoanerReturnPhotos} />
+            </div>
+          )}
+
+          {loanerDecision === 'kept' && (
+            <div className="space-y-2 border rounded-md p-3 bg-background">
+              <Label className="text-xs">Raison / commentaire (optionnel)</Label>
+              <Textarea
+                rows={2}
+                value={loanerReturnNotes}
+                onChange={(e) => setLoanerReturnNotes(e.target.value)}
+                placeholder="ex. Pièce en attente, client absent…"
+              />
+              <p className="text-[11px] text-amber-700">
+                Le prêt restera actif et le matériel marqué indisponible jusqu'à sa restitution.
               </p>
             </div>
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel onClick={() => { setLoanerAlertOpen(false); onClose(); }}>
-            Annuler
-          </AlertDialogCancel>
-          <AlertDialogAction onClick={() => { setLoanerAlertAcknowledged(true); setLoanerAlertOpen(false); }}>
-            J'ai récupéré le matériel
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+          )}
+        </div>
+
+        <DialogFooter className="gap-2">
+          <Button
+            variant="outline"
+            onClick={() => { setLoanerAlertOpen(false); onClose(); }}
+            disabled={loanerProcessing}
+          >
+            Annuler la clôture
+          </Button>
+          <Button
+            disabled={!loanerDecision || loanerProcessing}
+            onClick={async () => {
+              if (!activeLoan || !loanerDecision) return;
+              setLoanerProcessing(true);
+              try {
+                if (loanerDecision === 'returned') {
+                  await returnLoan({
+                    id: activeLoan.id,
+                    return_condition: loanerReturnCondition || null,
+                    notes: loanerReturnNotes || activeLoan.notes,
+                    return_photos: loanerReturnPhotos,
+                  });
+                } else if (loanerReturnNotes) {
+                  // Persist the reason in the existing notes field (loan stays active)
+                  const prevNotes = activeLoan.notes ? `${activeLoan.notes}\n` : '';
+                  await supabase
+                    .from('loaner_loans' as any)
+                    .update({ notes: `${prevNotes}[Non restitué à la clôture] ${loanerReturnNotes}` })
+                    .eq('id', activeLoan.id);
+                }
+                setLoanerAlertAcknowledged(true);
+                setLoanerAlertOpen(false);
+              } catch (e: any) {
+                toast({ title: 'Erreur', description: e.message, variant: 'destructive' });
+              } finally {
+                setLoanerProcessing(false);
+              }
+            }}
+          >
+            {loanerDecision === 'returned' ? 'Valider la restitution' : loanerDecision === 'kept' ? 'Clôturer sans restitution' : 'Confirmer'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
