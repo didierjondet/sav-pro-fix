@@ -1,14 +1,18 @@
 import { useEffect, useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { useEquipmentLoanHistory } from '@/hooks/useLoanerLoans';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { useEquipmentLoanHistory, useLoanerLoans } from '@/hooks/useLoanerLoans';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { ExternalLink, X } from 'lucide-react';
+import { ExternalLink, X, CheckCircle2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { LoanerConditionPhotos } from './LoanerConditionPhotos';
 import type { LoanerEquipment } from '@/hooks/useLoanerEquipment';
+
 
 interface Props {
   equipment: LoanerEquipment | null;
@@ -60,6 +64,20 @@ function LoanPhotos({ paths }: { paths: string[] }) {
 
 export function LoanerLoanHistoryDialog({ equipment, open, onOpenChange }: Props) {
   const { data: loans = [], isLoading } = useEquipmentLoanHistory(equipment?.id);
+  const { returnLoan } = useLoanerLoans();
+  const [forceReturnLoanId, setForceReturnLoanId] = useState<string | null>(null);
+  const [frCondition, setFrCondition] = useState('');
+  const [frNotes, setFrNotes] = useState('');
+  const [frPhotos, setFrPhotos] = useState<string[]>([]);
+  const [frBusy, setFrBusy] = useState(false);
+
+  const closeForceReturn = () => {
+    setForceReturnLoanId(null);
+    setFrCondition('');
+    setFrNotes('');
+    setFrPhotos([]);
+  };
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -97,8 +115,18 @@ export function LoanerLoanHistoryDialog({ equipment, open, onOpenChange }: Props
                     {l.returned_at ? (
                       <Badge className="bg-green-600 text-white">Rendu</Badge>
                     ) : (
-                      <Badge className="bg-orange-500 text-white">En cours</Badge>
+                      <div className="flex items-center gap-2">
+                        <Badge className="bg-orange-500 text-white">En cours</Badge>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => { setForceReturnLoanId(l.id); setFrNotes(l.notes || ''); }}
+                        >
+                          <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Forcer le retour
+                        </Button>
+                      </div>
                     )}
+
                   </div>
                   <div className="text-xs text-muted-foreground">
                     Prêté le {format(new Date(l.loaned_at), 'dd/MM/yyyy', { locale: fr })}
@@ -124,6 +152,52 @@ export function LoanerLoanHistoryDialog({ equipment, open, onOpenChange }: Props
           <Button variant="outline" onClick={() => onOpenChange(false)}>Fermer</Button>
         </div>
       </DialogContent>
+
+      <Dialog open={!!forceReturnLoanId} onOpenChange={(o) => !o && closeForceReturn()}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Forcer le retour du matériel</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 text-sm">
+            <p className="text-xs text-muted-foreground">
+              Marque ce prêt comme rendu maintenant. L'équipement repassera disponible.
+            </p>
+            <div>
+              <Label className="text-xs">État au retour (optionnel)</Label>
+              <Textarea rows={2} value={frCondition} onChange={(e) => setFrCondition(e.target.value)} placeholder="ex. RAS, écran rayé…" />
+            </div>
+            <div>
+              <Label className="text-xs">Notes (optionnel)</Label>
+              <Textarea rows={2} value={frNotes} onChange={(e) => setFrNotes(e.target.value)} />
+            </div>
+            <LoanerConditionPhotos value={frPhotos} onChange={setFrPhotos} />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={closeForceReturn} disabled={frBusy}>Annuler</Button>
+            <Button
+              disabled={frBusy}
+              onClick={async () => {
+                if (!forceReturnLoanId) return;
+                setFrBusy(true);
+                try {
+                  await returnLoan({
+                    id: forceReturnLoanId,
+                    return_condition: frCondition || null,
+                    notes: frNotes || null,
+                    return_photos: frPhotos,
+                  });
+                  closeForceReturn();
+                } finally {
+                  setFrBusy(false);
+                }
+              }}
+            >
+              Confirmer le retour
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Dialog>
   );
 }
+
