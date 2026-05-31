@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { n as LoanerReturnPhotosPicker } from '@/components/settings/loaner/LoanerConditionPhotos';
+import { LoanerConditionPhotos as LoanerReturnPhotosPicker } from '@/components/settings/loaner/LoanerConditionPhotos';
 
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
