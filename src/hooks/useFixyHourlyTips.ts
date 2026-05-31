@@ -57,11 +57,19 @@ export function useFixyHourlyTips(): FixyEvent | null {
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    const computeAndMaybeEmit = () => {
+    const computeAndMaybeEmit = async () => {
       if (!cases) return;
 
       // Sélectionne le SAV le plus en dépassement (jours restants les plus négatifs)
-      let stuckLine: { case_number: string; id: string; daysLate: number } | null = null;
+      type Stuck = {
+        case_number: string;
+        id: string;
+        daysLate: number;
+        device: string;
+        problem_description?: string;
+        technician_comments?: string;
+      };
+      let stuckLine: Stuck | null = null;
       const openCases = cases.filter(
         c => !isReadyStatus(c.status) && !isCancelledStatus(c.status)
       );
@@ -70,7 +78,14 @@ export function useFixyHourlyTips(): FixyEvent | null {
         const elapsedDays = (Date.now() - new Date(c.created_at).getTime()) / (1000 * 60 * 60 * 24);
         const daysLate = elapsedDays - maxDays;
         if (daysLate > 0 && (!stuckLine || daysLate > stuckLine.daysLate)) {
-          stuckLine = { case_number: c.case_number, id: c.id, daysLate };
+          stuckLine = {
+            case_number: c.case_number,
+            id: c.id,
+            daysLate,
+            device: `${c.device_brand} ${c.device_model}`.trim(),
+            problem_description: c.problem_description,
+            technician_comments: c.technician_comments,
+          };
         }
       }
 
@@ -78,9 +93,31 @@ export function useFixyHourlyTips(): FixyEvent | null {
       counterRef.current += 1;
       if (useStuck && stuckLine) {
         const days = Math.max(1, Math.round(stuckLine.daysLate));
+        const hasNotes = !!(stuckLine.problem_description || stuckLine.technician_comments);
+        // 1 fois sur 2 (si notes dispo) on demande un éclairage IA
+        let bubble = `Le SAV ${stuckLine.case_number} traîne depuis ${days} j, on regarde ?`;
+        if (hasNotes && Math.random() < 0.5) {
+          try {
+            const { data, error } = await supabase.functions.invoke('fixy-insight', {
+              body: {
+                case_number: stuckLine.case_number,
+                device: stuckLine.device,
+                problem_description: stuckLine.problem_description,
+                technician_comments: stuckLine.technician_comments,
+                days_late: days,
+              },
+            });
+            const suggestion = (data as any)?.suggestion as string | undefined;
+            if (!error && suggestion) {
+              bubble = `SAV ${stuckLine.case_number} : ${suggestion}`;
+            }
+          } catch {
+            // fallback silencieux sur la bulle par défaut
+          }
+        }
         setEvent({
           reaction: 'tip',
-          bubble: `Le SAV ${stuckLine.case_number} traîne depuis ${days} j, on regarde ?`,
+          bubble,
           id: counterRef.current,
           href: `/sav/${stuckLine.id}`,
         });
