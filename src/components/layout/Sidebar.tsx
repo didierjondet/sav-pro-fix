@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from 'react';
+import { memo, useMemo, useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -44,7 +44,7 @@ const baseNavigation: NavItem[] = [
   { name: 'Inventaire', href: '/inventory', icon: ClipboardList, group: 'management' },
   { name: 'Rapports', href: '/reports', icon: FileBarChart, group: 'management' },
 ];
-export function Sidebar({
+function SidebarComponent({
   isOpen,
   onClose
 }: SidebarProps) {
@@ -466,3 +466,5 @@ export function Sidebar({
       </div>
     </>;
 }
+
+export const Sidebar = memo(SidebarComponent);
