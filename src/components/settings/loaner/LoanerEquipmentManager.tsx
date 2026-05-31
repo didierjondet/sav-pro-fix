@@ -146,6 +146,9 @@ export function LoanerEquipmentManager() {
                     <TableCell>{statusBadge(e.status)}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex gap-1 justify-end">
+                        <Button size="sm" variant="outline" onClick={() => setHistoryFor(e)} title="Historique des prêts">
+                          <History className="h-3.5 w-3.5" />
+                        </Button>
                         <Button size="sm" variant="outline" onClick={() => { setEditing(e); setFormOpen(true); }}>
                           <Edit className="h-3.5 w-3.5" />
                         </Button>
@@ -159,6 +162,7 @@ export function LoanerEquipmentManager() {
                           <Trash2 className="h-3.5 w-3.5 text-destructive" />
                         </Button>
                       </div>
+
                     </TableCell>
                   </TableRow>
                 ))}
