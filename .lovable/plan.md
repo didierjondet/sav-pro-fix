@@ -1,48 +1,40 @@
-## Onglet "Logs" dans Paramètres (admin uniquement)
+## Correction upload photos retour matériel de prêt
 
-### Objectif
-Ajouter un onglet `Logs` dans `Paramètres`, visible seulement par les administrateurs, listant toutes les actions effectuées sur le logiciel, ligne par ligne, triées par date avec un filtre date unique ou intervalle.
+### Problème
+L'erreur "Bucket not found" vient du fait que le bucket `loaner-photos` n'existe pas dans Supabase Storage. Le composant `LoanerConditionPhotos` essaie d'uploader vers un bucket qui n'a jamais été créé.
 
-### Approche
+### 1. Migration base de données (création bucket privé)
 
-Plutôt que d'ajouter une nouvelle table générique (qui imposerait d'instrumenter tout le code), on **agrège les sources de logs déjà existantes** dans la base :
+Création du bucket `loaner-photos` **privé** (pas public), avec des policies isolées qui ne touchent à **aucune autre policy existante** :
 
-- `sav_audit_logs` — création / modification / clôture / changements de statut SAV, parts, pièces
-- `inventory_audit_logs` — mouvements de stock
-- `email_send_logs` — envois d'emails (clients, notifications)
-- `login_history` (si présente côté shop) — connexions des membres
+- Bucket privé (`public = false`) → accès uniquement via URLs signées (déjà utilisé dans le code via `createSignedUrl`)
+- Limite 2 Mo / fichier, MIME `image/*`
+- 4 nouvelles policies sur `storage.objects` scopées **uniquement** au bucket `loaner-photos` :
+  - SELECT/INSERT/UPDATE/DELETE réservés aux utilisateurs authentifiés dont le `shop_id` correspond au premier segment du chemin (`{shop_id}/uuid.jpg`)
+- Vérification via la fonction `get_current_user_shop_id()` déjà existante dans le projet
 
-Toutes ces tables sont déjà filtrées par `shop_id`. On les unifie côté client dans un seul flux chronologique.
+**Aucune policy publique existante n'est modifiée ou supprimée.** Les pages publiques (QuotePublic, TrackSAV, Satisfaction, RDV) n'utilisent pas ce bucket et continueront de fonctionner normalement.
 
-### Plan
+### 2. Capture photo sur smartphone
 
-1. **Onglet `logs` dans `src/pages/Settings.tsx`**
-   - Ajouter `'logs'` dans la liste `availableTabs` conditionnée par `isAdmin` (même garde que `loaners`)
-   - Ajouter `<TabsTrigger value="logs">` avec icône `ScrollText` et libellé « Logs »
-   - Ajouter `<TabsContent value="logs">` qui rend `<LogsManager />`
+Dans `src/components/settings/loaner/LoanerConditionPhotos.tsx`, ajout de l'attribut `capture="environment"` sur le `<input type="file">` :
+- Sur mobile : ouvre directement l'appareil photo arrière
+- Sur desktop : comportement inchangé (sélecteur de fichier classique, l'attribut est ignoré)
 
-2. **Composant `src/components/settings/logs/LogsManager.tsx`**
-   - Hook `useActivityLogs({ from, to })` qui lance en parallèle les requêtes sur `sav_audit_logs`, `inventory_audit_logs`, `email_send_logs` filtrées par `shop_id` et `created_at` entre `from` et `to`
-   - Normalisation : `{ id, timestamp, source, actor, action, target, details }`
-   - Fusion + tri DESC par `timestamp`
-   - Affichage : tableau (Date/heure · Utilisateur · Source · Action · Détail) avec pagination simple (50 par page) et badges colorés par `source`
+### Détails techniques
 
-3. **Filtre date**
-   - Deux modes via `RadioGroup` ou un toggle :
-     - **Date unique** : un `DatePicker` (shadcn), filtre `[date 00:00, date+1 00:00[`
-     - **Intervalle** : deux `DatePicker` (du / au), bornés au jour près
-   - Bouton « Réinitialiser » → 7 derniers jours par défaut
-   - Bouton « Exporter CSV » (optionnel mais simple) reprenant le résultat filtré courant
+```sql
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES ('loaner-photos', 'loaner-photos', false, 2097152, ARRAY['image/jpeg','image/png','image/webp','image/heic']);
 
-4. **Sécurité**
-   - L'onglet n'apparaît que si `isAdmin` (cohérent avec `loaners`)
-   - Aucune nouvelle policy nécessaire : les RLS existantes sur les tables sources scopent déjà au `shop_id` et exigent un rôle admin sur `sav_audit_logs` / `inventory_audit_logs`
+CREATE POLICY "loaner_photos_select_own_shop" ON storage.objects
+  FOR SELECT TO authenticated
+  USING (bucket_id = 'loaner-photos' 
+         AND (storage.foldername(name))[1] = get_current_user_shop_id()::text);
+-- + INSERT / UPDATE / DELETE équivalents
+```
 
-### Hors périmètre
-- Pas de nouvelle table `activity_logs` générique
-- Pas d'instrumentation de nouvelles actions (on liste ce qui est déjà journalisé)
-- Pas de modifications visuelles ailleurs dans Settings
-
-### Fichiers
-- Modifié : `src/pages/Settings.tsx`
-- Créés : `src/components/settings/logs/LogsManager.tsx`, `src/hooks/useActivityLogs.ts`
+### Hors scope
+- Aucune autre policy storage modifiée
+- Aucun changement sur les pages publiques
+- Aucun changement de logique métier
