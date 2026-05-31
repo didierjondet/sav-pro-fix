@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useSAVCases } from '@/hooks/useSAVCases';
 import { useShopSAVStatuses } from '@/hooks/useShopSAVStatuses';
 import { useShopSAVTypes } from '@/hooks/useShopSAVTypes';
+import { supabase } from '@/integrations/supabase/client';
 import type { FixyEvent } from '@/hooks/useFixyReactions';
 
 const LS_KEY = 'fixway_fixy_last_tip_ts';
