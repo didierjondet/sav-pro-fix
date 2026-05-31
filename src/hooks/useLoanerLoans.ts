@@ -123,3 +123,23 @@ export function useLoanerLoans(savCaseId?: string) {
     deleteLoan: deleteLoan.mutateAsync,
   };
 }
+
+export function useEquipmentLoanHistory(equipmentId: string | null | undefined) {
+  const { shop } = useShop();
+  const shopId = shop?.id;
+  return useQuery({
+    queryKey: ['loaner-loans-history', shopId, equipmentId],
+    enabled: !!shopId && !!equipmentId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('loaner_loans' as any)
+        .select('*, customer:customers(first_name, last_name), sav_case:sav_cases(id, case_number)')
+        .eq('shop_id', shopId!)
+        .eq('equipment_id', equipmentId!)
+        .order('loaned_at', { ascending: false });
+      if (error) throw error;
+      return (data || []) as any[];
+    },
+  });
+}
+
