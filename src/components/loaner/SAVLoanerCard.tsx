@@ -24,7 +24,9 @@ export function SAVLoanerCard({ savCaseId, customerId }: Props) {
   const [returnOpen, setReturnOpen] = useState(false);
   const [returnNotes, setReturnNotes] = useState('');
   const [returnCondition, setReturnCondition] = useState('');
+  const [returnPhotos, setReturnPhotos] = useState<string[]>([]);
   const [expectedReturn, setExpectedReturn] = useState('');
+
 
   const categoryLabel = (cat: string) =>
     LOANER_CATEGORIES.find((c) => c.value === cat)?.label || cat;
