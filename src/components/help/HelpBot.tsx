@@ -4,6 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import FixyMascot from '@/components/help/FixyMascot';
 import { useFixyReactions } from '@/hooks/useFixyReactions';
+import { useFixyWelcome } from '@/hooks/useFixyWelcome';
+import { useFixyHourlyTips } from '@/hooks/useFixyHourlyTips';
 
 import { useHelpBot, type BotAttachmentInput } from '@/hooks/useHelpBot';
 import { useAuth } from '@/contexts/AuthContext';
