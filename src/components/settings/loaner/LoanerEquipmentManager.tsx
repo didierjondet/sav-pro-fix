@@ -28,6 +28,8 @@ export function LoanerEquipmentManager() {
   const [editing, setEditing] = useState<LoanerEquipment | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [deleting, setDeleting] = useState<LoanerEquipment | null>(null);
+  const [historyFor, setHistoryFor] = useState<LoanerEquipment | null>(null);
+
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
