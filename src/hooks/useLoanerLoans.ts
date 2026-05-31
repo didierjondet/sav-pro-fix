@@ -16,12 +16,14 @@ export interface LoanerLoan {
   returned_at: string | null;
   loan_condition: string | null;
   return_condition: string | null;
+  return_photos: string[] | null;
   notes: string | null;
   created_by: string | null;
   created_at: string;
   updated_at: string;
   equipment?: LoanerEquipment;
 }
+
 
 export interface LoanerLoanInput {
   equipment_id: string;

@@ -1243,6 +1243,7 @@ export type Database = {
           loaned_at: string
           notes: string | null
           return_condition: string | null
+          return_photos: Json
           returned_at: string | null
           sav_case_id: string | null
           shop_id: string
@@ -1259,6 +1260,7 @@ export type Database = {
           loaned_at?: string
           notes?: string | null
           return_condition?: string | null
+          return_photos?: Json
           returned_at?: string | null
           sav_case_id?: string | null
           shop_id: string
@@ -1275,6 +1277,7 @@ export type Database = {
           loaned_at?: string
           notes?: string | null
           return_condition?: string | null
+          return_photos?: Json
           returned_at?: string | null
           sav_case_id?: string | null
           shop_id?: string
