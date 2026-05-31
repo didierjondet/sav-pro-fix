@@ -1,0 +1,1 @@
+ALTER TABLE public.loaner_loans ADD COLUMN IF NOT EXISTS return_photos jsonb NOT NULL DEFAULT '[]'::jsonb;

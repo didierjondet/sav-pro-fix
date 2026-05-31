@@ -16,12 +16,14 @@ export interface LoanerLoan {
   returned_at: string | null;
   loan_condition: string | null;
   return_condition: string | null;
+  return_photos: string[] | null;
   notes: string | null;
   created_by: string | null;
   created_at: string;
   updated_at: string;
   equipment?: LoanerEquipment;
 }
+
 
 export interface LoanerLoanInput {
   equipment_id: string;
@@ -83,10 +85,12 @@ export function useLoanerLoans(savCaseId?: string) {
   });
 
   const returnLoan = useMutation({
-    mutationFn: async ({ id, return_condition, notes }: { id: string; return_condition?: string | null; notes?: string | null }) => {
+    mutationFn: async ({ id, return_condition, notes, return_photos }: { id: string; return_condition?: string | null; notes?: string | null; return_photos?: string[] | null }) => {
+      const payload: any = { returned_at: new Date().toISOString(), return_condition, notes };
+      if (return_photos !== undefined) payload.return_photos = return_photos ?? [];
       const { error } = await supabase
         .from('loaner_loans' as any)
-        .update({ returned_at: new Date().toISOString(), return_condition, notes })
+        .update(payload)
         .eq('id', id);
       if (error) throw error;
     },
@@ -96,6 +100,7 @@ export function useLoanerLoans(savCaseId?: string) {
     },
     onError: (e: any) => toast({ title: 'Erreur', description: e.message, variant: 'destructive' }),
   });
+
 
   const deleteLoan = useMutation({
     mutationFn: async (id: string) => {
@@ -118,3 +123,23 @@ export function useLoanerLoans(savCaseId?: string) {
     deleteLoan: deleteLoan.mutateAsync,
   };
 }
+
+export function useEquipmentLoanHistory(equipmentId: string | null | undefined) {
+  const { shop } = useShop();
+  const shopId = shop?.id;
+  return useQuery({
+    queryKey: ['loaner-loans-history', shopId, equipmentId],
+    enabled: !!shopId && !!equipmentId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('loaner_loans' as any)
+        .select('*, customer:customers(first_name, last_name), sav_case:sav_cases(id, case_number)')
+        .eq('shop_id', shopId!)
+        .eq('equipment_id', equipmentId!)
+        .order('loaned_at', { ascending: false });
+      if (error) throw error;
+      return (data || []) as any[];
+    },
+  });
+}
+

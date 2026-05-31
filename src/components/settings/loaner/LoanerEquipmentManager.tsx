@@ -9,7 +9,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Edit, Plus, Search, Trash2, PackageOpen } from 'lucide-react';
+import { Edit, Plus, Search, Trash2, PackageOpen, History } from 'lucide-react';
 import {
   LoanerEquipment,
   LOANER_CATEGORIES,
@@ -17,6 +17,8 @@ import {
   useLoanerEquipment,
 } from '@/hooks/useLoanerEquipment';
 import { LoanerEquipmentForm } from './LoanerEquipmentForm';
+import { LoanerLoanHistoryDialog } from './LoanerLoanHistoryDialog';
+
 
 export function LoanerEquipmentManager() {
   const { equipment, isLoading, deleteEquipment } = useLoanerEquipment();
@@ -26,6 +28,8 @@ export function LoanerEquipmentManager() {
   const [editing, setEditing] = useState<LoanerEquipment | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [deleting, setDeleting] = useState<LoanerEquipment | null>(null);
+  const [historyFor, setHistoryFor] = useState<LoanerEquipment | null>(null);
+
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -142,6 +146,9 @@ export function LoanerEquipmentManager() {
                     <TableCell>{statusBadge(e.status)}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex gap-1 justify-end">
+                        <Button size="sm" variant="outline" onClick={() => setHistoryFor(e)} title="Historique des prêts">
+                          <History className="h-3.5 w-3.5" />
+                        </Button>
                         <Button size="sm" variant="outline" onClick={() => { setEditing(e); setFormOpen(true); }}>
                           <Edit className="h-3.5 w-3.5" />
                         </Button>
@@ -155,6 +162,7 @@ export function LoanerEquipmentManager() {
                           <Trash2 className="h-3.5 w-3.5 text-destructive" />
                         </Button>
                       </div>
+
                     </TableCell>
                   </TableRow>
                 ))}
@@ -165,6 +173,8 @@ export function LoanerEquipmentManager() {
       </CardContent>
 
       <LoanerEquipmentForm open={formOpen} onOpenChange={setFormOpen} initial={editing} />
+      <LoanerLoanHistoryDialog equipment={historyFor} open={!!historyFor} onOpenChange={(o) => !o && setHistoryFor(null)} />
+
 
       <AlertDialog open={!!deleting} onOpenChange={(o) => !o && setDeleting(null)}>
         <AlertDialogContent>

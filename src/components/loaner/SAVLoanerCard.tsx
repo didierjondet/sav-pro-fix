@@ -10,6 +10,8 @@ import { PackageOpen, CheckCircle2, Calendar as CalendarIcon, Plus } from 'lucid
 import { useLoanerLoans } from '@/hooks/useLoanerLoans';
 import { LOANER_CATEGORIES } from '@/hooks/useLoanerEquipment';
 import { LoanerPickerDialog } from './LoanerPickerDialog';
+import { LoanerConditionPhotos } from '@/components/settings/loaner/LoanerConditionPhotos';
+
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
@@ -24,7 +26,9 @@ export function SAVLoanerCard({ savCaseId, customerId }: Props) {
   const [returnOpen, setReturnOpen] = useState(false);
   const [returnNotes, setReturnNotes] = useState('');
   const [returnCondition, setReturnCondition] = useState('');
+  const [returnPhotos, setReturnPhotos] = useState<string[]>([]);
   const [expectedReturn, setExpectedReturn] = useState('');
+
 
   const categoryLabel = (cat: string) =>
     LOANER_CATEGORIES.find((c) => c.value === cat)?.label || cat;
@@ -45,11 +49,14 @@ export function SAVLoanerCard({ savCaseId, customerId }: Props) {
       id: activeLoan.id,
       return_condition: returnCondition || null,
       notes: returnNotes || activeLoan.notes,
+      return_photos: returnPhotos,
     });
     setReturnOpen(false);
     setReturnCondition('');
     setReturnNotes('');
+    setReturnPhotos([]);
   };
+
 
   const pastLoans = loans.filter((l) => l.returned_at);
 
@@ -162,7 +169,9 @@ export function SAVLoanerCard({ savCaseId, customerId }: Props) {
                 onChange={(e) => setReturnNotes(e.target.value)}
               />
             </div>
+            <LoanerConditionPhotos value={returnPhotos} onChange={setReturnPhotos} />
           </div>
+
           <DialogFooter>
             <Button variant="outline" onClick={() => setReturnOpen(false)}>Annuler</Button>
             <Button onClick={handleReturn}>Confirmer le retour</Button>
