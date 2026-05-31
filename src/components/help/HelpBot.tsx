@@ -194,13 +194,25 @@ const HelpBot: React.FC = () => {
       {!isOpen && (
         <div className="fixed bottom-4 right-4 z-50 flex flex-col items-end gap-2">
           {fixyEvent && (
-            <div
-              key={fixyEvent.id}
-              className="animate-mascot-bubble-in relative max-w-[200px] rounded-2xl bg-background border shadow-lg px-3 py-2 text-xs font-medium text-foreground"
-            >
-              {fixyEvent.bubble}
-              <span className="absolute -bottom-1 right-5 w-2 h-2 bg-background border-r border-b rotate-45" />
-            </div>
+            fixyEvent.href ? (
+              <button
+                key={fixyEvent.id}
+                type="button"
+                onClick={() => navigate(fixyEvent.href!)}
+                className="animate-mascot-bubble-in relative max-w-[240px] rounded-2xl bg-background border shadow-lg px-3 py-2 text-xs font-medium text-foreground text-left hover:bg-accent transition-colors cursor-pointer"
+              >
+                {fixyEvent.bubble}
+                <span className="absolute -bottom-1 right-5 w-2 h-2 bg-background border-r border-b rotate-45" />
+              </button>
+            ) : (
+              <div
+                key={fixyEvent.id}
+                className="animate-mascot-bubble-in relative max-w-[240px] rounded-2xl bg-background border shadow-lg px-3 py-2 text-xs font-medium text-foreground"
+              >
+                {fixyEvent.bubble}
+                <span className="absolute -bottom-1 right-5 w-2 h-2 bg-background border-r border-b rotate-45" />
+              </div>
+            )
           )}
           <button
             onClick={() => setIsOpen(true)}
