@@ -173,6 +173,8 @@ export function LoanerEquipmentManager() {
       </CardContent>
 
       <LoanerEquipmentForm open={formOpen} onOpenChange={setFormOpen} initial={editing} />
+      <LoanerLoanHistoryDialog equipment={historyFor} open={!!historyFor} onOpenChange={(o) => !o && setHistoryFor(null)} />
+
 
       <AlertDialog open={!!deleting} onOpenChange={(o) => !o && setDeleting(null)}>
         <AlertDialogContent>
