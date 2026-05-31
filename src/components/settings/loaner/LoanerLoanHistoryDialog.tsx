@@ -1,14 +1,18 @@
 import { useEffect, useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { useEquipmentLoanHistory } from '@/hooks/useLoanerLoans';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { useEquipmentLoanHistory, useLoanerLoans } from '@/hooks/useLoanerLoans';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { ExternalLink, X } from 'lucide-react';
+import { ExternalLink, X, CheckCircle2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { LoanerConditionPhotos } from './LoanerConditionPhotos';
 import type { LoanerEquipment } from '@/hooks/useLoanerEquipment';
+
 
 interface Props {
   equipment: LoanerEquipment | null;
