@@ -1,30 +1,48 @@
-## Périmètre
+## Onglet "Logs" dans Paramètres (admin uniquement)
 
-1. **Clic sur la ligne/carte d'un appareil** (Paramètres › Matériel de prêt) → ouvre la modale d'historique des prêts (déjà existante `LoanerLoanHistoryDialog`).
-   - Toute la ligne devient cliquable (curseur pointer, hover).
-   - Les boutons d'action (Édition, Suppression, et le bouton Historique actuel) restent cliquables sans propager le clic.
-   - Le bouton icône « Historique » est conservé pour rester découvrable.
+### Objectif
+Ajouter un onglet `Logs` dans `Paramètres`, visible seulement par les administrateurs, listant toutes les actions effectuées sur le logiciel, ligne par ligne, triées par date avec un filtre date unique ou intervalle.
 
-2. **Forcer le retour d'un matériel** depuis la modale d'historique :
-   - Pour chaque prêt encore actif (`returned_at IS NULL`), afficher un bouton **« Forcer le retour »** à côté du badge « En cours ».
-   - Ouvre une petite sous-modale demandant :
-     - état au retour (textarea, optionnel),
-     - notes (optionnel),
-     - photos (réutilise `LoanerConditionPhotos`).
-   - Confirmation → appelle `returnLoan({ id, return_condition, notes, return_photos })` du hook existant.
-   - L'équipement repasse automatiquement à `available` (trigger DB déjà en place sur `returned_at`).
-   - L'historique se rafraîchit (invalidation de `loaner-loans-history` à ajouter dans `useLoanerLoans.returnLoan.onSuccess`).
+### Approche
 
-## Fichiers touchés
+Plutôt que d'ajouter une nouvelle table générique (qui imposerait d'instrumenter tout le code), on **agrège les sources de logs déjà existantes** dans la base :
 
-- `src/components/settings/loaner/LoanerEquipmentManager.tsx` — rendre la `<TableRow>` cliquable, `stopPropagation` sur les boutons d'action.
-- `src/components/settings/loaner/LoanerLoanHistoryDialog.tsx` — bouton « Forcer le retour » sur chaque prêt actif + sous-dialog de saisie.
-- `src/hooks/useLoanerLoans.ts` — invalider aussi `['loaner-loans-history', shopId]` dans `invalidate()` pour rafraîchir la modale après un retour forcé.
+- `sav_audit_logs` — création / modification / clôture / changements de statut SAV, parts, pièces
+- `inventory_audit_logs` — mouvements de stock
+- `email_send_logs` — envois d'emails (clients, notifications)
+- `login_history` (si présente côté shop) — connexions des membres
 
-## Hors-scope
+Toutes ces tables sont déjà filtrées par `shop_id`. On les unifie côté client dans un seul flux chronologique.
 
-- Pas de modification du visuel des lignes (compactness conservée, juste hover/cursor).
-- Pas de notification SMS au client lors d'un retour forcé.
-- Pas de réécriture en grille de vraies cartes.
+### Plan
 
-Confirme et je passe en build.
+1. **Onglet `logs` dans `src/pages/Settings.tsx`**
+   - Ajouter `'logs'` dans la liste `availableTabs` conditionnée par `isAdmin` (même garde que `loaners`)
+   - Ajouter `<TabsTrigger value="logs">` avec icône `ScrollText` et libellé « Logs »
+   - Ajouter `<TabsContent value="logs">` qui rend `<LogsManager />`
+
+2. **Composant `src/components/settings/logs/LogsManager.tsx`**
+   - Hook `useActivityLogs({ from, to })` qui lance en parallèle les requêtes sur `sav_audit_logs`, `inventory_audit_logs`, `email_send_logs` filtrées par `shop_id` et `created_at` entre `from` et `to`
+   - Normalisation : `{ id, timestamp, source, actor, action, target, details }`
+   - Fusion + tri DESC par `timestamp`
+   - Affichage : tableau (Date/heure · Utilisateur · Source · Action · Détail) avec pagination simple (50 par page) et badges colorés par `source`
+
+3. **Filtre date**
+   - Deux modes via `RadioGroup` ou un toggle :
+     - **Date unique** : un `DatePicker` (shadcn), filtre `[date 00:00, date+1 00:00[`
+     - **Intervalle** : deux `DatePicker` (du / au), bornés au jour près
+   - Bouton « Réinitialiser » → 7 derniers jours par défaut
+   - Bouton « Exporter CSV » (optionnel mais simple) reprenant le résultat filtré courant
+
+4. **Sécurité**
+   - L'onglet n'apparaît que si `isAdmin` (cohérent avec `loaners`)
+   - Aucune nouvelle policy nécessaire : les RLS existantes sur les tables sources scopent déjà au `shop_id` et exigent un rôle admin sur `sav_audit_logs` / `inventory_audit_logs`
+
+### Hors périmètre
+- Pas de nouvelle table `activity_logs` générique
+- Pas d'instrumentation de nouvelles actions (on liste ce qui est déjà journalisé)
+- Pas de modifications visuelles ailleurs dans Settings
+
+### Fichiers
+- Modifié : `src/pages/Settings.tsx`
+- Créés : `src/components/settings/logs/LogsManager.tsx`, `src/hooks/useActivityLogs.ts`
