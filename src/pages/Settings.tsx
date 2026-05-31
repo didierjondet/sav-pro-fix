@@ -57,7 +57,7 @@ import { RolePermissionsManager } from '@/components/settings/RolePermissionsMan
 import { PartCategoriesManager } from '@/components/settings/PartCategoriesManager';
 import { SuppliersManager } from '@/components/settings/SuppliersManager';
 import { LoanerEquipmentManager } from '@/components/settings/loaner/LoanerEquipmentManager';
-import { LogsManager } from '@/components/settings/logs/LogsManager';
+import { LogsManager } from '@/components/settings/logs/LogsManager.tsx';
 import { SMSPackagesDisplay } from '@/components/subscription/SMSPackagesDisplay';
 import { BillingInvoices } from '@/components/billing/BillingInvoices';
 import { BillingVatTab } from '@/components/settings/BillingVatTab';
