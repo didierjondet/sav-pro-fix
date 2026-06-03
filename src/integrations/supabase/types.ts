@@ -2499,6 +2499,7 @@ export type Database = {
           id: string
           is_active: boolean
           is_default: boolean
+          loaner_enabled: boolean
           max_processing_days: number | null
           pause_timer: boolean
           require_unlock_pattern: boolean
@@ -2522,6 +2523,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           is_default?: boolean
+          loaner_enabled?: boolean
           max_processing_days?: number | null
           pause_timer?: boolean
           require_unlock_pattern?: boolean
@@ -2545,6 +2547,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           is_default?: boolean
+          loaner_enabled?: boolean
           max_processing_days?: number | null
           pause_timer?: boolean
           require_unlock_pattern?: boolean
