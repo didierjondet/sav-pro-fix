@@ -58,8 +58,10 @@ export function BillingTotalsSummary({ lines, discountTotal = 0 }: Props) {
     };
   }, [lines, parts, config, discountTotal]);
 
-  const showVat = config.vat_regime !== 'none';
+  const showVatDetail = config.vat_regime === 'standard';
   const showLabor = config.labor_billing_enabled && totals.laborHT > 0;
+  const isMargin = config.vat_regime === 'margin';
+  const isNone = config.vat_regime === 'none';
 
   return (
     <div className="rounded-md border bg-muted/30 p-3 space-y-1.5 text-sm">
@@ -74,7 +76,7 @@ export function BillingTotalsSummary({ lines, discountTotal = 0 }: Props) {
         </div>
       )}
 
-      {showVat && (
+      {showVatDetail && (
         <>
           <div className="flex justify-between">
             <span>Total HT</span>
@@ -82,7 +84,7 @@ export function BillingTotalsSummary({ lines, discountTotal = 0 }: Props) {
           </div>
           {totals.vatParts > 0 && (
             <div className="flex justify-between text-muted-foreground">
-              <span>TVA pièces ({config.vat_rate_parts}%{config.vat_regime === 'margin' ? ' / marge' : ''})</span>
+              <span>TVA pièces ({config.vat_rate_parts}%)</span>
               <span>{totals.vatParts.toFixed(2)} €</span>
             </div>
           )}
@@ -96,13 +98,18 @@ export function BillingTotalsSummary({ lines, discountTotal = 0 }: Props) {
       )}
 
       <div className="flex justify-between border-t pt-1.5 font-semibold">
-        <span>{showVat ? 'Total TTC' : 'Total'}</span>
+        <span>{showVatDetail ? 'Total TTC' : 'Total'}</span>
         <span>{totals.totalTTC.toFixed(2)} €</span>
       </div>
 
-      {!showVat && (
+      {isNone && (
         <p className="text-[11px] text-muted-foreground italic">
           TVA non applicable, art. 293 B du CGI.
+        </p>
+      )}
+      {isMargin && (
+        <p className="text-[11px] text-muted-foreground italic">
+          TVA sur marge — art. 297 A du CGI (non détaillée).
         </p>
       )}
     </div>
