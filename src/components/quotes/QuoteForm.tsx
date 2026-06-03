@@ -321,6 +321,8 @@ const updateUnitPurchasePrice = (partId: string, unitPrice: number) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submitting) return;
+    
     
     if (!customerInfo.firstName.trim() || !customerInfo.lastName.trim()) {
       toast({
