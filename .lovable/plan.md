@@ -1,23 +1,19 @@
-## Problème
+## Cause du doublon
 
-L'enregistrement dans Réglages → Types de SAV échoue car le code (`SAVTypesManager.tsx`, `useShopSAVTypes.ts`, formulaire de prêt) insère/update la colonne `loaner_enabled` dans la table `shop_sav_types`, mais cette colonne **n'existe pas en base**. PostgREST renvoie alors une erreur "column does not exist" qui bloque la sauvegarde.
+Dans `src/components/quotes/QuoteForm.tsx`, `handleSubmit` est `async` mais le bouton « Créer le devis » (`<Button type="submit">`, ligne 837) n'a aucun état `disabled` ni garde de réentrance. Tant que l'insert Supabase n'a pas répondu (latence réseau + appel de `refetch()` dans `useQuotes.createQuote`), un second clic relance `handleSubmit` → un deuxième `INSERT` est envoyé et un second devis (avec un nouveau `quote_number`) est créé.
 
-La table contient actuellement : id, shop_id, type_key, type_label, type_color, display_order, is_default, is_active, show_customer_info, max_processing_days, pause_timer, show_in_sidebar, alert_days, require_unlock_pattern, exclude_from_stats, exclude_purchase_costs, exclude_sales_revenue, show_satisfaction_survey, enable_restitution_pdf — **mais pas `loaner_enabled`**.
+Le `confirm()` de doublon (ligne 357) n'aide pas : il se déclenche uniquement quand un devis existant est détecté côté liste, pas pendant la soumission en cours.
 
-Aucune migration historique n'a ajouté cette colonne (recherche `loaner_enabled` dans `supabase/migrations/` → vide).
+## Correction (minimale, frontend uniquement)
 
-## Correction
+Dans `src/components/quotes/QuoteForm.tsx` :
 
-Migration unique :
+1. Ajouter `const [submitting, setSubmitting] = useState(false);`
+2. Au tout début de `handleSubmit`, après `e.preventDefault()` : `if (submitting) return;` puis `setSubmitting(true)`, et `setSubmitting(false)` dans un `finally`.
+3. Bouton ligne 837 : `disabled={submitting}` et libellé « Création… » / « Mise à jour… » pendant l'attente.
 
-```sql
-ALTER TABLE public.shop_sav_types
-  ADD COLUMN IF NOT EXISTS loaner_enabled boolean NOT NULL DEFAULT false;
-```
-
-Aucun changement de code frontend nécessaire — les composants utilisent déjà `loaner_enabled` et fonctionneront dès que la colonne existera.
+Aucun changement de logique métier, aucun changement DB, aucun autre composant touché. Conforme à la mémoire utilisateur (modification stricte, pas d'effets collatéraux).
 
 ## Vérification
 
-- Ouvrir Réglages → Types de SAV, modifier un type, enregistrer → succès attendu.
-- Création d'un nouveau type → succès attendu.
+Cliquer plusieurs fois rapidement sur « Créer le devis » → un seul devis créé, bouton désactivé pendant l'attente.
