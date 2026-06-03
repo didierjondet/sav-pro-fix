@@ -45,6 +45,7 @@ export function QuoteForm({ onSubmit, onCancel, initialQuote, submitLabel, title
   const [selectedItems, setSelectedItems] = useState<QuoteItem[]>([]);
   const [deviceInfo, setDeviceInfo] = useState({ brand: '', model: '', imei: '', sku: '', problemDescription: '', attachments: [] as string[] });
   const [depositAmount, setDepositAmount] = useState<number>(0);
+  const [submitting, setSubmitting] = useState(false);
   
   // États pour validation téléphone et détection doublons
   const [phoneValidation, setPhoneValidation] = useState({ isValid: true, message: '' });
