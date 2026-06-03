@@ -1,0 +1,1 @@
+ALTER TABLE public.shop_sav_types ADD COLUMN IF NOT EXISTS loaner_enabled boolean NOT NULL DEFAULT false;
