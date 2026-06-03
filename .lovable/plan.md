@@ -1,40 +1,23 @@
-## Correction upload photos retour matériel de prêt
+## Problème
 
-### Problème
-L'erreur "Bucket not found" vient du fait que le bucket `loaner-photos` n'existe pas dans Supabase Storage. Le composant `LoanerConditionPhotos` essaie d'uploader vers un bucket qui n'a jamais été créé.
+L'enregistrement dans Réglages → Types de SAV échoue car le code (`SAVTypesManager.tsx`, `useShopSAVTypes.ts`, formulaire de prêt) insère/update la colonne `loaner_enabled` dans la table `shop_sav_types`, mais cette colonne **n'existe pas en base**. PostgREST renvoie alors une erreur "column does not exist" qui bloque la sauvegarde.
 
-### 1. Migration base de données (création bucket privé)
+La table contient actuellement : id, shop_id, type_key, type_label, type_color, display_order, is_default, is_active, show_customer_info, max_processing_days, pause_timer, show_in_sidebar, alert_days, require_unlock_pattern, exclude_from_stats, exclude_purchase_costs, exclude_sales_revenue, show_satisfaction_survey, enable_restitution_pdf — **mais pas `loaner_enabled`**.
 
-Création du bucket `loaner-photos` **privé** (pas public), avec des policies isolées qui ne touchent à **aucune autre policy existante** :
+Aucune migration historique n'a ajouté cette colonne (recherche `loaner_enabled` dans `supabase/migrations/` → vide).
 
-- Bucket privé (`public = false`) → accès uniquement via URLs signées (déjà utilisé dans le code via `createSignedUrl`)
-- Limite 2 Mo / fichier, MIME `image/*`
-- 4 nouvelles policies sur `storage.objects` scopées **uniquement** au bucket `loaner-photos` :
-  - SELECT/INSERT/UPDATE/DELETE réservés aux utilisateurs authentifiés dont le `shop_id` correspond au premier segment du chemin (`{shop_id}/uuid.jpg`)
-- Vérification via la fonction `get_current_user_shop_id()` déjà existante dans le projet
+## Correction
 
-**Aucune policy publique existante n'est modifiée ou supprimée.** Les pages publiques (QuotePublic, TrackSAV, Satisfaction, RDV) n'utilisent pas ce bucket et continueront de fonctionner normalement.
-
-### 2. Capture photo sur smartphone
-
-Dans `src/components/settings/loaner/LoanerConditionPhotos.tsx`, ajout de l'attribut `capture="environment"` sur le `<input type="file">` :
-- Sur mobile : ouvre directement l'appareil photo arrière
-- Sur desktop : comportement inchangé (sélecteur de fichier classique, l'attribut est ignoré)
-
-### Détails techniques
+Migration unique :
 
 ```sql
-INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-VALUES ('loaner-photos', 'loaner-photos', false, 2097152, ARRAY['image/jpeg','image/png','image/webp','image/heic']);
-
-CREATE POLICY "loaner_photos_select_own_shop" ON storage.objects
-  FOR SELECT TO authenticated
-  USING (bucket_id = 'loaner-photos' 
-         AND (storage.foldername(name))[1] = get_current_user_shop_id()::text);
--- + INSERT / UPDATE / DELETE équivalents
+ALTER TABLE public.shop_sav_types
+  ADD COLUMN IF NOT EXISTS loaner_enabled boolean NOT NULL DEFAULT false;
 ```
 
-### Hors scope
-- Aucune autre policy storage modifiée
-- Aucun changement sur les pages publiques
-- Aucun changement de logique métier
+Aucun changement de code frontend nécessaire — les composants utilisent déjà `loaner_enabled` et fonctionneront dès que la colonne existera.
+
+## Vérification
+
+- Ouvrir Réglages → Types de SAV, modifier un type, enregistrer → succès attendu.
+- Création d'un nouveau type → succès attendu.
