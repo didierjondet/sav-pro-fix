@@ -363,32 +363,38 @@ const updateUnitPurchasePrice = (partId: string, unitPrice: number) => {
       }
     }
 
-    const { error } = await onSubmit({
-      customer_name: `${customerInfo.firstName} ${customerInfo.lastName}`.trim(),
-      customer_email: customerInfo.email || null,
-      customer_phone: customerInfo.phone || null,
-      // Informations appareil
-      device_brand: deviceInfo.brand ? deviceInfo.brand.toUpperCase().trim() : null,
-      device_model: deviceInfo.model ? deviceInfo.model.toUpperCase().trim() : null,
-      device_imei: deviceInfo.imei || null,
-      sku: deviceInfo.sku || null,
-      problem_description: deviceInfo.problemDescription || null,
-      notes: notes || null,
-      items: selectedItems,
-      total_amount: totalAmount,
-      deposit_amount: depositAmount,
-      status: initialQuote?.status ?? 'draft'
-    });
-
-    if (!error) {
-      // Si le devis est accepté, le client sera automatiquement créé par le trigger de la DB
-      toast({
-        title: "Succès",
-        description: initialQuote ? "Devis mis à jour avec succès" : "Devis créé avec succès",
+    setSubmitting(true);
+    try {
+      const { error } = await onSubmit({
+        customer_name: `${customerInfo.firstName} ${customerInfo.lastName}`.trim(),
+        customer_email: customerInfo.email || null,
+        customer_phone: customerInfo.phone || null,
+        // Informations appareil
+        device_brand: deviceInfo.brand ? deviceInfo.brand.toUpperCase().trim() : null,
+        device_model: deviceInfo.model ? deviceInfo.model.toUpperCase().trim() : null,
+        device_imei: deviceInfo.imei || null,
+        sku: deviceInfo.sku || null,
+        problem_description: deviceInfo.problemDescription || null,
+        notes: notes || null,
+        items: selectedItems,
+        total_amount: totalAmount,
+        deposit_amount: depositAmount,
+        status: initialQuote?.status ?? 'draft'
       });
-      onCancel();
+
+      if (!error) {
+        // Si le devis est accepté, le client sera automatiquement créé par le trigger de la DB
+        toast({
+          title: "Succès",
+          description: initialQuote ? "Devis mis à jour avec succès" : "Devis créé avec succès",
+        });
+        onCancel();
+      }
+    } finally {
+      setSubmitting(false);
     }
   };
+
 
   return (
     <div className="max-w-4xl mx-auto">
