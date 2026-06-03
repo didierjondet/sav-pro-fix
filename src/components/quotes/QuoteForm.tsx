@@ -45,6 +45,7 @@ export function QuoteForm({ onSubmit, onCancel, initialQuote, submitLabel, title
   const [selectedItems, setSelectedItems] = useState<QuoteItem[]>([]);
   const [deviceInfo, setDeviceInfo] = useState({ brand: '', model: '', imei: '', sku: '', problemDescription: '', attachments: [] as string[] });
   const [depositAmount, setDepositAmount] = useState<number>(0);
+  const [submitting, setSubmitting] = useState(false);
   
   // États pour validation téléphone et détection doublons
   const [phoneValidation, setPhoneValidation] = useState({ isValid: true, message: '' });
@@ -320,6 +321,8 @@ const updateUnitPurchasePrice = (partId: string, unitPrice: number) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submitting) return;
+    
     
     if (!customerInfo.firstName.trim() || !customerInfo.lastName.trim()) {
       toast({
@@ -360,32 +363,38 @@ const updateUnitPurchasePrice = (partId: string, unitPrice: number) => {
       }
     }
 
-    const { error } = await onSubmit({
-      customer_name: `${customerInfo.firstName} ${customerInfo.lastName}`.trim(),
-      customer_email: customerInfo.email || null,
-      customer_phone: customerInfo.phone || null,
-      // Informations appareil
-      device_brand: deviceInfo.brand ? deviceInfo.brand.toUpperCase().trim() : null,
-      device_model: deviceInfo.model ? deviceInfo.model.toUpperCase().trim() : null,
-      device_imei: deviceInfo.imei || null,
-      sku: deviceInfo.sku || null,
-      problem_description: deviceInfo.problemDescription || null,
-      notes: notes || null,
-      items: selectedItems,
-      total_amount: totalAmount,
-      deposit_amount: depositAmount,
-      status: initialQuote?.status ?? 'draft'
-    });
-
-    if (!error) {
-      // Si le devis est accepté, le client sera automatiquement créé par le trigger de la DB
-      toast({
-        title: "Succès",
-        description: initialQuote ? "Devis mis à jour avec succès" : "Devis créé avec succès",
+    setSubmitting(true);
+    try {
+      const { error } = await onSubmit({
+        customer_name: `${customerInfo.firstName} ${customerInfo.lastName}`.trim(),
+        customer_email: customerInfo.email || null,
+        customer_phone: customerInfo.phone || null,
+        // Informations appareil
+        device_brand: deviceInfo.brand ? deviceInfo.brand.toUpperCase().trim() : null,
+        device_model: deviceInfo.model ? deviceInfo.model.toUpperCase().trim() : null,
+        device_imei: deviceInfo.imei || null,
+        sku: deviceInfo.sku || null,
+        problem_description: deviceInfo.problemDescription || null,
+        notes: notes || null,
+        items: selectedItems,
+        total_amount: totalAmount,
+        deposit_amount: depositAmount,
+        status: initialQuote?.status ?? 'draft'
       });
-      onCancel();
+
+      if (!error) {
+        // Si le devis est accepté, le client sera automatiquement créé par le trigger de la DB
+        toast({
+          title: "Succès",
+          description: initialQuote ? "Devis mis à jour avec succès" : "Devis créé avec succès",
+        });
+        onCancel();
+      }
+    } finally {
+      setSubmitting(false);
     }
   };
+
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -834,8 +843,10 @@ const updateUnitPurchasePrice = (partId: string, unitPrice: number) => {
           <Button type="button" variant="outline" onClick={onCancel}>
             Annuler
           </Button>
-          <Button type="submit">
-            {submitLabel ?? (initialQuote ? 'Mettre à jour le devis' : 'Créer le devis')}
+          <Button type="submit" disabled={submitting}>
+            {submitting
+              ? (initialQuote ? 'Mise à jour…' : 'Création…')
+              : (submitLabel ?? (initialQuote ? 'Mettre à jour le devis' : 'Créer le devis'))}
           </Button>
         </div>
       </form>
