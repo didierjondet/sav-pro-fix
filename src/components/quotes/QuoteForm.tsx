@@ -843,8 +843,10 @@ const updateUnitPurchasePrice = (partId: string, unitPrice: number) => {
           <Button type="button" variant="outline" onClick={onCancel}>
             Annuler
           </Button>
-          <Button type="submit">
-            {submitLabel ?? (initialQuote ? 'Mettre à jour le devis' : 'Créer le devis')}
+          <Button type="submit" disabled={submitting}>
+            {submitting
+              ? (initialQuote ? 'Mise à jour…' : 'Création…')
+              : (submitLabel ?? (initialQuote ? 'Mettre à jour le devis' : 'Créer le devis'))}
           </Button>
         </div>
       </form>
