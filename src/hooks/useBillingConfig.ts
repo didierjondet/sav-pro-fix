@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useShop } from '@/contexts/ShopContext';
 import { useToast } from '@/hooks/use-toast';
 
-export type VatRegime = 'none' | 'standard' | 'margin';
+export type VatRegime = 'none' | 'standard';
 export type LaborMode = 'flat' | 'hourly';
 
 export interface BillingConfig {

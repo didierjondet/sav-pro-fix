@@ -74,25 +74,6 @@ export function buildVatHtmlBlock(totals: VatTotals, config: BillingConfig): str
       </div>
     `;
   }
-  if (config.vat_regime === 'margin') {
-    return `
-      <div style="margin-top:10px; padding:10px 12px; background:#f5f5f5; border-radius:5px; font-size:12px;">
-        <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
-          <span>Total pièces</span><span><strong>${totals.partsTTC.toFixed(2)} €</strong></span>
-        </div>
-        ${totals.laborHT > 0 ? `
-        <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
-          <span>Main d'œuvre</span><span><strong>${totals.laborTTC.toFixed(2)} €</strong></span>
-        </div>` : ''}
-        <div style="display:flex; justify-content:space-between; font-size:14px; font-weight:bold; border-top:1px solid #ccc; padding-top:6px; margin-top:6px;">
-          <span>TOTAL</span><span>${totals.totalTTC.toFixed(2)} €</span>
-        </div>
-        <p style="margin:8px 0 0; font-size:10px; color:#666; font-style:italic;">
-          TVA sur marge — art. 297 A du CGI (non détaillée).
-        </p>
-      </div>
-    `;
-  }
   const totalVat = totals.vatParts + totals.vatLabor;
   return `
     <div style="margin-top:10px; padding:10px 12px; background:#f5f5f5; border-radius:5px; font-size:12px;">

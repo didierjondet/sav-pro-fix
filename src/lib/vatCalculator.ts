@@ -74,12 +74,6 @@ export function computeLineTotals(
   if (config.vat_regime === 'standard') {
     vatPartsAmount = partTotalTTC - partTotalHT;
     vatLaborAmount = laborTotalHT * rateLabor;
-  } else if (config.vat_regime === 'margin') {
-    const marginUnit = Math.max(0, sellingTTCInput - purchase);
-    const marginTotalTTC = marginUnit * qty;
-    const marginHT = ratePart > 0 ? marginTotalTTC / (1 + ratePart) : marginTotalTTC;
-    vatPartsAmount = marginTotalTTC - marginHT;
-    vatLaborAmount = laborTotalHT * rateLabor;
   }
 
   const laborTotalTTC = laborTotalHT + vatLaborAmount;
@@ -100,7 +94,6 @@ export function computeLineTotals(
 
 export function regimeLabel(r: BillingConfig['vat_regime']): string {
   if (r === 'none') return 'Auto-entrepreneur (TVA non applicable, art. 293 B du CGI)';
-  if (r === 'margin') return 'TVA sur marge';
   return 'TVA classique';
 }
 
