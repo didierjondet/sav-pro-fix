@@ -49,13 +49,6 @@ export function BillingVatTab() {
                 <div className="text-sm text-muted-foreground">Taux paramétrable sur pièces et main d'œuvre.</div>
               </div>
             </label>
-            <label className="flex items-start gap-3 p-3 rounded-md border cursor-pointer hover:bg-accent">
-              <RadioGroupItem value="margin" id="r-margin" className="mt-1" />
-              <div>
-                <div className="font-medium">TVA sur marge</div>
-                <div className="text-sm text-muted-foreground">TVA appliquée uniquement sur la marge des pièces.</div>
-              </div>
-            </label>
           </RadioGroup>
 
           {form.vat_regime !== 'none' && (

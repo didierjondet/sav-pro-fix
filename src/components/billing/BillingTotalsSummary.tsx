@@ -60,7 +60,6 @@ export function BillingTotalsSummary({ lines, discountTotal = 0 }: Props) {
 
   const showVatDetail = config.vat_regime === 'standard';
   const showLabor = config.labor_billing_enabled && totals.laborHT > 0;
-  const isMargin = config.vat_regime === 'margin';
   const isNone = config.vat_regime === 'none';
 
   return (
@@ -105,11 +104,6 @@ export function BillingTotalsSummary({ lines, discountTotal = 0 }: Props) {
       {isNone && (
         <p className="text-[11px] text-muted-foreground italic">
           TVA non applicable, art. 293 B du CGI.
-        </p>
-      )}
-      {isMargin && (
-        <p className="text-[11px] text-muted-foreground italic">
-          TVA sur marge — art. 297 A du CGI (non détaillée).
         </p>
       )}
     </div>

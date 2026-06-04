@@ -1,19 +1,30 @@
-## Cause du doublon
 
-Dans `src/components/quotes/QuoteForm.tsx`, `handleSubmit` est `async` mais le bouton « Créer le devis » (`<Button type="submit">`, ligne 837) n'a aucun état `disabled` ni garde de réentrance. Tant que l'insert Supabase n'a pas répondu (latence réseau + appel de `refetch()` dans `useQuotes.createQuote`), un second clic relance `handleSubmit` → un deuxième `INSERT` est envoyé et un second devis (avec un nouveau `quote_number`) est créé.
+## Objectif
+Supprimer le régime "TVA sur marge" partout dans l'app. Ne conserver que :
+- **TVA classique** (avec détail TVA pièces/MO sur devis & factures)
+- **Auto-entrepreneur** (mention "TVA non applicable, art. 293 B du CGI")
 
-Le `confirm()` de doublon (ligne 357) n'aide pas : il se déclenche uniquement quand un devis existant est détecté côté liste, pas pendant la soumission en cours.
+## Changements
 
-## Correction (minimale, frontend uniquement)
+### 1. `src/components/settings/BillingVatTab.tsx`
+- Retirer la 3ᵉ option radio "TVA sur marge" du `RadioGroup`.
 
-Dans `src/components/quotes/QuoteForm.tsx` :
+### 2. `src/hooks/useBillingConfig.ts`
+- Restreindre le type `VatRegime` à `'none' | 'standard'` (supprimer `'margin'`).
 
-1. Ajouter `const [submitting, setSubmitting] = useState(false);`
-2. Au tout début de `handleSubmit`, après `e.preventDefault()` : `if (submitting) return;` puis `setSubmitting(true)`, et `setSubmitting(false)` dans un `finally`.
-3. Bouton ligne 837 : `disabled={submitting}` et libellé « Création… » / « Mise à jour… » pendant l'attente.
+### 3. `src/lib/vatCalculator.ts`
+- Supprimer la branche `vat_regime === 'margin'` dans `computeLineTotals`.
+- Retirer la mention `'TVA sur marge'` de `regimeLabel`.
 
-Aucun changement de logique métier, aucun changement DB, aucun autre composant touché. Conforme à la mémoire utilisateur (modification stricte, pas d'effets collatéraux).
+### 4. `src/components/billing/BillingTotalsSummary.tsx`
+- Supprimer la variable `isMargin` et le bloc d'affichage de la mention "art. 297 A du CGI".
 
-## Vérification
+### 5. `src/utils/pdfVatHelpers.ts`
+- Supprimer la branche `vat_regime === 'margin'` dans `buildVatHtmlBlock`.
 
-Cliquer plusieurs fois rapidement sur « Créer le devis » → un seul devis créé, bouton désactivé pendant l'attente.
+### 6. Migration de données (sécurité)
+- Mettre à jour les enregistrements existants : tout `shop_billing_config.vat_regime = 'margin'` → `'standard'` pour éviter les états cassés après le changement de type.
+
+## Hors-scope
+- Aucun changement aux paramètres de facturation MO (main d'œuvre) ni à la logique de calcul TVA classique.
+- Aucun changement UI ailleurs (devis, SAV, factures conservent leur mise en page).
