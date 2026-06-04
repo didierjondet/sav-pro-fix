@@ -1,0 +1,1 @@
+UPDATE public.shop_billing_config SET vat_regime = 'standard' WHERE vat_regime = 'margin';
