@@ -217,6 +217,25 @@ export function useStatistics(
 
     const fetchStatistics = async () => {
       setLoading(true);
+      // Reset des données pour éviter d'afficher des valeurs calculées
+      // sur la période précédente pendant le recalcul.
+      setData({
+        revenue: 0,
+        expenses: 0,
+        profit: 0,
+        savStats: { total: 0, averageTime: 0, averageProcessingDays: 0, lateRate: 0 },
+        partsStats: { totalUsed: 0, averageCost: 0 },
+        takeoverStats: { amount: 0, count: 0 },
+        revenueChart: [],
+        savCountChart: [],
+        completedSavChart: [],
+        lateRateChart: [],
+        profitabilityChart: [],
+        topParts: [],
+        topDevices: [],
+        savStatusDistribution: [],
+        revenueByProductCategory: []
+      });
       try {
       const { start, end } = getDateRange();
 
