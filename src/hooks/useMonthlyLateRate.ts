@@ -63,13 +63,9 @@ export function useMonthlyLateRate(year?: number) {
           finalStatusKeys.push('ready', 'pret_et_cloture', 'cancelled', 'delivered');
         }
 
-        // Fonction pour obtenir les jours max de traitement
-        const getMaxProcessingDays = (savType: string): number => {
-          const typeConfig = (shopSavTypes || []).find(t => t.type_key === savType);
-          if (typeConfig?.max_processing_days) return typeConfig.max_processing_days;
-          if (savType.toLowerCase().includes('interne')) return 0;
-          return 7;
-        };
+        // Fonction pour obtenir les jours max de traitement (helper partagé)
+        const getMaxDays = (savType: string): number =>
+          getMaxProcessingDays(savType, shopSavTypes);
 
         // Calculer le taux de retard pour chaque mois
         const monthlyData: MonthlyLateRateData[] = [];
@@ -83,41 +79,23 @@ export function useMonthlyLateRate(year?: number) {
           // Attribution = mois de clôture (et plus mois de création).
           const closedSavsThisMonth = (savCases || []).filter((sav: any) => {
             if (excludedTypes.includes(sav.sav_type)) return false;
-            const maxDays = getMaxProcessingDays(sav.sav_type);
+            const maxDays = getMaxDays(sav.sav_type);
             if (maxDays === 0) return false;
             if (!finalStatusKeys.includes(sav.status)) return false;
 
-            const closureHistory = sav.closure_history as any[] | null;
-            const lastClosure = closureHistory && closureHistory.length > 0
-              ? closureHistory[closureHistory.length - 1]
-              : null;
-            const closureDate = lastClosure?.closed_at
-              ? new Date(lastClosure.closed_at)
-              : new Date(sav.updated_at);
-
+            const closureDate = getClosureDate(sav);
             return closureDate >= monthStart && closureDate <= monthEnd;
           });
 
-          // Calculer les retards parmi les SAV clôturés ce mois
+          // Calculer les retards parmi les SAV clôturés ce mois (helper partagé)
           let lateCount = 0;
           closedSavsThisMonth.forEach((sav: any) => {
-            const maxDays = getMaxProcessingDays(sav.sav_type);
-            const createdAt = new Date(sav.created_at);
-            const deadline = new Date(createdAt);
-            deadline.setDate(deadline.getDate() + maxDays);
-
-            const closureHistory = sav.closure_history as any[] | null;
-            const lastClosure = closureHistory && closureHistory.length > 0
-              ? closureHistory[closureHistory.length - 1]
-              : null;
-            const closureDate = lastClosure?.closed_at
-              ? new Date(lastClosure.closed_at)
-              : new Date(sav.updated_at);
-
-            if (closureDate > deadline) {
+            const maxDays = getMaxDays(sav.sav_type);
+            if (isClosedLate(sav, maxDays)) {
               lateCount++;
             }
           });
+
 
           const totalCount = closedSavsThisMonth.length;
           const lateRate = totalCount > 0 ? (lateCount / totalCount) * 100 : 0;
