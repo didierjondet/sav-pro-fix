@@ -51,29 +51,39 @@ interface DashboardWidgetContainerProps {
 }
 
 function DashboardWidgetContainer({ widgetId, children }: DashboardWidgetContainerProps) {
-  const { config } = useWidgetConfiguration(widgetId);
-  
+  const { config, isLoading: configLoading } = useWidgetConfiguration(widgetId);
+
   // Mapper la temporalité configurée vers la période useStatistics
-  const effectivePeriod: StatisticsPeriod = 
+  const effectivePeriod: StatisticsPeriod =
     config?.temporality === 'monthly' ? '30d'
     : config?.temporality === 'monthly_calendar' ? '1m_calendar'
     : config?.temporality === 'quarterly' ? '3m'
     : config?.temporality === 'yearly' ? '1y'
     : '30d';
-  
+
   // Label pour l'affichage
-  const periodLabel = 
+  const periodLabel =
     config?.temporality === 'monthly' ? '30 derniers jours'
     : config?.temporality === 'monthly_calendar' ? 'Ce mois (calendaire)'
     : config?.temporality === 'quarterly' ? '3 derniers mois'
     : config?.temporality === 'yearly' ? 'Cette année'
     : '30 derniers jours';
-  
+
+  // Tant que la config n'est pas chargée, on n'appelle useStatistics qu'avec
+  // une période "neutre" pour conserver l'ordre des hooks, mais on n'affiche
+  // pas les enfants pour éviter un flash de valeur calculée sur une période
+  // différente de celle configurée.
   const stats = useStatistics(effectivePeriod, {
     savStatuses: config?.sav_statuses_filter ?? undefined,
     savTypes: config?.sav_types_filter ?? undefined,
   });
-  
+
+  if (configLoading || stats.loading) {
+    return (
+      <div className="h-full w-full animate-pulse rounded-md bg-muted/40 min-h-[120px]" />
+    );
+  }
+
   return <>{children(stats, periodLabel)}</>;
 }
 
