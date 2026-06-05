@@ -1,30 +1,31 @@
+## Problème
 
-## Objectif
-Supprimer le régime "TVA sur marge" partout dans l'app. Ne conserver que :
-- **TVA classique** (avec détail TVA pièces/MO sur devis & factures)
-- **Auto-entrepreneur** (mention "TVA non applicable, art. 293 B du CGI")
+Le widget "Taux de retard" (43,5 %) et le widget "Évolution des retards" (40,9 % pour juin) utilisent deux logiques différentes :
 
-## Changements
+| Élément | Taux de retard (`useStatistics`) | Évolution des retards (`useMonthlyLateRate`) |
+|---|---|---|
+| Période | Sélecteur global du dashboard (7j, 30j, 1m calendaire, 3m…) | Toujours mois calendaire (1er → fin du mois) |
+| `max_processing_days` par défaut (type non configuré) | 9 j (externe) / 7 j (autres) via `src/lib/lateRate.ts` | 7 j (tous types non "interne") en dur dans le hook |
+| Helper utilisé | `getMaxProcessingDays` / `isClosedLate` de `src/lib/lateRate.ts` | Logique recopiée localement |
 
-### 1. `src/components/settings/BillingVatTab.tsx`
-- Retirer la 3ᵉ option radio "TVA sur marge" du `RadioGroup`.
+Résultat : pour le mois en cours, si le sélecteur global n'est pas "Mois calendaire" et/ou s'il existe des SAV externes clôturés entre J+7 et J+9, les deux widgets divergent.
 
-### 2. `src/hooks/useBillingConfig.ts`
-- Restreindre le type `VatRegime` à `'none' | 'standard'` (supprimer `'margin'`).
+## Correction
 
-### 3. `src/lib/vatCalculator.ts`
-- Supprimer la branche `vat_regime === 'margin'` dans `computeLineTotals`.
-- Retirer la mention `'TVA sur marge'` de `regimeLabel`.
+1. **`src/hooks/useMonthlyLateRate.ts`** — remplacer la logique locale par les helpers partagés `getMaxProcessingDays`, `getClosureDate`, `isClosedLate` de `src/lib/lateRate.ts`, pour garantir le même seuil de retard partout.
+2. **Aligner les exclusions** — utiliser exactement la même liste `excludedFromStatsTypes` (types avec `exclude_from_stats = true`) que `useStatistics`.
+3. **Ne rien changer côté période** : "Taux de retard" reste lié au sélecteur global, "Évolution" reste par mois calendaire (c'est leur rôle). Mais préciser dans le tooltip du widget "Taux de retard" la période réellement couverte, pour que l'utilisateur comprenne pourquoi la valeur de juin peut différer du widget mensuel quand le sélecteur n'est pas "Mois en cours".
 
-### 4. `src/components/billing/BillingTotalsSummary.tsx`
-- Supprimer la variable `isMargin` et le bloc d'affichage de la mention "art. 297 A du CGI".
+## Détails techniques
 
-### 5. `src/utils/pdfVatHelpers.ts`
-- Supprimer la branche `vat_regime === 'margin'` dans `buildVatHtmlBlock`.
+- Fichier modifié : `src/hooks/useMonthlyLateRate.ts`
+  - Importer `getMaxProcessingDays`, `getClosureDate`, `isClosedLate` depuis `@/lib/lateRate`.
+  - Supprimer la fonction locale `getMaxProcessingDays` (fallback 7) et le calcul manuel de `closureDate` / dépassement de deadline.
+- Fichier modifié : `src/components/statistics/DragDropStatistics.tsx` (cas `late-rate`)
+  - Ajouter un sous-texte sous le pourcentage indiquant la période exacte utilisée (start → end) pour lever l'ambiguïté avec le widget mensuel.
+- Aucun changement DB, aucune migration.
 
-### 6. Migration de données (sécurité)
-- Mettre à jour les enregistrements existants : tout `shop_billing_config.vat_regime = 'margin'` → `'standard'` pour éviter les états cassés après le changement de type.
+## Vérification
 
-## Hors-scope
-- Aucun changement aux paramètres de facturation MO (main d'œuvre) ni à la logique de calcul TVA classique.
-- Aucun changement UI ailleurs (devis, SAV, factures conservent leur mise en page).
+- Sur le dashboard, sélectionner "Mois en cours" (`1m_calendar`) → les deux widgets doivent afficher la **même valeur** pour le mois courant.
+- Avec d'autres périodes (30j glissants, etc.), les valeurs peuvent légitimement différer, mais l'écart sera uniquement dû à la fenêtre temporelle, plus jamais au seuil de retard.

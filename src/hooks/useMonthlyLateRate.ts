@@ -3,8 +3,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { useShop } from './useShop';
 import { useShopSAVTypes } from './useShopSAVTypes';
 import { useShopSAVStatuses } from './useShopSAVStatuses';
-import { startOfYear, endOfMonth, startOfMonth, format, getDaysInMonth } from 'date-fns';
+import { startOfYear, endOfMonth, startOfMonth, format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { getClosureDate, isClosedLate, getMaxProcessingDays } from '@/lib/lateRate';
+
 
 interface MonthlyLateRateData {
   month: number;
