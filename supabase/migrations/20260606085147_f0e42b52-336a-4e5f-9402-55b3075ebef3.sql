@@ -1,0 +1,1 @@
+ALTER TABLE public.loaner_equipment ADD COLUMN IF NOT EXISTS condition_photos text[] NOT NULL DEFAULT '{}'::text[];
