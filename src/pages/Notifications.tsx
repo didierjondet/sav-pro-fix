@@ -127,25 +127,26 @@ export default function Notifications() {
   };
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center gap-2">
-        <Button 
-          variant="ghost" 
-          size="sm"
-          onClick={handleBack}
-          className="gap-2"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Retour
-        </Button>
-      </div>
+    <div className="flex-1 overflow-y-auto">
+      <div className="container mx-auto p-4 sm:p-6 space-y-4 sm:space-y-6 max-w-4xl">
+        <div className="flex items-center gap-2">
+          <Button 
+            variant="ghost" 
+            size="sm"
+            onClick={handleBack}
+            className="gap-2"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Retour
+          </Button>
+        </div>
       
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <CardTitle>Toutes les notifications</CardTitle>
             {totalUnreadCount > 0 && (
-              <Button onClick={handleMarkAllAsRead} variant="outline">
+              <Button onClick={handleMarkAllAsRead} variant="outline" className="w-full sm:w-auto">
                 Marquer tout comme lu ({totalUnreadCount})
               </Button>
             )}
