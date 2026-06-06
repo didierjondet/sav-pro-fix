@@ -1177,6 +1177,7 @@ export type Database = {
           brand: string | null
           category: string
           color: string | null
+          condition_photos: string[]
           created_at: string
           id: string
           imei: string | null
@@ -1193,6 +1194,7 @@ export type Database = {
           brand?: string | null
           category?: string
           color?: string | null
+          condition_photos?: string[]
           created_at?: string
           id?: string
           imei?: string | null
@@ -1209,6 +1211,7 @@ export type Database = {
           brand?: string | null
           category?: string
           color?: string | null
+          condition_photos?: string[]
           created_at?: string
           id?: string
           imei?: string | null
