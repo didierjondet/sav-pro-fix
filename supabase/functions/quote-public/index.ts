@@ -103,16 +103,39 @@ Deno.serve(async (req) => {
 
       console.log(`Quote ${quoteId} updated to status: ${status}${rejection_reason ? `, reason: ${rejection_reason}` : ''}`);
 
-      // Notification cloche pour le magasin quand un client accepte par SMS
-      if (status === 'sms_accepted' && updatedQuote.shop_id) {
+      // Notification cloche pour le magasin selon l'action du client
+      if (updatedQuote.shop_id) {
         try {
-          await supabase.from('notifications').insert({
-            shop_id: updatedQuote.shop_id,
-            type: 'general',
-            title: 'Devis accepté par le client',
-            message: `Le devis n°${updatedQuote.quote_number} vient d'être accepté par ${updatedQuote.customer_name}. Transformez-le en SAV pour finaliser.`,
-            read: false,
-          });
+          let notifTitle = '';
+          let notifMessage = '';
+
+          if (status === 'sms_accepted') {
+            notifTitle = 'Devis accepté par le client';
+            notifMessage = `Le devis n°${updatedQuote.quote_number} vient d'être accepté par ${updatedQuote.customer_name}. Transformez-le en SAV pour finaliser.`;
+          } else if (status === 'accepted') {
+            notifTitle = 'Devis accepté par le client';
+            notifMessage = `Le devis n°${updatedQuote.quote_number} vient d'être accepté par ${updatedQuote.customer_name}.`;
+          } else if (status === 'rejected') {
+            const reasonLabels: Record<string, string> = {
+              too_expensive: 'trop cher',
+              too_slow: 'délai trop long',
+              no_trust: 'manque de confiance',
+              postponed: 'reporté',
+            };
+            const reasonLabel = reasonLabels[rejection_reason] || rejection_reason;
+            notifTitle = 'Devis refusé par le client';
+            notifMessage = `Le devis n°${updatedQuote.quote_number} a été refusé par ${updatedQuote.customer_name}. Motif : ${reasonLabel}.`;
+          }
+
+          if (notifTitle) {
+            await supabase.from('notifications').insert({
+              shop_id: updatedQuote.shop_id,
+              type: 'general',
+              title: notifTitle,
+              message: notifMessage,
+              read: false,
+            });
+          }
         } catch (notifErr) {
           console.error('Notification insert failed (non-fatal):', notifErr);
         }

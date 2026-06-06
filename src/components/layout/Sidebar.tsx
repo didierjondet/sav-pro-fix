@@ -265,8 +265,9 @@ function SidebarComponent({
                       <Icon className="mr-3 h-5 w-5" />
                       <span>{item.name}</span>
                       {item.href === '/client-chats' && openConversationsCount > 0 && <Badge variant="destructive" className="ml-auto text-xs">{openConversationsCount}</Badge>}
-                      {item.href === '/quotes' && quoteCounts.inProgress > 0 && <Badge variant="destructive" className="ml-auto text-xs">{quoteCounts.inProgress}</Badge>}
-                      {item.href === '/quotes' && quoteCounts.clientAccepted > 0 && <Badge className="ml-1 text-xs bg-green-600 text-white hover:bg-green-700">{quoteCounts.clientAccepted}</Badge>}
+                      {item.href === '/quotes' && quoteCounts.inProgress > 0 && <Badge className="ml-auto text-xs bg-blue-600 text-white hover:bg-blue-700" title="Devis en cours">{quoteCounts.inProgress}</Badge>}
+                      {item.href === '/quotes' && quoteCounts.clientAccepted > 0 && <Badge className="ml-1 text-xs bg-green-600 text-white hover:bg-green-700" title="Acceptés par le client">{quoteCounts.clientAccepted}</Badge>}
+                      {item.href === '/quotes' && quoteCounts.rejected > 0 && <Badge className="ml-1 text-xs bg-orange-500 text-white hover:bg-orange-600" title="Refusés par le client">{quoteCounts.rejected}</Badge>}
                       {item.href === '/agenda' && pendingAppointmentsCount > 0 && <Badge variant="secondary" className="ml-auto text-xs bg-orange-500 text-white">{pendingAppointmentsCount}</Badge>}
                     </Button>
                   </div>;
