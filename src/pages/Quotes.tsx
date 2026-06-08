@@ -919,8 +919,23 @@ export default function Quotes() {
                             </CardContent>
                           </Card>
                         ) : (
-                          archivedQuotes.map((quote) => (
-                            <Card key={quote.id} className="hover:shadow-md transition-shadow opacity-75">
+                          archivedQuotes.map((quote) => {
+                            const wasAccepted = !!quote.accepted_at;
+                            const wasRejected = !!(quote as any).rejected_at;
+                            const borderClass = wasAccepted
+                              ? 'border-l-4 border-l-green-500'
+                              : wasRejected
+                                ? 'border-l-4 border-l-orange-500'
+                                : 'border-l-4 border-l-muted';
+                            const reasonMap: Record<string, string> = {
+                              too_expensive: 'trop cher',
+                              too_slow: 'délai trop long',
+                              no_trust: 'manque de confiance',
+                              postponed: 'reporté',
+                            };
+                            const rejectionReason = (quote as any).rejection_reason as string | undefined;
+                            return (
+                            <Card key={quote.id} className={`hover:shadow-md transition-shadow opacity-75 ${borderClass}`}>
                               <CardContent className="p-4 md:p-5 space-y-3">
                                 <div className="flex flex-wrap items-center gap-2">
                                   <h3 className="font-semibold text-base text-muted-foreground">{formatCustomerDisplay(quote.customer_name)}</h3>
@@ -928,6 +943,17 @@ export default function Quotes() {
                                   <Badge variant="secondary" className="text-xs">
                                     <Archive className="h-3 w-3 mr-1" />Archivé
                                   </Badge>
+                                  {wasAccepted && (
+                                    <Badge className="text-xs bg-green-600 hover:bg-green-700 text-white">
+                                      <CheckCircle className="h-3 w-3 mr-1" />
+                                      {quote.accepted_by === 'client' ? 'Accepté par le client' : 'Accepté'}
+                                    </Badge>
+                                  )}
+                                  {wasRejected && (
+                                    <Badge className="text-xs bg-orange-500 hover:bg-orange-600 text-white">
+                                      Refusé{rejectionReason && reasonMap[rejectionReason] ? ` — ${reasonMap[rejectionReason]}` : ''}
+                                    </Badge>
+                                  )}
                                 </div>
                                 
                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-1 text-sm">
@@ -945,6 +971,17 @@ export default function Quotes() {
                                     <span className="text-muted-foreground">Archivé le : </span>
                                     <span>{new Date(quote.updated_at || quote.created_at).toLocaleDateString('fr-FR')}</span>
                                   </div>
+                                  {wasAccepted && quote.accepted_at && (
+                                    <div className="col-span-2 text-xs text-green-700">
+                                      Accepté le {new Date(quote.accepted_at).toLocaleDateString('fr-FR')}
+                                    </div>
+                                  )}
+                                  {wasRejected && (quote as any).rejected_at && (
+                                    <div className="col-span-2 text-xs text-orange-700">
+                                      Refusé le {new Date((quote as any).rejected_at).toLocaleDateString('fr-FR')}
+                                      {rejectionReason && reasonMap[rejectionReason] ? ` — motif : ${reasonMap[rejectionReason]}` : ''}
+                                    </div>
+                                  )}
                                 </div>
 
                                 <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-border/50">
@@ -963,7 +1000,8 @@ export default function Quotes() {
                                 </div>
                               </CardContent>
                             </Card>
-                          ))
+                            );
+                          })
                         )}
                       </div>
                     </TabsContent>
