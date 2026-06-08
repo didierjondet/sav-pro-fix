@@ -665,7 +665,7 @@ export default function Quotes() {
               )}
             </>
           )}
-          {quote.status !== 'rejected' && quote.status !== 'archived' && (
+          {quote.status !== 'archived' && (
             <Button variant="outline" size="sm" className="h-8 text-xs text-orange-600 hover:text-orange-700" onClick={() => handleArchiveQuote(quote.id)}>
               <Archive className="h-3 w-3 mr-1" />Archiver
             </Button>
