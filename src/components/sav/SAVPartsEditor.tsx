@@ -93,9 +93,25 @@ export function SAVPartsEditor({ savCaseId, onPartsUpdated, trigger }: SAVPartsE
   };
 
   useEffect(() => {
-    if (open) {
-      fetchSAVParts();
-    }
+    if (!open) return;
+    fetchSAVParts();
+
+    const channel = supabase
+      .channel(`sav-parts-editor-${savCaseId}`)
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'parts' },
+        () => fetchSAVParts()
+      )
+      .subscribe();
+
+    const onStockEvent = () => fetchSAVParts();
+    window.addEventListener('parts-stock-updated', onStockEvent);
+
+    return () => {
+      supabase.removeChannel(channel);
+      window.removeEventListener('parts-stock-updated', onStockEvent);
+    };
   }, [open, savCaseId]);
 
   const addPartFromStock = (part: any) => {
