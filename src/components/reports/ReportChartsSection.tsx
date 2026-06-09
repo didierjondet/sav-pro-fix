@@ -7,7 +7,7 @@ import { PartsUsageHeatmapWidget } from '@/components/statistics/advanced/PartsU
 import { CustomerSatisfactionWidget } from '@/components/statistics/advanced/CustomerSatisfactionWidget';
 import { AnnualStatsWidget } from '@/components/statistics/widgets/AnnualStatsWidget';
 import { FinanceKPIsWidget } from '@/components/statistics/widgets/FinanceKPIsWidget';
-import { QuoteRejectionWidget } from '@/components/statistics/widgets/QuoteRejectionWidget';
+import { QuoteConversionWidget } from '@/components/statistics/widgets/QuoteConversionWidget';
 import { MonthlyLateRateChart } from '@/components/statistics/widgets/MonthlyLateRateChart';
 import { useMonthlyStatistics } from '@/hooks/useMonthlyStatistics';
 import { useStatistics } from '@/hooks/useStatistics';
