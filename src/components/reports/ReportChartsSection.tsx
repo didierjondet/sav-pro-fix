@@ -19,7 +19,7 @@ export const AVAILABLE_REPORT_WIDGETS = [
   { id: 'monthly-comparison', name: 'Comparaison mensuelle', description: 'Comparatif mois par mois' },
   { id: 'financial-overview', name: 'Vue d\'ensemble financière', description: 'Graphique combiné des finances' },
   { id: 'finance-kpis', name: 'KPIs financiers', description: 'Indicateurs du mois' },
-  { id: 'quote-rejections', name: 'Raisons de refus devis', description: 'Analyse des devis refusés' },
+  { id: 'quote-conversion', name: 'Taux de transformation des devis', description: 'Conversion des devis en SAV' },
   { id: 'late-rate-chart', name: 'Évolution des retards', description: 'Tendance du taux de retard' },
   { id: 'revenue-breakdown', name: 'Répartition du CA', description: 'Analyse détaillée des revenus' },
   { id: 'parts-usage-heatmap', name: 'Utilisation des pièces', description: 'Analyse d\'usage des pièces' },
