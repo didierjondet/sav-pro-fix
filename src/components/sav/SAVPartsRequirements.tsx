@@ -203,6 +203,29 @@ export function SAVPartsRequirements({ savCaseId, onPartsUpdated }: SAVPartsRequ
 
   useEffect(() => {
     fetchPartsRequirements();
+
+    // Realtime: refetch when this SAV's parts or any related parts row changes
+    const channel = supabase
+      .channel(`sav-parts-req-${savCaseId}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'sav_parts', filter: `sav_case_id=eq.${savCaseId}` },
+        () => fetchPartsRequirements()
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'parts' },
+        () => fetchPartsRequirements()
+      )
+      .subscribe();
+
+    const onStockEvent = () => fetchPartsRequirements();
+    window.addEventListener('parts-stock-updated', onStockEvent);
+
+    return () => {
+      supabase.removeChannel(channel);
+      window.removeEventListener('parts-stock-updated', onStockEvent);
+    };
   }, [savCaseId]);
 
   if (loading) {
