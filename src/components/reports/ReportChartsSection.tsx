@@ -7,7 +7,7 @@ import { PartsUsageHeatmapWidget } from '@/components/statistics/advanced/PartsU
 import { CustomerSatisfactionWidget } from '@/components/statistics/advanced/CustomerSatisfactionWidget';
 import { AnnualStatsWidget } from '@/components/statistics/widgets/AnnualStatsWidget';
 import { FinanceKPIsWidget } from '@/components/statistics/widgets/FinanceKPIsWidget';
-import { QuoteRejectionWidget } from '@/components/statistics/widgets/QuoteRejectionWidget';
+import { QuoteConversionWidget } from '@/components/statistics/widgets/QuoteConversionWidget';
 import { MonthlyLateRateChart } from '@/components/statistics/widgets/MonthlyLateRateChart';
 import { useMonthlyStatistics } from '@/hooks/useMonthlyStatistics';
 import { useStatistics } from '@/hooks/useStatistics';
@@ -19,7 +19,7 @@ export const AVAILABLE_REPORT_WIDGETS = [
   { id: 'monthly-comparison', name: 'Comparaison mensuelle', description: 'Comparatif mois par mois' },
   { id: 'financial-overview', name: 'Vue d\'ensemble financière', description: 'Graphique combiné des finances' },
   { id: 'finance-kpis', name: 'KPIs financiers', description: 'Indicateurs du mois' },
-  { id: 'quote-rejections', name: 'Raisons de refus devis', description: 'Analyse des devis refusés' },
+  { id: 'quote-conversion', name: 'Taux de transformation des devis', description: 'Conversion des devis en SAV' },
   { id: 'late-rate-chart', name: 'Évolution des retards', description: 'Tendance du taux de retard' },
   { id: 'revenue-breakdown', name: 'Répartition du CA', description: 'Analyse détaillée des revenus' },
   { id: 'parts-usage-heatmap', name: 'Utilisation des pièces', description: 'Analyse d\'usage des pièces' },
@@ -477,8 +477,8 @@ export function ReportChartsSection({ selectedWidgets, dateRange, reportData }: 
           />
         );
       
-      case 'quote-rejections':
-        return <QuoteRejectionWidget dateRange={dateRange} />;
+      case 'quote-conversion':
+        return <QuoteConversionWidget dateRange={dateRange} />;
       
       case 'late-rate-chart':
         return <MonthlyLateRateChart year={selectedYear} />;
