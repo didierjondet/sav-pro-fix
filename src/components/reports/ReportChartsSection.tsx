@@ -477,8 +477,8 @@ export function ReportChartsSection({ selectedWidgets, dateRange, reportData }: 
           />
         );
       
-      case 'quote-rejections':
-        return <QuoteRejectionWidget dateRange={dateRange} />;
+      case 'quote-conversion':
+        return <QuoteConversionWidget dateRange={dateRange} />;
       
       case 'late-rate-chart':
         return <MonthlyLateRateChart year={selectedYear} />;
