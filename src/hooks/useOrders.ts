@@ -701,6 +701,10 @@ export function useOrders() {
     fetchPartsNeededForSAV();
     fetchPartsNeededForQuotes();
     fetchPartsNeedingRestock();
+    // Notify all listeners (useParts, SAV parts cards, editor) that stock changed
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('parts-stock-updated'));
+    }
   };
 
   const receiveOrderItem = async (itemId: string, quantityReceived: number) => {

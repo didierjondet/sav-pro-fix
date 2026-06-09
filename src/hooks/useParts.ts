@@ -116,6 +116,29 @@ export function useParts() {
   useEffect(() => {
     setLoading(true);
     fetchParts();
+
+    if (!shop?.id) return;
+
+    // Realtime: refetch on any parts change for this shop
+    const channel = supabase
+      .channel(`parts-changes-${shop.id}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'parts', filter: `shop_id=eq.${shop.id}` },
+        () => {
+          fetchParts();
+        }
+      )
+      .subscribe();
+
+    // Fallback event (dispatched by hooks that mutate stock)
+    const onStockEvent = () => fetchParts();
+    window.addEventListener('parts-stock-updated', onStockEvent);
+
+    return () => {
+      supabase.removeChannel(channel);
+      window.removeEventListener('parts-stock-updated', onStockEvent);
+    };
   }, [shop?.id]);
 
   // Fonction pour trouver des pièces similaires
