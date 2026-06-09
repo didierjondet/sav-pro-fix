@@ -46,9 +46,11 @@ export function SAVPartsRequirements({ savCaseId, onPartsUpdated }: SAVPartsRequ
           unit_price,
           purchase_price,
           parts (
+            shop_id,
             name,
             reference,
             quantity,
+            reserved_quantity,
             min_stock
           )
         `)
@@ -59,7 +61,9 @@ export function SAVPartsRequirements({ savCaseId, onPartsUpdated }: SAVPartsRequ
       if (savParts) {
         const partsRequirements = savParts.map(savPart => {
           const part = savPart.parts as any;
-          const availableStock = part?.quantity || 0;
+          const physicalStock = part?.quantity || 0;
+          const reserved = part?.reserved_quantity || 0;
+          const availableStock = Math.max(0, physicalStock - reserved);
           const neededQuantity = savPart.quantity;
           const missingQuantity = Math.max(0, neededQuantity - availableStock);
           const needsOrdering = missingQuantity > 0;
