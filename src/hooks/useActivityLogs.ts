@@ -12,6 +12,9 @@ export interface ActivityLogEntry {
   action: string;
   target: string;
   details: string;
+  case_number?: string;
+  customer_name?: string;
+  device_label?: string;
 }
 
 interface Params {
@@ -59,20 +62,44 @@ export function useActivityLogs({ from, to }: Params) {
 
       const entries: ActivityLogEntry[] = [];
 
+      // Pre-fetch SAV info for richer log rows
+      const savIds = Array.from(new Set((sav.data || []).map((r: any) => r.sav_case_id).filter(Boolean)));
+      const savInfoMap = new Map<string, { case_number?: string; customer_name?: string; device_label?: string }>();
+      if (savIds.length) {
+        const { data: savRows } = await supabase
+          .from('sav_cases')
+          .select('id, case_number, device_brand, device_model, customer:customers(first_name, last_name)')
+          .in('id', savIds);
+        (savRows || []).forEach((s: any) => {
+          const c = s.customer;
+          const customer_name = c ? `${c.first_name || ''} ${c.last_name || ''}`.trim() : '';
+          const device_label = [s.device_brand, s.device_model].filter(Boolean).join(' ');
+          savInfoMap.set(s.id, {
+            case_number: s.case_number || undefined,
+            customer_name: customer_name || undefined,
+            device_label: device_label || undefined,
+          });
+        });
+      }
+
       (sav.data || []).forEach((r: any) => {
         const detailParts: string[] = [];
         if (r.field_name) detailParts.push(r.field_name);
         if (r.old_value || r.new_value) {
           detailParts.push(`${r.old_value ?? '∅'} → ${r.new_value ?? '∅'}`);
         }
+        const info = r.sav_case_id ? savInfoMap.get(r.sav_case_id) : undefined;
         entries.push({
           id: `sav-${r.id}`,
           timestamp: r.created_at,
           source: 'sav',
           actor: r.changed_by_name || '—',
           action: r.action || '—',
-          target: r.sav_case_id ? `SAV ${String(r.sav_case_id).slice(0, 8)}` : (r.table_name || '—'),
+          target: info?.case_number || (r.sav_case_id ? `SAV ${String(r.sav_case_id).slice(0, 8)}` : (r.table_name || '—')),
           details: detailParts.join(' · '),
+          case_number: info?.case_number,
+          customer_name: info?.customer_name,
+          device_label: info?.device_label,
         });
       });
 

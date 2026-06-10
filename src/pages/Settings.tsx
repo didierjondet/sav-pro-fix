@@ -57,8 +57,10 @@ import {
   ScrollText,
   CalendarIcon,
   Download,
-  RotateCcw
+  RotateCcw,
+  Search as SearchIcon
 } from 'lucide-react';
+import { multiWordSearch } from '@/utils/searchUtils';
 
 import { MenuConfigurationTab } from '@/components/settings/MenuConfigurationTab';
 import { RolePermissionsManager } from '@/components/settings/RolePermissionsManager';
@@ -140,6 +142,7 @@ function LogsManager() {
   const [rangeFrom, setRangeFrom] = useState<Date>(logsAddDays(new Date(), -7));
   const [rangeTo, setRangeTo] = useState<Date>(new Date());
   const [page, setPage] = useState(0);
+  const [search, setSearch] = useState('');
 
   const { from, to } = useMemo(() => {
     if (mode === 'single') {
@@ -148,7 +151,14 @@ function LogsManager() {
     return { from: logsStartOfDay(rangeFrom), to: logsEndOfDay(rangeTo) };
   }, [mode, singleDate, rangeFrom, rangeTo]);
 
-  const { data: logs = [], isLoading } = useActivityLogs({ from, to });
+  const { data: allLogs = [], isLoading } = useActivityLogs({ from, to });
+  const logs = useMemo(() => {
+    if (!search.trim()) return allLogs;
+    return allLogs.filter((l) =>
+      multiWordSearch(search, l.actor, l.action, l.target, l.details, l.case_number, l.customer_name, l.device_label)
+    );
+  }, [allLogs, search]);
+  useEffect(() => { setPage(0); }, [search]);
   const totalPages = Math.max(1, Math.ceil(logs.length / LOGS_PAGE_SIZE));
   const pageItems = logs.slice(page * LOGS_PAGE_SIZE, (page + 1) * LOGS_PAGE_SIZE);
 
@@ -160,10 +170,12 @@ function LogsManager() {
   };
 
   const handleExport = () => {
-    const header = ['Date', 'Source', 'Utilisateur', 'Action', 'Cible', 'Détails'];
+    const header = ['Date', 'Source', 'N° SAV', 'Client', 'Utilisateur', 'Action', 'Cible', 'Détails'];
     const rows = logs.map((l) => [
       format(new Date(l.timestamp), 'yyyy-MM-dd HH:mm:ss'),
       logsSourceLabel[l.source],
+      l.case_number || '',
+      l.customer_name || '',
       l.actor,
       l.action,
       l.target,
@@ -224,12 +236,24 @@ function LogsManager() {
           </div>
         </div>
 
+        <div className="relative max-w-md">
+          <SearchIcon className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Rechercher (n° SAV, client, produit, action…)"
+            className="pl-8"
+          />
+        </div>
+
         <div className="border rounded-md overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead className="whitespace-nowrap">Date / heure</TableHead>
                 <TableHead>Source</TableHead>
+                <TableHead>N° SAV</TableHead>
+                <TableHead>Client</TableHead>
                 <TableHead>Utilisateur</TableHead>
                 <TableHead>Action</TableHead>
                 <TableHead>Cible</TableHead>
@@ -239,7 +263,7 @@ function LogsManager() {
             <TableBody>
               {pageItems.length === 0 && !isLoading && (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
                     Aucune action sur cette période.
                   </TableCell>
                 </TableRow>
@@ -254,6 +278,8 @@ function LogsManager() {
                       {logsSourceLabel[l.source]}
                     </Badge>
                   </TableCell>
+                  <TableCell className="text-sm font-mono whitespace-nowrap">{l.case_number || '—'}</TableCell>
+                  <TableCell className="text-sm whitespace-nowrap">{l.customer_name || '—'}</TableCell>
                   <TableCell className="text-sm">{l.actor}</TableCell>
                   <TableCell className="text-sm">{l.action}</TableCell>
                   <TableCell className="text-sm">{l.target}</TableCell>
@@ -265,6 +291,7 @@ function LogsManager() {
             </TableBody>
           </Table>
         </div>
+
 
         {totalPages > 1 && (
           <div className="flex items-center justify-between text-sm">
