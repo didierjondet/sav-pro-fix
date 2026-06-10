@@ -57,8 +57,11 @@ import {
   ScrollText,
   CalendarIcon,
   Download,
-  RotateCcw
+  RotateCcw,
+  Search as SearchIcon
 } from 'lucide-react';
+import { multiWordSearch } from '@/utils/searchUtils';
+import { Input as UIInput } from '@/components/ui/input';
 
 import { MenuConfigurationTab } from '@/components/settings/MenuConfigurationTab';
 import { RolePermissionsManager } from '@/components/settings/RolePermissionsManager';
