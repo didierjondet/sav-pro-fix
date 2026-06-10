@@ -234,12 +234,24 @@ function LogsManager() {
           </div>
         </div>
 
+        <div className="relative max-w-md">
+          <SearchIcon className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Rechercher (n° SAV, client, produit, action…)"
+            className="pl-8"
+          />
+        </div>
+
         <div className="border rounded-md overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead className="whitespace-nowrap">Date / heure</TableHead>
                 <TableHead>Source</TableHead>
+                <TableHead>N° SAV</TableHead>
+                <TableHead>Client</TableHead>
                 <TableHead>Utilisateur</TableHead>
                 <TableHead>Action</TableHead>
                 <TableHead>Cible</TableHead>
@@ -249,7 +261,7 @@ function LogsManager() {
             <TableBody>
               {pageItems.length === 0 && !isLoading && (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
                     Aucune action sur cette période.
                   </TableCell>
                 </TableRow>
@@ -264,6 +276,8 @@ function LogsManager() {
                       {logsSourceLabel[l.source]}
                     </Badge>
                   </TableCell>
+                  <TableCell className="text-sm font-mono whitespace-nowrap">{l.case_number || '—'}</TableCell>
+                  <TableCell className="text-sm whitespace-nowrap">{l.customer_name || '—'}</TableCell>
                   <TableCell className="text-sm">{l.actor}</TableCell>
                   <TableCell className="text-sm">{l.action}</TableCell>
                   <TableCell className="text-sm">{l.target}</TableCell>
@@ -275,6 +289,7 @@ function LogsManager() {
             </TableBody>
           </Table>
         </div>
+
 
         {totalPages > 1 && (
           <div className="flex items-center justify-between text-sm">
