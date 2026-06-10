@@ -12,6 +12,9 @@ export interface ActivityLogEntry {
   action: string;
   target: string;
   details: string;
+  case_number?: string;
+  customer_name?: string;
+  device_label?: string;
 }
 
 interface Params {
