@@ -1,57 +1,29 @@
-## Diagnostic
+## Objectif
 
-Le sous-agent a confirmé le bug. Le stock affiché dans les SAV et devis **ne se rafraîchit pas** après une réception de commande (ou tout autre changement de stock) car :
+Sur Paramètres → onglet « Logs » (Journal d'activité), rendre les lignes liées à un SAV beaucoup plus lisibles et permettre la recherche.
 
-1. Aucun abonnement realtime Supabase sur la table `parts`.
-2. `useParts` et les composants `SAVPartsRequirements`/`SAVPartsEditor` utilisent du `useState` local — pas de react-query, donc pas d'invalidation possible depuis l'extérieur.
-3. `useOrders.receiveOrderItem()` met bien à jour `parts.quantity` en DB mais n'avertit que ses propres états internes (`refreshAllData` reste local au hook). Le callback `onPartsUpdated` passé à `SAVPartsRequirements` est un `() => {}` no-op.
-4. **Incohérence supplémentaire** : `SAVPartsRequirements` affiche `parts.quantity` brut (sans soustraire `reserved_quantity`), alors que `SAVPartsEditor` calcule correctement `quantity - reserved_quantity`. Les deux vues du même SAV affichent donc des stocks différents.
+## Changements
 
----
+### 1. `src/hooks/useActivityLogs.ts`
+- Récupérer les détails des SAV référencés par les logs au lieu d'afficher uniquement les 8 premiers caractères de l'UUID.
+- Après le fetch de `sav_audit_logs`, collecter les `sav_case_id` distincts puis une requête `sav_cases` jointe à `customers` :
+  - `case_number`
+  - `device_brand`, `device_model`
+  - `customer:customers(first_name, last_name)`
+- Étendre `ActivityLogEntry` avec 3 champs optionnels : `case_number?: string`, `customer_name?: string`, `device_label?: string`.
+- Pour chaque entrée SAV, peupler ces champs ; pour inventory/email, les laisser vides.
+- Remplacer la valeur actuelle de `target` pour les SAV par le `case_number` (ex. `SAV-2026-00042`) au lieu de `SAV 93c60b1f`.
 
-## Plan de correction
+### 2. `src/pages/Settings.tsx` (panneau Journal d'activité, lignes ~140-285)
+- Ajouter un state `search` et un `Input` (icône `Search`) placé à gauche du compteur d'entrées.
+- Filtrer `logs` côté client via `multiWordSearch` (déjà dispo dans `src/utils/searchUtils.ts`) sur : `actor`, `action`, `target`, `details`, `case_number`, `customer_name`, `device_label`.
+- Réinitialiser `page` à 0 quand `search` change.
+- Ajouter deux colonnes au tableau, entre « Source » et « Utilisateur » :
+  - `N° SAV` → affiche `l.case_number` (font-mono) ou `—`
+  - `Client` → affiche `l.customer_name` ou `—`
+- Mettre à jour le `colSpan` de la ligne "Aucune action" (6 → 8).
+- Inclure ces deux colonnes dans l'export CSV.
 
-Objectif : tout changement de `parts` (réception commande, ajustement, vente, conversion devis→SAV…) est répercuté **en direct** partout (cards SAV, dialog editor, picker devis), avec une formule d'available stock cohérente.
-
-### 1. Ajouter un canal realtime central sur la table `parts`
-
-Fichier : `src/hooks/useParts.ts`
-- Dans le `useEffect` existant lié à `shop?.id`, ajouter un `supabase.channel('parts-changes')` qui écoute `postgres_changes` (`*`, schema `public`, table `parts`, filtre `shop_id=eq.{shop.id}`) et appelle `fetchParts()` à chaque event.
-- Cleanup `removeChannel` au démontage.
-
-Effet : la liste interne de `useParts` (utilisée par `QuoteForm`, `Parts`, etc.) reste toujours synchro avec la DB sans dépendre du composant qui modifie le stock.
-
-### 2. Émettre un événement global de mise à jour stock
-
-Pour les composants qui n'utilisent pas `useParts` (les `SAVPartsRequirements`/`SAVPartsEditor` interrogent `sav_parts` joint à `parts`), on s'appuie sur le même channel realtime mais côté composant.
-
-Fichier : `src/components/sav/SAVPartsRequirements.tsx`
-- Ajouter un `useEffect` qui souscrit à `postgres_changes` sur `parts` (filtre `shop_id`) et sur `sav_parts` (filtre `sav_case_id`), et rappelle `fetchPartsRequirements()`.
-- Cleanup à la fin.
-
-Fichier : `src/components/sav/SAVPartsEditor.tsx`
-- Idem : ajouter un abonnement realtime `parts` (filtre `shop_id`) qui rappelle `fetchSAVParts()` quand le dialog est ouvert.
-
-### 3. Aligner la formule d'available stock dans `SAVPartsRequirements`
-
-Fichier : `src/components/sav/SAVPartsRequirements.tsx`
-- Étendre le `select` pour inclure `reserved_quantity`.
-- Calculer `available_stock = Math.max(0, (parts.quantity || 0) - (parts.reserved_quantity || 0))` (même formule que `SAVPartsEditor`).
-- `needs_ordering` recalculé avec cette même formule.
-
-### 4. Invalidation explicite après `receiveOrderItem`
-
-Fichier : `src/hooks/useOrders.ts`
-- Après le succès de `receiveOrderItem` (et `restockPart`, `cancelOrderItem` pour cohérence), injecter `queryClient.invalidateQueries({ queryKey: ['quotes'] })` et dispatcher un `window.dispatchEvent(new CustomEvent('parts-stock-updated'))` (filet de sécurité si realtime indisponible).
-- Les composants ci-dessus écouteront aussi cet événement (`window.addEventListener('parts-stock-updated', refetch)`).
-
-### 5. Rien d'autre n'est touché
-
-- Pas de modif UI/visuelle.
-- Pas de migration DB (realtime sur `parts` est déjà activé côté Supabase pour les tables `public`; vérifier via `supabase--read_query` sur `pg_publication_tables` si besoin, sinon ajouter une migration `ALTER PUBLICATION supabase_realtime ADD TABLE public.parts`).
-
-### Vérification post-implémentation
-
-- Recevoir une commande depuis l'écran Commandes : l'onglet SAV ouvert doit voir le badge stock passer de 0 → reçu sans recharger.
-- Ouvrir QuoteForm, rechercher la pièce : le compteur Stock se met à jour en live.
-- Comparer `SAVPartsRequirements` vs `SAVPartsEditor` : même valeur d'available stock.
+## Hors scope
+- Aucun changement de logique métier, de schéma DB, ni d'autres écrans.
+- Les colonnes existantes (Date, Source, Action, Cible, Détails) restent identiques visuellement.
