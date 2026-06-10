@@ -140,6 +140,7 @@ function LogsManager() {
   const [rangeFrom, setRangeFrom] = useState<Date>(logsAddDays(new Date(), -7));
   const [rangeTo, setRangeTo] = useState<Date>(new Date());
   const [page, setPage] = useState(0);
+  const [search, setSearch] = useState('');
 
   const { from, to } = useMemo(() => {
     if (mode === 'single') {
@@ -148,7 +149,14 @@ function LogsManager() {
     return { from: logsStartOfDay(rangeFrom), to: logsEndOfDay(rangeTo) };
   }, [mode, singleDate, rangeFrom, rangeTo]);
 
-  const { data: logs = [], isLoading } = useActivityLogs({ from, to });
+  const { data: allLogs = [], isLoading } = useActivityLogs({ from, to });
+  const logs = useMemo(() => {
+    if (!search.trim()) return allLogs;
+    return allLogs.filter((l) =>
+      multiWordSearch(search, l.actor, l.action, l.target, l.details, l.case_number, l.customer_name, l.device_label)
+    );
+  }, [allLogs, search]);
+  useEffect(() => { setPage(0); }, [search]);
   const totalPages = Math.max(1, Math.ceil(logs.length / LOGS_PAGE_SIZE));
   const pageItems = logs.slice(page * LOGS_PAGE_SIZE, (page + 1) * LOGS_PAGE_SIZE);
 
