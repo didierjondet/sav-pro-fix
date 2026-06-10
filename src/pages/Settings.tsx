@@ -170,10 +170,12 @@ function LogsManager() {
   };
 
   const handleExport = () => {
-    const header = ['Date', 'Source', 'Utilisateur', 'Action', 'Cible', 'Détails'];
+    const header = ['Date', 'Source', 'N° SAV', 'Client', 'Utilisateur', 'Action', 'Cible', 'Détails'];
     const rows = logs.map((l) => [
       format(new Date(l.timestamp), 'yyyy-MM-dd HH:mm:ss'),
       logsSourceLabel[l.source],
+      l.case_number || '',
+      l.customer_name || '',
       l.actor,
       l.action,
       l.target,
