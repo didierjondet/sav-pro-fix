@@ -110,3 +110,6 @@ verify_jwt = false
 
 [functions.fixy-insight]
 verify_jwt = true
+
+[functions.ai-rerank-parts]
+verify_jwt = true

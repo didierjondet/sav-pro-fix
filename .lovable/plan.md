@@ -1,29 +1,83 @@
-## Objectif
+# Recherche de pièces plus pertinente
 
-Sur Paramètres → onglet « Logs » (Journal d'activité), rendre les lignes liées à un SAV beaucoup plus lisibles et permettre la recherche.
+## Problème
 
-## Changements
+`multiWordSearch` (utils/searchUtils.ts) vérifie seulement la présence de tous les mots dans un texte concaténé (name + reference + sku + supplier + notes). Conséquences :
 
-### 1. `src/hooks/useActivityLogs.ts`
-- Récupérer les détails des SAV référencés par les logs au lieu d'afficher uniquement les 8 premiers caractères de l'UUID.
-- Après le fetch de `sav_audit_logs`, collecter les `sav_case_id` distincts puis une requête `sav_cases` jointe à `customers` :
-  - `case_number`
-  - `device_brand`, `device_model`
-  - `customer:customers(first_name, last_name)`
-- Étendre `ActivityLogEntry` avec 3 champs optionnels : `case_number?: string`, `customer_name?: string`, `device_label?: string`.
-- Pour chaque entrée SAV, peupler ces champs ; pour inventory/email, les laisser vides.
-- Remplacer la valeur actuelle de `target` pour les SAV par le `case_number` (ex. `SAV-2026-00042`) au lieu de `SAV 93c60b1f`.
+- "iphone 12" matche aussi un produit nommé "Coque iPhone — compatible 12/13/14/15" ou dont la référence contient "12".
+- Aucun classement : la liste reste triée alphabétiquement par nom, donc un "iPhone 15" peut apparaître avant un "iPhone 12" pertinent.
+- Les correspondances dans le nom ne sont pas privilégiées par rapport aux correspondances dans notes/fournisseur.
 
-### 2. `src/pages/Settings.tsx` (panneau Journal d'activité, lignes ~140-285)
-- Ajouter un state `search` et un `Input` (icône `Search`) placé à gauche du compteur d'entrées.
-- Filtrer `logs` côté client via `multiWordSearch` (déjà dispo dans `src/utils/searchUtils.ts`) sur : `actor`, `action`, `target`, `details`, `case_number`, `customer_name`, `device_label`.
-- Réinitialiser `page` à 0 quand `search` change.
-- Ajouter deux colonnes au tableau, entre « Source » et « Utilisateur » :
-  - `N° SAV` → affiche `l.case_number` (font-mono) ou `—`
-  - `Client` → affiche `l.customer_name` ou `—`
-- Mettre à jour le `colSpan` de la ligne "Aucune action" (6 → 8).
-- Inclure ces deux colonnes dans l'export CSV.
+Endroits concernés (4) :
+- `src/pages/Parts.tsx` (recherche page Stock)
+- `src/components/sav/PartsSelection.tsx` (rattacher pièce dans SAV)
+- `src/components/sav/SAVPartsEditor.tsx` (édition pièces SAV)
+- `src/components/quotes/QuoteForm.tsx` (recherche pièce dans devis)
 
-## Hors scope
-- Aucun changement de logique métier, de schéma DB, ni d'autres écrans.
-- Les colonnes existantes (Date, Source, Action, Cible, Détails) restent identiques visuellement.
+## Solution
+
+### 1. Nouveau utilitaire `searchAndRankParts` dans `src/utils/searchUtils.ts`
+
+Fonction de scoring qui retourne les pièces triées par pertinence décroissante :
+
+Pondération par champ :
+- `name` exact (insensible casse/accents) → 1000
+- `name` commence par la requête complète → 500
+- chaque mot trouvé en début d'un token du `name` → +50
+- chaque mot présent dans `name` → +20
+- chaque mot présent dans `reference`/`sku` → +10
+- chaque mot présent dans `supplier`/`notes` → +2
+- bonus si TOUS les mots sont dans `name` → +100
+- exclusion si un des mots n'est trouvé nulle part (comportement actuel conservé)
+
+Normalisation : lowercase + suppression accents (`normalize('NFD')`) pour que "écran" = "ecran".
+
+Retourne `Part[]` trié desc par score, puis alpha par name à score égal.
+
+### 2. Appliquer dans les 4 composants
+
+Remplacer :
+```ts
+parts.filter(p => multiWordSearch(term, p.name, p.reference, ...))
+```
+par :
+```ts
+searchAndRankParts(term, parts)
+```
+en conservant les `.slice(0, 10)` existants.
+
+### 3. Couche IA optionnelle (re-ranking) — page Stock uniquement
+
+Pour répondre à la demande "couche d'IA" sans alourdir chaque frappe :
+
+- Bouton discret "Affiner avec l'IA" à côté du champ de recherche de la page Stock, visible uniquement quand `searchTerm.length >= 3` et `filteredParts.length > 5`.
+- Au clic, appelle une nouvelle edge function `ai-rerank-parts` (Lovable AI Gateway, modèle `google/gemini-3-flash-preview`) avec la requête et les 30 premiers candidats (id, name, reference). Retourne un tableau d'`id` ordonnés. La liste est ensuite réordonnée côté client.
+- Indicateur de chargement + toast d'erreur en cas d'échec (rate limit 429 / crédits 402). Pas de re-ranking automatique pour préserver les crédits et la latence.
+
+Edge function : `supabase/functions/ai-rerank-parts/index.ts` avec `Output.object({ ids: z.array(z.string()) })`.
+
+## Détails techniques
+
+- Aucune migration DB.
+- Aucune modification de schéma `Part`.
+- L'utilitaire reste pur (testable, sans dépendance React).
+- `multiWordSearch` reste inchangé (toujours utilisé ailleurs : SAV, clients, logs, etc.).
+
+## Fichiers modifiés
+
+```
+src/utils/searchUtils.ts          (ajout searchAndRankParts + normalize helper)
+src/pages/Parts.tsx               (utilise searchAndRankParts + bouton IA)
+src/components/sav/PartsSelection.tsx        (utilise searchAndRankParts)
+src/components/sav/SAVPartsEditor.tsx        (utilise searchAndRankParts)
+src/components/quotes/QuoteForm.tsx          (utilise searchAndRankParts)
+supabase/functions/ai-rerank-parts/index.ts  (nouveau, edge function)
+supabase/config.toml              (déclaration de la function, verify_jwt = true)
+```
+
+## Question
+
+Souhaitez-vous le bouton IA "Affiner" :
+- (A) Uniquement sur la page Stock (proposé)
+- (B) Aussi dans la recherche pièce des SAV et devis
+- (C) Pas de bouton IA — uniquement le scoring local amélioré (plus rapide, gratuit)

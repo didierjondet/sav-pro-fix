@@ -1,5 +1,5 @@
 import { useState, useEffect, type ReactNode } from 'react';
-import { multiWordSearch } from '@/utils/searchUtils';
+import { searchAndRankParts } from '@/utils/searchUtils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { NumberInput } from "@/components/ui/number-input";
@@ -46,9 +46,7 @@ export function SAVPartsEditor({ savCaseId, onPartsUpdated, trigger }: SAVPartsE
   const { toast } = useToast();
 
   // Filtrer les pièces en fonction de la recherche
-  const filteredParts = parts.filter(part =>
-    multiWordSearch(searchTerm, part.name, part.reference)
-  );
+  const filteredParts = searchAndRankParts(searchTerm, parts);
 
   const fetchSAVParts = async () => {
     try {

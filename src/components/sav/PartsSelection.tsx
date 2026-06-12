@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { multiWordSearch } from '@/utils/searchUtils';
+import { searchAndRankParts } from '@/utils/searchUtils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { NumberInput } from "@/components/ui/number-input";
@@ -39,9 +39,7 @@ export function PartsSelection({ selectedParts, onPartsChange, savCaseId }: Part
   const { createStockAlert } = useNotifications();
   const { addToOrder } = useOrders();
 
-  const filteredParts = parts.filter(part =>
-    multiWordSearch(searchTerm, part.name, part.reference)
-  );
+  const filteredParts = searchAndRankParts(searchTerm, parts);
 
   const addPart = (part: Part) => {
     const existingPart = selectedParts.find(p => p.part_id === part.id);
