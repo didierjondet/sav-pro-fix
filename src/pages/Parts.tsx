@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { multiWordSearch } from '@/utils/searchUtils';
+import { searchAndRankParts } from '@/utils/searchUtils';
 import { PaginationControls } from '@/components/ui/pagination-controls';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -97,9 +97,7 @@ export default function Parts() {
       }
     }
     if (!searchTerm.trim()) return list;
-    return list.filter(part =>
-      multiWordSearch(searchTerm, part.name, part.reference, part.sku, part.supplier, part.notes)
-    );
+    return searchAndRankParts(searchTerm, list);
   }, [parts, searchTerm, categoryFilter, supplierFilter, typeFilter]);
 
   // Pagination après filtrage

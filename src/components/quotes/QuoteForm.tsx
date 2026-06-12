@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { multiWordSearch } from '@/utils/searchUtils';
+import { searchAndRankParts } from '@/utils/searchUtils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { NumberInput } from "@/components/ui/number-input";
@@ -177,9 +177,7 @@ export function QuoteForm({ onSubmit, onCancel, initialQuote, submitLabel, title
     const formattedPhone = formatPhoneInput(value);
     setCustomerInfo({ ...customerInfo, phone: formattedPhone });
   };
-  const filteredParts = parts.filter(part =>
-    multiWordSearch(searchTerm, part.name, part.reference)
-  );
+  const filteredParts = searchAndRankParts(searchTerm, parts);
 
 const addPartToQuote = (partId: string) => {
   const part = parts.find(p => p.id === partId);
