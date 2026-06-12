@@ -101,8 +101,17 @@ export default function Parts() {
       }
     }
     if (!searchTerm.trim()) return list;
-    return searchAndRankParts(searchTerm, list);
-  }, [parts, searchTerm, categoryFilter, supplierFilter, typeFilter]);
+    const ranked = searchAndRankParts(searchTerm, list);
+    if (aiOrderIds && aiOrderIds.length > 0) {
+      const orderIndex = new Map(aiOrderIds.map((id, i) => [id, i]));
+      return [...ranked].sort((a, b) => {
+        const ai = orderIndex.has(a.id) ? (orderIndex.get(a.id) as number) : Number.MAX_SAFE_INTEGER;
+        const bi = orderIndex.has(b.id) ? (orderIndex.get(b.id) as number) : Number.MAX_SAFE_INTEGER;
+        return ai - bi;
+      });
+    }
+    return ranked;
+  }, [parts, searchTerm, categoryFilter, supplierFilter, typeFilter, aiOrderIds]);
 
   // Pagination après filtrage
   const displayedParts = filteredParts;
@@ -112,10 +121,43 @@ export default function Parts() {
   const endIndex = startIndex + itemsPerPage;
   const paginatedParts = displayedParts.slice(startIndex, endIndex);
 
-  // Réinitialiser la page quand la recherche change
+  // Réinitialiser la page et l'ordre IA quand la recherche change
   useEffect(() => {
     setCurrentPage(1);
+    setAiOrderIds(null);
   }, [searchTerm]);
+
+  const handleAiRerank = async () => {
+    if (!searchTerm.trim() || filteredParts.length === 0) return;
+    setAiReranking(true);
+    try {
+      const candidates = filteredParts.slice(0, 30).map((p) => ({
+        id: p.id,
+        name: p.name,
+        reference: p.reference ?? null,
+      }));
+      const { data, error } = await supabase.functions.invoke('ai-rerank-parts', {
+        body: { query: searchTerm, candidates },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      const ids: string[] = Array.isArray(data?.ids) ? data.ids : [];
+      if (ids.length === 0) throw new Error('Aucun résultat IA');
+      setAiOrderIds(ids);
+    } catch (e: any) {
+      console.error('AI rerank failed', e);
+      const msg = e?.message || '';
+      const friendly = msg.includes('429')
+        ? 'Trop de requêtes IA, réessayez dans quelques instants.'
+        : msg.includes('402')
+        ? 'Crédits IA épuisés. Ajoutez des crédits dans les paramètres.'
+        : "Impossible d'affiner avec l'IA pour le moment.";
+      alert(friendly);
+    } finally {
+      setAiReranking(false);
+    }
+  };
+
 
   // Statistiques globales - basées sur toutes les pièces du shop
   const totalParts = statistics.totalQuantity;
