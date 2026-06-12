@@ -279,8 +279,28 @@ export default function Parts() {
                         placeholder="Rechercher une pièce par nom ou référence..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-10"
+                        className="pl-10 pr-32"
                       />
+                      {searchTerm.trim().length >= 3 && filteredParts.length > 5 && (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant={aiOrderIds ? 'secondary' : 'ghost'}
+                          onClick={handleAiRerank}
+                          disabled={aiReranking}
+                          className="absolute right-1 top-1/2 -translate-y-1/2 h-7 px-2 text-xs"
+                          title="Réordonner les résultats avec l'IA"
+                        >
+                          {aiReranking ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <Sparkles className="h-3.5 w-3.5 text-purple-500" />
+                          )}
+                          <span className="ml-1 hidden sm:inline">
+                            {aiOrderIds ? 'IA appliquée' : 'Affiner IA'}
+                          </span>
+                        </Button>
+                      )}
                     </div>
                     <Select value={typeFilter} onValueChange={(v) => setTypeFilter(v as any)}>
                       <SelectTrigger className="sm:w-48">
