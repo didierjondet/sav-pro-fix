@@ -36,7 +36,9 @@ import {
   Image as ImageIcon,
   Clock,
   ClipboardCheck,
-  Wrench
+  Wrench,
+  Sparkles,
+  Loader2
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { isPriceOutdated, getMonthsSinceUpdate } from '@/utils/priceUtils';
@@ -57,6 +59,8 @@ export default function Parts() {
   const [adjustingPart, setAdjustingPart] = useState<Part | null>(null);
   const [showImport, setShowImport] = useState(false);
   const [viewingPhoto, setViewingPhoto] = useState<Part | null>(null);
+  const [aiReranking, setAiReranking] = useState(false);
+  const [aiOrderIds, setAiOrderIds] = useState<string[] | null>(null);
 
   const { parts, loading, statistics, createPart, updatePart, deletePart, adjustStock, findSimilarParts, refetch } = useParts();
   const { categories } = usePartCategories();
