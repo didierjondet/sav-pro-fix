@@ -19,6 +19,7 @@ interface QuoteData {
   items: any[];
   device_brand?: string;
   device_model?: string;
+  device_imei?: string;
 }
 
 interface ShopData {
