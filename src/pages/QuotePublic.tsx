@@ -435,6 +435,27 @@ export default function QuotePublic() {
               </div>
             </div>
 
+            {(quote.device_brand || quote.device_model || quote.device_imei) && (
+              <div>
+                <h3 className="text-base sm:text-lg font-semibold mb-3">Votre appareil</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 p-3 sm:p-4 bg-muted/50 rounded-lg">
+                  {(quote.device_brand || quote.device_model) && (
+                    <div>
+                      <span className="font-medium text-xs sm:text-sm text-muted-foreground">Marque / Modèle:</span>
+                      <p className="text-sm">{[quote.device_brand, quote.device_model].filter(Boolean).join(' ')}</p>
+                    </div>
+                  )}
+                  {quote.device_imei && (
+                    <div>
+                      <span className="font-medium text-xs sm:text-sm text-muted-foreground">IMEI / N° de série:</span>
+                      <p className="text-sm font-mono break-all">{quote.device_imei}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+
             {/* Articles - Vue mobile : cartes empilées */}
             <div>
               <h3 className="text-base sm:text-lg font-semibold mb-3">Articles</h3>
