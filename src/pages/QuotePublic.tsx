@@ -19,6 +19,7 @@ interface QuoteData {
   items: any[];
   device_brand?: string;
   device_model?: string;
+  device_imei?: string;
 }
 
 interface ShopData {
@@ -165,6 +166,13 @@ export default function QuotePublic() {
             ${q.customer_email ? `<p><strong>Email:</strong> ${q.customer_email}</p>` : ''}
             ${q.customer_phone ? `<p><strong>Téléphone:</strong> ${q.customer_phone}</p>` : ''}
           </div>
+          ${(q.device_brand || q.device_model || q.device_imei) ? `
+          <div class="customer-info">
+            <h3>Appareil concerné</h3>
+            ${(q.device_brand || q.device_model) ? `<p><strong>Marque / Modèle:</strong> ${[q.device_brand, q.device_model].filter(Boolean).join(' ')}</p>` : ''}
+            ${q.device_imei ? `<p><strong>IMEI / N° de série:</strong> ${q.device_imei}</p>` : ''}
+          </div>
+          ` : ''}
           <h3>Détail des articles</h3>
           <table class="items-table">
             <thead>
@@ -433,6 +441,27 @@ export default function QuotePublic() {
                 </div>
               </div>
             </div>
+
+            {(quote.device_brand || quote.device_model || quote.device_imei) && (
+              <div>
+                <h3 className="text-base sm:text-lg font-semibold mb-3">Votre appareil</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 p-3 sm:p-4 bg-muted/50 rounded-lg">
+                  {(quote.device_brand || quote.device_model) && (
+                    <div>
+                      <span className="font-medium text-xs sm:text-sm text-muted-foreground">Marque / Modèle:</span>
+                      <p className="text-sm">{[quote.device_brand, quote.device_model].filter(Boolean).join(' ')}</p>
+                    </div>
+                  )}
+                  {quote.device_imei && (
+                    <div>
+                      <span className="font-medium text-xs sm:text-sm text-muted-foreground">IMEI / N° de série:</span>
+                      <p className="text-sm font-mono break-all">{quote.device_imei}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
 
             {/* Articles - Vue mobile : cartes empilées */}
             <div>

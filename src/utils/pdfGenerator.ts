@@ -152,6 +152,14 @@ export const generateQuotePDF = async (quote: Quote, shop?: Shop) => {
         ${quote.customer_phone ? `<p><strong>Téléphone:</strong> ${quote.customer_phone}</p>` : ''}
       </div>
       
+      ${((quote as any).device_brand || (quote as any).device_model || (quote as any).device_imei) ? `
+      <div class="customer-info">
+        <h3>Appareil concerné</h3>
+        ${((quote as any).device_brand || (quote as any).device_model) ? `<p><strong>Marque / Modèle:</strong> ${[(quote as any).device_brand, (quote as any).device_model].filter(Boolean).join(' ')}</p>` : ''}
+        ${(quote as any).device_imei ? `<p><strong>IMEI / N° de série:</strong> ${(quote as any).device_imei}</p>` : ''}
+      </div>
+      ` : ''}
+      
       <h3>Détail des articles</h3>
       <table class="items-table">
         <thead>

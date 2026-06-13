@@ -192,6 +192,26 @@ export function QuoteView({ quote, isOpen, onClose, onDownloadPDF, onSendEmail, 
             </div>
           </div>
 
+          {((quote as any).device_brand || (quote as any).device_model || (quote as any).device_imei) && (
+            <div>
+              <h3 className="text-lg font-semibold mb-3">Appareil concerné</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-muted/50 rounded-lg">
+                {((quote as any).device_brand || (quote as any).device_model) && (
+                  <div>
+                    <span className="font-medium text-sm text-muted-foreground">Marque / Modèle:</span>
+                    <p className="text-sm">{[(quote as any).device_brand, (quote as any).device_model].filter(Boolean).join(' ')}</p>
+                  </div>
+                )}
+                {(quote as any).device_imei && (
+                  <div>
+                    <span className="font-medium text-sm text-muted-foreground">IMEI / N° de série:</span>
+                    <p className="text-sm font-mono">{(quote as any).device_imei}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           <Separator />
 
           {/* Articles */}
