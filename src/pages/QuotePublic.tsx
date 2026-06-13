@@ -166,6 +166,13 @@ export default function QuotePublic() {
             ${q.customer_email ? `<p><strong>Email:</strong> ${q.customer_email}</p>` : ''}
             ${q.customer_phone ? `<p><strong>Téléphone:</strong> ${q.customer_phone}</p>` : ''}
           </div>
+          ${(q.device_brand || q.device_model || q.device_imei) ? `
+          <div class="customer-info">
+            <h3>Appareil concerné</h3>
+            ${(q.device_brand || q.device_model) ? `<p><strong>Marque / Modèle:</strong> ${[q.device_brand, q.device_model].filter(Boolean).join(' ')}</p>` : ''}
+            ${q.device_imei ? `<p><strong>IMEI / N° de série:</strong> ${q.device_imei}</p>` : ''}
+          </div>
+          ` : ''}
           <h3>Détail des articles</h3>
           <table class="items-table">
             <thead>
