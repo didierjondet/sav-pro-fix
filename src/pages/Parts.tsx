@@ -475,6 +475,16 @@ export default function Parts() {
                                         Réservé: {part.reserved_quantity}
                                       </Badge>
                                     )}
+                                    {ghostByPart[part.id] > 0 && (
+                                      <Badge
+                                        variant="outline"
+                                        className="bg-orange-100 text-orange-800 border-orange-400 flex items-center gap-1"
+                                        title={`${ghostByPart[part.id]} unité(s) réservée(s) sans SAV ouvert`}
+                                      >
+                                        <AlertTriangle className="h-3 w-3" />
+                                        Fantôme: {ghostByPart[part.id]}
+                                      </Badge>
+                                    )}
                                     {part.quantity <= part.min_stock && (
                                       <Badge variant="destructive" className="flex items-center gap-1">
                                         <AlertTriangle className="h-3 w-3" />
