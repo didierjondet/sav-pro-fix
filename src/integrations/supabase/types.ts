@@ -3925,10 +3925,26 @@ export type Database = {
       }
       is_shop_admin: { Args: { check_user_id?: string }; Returns: boolean }
       is_super_admin: { Args: { check_user_id?: string }; Returns: boolean }
+      list_ghost_reserved_parts: {
+        Args: { p_shop_id: string }
+        Returns: {
+          expected_reserved: number
+          ghost_units: number
+          id: string
+          name: string
+          reference: string
+          reserved_quantity: number
+          sku: string
+        }[]
+      }
       mask_phone_number: { Args: { phone_number: string }; Returns: string }
       recalculate_inventory_session_totals: {
         Args: { _session_id: string }
         Returns: undefined
+      }
+      recalculate_part_reservations: {
+        Args: { p_shop_id?: string }
+        Returns: Json
       }
       record_sav_visit: {
         Args: {
