@@ -239,6 +239,17 @@ export default function Parts() {
                   <div className="flex justify-between items-center mb-6 flex-wrap gap-2">
                     <h1 className="text-2xl font-bold">Stock pièces & prestations</h1>
                     <div className="flex gap-2 flex-wrap">
+                      {isAdmin && (
+                        <Button
+                          variant="outline"
+                          onClick={handleRecalcReservations}
+                          disabled={recalculating}
+                          title={ghostCount > 0 ? `${ghostCount} pièce(s) avec réservation fantôme` : 'Recalculer les réservations à partir des SAV ouverts'}
+                        >
+                          {recalculating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <AlertTriangle className={`h-4 w-4 mr-2 ${ghostCount > 0 ? 'text-orange-600' : ''}`} />}
+                          Recalculer réservations{ghostCount > 0 ? ` (${ghostCount})` : ''}
+                        </Button>
+                      )}
                       <Button variant="outline" onClick={() => setShowImport(true)}>
                         <Upload className="h-4 w-4 mr-2" />
                         Importer CSV/Excel
