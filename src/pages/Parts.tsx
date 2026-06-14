@@ -71,6 +71,24 @@ export default function Parts() {
   const { suppliers } = useSuppliersDirectory();
   const { lastInventoryByPart } = useLastInventoryByPart();
   const navigate = useNavigate();
+  const { ghostByPart, refetch: refetchGhosts, recalculate: recalcReservations } = useGhostReservations();
+  const { profile, actualProfile } = useProfile();
+  const { toast } = useToast();
+  const isAdmin = profile?.role === 'admin' || actualProfile?.role === 'super_admin';
+  const ghostCount = Object.keys(ghostByPart).length;
+  const [recalculating, setRecalculating] = useState(false);
+  const handleRecalcReservations = async () => {
+    setRecalculating(true);
+    try {
+      const res = await recalcReservations();
+      await refetch();
+      toast({ title: 'Réservations recalculées', description: `${res.updated_parts} pièce(s) corrigée(s).` });
+    } catch (e: any) {
+      toast({ title: 'Erreur', description: e?.message || 'Recalcul impossible', variant: 'destructive' });
+    } finally {
+      setRecalculating(false);
+    }
+  };
   const categoryById = useMemo(() => {
     const map = new Map<string, typeof categories[number]>();
     categories.forEach((c) => map.set(c.id, c));
