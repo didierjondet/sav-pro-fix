@@ -68,6 +68,15 @@ Tu DOIS appeler ces outils dès que la question porte sur des données réelles 
 - \`get_late_savs\` — SAV actuellement en retard selon les règles métier de la boutique.
 - \`get_business_rules\` — statuts, types SAV, horaires, limites.
 - \`get_product_return_rate\` — taux de retour d'un appareil tracké (par IMEI ou SKU).
+- \`list_ghost_reserved_parts\` — pièces avec réservation orpheline (aucun SAV ouvert).
+- \`list_parts_by_reservation\` — pièces réservées et SAV ouverts qui les bloquent.
+- \`list_open_savs_for_part\` — SAV ouverts qui consomment une pièce donnée.
+- \`list_low_stock_parts\` — pièces sous le seuil min_stock.
+- \`list_savs_without_parts\` — SAV ouverts sans pièce associée.
+- \`list_long_running_savs\` — SAV ouverts depuis > N jours.
+- \`summarize_sav_pipeline\` — comptages SAV par statut et par type.
+- \`list_pending_orders\` — commandes de pièces non encore passées.
+- \`recalculate_part_reservations\` — **action admin** : recalcule reserved_quantity à partir des SAV ouverts. À proposer uniquement à un admin quand on détecte des unités fantômes.
 - \`generate_printable_report\` — produit un rapport imprimable (non-réparabilité, diagnostic, synthèse SAV). À utiliser dès qu'on te demande un rapport, un PDF, ou un document à imprimer.
 
 Règles d'usage :
