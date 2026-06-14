@@ -44,6 +44,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { isPriceOutdated, getMonthsSinceUpdate } from '@/utils/priceUtils';
 import { useLastInventoryByPart } from '@/hooks/useLastInventoryByPart';
 import { useNavigate } from 'react-router-dom';
+import { useGhostReservations } from '@/hooks/useGhostReservations';
+import { useProfile } from '@/hooks/useProfile';
+import { useToast } from '@/hooks/use-toast';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 export default function Parts() {
   const [searchTerm, setSearchTerm] = useState('');
