@@ -44,6 +44,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { isPriceOutdated, getMonthsSinceUpdate } from '@/utils/priceUtils';
 import { useLastInventoryByPart } from '@/hooks/useLastInventoryByPart';
 import { useNavigate } from 'react-router-dom';
+import { useGhostReservations } from '@/hooks/useGhostReservations';
+import { useProfile } from '@/hooks/useProfile';
+import { useToast } from '@/hooks/use-toast';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 export default function Parts() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -67,6 +71,24 @@ export default function Parts() {
   const { suppliers } = useSuppliersDirectory();
   const { lastInventoryByPart } = useLastInventoryByPart();
   const navigate = useNavigate();
+  const { ghostByPart, refetch: refetchGhosts, recalculate: recalcReservations } = useGhostReservations();
+  const { profile, actualProfile } = useProfile();
+  const { toast } = useToast();
+  const isAdmin = profile?.role === 'admin' || actualProfile?.role === 'super_admin';
+  const ghostCount = Object.keys(ghostByPart).length;
+  const [recalculating, setRecalculating] = useState(false);
+  const handleRecalcReservations = async () => {
+    setRecalculating(true);
+    try {
+      const res = await recalcReservations();
+      await refetch();
+      toast({ title: 'Réservations recalculées', description: `${res.updated_parts} pièce(s) corrigée(s).` });
+    } catch (e: any) {
+      toast({ title: 'Erreur', description: e?.message || 'Recalcul impossible', variant: 'destructive' });
+    } finally {
+      setRecalculating(false);
+    }
+  };
   const categoryById = useMemo(() => {
     const map = new Map<string, typeof categories[number]>();
     categories.forEach((c) => map.set(c.id, c));
@@ -217,6 +239,17 @@ export default function Parts() {
                   <div className="flex justify-between items-center mb-6 flex-wrap gap-2">
                     <h1 className="text-2xl font-bold">Stock pièces & prestations</h1>
                     <div className="flex gap-2 flex-wrap">
+                      {isAdmin && (
+                        <Button
+                          variant="outline"
+                          onClick={handleRecalcReservations}
+                          disabled={recalculating}
+                          title={ghostCount > 0 ? `${ghostCount} pièce(s) avec réservation fantôme` : 'Recalculer les réservations à partir des SAV ouverts'}
+                        >
+                          {recalculating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <AlertTriangle className={`h-4 w-4 mr-2 ${ghostCount > 0 ? 'text-orange-600' : ''}`} />}
+                          Recalculer réservations{ghostCount > 0 ? ` (${ghostCount})` : ''}
+                        </Button>
+                      )}
                       <Button variant="outline" onClick={() => setShowImport(true)}>
                         <Upload className="h-4 w-4 mr-2" />
                         Importer CSV/Excel
@@ -440,6 +473,16 @@ export default function Parts() {
                                     {(part.reserved_quantity || 0) > 0 && (
                                       <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-300">
                                         Réservé: {part.reserved_quantity}
+                                      </Badge>
+                                    )}
+                                    {ghostByPart[part.id] > 0 && (
+                                      <Badge
+                                        variant="outline"
+                                        className="bg-orange-100 text-orange-800 border-orange-400 flex items-center gap-1"
+                                        title={`${ghostByPart[part.id]} unité(s) réservée(s) sans SAV ouvert`}
+                                      >
+                                        <AlertTriangle className="h-3 w-3" />
+                                        Fantôme: {ghostByPart[part.id]}
                                       </Badge>
                                     )}
                                     {part.quantity <= part.min_stock && (
