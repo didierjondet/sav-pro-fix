@@ -334,6 +334,103 @@ const TOOL_DEFS = [
       },
     },
   },
+  {
+    type: 'function',
+    function: {
+      name: 'list_ghost_reserved_parts',
+      description: 'Liste les pièces dont reserved_quantity dépasse ce que justifient les SAV non clôturés (réservations « fantômes » coincées par un ancien bug).',
+      parameters: { type: 'object', properties: {} },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'list_parts_by_reservation',
+      description: 'Liste les pièces avec reserved_quantity > 0 et les SAV ouverts qui les réservent. Utile pour comprendre pourquoi une pièce est marquée réservée.',
+      parameters: {
+        type: 'object',
+        properties: { limit: { type: 'number', description: 'Défaut 50, max 200.' } },
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'list_low_stock_parts',
+      description: 'Pièces sous le seuil min_stock (stock <= min_stock).',
+      parameters: {
+        type: 'object',
+        properties: { limit: { type: 'number' } },
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'list_open_savs_for_part',
+      description: 'Liste les SAV non clôturés qui consomment une pièce donnée (part_id, reference ou sku).',
+      parameters: {
+        type: 'object',
+        properties: {
+          part_id: { type: 'string' },
+          reference: { type: 'string' },
+          sku: { type: 'string' },
+        },
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'list_savs_without_parts',
+      description: 'SAV ouverts (statut non final) sans aucune pièce rattachée.',
+      parameters: {
+        type: 'object',
+        properties: { limit: { type: 'number' } },
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'list_long_running_savs',
+      description: 'SAV ouverts depuis plus de N jours (défaut 14).',
+      parameters: {
+        type: 'object',
+        properties: {
+          days: { type: 'number' },
+          limit: { type: 'number' },
+        },
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'summarize_sav_pipeline',
+      description: 'Vue d\'ensemble : comptages des SAV par statut et par type pour la boutique.',
+      parameters: { type: 'object', properties: {} },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'list_pending_orders',
+      description: 'Commandes de pièces en attente (statuts pending, ordered, partially_received).',
+      parameters: {
+        type: 'object',
+        properties: { limit: { type: 'number' } },
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'recalculate_part_reservations',
+      description: 'ACTION ADMIN uniquement. Recalcule reserved_quantity de toutes les pièces de la boutique à partir des SAV ouverts. À proposer si des unités fantômes sont détectées.',
+      parameters: { type: 'object', properties: {} },
+    },
+  },
 ]
 
 // ===================== Return rate logic (ported from src/lib/productReturnRate.ts) =====================
