@@ -803,6 +803,150 @@ async function runTool(name: string, args: any, supa: any, shopId: string): Prom
         return { tracked_product_id: trackedId, ...stats, cases: cases || [] }
       }
 
+      case 'list_ghost_reserved_parts': {
+        const { data, error } = await supa.rpc('list_ghost_reserved_parts', { p_shop_id: shopId })
+        if (error) return { error: error.message }
+        return { count: (data || []).length, parts: data || [] }
+      }
+
+      case 'list_parts_by_reservation': {
+        const limit = clamp(args.limit, 50, 200)
+        const { data: parts, error } = await supa.from('parts')
+          .select('id, name, reference, sku, quantity, reserved_quantity')
+          .eq('shop_id', shopId)
+          .gt('reserved_quantity', 0)
+          .order('reserved_quantity', { ascending: false })
+          .limit(limit)
+        if (error) return { error: error.message }
+        const partIds = (parts || []).map((p: any) => p.id)
+        let savByPart: Record<string, any[]> = {}
+        if (partIds.length) {
+          const { data: statuses } = await supa.from('shop_sav_statuses').select('status_key,is_final_status').eq('shop_id', shopId)
+          const finalCustom = new Set((statuses || []).filter((s: any) => s.is_final_status).map((s: any) => s.status_key))
+          const { data: links } = await supa.from('sav_parts')
+            .select('part_id, quantity, sav_case:sav_cases!inner(id, case_number, status, sav_type, shop_id)')
+            .in('part_id', partIds)
+          for (const l of (links || []) as any[]) {
+            const sc = l.sav_case
+            if (!sc || sc.shop_id !== shopId) continue
+            if (['ready','delivered','cancelled'].includes(sc.status) || finalCustom.has(sc.status)) continue
+            ;(savByPart[l.part_id] ||= []).push({ case_number: sc.case_number, status: sc.status, sav_type: sc.sav_type, quantity: l.quantity })
+          }
+        }
+        return {
+          count: (parts || []).length,
+          parts: (parts || []).map((p: any) => ({
+            ...p,
+            open_savs: savByPart[p.id] || [],
+            expected_reserved: (savByPart[p.id] || []).reduce((s: number, r: any) => s + (r.quantity || 0), 0),
+          })),
+        }
+      }
+
+      case 'list_low_stock_parts': {
+        const limit = clamp(args.limit, 50, 200)
+        const { data, error } = await supa.from('parts')
+          .select('id, name, reference, sku, quantity, min_stock, supplier:suppliers(name)')
+          .eq('shop_id', shopId)
+          .not('min_stock', 'is', null)
+          .order('quantity', { ascending: true })
+          .limit(limit * 2)
+        if (error) return { error: error.message }
+        const low = (data || []).filter((p: any) => p.quantity != null && p.min_stock != null && p.quantity <= p.min_stock).slice(0, limit)
+        return { count: low.length, parts: low }
+      }
+
+      case 'list_open_savs_for_part': {
+        let partId = args.part_id
+        if (!partId && (args.reference || args.sku)) {
+          let q = supa.from('parts').select('id').eq('shop_id', shopId).limit(1)
+          if (args.reference) q = q.ilike('reference', `%${args.reference}%`)
+          if (args.sku) q = q.ilike('sku', `%${args.sku}%`)
+          const r = await q
+          partId = r.data?.[0]?.id
+        }
+        if (!partId) return { error: 'part_id, reference ou sku requis' }
+        const { data: statuses } = await supa.from('shop_sav_statuses').select('status_key,is_final_status').eq('shop_id', shopId)
+        const finalCustom = (statuses || []).filter((s: any) => s.is_final_status).map((s: any) => s.status_key)
+        const finals = ['ready','delivered','cancelled', ...finalCustom]
+        const { data, error } = await supa.from('sav_parts')
+          .select('quantity, sav_case:sav_cases!inner(id, case_number, status, sav_type, device_brand, device_model, created_at, shop_id)')
+          .eq('part_id', partId)
+        if (error) return { error: error.message }
+        const rows = ((data || []) as any[])
+          .filter((r) => r.sav_case && r.sav_case.shop_id === shopId && !finals.includes(r.sav_case.status))
+          .map((r) => ({ quantity: r.quantity, ...r.sav_case }))
+        return { part_id: partId, count: rows.length, open_savs: rows }
+      }
+
+      case 'list_savs_without_parts': {
+        const limit = clamp(args.limit, 30, 200)
+        const { data: statuses } = await supa.from('shop_sav_statuses').select('status_key,is_final_status').eq('shop_id', shopId)
+        const finalCustom = (statuses || []).filter((s: any) => s.is_final_status).map((s: any) => s.status_key)
+        const finals = ['ready','delivered','cancelled', ...finalCustom]
+        const { data: cases, error } = await supa.from('sav_cases')
+          .select('id, case_number, status, sav_type, device_brand, device_model, created_at')
+          .eq('shop_id', shopId)
+          .not('status', 'in', `(${finals.map(f => `"${f}"`).join(',')})`)
+          .order('created_at', { ascending: false })
+          .limit(500)
+        if (error) return { error: error.message }
+        const ids = (cases || []).map((c: any) => c.id)
+        if (!ids.length) return { count: 0, cases: [] }
+        const { data: parts } = await supa.from('sav_parts').select('sav_case_id').in('sav_case_id', ids)
+        const withParts = new Set((parts || []).map((p: any) => p.sav_case_id))
+        const without = (cases || []).filter((c: any) => !withParts.has(c.id)).slice(0, limit)
+        return { count: without.length, cases: without }
+      }
+
+      case 'list_long_running_savs': {
+        const days = clamp(args.days, 14, 365)
+        const limit = clamp(args.limit, 50, 200)
+        const cutoff = new Date(Date.now() - days * 86400000).toISOString()
+        const { data: statuses } = await supa.from('shop_sav_statuses').select('status_key,is_final_status').eq('shop_id', shopId)
+        const finalCustom = (statuses || []).filter((s: any) => s.is_final_status).map((s: any) => s.status_key)
+        const finals = ['ready','delivered','cancelled', ...finalCustom]
+        const { data, error } = await supa.from('sav_cases')
+          .select('id, case_number, status, sav_type, device_brand, device_model, created_at')
+          .eq('shop_id', shopId)
+          .lte('created_at', cutoff)
+          .not('status', 'in', `(${finals.map(f => `"${f}"`).join(',')})`)
+          .order('created_at', { ascending: true })
+          .limit(limit)
+        if (error) return { error: error.message }
+        return { count: (data || []).length, days_threshold: days, cases: data || [] }
+      }
+
+      case 'summarize_sav_pipeline': {
+        const { data, error } = await supa.from('sav_cases').select('status, sav_type').eq('shop_id', shopId)
+        if (error) return { error: error.message }
+        const byStatus: Record<string, number> = {}
+        const byType: Record<string, number> = {}
+        for (const r of (data || []) as any[]) {
+          byStatus[r.status] = (byStatus[r.status] || 0) + 1
+          byType[r.sav_type || '(non défini)'] = (byType[r.sav_type || '(non défini)'] || 0) + 1
+        }
+        return { total: (data || []).length, by_status: byStatus, by_type: byType }
+      }
+
+      case 'list_pending_orders': {
+        const limit = clamp(args.limit, 50, 200)
+        const { data, error } = await supa.from('order_items')
+          .select('id, part_name, part_reference, quantity_needed, reason, priority, ordered, created_at, sav_case_id')
+          .eq('shop_id', shopId)
+          .eq('ordered', false)
+          .order('created_at', { ascending: false })
+          .limit(limit)
+        if (error) return { error: error.message }
+        return { count: (data || []).length, orders: data || [] }
+      }
+
+      case 'recalculate_part_reservations': {
+        const { data, error } = await supa.rpc('recalculate_part_reservations', { p_shop_id: shopId })
+        if (error) return { error: error.message }
+        return { ok: true, result: data }
+      }
+
       default:
         return { error: `tool inconnu: ${name}` }
     }
