@@ -253,14 +253,28 @@ const TOOL_DEFS = [
     type: 'function',
     function: {
       name: 'generate_printable_report',
-      description: 'Génère un rapport HTML imprimable A4 (sans coordonnées client). Types: non_repairability (non-réparabilité), diagnostic, sav_summary. Le rapport est renvoyé à l\'utilisateur sous forme de bouton Imprimer.',
+      description: 'Génère un rapport HTML imprimable A4 (sans coordonnées client). Types: non_repairability, diagnostic, sav_summary (dossier SAV), stock_audit (audit stock automatique avec pièces fantômes), data_report (rapport libre : passer title + sections). Le rapport est renvoyé à l\'utilisateur sous forme de bouton Imprimer / Enregistrer en PDF.',
       parameters: {
         type: 'object',
         properties: {
-          report_type: { type: 'string', enum: ['non_repairability', 'diagnostic', 'sav_summary'] },
-          case_number: { type: 'string', description: 'Numéro de dossier SAV à inclure (sans #).' },
-          conclusion: { type: 'string', description: 'Conclusion / motif rédigé par Fixy (ex: cause de non-réparabilité, diagnostic technique).' },
-          tests_performed: { type: 'string', description: 'Liste des tests effectués (texte libre).' },
+          report_type: { type: 'string', enum: ['non_repairability', 'diagnostic', 'sav_summary', 'stock_audit', 'data_report'] },
+          case_number: { type: 'string', description: 'Numéro de dossier SAV (pour sav_summary/diagnostic/non_repairability).' },
+          conclusion: { type: 'string' },
+          tests_performed: { type: 'string' },
+          title: { type: 'string', description: 'Titre du rapport (pour data_report).' },
+          sections: {
+            type: 'array',
+            description: 'Sections du rapport (pour data_report). Chaque section a un heading et soit un text soit un tableau (columns + rows).',
+            items: {
+              type: 'object',
+              properties: {
+                heading: { type: 'string' },
+                text: { type: 'string' },
+                columns: { type: 'array', items: { type: 'string' } },
+                rows: { type: 'array', items: { type: 'array', items: { type: 'string' } } },
+              },
+            },
+          },
         },
         required: ['report_type'],
       },
