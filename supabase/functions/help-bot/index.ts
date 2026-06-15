@@ -319,8 +319,24 @@ const TOOL_DEFS = [
   {
     type: 'function',
     function: {
+      name: 'audit_part_reservations',
+      description: 'OUTIL PRIORITAIRE stock : liste TOUTES les pièces avec une réservation actuelle ou attendue. Renvoie pour chaque pièce : stock physique, réservé réel, réservé attendu, unités fantômes, nombre de SAV ouverts et détail des SAV qui justifient la réservation. À utiliser pour toute question sur les pièces réservées, fantômes, bloquées.',
+      parameters: { type: 'object', properties: {} },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'list_savs_for_ghost_reserved_parts',
+      description: 'Liste TOUS les SAV (ouverts et clôturés) attachés aux pièces qui ont des unités fantômes. À utiliser pour répondre précisément à « combien de SAV sont concernés par des pièces fantômes » ou « quels SAV ».',
+      parameters: { type: 'object', properties: {} },
+    },
+  },
+  {
+    type: 'function',
+    function: {
       name: 'list_ghost_reserved_parts',
-      description: 'Liste les pièces dont reserved_quantity dépasse ce que justifient les SAV non clôturés (réservations « fantômes » coincées par un ancien bug).',
+      description: 'Version courte : juste les pièces avec unités fantômes (reserved_quantity > attendu).',
       parameters: { type: 'object', properties: {} },
     },
   },
@@ -328,10 +344,25 @@ const TOOL_DEFS = [
     type: 'function',
     function: {
       name: 'list_parts_by_reservation',
-      description: 'Liste les pièces avec reserved_quantity > 0 et les SAV ouverts qui les réservent. Utile pour comprendre pourquoi une pièce est marquée réservée.',
+      description: 'Liste les pièces avec reserved_quantity > 0 et les SAV ouverts qui les réservent. Note: préférer audit_part_reservations qui est plus complet.',
       parameters: {
         type: 'object',
         properties: { limit: { type: 'number', description: 'Défaut 50, max 200.' } },
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'web_search',
+      description: 'Recherche internet technique (iFixit, datasheets, forums, retours d\'expérience réparation). Utiliser pour pannes inhabituelles, brochages, procédures de démontage, comparatifs. Renvoie une liste de résultats avec titre, URL et extrait. CITE toujours la source dans la réponse finale.',
+      parameters: {
+        type: 'object',
+        properties: {
+          query: { type: 'string', description: 'Requête de recherche en langage naturel.' },
+          limit: { type: 'number', description: 'Nombre de résultats (défaut 5, max 10).' },
+        },
+        required: ['query'],
       },
     },
   },
