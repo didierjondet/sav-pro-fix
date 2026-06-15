@@ -836,6 +836,60 @@ async function runTool(name: string, args: any, supa: any, shopId: string): Prom
         return { count: (data || []).length, parts: data || [] }
       }
 
+      case 'audit_part_reservations': {
+        const { data, error } = await supa.rpc('audit_part_reservations', { p_shop_id: shopId })
+        if (error) return { error: error.message }
+        const rows = data || []
+        const ghost = rows.filter((r: any) => (r.ghost_units || 0) > 0)
+        return {
+          count: rows.length,
+          ghost_count: ghost.length,
+          ghost_units_total: ghost.reduce((s: number, r: any) => s + (r.ghost_units || 0), 0),
+          parts: rows,
+        }
+      }
+
+      case 'list_savs_for_ghost_reserved_parts': {
+        const { data, error } = await supa.rpc('list_savs_for_ghost_reserved_parts', { p_shop_id: shopId })
+        if (error) return { error: error.message }
+        const rows = (data || []) as any[]
+        const uniqueSavs = new Set(rows.map((r) => r.sav_case_id))
+        const uniqueParts = new Set(rows.map((r) => r.part_id))
+        return {
+          total_links: rows.length,
+          unique_savs: uniqueSavs.size,
+          unique_parts: uniqueParts.size,
+          rows,
+        }
+      }
+
+      case 'web_search': {
+        const fcKey = Deno.env.get('FIRECRAWL_API_KEY')
+        if (!fcKey) return { error: 'web_search indisponible (FIRECRAWL_API_KEY non configurée)' }
+        const limit = clamp(args.limit, 5, 10)
+        try {
+          const resp = await fetch('https://api.firecrawl.dev/v1/search', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${fcKey}` },
+            body: JSON.stringify({ query: String(args.query || ''), limit }),
+          })
+          if (!resp.ok) {
+            const t = await resp.text()
+            return { error: `web_search HTTP ${resp.status}: ${t.slice(0, 200)}` }
+          }
+          const data = await resp.json()
+          const results = (data?.data || data?.results || []).slice(0, limit).map((r: any) => ({
+            title: r.title || r.metadata?.title || '',
+            url: r.url || r.metadata?.sourceURL || '',
+            snippet: (r.description || r.snippet || r.markdown || '').slice(0, 400),
+          }))
+          return { query: args.query, count: results.length, results }
+        } catch (e: any) {
+          return { error: `web_search failed: ${e.message}` }
+        }
+      }
+
+
       case 'list_parts_by_reservation': {
         const limit = clamp(args.limit, 50, 200)
         const { data: parts, error } = await supa.from('parts')
