@@ -1048,8 +1048,50 @@ async function buildPrintableReport(supa: any, shopId: string, args: any): Promi
     non_repairability: 'Rapport de non-réparabilité',
     diagnostic: 'Rapport de diagnostic',
     sav_summary: 'Synthèse de dossier SAV',
+    stock_audit: 'Audit du stock — Pièces réservées',
+    data_report: args.title || 'Rapport',
   }
-  const title = titles[reportType] || 'Rapport SAV'
+  const title = titles[reportType] || 'Rapport'
+
+  // Branch: stock_audit auto-generates from RPC
+  if (reportType === 'stock_audit') {
+    const { data: audit } = await supa.rpc('audit_part_reservations', { p_shop_id: shopId })
+    const rows = (audit || []) as any[]
+    const cols = ['Pièce', 'Référence', 'Stock', 'Réservé', 'Attendu', 'Fantôme', 'SAV ouverts']
+    const tbody = rows.map((r) => `<tr>
+      <td>${escapeHtml(r.name || '-')}</td>
+      <td>${escapeHtml(r.reference || r.sku || '-')}</td>
+      <td style="text-align:right">${r.quantity ?? 0}</td>
+      <td style="text-align:right">${r.reserved_quantity ?? 0}</td>
+      <td style="text-align:right">${r.expected_reserved ?? 0}</td>
+      <td style="text-align:right;color:${(r.ghost_units || 0) > 0 ? '#c00' : '#333'};font-weight:${(r.ghost_units || 0) > 0 ? 'bold' : 'normal'}">${r.ghost_units ?? 0}</td>
+      <td style="text-align:right">${r.open_sav_count ?? 0}</td>
+    </tr>`).join('')
+    return buildHtmlShell(supa, shopId, title, `
+      <h2>Synthèse</h2>
+      <div class="block">Pièces avec réservation : <b>${rows.length}</b><br>Pièces fantômes : <b>${rows.filter((r) => (r.ghost_units || 0) > 0).length}</b><br>Unités fantômes totales : <b>${rows.reduce((s, r) => s + (r.ghost_units || 0), 0)}</b></div>
+      <h2>Détail des pièces</h2>
+      <table><thead><tr>${cols.map((c) => `<th>${c}</th>`).join('')}</tr></thead><tbody>${tbody || `<tr><td colspan="${cols.length}" style="text-align:center;color:#666">Aucune pièce réservée.</td></tr>`}</tbody></table>
+    `).then((html) => ({ ok: true, report_type: reportType, title, html }))
+  }
+
+  // Branch: data_report (generic, AI-built sections)
+  if (reportType === 'data_report') {
+    const sections: any[] = Array.isArray(args.sections) ? args.sections : []
+    const body = sections.map((s) => {
+      const head = s.heading ? `<h2>${escapeHtml(s.heading)}</h2>` : ''
+      if (Array.isArray(s.columns) && Array.isArray(s.rows)) {
+        const th = s.columns.map((c: string) => `<th>${escapeHtml(c)}</th>`).join('')
+        const tr = s.rows.map((row: string[]) => `<tr>${(row || []).map((c) => `<td>${escapeHtml(c)}</td>`).join('')}</tr>`).join('')
+        return `${head}<table><thead><tr>${th}</tr></thead><tbody>${tr}</tbody></table>`
+      }
+      if (s.text) return `${head}<div class="block">${escapeHtml(s.text)}</div>`
+      return head
+    }).join('\n')
+    return buildHtmlShell(supa, shopId, title, body || '<div class="block">Aucune donnée.</div>')
+      .then((html) => ({ ok: true, report_type: reportType, title, html }))
+  }
+
 
   let caseRow: any = null
   let cust: any = null
