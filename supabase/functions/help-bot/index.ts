@@ -1042,6 +1042,43 @@ function escapeHtml(s: any): string {
   return String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!))
 }
 
+async function buildHtmlShell(supa: any, shopId: string, title: string, body: string): Promise<string> {
+  const { data: shop } = await supa.from('shops').select('name, address, email, phone, logo_url').eq('id', shopId).maybeSingle()
+  const today = new Date().toLocaleDateString('fr-FR')
+  return `<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>${escapeHtml(title)}</title>
+<style>
+  @page { size: A4; margin: 14mm; }
+  body { font-family: -apple-system, Segoe UI, Roboto, sans-serif; color: #111; font-size: 12px; margin: 0; }
+  header { display:flex; justify-content:space-between; align-items:flex-start; border-bottom: 2px solid #111; padding-bottom: 8px; margin-bottom: 14px; }
+  header h1 { font-size: 18px; margin: 0 0 4px; }
+  .shop { text-align:right; font-size: 11px; line-height: 1.4; }
+  h2 { font-size: 13px; margin: 16px 0 6px; border-bottom: 1px solid #ccc; padding-bottom: 2px; }
+  table { width:100%; border-collapse: collapse; margin-top: 6px; }
+  th, td { border: 1px solid #ddd; padding: 4px 6px; font-size: 11px; }
+  th { background:#f3f4f6; text-align:left; }
+  .block { background:#f9fafb; border:1px solid #e5e7eb; padding: 8px; border-radius: 4px; white-space:pre-wrap; }
+  .noprint { margin: 12px 0; }
+  @media print { .noprint { display:none; } }
+</style></head><body>
+<div class="noprint" style="text-align:right"><button onclick="window.print()" style="padding:8px 16px;font-size:14px;background:#111;color:#fff;border:0;border-radius:4px;cursor:pointer">Imprimer / Enregistrer en PDF</button></div>
+<header>
+  <div>
+    ${shop?.logo_url ? `<img src="${escapeHtml(shop.logo_url)}" style="max-height:50px;margin-bottom:6px"/><br>` : ''}
+    <h1>${escapeHtml(title)}</h1>
+    <div>Date d'édition : <b>${today}</b></div>
+  </div>
+  <div class="shop">
+    <b>${escapeHtml(shop?.name || '')}</b><br>
+    ${escapeHtml(shop?.address || '')}<br>
+    ${escapeHtml(shop?.phone || '')}<br>
+    ${escapeHtml(shop?.email || '')}
+  </div>
+</header>
+${body}
+</body></html>`
+}
+
+
 async function buildPrintableReport(supa: any, shopId: string, args: any): Promise<any> {
   const reportType: string = args.report_type
   const titles: Record<string, string> = {
