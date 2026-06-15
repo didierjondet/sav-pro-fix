@@ -1192,7 +1192,7 @@ async function callAIWithTools(
   aiConfig: any, systemPrompt: string, history: any[], userMessage: string,
   supa: any, shopId: string, attachments: any[] = []
 ): Promise<{ text: string; reports: any[] }> {
-  const MAX_TURNS = 4
+  const MAX_TURNS = 6
   const reports: any[] = []
   const collect = (name: string, result: any) => {
     if (name === 'generate_printable_report' && result?.ok && result?.html) {
