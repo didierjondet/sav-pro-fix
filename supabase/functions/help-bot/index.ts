@@ -53,84 +53,57 @@ const SYSTEM_PROMPT = `Tu es **Fixy**, technicien réparateur hi-tech expert (sp
 - Tu réponds toujours avec la double casquette : **technicien** d'abord, **utilisateur expert du logiciel** ensuite.
 - Tu tutoies, sois CONCIS (2–6 phrases sauf demande de détails), structuré en Markdown.
 - Tu ne dis JAMAIS « consultez votre ERP » : tu ES l'ERP, tu vas chercher l'info via tes outils.
-- Tu ne dis JAMAIS « je ne peux voir que les 20 derniers SAV » : tu as accès à **TOUT l'historique** via les outils.
+- Tu ne dis JAMAIS « je n'ai pas accès » : tu as des outils pour TOUT lire dans la base.
 
 ## Outils à ta disposition (function calling)
-Tu DOIS appeler ces outils dès que la question porte sur des données réelles du magasin :
-- \`search_sav_cases\` — recherche dans **tout** l'historique des SAV (statut, type, marque, modèle, IMEI, client, dates…).
-- \`get_sav_case_detail\` — fiche complète d'un SAV (pièces, messages, historique de clôtures).
-- \`search_parts\` — toutes les pièces du stock (filtre marque, modèle, type, stock bas…).
-- \`get_part_history\` — historique d'usage / prix payés d'une pièce sur N jours.
-- \`search_customers\` / \`get_customer_history\` — fiche client + tout son historique.
-- \`search_quotes\` — devis (statut, dates, client…).
-- \`list_appointments\` / \`get_appointment_detail\` — agenda (RDV, statuts, contre-propositions, technicien, SAV lié).
-- \`get_finance_summary\` — CA, marge, nombre SAV, taux retard sur une période.
-- \`get_late_savs\` — SAV actuellement en retard selon les règles métier de la boutique.
-- \`get_business_rules\` — statuts, types SAV, horaires, limites.
-- \`get_product_return_rate\` — taux de retour d'un appareil tracké (par IMEI ou SKU).
-- \`list_ghost_reserved_parts\` — pièces avec réservation orpheline (aucun SAV ouvert).
-- \`list_parts_by_reservation\` — pièces réservées et SAV ouverts qui les bloquent.
-- \`list_open_savs_for_part\` — SAV ouverts qui consomment une pièce donnée.
-- \`list_low_stock_parts\` — pièces sous le seuil min_stock.
-- \`list_savs_without_parts\` — SAV ouverts sans pièce associée.
-- \`list_long_running_savs\` — SAV ouverts depuis > N jours.
-- \`summarize_sav_pipeline\` — comptages SAV par statut et par type.
-- \`list_pending_orders\` — commandes de pièces non encore passées.
-- \`recalculate_part_reservations\` — **action admin** : recalcule reserved_quantity à partir des SAV ouverts. À proposer uniquement à un admin quand on détecte des unités fantômes.
-- \`generate_printable_report\` — produit un rapport imprimable (non-réparabilité, diagnostic, synthèse SAV). À utiliser dès qu'on te demande un rapport, un PDF, ou un document à imprimer.
+Appelle ces outils dès que la question porte sur des données réelles du magasin :
+- \`search_sav_cases\`, \`get_sav_case_detail\` — historique SAV complet.
+- \`search_parts\`, \`get_part_history\` — stock + historique pièces.
+- \`search_customers\`, \`get_customer_history\` — clients.
+- \`search_quotes\` — devis.
+- \`list_appointments\`, \`get_appointment_detail\` — agenda.
+- \`get_finance_summary\`, \`get_late_savs\`, \`get_business_rules\`, \`get_product_return_rate\`.
+- \`audit_part_reservations\` — **OUTIL PRIORITAIRE stock/réservation** : toutes les pièces réservées avec stock physique, réservé réel, réservé attendu, unités fantômes ET les SAV ouverts qui justifient. Utilise-le pour « pièces réservées », « pièces fantômes », « pourquoi cette pièce est réservée ».
+- \`list_savs_for_ghost_reserved_parts\` — pour « combien / quels SAV sont liés aux pièces fantômes » : renvoie TOUS les SAV (ouverts ou clôturés) attachés aux pièces fantômes.
+- \`list_ghost_reserved_parts\` — version courte (juste les unités fantômes).
+- \`list_open_savs_for_part\`, \`list_low_stock_parts\`, \`list_savs_without_parts\`, \`list_long_running_savs\`, \`summarize_sav_pipeline\`, \`list_pending_orders\`.
+- \`recalculate_part_reservations\` — **action admin uniquement**. À proposer si tu détectes des unités fantômes ET que l'utilisateur est admin/super_admin.
+- \`web_search\` — recherche internet technique (iFixit, datasheets, forums, retours d'expérience). Utilise pour pannes inhabituelles, brochages, procédures de démontage. CITE toujours la source.
+- \`generate_printable_report\` — rapport HTML imprimable A4. Types : \`non_repairability\`, \`diagnostic\`, \`sav_summary\`, \`stock_audit\`, \`data_report\`. Pour toute demande de PDF/rapport/export : utilise \`data_report\` avec \`title\` + \`sections\` (titre + texte ou tableau).
 
-Règles d'usage :
-1. Question chiffrée / liste / fiche → **appelle l'outil**, ne devine pas.
-2. Avant de chiffrer une réparation, appelle \`search_parts\` pour citer le prix réel boutique + marge.
-3. Si un IMEI/SKU est mentionné → \`get_product_return_rate\` pour signaler une récidive.
-4. **Ne renvoie JAMAIS les coordonnées clients** (téléphone, email, adresse). Le nom/prénom seul est OK.
-5. Tu peux enchaîner plusieurs outils (max 4 tours).
-6. Si l'utilisateur joint une image ou un PDF, analyse-le et croise avec les outils si pertinent.
+## Règles d'usage des outils
+1. Question chiffrée / liste / fiche / "combien" / "quels" → appelle l'outil, ne devine pas.
+2. Question réservations/stock fantôme → TOUJOURS \`audit_part_reservations\` d'abord, puis \`list_savs_for_ghost_reserved_parts\` si on parle de SAV concernés. Ne te limite jamais à un seul résultat : énumère tout ce que renvoie l'outil.
+3. Avant de chiffrer une réparation : \`search_parts\` pour le prix réel boutique.
+4. IMEI/SKU mentionné → \`get_product_return_rate\`.
+5. Demande de PDF/rapport/export → \`generate_printable_report\` avec le bon type. Pour des données tabulaires (audit, liste pièces, liste SAV…) construis un \`data_report\` avec sections + tableaux.
+6. **Ne renvoie JAMAIS les coordonnées clients** (téléphone, email, adresse). Nom/prénom seul OK.
+7. Tu peux enchaîner jusqu'à 6 tours d'outils. N'abandonne pas après un seul appel.
+8. Si pièce jointe (image/PDF), analyse-la et croise avec les outils.
+
+## Mode "super technicien" (diagnostic guidé)
+Quand l'utilisateur décrit une panne :
+1. Si symptômes flous → 2-3 questions ciblées (modèle exact, depuis quand, chute/eau, intermittent, tests déjà faits).
+2. Liste causes probables triées par probabilité + tests rapides pour discriminer.
+3. Panne inhabituelle ou doute → \`web_search\` (iFixit, forums) et CITE la source.
+4. Propose pièces candidates via \`search_parts\` (prix réel boutique).
+5. Format final : Symptômes / Tests / Pièce(s) / Temps estimé / Risques.
 
 ## Compétences techniques (réparateur expert)
-
-### Marques & catégories maîtrisées
-- **Apple** : iPhone (5s → 17 Pro Max), iPad, Apple Watch, AirPods, MacBook (Intel + Apple Silicon).
-- **Samsung** : Galaxy S, Note, A, M, Z Fold/Flip, Tab, Watch.
-- **Xiaomi / Redmi / Poco**, **Huawei / Honor**, **Oppo / Realme**, **OnePlus**, **Google Pixel**, **Sony Xperia**, **Nokia**.
-- **Consoles** : Switch (V1/V2/OLED/Lite), PS4/PS5, Xbox Series, Steam Deck, manettes.
-- **Hi-tech** : montres connectées, drones, écouteurs sans fil, GoPro, e-trottinettes/VAE.
-
-### Pannes & réflexes (extraits)
-- **Écran iPhone** : True Tone perdu si écran non-original ou puce non transférée. Face ID perdu si remplacement du module avant sans transfert capteur (iPhone X+). Incell LCD = pas de True Tone, Hard OLED = meilleur compromis copie.
-- **Point bleu Samsung** : brûlure OLED → remplacement écran complet (souvent collé, chauffe + séparateur).
-- **iPhone "Service" batterie** : reprogrammer puce TI ou utiliser batterie originale Apple Service Pack.
-- **Charge HS** : test chargeur+câble certifiés → nappe charge (Lightning/USB-C) → si KO : Tristar/Tigris iPhone, PMIC Samsung.
-- **Caméra arrière HS** : module complet ; vitre objectif seule = kit vitre arrière laser.
-- **Joy-Con drift** : potentiomètre standard ou upgrade module **Hall effect** (durable).
-- **HDMI PS4/PS5** : refusion port (rework BGA, station air chaud, flux).
-- **iCloud Lock** : refuser le SAV si non débloqué. FRP Samsung idem.
-- **Oxydation** : NE PAS CHARGER, démontage immédiat, bain ultrasons + alcool isopropylique 99%.
-- **Batterie gonflée** : DANGER, isoler, décharger lentement, jamais percer.
-
-### Procédure diagnostic standard
-1. Interroger client : chute / eau / depuis quand / intermittent ?
-2. Test allumage (démarre / écran noir / vibre / bootloop).
-3. Test sous chargeur certifié 10 min.
-4. Test écran (multi-touch, couleurs, luminosité).
-5. Test fonctions (HP, micro, caméras avant/arrière, Wi-Fi, BT, capteurs).
-6. Carte mère suspecte → mesure conso à l'alim de labo (court-circuit = ampérage anormal).
-
-### Format de sortie pour un diagnostic
-- **Symptômes probables** (classés par probabilité)
-- **Tests à faire** (ordonnés, rapides d'abord)
-- **Pièce(s) candidate(s)** (avec réf stock + prix réel via \`search_parts\` si possible)
-- **Temps estimé**
-- **Risques / pertes** (True Tone, Face ID, étanchéité, données)
-
-### Qualités de pièces
-- **Original / OEM Service Pack** > **Refurb** > **Hard OLED** > **Soft OLED** / **Incell LCD**.
+- **Apple / Samsung / Xiaomi / Huawei / Oppo / OnePlus / Pixel / Sony / Nokia** + Consoles (Switch/PS/Xbox/Steam Deck) + hi-tech.
+- True Tone / Face ID perdus selon transfert capteurs ; Incell vs Hard OLED vs Soft OLED.
+- Charge HS : chargeur+câble → nappe → Tristar (iPhone) / PMIC (Samsung).
+- Joy-Con drift : potentiomètre standard ou upgrade Hall.
+- Refusion HDMI PS4/PS5 ; iCloud Lock / FRP : refuser SAV non débloqué.
+- Oxydation : pas de charge, démontage + ultrasons + IPA 99%.
+- Batterie gonflée : DANGER, isoler, jamais percer.
+- Qualité : Original/OEM > Refurb > Hard OLED > Soft OLED / Incell.
 
 ## Couverture logiciel Fixway
-SAV (création, statuts/types personnalisables, pièces, remises, clôture, QR tracking), messagerie interne, codes sécurité, stock + commandes + fournisseurs, devis (manuels + SMS public), clients (historique + doublons), agenda (RDV, contre-propositions, horaires), statistiques (widgets DnD, IA), SMS, import/export, paramètres (profil, boutique, types SAV, statuts, menu, IA, fournisseurs), rôles (admin / technicien / shop_admin / super_admin), abonnement & limites, notifications realtime, mini-site boutique + SEO.
+SAV (création, statuts/types perso, pièces, remises, clôture, QR tracking), messagerie interne, codes sécurité, stock + commandes + fournisseurs, devis (manuels + SMS public), clients, agenda, statistiques (widgets DnD), SMS, import/export, paramètres, rôles, abonnement, notifications realtime, mini-site + SEO.
 
 ## Règles d'escalade
-Préfixe la réponse par \`[ESCALATE]\` UNIQUEMENT pour les sujets hors logiciel ET hors réparation hi-tech (comptable personnelle, juridique non SAV, etc.). Une question de diagnostic ou de procédure de réparation n'est JAMAIS hors périmètre.`
+Préfixe \`[ESCALATE]\` UNIQUEMENT pour les sujets hors logiciel ET hors réparation hi-tech. Diagnostic / procédure réparation = JAMAIS hors périmètre.`
 
 // ===================== TOOLS =====================
 const TOOL_DEFS = [
@@ -280,14 +253,28 @@ const TOOL_DEFS = [
     type: 'function',
     function: {
       name: 'generate_printable_report',
-      description: 'Génère un rapport HTML imprimable A4 (sans coordonnées client). Types: non_repairability (non-réparabilité), diagnostic, sav_summary. Le rapport est renvoyé à l\'utilisateur sous forme de bouton Imprimer.',
+      description: 'Génère un rapport HTML imprimable A4 (sans coordonnées client). Types: non_repairability, diagnostic, sav_summary (dossier SAV), stock_audit (audit stock automatique avec pièces fantômes), data_report (rapport libre : passer title + sections). Le rapport est renvoyé à l\'utilisateur sous forme de bouton Imprimer / Enregistrer en PDF.',
       parameters: {
         type: 'object',
         properties: {
-          report_type: { type: 'string', enum: ['non_repairability', 'diagnostic', 'sav_summary'] },
-          case_number: { type: 'string', description: 'Numéro de dossier SAV à inclure (sans #).' },
-          conclusion: { type: 'string', description: 'Conclusion / motif rédigé par Fixy (ex: cause de non-réparabilité, diagnostic technique).' },
-          tests_performed: { type: 'string', description: 'Liste des tests effectués (texte libre).' },
+          report_type: { type: 'string', enum: ['non_repairability', 'diagnostic', 'sav_summary', 'stock_audit', 'data_report'] },
+          case_number: { type: 'string', description: 'Numéro de dossier SAV (pour sav_summary/diagnostic/non_repairability).' },
+          conclusion: { type: 'string' },
+          tests_performed: { type: 'string' },
+          title: { type: 'string', description: 'Titre du rapport (pour data_report).' },
+          sections: {
+            type: 'array',
+            description: 'Sections du rapport (pour data_report). Chaque section a un heading et soit un text soit un tableau (columns + rows).',
+            items: {
+              type: 'object',
+              properties: {
+                heading: { type: 'string' },
+                text: { type: 'string' },
+                columns: { type: 'array', items: { type: 'string' } },
+                rows: { type: 'array', items: { type: 'array', items: { type: 'string' } } },
+              },
+            },
+          },
         },
         required: ['report_type'],
       },
@@ -346,8 +333,24 @@ const TOOL_DEFS = [
   {
     type: 'function',
     function: {
+      name: 'audit_part_reservations',
+      description: 'OUTIL PRIORITAIRE stock : liste TOUTES les pièces avec une réservation actuelle ou attendue. Renvoie pour chaque pièce : stock physique, réservé réel, réservé attendu, unités fantômes, nombre de SAV ouverts et détail des SAV qui justifient la réservation. À utiliser pour toute question sur les pièces réservées, fantômes, bloquées.',
+      parameters: { type: 'object', properties: {} },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'list_savs_for_ghost_reserved_parts',
+      description: 'Liste TOUS les SAV (ouverts et clôturés) attachés aux pièces qui ont des unités fantômes. À utiliser pour répondre précisément à « combien de SAV sont concernés par des pièces fantômes » ou « quels SAV ».',
+      parameters: { type: 'object', properties: {} },
+    },
+  },
+  {
+    type: 'function',
+    function: {
       name: 'list_ghost_reserved_parts',
-      description: 'Liste les pièces dont reserved_quantity dépasse ce que justifient les SAV non clôturés (réservations « fantômes » coincées par un ancien bug).',
+      description: 'Version courte : juste les pièces avec unités fantômes (reserved_quantity > attendu).',
       parameters: { type: 'object', properties: {} },
     },
   },
@@ -355,10 +358,25 @@ const TOOL_DEFS = [
     type: 'function',
     function: {
       name: 'list_parts_by_reservation',
-      description: 'Liste les pièces avec reserved_quantity > 0 et les SAV ouverts qui les réservent. Utile pour comprendre pourquoi une pièce est marquée réservée.',
+      description: 'Liste les pièces avec reserved_quantity > 0 et les SAV ouverts qui les réservent. Note: préférer audit_part_reservations qui est plus complet.',
       parameters: {
         type: 'object',
         properties: { limit: { type: 'number', description: 'Défaut 50, max 200.' } },
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'web_search',
+      description: 'Recherche internet technique (iFixit, datasheets, forums, retours d\'expérience réparation). Utiliser pour pannes inhabituelles, brochages, procédures de démontage, comparatifs. Renvoie une liste de résultats avec titre, URL et extrait. CITE toujours la source dans la réponse finale.',
+      parameters: {
+        type: 'object',
+        properties: {
+          query: { type: 'string', description: 'Requête de recherche en langage naturel.' },
+          limit: { type: 'number', description: 'Nombre de résultats (défaut 5, max 10).' },
+        },
+        required: ['query'],
       },
     },
   },
@@ -818,6 +836,60 @@ async function runTool(name: string, args: any, supa: any, shopId: string): Prom
         return { count: (data || []).length, parts: data || [] }
       }
 
+      case 'audit_part_reservations': {
+        const { data, error } = await supa.rpc('audit_part_reservations', { p_shop_id: shopId })
+        if (error) return { error: error.message }
+        const rows = data || []
+        const ghost = rows.filter((r: any) => (r.ghost_units || 0) > 0)
+        return {
+          count: rows.length,
+          ghost_count: ghost.length,
+          ghost_units_total: ghost.reduce((s: number, r: any) => s + (r.ghost_units || 0), 0),
+          parts: rows,
+        }
+      }
+
+      case 'list_savs_for_ghost_reserved_parts': {
+        const { data, error } = await supa.rpc('list_savs_for_ghost_reserved_parts', { p_shop_id: shopId })
+        if (error) return { error: error.message }
+        const rows = (data || []) as any[]
+        const uniqueSavs = new Set(rows.map((r) => r.sav_case_id))
+        const uniqueParts = new Set(rows.map((r) => r.part_id))
+        return {
+          total_links: rows.length,
+          unique_savs: uniqueSavs.size,
+          unique_parts: uniqueParts.size,
+          rows,
+        }
+      }
+
+      case 'web_search': {
+        const fcKey = Deno.env.get('FIRECRAWL_API_KEY')
+        if (!fcKey) return { error: 'web_search indisponible (FIRECRAWL_API_KEY non configurée)' }
+        const limit = clamp(args.limit, 5, 10)
+        try {
+          const resp = await fetch('https://api.firecrawl.dev/v1/search', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${fcKey}` },
+            body: JSON.stringify({ query: String(args.query || ''), limit }),
+          })
+          if (!resp.ok) {
+            const t = await resp.text()
+            return { error: `web_search HTTP ${resp.status}: ${t.slice(0, 200)}` }
+          }
+          const data = await resp.json()
+          const results = (data?.data || data?.results || []).slice(0, limit).map((r: any) => ({
+            title: r.title || r.metadata?.title || '',
+            url: r.url || r.metadata?.sourceURL || '',
+            snippet: (r.description || r.snippet || r.markdown || '').slice(0, 400),
+          }))
+          return { query: args.query, count: results.length, results }
+        } catch (e: any) {
+          return { error: `web_search failed: ${e.message}` }
+        }
+      }
+
+
       case 'list_parts_by_reservation': {
         const limit = clamp(args.limit, 50, 200)
         const { data: parts, error } = await supa.from('parts')
@@ -970,14 +1042,93 @@ function escapeHtml(s: any): string {
   return String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!))
 }
 
+async function buildHtmlShell(supa: any, shopId: string, title: string, body: string): Promise<string> {
+  const { data: shop } = await supa.from('shops').select('name, address, email, phone, logo_url').eq('id', shopId).maybeSingle()
+  const today = new Date().toLocaleDateString('fr-FR')
+  return `<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>${escapeHtml(title)}</title>
+<style>
+  @page { size: A4; margin: 14mm; }
+  body { font-family: -apple-system, Segoe UI, Roboto, sans-serif; color: #111; font-size: 12px; margin: 0; }
+  header { display:flex; justify-content:space-between; align-items:flex-start; border-bottom: 2px solid #111; padding-bottom: 8px; margin-bottom: 14px; }
+  header h1 { font-size: 18px; margin: 0 0 4px; }
+  .shop { text-align:right; font-size: 11px; line-height: 1.4; }
+  h2 { font-size: 13px; margin: 16px 0 6px; border-bottom: 1px solid #ccc; padding-bottom: 2px; }
+  table { width:100%; border-collapse: collapse; margin-top: 6px; }
+  th, td { border: 1px solid #ddd; padding: 4px 6px; font-size: 11px; }
+  th { background:#f3f4f6; text-align:left; }
+  .block { background:#f9fafb; border:1px solid #e5e7eb; padding: 8px; border-radius: 4px; white-space:pre-wrap; }
+  .noprint { margin: 12px 0; }
+  @media print { .noprint { display:none; } }
+</style></head><body>
+<div class="noprint" style="text-align:right"><button onclick="window.print()" style="padding:8px 16px;font-size:14px;background:#111;color:#fff;border:0;border-radius:4px;cursor:pointer">Imprimer / Enregistrer en PDF</button></div>
+<header>
+  <div>
+    ${shop?.logo_url ? `<img src="${escapeHtml(shop.logo_url)}" style="max-height:50px;margin-bottom:6px"/><br>` : ''}
+    <h1>${escapeHtml(title)}</h1>
+    <div>Date d'édition : <b>${today}</b></div>
+  </div>
+  <div class="shop">
+    <b>${escapeHtml(shop?.name || '')}</b><br>
+    ${escapeHtml(shop?.address || '')}<br>
+    ${escapeHtml(shop?.phone || '')}<br>
+    ${escapeHtml(shop?.email || '')}
+  </div>
+</header>
+${body}
+</body></html>`
+}
+
+
 async function buildPrintableReport(supa: any, shopId: string, args: any): Promise<any> {
   const reportType: string = args.report_type
   const titles: Record<string, string> = {
     non_repairability: 'Rapport de non-réparabilité',
     diagnostic: 'Rapport de diagnostic',
     sav_summary: 'Synthèse de dossier SAV',
+    stock_audit: 'Audit du stock — Pièces réservées',
+    data_report: args.title || 'Rapport',
   }
-  const title = titles[reportType] || 'Rapport SAV'
+  const title = titles[reportType] || 'Rapport'
+
+  // Branch: stock_audit auto-generates from RPC
+  if (reportType === 'stock_audit') {
+    const { data: audit } = await supa.rpc('audit_part_reservations', { p_shop_id: shopId })
+    const rows = (audit || []) as any[]
+    const cols = ['Pièce', 'Référence', 'Stock', 'Réservé', 'Attendu', 'Fantôme', 'SAV ouverts']
+    const tbody = rows.map((r) => `<tr>
+      <td>${escapeHtml(r.name || '-')}</td>
+      <td>${escapeHtml(r.reference || r.sku || '-')}</td>
+      <td style="text-align:right">${r.quantity ?? 0}</td>
+      <td style="text-align:right">${r.reserved_quantity ?? 0}</td>
+      <td style="text-align:right">${r.expected_reserved ?? 0}</td>
+      <td style="text-align:right;color:${(r.ghost_units || 0) > 0 ? '#c00' : '#333'};font-weight:${(r.ghost_units || 0) > 0 ? 'bold' : 'normal'}">${r.ghost_units ?? 0}</td>
+      <td style="text-align:right">${r.open_sav_count ?? 0}</td>
+    </tr>`).join('')
+    return buildHtmlShell(supa, shopId, title, `
+      <h2>Synthèse</h2>
+      <div class="block">Pièces avec réservation : <b>${rows.length}</b><br>Pièces fantômes : <b>${rows.filter((r) => (r.ghost_units || 0) > 0).length}</b><br>Unités fantômes totales : <b>${rows.reduce((s, r) => s + (r.ghost_units || 0), 0)}</b></div>
+      <h2>Détail des pièces</h2>
+      <table><thead><tr>${cols.map((c) => `<th>${c}</th>`).join('')}</tr></thead><tbody>${tbody || `<tr><td colspan="${cols.length}" style="text-align:center;color:#666">Aucune pièce réservée.</td></tr>`}</tbody></table>
+    `).then((html) => ({ ok: true, report_type: reportType, title, html }))
+  }
+
+  // Branch: data_report (generic, AI-built sections)
+  if (reportType === 'data_report') {
+    const sections: any[] = Array.isArray(args.sections) ? args.sections : []
+    const body = sections.map((s) => {
+      const head = s.heading ? `<h2>${escapeHtml(s.heading)}</h2>` : ''
+      if (Array.isArray(s.columns) && Array.isArray(s.rows)) {
+        const th = s.columns.map((c: string) => `<th>${escapeHtml(c)}</th>`).join('')
+        const tr = s.rows.map((row: string[]) => `<tr>${(row || []).map((c) => `<td>${escapeHtml(c)}</td>`).join('')}</tr>`).join('')
+        return `${head}<table><thead><tr>${th}</tr></thead><tbody>${tr}</tbody></table>`
+      }
+      if (s.text) return `${head}<div class="block">${escapeHtml(s.text)}</div>`
+      return head
+    }).join('\n')
+    return buildHtmlShell(supa, shopId, title, body || '<div class="block">Aucune donnée.</div>')
+      .then((html) => ({ ok: true, report_type: reportType, title, html }))
+  }
+
 
   let caseRow: any = null
   let cust: any = null
@@ -1120,7 +1271,7 @@ async function callAIWithTools(
   aiConfig: any, systemPrompt: string, history: any[], userMessage: string,
   supa: any, shopId: string, attachments: any[] = []
 ): Promise<{ text: string; reports: any[] }> {
-  const MAX_TURNS = 4
+  const MAX_TURNS = 6
   const reports: any[] = []
   const collect = (name: string, result: any) => {
     if (name === 'generate_printable_report' && result?.ok && result?.html) {

@@ -3711,6 +3711,21 @@ export type Database = {
           updated_rows: number
         }[]
       }
+      audit_part_reservations: {
+        Args: { p_shop_id: string }
+        Returns: {
+          expected_reserved: number
+          ghost_units: number
+          name: string
+          open_sav_count: number
+          open_savs: Json
+          part_id: string
+          quantity: number
+          reference: string
+          reserved_quantity: number
+          sku: string
+        }[]
+      }
       begin_inventory_session:
         | {
             Args: { _mode?: string; _name: string; _notes?: string }
@@ -3923,6 +3938,10 @@ export type Database = {
         }
         Returns: Json
       }
+      is_final_sav_status: {
+        Args: { p_shop_id: string; p_status: string }
+        Returns: boolean
+      }
       is_shop_admin: { Args: { check_user_id?: string }; Returns: boolean }
       is_super_admin: { Args: { check_user_id?: string }; Returns: boolean }
       list_ghost_reserved_parts: {
@@ -3935,6 +3954,24 @@ export type Database = {
           reference: string
           reserved_quantity: number
           sku: string
+        }[]
+      }
+      list_savs_for_ghost_reserved_parts: {
+        Args: { p_shop_id: string }
+        Returns: {
+          case_number: string
+          created_at: string
+          device_brand: string
+          device_model: string
+          ghost_units: number
+          is_final: boolean
+          part_id: string
+          part_name: string
+          part_reference: string
+          quantity: number
+          sav_case_id: string
+          sav_type: string
+          status: string
         }[]
       }
       mask_phone_number: { Args: { phone_number: string }; Returns: string }
