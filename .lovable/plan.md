@@ -1,46 +1,49 @@
-## Objectif
-Rendre Fixy fiable pour les opérations simples et avancées : accès stock/SAV complet, listes exactes des pièces réservées/fantômes, rapports PDF propres, et aide diagnostic technique avec recherche internet.
+## Diagnostic
 
-## 1. Corriger le vrai bug des réservations fantômes
-- Remplacer la logique de recalcul actuelle, car elle peut laisser des pièces à `reserved_quantity > 0` quand elles ne sont liées qu’à des SAV clôturés.
-- Recalculer toutes les pièces de la boutique avec une règle simple :
-  - `reserved_quantity = somme des quantités dans sav_parts uniquement pour les SAV non finaux`
-  - `0` si aucun SAV ouvert ne justifie la réservation.
-- Corriger le trigger `handle_sav_part_stock_reservation` pour qu’une pièce ajoutée/modifiée sur un SAV déjà final ne crée pas de nouvelle réservation fantôme.
-- Garder la libération/restauration automatique lors du passage d’un SAV en statut final ou réouvert, mais avec une fonction commune pour reconnaître les statuts finaux.
-- Relancer une remise à plat des réservations existantes après migration.
+Le correctif précédent n’a pas suffi parce que la source réelle restante est un autre trigger :
 
-## 2. Ajouter des RPC d’audit fiables pour Fixy
-Créer des fonctions SQL dédiées, plutôt que laisser Fixy bricoler plusieurs requêtes approximatives :
-- `audit_part_reservations(p_shop_id)` : liste toutes les pièces réservées avec : stock physique, réservé actuel, réservé attendu, unités fantômes, SAV ouverts qui justifient la réservation.
-- `list_savs_for_ghost_reserved_parts(p_shop_id)` : liste les SAV historiques liés aux pièces qui ont encore une réservation fantôme, pour répondre précisément aux questions du type “combien de SAV sont concernés”.
-- Ces fonctions seront limitées à la boutique courante, sans coordonnées client sensibles.
+- La clôture du SAV `2026-06-16-001` tente bien de passer `sav_cases.status` vers `pret_et_cloture`.
+- Ce statut est bien final et personnalisé.
+- Le trigger `release_part_reservations_on_final_status` libère la réservation en mettant à jour `parts.reserved_quantity`.
+- Mais la table `parts` a un trigger trop large : `sync_part_updates_trigger AFTER UPDATE ON parts`.
+- Ce trigger se déclenche même quand on change seulement `reserved_quantity`, puis il réécrit `sav_cases.total_cost/total_time_minutes` pour le même SAV en cours de clôture.
+- PostgreSQL bloque alors l’opération avec : `tuple to be updated was already modified by an operation triggered by the current command`.
 
-## 3. Réparer et renforcer les outils Fixy
-Dans `supabase/functions/help-bot/index.ts` :
-- Remplacer les outils stock fragiles par les nouvelles RPC d’audit.
-- Faire en sorte que les demandes contenant “réservé”, “fantôme”, “stock”, “pièce bloquée”, “SAV concerné” déclenchent systématiquement les bons outils.
-- Augmenter la capacité de raisonnement multi-outils pour éviter qu’il s’arrête trop tôt sur un seul résultat.
-- Ajouter un outil de rapport générique pour transformer n’importe quel résultat d’audit en rapport structuré.
-- Garder les réponses concises, mais imposer un format clair quand il liste des résultats : résumé, tableau, anomalies, action proposée.
+Donc le problème n’est pas le processus de fermeture/impression : la mise à jour SQL est annulée après l’impression, ce qui explique pourquoi le dossier reste `pending`.
 
-## 4. Rapports PDF depuis Fixy
-- Étendre `generate_printable_report` pour accepter des rapports d’audit stock/SAV, pas seulement diagnostic ou synthèse SAV.
-- Côté chat Fixy, ajouter un bouton de rapport plus clair : “Ouvrir / enregistrer en PDF”.
-- Préserver le HTML A4 imprimable et permettre à Fixy de générer un rapport quand l’utilisateur demande “rapport”, “PDF”, “imprimer”, “export”.
-- Sauvegarder les rapports dans les messages de conversation pour ne pas les perdre pendant la session.
+## Plan de correction
 
-## 5. Mode “super technicien” avec internet
-- Ajouter à Fixy une compétence diagnostic guidé : il pose des questions utiles quand les symptômes sont incomplets, puis propose tests, causes probables, pièces candidates et risques.
-- Ajouter un outil de recherche internet technique via la clé `FIRECRAWL_API_KEY` déjà configurée, pour croiser ses réponses avec des sources web quand l’utilisateur demande une aide réparation ou une panne inconnue.
-- Garder la priorité aux données boutique : s’il parle d’une pièce, d’un modèle ou d’un SAV existant, Fixy consulte d’abord la base Fixway, puis complète avec internet si nécessaire.
+1. Modifier uniquement le trigger `sync_part_updates_trigger` sur `public.parts`.
+2. Le faire déclencher seulement quand les champs métier qu’il synchronise changent réellement :
+   - `selling_price`
+   - `purchase_price`
+   - `time_minutes`
+3. Ne plus le déclencher lors des changements de stock/réservation :
+   - `quantity`
+   - `reserved_quantity`
+4. Garder les triggers existants de clôture/réservation, car leur logique est utile ; le conflit vient du trigger `parts` trop général.
+5. Vérifier en base après migration :
+   - le SAV `2026-06-16-001` peut passer de `pending` à `pret_et_cloture`,
+   - son `closure_history` est ajouté,
+   - la réservation de sa pièce est libérée,
+   - aucune erreur `tuple to be updated...` ne réapparaît.
 
-## 6. Validation
-- Tester en base que les pièces fantômes repassent bien à zéro quand aucun SAV ouvert ne les justifie.
-- Tester Fixy avec ces demandes :
-  - “liste les pièces réservées”
-  - “liste les pièces fantômes”
-  - “combien de SAV sont liés à des pièces fantômes”
-  - “fais-moi un rapport PDF de ces résultats”
-  - “aide-moi à diagnostiquer une panne de charge sur Xiaomi 13”
-- Vérifier les logs de l’edge function `help-bot` après test.
+## Correction technique prévue
+
+Créer une migration qui :
+
+```sql
+DROP TRIGGER IF EXISTS sync_part_updates_trigger ON public.parts;
+
+CREATE TRIGGER sync_part_updates_trigger
+AFTER UPDATE OF selling_price, purchase_price, time_minutes ON public.parts
+FOR EACH ROW
+WHEN (
+  OLD.selling_price IS DISTINCT FROM NEW.selling_price
+  OR OLD.purchase_price IS DISTINCT FROM NEW.purchase_price
+  OR OLD.time_minutes IS DISTINCT FROM NEW.time_minutes
+)
+EXECUTE FUNCTION public.sync_part_updates_to_sav();
+```
+
+Ce correctif est volontairement minimal : il ne change pas l’interface, ne touche pas aux statuts, ne recalcule pas tout le stock et ne modifie pas les règles de clôture.
