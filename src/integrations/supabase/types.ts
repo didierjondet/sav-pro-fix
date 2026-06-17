@@ -3864,6 +3864,22 @@ export type Database = {
           total_value: number
         }[]
       }
+      get_satisfaction_survey_by_token: {
+        Args: { p_token: string }
+        Returns: {
+          comment: string
+          completed_at: string
+          id: string
+          rating: number
+          sav_case_id: string
+          sav_case_number: string
+          sav_device_brand: string
+          sav_device_model: string
+          shop_id: string
+          shop_logo_url: string
+          shop_name: string
+        }[]
+      }
       get_sav_visit_counts: {
         Args: { p_sav_case_ids: string[] }
         Returns: {
@@ -4043,6 +4059,10 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      submit_satisfaction_survey: {
+        Args: { p_comment: string; p_rating: number; p_token: string }
+        Returns: Json
       }
     }
     Enums: {
