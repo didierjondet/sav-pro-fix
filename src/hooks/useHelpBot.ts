@@ -121,11 +121,8 @@ export function useHelpBot() {
   const incrementFAQClick = useCallback(async (faqId: string) => {
     const item = faqItems.find(f => f.id === faqId);
     if (item) {
-      await supabase
-        .from('help_bot_faq')
-        .update({ click_count: item.click_count + 1 })
-        .eq('id', faqId);
-      
+      await supabase.rpc('increment_faq_click', { faq_id: faqId });
+
       setFaqItems(prev => 
         prev.map(f => f.id === faqId ? { ...f, click_count: f.click_count + 1 } : f)
           .sort((a, b) => b.click_count - a.click_count)

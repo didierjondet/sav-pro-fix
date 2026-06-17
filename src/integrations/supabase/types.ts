@@ -3943,6 +3943,7 @@ export type Database = {
         Args: { _permission: string; _shop_id: string }
         Returns: boolean
       }
+      increment_faq_click: { Args: { faq_id: string }; Returns: undefined }
       invite_user_to_shop: {
         Args: {
           p_email: string
