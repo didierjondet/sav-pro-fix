@@ -1,123 +1,111 @@
-## Contexte et principes directeurs
+## Phase 2.A — Sécurisation `satisfaction_surveys` + avis modifiable
 
-Fixway est un SaaS multi-boutiques avec un mix complexe d'accès :
-- Utilisateurs **authentifiés** (admins, techniciens, shop_admin, super_admin)
-- **Clients particuliers non authentifiés** qui accèdent via des tokens/slugs publics (suivi SAV, devis, satisfaction, RDV)
-- **Edge functions** qui utilisent le `service_role` (SMS, emails, etc.)
+### Problème sécurité
+Les 2 policies publiques (`Public can view survey via token`, `Public can submit survey responses via token`) acceptent toute ligne où `access_token IS NOT NULL`. Comme **toutes** les lignes ont un token, n'importe quel anonyme peut lire/modifier l'ensemble des 95 enquêtes.
 
-Les corrections passées ont cassé :
-1. Le **suivi SAV public** (clients non logués qui ne peuvent plus voir leur dossier / envoyer un message)
-2. L'**envoi de SMS** (RLS qui bloque l'insert dans `sms_history` ou `sav_messages` depuis l'edge function)
+### Nouvelle fonctionnalité demandée
+Un client re-sollicité doit pouvoir **modifier** sa note précédente (et non être bloqué par "déjà répondu"). Chaque token reste donc utilisable tant qu'il existe — la dernière soumission écrase la précédente sur la **même ligne** (même token).
 
-**Règles d'or pour ce chantier :**
-- Une faille = une migration isolée, testable et réversible
-- Toujours créer une **RPC SECURITY DEFINER** scopée par token avant de durcir une policy publique (jamais l'inverse)
-- Les edge functions utilisent déjà `service_role` → elles bypassent RLS, donc durcir RLS ne casse PAS les SMS si on ne touche pas au code des functions
-- Aucune modif en parallèle : on attend ta validation visuelle entre chaque étape
-- Garder le rollback prêt (SQL inverse fourni avant chaque migration)
+> Note : la "re-sollicitation" envoie aujourd'hui un **nouveau token** (donc une nouvelle ligne). Ta demande couvre les deux cas naturellement :
+> - même token réouvert → la nouvelle note remplace l'ancienne sur cette ligne
+> - nouveau token envoyé → nouvelle ligne, nouvelle note (la précédente reste en historique)
 
----
+### Solution — RPC SECURITY DEFINER scopée par token
 
-## Cartographie des 7 failles critiques
+**Migration A — créer 2 RPC publiques**
 
-| # | Faille | Risque réel | Risque de casse |
-|---|--------|-------------|------------------|
-| 1 | `appointments` lecture publique totale | Élevé (fuite RGPD multi-boutiques) | Moyen — page `/rdv/:token` |
-| 2 | `appointments` update publique non scopée | Élevé (n'importe qui modifie tout RDV) | Moyen — confirmation client |
-| 3 | `satisfaction_surveys` lecture publique totale | Élevé (95 enquêtes exposées) | Faible — page `/satisfaction/:token` |
-| 4 | `sav_messages` lecture publique via tracking_slug deviné | Moyen-élevé | **ÉLEVÉ** — c'est ici que ça a cassé avant |
-| 5 | `subscribers` update non scopée | Critique (changer son tier !) | Très faible |
-| 6 | `sav-attachments` storage insert/delete trop large | Moyen (cross-shop) | Faible si on garde les policies folder-scopées |
-| 7 | Realtime sans autorisation de canal | Moyen (écoute cross-shop) | **ÉLEVÉ** — peut casser toutes les souscriptions live |
+```sql
+-- Lecture : renvoie la ligne du token + infos shop/SAV + note/commentaire actuels pour pré-remplir
+CREATE OR REPLACE FUNCTION public.get_satisfaction_survey_by_token(p_token text)
+RETURNS TABLE (
+  id uuid, shop_id uuid, sav_case_id uuid,
+  completed_at timestamptz, rating int, comment text,
+  shop_name text, shop_logo_url text,
+  sav_case_number text, sav_device_brand text, sav_device_model text
+)
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public
+AS $$
+BEGIN
+  RETURN QUERY
+  SELECT ss.id, ss.shop_id, ss.sav_case_id, ss.completed_at, ss.rating, ss.comment,
+         s.name, s.logo_url,
+         sc.case_number, sc.device_brand, sc.device_model
+  FROM public.satisfaction_surveys ss
+  LEFT JOIN public.shops s ON s.id = ss.shop_id
+  LEFT JOIN public.sav_cases sc ON sc.id = ss.sav_case_id
+  WHERE ss.access_token = p_token
+  LIMIT 1;
+END $$;
 
-Les warnings (Postgres version, OTP expiry, search_path mutable, bucket listing, function executable) sont à traiter en **phase 4**, sans urgence et sans risque applicatif.
+-- Soumission : autorise la modification (pas de blocage si déjà complété)
+CREATE OR REPLACE FUNCTION public.submit_satisfaction_survey(
+  p_token text, p_rating int, p_comment text
+) RETURNS jsonb
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public
+AS $$
+DECLARE v_found boolean; v_was_completed boolean;
+BEGIN
+  IF p_rating < 1 OR p_rating > 5 THEN
+    RETURN jsonb_build_object('success', false, 'error', 'invalid_rating');
+  END IF;
 
----
+  SELECT true, completed_at IS NOT NULL INTO v_found, v_was_completed
+  FROM public.satisfaction_surveys WHERE access_token = p_token;
 
-## Plan en 4 phases (à valider une par une)
+  IF NOT v_found THEN
+    RETURN jsonb_build_object('success', false, 'error', 'not_found');
+  END IF;
 
-### Phase 1 — Quick wins sans risque utilisateur (faille #5 + #6)
+  UPDATE public.satisfaction_surveys
+  SET rating = p_rating,
+      comment = NULLIF(trim(p_comment), ''),
+      completed_at = now()   -- mis à jour à chaque soumission = horodatage du dernier avis
+  WHERE access_token = p_token;
 
-**Faille #5 — `subscribers` update non scopée**
-- Remplacer `USING (true)` par `USING (user_id = auth.uid() OR email = auth.email())`
-- **Aucun impact** : la page subscription lit/écrit déjà sur sa propre ligne
-- Rollback : 1 ligne SQL
+  RETURN jsonb_build_object('success', true, 'updated', v_was_completed);
+END $$;
 
-**Faille #6 — Storage `sav-attachments`**
-- Supprimer les 2 policies trop larges (`Users can upload sav attachments` + `Users can delete their own sav attachments`)
-- Les policies folder-scopées (`<shop_id>/...`) existent déjà et continueront de fonctionner
-- À vérifier en amont : confirmer par lecture des policies actuelles qu'un fallback folder-scopé couvre bien upload + delete pour `authenticated`
-- Test après migration : un technicien upload une pièce jointe dans un SAV de sa boutique
+GRANT EXECUTE ON FUNCTION public.get_satisfaction_survey_by_token(text) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.submit_satisfaction_survey(text,int,text) TO anon, authenticated;
+```
 
-**Validation requise avant Phase 2** : tu confirmes que pièces jointes SAV et page abonnement marchent normalement.
+**Modifications `src/pages/Satisfaction.tsx`**
+- Remplacer les 3 requêtes directes (`satisfaction_surveys`, `shops`, `sav_cases`) par un seul `anonClient.rpc('get_satisfaction_survey_by_token', { p_token: token })`.
+- Si `rating`/`comment` reviennent non nuls (avis déjà donné) :
+  - Pré-remplir `setRating(...)` et `setComment(...)`
+  - Afficher un bandeau d'info en haut du formulaire : *"Vous avez déjà donné un avis le {date}. Vous pouvez le modifier ci-dessous."*
+  - **Ne plus** afficher l'écran "Déjà répondu" bloquant ; le formulaire reste accessible.
+- Le `handleSubmit` :
+  - Supprime la pré-vérification "déjà complété" (plus de blocage)
+  - Appelle `anonClient.rpc('submit_satisfaction_survey', { p_token, p_rating, p_comment })`
+  - Sur succès : message *"Avis enregistré, merci !"* (ou *"Avis mis à jour, merci !"* si `updated=true`).
+- Supprimer toute la branche `alreadyCompleted`.
 
----
+**Migration B — après validation utilisateur uniquement**
+```sql
+DROP POLICY "Public can view survey via token" ON public.satisfaction_surveys;
+DROP POLICY "Public can submit survey responses via token" ON public.satisfaction_surveys;
+```
+Les RPC `SECURITY DEFINER` continuent de fonctionner (bypass RLS). Policies admin/shop inchangées.
 
-### Phase 2 — Pages publiques (failles #1, #2, #3) — risque modéré
+### Impact ailleurs dans l'app
+- `useSatisfactionSurveys.ts` (dashboard) : aucun changement requis — il lit via RLS authentifiée (policy `Shop users can view`).
+- Edge functions : non concernées (utilisent `service_role`).
+- SMS d'envoi de l'enquête : non concerné.
 
-Pour chacune : **on crée d'abord une RPC SECURITY DEFINER** qui prend le token en paramètre et renvoie/modifie la seule ligne correspondante. Le frontend bascule sur la RPC. **Seulement après** on durcit la policy publique.
+### Risque & rollback
+Risque **très faible**. Rollback :
+```sql
+CREATE POLICY "Public can view survey via token" ON public.satisfaction_surveys
+  FOR SELECT USING (access_token IS NOT NULL AND auth.uid() IS NULL);
+CREATE POLICY "Public can submit survey responses via token" ON public.satisfaction_surveys
+  FOR UPDATE USING (access_token IS NOT NULL AND completed_at IS NULL AND auth.uid() IS NULL);
+```
 
-**Faille #3 — `satisfaction_surveys` (plus simple, on commence par là)**
-1. Migration A : créer `get_satisfaction_survey_by_token(token text)` + `submit_satisfaction_survey(token, rating, comment)`
-2. Modifier `src/pages/Satisfaction.tsx` pour utiliser les RPC
-3. Migration B (après validation visuelle) : remplacer la policy publique par `false` (ou la supprimer)
+### Ordre d'exécution
+1. Migration A (RPC) — j'attends ton OK
+2. Refonte `Satisfaction.tsx` (pré-remplissage + modification autorisée)
+3. Tes tests prod : nouveau lien → noter ; rouvrir le même lien → note pré-affichée, modifiable, re-soumettre
+4. Migration B (suppression policies publiques) — sur ton OK explicite
 
-**Faille #1 + #2 — `appointments`**
-1. Migration A : créer `get_appointment_by_token(token uuid)` + `respond_to_appointment_proposal(token, action, counter_datetime)`
-2. Modifier `src/pages/AppointmentConfirm.tsx`
-3. Migration B : durcir les policies publiques
-
-**Validation requise** : tester `/satisfaction/:token`, `/rdv/:token`, confirmation + contre-proposition.
-
----
-
-### Phase 3 — Suivi SAV client (faille #4) — risque ÉLEVÉ, à isoler
-
-C'est la zone qui a cassé l'an dernier. On va donc **changer le moins possible** et garder le pattern RPC qui existe déjà :
-- `get_tracking_messages(p_tracking_slug)` — déjà SECURITY DEFINER ✅
-- `send_client_tracking_message(...)` — déjà SECURITY DEFINER ✅
-- `record_sav_visit(...)` — déjà SECURITY DEFINER ✅
-
-**Stratégie :**
-1. Audit complet de `src/pages/TrackSAV.tsx` + `SimpleTrack.tsx` + tout composant client public pour identifier chaque requête directe vers `sav_messages` / `sav_cases` qui pourrait casser
-2. Pour chaque requête directe restante, créer une RPC dédiée et migrer le frontend
-3. **Seulement quand 100% du frontend public passe par des RPC**, durcir la policy `Unified view messages policy`
-4. Garder la policy `INSERT` côté edge function intacte (le service_role bypasse RLS de toute façon → **les SMS et messages serveur ne seront pas impactés**)
-
-**Pourquoi les SMS ne casseront pas** : l'edge function `send-sms` insère dans `sms_history` et `sav_messages` via le client Supabase avec `SUPABASE_SERVICE_ROLE_KEY` (visible dans `supabase/functions/send-sms/index.ts`). Le service_role ignore RLS. Le scénario de casse précédent venait probablement d'un changement côté frontend, pas côté policy.
-
-**Validation longue requise** : 24-48h d'usage en prod avant Phase 4.
-
----
-
-### Phase 4 — Realtime + warnings (faille #7 et reste)
-
-**Faille #7 — Realtime channels**
-- Le plus risqué pour ton usage quotidien (notifications live, messages SAV, etc.)
-- À traiter en dernier, avec une fenêtre de maintenance
-- Solution : RLS sur `realtime.messages` scopée par topic contenant le `shop_id`
-- Prérequis : auditer **tous** les `supabase.channel('...')` du codebase pour renommer les topics en `shop:<shop_id>:...`
-- Sous-étape testable : on liste d'abord tous les canaux, on propose une convention, tu valides, puis migration
-
-**Warnings restants (low priority)**
-- Postgres version : upgrade depuis le dashboard Supabase (toi, en dehors du chat)
-- OTP expiry : réglage dashboard auth
-- `search_path mutable` : revue des fonctions, ajout `SET search_path = public`
-- `public_bucket_allows_listing` : restreindre policy SELECT du bucket public
-- `security_definer_function_executable` : revoke EXECUTE sur les fonctions non publiques
-
----
-
-## Ce que je propose comme prochaine action
-
-Démarrer par la **Phase 1** (faille #5 + #6) car :
-- Aucun impact sur tes clients particuliers
-- Aucun impact sur les SMS
-- Rollback trivial
-- Te permet de valider le processus de travail avant d'attaquer les zones sensibles
-
-Si tu valides ce plan général, je rédige la migration précise de la Phase 1 (avec le SQL de rollback) dans un prochain message, tu la valides, on l'exécute, tu testes en prod, puis on enchaîne sur la Phase 2.
-
-**Confirme-moi :**
-1. OK pour démarrer par la Phase 1 ?
-2. Une préférence pour traiter `satisfaction_surveys` avant `appointments` en Phase 2 (ordre du moins risqué au plus risqué) ?
+On part comme ça ?
