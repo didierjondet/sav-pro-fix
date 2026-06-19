@@ -3853,6 +3853,7 @@ export type Database = {
           storage_gb: number
         }[]
       }
+      get_appointment_by_token: { Args: { _token: string }; Returns: Json }
       get_available_stock: { Args: { part_id: string }; Returns: number }
       get_current_user_role: { Args: never; Returns: string }
       get_current_user_shop_id: { Args: never; Returns: string }
@@ -4010,6 +4011,15 @@ export type Database = {
       }
       reset_monthly_counters: { Args: never; Returns: undefined }
       reset_monthly_sms_credits: { Args: never; Returns: undefined }
+      respond_to_appointment_by_token: {
+        Args: {
+          _action: string
+          _counter_datetime?: string
+          _counter_message?: string
+          _token: string
+        }
+        Returns: Json
+      }
       send_client_tracking_message: {
         Args: {
           p_message: string

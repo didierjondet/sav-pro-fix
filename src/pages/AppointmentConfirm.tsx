@@ -86,33 +86,15 @@ export default function AppointmentConfirm() {
   const fetchAppointment = async () => {
     try {
       const { data, error } = await supabase
-        .from('appointments')
-        .select(`
-          id,
-          start_datetime,
-          duration_minutes,
-          appointment_type,
-          status,
-          notes,
-          device_info,
-          counter_proposal_datetime,
-          counter_proposal_message,
-          shop:shops(name, phone, address, logo_url),
-          sav_case:sav_cases(case_number, device_brand, device_model),
-          customer:customers(first_name, last_name)
-        `)
-        .eq('confirmation_token', token)
-        .single();
+        .rpc('get_appointment_by_token', { _token: token as string });
 
       if (error) throw error;
-      
+      if (!data) throw new Error('not_found');
+
       setAppointment(data as unknown as AppointmentData);
-      
-      // Préremplir la date pour la contre-proposition
-      if (data) {
-        const appointmentDate = new Date(data.start_datetime);
-        setCounterDate(format(addDays(appointmentDate, 1), 'yyyy-MM-dd'));
-      }
+
+      const appointmentDate = new Date((data as any).start_datetime);
+      setCounterDate(format(addDays(appointmentDate, 1), 'yyyy-MM-dd'));
     } catch (error) {
       console.error('Error fetching appointment:', error);
       toast({
@@ -124,6 +106,7 @@ export default function AppointmentConfirm() {
       setLoading(false);
     }
   };
+
 
   const handleConfirm = async () => {
     if (!appointment) return;
