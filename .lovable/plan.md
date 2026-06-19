@@ -1,35 +1,47 @@
-## Contexte
+## Étape 4 — Sécurisation de `sav_messages` (mode prudent)
 
-Tu as raison, je m'en excuse — les FAQ ont bien été supprimées de l'UI HelpBot à ta demande (cf. mémoire `[Assistant Removal]`). L'absence de FAQ dans le bot est **normale**, ce n'est pas une régression. Les tests que je t'avais donnés (cliquer une FAQ) ne sont donc pas valables.
+### Contexte de risque
+Cette zone a déjà causé la perte d'accès à des SAV par le passé. Le plan ci-dessous est donc volontairement **non destructif** et **réversible**.
 
-## Où on en est
+### Problème actuel
+Les politiques RLS de `sav_messages` accordent un accès **anonyme total** (SELECT / INSERT / UPDATE / DELETE) dès qu'un SAV possède un `tracking_slug` (donc tous). Aucune vérification du slug n'est faite — un UUID de message ou de SAV suffit à lire, écrire ou supprimer.
 
-**Étape 1 — TERMINÉE côté code** : la table `help_bot_faq` est sécurisée (UPDATE réservé à `service_role`, RPC `increment_faq_click` créée). Comme l'UI FAQ n'existe plus, cette étape n'a **aucun impact visible utilisateur**. Le seul risque serait une régression côté backend (edge function `help-bot` ou hook `useHelpBot`).
+Politiques concernées :
+- `Clients can insert messages via tracking` (INSERT anon)
+- `Unified view messages policy` — branche anon (SELECT)
+- `Unified update messages policy` — branche anon (UPDATE)
+- `Unified delete messages policy` — branche anon (DELETE)
 
-## Nouveau protocole de test Étape 1 (adapté à la réalité)
+### Pourquoi c'est sûr de les retirer
+Le frontend public passe **déjà** par des RPC `SECURITY DEFINER` qui valident le slug :
+- Lecture publique : `get_tracking_messages(p_tracking_slug)`
+- Envoi public : `send_client_tracking_message(p_tracking_slug, …)`
 
-Au lieu de tester les FAQ (qui n'existent plus dans l'UI), on vérifie que **le HelpBot tout court fonctionne toujours** :
+Les seuls appels anon directs restants dans le code sont `markAsRead` / `markAllAsRead` côté client public (mise à jour du flag « lu »). On les remplace par une nouvelle RPC dédiée.
 
-1. **Ouvrir Fixy** (bouton en bas à droite) → la bulle bleue "Je suis Fixy…" doit s'afficher (comme sur ta capture). ✅ Déjà confirmé par ta capture.
-2. **Poser une question** dans le champ "Posez votre question…" (ex : "combien j'ai de SAV en cours ?") → Fixy doit répondre normalement.
-3. **Vérifier la console navigateur** (F12 → Console) : aucune erreur rouge mentionnant `help_bot_faq`, `increment_faq_click`, ou `useHelpBot`.
-4. **Vérifier l'onglet Network** (F12 → Network) : aucun appel en 4xx/5xx sur `/rest/v1/help_bot_faq` ou `/rest/v1/rpc/increment_faq_click`.
+### Migration SQL (réversible)
+1. `DROP POLICY "Clients can insert messages via tracking" ON public.sav_messages`
+2. `DROP POLICY "Unified view messages policy" ON public.sav_messages` puis recréer une version **authenticated-only** (branche anon retirée). Idem pour `Unified update messages policy` et `Unified delete messages policy`.
+3. `CREATE OR REPLACE FUNCTION public.mark_tracking_messages_read(p_tracking_slug text)` en `SECURITY DEFINER` : passe `read_by_client = true` sur les messages `sender_type = 'shop'` du SAV correspondant au slug. `GRANT EXECUTE TO anon, authenticated`.
 
-Si les 4 points sont verts → Étape 1 validée, on passe à l'Étape 2.
-Si un point casse → rollback immédiat de la migration Étape 1.
+Aucune donnée n'est touchée. Aucune table, colonne, ou ligne n'est supprimée/modifiée. Seules des politiques RLS sont remplacées et une fonction est ajoutée.
 
-## Rappel du plan global (inchangé)
+### Plan de rollback explicite
+Si quoi que ce soit casse l'accès aux SAV ou aux messages :
+- **Option 1 (immédiate)** : utiliser le bouton « Revert » sous le message Lovable qui aura appliqué la migration → restauration intégrale de la version précédente.
+- **Option 2 (SQL)** : la migration de rollback est triviale — recréer à l'identique les 4 politiques d'origine (le SQL exact sera inclus en commentaire dans le fichier de migration pour copier/coller en un clic dans l'éditeur SQL Supabase).
 
-- **Étape 1** : `help_bot_faq` — UPDATE restreint + RPC click counter ✅ code livré, **à valider par toi**
-- **Étape 2** : `subscribers` — restreindre SELECT/UPDATE à `auth.uid() = user_id` (suppression accès par email)
-- **Étape 3** : `prospects` — restreindre lecture publique (données commerciales sensibles)
-- **Étape 4** : `customers` — vérifier qu'aucune policy ne fuit email/téléphone hors du shop
-- **Étape 5** : `messaging_providers` / `ai_engine_config` — confirmer que les clés chiffrées ne sont jamais retournées en clair via SELECT
+Aucun `DROP TABLE`, `DROP COLUMN`, `DELETE` ou `TRUNCATE` n'est utilisé → un rollback restaure 100 % du comportement.
 
-Chaque étape suivra le même rituel : **1 migration ciblée → consignes de test prod précises → ta validation → étape suivante**. Je ne touche à rien d'autre.
+### Modifications frontend
+- `src/hooks/useMessaging.ts` :
+  - Quand `userType === 'client'`, `markAsRead` et `markAllAsRead` appellent `mark_tracking_messages_read` au lieu d'`UPDATE` direct.
+  - Comportement côté shop authentifié **inchangé**.
+- Aucun autre fichier modifié (les hooks shop `useSAVMessages.ts`, etc. tournent en authentifié → toujours OK).
 
-## Action attendue de toi
+### Vérification post-migration
+1. Côté shop authentifié : ouvrir un SAV, lire/envoyer/supprimer un message → OK.
+2. Côté public `/track/...` : ouvrir un tracking, voir l'historique, envoyer un message, voir le badge « non lu » disparaître côté shop.
+3. Relancer le scan de sécurité → confirmer la disparition des alertes liées à `sav_messages`.
 
-Fais les 4 vérifications ci-dessus et dis-moi :
-- ✅ "go étape 2" si tout est vert
-- ❌ décris ce qui casse (message console, code HTTP, comportement Fixy) → je rollback
+Je n'enchaîne **pas** l'étape suivante : après application, j'attends ta validation explicite avant de toucher à autre chose.
