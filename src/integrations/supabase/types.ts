@@ -3992,6 +3992,10 @@ export type Database = {
           status: string
         }[]
       }
+      mark_tracking_messages_read: {
+        Args: { p_tracking_slug: string }
+        Returns: undefined
+      }
       mask_phone_number: { Args: { phone_number: string }; Returns: string }
       recalculate_inventory_session_totals: {
         Args: { _session_id: string }
