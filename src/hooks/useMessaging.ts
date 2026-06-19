@@ -201,11 +201,22 @@ export function useMessaging({ savCaseId, trackingSlug, userType }: UseMessaging
 
   const markAsRead = useCallback(async (messageId: string) => {
     try {
-      const updateField = userTypeRef.current === 'client' ? 'read_by_client' : 'read_by_shop';
-      
+      const currentUserType = userTypeRef.current;
+      const currentTrackingSlug = trackingSlugRef.current;
+
+      if (currentUserType === 'client') {
+        // Public client: pas d'accès direct, on marque les messages shop comme lus via RPC
+        if (!currentTrackingSlug) return;
+        const { error } = await supabase.rpc('mark_tracking_messages_read', {
+          p_tracking_slug: currentTrackingSlug,
+        });
+        if (error) throw error;
+        return;
+      }
+
       const { error } = await supabase
         .from('sav_messages')
-        .update({ [updateField]: true } as any)
+        .update({ read_by_shop: true } as any)
         .eq('id', messageId);
 
       if (error) throw error;
@@ -220,32 +231,29 @@ export function useMessaging({ savCaseId, trackingSlug, userType }: UseMessaging
     const currentUserType = userTypeRef.current;
 
     if (!currentSavCaseId && !currentTrackingSlug) return;
-    
-    try {
-      const updateField = currentUserType === 'client' ? 'read_by_client' : 'read_by_shop';
-      const senderTypeToMark = currentUserType === 'client' ? 'shop' : 'client';
-      
-      let caseId = currentSavCaseId;
-      
-      if (!caseId && currentTrackingSlug) {
-        const { data: savCase } = await supabase
-          .from('sav_cases')
-          .select('id')
-          .eq('tracking_slug', currentTrackingSlug)
-          .single();
 
-        if (!savCase) return;
-        caseId = savCase.id;
+    try {
+      if (currentUserType === 'client') {
+        if (!currentTrackingSlug) return;
+        const { error } = await supabase.rpc('mark_tracking_messages_read', {
+          p_tracking_slug: currentTrackingSlug,
+        });
+        if (error) {
+          console.error('❌ Error marking messages as read (client):', error);
+          throw error;
+        }
+        return;
       }
 
-      if (!caseId) return;
+      // Shop authentifié
+      if (!currentSavCaseId) return;
 
       const { error } = await supabase
         .from('sav_messages')
-        .update({ [updateField]: true } as any)
-        .eq('sav_case_id', caseId)
-        .eq('sender_type', senderTypeToMark)
-        .eq(updateField, false);
+        .update({ read_by_shop: true } as any)
+        .eq('sav_case_id', currentSavCaseId)
+        .eq('sender_type', 'client')
+        .eq('read_by_shop', false);
 
       if (error) {
         console.error('❌ Error marking messages as read:', error);
