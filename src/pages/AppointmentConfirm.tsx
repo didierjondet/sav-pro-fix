@@ -86,33 +86,15 @@ export default function AppointmentConfirm() {
   const fetchAppointment = async () => {
     try {
       const { data, error } = await supabase
-        .from('appointments')
-        .select(`
-          id,
-          start_datetime,
-          duration_minutes,
-          appointment_type,
-          status,
-          notes,
-          device_info,
-          counter_proposal_datetime,
-          counter_proposal_message,
-          shop:shops(name, phone, address, logo_url),
-          sav_case:sav_cases(case_number, device_brand, device_model),
-          customer:customers(first_name, last_name)
-        `)
-        .eq('confirmation_token', token)
-        .single();
+        .rpc('get_appointment_by_token', { _token: token as string });
 
       if (error) throw error;
-      
+      if (!data) throw new Error('not_found');
+
       setAppointment(data as unknown as AppointmentData);
-      
-      // Préremplir la date pour la contre-proposition
-      if (data) {
-        const appointmentDate = new Date(data.start_datetime);
-        setCounterDate(format(addDays(appointmentDate, 1), 'yyyy-MM-dd'));
-      }
+
+      const appointmentDate = new Date((data as any).start_datetime);
+      setCounterDate(format(addDays(appointmentDate, 1), 'yyyy-MM-dd'));
     } catch (error) {
       console.error('Error fetching appointment:', error);
       toast({
@@ -125,28 +107,19 @@ export default function AppointmentConfirm() {
     }
   };
 
+
   const handleConfirm = async () => {
     if (!appointment) return;
     
     setSubmitting(true);
     try {
-      const { error } = await supabase
-        .from('appointments')
-        .update({ status: 'confirmed' })
-        .eq('id', appointment.id);
+      const { data, error } = await supabase.rpc('respond_to_appointment_by_token', {
+        _token: token as string,
+        _action: 'confirm',
+      });
 
       if (error) throw error;
-
-      // Créer une notification pour le magasin
-      if (appointment.sav_case) {
-        await supabase.from('sav_messages').insert({
-          sav_case_id: appointment.sav_case.case_number, // Récupérer l'ID réel
-          message: `✅ Le client a confirmé le rendez-vous du ${format(new Date(appointment.start_datetime), "EEEE d MMMM à HH'h'mm", { locale: fr })}`,
-          sender_type: 'client',
-          sender_name: `${appointment.customer?.first_name || 'Client'}`,
-          shop_id: '' // Sera rempli côté serveur
-        });
-      }
+      if (data && (data as any).success === false) throw new Error((data as any).error || 'failed');
 
       setAppointment({ ...appointment, status: 'confirmed' });
       
@@ -174,16 +147,15 @@ export default function AppointmentConfirm() {
       const [hours, minutes] = counterTime.split(':').map(Number);
       const counterDateTime = setMinutes(setHours(new Date(counterDate), hours), minutes);
 
-      const { error } = await supabase
-        .from('appointments')
-        .update({ 
-          status: 'counter_proposed',
-          counter_proposal_datetime: counterDateTime.toISOString(),
-          counter_proposal_message: counterMessage || null
-        })
-        .eq('id', appointment.id);
+      const { data, error } = await supabase.rpc('respond_to_appointment_by_token', {
+        _token: token as string,
+        _action: 'counter_propose',
+        _counter_datetime: counterDateTime.toISOString(),
+        _counter_message: counterMessage || null,
+      });
 
       if (error) throw error;
+      if (data && (data as any).success === false) throw new Error((data as any).error || 'failed');
 
       setAppointment({ 
         ...appointment, 
@@ -209,6 +181,7 @@ export default function AppointmentConfirm() {
       setSubmitting(false);
     }
   };
+
 
   // Générer les créneaux horaires
   const timeSlots = [];
