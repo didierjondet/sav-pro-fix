@@ -23,4 +23,4 @@ Disallow: /customers
 Disallow: /reports
 Disallow: /notifications
 
-Sitemap: https://www.fixwaypro.com/sitemap.xml
+Sitemap: https://sav-pro-fix.lovable.app/sitemap.xml
