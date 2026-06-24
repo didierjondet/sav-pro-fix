@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useShop } from './useShop';
 import { format, subDays, subMonths, startOfDay, endOfDay, startOfMonth } from 'date-fns';
 import { useQueryClient } from '@tanstack/react-query';
-import { getClosureDate, isClosedLate, getMaxProcessingDays, filterClosedForLateRate } from '@/lib/lateRate';
+import { getClosureDate, isClosedLate, getMaxProcessingDays, filterClosedForLateRate, computeLateRateForPeriod, getRangeForPeriod, LatePeriodKey } from '@/lib/lateRate';
 
 interface ProductCategoryRevenue {
   category: string;
@@ -74,35 +74,9 @@ export function useStatistics(
   });
   const [loading, setLoading] = useState(true);
 
-  const getDateRange = () => {
-    const end = new Date();
-    let start: Date;
-    
-    switch (period) {
-      case '7d':
-        start = subDays(end, 7);
-        break;
-      case '30d':
-        start = subDays(end, 30);
-        break;
-      case '1m_calendar':
-        start = startOfMonth(end);
-        break;
-      case '3m':
-        start = subMonths(end, 3);
-        break;
-      case '6m':
-        start = subMonths(end, 6);
-        break;
-      case '1y':
-        start = subMonths(end, 12);
-        break;
-      default:
-        start = subDays(end, 30);
-    }
-    
-    return { start: startOfDay(start), end: endOfDay(end) };
-  };
+  // Bornes temporelles unifiées avec le graphique d'évolution des retards
+  // pour garantir l'identité de fenêtre entre KPI et chart.
+  const getDateRange = () => getRangeForPeriod(period as LatePeriodKey);
 
   // Fonction de catégorisation intelligente des produits
   const categorizeDevice = (brand: string, model: string): string => {

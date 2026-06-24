@@ -60,25 +60,41 @@ function WidgetModeChart({ widgetId }: { widgetId: string }) {
     );
   }
 
+  // Agrégat global sur la période (identique au KPI "Taux de retard")
+  const totalLate = data.reduce((s, b) => s + b.lateCount, 0);
+  const totalCount = data.reduce((s, b) => s + b.totalCount, 0);
+  const globalRate = totalCount > 0 ? Math.round((totalLate / totalCount) * 1000) / 10 : 0;
+
   return (
-    <ChartContainer
-      config={{ lateRate: { label: 'Taux de retard (%)', color: 'hsl(var(--destructive))' } }}
-      className="h-72"
-    >
-      <LineChart data={data}>
-        <XAxis dataKey="label" tickLine={false} axisLine={false} tick={{ fontSize: 12 }} />
-        <YAxis domain={[0, 100]} tickFormatter={(v) => `${Math.round(v)}%`} tickLine={false} axisLine={false} tick={{ fontSize: 12 }} />
-        <ChartTooltip content={<CustomTooltip />} />
-        <Line
-          type="monotone"
-          dataKey="lateRate"
-          stroke="var(--color-lateRate)"
-          strokeWidth={2}
-          dot={{ fill: 'var(--color-lateRate)', strokeWidth: 2, r: 4 }}
-          activeDot={{ r: 6, strokeWidth: 2 }}
-        />
-      </LineChart>
-    </ChartContainer>
+    <div className="space-y-2">
+      <div className="flex items-baseline justify-between px-1">
+        <div className="text-xs text-muted-foreground">Taux global sur la période</div>
+        <div className="text-sm font-semibold text-destructive">
+          {globalRate.toFixed(1).replace('.', ',')}%
+          <span className="ml-1 text-xs text-muted-foreground font-normal">
+            ({totalLate}/{totalCount})
+          </span>
+        </div>
+      </div>
+      <ChartContainer
+        config={{ lateRate: { label: 'Taux de retard (%)', color: 'hsl(var(--destructive))' } }}
+        className="h-72"
+      >
+        <LineChart data={data}>
+          <XAxis dataKey="label" tickLine={false} axisLine={false} tick={{ fontSize: 12 }} />
+          <YAxis domain={[0, 100]} tickFormatter={(v) => `${Math.round(v)}%`} tickLine={false} axisLine={false} tick={{ fontSize: 12 }} />
+          <ChartTooltip content={<CustomTooltip />} />
+          <Line
+            type="monotone"
+            dataKey="lateRate"
+            stroke="var(--color-lateRate)"
+            strokeWidth={2}
+            dot={{ fill: 'var(--color-lateRate)', strokeWidth: 2, r: 4 }}
+            activeDot={{ r: 6, strokeWidth: 2 }}
+          />
+        </LineChart>
+      </ChartContainer>
+    </div>
   );
 }
 
