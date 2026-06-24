@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useShop } from './useShop';
 import { format, subDays, subMonths, startOfDay, endOfDay, startOfMonth } from 'date-fns';
 import { useQueryClient } from '@tanstack/react-query';
-import { getClosureDate, isClosedLate, getMaxProcessingDays } from '@/lib/lateRate';
+import { getClosureDate, isClosedLate, getMaxProcessingDays, filterClosedForLateRate } from '@/lib/lateRate';
 
 interface ProductCategoryRevenue {
   category: string;
