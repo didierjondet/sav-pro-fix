@@ -159,35 +159,56 @@ async function handleSubscriptionCancellation(supabaseClient: any, subscription:
 }
 
 async function handleCheckoutCompleted(supabaseClient: any, stripe: Stripe, session: Stripe.Checkout.Session) {
-  logStep("Handling checkout completion", { sessionId: session.id });
+  logStep("Handling checkout completion", { sessionId: session.id, mode: session.mode });
 
   if (session.mode === 'payment') {
-    // C'est un achat de SMS one-time
-    const smsCredits = parseInt(session.metadata?.sms_credits || '0');
+    // Lecture des metadata (alignée sur purchase-sms-package : sms_count, pas sms_credits)
+    const smsCount = parseInt(
+      session.metadata?.sms_count || session.metadata?.sms_credits || '0'
+    );
     const shopId = session.metadata?.shop_id;
-    
-    if (smsCredits && shopId) {
-      // Ajouter les crédits SMS
+    const purchaseType = session.metadata?.type;
+
+    if (smsCount > 0 && shopId) {
+      // 1) Marquer l'achat comme completed dans sms_package_purchases
+      //    (purchase-sms-package stocke session.id dans stripe_payment_intent_id)
+      const { error: updateErr } = await supabaseClient
+        .from('sms_package_purchases')
+        .update({
+          status: 'completed',
+          processed_at: new Date().toISOString(),
+        })
+        .eq('stripe_payment_intent_id', session.id)
+        .eq('status', 'pending');
+
+      if (updateErr) {
+        logStep("Error marking purchase completed", { error: updateErr.message });
+      } else {
+        logStep("Purchase marked completed", { sessionId: session.id });
+      }
+
+      // 2) Créditer le shop (sms_credits column si elle existe — sinon ignoré silencieusement)
       const { data: shop } = await supabaseClient
         .from('shops')
         .select('sms_credits')
         .eq('id', shopId)
-        .single();
+        .maybeSingle();
 
       if (shop) {
         await supabaseClient
           .from('shops')
           .update({
-            sms_credits: (shop.sms_credits || 0) + smsCredits,
-            updated_at: new Date().toISOString()
+            sms_credits: (shop.sms_credits || 0) + smsCount,
+            updated_at: new Date().toISOString(),
           })
           .eq('id', shopId);
-
-        logStep("SMS credits added", { shopId, credits: smsCredits });
+        logStep("SMS credits added to shop", { shopId, credits: smsCount, type: purchaseType });
       }
+    } else {
+      logStep("Payment checkout without sms metadata — skipped", { metadata: session.metadata });
     }
   } else if (session.mode === 'subscription') {
-    // C'est un abonnement - sera géré par les events subscription
+    // C'est un abonnement - sera géré par les events subscription.created/updated
     logStep("Subscription checkout completed", { sessionId: session.id });
   }
 }
