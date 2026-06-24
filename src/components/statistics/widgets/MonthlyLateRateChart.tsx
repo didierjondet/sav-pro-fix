@@ -1,22 +1,22 @@
 import { useMonthlyLateRate } from '@/hooks/useMonthlyLateRate';
+import { useLateRateChart } from '@/hooks/useLateRateChart';
 import { ChartContainer, ChartTooltip } from '@/components/ui/chart';
-import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, TooltipProps } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, TooltipProps } from 'recharts';
 import { Loader2 } from 'lucide-react';
 
 interface MonthlyLateRateChartProps {
+  /** Mode "rapport annuel" : affiche les 12 mois d'une année. */
   year?: number;
+  /** Mode "widget" : utilise la configuration (temporalité + filtres) du widget. */
+  widgetId?: string;
 }
 
-interface CustomTooltipProps extends TooltipProps<number, string> {
-  displayYear: number;
-}
-
-const CustomTooltip = ({ active, payload, displayYear }: CustomTooltipProps) => {
+const CustomTooltip = ({ active, payload, suffix }: TooltipProps<number, string> & { suffix?: string }) => {
   if (active && payload && payload.length) {
-    const data = payload[0].payload;
+    const data: any = payload[0].payload;
     return (
       <div className="bg-background border rounded-lg shadow-lg p-3">
-        <p className="font-semibold capitalize">{data.monthLabel} {displayYear}</p>
+        <p className="font-semibold capitalize">{data.label ?? data.monthLabel}{suffix ? ` ${suffix}` : ''}</p>
         <div className="border-t my-2" />
         <p className="text-sm">
           <span className="text-muted-foreground">Taux de retard: </span>
@@ -32,7 +32,57 @@ const CustomTooltip = ({ active, payload, displayYear }: CustomTooltipProps) => 
   return null;
 };
 
-export function MonthlyLateRateChart({ year }: MonthlyLateRateChartProps) {
+export function MonthlyLateRateChart({ year, widgetId }: MonthlyLateRateChartProps) {
+  // Mode widget : respecte la configuration (temporalité + filtres)
+  if (widgetId) {
+    return <WidgetModeChart widgetId={widgetId} />;
+  }
+  // Mode rapport annuel (inchangé)
+  return <YearModeChart year={year} />;
+}
+
+function WidgetModeChart({ widgetId }: { widgetId: string }) {
+  const { data, loading } = useLateRateChart(widgetId);
+
+  if (loading) {
+    return (
+      <div className="h-72 flex items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (!data.length || data.every((d) => d.totalCount === 0)) {
+    return (
+      <div className="h-72 flex items-center justify-center text-muted-foreground">
+        Aucune donnée disponible sur la période sélectionnée
+      </div>
+    );
+  }
+
+  return (
+    <ChartContainer
+      config={{ lateRate: { label: 'Taux de retard (%)', color: 'hsl(var(--destructive))' } }}
+      className="h-72"
+    >
+      <LineChart data={data}>
+        <XAxis dataKey="label" tickLine={false} axisLine={false} tick={{ fontSize: 12 }} />
+        <YAxis domain={[0, 100]} tickFormatter={(v) => `${Math.round(v)}%`} tickLine={false} axisLine={false} tick={{ fontSize: 12 }} />
+        <ChartTooltip content={<CustomTooltip />} />
+        <Line
+          type="monotone"
+          dataKey="lateRate"
+          stroke="var(--color-lateRate)"
+          strokeWidth={2}
+          dot={{ fill: 'var(--color-lateRate)', strokeWidth: 2, r: 4 }}
+          activeDot={{ r: 6, strokeWidth: 2 }}
+        />
+      </LineChart>
+    </ChartContainer>
+  );
+}
+
+function YearModeChart({ year }: { year?: number }) {
   const { data, loading, year: displayYear } = useMonthlyLateRate(year);
 
   if (loading) {
@@ -53,30 +103,19 @@ export function MonthlyLateRateChart({ year }: MonthlyLateRateChartProps) {
 
   return (
     <ChartContainer
-      config={{ lateRate: { label: "Taux de retard (%)", color: "hsl(var(--destructive))" } }}
+      config={{ lateRate: { label: 'Taux de retard (%)', color: 'hsl(var(--destructive))' } }}
       className="h-72"
     >
       <LineChart data={data}>
-        <XAxis 
-          dataKey="monthLabel" 
-          tickLine={false} 
-          axisLine={false}
-          tick={{ fontSize: 12 }}
-        />
-        <YAxis 
-          domain={[0, 100]} 
-          tickFormatter={(v) => `${Math.round(v)}%`} 
-          tickLine={false} 
-          axisLine={false}
-          tick={{ fontSize: 12 }}
-        />
-        <ChartTooltip content={<CustomTooltip displayYear={displayYear} />} />
-        <Line 
-          type="monotone" 
-          dataKey="lateRate" 
-          stroke="var(--color-lateRate)" 
-          strokeWidth={2} 
-          dot={{ fill: "var(--color-lateRate)", strokeWidth: 2, r: 4 }}
+        <XAxis dataKey="monthLabel" tickLine={false} axisLine={false} tick={{ fontSize: 12 }} />
+        <YAxis domain={[0, 100]} tickFormatter={(v) => `${Math.round(v)}%`} tickLine={false} axisLine={false} tick={{ fontSize: 12 }} />
+        <ChartTooltip content={<CustomTooltip suffix={String(displayYear)} />} />
+        <Line
+          type="monotone"
+          dataKey="lateRate"
+          stroke="var(--color-lateRate)"
+          strokeWidth={2}
+          dot={{ fill: 'var(--color-lateRate)', strokeWidth: 2, r: 4 }}
           activeDot={{ r: 6, strokeWidth: 2 }}
         />
       </LineChart>
