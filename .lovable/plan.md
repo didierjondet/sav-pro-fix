@@ -1,55 +1,110 @@
-## Modification de la zone « Codes de sécurité »
+## Problème à corriger
 
-Trois changements ciblés, sans toucher au reste de la mise en page.
+Oui, ta remarque est bien prise en compte : le problème prioritaire n’est pas seulement l’écart entre deux widgets, c’est que **changer la temporalité d’un widget, par exemple passer “Taux de retard” de 1 mois calendaire à 3 mois, ne fait pas bouger le résultat comme attendu**.
 
-### 1. Mot de passe iCloud visible
-Retirer le masquage `WebkitTextSecurity: 'disc'` sur le champ « Mot de passe iCloud » dans :
-- `src/components/sav/SecurityCodesSection.tsx`
-- `src/components/sav/SAVWizardDialog.tsx` (formulaire inline du wizard)
+La correction doit donc garantir que **chaque calcul de widget utilise réellement sa configuration enregistrée** : temporalité, statuts inclus, types SAV inclus.
 
-Le champ reste un `Input type="text"`, mais le contenu sera affiché en clair pour permettre la relecture/vérification de la saisie.
+## Cause probable identifiée dans le code
 
-### 2. Checkbox « Cet appareil n'a pas de code de déverrouillage » → ne touche QUE le déverrouillage
-Aujourd'hui, cocher la case :
-- vide tous les champs (`unlock_code`, `icloud_id`, `icloud_password`, `sim_pin`, `unlock_pattern`)
-- désactive (`disabled`) tous les champs iCloud / PIN SIM
-- empêche la sauvegarde des codes iCloud/SIM/Mail à l'envoi
+### 1. Le widget “Taux de retard” lit bien une configuration, mais le recalcul peut rester faux
 
-À corriger :
-- **`SecurityCodesSection.tsx`** : retirer `disabled={noCode}` des champs iCloud, PIN SIM (et futurs champs Mail). Conserver `disabled={noCode}` uniquement sur le champ « Code de déverrouillage ».
-- **`SAVForm.tsx`** (ligne 887-893) : le `onNoCodeChange` ne doit vider QUE `unlock_code` et `unlock_pattern`, pas iCloud/SIM/Mail.
-- **`SAVForm.tsx`** (ligne 319-324) : la condition de sauvegarde `security_codes` doit rester telle quelle (déjà OK, indépendante du flag).
-- **`SAVWizardDialog.tsx`** (ligne 809-816 et 335-337) : même correction — la case ne vide que `unlock_code` + `unlock_pattern`, et la sauvegarde des autres codes ne doit plus être conditionnée à `!noUnlockCode` (ligne 335).
-- **`SAVWizardDialog.tsx`** (lignes 838-857) : retirer `disabled={noUnlockCode}` des champs iCloud / PIN SIM.
+Dans `DragDropStatistics.tsx`, le widget passe par `StatisticsWidgetContainer`, qui convertit :
 
-### 3. Nouvelle zone « Compte Mail » (indépendante)
-Ajouter dans la même carte « Codes de sécurité », à la suite du bloc iCloud :
-
-```
-Compte Mail
-  Identifiant mail        [______________________]
-  Mot de passe mail       [______________________]   ← visible en clair
+```text
+monthly            -> 30d
+monthly_calendar   -> 1m_calendar
+quarterly          -> 3m
+yearly             -> 1y
 ```
 
-- Toujours actif, jamais désactivé par la checkbox déverrouillage.
-- Texte du mot de passe en clair (pas de masquage).
+Puis il appelle `useStatistics(effectivePeriod, filters)`.
 
-#### Détails techniques
-- Étendre `interface SecurityCodes` dans `SecurityCodesSection.tsx` :
-  ```ts
-  email_id: string;
-  email_password: string;
-  ```
-- Mettre à jour les états initiaux et resets dans `SAVForm.tsx` et `SAVWizardDialog.tsx` (`{ unlock_code:'', icloud_id:'', icloud_password:'', sim_pin:'', email_id:'', email_password:'' }`).
-- Étendre la condition « au moins un champ rempli » et l'objet `security_codes` envoyé en base pour inclure `email_id` et `email_password` (la colonne `security_codes` est un `JSONB`, aucune migration nécessaire).
-- Mettre à jour `SecurityCodesDisplay.tsx` :
-  - `interface SecurityCodes` : ajouter `email_id?: string | null; email_password?: string | null;`
-  - `hasAnyCodes` : inclure les nouveaux champs.
-  - Mode édition : ajouter bloc « Compte Mail » (identifiant + mot de passe en clair).
-  - Mode lecture : afficher le bloc « Compte Mail » si rempli.
-- Ajouter le bloc UI « Compte Mail » dans `SecurityCodesSection.tsx` et dans le formulaire inline du `SAVWizardDialog.tsx`, sur le même modèle que la zone iCloud (sans le masquage).
+Mais il faut corriger/renforcer `useStatistics`, car le calcul du taux de retard dépend d’une requête séparée `closedSavRaw` et tous les filtres/configurations ne sont pas appliqués de manière suffisamment fiable à cette liste de SAV clôturés. Résultat possible : la valeur peut rester identique malgré un changement 1 mois / 3 mois.
 
-### Hors périmètre
-- Aucune autre modification UI (alerte orange, numérotation des étapes, structure de la carte, autres sections de SAVForm/Wizard).
-- Pas de changement de la suppression automatique des codes à la livraison/annulation (existante côté backend).
-- Pas de migration SQL (le JSONB accueille naturellement les nouveaux champs).
+### 2. Le widget “Évolution du retard” ignore totalement sa configuration
+
+Le graphique appelle actuellement `useMonthlyLateRate(year)` via `MonthlyLateRateChart`, donc il calcule toujours par mois de l’année, sans tenir compte de :
+
+- la temporalité du widget ;
+- les filtres de statuts ;
+- les filtres de types SAV ;
+- la même logique de période que le KPI.
+
+Donc même si l’utilisateur change les réglages du widget, ce graphique ne peut pas refléter ces réglages.
+
+## Plan de correction
+
+### 1. Centraliser la logique du taux de retard
+
+Modifier `src/lib/lateRate.ts` pour ajouter une fonction unique de calcul :
+
+```text
+computeLateRateForPeriod(cases, options)
+```
+
+Elle devra appliquer, dans cet ordre :
+
+1. statut final uniquement ;
+2. filtre de statuts du widget si configuré ;
+3. filtre de types SAV du widget si configuré ;
+4. exclusion des types `exclude_from_stats` ;
+5. exclusion des types avec `max_processing_days <= 0` ;
+6. attribution par date de clôture réelle via `getClosureDate` ;
+7. période exacte demandée : `30d`, `1m_calendar`, `3m`, `1y` ;
+8. calcul `lateCount / closedInPeriodCount`.
+
+Cette fonction sera la source unique pour éviter deux logiques concurrentes.
+
+### 2. Corriger `useStatistics` pour que “Taux de retard” bouge réellement
+
+Dans `src/hooks/useStatistics.ts` :
+
+- appliquer les filtres `savStatuses` / `savTypes` aussi sur la liste des SAV clôturés utilisée pour le taux de retard ;
+- utiliser la période `effectivePeriod` réellement reçue (`1m_calendar`, `3m`, etc.) ;
+- remplacer le bloc de calcul manuel du taux par la fonction centralisée ;
+- conserver les valeurs affichées actuellement :
+  - `lateRate` ;
+  - `lateCount` ;
+  - `closedInPeriodCount`.
+
+Objectif : quand tu changes le widget “Taux de retard” de `1 mois calendaire` à `3 mois`, la requête et le calcul changent vraiment, donc la valeur doit pouvoir changer.
+
+### 3. Brancher “Évolution du retard” sur la configuration widget
+
+Modifier `MonthlyLateRateChart.tsx` et son appel dans `DragDropStatistics.tsx` pour que le graphique reçoive son `widgetId` et lise sa configuration.
+
+Le graphique devra utiliser :
+
+- la même temporalité que son widget ;
+- les mêmes filtres de statuts ;
+- les mêmes filtres de types ;
+- la même fonction `computeLateRateForPeriod`.
+
+Ainsi, si le graphique est réglé sur `3 mois`, il affichera une évolution sur 3 mois ; s’il est réglé sur `mois calendaire`, il affichera uniquement la période depuis le 1er du mois.
+
+### 4. Garder l’UI existante
+
+Aucun changement de design prévu :
+
+- pas de changement de carte ;
+- pas de changement de couleurs ;
+- pas de changement du dialogue de configuration ;
+- pas de nouveau bouton ;
+- seulement correction de la logique de calcul.
+
+### 5. Vérification attendue après correction
+
+Après implémentation :
+
+1. Régler “Taux de retard” sur `mois calendaire` : la valeur doit correspondre aux SAV clôturés depuis le 1er du mois.
+2. Régler “Taux de retard” sur `3 mois` : la valeur doit être recalculée sur les 3 derniers mois et ne pas rester bloquée.
+3. Régler “Évolution du retard” sur la même temporalité et les mêmes filtres : le graphique doit utiliser le même périmètre que le KPI.
+4. Les compteurs d’audit affichés sous le KPI, `X retards sur Y clôturés`, doivent changer avec la temporalité.
+
+## Fichiers concernés
+
+- `src/lib/lateRate.ts`
+- `src/hooks/useStatistics.ts`
+- `src/components/statistics/widgets/MonthlyLateRateChart.tsx`
+- `src/components/statistics/DragDropStatistics.tsx`
+- éventuellement `src/hooks/useMonthlyLateRate.ts` si encore utilisé par ailleurs, mais sans casser les rapports existants.
