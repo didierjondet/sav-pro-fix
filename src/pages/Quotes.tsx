@@ -67,6 +67,7 @@ export default function Quotes() {
   const [editingQuote, setEditingQuote] = useState<Quote | null>(null);
   const [showQuoteActionDialog, setShowQuoteActionDialog] = useState<Quote | null>(null);
   const [selectedSAVType, setSelectedSAVType] = useState<string>('');
+  const [isConverting, setIsConverting] = useState(false);
   const [partsSearchTerm, setPartsSearchTerm] = useState('');
   const { quotes, loading, createQuote, deleteQuote, updateQuote, archiveQuote, reactivateQuote, refetch: refetchQuotes } = useQuotes();
 
@@ -321,6 +322,8 @@ export default function Quotes() {
 
   const convertQuoteToSAV = async (type: string) => {
     if (!quoteToConvert) return;
+    if (isConverting) return;
+    setIsConverting(true);
     try {
       // 0) Nettoyer les IDs invalides du devis AVANT toute opération
       const cleanQuote = {
@@ -561,6 +564,8 @@ export default function Quotes() {
     } catch (error: any) {
       console.error('Erreur conversion devis -> SAV:', error);
       toast({ title: 'Erreur', description: error.message ?? 'Conversion impossible', variant: 'destructive' });
+    } finally {
+      setIsConverting(false);
     }
   };
 
@@ -1089,6 +1094,7 @@ export default function Quotes() {
                 open={!!quoteToConvert} 
                 onOpenChange={(open) => { 
                   if (!open) {
+                    if (isConverting) return;
                     setQuoteToConvert(null);
                     setSelectedSAVType('');
                   }
@@ -1125,7 +1131,7 @@ export default function Quotes() {
                   </div>
                   
                   <DialogFooter>
-                    <Button variant="outline" onClick={() => {
+                    <Button variant="outline" disabled={isConverting} onClick={() => {
                       setQuoteToConvert(null);
                       setSelectedSAVType('');
                     }}>
@@ -1133,17 +1139,18 @@ export default function Quotes() {
                     </Button>
                     <Button 
                       onClick={() => {
-                        if (selectedSAVType) {
+                        if (selectedSAVType && !isConverting) {
                           convertQuoteToSAV(selectedSAVType);
                         }
                       }}
-                      disabled={!selectedSAVType}
+                      disabled={!selectedSAVType || isConverting}
                       className="bg-green-600 hover:bg-green-700"
                     >
                       <Plus className="h-4 w-4 mr-2" />
-                      Créer le SAV
+                      {isConverting ? 'Création en cours...' : 'Créer le SAV'}
                     </Button>
                   </DialogFooter>
+
                 </DialogContent>
               </Dialog>
             </div>
