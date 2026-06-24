@@ -123,7 +123,7 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
   const [unlockPattern, setUnlockPattern] = useState<number[]>([]);
   const [noUnlockCode, setNoUnlockCode] = useState(false);
   const [securityCodes, setSecurityCodes] = useState<SecurityCodes>({
-    unlock_code: '', icloud_id: '', icloud_password: '', sim_pin: '',
+    unlock_code: '', icloud_id: '', icloud_password: '', sim_pin: '', email_id: '', email_password: '',
   });
   const [selectedParts, setSelectedParts] = useState<SelectedPart[]>([]);
   const [depositAmount, setDepositAmount] = useState(0);
@@ -332,8 +332,8 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
         status: selectedStatus as any, shop_id: profile?.shop_id,
         attachments: deviceInfo.attachments || [], accessories,
         unlock_pattern: !noUnlockCode && unlockPattern.length > 0 ? unlockPattern : null,
-        security_codes: !noUnlockCode && (securityCodes.unlock_code || securityCodes.icloud_id || securityCodes.icloud_password || securityCodes.sim_pin)
-          ? { unlock_code: securityCodes.unlock_code || null, icloud_id: securityCodes.icloud_id || null, icloud_password: securityCodes.icloud_password || null, sim_pin: securityCodes.sim_pin || null }
+        security_codes: (securityCodes.unlock_code || securityCodes.icloud_id || securityCodes.icloud_password || securityCodes.sim_pin || securityCodes.email_id || securityCodes.email_password)
+          ? { unlock_code: !noUnlockCode ? (securityCodes.unlock_code || null) : null, icloud_id: securityCodes.icloud_id || null, icloud_password: securityCodes.icloud_password || null, sim_pin: securityCodes.sim_pin || null, email_id: securityCodes.email_id || null, email_password: securityCodes.email_password || null }
           : null,
         taken_over_by: collectInitials && technicianInitials.trim() ? technicianInitials.trim().toUpperCase() : null,
       });
@@ -431,7 +431,7 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
     setAccessories({ charger: false, case: false, screen_protector: false, other: '' });
     setUnlockPattern([]);
     setNoUnlockCode(false);
-    setSecurityCodes({ unlock_code: '', icloud_id: '', icloud_password: '', sim_pin: '' });
+    setSecurityCodes({ unlock_code: '', icloud_id: '', icloud_password: '', sim_pin: '', email_id: '', email_password: '' });
     setSelectedParts([]);
     setDepositAmount(0);
     setTechnicianInitials('');
@@ -810,7 +810,7 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
                     const v = checked === true;
                     setNoUnlockCode(v);
                     if (v) {
-                      setSecurityCodes({ unlock_code: '', icloud_id: '', icloud_password: '', sim_pin: '' });
+                      setSecurityCodes({ ...securityCodes, unlock_code: '' });
                       setUnlockPattern([]);
                     }
                   }}
@@ -836,23 +836,32 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
                 <div>
                   <Label className="text-sm">Identifiant iCloud</Label>
                   <Input name="wiz_icid_xq" type="text" value={securityCodes.icloud_id}
-                    disabled={noUnlockCode}
                     onChange={(e) => setSecurityCodes({ ...securityCodes, icloud_id: e.target.value })}
                     placeholder="mail@gmail.com" {...wizNoAutofill} />
                 </div>
                 <div>
                   <Label className="text-sm">Mot de passe iCloud</Label>
                   <Input name="wiz_icpw_xq" type="text"
-                    style={{ WebkitTextSecurity: 'disc' } as React.CSSProperties}
                     value={securityCodes.icloud_password}
-                    disabled={noUnlockCode}
                     onChange={(e) => setSecurityCodes({ ...securityCodes, icloud_password: e.target.value })}
+                    placeholder="mot de passe" {...wizNoAutofill} />
+                </div>
+                <div>
+                  <Label className="text-sm">Identifiant mail</Label>
+                  <Input name="wiz_emid_xq" type="text" value={securityCodes.email_id}
+                    onChange={(e) => setSecurityCodes({ ...securityCodes, email_id: e.target.value })}
+                    placeholder="mail@gmail.com" {...wizNoAutofill} />
+                </div>
+                <div>
+                  <Label className="text-sm">Mot de passe mail</Label>
+                  <Input name="wiz_empw_xq" type="text"
+                    value={securityCodes.email_password}
+                    onChange={(e) => setSecurityCodes({ ...securityCodes, email_password: e.target.value })}
                     placeholder="mot de passe" {...wizNoAutofill} />
                 </div>
                 <div>
                   <Label className="text-sm">Code PIN SIM (4 à 6 chiffres)</Label>
                   <Input name="wiz_pin_xq" type="text" inputMode="numeric" maxLength={6} value={securityCodes.sim_pin}
-                    disabled={noUnlockCode}
                     onChange={(e) => setSecurityCodes({ ...securityCodes, sim_pin: e.target.value.replace(/\D/g, '') })}
                     placeholder="123456" {...wizNoAutofill} />
                 </div>

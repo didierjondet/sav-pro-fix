@@ -133,6 +133,8 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
     icloud_id: '',
     icloud_password: '',
     sim_pin: '',
+    email_id: '',
+    email_password: '',
   });
   const [savLimits, setSavLimits] = useState<{ allowed: boolean; reason: string; action: string | null }>({ allowed: true, reason: '', action: null });
   const [loanerSelection, setLoanerSelection] = useState<LoanerSelection>(EMPTY_LOANER_SELECTION);
@@ -316,11 +318,13 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
         attachments: deviceInfo.attachments || [], // Ajouter les attachments ici
         accessories,
         unlock_pattern: unlockPattern.length > 0 ? unlockPattern : null,
-        security_codes: (securityCodes.unlock_code || securityCodes.icloud_id || securityCodes.icloud_password || securityCodes.sim_pin) ? {
+        security_codes: (securityCodes.unlock_code || securityCodes.icloud_id || securityCodes.icloud_password || securityCodes.sim_pin || securityCodes.email_id || securityCodes.email_password) ? {
           unlock_code: securityCodes.unlock_code || null,
           icloud_id: securityCodes.icloud_id || null,
           icloud_password: securityCodes.icloud_password || null,
           sim_pin: securityCodes.sim_pin || null,
+          email_id: securityCodes.email_id || null,
+          email_password: securityCodes.email_password || null,
         } : null,
         taken_over_by: collectInitials && technicianInitials.trim() ? technicianInitials.trim().toUpperCase() : null,
       });
@@ -887,7 +891,7 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
         onNoCodeChange={(v) => {
           setNoUnlockCode(v);
           if (v) {
-            setSecurityCodes({ unlock_code: '', icloud_id: '', icloud_password: '', sim_pin: '' });
+            setSecurityCodes({ ...securityCodes, unlock_code: '' });
             setUnlockPattern([]);
           }
         }}

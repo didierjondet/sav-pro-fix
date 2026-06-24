@@ -11,6 +11,8 @@ interface SecurityCodes {
   icloud_id?: string | null;
   icloud_password?: string | null;
   sim_pin?: string | null;
+  email_id?: string | null;
+  email_password?: string | null;
 }
 
 interface SecurityCodesDisplayProps {
@@ -22,7 +24,7 @@ interface SecurityCodesDisplayProps {
 
 export function SecurityCodesDisplay({ savCase, onUpdate }: SecurityCodesDisplayProps) {
   const codes = savCase.security_codes as SecurityCodes | null;
-  const hasAnyCodes = codes && (codes.unlock_code || codes.icloud_id || codes.icloud_password || codes.sim_pin);
+  const hasAnyCodes = codes && (codes.unlock_code || codes.icloud_id || codes.icloud_password || codes.sim_pin || codes.email_id || codes.email_password);
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [editCodes, setEditCodes] = useState<SecurityCodes>({
@@ -30,6 +32,8 @@ export function SecurityCodesDisplay({ savCase, onUpdate }: SecurityCodesDisplay
     icloud_id: '',
     icloud_password: '',
     sim_pin: '',
+    email_id: '',
+    email_password: '',
   });
   const { toast } = useToast();
 
@@ -39,6 +43,8 @@ export function SecurityCodesDisplay({ savCase, onUpdate }: SecurityCodesDisplay
       icloud_id: codes?.icloud_id || '',
       icloud_password: codes?.icloud_password || '',
       sim_pin: codes?.sim_pin || '',
+      email_id: codes?.email_id || '',
+      email_password: codes?.email_password || '',
     });
     setIsEditing(true);
   };
@@ -110,7 +116,32 @@ export function SecurityCodesDisplay({ savCase, onUpdate }: SecurityCodesDisplay
                     type="text"
                     value={editCodes.icloud_password || ''}
                     onChange={(e) => setEditCodes({ ...editCodes, icloud_password: e.target.value })}
-                    placeholder="••••••••"
+                    placeholder="mot de passe"
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label className="font-semibold text-base">Compte Mail</Label>
+              <div className="pl-4 space-y-3">
+                <div>
+                  <Label htmlFor="edit-email-id" className="text-sm">Identifiant mail</Label>
+                  <Input
+                    id="edit-email-id"
+                    type="text"
+                    value={editCodes.email_id || ''}
+                    onChange={(e) => setEditCodes({ ...editCodes, email_id: e.target.value })}
+                    placeholder="mail@gmail.com"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-email-pwd" className="text-sm">Mot de passe mail</Label>
+                  <Input
+                    id="edit-email-pwd"
+                    type="text"
+                    value={editCodes.email_password || ''}
+                    onChange={(e) => setEditCodes({ ...editCodes, email_password: e.target.value })}
+                    placeholder="mot de passe"
                   />
                 </div>
               </div>
@@ -157,6 +188,23 @@ export function SecurityCodesDisplay({ savCase, onUpdate }: SecurityCodesDisplay
                   <div className="pl-4">
                     <Label className="text-xs text-muted-foreground">Mot de passe</Label>
                     <p className="font-mono text-lg font-semibold">{codes.icloud_password}</p>
+                  </div>
+                )}
+              </div>
+            )}
+            {(codes?.email_id || codes?.email_password) && (
+              <div className="space-y-2">
+                <Label className="font-semibold text-base">Compte Mail</Label>
+                {codes?.email_id && (
+                  <div className="pl-4">
+                    <Label className="text-xs text-muted-foreground">Identifiant</Label>
+                    <p className="font-mono">{codes.email_id}</p>
+                  </div>
+                )}
+                {codes?.email_password && (
+                  <div className="pl-4">
+                    <Label className="text-xs text-muted-foreground">Mot de passe</Label>
+                    <p className="font-mono text-lg font-semibold">{codes.email_password}</p>
                   </div>
                 )}
               </div>

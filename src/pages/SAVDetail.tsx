@@ -679,7 +679,7 @@ export default function SAVDetail() {
                   savCase={savCase}
                   onUpdate={async (codes) => {
                     await supabase.from('sav_cases').update({ 
-                      security_codes: (codes.unlock_code || codes.icloud_id || codes.icloud_password || codes.sim_pin) ? codes as any : null 
+                      security_codes: (codes.unlock_code || codes.icloud_id || codes.icloud_password || codes.sim_pin || codes.email_id || codes.email_password) ? codes as any : null 
                     }).eq('id', savCase.id);
                     // Le realtime se charge de la mise à jour
                   }}
