@@ -616,7 +616,9 @@ export function useStatistics(
             total: (savCases || []).filter((c: any) => !excludedFromStatsTypes.includes(c.sav_type)).length,
             averageTime: savWithTimeCount > 0 ? Number((totalTimeMinutes / savWithTimeCount / 60).toFixed(1)) : 0,
             averageProcessingDays,
-            lateRate: lateRate
+            lateRate: Math.round(lateRate * 10) / 10,
+            lateCount,
+            closedInPeriodCount: totalClosedForRate,
           },
           partsStats: {
             totalUsed: Object.values(partsUsage).reduce((sum, part) => sum + part.quantity, 0),
