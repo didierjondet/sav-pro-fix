@@ -102,10 +102,10 @@ async function handleSubscriptionChange(supabaseClient: any, subscription: Strip
     if (plan?.tier_key) {
       subscriptionTier = plan.tier_key;
     } else {
-      // Fallback amount-based
+      // Fallback amount-based aligné sur les prix réels (49€ premium, 79€ enterprise)
       const amount = subscription.items.data[0]?.price.unit_amount || 0;
-      if (amount >= 4000) subscriptionTier = 'enterprise';
-      else if (amount >= 1200) subscriptionTier = 'premium';
+      if (amount >= 7900) subscriptionTier = 'enterprise';
+      else if (amount >= 4900) subscriptionTier = 'premium';
     }
   }
 
