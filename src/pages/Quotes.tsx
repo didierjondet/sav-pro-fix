@@ -1131,7 +1131,7 @@ export default function Quotes() {
                   </div>
                   
                   <DialogFooter>
-                    <Button variant="outline" onClick={() => {
+                    <Button variant="outline" disabled={isConverting} onClick={() => {
                       setQuoteToConvert(null);
                       setSelectedSAVType('');
                     }}>
@@ -1139,17 +1139,18 @@ export default function Quotes() {
                     </Button>
                     <Button 
                       onClick={() => {
-                        if (selectedSAVType) {
+                        if (selectedSAVType && !isConverting) {
                           convertQuoteToSAV(selectedSAVType);
                         }
                       }}
-                      disabled={!selectedSAVType}
+                      disabled={!selectedSAVType || isConverting}
                       className="bg-green-600 hover:bg-green-700"
                     >
                       <Plus className="h-4 w-4 mr-2" />
-                      Créer le SAV
+                      {isConverting ? 'Création en cours...' : 'Créer le SAV'}
                     </Button>
                   </DialogFooter>
+
                 </DialogContent>
               </Dialog>
             </div>
