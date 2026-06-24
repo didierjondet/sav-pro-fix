@@ -166,6 +166,14 @@ Deno.serve(async (req) => {
         user_email: user.email,
         plan: plan,
         plan_id: planData.id
+      },
+      subscription_data: {
+        metadata: {
+          user_id: user.id,
+          user_email: user.email,
+          plan: plan,
+          plan_id: planData.id
+        }
       }
     });
 
