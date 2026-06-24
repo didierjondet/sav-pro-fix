@@ -134,19 +134,26 @@ Deno.serve(async (req) => {
           if (userData?.user?.email) adminEmail = userData.user.email;
         }
 
+        const dateStr = deletionAt.toLocaleDateString("fr-FR");
         // Email
         if (adminEmail) {
+          const html = `
+            <div style="font-family:Arial,sans-serif;max-width:560px;margin:auto;padding:24px;background:#fff;">
+              <h2 style="color:#dc2626;margin:0 0 16px;">⚠️ Suppression imminente de votre boutique</h2>
+              <p>Bonjour ${admin?.first_name || ""},</p>
+              <p>Votre boutique <strong>${shop.name}</strong> n'a enregistré aucune activité (SAV, client, devis, pièce, RDV…) depuis plus de ${thresholdDays - WARNING_DAYS_BEFORE} jours.</p>
+              <p>Conformément à notre politique d'inactivité, elle sera <strong>définitivement supprimée le ${dateStr}</strong>.</p>
+              <p>Pour annuler la suppression, il vous suffit de vous connecter et de créer ou modifier au moins une donnée.</p>
+              <p style="margin-top:24px;color:#666;font-size:12px;">Cet email est envoyé automatiquement par FixWay.</p>
+            </div>`;
           try {
-            await supabase.functions.invoke("send-transactional-email", {
+            await supabase.functions.invoke("send-app-email", {
               body: {
-                templateName: "shop-inactivity-warning",
-                recipientEmail: adminEmail,
-                idempotencyKey: `inactivity-${shop.id}-${shop.inactivity_warning_sent_at || Date.now()}`,
-                templateData: {
-                  shopName: shop.name,
-                  deletionDate: deletionAt.toLocaleDateString("fr-FR"),
-                  firstName: admin?.first_name || "",
-                },
+                to: adminEmail,
+                subject: `Votre boutique ${shop.name} sera supprimée le ${dateStr}`,
+                html,
+                context: "inactivity_warning",
+                shopId: shop.id,
               },
             });
           } catch (e) { console.error("email err", e); }
@@ -156,10 +163,10 @@ Deno.serve(async (req) => {
         if (admin?.phone && alert.sms_message_1) {
           const msg = alert.sms_message_1
             .replaceAll("{shop_name}", shop.name)
-            .replaceAll("{deletion_date}", deletionAt.toLocaleDateString("fr-FR"));
+            .replaceAll("{deletion_date}", dateStr);
           try {
             await supabase.functions.invoke("send-sms", {
-              body: { to: admin.phone, message: msg, shop_id: shop.id },
+              body: { shopId: shop.id, toNumber: admin.phone, message: msg, type: "manual" },
             });
           } catch (e) { console.error("sms err", e); }
         }
