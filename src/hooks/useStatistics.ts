@@ -22,6 +22,8 @@ interface StatisticsData {
     averageTime: number;
     averageProcessingDays: number;
     lateRate: number;
+    lateCount: number;
+    closedInPeriodCount: number;
   };
   partsStats: {
     totalUsed: number;
