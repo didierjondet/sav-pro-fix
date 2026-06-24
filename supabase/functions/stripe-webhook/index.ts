@@ -22,9 +22,10 @@ Deno.serve(async (req) => {
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
     const webhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET");
     if (!stripeKey) throw new Error("STRIPE_SECRET_KEY is not set");
-    
+    if (!webhookSecret) throw new Error("STRIPE_WEBHOOK_SECRET is not set — webhook signature verification is mandatory");
+
     const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
-    
+
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
@@ -33,18 +34,13 @@ Deno.serve(async (req) => {
 
     const signature = req.headers.get("stripe-signature");
     const body = await req.text();
-    
-    let event: Stripe.Event;
-    
-    if (webhookSecret && signature) {
-      // Verify webhook signature
-      event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
-      logStep("Webhook signature verified", { type: event.type });
-    } else {
-      // For testing without webhook secret
-      event = JSON.parse(body);
-      logStep("Webhook parsed (no signature verification)", { type: event.type });
+
+    if (!signature) {
+      throw new Error("Missing stripe-signature header");
     }
+
+    const event: Stripe.Event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
+    logStep("Webhook signature verified", { type: event.type });
 
     // Handle the event
     switch (event.type) {
