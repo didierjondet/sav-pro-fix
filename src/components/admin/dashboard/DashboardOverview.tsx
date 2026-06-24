@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { 
-  Store, 
-  Users, 
+import {
+  Store,
+  Users,
   DollarSign,
   BarChart3,
   TrendingUp,
-  Activity
+  Activity,
+  AlertCircle,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -26,10 +26,23 @@ interface Profile {
   role: string;
 }
 
-interface SubscriptionPlan {
-  id: string;
-  name: string;
+interface PlanBreakdownEntry {
+  price_id: string;
+  product_id: string;
+  plan_name: string;
   monthly_price: number;
+  interval: string;
+  count: number;
+  revenue: number;
+}
+
+interface StripeMetrics {
+  mrr: number;
+  monthly_revenue: number;
+  annual_revenue: number;
+  subscriber_count: number;
+  plan_breakdown: PlanBreakdownEntry[];
+  last_synced_at: string;
 }
 
 interface DashboardOverviewProps {
@@ -38,69 +51,48 @@ interface DashboardOverviewProps {
   activeSupportCount: number;
 }
 
+const fmt = (n: number) =>
+  new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 2 }).format(
+    Math.round(n * 100) / 100,
+  );
+
 export function DashboardOverview({ shops, profiles, activeSupportCount }: DashboardOverviewProps) {
-  const [subscriptionPlans, setSubscriptionPlans] = useState<SubscriptionPlan[]>([]);
+  const [metrics, setMetrics] = useState<StripeMetrics | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchSubscriptionPlans();
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      setError(null);
+      const { data, error } = await supabase.functions.invoke('stripe-admin-metrics');
+      if (cancelled) return;
+      if (error || !data || (data as any).error) {
+        console.error('stripe-admin-metrics error', error || data);
+        setError((data as any)?.error || error?.message || 'Erreur Stripe');
+        setMetrics(null);
+      } else {
+        setMetrics(data as StripeMetrics);
+      }
+      setLoading(false);
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  const fetchSubscriptionPlans = async () => {
-    try {
-      console.log('🔍 Récupération des plans d\'abonnement...');
-      const { data, error } = await supabase
-        .from('subscription_plans')
-        .select('id, name, monthly_price')
-        .eq('is_active', true)
-        .order('monthly_price');
-
-      if (error) throw error;
-      console.log('📊 Plans récupérés:', data);
-      setSubscriptionPlans(data || []);
-    } catch (error) {
-      console.error('❌ Erreur lors du chargement des plans:', error);
-      setSubscriptionPlans([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Calculer les statistiques basées sur les vrais plans
-  const getShopsByPlan = () => {
-    const planStats = subscriptionPlans.map(plan => {
-      const shopsWithPlan = shops.filter(shop => shop.subscription_plan_id === plan.id);
-      return {
-        ...plan,
-        shopCount: shopsWithPlan.length,
-        revenue: shopsWithPlan.length * plan.monthly_price
-      };
-    });
-
-    // Ajouter les magasins sans plan assigné
-    const shopsWithoutPlan = shops.filter(shop => !shop.subscription_plan_id);
-    if (shopsWithoutPlan.length > 0) {
-      planStats.push({
-        id: 'no-plan',
-        name: 'Sans plan assigné',
-        monthly_price: 0,
-        shopCount: shopsWithoutPlan.length,
-        revenue: 0
-      });
-    }
-
-    return planStats;
-  };
-
-  const planStats = getShopsByPlan();
-  const totalSubscriptionRevenue = planStats.reduce((sum, plan) => sum + plan.revenue, 0);
+  const mrr = metrics?.mrr ?? 0;
+  const monthlyRevenue = metrics?.monthly_revenue ?? 0;
+  const annualRevenue = metrics?.annual_revenue ?? 0;
+  const subscriberCount = metrics?.subscriber_count ?? 0;
+  const planBreakdown = metrics?.plan_breakdown ?? [];
 
   const totalStats = {
     totalShops: shops.length,
     totalUsers: profiles.length,
     totalRevenue: shops.reduce((sum, shop) => sum + (shop.total_revenue || 0), 0),
     totalCases: shops.reduce((sum, shop) => sum + (shop.total_sav_cases || 0), 0),
-    totalSubscriptionRevenue,
     activeSupportTickets: activeSupportCount,
   };
 
@@ -111,6 +103,13 @@ export function DashboardOverview({ shops, profiles, activeSupportCount }: Dashb
         <h2 className="text-3xl font-bold text-slate-900 mb-2">Tableau de bord</h2>
         <p className="text-lg text-slate-600">Vue d'ensemble du réseau SAV Pro</p>
       </div>
+
+      {error && (
+        <div className="flex items-center gap-2 p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-sm">
+          <AlertCircle className="h-4 w-4" />
+          Données Stripe indisponibles : {error}
+        </div>
+      )}
 
       {/* Dashboard Overview */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -127,7 +126,7 @@ export function DashboardOverview({ shops, profiles, activeSupportCount }: Dashb
             </div>
           </CardContent>
         </Card>
-        
+
         <Card className="bg-white border-slate-200 shadow-sm hover:shadow-md transition-shadow">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
@@ -141,14 +140,14 @@ export function DashboardOverview({ shops, profiles, activeSupportCount }: Dashb
             </div>
           </CardContent>
         </Card>
-        
+
         <Card className="bg-white border-slate-200 shadow-sm hover:shadow-md transition-shadow">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-slate-600 font-medium">CA Abonnements</p>
-                <p className="text-3xl font-bold text-slate-900">{totalStats.totalSubscriptionRevenue}€</p>
-                <p className="text-sm text-slate-500">/ mois</p>
+                <p className="text-slate-600 font-medium">CA Abonnements (Stripe)</p>
+                <p className="text-3xl font-bold text-slate-900">{fmt(mrr)}€</p>
+                <p className="text-sm text-slate-500">MRR / mois</p>
               </div>
               <div className="p-3 bg-purple-100 rounded-lg">
                 <DollarSign className="h-8 w-8 text-purple-600" />
@@ -156,7 +155,7 @@ export function DashboardOverview({ shops, profiles, activeSupportCount }: Dashb
             </div>
           </CardContent>
         </Card>
-        
+
         <Card className="bg-white border-slate-200 shadow-sm hover:shadow-md transition-shadow">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
@@ -174,12 +173,12 @@ export function DashboardOverview({ shops, profiles, activeSupportCount }: Dashb
 
       {/* Indicateurs spécifiques aux abonnements */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Répartition des plans */}
+        {/* Répartition des plans (Stripe) */}
         <Card className="bg-white border-slate-200 shadow-sm">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <BarChart3 className="h-5 w-5" />
-              Répartition des Plans d'Abonnement
+              Répartition des Abonnements Stripe
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -187,24 +186,32 @@ export function DashboardOverview({ shops, profiles, activeSupportCount }: Dashb
               {loading ? (
                 <div className="text-center py-4">
                   <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mx-auto"></div>
-                  <p className="text-sm text-slate-600 mt-2">Chargement des plans...</p>
+                  <p className="text-sm text-slate-600 mt-2">Chargement Stripe...</p>
                 </div>
+              ) : planBreakdown.length === 0 ? (
+                <p className="text-sm text-slate-500 text-center py-4">
+                  Aucun abonnement actif sur Stripe.
+                </p>
               ) : (
-                planStats.map((plan, index) => {
-                  const percentage = shops.length > 0 ? (plan.shopCount / shops.length * 100).toFixed(1) : 0;
-                  const colors = ['bg-gray-400', 'bg-green-500', 'bg-blue-500', 'bg-purple-600', 'bg-orange-500'];
-                  
+                planBreakdown.map((plan, index) => {
+                  const percentage = subscriberCount > 0
+                    ? ((plan.count / subscriberCount) * 100).toFixed(1)
+                    : '0';
+                  const colors = ['bg-green-500', 'bg-blue-500', 'bg-purple-600', 'bg-orange-500', 'bg-gray-400'];
                   return (
-                    <div key={plan.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                    <div key={plan.price_id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
                       <div className="flex items-center gap-3">
                         <div className={`w-3 h-3 rounded-full ${colors[index % colors.length]}`}></div>
                         <div>
-                          <p className="font-medium">{plan.name}</p>
-                          <p className="text-sm text-slate-600">{plan.monthly_price}€/mois</p>
+                          <p className="font-medium">{plan.plan_name}</p>
+                          <p className="text-sm text-slate-600">
+                            {fmt(plan.monthly_price)}€/mois
+                            {plan.interval === 'year' && ' (annuel)'}
+                          </p>
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="font-bold">{plan.shopCount} magasins</p>
+                        <p className="font-bold">{plan.count} abonnés</p>
                         <p className="text-sm text-slate-600">{percentage}%</p>
                       </div>
                     </div>
@@ -220,7 +227,7 @@ export function DashboardOverview({ shops, profiles, activeSupportCount }: Dashb
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <DollarSign className="h-5 w-5" />
-              Détails du Chiffre d'Affaires
+              Chiffre d'Affaires encaissé (Stripe)
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -228,19 +235,22 @@ export function DashboardOverview({ shops, profiles, activeSupportCount }: Dashb
               <div className="p-4 bg-green-50 rounded-lg border border-green-200">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-green-800 font-medium">CA Abonnements (mensuel)</p>
-                    <p className="text-2xl font-bold text-green-900">{totalStats.totalSubscriptionRevenue}€</p>
+                    <p className="text-green-800 font-medium">Abonnements mensuels</p>
+                    <p className="text-2xl font-bold text-green-900">{fmt(monthlyRevenue)}€</p>
+                    <p className="text-xs text-green-700 mt-1">facturés tous les mois</p>
                   </div>
                   <TrendingUp className="h-8 w-8 text-green-600" />
                 </div>
               </div>
-              
+
               <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-blue-800 font-medium">CA Abonnements (annuel)</p>
-                    <p className="text-2xl font-bold text-blue-900">0€</p>
-                    <p className="text-xs text-blue-600 mt-1">Aucun abonnement annuel</p>
+                    <p className="text-blue-800 font-medium">Abonnements annuels</p>
+                    <p className="text-2xl font-bold text-blue-900">{fmt(annualRevenue)}€</p>
+                    <p className="text-xs text-blue-600 mt-1">
+                      soit {fmt(annualRevenue / 12)}€/mois annualisé
+                    </p>
                   </div>
                   <BarChart3 className="h-8 w-8 text-blue-600" />
                 </div>
@@ -249,7 +259,7 @@ export function DashboardOverview({ shops, profiles, activeSupportCount }: Dashb
               <div className="p-4 bg-slate-50 rounded-lg border border-slate-200">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-slate-800 font-medium">CA Réseau (total généré)</p>
+                    <p className="text-slate-800 font-medium">CA Réseau (interne, total généré)</p>
                     <p className="text-2xl font-bold text-slate-900">{totalStats.totalRevenue.toLocaleString()}€</p>
                   </div>
                   <Activity className="h-8 w-8 text-slate-600" />
