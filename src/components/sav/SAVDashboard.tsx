@@ -903,7 +903,7 @@ export function SAVDashboard() {
               <CardDescription>Taux de retard mensuel - {new Date().getFullYear()}</CardDescription>
             </CardHeader>
             <CardContent>
-              <MonthlyLateRateChart />
+              <MonthlyLateRateChart widgetId="late-rate-chart" />
             </CardContent>
           </Card>
         );
