@@ -1094,6 +1094,7 @@ export default function Quotes() {
                 open={!!quoteToConvert} 
                 onOpenChange={(open) => { 
                   if (!open) {
+                    if (isConverting) return;
                     setQuoteToConvert(null);
                     setSelectedSAVType('');
                   }
