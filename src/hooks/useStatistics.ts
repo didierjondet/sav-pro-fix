@@ -434,7 +434,6 @@ export function useStatistics(
         // === NOUVEAU TAUX DE RETARD (logique centralisée) ===
         // Applique aussi les filtres widget (savStatuses, savTypes) à la liste
         // des SAV clôturés utilisée pour le taux de retard.
-        const { filterClosedForLateRate: _frl } = await import('@/lib/lateRate'); void _frl;
         const closedInPeriod = filterClosedForLateRate(closedSavRaw || [], {
           start,
           end,
