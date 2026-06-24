@@ -225,7 +225,7 @@ export function useStatistics(
         revenue: 0,
         expenses: 0,
         profit: 0,
-        savStats: { total: 0, averageTime: 0, averageProcessingDays: 0, lateRate: 0 },
+        savStats: { total: 0, averageTime: 0, averageProcessingDays: 0, lateRate: 0, lateCount: 0, closedInPeriodCount: 0 },
         partsStats: { totalUsed: 0, averageCost: 0 },
         takeoverStats: { amount: 0, count: 0 },
         revenueChart: [],
