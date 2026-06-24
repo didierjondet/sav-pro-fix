@@ -22,6 +22,8 @@ interface StatisticsData {
     averageTime: number;
     averageProcessingDays: number;
     lateRate: number;
+    lateCount: number;
+    closedInPeriodCount: number;
   };
   partsStats: {
     totalUsed: number;
@@ -57,7 +59,7 @@ export function useStatistics(
     revenue: 0,
     expenses: 0,
     profit: 0,
-    savStats: { total: 0, averageTime: 0, averageProcessingDays: 0, lateRate: 0 },
+    savStats: { total: 0, averageTime: 0, averageProcessingDays: 0, lateRate: 0, lateCount: 0, closedInPeriodCount: 0 },
     partsStats: { totalUsed: 0, averageCost: 0 },
     takeoverStats: { amount: 0, count: 0 },
     revenueChart: [],
@@ -223,7 +225,7 @@ export function useStatistics(
         revenue: 0,
         expenses: 0,
         profit: 0,
-        savStats: { total: 0, averageTime: 0, averageProcessingDays: 0, lateRate: 0 },
+        savStats: { total: 0, averageTime: 0, averageProcessingDays: 0, lateRate: 0, lateCount: 0, closedInPeriodCount: 0 },
         partsStats: { totalUsed: 0, averageCost: 0 },
         takeoverStats: { amount: 0, count: 0 },
         revenueChart: [],
@@ -614,7 +616,9 @@ export function useStatistics(
             total: (savCases || []).filter((c: any) => !excludedFromStatsTypes.includes(c.sav_type)).length,
             averageTime: savWithTimeCount > 0 ? Number((totalTimeMinutes / savWithTimeCount / 60).toFixed(1)) : 0,
             averageProcessingDays,
-            lateRate: lateRate
+            lateRate: Math.round(lateRate * 10) / 10,
+            lateCount,
+            closedInPeriodCount: totalClosedForRate,
           },
           partsStats: {
             totalUsed: Object.values(partsUsage).reduce((sum, part) => sum + part.quantity, 0),
