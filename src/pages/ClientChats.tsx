@@ -185,9 +185,9 @@ export default function ClientChats() {
                     </Button>
                   </div>
 
-                  <Alert className="py-2 px-3">
+                  <Alert variant="destructive" className="py-2 px-3 border-2 border-red-500 bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-300">
                     <Info className="h-4 w-4" />
-                    <AlertDescription className="text-xs">
+                    <AlertDescription className="text-xs font-semibold">
                       Les conversations restent ouvertes tant que le dossier SAV est actif, afin de ne manquer aucun échange.
                     </AlertDescription>
                   </Alert>
