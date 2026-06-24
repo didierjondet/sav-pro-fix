@@ -1,45 +1,77 @@
-# Plan — Refactor `upgrade-subscription` + audit `stripe-webhook`
 
-## (a) Refactor `upgrade-subscription`
+# Nettoyage automatique des boutiques inactives
 
-**Problème** : la fonction `supabase/functions/upgrade-subscription/index.ts` contient les Stripe price IDs en dur (lignes 80-86). Si un prix change, le code casse silencieusement.
+## Objectif
+Supprimer automatiquement les boutiques créées mais jamais réellement utilisées (aucune donnée SAV, client, devis, pièce, RDV, message créée/modifiée) après 60 jours d'inactivité, avec préavis de 7 jours par mail + SMS + bandeau rouge, et libération virtuelle des SMS non utilisés. Activable/désactivable depuis le menu Super Admin → Alertes.
 
-**Action** :
-- Supprimer la fonction `getPriceId()`.
-- Charger dynamiquement le `stripe_price_id` depuis `subscription_plans` via `tier_key = targetPlan`.
-- Renvoyer une erreur 400 explicite si le plan est inconnu ou si `stripe_price_id` est manquant.
-- Ajouter logging (style `logStep`) comme dans `create-checkout` pour faciliter le debug.
-- Aligner la version Stripe API sur `2025-08-27.basil` (cohérence avec les autres functions récentes — facultatif, à confirmer).
-- Garder l'`origin` dynamique (fallback sur Preview URL au lieu de `"https://your-domain.com"`).
+## Règles fonctionnelles
+- **Période d'inactivité** : 60 jours sans aucune activité métier.
+- **Activité** = présence ou modification d'au moins une ligne dans : `sav_cases`, `customers`, `parts`, `quotes`, `appointments`, `sav_messages`, `order_items`, `loaner_loans`, `inventory_sessions`. Si tous ces compteurs = 0 et `max(updated_at, created_at)` côté shop ≥ 60 jours → boutique éligible.
+- **À la création de la boutique** : modale d'avertissement claire "Sans aucune donnée saisie pendant 60 jours, la boutique sera automatiquement supprimée". Acquittement obligatoire.
+- **J-7 avant suppression** :
+  - Bandeau rouge persistant en haut de l'app pour tous les utilisateurs de la boutique (compte à rebours en jours).
+  - Email + SMS au créateur / admin de la boutique avec date exacte de suppression.
+  - Notification interne (cloche).
+- **J0** :
+  - Suppression totale en cascade (voir section technique) pour libérer le nom + l'email.
+  - Les SMS achetés non utilisés sont restitués virtuellement dans `admin_sms_credits_history` (motif `inactive_shop_refund`) pour conserver la projection comptable, sans les rendre à un compte utilisateur (boutique supprimée).
+- **Toute activité réelle pendant les 60 jours réinitialise le compteur** et annule un éventuel préavis.
 
-## (b) Audit + corrections `stripe-webhook`
+## Switch Super Admin
+- Dans `Menu Alertes` (composant `SystemAlertsManager`), ajout d'une ligne `inactive_shop_cleanup` réutilisant le même pattern que les alertes existantes (`is_enabled`, `threshold_value` = 60, `check_frequency_hours` = 24).
+- Si désactivé : aucun préavis, aucune suppression, aucun bandeau.
 
-Bugs identifiés à la relecture de `supabase/functions/stripe-webhook/index.ts` :
+## Détails techniques
 
-1. **Fallback de tier cassé** (lignes 110-112) : seuils `>= 4000` cents = enterprise, `>= 1200` = premium. Les vrais prix sont 4900 (premium) et 7900 (enterprise) → un Premium serait classé Enterprise. Correction : `>= 7900 → enterprise`, `>= 4900 → premium`. (Cas rare car le lookup par `stripe_price_id` couvre le cas normal, mais à corriger.)
+### Migration DB
+- Table `shops` : ajout de
+  - `inactivity_warning_sent_at TIMESTAMPTZ`
+  - `scheduled_deletion_at TIMESTAMPTZ`
+  - `inactivity_policy_acknowledged_at TIMESTAMPTZ`
+- Fonction SQL `public.get_shop_last_activity(shop_id uuid) RETURNS timestamptz` (SECURITY DEFINER) qui prend le max des `greatest(created_at, updated_at)` sur les tables métier ci-dessus, fallback `shops.created_at`.
+- Insertion d'une ligne `system_alerts` (`alert_type='inactive_shop_cleanup'`, `is_enabled=false` par défaut, `threshold_value=60`).
+- RPC `mark_shop_activity_policy_acknowledged(shop_id)`.
 
-2. **Update `shops` par `subscription.metadata.user_email` ne marche jamais** (lignes 129-133, 156-160) : `create-checkout` met les metadata sur la **Checkout Session**, pas sur la subscription. Donc `subscription.metadata.user_email` est `undefined` et l'`UPDATE` cible une chaîne vide → aucune ligne touchée.
-   
-   Correction : dans `create-checkout` ajouter `subscription_data: { metadata: { user_id, user_email, plan_id } }` pour que les metadata se propagent à la subscription. Idem dans `upgrade-subscription`. Le webhook continuera à fonctionner.
+### Edge function `cleanup-inactive-shops` (cron quotidien via pg_cron + pg_net)
+1. Vérifie que l'alerte `inactive_shop_cleanup` est `is_enabled=true`. Sinon, exit.
+2. Pour chaque boutique :
+   - Calcule `last_activity` via la fonction SQL.
+   - `days_inactive = now() - last_activity`.
+   - Si `days_inactive ≥ 53` et `inactivity_warning_sent_at IS NULL` :
+     - Envoi email (`send-transactional-email`, nouveau template `shop-inactivity-warning`).
+     - Envoi SMS via le provider configuré (réutilise `messaging_providers`).
+     - Création d'une notification en base.
+     - `scheduled_deletion_at = now() + 7 days`, `inactivity_warning_sent_at = now()`.
+   - Si `days_inactive ≥ 60` et `scheduled_deletion_at ≤ now()` :
+     - Crédite virtuellement les SMS restants dans `admin_sms_credits_history`.
+     - DELETE en cascade : toutes les tables FK-liées à `shop_id`, puis suppression des `profiles` rattachés, puis appel admin API pour supprimer les `auth.users` orphelins (uniquement ceux n'ayant plus aucun `profiles.shop_id`).
+     - DELETE de `shops`.
+   - Si activité détectée pendant le préavis : reset (`inactivity_warning_sent_at = NULL`, `scheduled_deletion_at = NULL`).
+3. Logs dans `alert_history`.
 
-3. **Signature webhook optionnelle** (lignes 39-47) : si `STRIPE_WEBHOOK_SECRET` n'est pas configuré, le webhook accepte n'importe quel POST non signé. Risque sécurité en prod.
-   
-   Correction : si pas de `STRIPE_WEBHOOK_SECRET` configuré → renvoyer 500 avec message clair. Plus de fallback "no signature verification".
+### Frontend
+- Nouveau composant `InactivityWarningBanner` (rouge, sticky en haut, J-N jours, CTA "Saisir des données"). Affiché si `shops.scheduled_deletion_at` est défini pour la boutique courante.
+- Nouveau composant `ShopCreationPolicyDialog` ouvert automatiquement après création / au premier login d'un shop sans `inactivity_policy_acknowledged_at`. Bouton "J'ai compris" → RPC.
+- `SystemAlertsManager` : aucun changement de code nécessaire si l'alerte suit le pattern existant ; sinon ajout d'un libellé spécifique.
 
-4. **`subscribers.upsert` sur `stripe_customer_id`** (ligne 126) : à vérifier rapidement qu'une contrainte unique existe sur cette colonne (sinon l'upsert crée des doublons). Si absente → ajouter via migration `ALTER TABLE subscribers ADD CONSTRAINT subscribers_stripe_customer_id_key UNIQUE (stripe_customer_id);`.
+### Email / SMS
+- Template email `shop-inactivity-warning` (date suppression, nom boutique, CTA login).
+- Message SMS court paramétrable via `system_alerts.sms_message_1`.
 
-5. **SMS package purchases** (lignes 165-196) : `handleCheckoutCompleted` gère les SMS one-time via les metadata `sms_credits`/`shop_id`, mais `purchase-sms-package` enregistre aussi une ligne `pending` dans `sms_package_purchases` qui n'est jamais passée à `completed`. À vérifier rapidement et corriger si nécessaire pour marquer le statut.
+### Sécurité
+- Fonction de suppression `SECURITY DEFINER`, restreinte à l'edge function (clé service role).
+- Vérifie l'absence totale d'activité juste avant DELETE (double-check pour éviter une race condition).
 
-## Vérifications à faire avant prod (chat seulement, pas de code)
+## Fichiers impactés
+- `supabase/migrations/<new>.sql`
+- `supabase/functions/cleanup-inactive-shops/index.ts` (nouvelle)
+- `supabase/functions/_shared/transactional-email-templates/shop-inactivity-warning.tsx` + registry
+- `src/components/layout/InactivityWarningBanner.tsx` (nouveau)
+- `src/components/onboarding/ShopCreationPolicyDialog.tsx` (nouveau)
+- `src/App.tsx` ou layout principal : montage du banner + dialog
+- `src/components/admin/SystemAlertsManager.tsx` : libellé pour le nouveau type d'alerte
+- Cron pg_cron via `supabase--insert`
 
-- Confirmer que `STRIPE_SECRET_KEY` est bien en **mode live** (pas test) — les price IDs `price_1TH3...` existent dans les deux modes potentiellement.
-- Confirmer que `STRIPE_WEBHOOK_SECRET` est bien configuré côté secrets, et que l'endpoint webhook est bien déclaré dans le dashboard Stripe pour les events : `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`, `checkout.session.completed`.
-
-## Fichiers touchés
-
-- `supabase/functions/upgrade-subscription/index.ts` (refactor complet)
-- `supabase/functions/create-checkout/index.ts` (ajout `subscription_data.metadata`)
-- `supabase/functions/stripe-webhook/index.ts` (corrections 1, 2, 3, 5)
-- Migration éventuelle pour la contrainte unique sur `subscribers.stripe_customer_id` (si absente)
-
-Pas de changement UI.
+## Hors scope
+- Aucun changement aux règles de facturation/Stripe.
+- Pas de récupération possible après suppression (irréversible — c'est le but).
