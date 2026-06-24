@@ -2828,6 +2828,8 @@ export type Database = {
           forced_features: Json | null
           hide_empty_sav_types: boolean | null
           id: string
+          inactivity_policy_acknowledged_at: string | null
+          inactivity_warning_sent_at: string | null
           invite_code: string | null
           last_monthly_reset: string | null
           logo_url: string | null
@@ -2847,6 +2849,7 @@ export type Database = {
           review_link: string | null
           sav_delay_alerts_enabled: boolean | null
           sav_warning_enabled: boolean | null
+          scheduled_deletion_at: string | null
           sidebar_late_sav_visible: boolean | null
           sidebar_nav_visible: boolean | null
           sidebar_sav_statuses_visible: boolean | null
@@ -2885,6 +2888,8 @@ export type Database = {
           forced_features?: Json | null
           hide_empty_sav_types?: boolean | null
           id?: string
+          inactivity_policy_acknowledged_at?: string | null
+          inactivity_warning_sent_at?: string | null
           invite_code?: string | null
           last_monthly_reset?: string | null
           logo_url?: string | null
@@ -2904,6 +2909,7 @@ export type Database = {
           review_link?: string | null
           sav_delay_alerts_enabled?: boolean | null
           sav_warning_enabled?: boolean | null
+          scheduled_deletion_at?: string | null
           sidebar_late_sav_visible?: boolean | null
           sidebar_nav_visible?: boolean | null
           sidebar_sav_statuses_visible?: boolean | null
@@ -2942,6 +2948,8 @@ export type Database = {
           forced_features?: Json | null
           hide_empty_sav_types?: boolean | null
           id?: string
+          inactivity_policy_acknowledged_at?: string | null
+          inactivity_warning_sent_at?: string | null
           invite_code?: string | null
           last_monthly_reset?: string | null
           logo_url?: string | null
@@ -2961,6 +2969,7 @@ export type Database = {
           review_link?: string | null
           sav_delay_alerts_enabled?: boolean | null
           sav_warning_enabled?: boolean | null
+          scheduled_deletion_at?: string | null
           sidebar_late_sav_visible?: boolean | null
           sidebar_nav_visible?: boolean | null
           sidebar_sav_statuses_visible?: boolean | null
@@ -3690,6 +3699,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      acknowledge_shop_inactivity_policy: { Args: never; Returns: undefined }
       admin_add_sms_credits: {
         Args: { p_amount: number; p_shop_id: string }
         Returns: Json
@@ -3888,6 +3898,7 @@ export type Database = {
           visit_count: number
         }[]
       }
+      get_shop_last_activity: { Args: { _shop_id: string }; Returns: string }
       get_sms_credits_breakdown: {
         Args: { p_shop_id: string }
         Returns: {
