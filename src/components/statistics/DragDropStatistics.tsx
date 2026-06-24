@@ -588,10 +588,14 @@ export const DragDropStatistics = ({ period, onPeriodChange }: DragDropStatistic
                 return (
                   <>
                     <div className="text-xs text-muted-foreground mb-1">📅 {latePeriodLabel}</div>
-                    <div className="text-sm text-muted-foreground">SAV en retard</div>
-                    <div className="text-3xl font-semibold text-destructive">{Math.round(savStats.lateRate)}%</div>
-                    <div className="text-xs text-muted-foreground mt-1">SAV actifs dépassant délai configuré</div>
-                    <div className="text-xs text-muted-foreground">Hors SAV terminés/annulés</div>
+                    <div className="text-sm text-muted-foreground">SAV clôturés en retard</div>
+                    <div className="text-3xl font-semibold text-destructive">
+                      {savStats.lateRate.toFixed(1).replace('.', ',')}%
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-1">
+                      {savStats.lateCount} retard{savStats.lateCount > 1 ? 's' : ''} sur {savStats.closedInPeriodCount} clôturé{savStats.closedInPeriodCount > 1 ? 's' : ''}
+                    </div>
+                    <div className="text-xs text-muted-foreground">Attribution = date de clôture</div>
                   </>
                 );
               }}
