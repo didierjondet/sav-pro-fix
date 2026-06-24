@@ -11,6 +11,8 @@ export interface SecurityCodes {
   icloud_id: string;
   icloud_password: string;
   sim_pin: string;
+  email_id: string;
+  email_password: string;
 }
 
 interface SecurityCodesSectionProps {
@@ -29,6 +31,8 @@ export function SecurityCodesSection({ codes, onChange, stepNumber, noCode = fal
     icloudId: `f_${uid}_b`,
     icloudPwd: `f_${uid}_c`,
     simPin: `f_${uid}_d`,
+    emailId: `f_${uid}_e`,
+    emailPwd: `f_${uid}_f`,
   };
 
   const noAutofillProps = {
@@ -110,7 +114,6 @@ export function SecurityCodesSection({ codes, onChange, stepNumber, noCode = fal
                 name={fieldNames.icloudId}
                 type="text"
                 value={codes.icloud_id}
-                disabled={noCode}
                 onChange={(e) => onChange({...codes, icloud_id: e.target.value})}
                 placeholder="mail@gmail.com"
                 {...noAutofillProps}
@@ -122,10 +125,39 @@ export function SecurityCodesSection({ codes, onChange, stepNumber, noCode = fal
                 id="icloud-password"
                 name={fieldNames.icloudPwd}
                 type="text"
-                style={{ WebkitTextSecurity: 'disc' } as React.CSSProperties}
                 value={codes.icloud_password}
-                disabled={noCode}
                 onChange={(e) => onChange({...codes, icloud_password: e.target.value})}
+                placeholder="mot de passe"
+                {...noAutofillProps}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Compte Mail */}
+        <div className="space-y-2">
+          <Label className="font-semibold text-base">Compte Mail</Label>
+          <div className="pl-4 space-y-3">
+            <div>
+              <Label htmlFor="email-id" className="text-sm">Identifiant mail</Label>
+              <Input
+                id="email-id"
+                name={fieldNames.emailId}
+                type="text"
+                value={codes.email_id}
+                onChange={(e) => onChange({...codes, email_id: e.target.value})}
+                placeholder="mail@gmail.com"
+                {...noAutofillProps}
+              />
+            </div>
+            <div>
+              <Label htmlFor="email-password" className="text-sm">Mot de passe mail</Label>
+              <Input
+                id="email-password"
+                name={fieldNames.emailPwd}
+                type="text"
+                value={codes.email_password}
+                onChange={(e) => onChange({...codes, email_password: e.target.value})}
                 placeholder="mot de passe"
                 {...noAutofillProps}
               />
@@ -143,7 +175,6 @@ export function SecurityCodesSection({ codes, onChange, stepNumber, noCode = fal
             inputMode="numeric"
             maxLength={6}
             value={codes.sim_pin}
-            disabled={noCode}
             onChange={(e) => {
               const value = e.target.value.replace(/\D/g, '');
               onChange({...codes, sim_pin: value});
