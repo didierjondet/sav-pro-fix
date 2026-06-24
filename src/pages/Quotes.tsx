@@ -564,6 +564,8 @@ export default function Quotes() {
     } catch (error: any) {
       console.error('Erreur conversion devis -> SAV:', error);
       toast({ title: 'Erreur', description: error.message ?? 'Conversion impossible', variant: 'destructive' });
+    } finally {
+      setIsConverting(false);
     }
   };
 
