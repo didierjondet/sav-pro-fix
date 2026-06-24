@@ -431,15 +431,17 @@ export function useStatistics(
           }
         };
 
-        // === NOUVEAU TAUX DE RETARD ===
-        // Logique : SAV CLÔTURÉS dont la date de clôture est dans la période
-        // (attribution = mois de clôture). Late si (closure - created) > max_processing_days.
-        const closedInPeriod = (closedSavRaw || []).filter((c: any) => {
-          if (excludedFromStatsTypes.includes(c.sav_type)) return false;
-          const maxDays = getMaxProcessingDays(c.sav_type, shopSavTypes);
-          if (maxDays === 0) return false;
-          const closureDate = getClosureDate(c);
-          return closureDate >= start && closureDate <= end;
+        // === NOUVEAU TAUX DE RETARD (logique centralisée) ===
+        // Applique aussi les filtres widget (savStatuses, savTypes) à la liste
+        // des SAV clôturés utilisée pour le taux de retard.
+        const { filterClosedForLateRate } = await import('@/lib/lateRate');
+        const closedInPeriod = filterClosedForLateRate(closedSavRaw || [], {
+          start,
+          end,
+          shopSavTypes,
+          shopSavStatuses,
+          savStatusesFilter: filters?.savStatuses ?? null,
+          savTypesFilter: filters?.savTypes ?? null,
         });
 
         let totalClosedForRate = 0;
