@@ -631,7 +631,7 @@ export const DragDropStatistics = ({ period, onPeriodChange }: DragDropStatistic
         return (
           <div className={className}>
             <DraggableStatisticsWidget {...baseProps}>
-              <MonthlyLateRateChart />
+              <MonthlyLateRateChart widgetId="late-rate-chart" />
             </DraggableStatisticsWidget>
           </div>
         );
