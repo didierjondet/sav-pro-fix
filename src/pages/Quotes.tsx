@@ -322,6 +322,8 @@ export default function Quotes() {
 
   const convertQuoteToSAV = async (type: string) => {
     if (!quoteToConvert) return;
+    if (isConverting) return;
+    setIsConverting(true);
     try {
       // 0) Nettoyer les IDs invalides du devis AVANT toute opération
       const cleanQuote = {
