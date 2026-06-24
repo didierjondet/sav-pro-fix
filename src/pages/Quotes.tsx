@@ -67,6 +67,7 @@ export default function Quotes() {
   const [editingQuote, setEditingQuote] = useState<Quote | null>(null);
   const [showQuoteActionDialog, setShowQuoteActionDialog] = useState<Quote | null>(null);
   const [selectedSAVType, setSelectedSAVType] = useState<string>('');
+  const [isConverting, setIsConverting] = useState(false);
   const [partsSearchTerm, setPartsSearchTerm] = useState('');
   const { quotes, loading, createQuote, deleteQuote, updateQuote, archiveQuote, reactivateQuote, refetch: refetchQuotes } = useQuotes();
 
