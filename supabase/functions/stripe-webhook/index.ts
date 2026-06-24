@@ -22,9 +22,10 @@ Deno.serve(async (req) => {
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
     const webhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET");
     if (!stripeKey) throw new Error("STRIPE_SECRET_KEY is not set");
-    
+    if (!webhookSecret) throw new Error("STRIPE_WEBHOOK_SECRET is not set — webhook signature verification is mandatory");
+
     const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
-    
+
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
@@ -33,18 +34,13 @@ Deno.serve(async (req) => {
 
     const signature = req.headers.get("stripe-signature");
     const body = await req.text();
-    
-    let event: Stripe.Event;
-    
-    if (webhookSecret && signature) {
-      // Verify webhook signature
-      event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
-      logStep("Webhook signature verified", { type: event.type });
-    } else {
-      // For testing without webhook secret
-      event = JSON.parse(body);
-      logStep("Webhook parsed (no signature verification)", { type: event.type });
+
+    if (!signature) {
+      throw new Error("Missing stripe-signature header");
     }
+
+    const event: Stripe.Event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
+    logStep("Webhook signature verified", { type: event.type });
 
     // Handle the event
     switch (event.type) {
@@ -106,10 +102,10 @@ async function handleSubscriptionChange(supabaseClient: any, subscription: Strip
     if (plan?.tier_key) {
       subscriptionTier = plan.tier_key;
     } else {
-      // Fallback amount-based
+      // Fallback amount-based aligné sur les prix réels (49€ premium, 79€ enterprise)
       const amount = subscription.items.data[0]?.price.unit_amount || 0;
-      if (amount >= 4000) subscriptionTier = 'enterprise';
-      else if (amount >= 1200) subscriptionTier = 'premium';
+      if (amount >= 7900) subscriptionTier = 'enterprise';
+      else if (amount >= 4900) subscriptionTier = 'premium';
     }
   }
 
@@ -163,35 +159,56 @@ async function handleSubscriptionCancellation(supabaseClient: any, subscription:
 }
 
 async function handleCheckoutCompleted(supabaseClient: any, stripe: Stripe, session: Stripe.Checkout.Session) {
-  logStep("Handling checkout completion", { sessionId: session.id });
+  logStep("Handling checkout completion", { sessionId: session.id, mode: session.mode });
 
   if (session.mode === 'payment') {
-    // C'est un achat de SMS one-time
-    const smsCredits = parseInt(session.metadata?.sms_credits || '0');
+    // Lecture des metadata (alignée sur purchase-sms-package : sms_count, pas sms_credits)
+    const smsCount = parseInt(
+      session.metadata?.sms_count || session.metadata?.sms_credits || '0'
+    );
     const shopId = session.metadata?.shop_id;
-    
-    if (smsCredits && shopId) {
-      // Ajouter les crédits SMS
+    const purchaseType = session.metadata?.type;
+
+    if (smsCount > 0 && shopId) {
+      // 1) Marquer l'achat comme completed dans sms_package_purchases
+      //    (purchase-sms-package stocke session.id dans stripe_payment_intent_id)
+      const { error: updateErr } = await supabaseClient
+        .from('sms_package_purchases')
+        .update({
+          status: 'completed',
+          processed_at: new Date().toISOString(),
+        })
+        .eq('stripe_payment_intent_id', session.id)
+        .eq('status', 'pending');
+
+      if (updateErr) {
+        logStep("Error marking purchase completed", { error: updateErr.message });
+      } else {
+        logStep("Purchase marked completed", { sessionId: session.id });
+      }
+
+      // 2) Créditer le shop (sms_credits column si elle existe — sinon ignoré silencieusement)
       const { data: shop } = await supabaseClient
         .from('shops')
         .select('sms_credits')
         .eq('id', shopId)
-        .single();
+        .maybeSingle();
 
       if (shop) {
         await supabaseClient
           .from('shops')
           .update({
-            sms_credits: (shop.sms_credits || 0) + smsCredits,
-            updated_at: new Date().toISOString()
+            sms_credits: (shop.sms_credits || 0) + smsCount,
+            updated_at: new Date().toISOString(),
           })
           .eq('id', shopId);
-
-        logStep("SMS credits added", { shopId, credits: smsCredits });
+        logStep("SMS credits added to shop", { shopId, credits: smsCount, type: purchaseType });
       }
+    } else {
+      logStep("Payment checkout without sms metadata — skipped", { metadata: session.metadata });
     }
   } else if (session.mode === 'subscription') {
-    // C'est un abonnement - sera géré par les events subscription
+    // C'est un abonnement - sera géré par les events subscription.created/updated
     logStep("Subscription checkout completed", { sessionId: session.id });
   }
 }
