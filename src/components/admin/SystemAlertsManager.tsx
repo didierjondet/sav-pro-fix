@@ -19,6 +19,7 @@ export function SystemAlertsManager() {
   const [formData, setFormData] = useState<any>({});
 
   const smsAlert = alerts.find(alert => alert.alert_type === 'sms_credits');
+  const inactivityAlert = alerts.find(alert => alert.alert_type === 'inactive_shop_cleanup');
 
   const handleEdit = (alert: any) => {
     setEditingAlert(alert.id);
@@ -275,6 +276,37 @@ export function SystemAlertsManager() {
               <p>Aucune alerte SMS configurée.</p>
               <p className="text-sm">L'alerte par défaut devrait être créée automatiquement.</p>
             </div>
+          )}
+
+          {inactivityAlert && (
+            <Card className="mt-6">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <Trash2 className="h-5 w-5" />
+                  {inactivityAlert.name}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  Lorsque cette fonctionnalité est activée, les boutiques sans aucune activité depuis {inactivityAlert.threshold_value || 60} jours sont automatiquement supprimées, après un avertissement email + SMS envoyé 7 jours avant.
+                </p>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="inactivity-toggle" className="flex flex-col">
+                    <span>Activer la suppression automatique</span>
+                    <span className="text-xs text-muted-foreground">
+                      Vérification quotidienne via cron
+                    </span>
+                  </Label>
+                  <Switch
+                    id="inactivity-toggle"
+                    checked={inactivityAlert.is_enabled}
+                    onCheckedChange={(checked) =>
+                      updateAlert(inactivityAlert.id, { is_enabled: checked })
+                    }
+                  />
+                </div>
+              </CardContent>
+            </Card>
           )}
         </CardContent>
       </Card>
