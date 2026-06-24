@@ -56,6 +56,9 @@ export interface Shop {
   ai_modules_config: any;
   created_at: string;
   updated_at: string;
+  inactivity_warning_sent_at?: string | null;
+  scheduled_deletion_at?: string | null;
+  inactivity_policy_acknowledged_at?: string | null;
 }
 
 interface ShopContextType {
