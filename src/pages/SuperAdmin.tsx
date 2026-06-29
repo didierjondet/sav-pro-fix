@@ -339,6 +339,9 @@ export default function SuperAdmin() {
         return <DefaultRolePermissionsManager />;
       case 'prospects':
         return <ProspectsManager />;
+      case 'stripe':
+        return <StripeSystemPanel />;
+
       default:
         return <DashboardOverview shops={shops} profiles={profiles} activeSupportCount={activeSupportCount} />;
     }
