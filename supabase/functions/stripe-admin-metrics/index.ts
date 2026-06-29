@@ -47,28 +47,49 @@ serve(async (req) => {
       });
     }
 
-    const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
-
-    // Fetch local plans to enrich names
+    // ----- Allowlist Fixway : on ne regarde QUE nos price IDs -----
     const { data: localPlans } = await supabase
       .from("subscription_plans")
-      .select("id, name, stripe_price_id, monthly_price, billing_interval");
+      .select("id, name, tier_key, stripe_price_id, monthly_price, billing_interval");
+
     const localByPrice = new Map<string, any>();
     for (const p of localPlans ?? []) {
       if (p.stripe_price_id) localByPrice.set(p.stripe_price_id, p);
     }
+    const fixwayPriceIds = new Set(localByPrice.keys());
 
-    // Paginate subscriptions for active + trialing
+    if (fixwayPriceIds.size === 0) {
+      log("no fixway price configured");
+      return new Response(
+        JSON.stringify({
+          configured: false,
+          message:
+            "Aucun price Stripe Fixway configuré dans les plans d'abonnement.",
+          mrr: 0,
+          monthly_revenue: 0,
+          annual_revenue: 0,
+          subscriber_count: 0,
+          plan_breakdown: [],
+          revenue_30d: 0,
+          revenue_12m: 0,
+          last_synced_at: new Date().toISOString(),
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 },
+      );
+    }
+
+    const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
+
+    // ----- Souscriptions actives + trialing -----
     const subs: Stripe.Subscription[] = [];
     for (const status of ["active", "trialing"] as const) {
       let startingAfter: string | undefined;
-      // safety cap
       for (let i = 0; i < 20; i++) {
         const page = await stripe.subscriptions.list({
           status,
           limit: 100,
           starting_after: startingAfter,
-          expand: ["data.items.data.price.product"],
+          expand: ["data.items.data.price"],
         });
         subs.push(...page.data);
         if (!page.has_more) break;
@@ -76,15 +97,15 @@ serve(async (req) => {
         if (!startingAfter) break;
       }
     }
-    log("subscriptions fetched", { count: subs.length });
+    log("subscriptions fetched (raw)", { count: subs.length });
 
     let monthly_revenue = 0;
     let annual_revenue = 0;
+    let subscriber_count = 0;
     const breakdown = new Map<
       string,
       {
         price_id: string;
-        product_id: string;
         plan_name: string;
         monthly_price: number;
         interval: string;
@@ -94,36 +115,30 @@ serve(async (req) => {
     >();
 
     for (const sub of subs) {
+      let hasFixwayItem = false;
       for (const item of sub.items.data) {
         const price = item.price;
+        if (!fixwayPriceIds.has(price.id)) continue; // FILTRE STRICT
+        hasFixwayItem = true;
+
         const qty = item.quantity ?? 1;
         const unit = (price.unit_amount ?? 0) / 100;
         const amount = unit * qty;
         const interval = price.recurring?.interval ?? "month";
 
-        if (interval === "year") {
-          annual_revenue += amount;
-        } else if (interval === "month") {
-          monthly_revenue += amount;
-        }
+        if (interval === "year") annual_revenue += amount;
+        else if (interval === "month") monthly_revenue += amount;
 
-        const product = price.product as Stripe.Product | string;
-        const productId = typeof product === "string" ? product : product.id;
-        const productName =
-          typeof product === "string" ? "" : product.name ?? "";
         const local = localByPrice.get(price.id);
-        const planName =
-          local?.name || productName || price.nickname || "Plan inconnu";
+        const planName = local?.name || price.nickname || "Plan Fixway";
 
-        const key = price.id;
-        const existing = breakdown.get(key);
+        const existing = breakdown.get(price.id);
         if (existing) {
           existing.count += qty;
           existing.revenue += amount;
         } else {
-          breakdown.set(key, {
+          breakdown.set(price.id, {
             price_id: price.id,
-            product_id: productId,
             plan_name: planName,
             monthly_price: interval === "year" ? unit / 12 : unit,
             interval,
@@ -132,27 +147,60 @@ serve(async (req) => {
           });
         }
       }
+      if (hasFixwayItem) subscriber_count++;
     }
 
     const plan_breakdown = Array.from(breakdown.values()).sort(
       (a, b) => b.revenue - a.revenue,
     );
-
     const mrr = monthly_revenue + annual_revenue / 12;
+
+    // ----- CA encaissé (invoices payées) filtré ligne par ligne -----
+    const now = Math.floor(Date.now() / 1000);
+    const since30d = now - 30 * 24 * 3600;
+    const since12m = now - 365 * 24 * 3600;
+
+    const sumPaidInvoices = async (gte: number) => {
+      let total = 0;
+      let startingAfter: string | undefined;
+      for (let i = 0; i < 20; i++) {
+        const page = await stripe.invoices.list({
+          status: "paid",
+          limit: 100,
+          created: { gte },
+          starting_after: startingAfter,
+        });
+        for (const inv of page.data) {
+          for (const line of inv.lines.data) {
+            const lpid = line.price?.id;
+            if (lpid && fixwayPriceIds.has(lpid)) {
+              total += (line.amount ?? 0) / 100;
+            }
+          }
+        }
+        if (!page.has_more) break;
+        startingAfter = page.data[page.data.length - 1]?.id;
+        if (!startingAfter) break;
+      }
+      return total;
+    };
+
+    const revenue_30d = await sumPaidInvoices(since30d);
+    const revenue_12m = await sumPaidInvoices(since12m);
 
     return new Response(
       JSON.stringify({
+        configured: true,
         mrr,
         monthly_revenue,
         annual_revenue,
-        subscriber_count: subs.length,
+        subscriber_count,
         plan_breakdown,
+        revenue_30d,
+        revenue_12m,
         last_synced_at: new Date().toISOString(),
       }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      },
+      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 },
     );
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
