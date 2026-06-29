@@ -21,6 +21,7 @@ import {
   Globe,
   Palette,
   FileText,
+  CreditCard,
   Zap,
   HelpCircle,
   TrendingUp,
