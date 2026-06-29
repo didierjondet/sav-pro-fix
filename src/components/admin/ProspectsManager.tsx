@@ -35,7 +35,12 @@ import {
   UserPlus,
   Loader2,
   RefreshCw,
+  StickyNote,
+  Pencil,
+  X,
+  Check,
 } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
 import { ProspectRedirectToggle } from './ProspectRedirectToggle';
 
 interface Prospect {
