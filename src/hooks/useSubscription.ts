@@ -193,28 +193,17 @@ export function useSubscription() {
       return { allowed: true, reason: 'Abonnement forcé - vérifications désactivées', action: null };
     }
 
-    const { subscription_tier, monthly_sms_used, sms_credits_allocated, monthly_sav_count, custom_sav_limit, custom_sms_limit, purchased_sms_credits, admin_added_sms_credits } = subscription;
+    const { subscription_tier, monthly_sms_used, sms_credits_allocated, monthly_sav_count, custom_sav_limit, custom_sms_limit, purchased_sms_credits, admin_added_sms_credits, plan_sav_limit } = subscription;
 
     // Calculer les SMS achetés + admin disponibles
     const purchasedAndAdminSmsAvailable = Math.max(0, (purchased_sms_credits || 0) + (admin_added_sms_credits || 0));
 
     // Vérification des limites SAV mensuelles
     if (action === 'sav' || !action) {
-      let savLimit = custom_sav_limit;
-      
-      if (!savLimit) {
-        if (subscription_tier === 'free') {
-          savLimit = 5;
-        } else if (subscription_tier === 'premium') {
-          savLimit = 50;
-        } else if (subscription_tier === 'enterprise') {
-          savLimit = 100;
-        } else {
-          savLimit = 5;
-        }
-      }
+      // Source unique de vérité : custom override > plan (Super Admin)
+      const savLimit = custom_sav_limit ?? plan_sav_limit ?? null;
 
-      if (monthly_sav_count >= savLimit) {
+      if (savLimit !== null && monthly_sav_count >= savLimit) {
         const message = custom_sav_limit 
           ? `Limite SAV mensuelle personnalisée atteinte (${monthly_sav_count}/${savLimit}). Contactez le support.`
           : `Plan ${subscription_tier} limité à ${savLimit} SAV par mois (${monthly_sav_count}/${savLimit}). Renouvellement le 1er du mois prochain.`;
