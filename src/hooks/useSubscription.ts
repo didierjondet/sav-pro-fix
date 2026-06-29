@@ -17,6 +17,8 @@ export interface SubscriptionInfo {
   forced?: boolean;
   custom_sav_limit?: number;
   custom_sms_limit?: number;
+  plan_sav_limit?: number | null;
+  plan_sms_limit?: number | null;
 }
 
 export function useSubscription() {
@@ -46,24 +48,34 @@ export function useSubscription() {
             .single();
           const shopData: any = shopRes.data;
 
-          // Charger le plan si disponible
+          // Charger le plan si disponible (source de vérité = Super Admin)
           let plan: any = null;
           if (shopData?.subscription_plan_id) {
             const planRes = await (supabase as any)
               .from('subscription_plans')
-              .select('name, sms_limit, sms_cost, sav_limit, monthly_price')
+              .select('tier_key, name, sms_limit, sms_cost, sav_limit, monthly_price')
               .eq('id', shopData.subscription_plan_id)
               .single();
             plan = planRes.data;
           }
+          // Fallback : si pas de plan rattaché, charger le plan free (Découverte)
+          if (!plan) {
+            const freeRes = await (supabase as any)
+              .from('subscription_plans')
+              .select('tier_key, name, sms_limit, sms_cost, sav_limit, monthly_price')
+              .eq('is_active', true)
+              .eq('tier_key', 'free')
+              .maybeSingle();
+            plan = freeRes.data;
+          }
 
           const resolveSubscriptionFromLocal = (fallbackSubscribed = true): SubscriptionInfo => {
-            const tier = (plan?.name?.toLowerCase?.() || shopData?.subscription_tier || 'free') as 'free' | 'premium' | 'enterprise';
+            const tier = (plan?.tier_key || shopData?.subscription_tier || 'free') as 'free' | 'premium' | 'enterprise';
             return {
               subscribed: fallbackSubscribed,
               subscription_tier: tier,
               subscription_end: undefined,
-              sms_credits_allocated: shopData?.custom_sms_limit ?? plan?.sms_limit ?? shopData?.sms_credits_allocated ?? 15,
+              sms_credits_allocated: shopData?.custom_sms_limit ?? plan?.sms_limit ?? shopData?.sms_credits_allocated ?? 0,
               sms_credits_used: shopData?.sms_credits_used ?? 0,
               monthly_sms_used: shopData?.monthly_sms_used ?? 0,
               purchased_sms_credits: shopData?.purchased_sms_credits ?? 0,
@@ -72,7 +84,9 @@ export function useSubscription() {
               monthly_sav_count: shopData?.monthly_sav_count ?? 0,
               forced: !!shopData?.subscription_forced,
               custom_sav_limit: shopData?.custom_sav_limit,
-              custom_sms_limit: shopData?.custom_sms_limit
+              custom_sms_limit: shopData?.custom_sms_limit,
+              plan_sav_limit: plan?.sav_limit ?? null,
+              plan_sms_limit: plan?.sms_limit ?? null,
             };
           };
 
@@ -88,12 +102,12 @@ export function useSubscription() {
               console.warn('Stripe verification failed, using local subscription data');
               return resolveSubscriptionFromLocal(true);
             }
-            const tier = (plan?.name?.toLowerCase?.() || shopData?.subscription_tier || 'free') as 'free' | 'premium' | 'enterprise';
+            const tier = (plan?.tier_key || shopData?.subscription_tier || 'free') as 'free' | 'premium' | 'enterprise';
             return {
               subscribed: data?.subscribed ?? false,
               subscription_tier: tier,
               subscription_end: data?.subscription_end ?? undefined,
-              sms_credits_allocated: shopData?.custom_sms_limit ?? plan?.sms_limit ?? shopData?.sms_credits_allocated ?? 15,
+              sms_credits_allocated: shopData?.custom_sms_limit ?? plan?.sms_limit ?? shopData?.sms_credits_allocated ?? 0,
               sms_credits_used: shopData?.sms_credits_used ?? 0,
               monthly_sms_used: shopData?.monthly_sms_used ?? 0,
               purchased_sms_credits: shopData?.purchased_sms_credits ?? 0,
@@ -102,13 +116,16 @@ export function useSubscription() {
               monthly_sav_count: shopData?.monthly_sav_count ?? 0,
               forced: false,
               custom_sav_limit: shopData?.custom_sav_limit,
-              custom_sms_limit: shopData?.custom_sms_limit
+              custom_sms_limit: shopData?.custom_sms_limit,
+              plan_sav_limit: plan?.sav_limit ?? null,
+              plan_sms_limit: plan?.sms_limit ?? null,
             };
           } catch (stripeError) {
             console.warn('Stripe API unavailable, using local subscription data');
             return resolveSubscriptionFromLocal(true);
           }
         }
+
         
         return null;
       } catch (error: any) {
@@ -176,28 +193,17 @@ export function useSubscription() {
       return { allowed: true, reason: 'Abonnement forcé - vérifications désactivées', action: null };
     }
 
-    const { subscription_tier, monthly_sms_used, sms_credits_allocated, monthly_sav_count, custom_sav_limit, custom_sms_limit, purchased_sms_credits, admin_added_sms_credits } = subscription;
+    const { subscription_tier, monthly_sms_used, sms_credits_allocated, monthly_sav_count, custom_sav_limit, custom_sms_limit, purchased_sms_credits, admin_added_sms_credits, plan_sav_limit } = subscription;
 
     // Calculer les SMS achetés + admin disponibles
     const purchasedAndAdminSmsAvailable = Math.max(0, (purchased_sms_credits || 0) + (admin_added_sms_credits || 0));
 
     // Vérification des limites SAV mensuelles
     if (action === 'sav' || !action) {
-      let savLimit = custom_sav_limit;
-      
-      if (!savLimit) {
-        if (subscription_tier === 'free') {
-          savLimit = 5;
-        } else if (subscription_tier === 'premium') {
-          savLimit = 50;
-        } else if (subscription_tier === 'enterprise') {
-          savLimit = 100;
-        } else {
-          savLimit = 5;
-        }
-      }
+      // Source unique de vérité : custom override > plan (Super Admin)
+      const savLimit = custom_sav_limit ?? plan_sav_limit ?? null;
 
-      if (monthly_sav_count >= savLimit) {
+      if (savLimit !== null && monthly_sav_count >= savLimit) {
         const message = custom_sav_limit 
           ? `Limite SAV mensuelle personnalisée atteinte (${monthly_sav_count}/${savLimit}). Contactez le support.`
           : `Plan ${subscription_tier} limité à ${savLimit} SAV par mois (${monthly_sav_count}/${savLimit}). Renouvellement le 1er du mois prochain.`;

@@ -3905,6 +3905,7 @@ export type Database = {
       get_available_stock: { Args: { part_id: string }; Returns: number }
       get_current_user_role: { Args: never; Returns: string }
       get_current_user_shop_id: { Args: never; Returns: string }
+      get_default_free_plan_id: { Args: never; Returns: string }
       get_parts_statistics: {
         Args: { p_shop_id: string }
         Returns: {

@@ -67,12 +67,24 @@ export function ProfileSetup({ onComplete }: ProfileSetupProps) {
         return;
       }
 
+      // Récupérer le plan "free" (Découverte) pour alignement immédiat des quotas
+      const { data: freePlan } = await supabase
+        .from('subscription_plans')
+        .select('id, tier_key, sms_limit')
+        .eq('is_active', true)
+        .eq('tier_key', 'free')
+        .maybeSingle();
+
       // Créer la boutique avec le nom par défaut "Mon Magasin"
+      // (Un trigger BEFORE INSERT garantit aussi l'alignement plan/quotas côté DB)
       const { data: shop, error: shopError } = await supabase
         .from('shops')
         .insert({
           name: 'Mon Magasin',
           email: user.email,
+          subscription_plan_id: freePlan?.id ?? null,
+          subscription_tier: 'free',
+          sms_credits_allocated: freePlan?.sms_limit ?? 5,
         })
         .select()
         .single();
