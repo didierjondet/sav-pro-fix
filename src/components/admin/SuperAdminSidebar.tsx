@@ -30,9 +30,7 @@ import {
   ShieldCheck,
   Mail,
   UserPlus,
-  CreditCard,
 } from "lucide-react";
-
 
 interface SuperAdminSidebarProps {
   activeSection: string;
@@ -75,8 +73,6 @@ const menuItems = [
       { id: "messaging", title: "SMS / Mail", icon: Mail },
       { id: "role-permissions", title: "Permissions rôles", icon: ShieldCheck },
       { id: "alerts", title: "Alertes", icon: Bell },
-      { id: "stripe", title: "Système & Stripe", icon: CreditCard },
-
     ]
   },
   {

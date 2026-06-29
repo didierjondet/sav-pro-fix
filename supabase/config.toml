@@ -39,10 +39,6 @@ verify_jwt = true
 [functions.stripe-admin-metrics]
 verify_jwt = true
 
-[functions.stripe-health-check]
-verify_jwt = true
-
-
 [functions.customer-portal]
 verify_jwt = true
 

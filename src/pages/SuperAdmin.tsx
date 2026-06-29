@@ -31,8 +31,6 @@ import { BotConversationsViewer } from '@/components/admin/BotConversationsViewe
 import { DefaultRolePermissionsManager } from '@/components/admin/DefaultRolePermissionsManager';
 import { MessagingProvidersManager } from '@/components/admin/MessagingProvidersManager';
 import { ProspectsManager } from '@/components/admin/ProspectsManager';
-import { StripeSystemPanel } from '@/components/admin/StripeSystemPanel';
-
 import { useStorageUsage } from '@/hooks/useStorageUsage';
 import { Shop } from '@/hooks/useShop';
 
@@ -339,9 +337,6 @@ export default function SuperAdmin() {
         return <DefaultRolePermissionsManager />;
       case 'prospects':
         return <ProspectsManager />;
-      case 'stripe':
-        return <StripeSystemPanel />;
-
       default:
         return <DashboardOverview shops={shops} profiles={profiles} activeSupportCount={activeSupportCount} />;
     }

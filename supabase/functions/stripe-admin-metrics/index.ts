@@ -37,16 +37,15 @@ serve(async (req) => {
     const { data: profile } = await supabase
       .from("profiles")
       .select("role")
-      .eq("user_id", userData.user.id)
+      .eq("id", userData.user.id)
       .maybeSingle();
 
     if (!profile || profile.role !== "super_admin") {
-      return new Response(JSON.stringify({ error: "Forbidden", error_kind: "forbidden" }), {
+      return new Response(JSON.stringify({ error: "Forbidden" }), {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
 
@@ -69,7 +68,7 @@ serve(async (req) => {
           status,
           limit: 100,
           starting_after: startingAfter,
-          expand: ["data.items.data.price"],
+          expand: ["data.items.data.price.product"],
         });
         subs.push(...page.data);
         if (!page.has_more) break;
@@ -108,16 +107,13 @@ serve(async (req) => {
           monthly_revenue += amount;
         }
 
-        const product = price.product as Stripe.Product | string | null;
-        const productId = !product
-          ? ""
-          : typeof product === "string"
-            ? product
-            : product.id;
+        const product = price.product as Stripe.Product | string;
+        const productId = typeof product === "string" ? product : product.id;
+        const productName =
+          typeof product === "string" ? "" : product.name ?? "";
         const local = localByPrice.get(price.id);
         const planName =
-          local?.name || price.nickname || "Plan inconnu";
-
+          local?.name || productName || price.nickname || "Plan inconnu";
 
         const key = price.id;
         const existing = breakdown.get(key);
@@ -158,17 +154,12 @@ serve(async (req) => {
         status: 200,
       },
     );
-  } catch (e: any) {
+  } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
-    const kind = e?.type || e?.code || "stripe_error";
     log("ERROR", msg);
-    return new Response(
-      JSON.stringify({ error: msg, error_kind: kind, last_synced_at: new Date().toISOString() }),
-      {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      },
-    );
+    return new Response(JSON.stringify({ error: msg }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
-
 });
