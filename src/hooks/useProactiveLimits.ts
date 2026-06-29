@@ -14,18 +14,17 @@ export function useProactiveLimits() {
 
   const getSAVLimits = useCallback(() => {
     if (!subscription) return { remaining: 0, total: 0, usagePercent: 0 };
-    
-    let savLimit = subscription.custom_sav_limit;
-    if (!savLimit) {
-      if (subscription.subscription_tier === 'free') savLimit = 5;
-      else if (subscription.subscription_tier === 'premium') savLimit = 50;
-      else if (subscription.subscription_tier === 'enterprise') savLimit = 100;
-      else savLimit = 5;
+
+    // Source de vérité : custom override > limite définie par le plan (Super Admin)
+    const savLimit = subscription.custom_sav_limit ?? subscription.plan_sav_limit ?? 0;
+
+    if (!savLimit || savLimit <= 0) {
+      return { remaining: 0, total: 0, usagePercent: 0 };
     }
-    
+
     const remaining = Math.max(0, savLimit - subscription.monthly_sav_count);
     const usagePercent = (subscription.monthly_sav_count / savLimit) * 100;
-    
+
     return { remaining, total: savLimit, usagePercent };
   }, [subscription]);
 
