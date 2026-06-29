@@ -42,20 +42,35 @@ Deno.serve(async (req) => {
     const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
     
+    // Récupérer le plan "free" (Découverte) configuré dans le Super Admin
+    // pour disposer des bonnes valeurs par défaut (sms_limit, plan_id)
+    const { data: freePlan } = await supabaseClient
+      .from('subscription_plans')
+      .select('id, tier_key, sms_limit')
+      .eq('is_active', true)
+      .eq('tier_key', 'free')
+      .maybeSingle();
+    const freeSmsLimit = freePlan?.sms_limit ?? 0;
+
     if (customers.data.length === 0) {
       logStep("No customer found, updating free tier state");
-      
-      // Update shop subscription info
-      await supabaseClient.from("shops").update({
-        subscription_tier: 'free',
-        sms_credits_allocated: 15,
-        subscription_end: null,
-      }).eq('id', (await supabaseClient.from('profiles').select('shop_id').eq('user_id', user.id).single()).data?.shop_id);
+
+      const { data: profileNoCust } = await supabaseClient
+        .from('profiles').select('shop_id').eq('user_id', user.id).single();
+
+      if (profileNoCust?.shop_id) {
+        await supabaseClient.from("shops").update({
+          subscription_tier: 'free',
+          subscription_plan_id: freePlan?.id ?? null,
+          sms_credits_allocated: freeSmsLimit,
+          subscription_end: null,
+        }).eq('id', profileNoCust.shop_id);
+      }
 
       return new Response(JSON.stringify({ 
         subscribed: false, 
         subscription_tier: 'free',
-        sms_credits_allocated: 15 
+        sms_credits_allocated: freeSmsLimit
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
@@ -71,39 +86,40 @@ Deno.serve(async (req) => {
       limit: 1,
     });
     const hasActiveSub = subscriptions.data.length > 0;
-    let subscriptionTier = 'free';
-    let smsCreditsAllocated = 15;
-    let subscriptionEnd = null;
+    let subscriptionTier: string = 'free';
+    let subscriptionPlanId: string | null = freePlan?.id ?? null;
+    let smsCreditsAllocated: number = freeSmsLimit;
+    let subscriptionEnd: string | null = null;
+
+    // Charger tous les plans actifs une seule fois (source : Super Admin)
+    const { data: plans } = await supabaseClient
+      .from('subscription_plans')
+      .select('*')
+      .eq('is_active', true);
 
     if (hasActiveSub) {
       const subscription = subscriptions.data[0];
       subscriptionEnd = new Date(subscription.current_period_end * 1000).toISOString();
       logStep("Active subscription found", { subscriptionId: subscription.id, endDate: subscriptionEnd });
-      
-      // Get subscription plans from database to match price ID
-      const { data: plans } = await supabaseClient
-        .from('subscription_plans')
-        .select('*')
-        .eq('is_active', true);
-      
+
       const priceId = subscription.items.data[0].price.id;
       const matchingPlan = plans?.find(p => p.stripe_price_id === priceId);
-      
+
       if (matchingPlan) {
-        subscriptionTier = (matchingPlan.tier_key || matchingPlan.name.toLowerCase());
+        subscriptionTier = matchingPlan.tier_key || matchingPlan.name.toLowerCase();
+        subscriptionPlanId = matchingPlan.id;
         smsCreditsAllocated = matchingPlan.sms_limit;
         logStep("Matched plan from database", { planName: matchingPlan.name, smsLimit: matchingPlan.sms_limit });
       } else {
-        // Fallback to old price-based detection
+        // Fallback via prix Stripe -> recherche par tier_key dans plans configurés
         const price = await stripe.prices.retrieve(priceId);
         const amount = price.unit_amount || 0;
-        
-        if (amount === 4900) { // 49€
-          subscriptionTier = "premium";
-          smsCreditsAllocated = 40;
-        } else if (amount === 7900) { // 79€
-          subscriptionTier = "enterprise";
-          smsCreditsAllocated = 100;
+        const guessedTier = amount >= 7000 ? 'enterprise' : amount >= 4000 ? 'premium' : 'free';
+        const guessedPlan = plans?.find(p => p.tier_key === guessedTier);
+        if (guessedPlan) {
+          subscriptionTier = guessedPlan.tier_key;
+          subscriptionPlanId = guessedPlan.id;
+          smsCreditsAllocated = guessedPlan.sms_limit;
         }
         logStep("Used fallback price detection", { priceId, amount, subscriptionTier });
       }
@@ -111,7 +127,6 @@ Deno.serve(async (req) => {
       logStep("No active subscription found");
     }
 
-    // Get user's shop ID
     const { data: profileData } = await supabaseClient
       .from('profiles')
       .select('shop_id')
@@ -119,9 +134,9 @@ Deno.serve(async (req) => {
       .single();
 
     if (profileData?.shop_id) {
-      // Update shop subscription info
       await supabaseClient.from("shops").update({
         subscription_tier: subscriptionTier,
+        subscription_plan_id: subscriptionPlanId,
         sms_credits_allocated: smsCreditsAllocated,
         subscription_end: subscriptionEnd,
       }).eq('id', profileData.shop_id);
@@ -137,7 +152,6 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });
-  } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     logStep("ERROR in check-subscription", { message: errorMessage });
     return new Response(JSON.stringify({ error: errorMessage }), {
