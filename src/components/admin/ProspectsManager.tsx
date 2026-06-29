@@ -151,11 +151,11 @@ export function ProspectsManager() {
       if (!user) return;
       const { data: profile } = await supabase
         .from('profiles')
-        .select('first_name, last_name, email')
+        .select('first_name, last_name')
         .eq('id', user.id)
         .maybeSingle();
       const name = profile
-        ? [profile.first_name, profile.last_name].filter(Boolean).join(' ').trim() || profile.email || user.email
+        ? [profile.first_name, profile.last_name].filter(Boolean).join(' ').trim() || user.email
         : user.email;
       setCurrentAuthor({ id: user.id, name: name || null });
     })();
