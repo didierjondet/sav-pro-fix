@@ -69,7 +69,7 @@ serve(async (req) => {
           status,
           limit: 100,
           starting_after: startingAfter,
-          expand: ["data.items.data.price.product"],
+          expand: ["data.items.data.price"],
         });
         subs.push(...page.data);
         if (!page.has_more) break;
@@ -108,13 +108,16 @@ serve(async (req) => {
           monthly_revenue += amount;
         }
 
-        const product = price.product as Stripe.Product | string;
-        const productId = typeof product === "string" ? product : product.id;
-        const productName =
-          typeof product === "string" ? "" : product.name ?? "";
+        const product = price.product as Stripe.Product | string | null;
+        const productId = !product
+          ? ""
+          : typeof product === "string"
+            ? product
+            : product.id;
         const local = localByPrice.get(price.id);
         const planName =
-          local?.name || productName || price.nickname || "Plan inconnu";
+          local?.name || price.nickname || "Plan inconnu";
+
 
         const key = price.id;
         const existing = breakdown.get(key);
