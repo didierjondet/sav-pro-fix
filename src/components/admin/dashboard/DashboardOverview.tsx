@@ -105,11 +105,14 @@ export function DashboardOverview({ shops, profiles, activeSupportCount }: Dashb
       </div>
 
       {error && (
-        <div className="flex items-center gap-2 p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-sm">
-          <AlertCircle className="h-4 w-4" />
-          Données Stripe indisponibles : {error}
+        <div className="flex items-center justify-between gap-2 p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-sm">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="h-4 w-4" />
+            <span>Données Stripe indisponibles : {error}. Ouvrez « Système & Stripe » pour diagnostiquer.</span>
+          </div>
         </div>
       )}
+
 
       {/* Dashboard Overview */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
