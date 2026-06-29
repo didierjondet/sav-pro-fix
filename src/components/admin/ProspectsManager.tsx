@@ -81,6 +81,18 @@ function relativeDate(iso: string): string {
   return `il y a ${diffMonths} mois`;
 }
 
+interface ProspectNote {
+  id: string;
+  prospect_id: string;
+  author_id: string | null;
+  author_name: string | null;
+  content: string;
+  created_at: string;
+  updated_at: string;
+}
+
+const dateTimeFmt = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'short', timeStyle: 'short' });
+
 export function ProspectsManager() {
   const [prospects, setProspects] = useState<Prospect[]>([]);
   const [loading, setLoading] = useState(true);
