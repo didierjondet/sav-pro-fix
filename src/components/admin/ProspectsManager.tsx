@@ -35,7 +35,12 @@ import {
   UserPlus,
   Loader2,
   RefreshCw,
+  StickyNote,
+  Pencil,
+  X,
+  Check,
 } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
 import { ProspectRedirectToggle } from './ProspectRedirectToggle';
 
 interface Prospect {
@@ -76,6 +81,18 @@ function relativeDate(iso: string): string {
   return `il y a ${diffMonths} mois`;
 }
 
+interface ProspectNote {
+  id: string;
+  prospect_id: string;
+  author_id: string | null;
+  author_name: string | null;
+  content: string;
+  created_at: string;
+  updated_at: string;
+}
+
+const dateTimeFmt = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'short', timeStyle: 'short' });
+
 export function ProspectsManager() {
   const [prospects, setProspects] = useState<Prospect[]>([]);
   const [loading, setLoading] = useState(true);
@@ -83,6 +100,13 @@ export function ProspectsManager() {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [interestFilter, setInterestFilter] = useState<string>('all');
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [notesByProspect, setNotesByProspect] = useState<Record<string, ProspectNote[]>>({});
+  const [openNotes, setOpenNotes] = useState<Record<string, boolean>>({});
+  const [newNoteContent, setNewNoteContent] = useState<Record<string, string>>({});
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+  const [editingContent, setEditingContent] = useState<string>('');
+  const [savingNote, setSavingNote] = useState<boolean>(false);
+  const [currentAuthor, setCurrentAuthor] = useState<{ id: string | null; name: string | null }>({ id: null, name: null });
 
   const fetchProspects = async () => {
     setLoading(true);
@@ -102,9 +126,113 @@ export function ProspectsManager() {
     }
   };
 
+  const fetchAllNotes = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('prospect_notes')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      const grouped: Record<string, ProspectNote[]> = {};
+      (data || []).forEach((n: any) => {
+        (grouped[n.prospect_id] = grouped[n.prospect_id] || []).push(n as ProspectNote);
+      });
+      setNotesByProspect(grouped);
+    } catch (err: any) {
+      console.error('Error fetching prospect notes:', err);
+    }
+  };
+
   useEffect(() => {
     fetchProspects();
+    fetchAllNotes();
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('first_name, last_name')
+        .eq('id', user.id)
+        .maybeSingle();
+      const name = profile
+        ? [profile.first_name, profile.last_name].filter(Boolean).join(' ').trim() || user.email
+        : user.email;
+      setCurrentAuthor({ id: user.id, name: name || null });
+    })();
   }, []);
+
+  const addNote = async (prospectId: string) => {
+    const content = (newNoteContent[prospectId] || '').trim();
+    if (!content) return;
+    setSavingNote(true);
+    try {
+      const { data, error } = await supabase
+        .from('prospect_notes')
+        .insert({
+          prospect_id: prospectId,
+          author_id: currentAuthor.id,
+          author_name: currentAuthor.name,
+          content,
+        })
+        .select()
+        .single();
+      if (error) throw error;
+      setNotesByProspect((prev) => ({
+        ...prev,
+        [prospectId]: [data as ProspectNote, ...(prev[prospectId] || [])],
+      }));
+      setNewNoteContent((prev) => ({ ...prev, [prospectId]: '' }));
+      toast.success('Note ajoutée');
+    } catch (err: any) {
+      console.error(err);
+      toast.error('Erreur lors de l\'ajout de la note');
+    } finally {
+      setSavingNote(false);
+    }
+  };
+
+  const saveEditNote = async (prospectId: string, noteId: string) => {
+    const content = editingContent.trim();
+    if (!content) return;
+    setSavingNote(true);
+    try {
+      const { data, error } = await supabase
+        .from('prospect_notes')
+        .update({ content })
+        .eq('id', noteId)
+        .select()
+        .single();
+      if (error) throw error;
+      setNotesByProspect((prev) => ({
+        ...prev,
+        [prospectId]: (prev[prospectId] || []).map((n) => (n.id === noteId ? (data as ProspectNote) : n)),
+      }));
+      setEditingNoteId(null);
+      setEditingContent('');
+      toast.success('Note mise à jour');
+    } catch (err: any) {
+      console.error(err);
+      toast.error('Erreur lors de la mise à jour');
+    } finally {
+      setSavingNote(false);
+    }
+  };
+
+  const removeNote = async (prospectId: string, noteId: string) => {
+    try {
+      const { error } = await supabase.from('prospect_notes').delete().eq('id', noteId);
+      if (error) throw error;
+      setNotesByProspect((prev) => ({
+        ...prev,
+        [prospectId]: (prev[prospectId] || []).filter((n) => n.id !== noteId),
+      }));
+      toast.success('Note supprimée');
+    } catch (err: any) {
+      console.error(err);
+      toast.error('Erreur lors de la suppression');
+    }
+  };
+
 
   const updateStatus = async (id: string, status: string) => {
     try {
@@ -377,6 +505,131 @@ export function ProspectsManager() {
                       <Trash2 className="h-3.5 w-3.5" />
                     </Button>
                   </div>
+
+                  {/* Notes CRM */}
+                  {(() => {
+                    const notes = notesByProspect[p.id] || [];
+                    const isOpen = !!openNotes[p.id];
+                    return (
+                      <div className="pt-2 border-t space-y-2">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 px-2 text-xs"
+                          onClick={() =>
+                            setOpenNotes((prev) => ({ ...prev, [p.id]: !prev[p.id] }))
+                          }
+                        >
+                          <StickyNote className="h-3.5 w-3.5 mr-1.5" />
+                          Notes ({notes.length})
+                        </Button>
+                        {isOpen && (
+                          <div className="space-y-2">
+                            {notes.length === 0 && (
+                              <p className="text-xs text-muted-foreground italic">
+                                Aucune note pour le moment.
+                              </p>
+                            )}
+                            {notes.map((n) => (
+                              <div
+                                key={n.id}
+                                className="rounded-md border bg-muted/30 p-2 text-sm space-y-1"
+                              >
+                                <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
+                                  <span>
+                                    {n.author_name || 'Admin'} ·{' '}
+                                    {dateTimeFmt.format(new Date(n.created_at))}
+                                    {n.updated_at !== n.created_at && (
+                                      <span className="italic"> (modifiée)</span>
+                                    )}
+                                  </span>
+                                  {editingNoteId !== n.id && (
+                                    <div className="flex items-center gap-1">
+                                      <Button
+                                        size="icon"
+                                        variant="ghost"
+                                        className="h-6 w-6"
+                                        onClick={() => {
+                                          setEditingNoteId(n.id);
+                                          setEditingContent(n.content);
+                                        }}
+                                      >
+                                        <Pencil className="h-3 w-3" />
+                                      </Button>
+                                      <Button
+                                        size="icon"
+                                        variant="ghost"
+                                        className="h-6 w-6 text-red-600 hover:text-red-700"
+                                        onClick={() => removeNote(p.id, n.id)}
+                                      >
+                                        <Trash2 className="h-3 w-3" />
+                                      </Button>
+                                    </div>
+                                  )}
+                                </div>
+                                {editingNoteId === n.id ? (
+                                  <div className="space-y-1.5">
+                                    <Textarea
+                                      value={editingContent}
+                                      onChange={(e) => setEditingContent(e.target.value)}
+                                      rows={3}
+                                      className="text-sm"
+                                    />
+                                    <div className="flex gap-1.5 justify-end">
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        onClick={() => {
+                                          setEditingNoteId(null);
+                                          setEditingContent('');
+                                        }}
+                                      >
+                                        <X className="h-3.5 w-3.5 mr-1" />
+                                        Annuler
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        onClick={() => saveEditNote(p.id, n.id)}
+                                        disabled={savingNote || !editingContent.trim()}
+                                      >
+                                        <Check className="h-3.5 w-3.5 mr-1" />
+                                        Enregistrer
+                                      </Button>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <p className="whitespace-pre-wrap">{n.content}</p>
+                                )}
+                              </div>
+                            ))}
+                            <div className="space-y-1.5">
+                              <Textarea
+                                placeholder="Ajouter une note…"
+                                value={newNoteContent[p.id] || ''}
+                                onChange={(e) =>
+                                  setNewNoteContent((prev) => ({
+                                    ...prev,
+                                    [p.id]: e.target.value,
+                                  }))
+                                }
+                                rows={2}
+                                className="text-sm"
+                              />
+                              <div className="flex justify-end">
+                                <Button
+                                  size="sm"
+                                  onClick={() => addNote(p.id)}
+                                  disabled={savingNote || !(newNoteContent[p.id] || '').trim()}
+                                >
+                                  Ajouter
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </CardContent>
               </Card>
             );
