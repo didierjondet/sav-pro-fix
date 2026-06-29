@@ -100,6 +100,13 @@ export function ProspectsManager() {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [interestFilter, setInterestFilter] = useState<string>('all');
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [notesByProspect, setNotesByProspect] = useState<Record<string, ProspectNote[]>>({});
+  const [openNotes, setOpenNotes] = useState<Record<string, boolean>>({});
+  const [newNoteContent, setNewNoteContent] = useState<Record<string, string>>({});
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+  const [editingContent, setEditingContent] = useState<string>('');
+  const [savingNote, setSavingNote] = useState<boolean>(false);
+  const [currentAuthor, setCurrentAuthor] = useState<{ id: string | null; name: string | null }>({ id: null, name: null });
 
   const fetchProspects = async () => {
     setLoading(true);
@@ -119,9 +126,113 @@ export function ProspectsManager() {
     }
   };
 
+  const fetchAllNotes = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('prospect_notes')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      const grouped: Record<string, ProspectNote[]> = {};
+      (data || []).forEach((n: any) => {
+        (grouped[n.prospect_id] = grouped[n.prospect_id] || []).push(n as ProspectNote);
+      });
+      setNotesByProspect(grouped);
+    } catch (err: any) {
+      console.error('Error fetching prospect notes:', err);
+    }
+  };
+
   useEffect(() => {
     fetchProspects();
+    fetchAllNotes();
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('first_name, last_name, email')
+        .eq('id', user.id)
+        .maybeSingle();
+      const name = profile
+        ? [profile.first_name, profile.last_name].filter(Boolean).join(' ').trim() || profile.email || user.email
+        : user.email;
+      setCurrentAuthor({ id: user.id, name: name || null });
+    })();
   }, []);
+
+  const addNote = async (prospectId: string) => {
+    const content = (newNoteContent[prospectId] || '').trim();
+    if (!content) return;
+    setSavingNote(true);
+    try {
+      const { data, error } = await supabase
+        .from('prospect_notes')
+        .insert({
+          prospect_id: prospectId,
+          author_id: currentAuthor.id,
+          author_name: currentAuthor.name,
+          content,
+        })
+        .select()
+        .single();
+      if (error) throw error;
+      setNotesByProspect((prev) => ({
+        ...prev,
+        [prospectId]: [data as ProspectNote, ...(prev[prospectId] || [])],
+      }));
+      setNewNoteContent((prev) => ({ ...prev, [prospectId]: '' }));
+      toast.success('Note ajoutée');
+    } catch (err: any) {
+      console.error(err);
+      toast.error('Erreur lors de l\'ajout de la note');
+    } finally {
+      setSavingNote(false);
+    }
+  };
+
+  const saveEditNote = async (prospectId: string, noteId: string) => {
+    const content = editingContent.trim();
+    if (!content) return;
+    setSavingNote(true);
+    try {
+      const { data, error } = await supabase
+        .from('prospect_notes')
+        .update({ content })
+        .eq('id', noteId)
+        .select()
+        .single();
+      if (error) throw error;
+      setNotesByProspect((prev) => ({
+        ...prev,
+        [prospectId]: (prev[prospectId] || []).map((n) => (n.id === noteId ? (data as ProspectNote) : n)),
+      }));
+      setEditingNoteId(null);
+      setEditingContent('');
+      toast.success('Note mise à jour');
+    } catch (err: any) {
+      console.error(err);
+      toast.error('Erreur lors de la mise à jour');
+    } finally {
+      setSavingNote(false);
+    }
+  };
+
+  const removeNote = async (prospectId: string, noteId: string) => {
+    try {
+      const { error } = await supabase.from('prospect_notes').delete().eq('id', noteId);
+      if (error) throw error;
+      setNotesByProspect((prev) => ({
+        ...prev,
+        [prospectId]: (prev[prospectId] || []).filter((n) => n.id !== noteId),
+      }));
+      toast.success('Note supprimée');
+    } catch (err: any) {
+      console.error(err);
+      toast.error('Erreur lors de la suppression');
+    }
+  };
+
 
   const updateStatus = async (id: string, status: string) => {
     try {
