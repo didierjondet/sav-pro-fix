@@ -290,6 +290,8 @@ export default function SuperAdmin() {
         return <UsersManagement profiles={profiles} shops={shops} onUpdate={fetchData} />;
       case 'plans':
         return <SubscriptionPlansManager />;
+      case 'stripe':
+        return <StripeOverview />;
       case 'sms':
         return <SMSCreditsCenter />;
       case 'invoices':
