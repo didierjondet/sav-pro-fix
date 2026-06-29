@@ -505,6 +505,131 @@ export function ProspectsManager() {
                       <Trash2 className="h-3.5 w-3.5" />
                     </Button>
                   </div>
+
+                  {/* Notes CRM */}
+                  {(() => {
+                    const notes = notesByProspect[p.id] || [];
+                    const isOpen = !!openNotes[p.id];
+                    return (
+                      <div className="pt-2 border-t space-y-2">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 px-2 text-xs"
+                          onClick={() =>
+                            setOpenNotes((prev) => ({ ...prev, [p.id]: !prev[p.id] }))
+                          }
+                        >
+                          <StickyNote className="h-3.5 w-3.5 mr-1.5" />
+                          Notes ({notes.length})
+                        </Button>
+                        {isOpen && (
+                          <div className="space-y-2">
+                            {notes.length === 0 && (
+                              <p className="text-xs text-muted-foreground italic">
+                                Aucune note pour le moment.
+                              </p>
+                            )}
+                            {notes.map((n) => (
+                              <div
+                                key={n.id}
+                                className="rounded-md border bg-muted/30 p-2 text-sm space-y-1"
+                              >
+                                <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
+                                  <span>
+                                    {n.author_name || 'Admin'} ·{' '}
+                                    {dateTimeFmt.format(new Date(n.created_at))}
+                                    {n.updated_at !== n.created_at && (
+                                      <span className="italic"> (modifiée)</span>
+                                    )}
+                                  </span>
+                                  {editingNoteId !== n.id && (
+                                    <div className="flex items-center gap-1">
+                                      <Button
+                                        size="icon"
+                                        variant="ghost"
+                                        className="h-6 w-6"
+                                        onClick={() => {
+                                          setEditingNoteId(n.id);
+                                          setEditingContent(n.content);
+                                        }}
+                                      >
+                                        <Pencil className="h-3 w-3" />
+                                      </Button>
+                                      <Button
+                                        size="icon"
+                                        variant="ghost"
+                                        className="h-6 w-6 text-red-600 hover:text-red-700"
+                                        onClick={() => removeNote(p.id, n.id)}
+                                      >
+                                        <Trash2 className="h-3 w-3" />
+                                      </Button>
+                                    </div>
+                                  )}
+                                </div>
+                                {editingNoteId === n.id ? (
+                                  <div className="space-y-1.5">
+                                    <Textarea
+                                      value={editingContent}
+                                      onChange={(e) => setEditingContent(e.target.value)}
+                                      rows={3}
+                                      className="text-sm"
+                                    />
+                                    <div className="flex gap-1.5 justify-end">
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        onClick={() => {
+                                          setEditingNoteId(null);
+                                          setEditingContent('');
+                                        }}
+                                      >
+                                        <X className="h-3.5 w-3.5 mr-1" />
+                                        Annuler
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        onClick={() => saveEditNote(p.id, n.id)}
+                                        disabled={savingNote || !editingContent.trim()}
+                                      >
+                                        <Check className="h-3.5 w-3.5 mr-1" />
+                                        Enregistrer
+                                      </Button>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <p className="whitespace-pre-wrap">{n.content}</p>
+                                )}
+                              </div>
+                            ))}
+                            <div className="space-y-1.5">
+                              <Textarea
+                                placeholder="Ajouter une note…"
+                                value={newNoteContent[p.id] || ''}
+                                onChange={(e) =>
+                                  setNewNoteContent((prev) => ({
+                                    ...prev,
+                                    [p.id]: e.target.value,
+                                  }))
+                                }
+                                rows={2}
+                                className="text-sm"
+                              />
+                              <div className="flex justify-end">
+                                <Button
+                                  size="sm"
+                                  onClick={() => addNote(p.id)}
+                                  disabled={savingNote || !(newNoteContent[p.id] || '').trim()}
+                                >
+                                  Ajouter
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </CardContent>
               </Card>
             );
