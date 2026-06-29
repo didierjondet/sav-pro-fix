@@ -58,6 +58,7 @@ const menuItems = [
     group: "Fonctionnalités",
     items: [
       { id: "plans", title: "Plans d'abonnement", icon: Settings },
+      { id: "stripe", title: "Stripe", icon: CreditCard },
       { id: "sms", title: "Crédits SMS", icon: MessageSquare },
       { id: "invoices", title: "Facturation", icon: Receipt },
       { id: "support", title: "Support", icon: HelpCircle },
