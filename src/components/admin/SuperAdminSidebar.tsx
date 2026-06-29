@@ -31,16 +31,8 @@ import {
   Mail,
   UserPlus,
   CreditCard,
-
-  HelpCircle,
-  TrendingUp,
-  Bell,
-  Receipt,
-  Brain,
-  ShieldCheck,
-  Mail,
-  UserPlus,
 } from "lucide-react";
+
 
 interface SuperAdminSidebarProps {
   activeSection: string;
