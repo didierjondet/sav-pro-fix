@@ -17,6 +17,8 @@ export interface SubscriptionInfo {
   forced?: boolean;
   custom_sav_limit?: number;
   custom_sms_limit?: number;
+  plan_sav_limit?: number | null;
+  plan_sms_limit?: number | null;
 }
 
 export function useSubscription() {
