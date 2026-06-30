@@ -1,54 +1,69 @@
 ## Objectif
-Recréer une entrée de menu dédiée « Stripe » dans le Super Admin, totalement isolée des autres SaaS qui partagent le même compte Stripe. Toutes les métriques affichées doivent provenir uniquement des produits/prix Fixway déclarés dans `subscription_plans`.
 
-## Principe d'isolation (point critique)
-Le compte Stripe héberge plusieurs SaaS. Aujourd'hui `stripe-admin-metrics` liste **toutes** les souscriptions actives du compte → fuite de données d'autres business. On restreint à un allowlist Fixway :
+Ajouter codes-barres (Code 128) sur les fiches produit + transformer le téléphone en scanner caméra pour des sessions d'inventaire en comptage cumulatif, le tout pensé mobile-first et ergonomique.
 
-- Source de vérité : `subscription_plans.stripe_price_id` (+ `stripe_product_id` si présent).
-- On construit un `Set<priceId>` Fixway et un `Set<productId>` Fixway au démarrage.
-- Toute souscription / item / facture / charge dont le `price.id` (ou `product.id`) n'est pas dans ces sets est **ignorée** (ni comptée dans le MRR, ni listée, ni cumulée dans le CA).
-- Aucun appel "global" type `stripe.balance`, `stripe.charges.list` sans filtre, ni statistiques compte-niveau.
+## 1. Codes-barres sur les fiches produit
 
-## 1. Edge function `stripe-admin-metrics` (refonte)
-Garder la garde super_admin existante, puis :
+- Dépendances : `bwip-js` (génération Code 128 SVG/Canvas, léger, sans dépendance native).
+- Source du code = le `sku` de la pièce. Si le SKU est vide, fallback sur la `reference`. Si les deux sont vides : message « Définissez un SKU pour générer le code-barres ».
+- Nouveau composant `src/components/parts/PartBarcode.tsx` : rend un Code 128 + libellé SKU en dessous.
+- Intégration dans `PartForm.tsx` : bloc « Code-barres » sous la zone SKU avec :
+  - Aperçu du code 128.
+  - Bouton **« Imprimer l'étiquette »** → ouvre une fenêtre d'impression A4 minimale (1 étiquette format ~50×30 mm centrée) avec nom produit + SKU + code-barres. Aucune planche multi-étiquettes (conforme au choix).
+  - Bouton **« Télécharger PNG »** pour usage externe.
 
-1. Charger `subscription_plans` (id, name, tier_key, stripe_price_id, monthly_price, billing_interval).
-2. Construire `fixwayPriceIds = Set(stripe_price_id)`. Si vide → renvoyer un payload neutre avec `configured: false` et un message « Aucun price Stripe Fixway configuré ».
-3. Paginer `stripe.subscriptions.list({ status: 'active' | 'trialing', expand: ['data.items.data.price.product'] })` puis **filtrer chaque item** : ne garder que ceux dont `item.price.id ∈ fixwayPriceIds`. Une souscription mixte n'est comptée que pour ses items Fixway.
-4. Calculer sur ce sous-ensemble uniquement :
-   - `mrr` (mensualisation des annuels /12)
-   - `monthly_revenue`, `annual_revenue`
-   - `subscriber_count` = nb de souscriptions ayant ≥ 1 item Fixway
-   - `plan_breakdown` groupé par `price_id` Fixway (nom = `subscription_plans.name`, jamais le nom produit Stripe global)
-5. CA encaissé : `stripe.invoices.list({ status: 'paid', created: { gte: <30j> } })` puis filtrer ligne par ligne `line.price.id ∈ fixwayPriceIds` ; sommer ces lignes uniquement. Idem pour fenêtre 12 mois si besoin.
-6. Réponse : `{ configured, mrr, monthly_revenue, annual_revenue, subscriber_count, plan_breakdown, revenue_30d, revenue_12m, last_synced_at }`.
+## 2. Module Scanner (réutilisable)
 
-Aucune autre API Stripe n'est appelée (pas de balance, pas de customers globaux, pas de payouts).
+- Dépendance : `@zxing/browser` (lecture Code 128 / EAN / QR via `getUserMedia`, maintenue, compatible iOS Safari).
+- Nouveau composant `src/components/inventory/BarcodeScannerDialog.tsx` :
+  - Plein écran sur mobile, dialog sur desktop.
+  - Sélection caméra arrière par défaut (`facingMode: environment`), bouton bascule avant/arrière.
+  - Overlay viseur + bip sonore + vibration courte à chaque scan détecté.
+  - Mode **« scan continu »** : ne ferme pas le dialog après un scan, enchaîne les lectures (essentiel pour le comptage cumulatif).
+  - Debounce 800 ms par code identique pour éviter les doubles lectures.
+  - Champ de saisie clavier intégré (fallback si pas de caméra ou pour douchette USB/BT future).
+  - Callback `onScan(code: string)`.
 
-## 2. Nouvelle page Super Admin « Stripe »
+## 3. Inventaire — comptage cumulatif par scan
 
-Créer `src/components/admin/StripeOverview.tsx` :
-- Bandeau d'avertissement : « Données filtrées sur les produits Fixway uniquement ».
-- Cartes : MRR, CA mensuel récurrent, CA annuel récurrent, Nb d'abonnés actifs.
-- Tableau « Répartition par plan Fixway » : plan, prix, intervalle, nb abonnés, CA.
-- Cartes « CA encaissé 30j » et « CA encaissé 12 mois » (issus des invoices filtrées).
-- Bouton « Rafraîchir » qui réinvoque la fonction.
-- État `configured: false` → message explicite avec lien vers la section « Plans d'abonnement ».
+Refonte ergonomique de la session d'inventaire en mode « Scan » (le mode existe déjà dans `InventoryMode`, on le rend pleinement opérationnel).
 
-## 3. Sidebar + routage
-- `src/components/admin/SuperAdminSidebar.tsx` : ajouter dans le groupe « Analyse » (ou « Fonctionnalités ») une entrée `{ id: 'stripe', title: 'Stripe', icon: CreditCard }`.
-- `src/pages/SuperAdmin.tsx` : ajouter `case 'stripe': return <StripeOverview />;`.
+### Nouveau composant `InventoryScanMode.tsx`
+- Bouton géant « 📷 Démarrer le scan » → ouvre `BarcodeScannerDialog` en mode continu.
+- À chaque scan d'un SKU :
+  1. Recherche la ligne `inventory_session_items` correspondante (match sur `part_sku`, fallback sur `part_reference`).
+  2. Incrémente `counted_quantity` de +1 (RPC dédié, voir §4).
+  3. Toast court + bip + vibration → l'utilisateur enchaîne sans toucher l'écran.
+  4. SKU inconnu dans la session : toast d'avertissement + proposition « Ajouter à la session » (si la pièce existe en stock).
+- Panneau latéral / inférieur live :
+  - Compteur global « X / Y comptés ».
+  - 5 derniers scans avec nom, SKU, nouveau compteur (avec bouton -1 d'annulation rapide pendant 10 s).
+- Bouton **« Saisie manuelle »** ouvre le clavier numérique pour ajuster une ligne précise (réutilise éditeur existant).
+- Bouton **« Pause / Reprendre »** branché sur les statuts existants.
 
-## 4. Nettoyage `DashboardOverview`
-Le `DashboardOverview` actuel contient encore l'appel à `stripe-admin-metrics` non filtré (potentiellement source de la fuite vue par l'utilisateur). On déplace toute la section Stripe **hors** du Dashboard vers la nouvelle page :
-- Retirer de `DashboardOverview.tsx` l'état `metrics`, l'appel à `stripe-admin-metrics`, et les blocs « CA Abonnements (Stripe) », « Répartition des Abonnements Stripe », « Chiffre d'Affaires encaissé (Stripe) ».
-- Le Dashboard redevient basé uniquement sur les données locales Fixway (shops, plans).
+### Intégration dans `InventoryManager`
+- Onglet « Scan » mis en avant comme mode principal sur mobile (détection viewport).
+- Sur desktop : les 3 modes (Assisté / Scan / Manuel) restent disponibles.
 
-## 5. Vérifications
-- Tester l'edge function (super_admin) avec un compte ayant 0 plan configuré → réponse neutre, pas d'erreur.
-- Tester avec les price IDs Fixway → chiffres cohérents avec la liste des plans.
-- Vérifier qu'aucun montant d'un autre SaaS n'apparaît (croiser avec `subscription_plans`).
+## 4. Backend (migration)
 
-## Hors scope
-- Pas de modification des plans, du webhook, ou de `check-subscription`.
-- Pas de changement UI ailleurs que la sidebar + la nouvelle page + nettoyage du Dashboard.
+- RPC `public.inventory_scan_increment(session_id uuid, code text, delta int default 1)` (SECURITY DEFINER, `search_path = public`) :
+  - Vérifie que la session appartient au shop de l'utilisateur courant.
+  - Trouve la ligne (`part_sku = code` OR `part_reference = code`), met `line_status = 'found'`, ajoute `delta` à `counted_quantity`, met `counted_at = now()`, `entry_method = 'scan'`, `last_scanned_code = code`, `scan_count = scan_count + 1`.
+  - Renvoie la ligne mise à jour (ou code d'erreur structuré `{ status: 'not_found' | 'ok', item? }`).
+- GRANT EXECUTE à `authenticated` uniquement.
+- Aucun changement de schéma sur `parts` ni `inventory_session_items` (les colonnes nécessaires existent déjà : `entry_method`, `last_scanned_code`, `scan_count`).
+
+## 5. Détails techniques
+
+- Installation : `bun add bwip-js @zxing/browser`.
+- iOS Safari : la caméra nécessite HTTPS + interaction utilisateur → le bouton « Démarrer le scan » respecte ce flow.
+- Aucune sortie directe de stock (mode « vidange ») n'est implémentée — conforme au choix « comptage cumulatif » seul. L'application des écarts au stock réel reste gérée par le bouton existant « Appliquer l'inventaire » en fin de session.
+- Aucune modification des fonctionnalités validées (UI fiche produit conservée, ajout d'un bloc dédié seulement ; modes d'inventaire existants conservés).
+
+## Fichiers impactés
+
+- Nouveaux : `src/components/parts/PartBarcode.tsx`, `src/components/inventory/BarcodeScannerDialog.tsx`, `src/components/settings/inventory/InventoryScanMode.tsx`.
+- Modifiés : `src/components/parts/PartForm.tsx` (bloc code-barres), `src/components/settings/inventory/InventoryManager.tsx` / `InventorySessionTab.tsx` (onglet Scan opérationnel).
+- Migration : RPC `inventory_scan_increment`.
+- `package.json` : ajout `bwip-js`, `@zxing/browser`.
