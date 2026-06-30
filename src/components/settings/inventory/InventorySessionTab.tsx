@@ -428,10 +428,12 @@ export function InventorySessionTab(props: InventorySessionTabProps) {
       {(() => {
         const countingBody = (
           <CardContent className="pt-4">
-            <Tabs defaultValue="manual" className="space-y-4">
+            <Tabs defaultValue={session.mode === 'scan' ? 'scan' : 'manual'} className="space-y-4">
               <TabsList>
                 <TabsTrigger value="manual">Saisie manuelle</TabsTrigger>
-                {session.mode === 'scan' && <TabsTrigger value="scan">Scan code-barres</TabsTrigger>}
+                <TabsTrigger value="scan">
+                  <ScanLine className="h-3.5 w-3.5" />Scan code-barres
+                </TabsTrigger>
               </TabsList>
 
               <TabsContent value="manual" className="mt-0">
@@ -453,31 +455,56 @@ export function InventorySessionTab(props: InventorySessionTabProps) {
                 />
               </TabsContent>
 
-              {session.mode === 'scan' && (
-                <TabsContent value="scan" className="mt-0 space-y-4">
+              <TabsContent value="scan" className="mt-0 space-y-4">
+                <div className="rounded-lg border-2 border-primary/30 bg-primary/5 p-4 flex flex-col sm:flex-row gap-3 sm:items-center">
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium flex items-center gap-2">
+                      <Camera className="h-4 w-4 text-primary" />
+                      Transformez votre téléphone en scanner
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Scan continu : chaque code lu incrémente automatiquement le compteur
+                      de la pièce correspondante (+1 par scan).
+                    </p>
+                  </div>
+                  <Button
+                    size="lg"
+                    onClick={() => { setLiveScanCount(0); setLastLiveScan(null); setCameraOpen(true); }}
+                    disabled={!canEditSession || !onLiveScan}
+                    className="w-full sm:w-auto"
+                  >
+                    <Camera className="h-5 w-5" />Démarrer le scan caméra
+                  </Button>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="text-xs uppercase tracking-wide text-muted-foreground">
+                    Saisie par lot (douchette / copier-coller)
+                  </div>
                   <Textarea
                     value={scanCodes}
                     onChange={(e) => onScanCodesChange(e.target.value)}
-                    placeholder="Scannez ou collez une succession de SKU"
-                    rows={5}
+                    placeholder="Scannez ou collez une succession de SKU (un par ligne ou séparés par un espace)"
+                    rows={4}
                     disabled={!canEditSession}
                   />
-                  <Button onClick={onScan} disabled={!canEditSession}>
+                  <Button variant="outline" onClick={onScan} disabled={!canEditSession || !scanCodes.trim()}>
                     <Barcode className="h-4 w-4" />Traiter les codes
                   </Button>
-                  {lastScanBatch && (
-                    <div className="rounded-md border p-3 text-sm text-muted-foreground">
-                      <div className="font-medium text-foreground">Dernier lot</div>
-                      <div className="mt-1">
-                        {lastScanBatch.totalCodes} code(s) · {lastScanBatch.matchedCodes.length} reconnu(s)
-                      </div>
-                      {!!lastScanBatch.unknownCodes.length && (
-                        <div className="mt-1">Inconnus : {lastScanBatch.unknownCodes.join(', ')}</div>
-                      )}
+                </div>
+
+                {lastScanBatch && (
+                  <div className="rounded-md border p-3 text-sm text-muted-foreground">
+                    <div className="font-medium text-foreground">Dernier lot</div>
+                    <div className="mt-1">
+                      {lastScanBatch.totalCodes} code(s) · {lastScanBatch.matchedCodes.length} reconnu(s)
                     </div>
-                  )}
-                </TabsContent>
-              )}
+                    {!!lastScanBatch.unknownCodes.length && (
+                      <div className="mt-1">Inconnus : {lastScanBatch.unknownCodes.join(', ')}</div>
+                    )}
+                  </div>
+                )}
+              </TabsContent>
             </Tabs>
           </CardContent>
         );
