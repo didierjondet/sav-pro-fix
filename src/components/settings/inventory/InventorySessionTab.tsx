@@ -86,6 +86,8 @@ export interface InventorySessionTabProps {
   scanCodes: string;
   onScanCodesChange: (v: string) => void;
   onScan: () => void;
+  /** Scan unitaire (un seul code) — utilisé par la caméra live. */
+  onLiveScan?: (code: string) => Promise<{ matched: boolean; itemName?: string } | void> | void;
   lastScanBatch: { totalCodes: number; matchedCodes: string[]; ambiguousCodes: string[]; unknownCodes: string[] } | null;
   draftQuantities: Record<string, string>;
   onDraftQuantityChange: (id: string, v: string) => void;
@@ -126,6 +128,7 @@ export function InventorySessionTab(props: InventorySessionTabProps) {
     scanCodes,
     onScanCodesChange,
     onScan,
+    onLiveScan,
     lastScanBatch,
     draftQuantities,
     onDraftQuantityChange,
