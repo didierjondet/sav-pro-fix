@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils';
 import {
   Archive,
   Barcode,
+  Camera,
   CheckCircle2,
   ClipboardList,
   FileSpreadsheet,
@@ -26,6 +27,7 @@ import { printInventoryDocument } from '@/lib/inventoryPrint';
 import { InventoryJournalDialog } from './InventoryJournalDialog';
 import { InventoryManualEditor, type InventoryReviewTab } from './InventoryManualEditor';
 import { InventorySessionSummary } from './InventorySessionSummary';
+import { BarcodeScannerDialog } from '@/components/inventory/BarcodeScannerDialog';
 import {
   INVENTORY_MODE_LABELS,
   INVENTORY_STATUS_LABELS,
