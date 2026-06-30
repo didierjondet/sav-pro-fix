@@ -571,6 +571,14 @@ export function InventorySessionTab(props: InventorySessionTabProps) {
         logs={logs}
         session={session}
       />
+      <BarcodeScannerDialog
+        open={cameraOpen}
+        onOpenChange={setCameraOpen}
+        onScan={handleLiveScan}
+        title={`Scan — ${session.name}`}
+        subtitle={`Lignes : ${items.length - pendingItems.length}/${items.length} · ${liveScanCount} scan(s) cette session`}
+        lastScanLabel={lastLiveScan}
+      />
     </div>
   );
 }
