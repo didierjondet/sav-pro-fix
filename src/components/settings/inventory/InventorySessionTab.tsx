@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils';
 import {
   Archive,
   Barcode,
+  Camera,
   CheckCircle2,
   ClipboardList,
   FileSpreadsheet,
@@ -26,6 +27,7 @@ import { printInventoryDocument } from '@/lib/inventoryPrint';
 import { InventoryJournalDialog } from './InventoryJournalDialog';
 import { InventoryManualEditor, type InventoryReviewTab } from './InventoryManualEditor';
 import { InventorySessionSummary } from './InventorySessionSummary';
+import { BarcodeScannerDialog } from '@/components/inventory/BarcodeScannerDialog';
 import {
   INVENTORY_MODE_LABELS,
   INVENTORY_STATUS_LABELS,
@@ -84,6 +86,8 @@ export interface InventorySessionTabProps {
   scanCodes: string;
   onScanCodesChange: (v: string) => void;
   onScan: () => void;
+  /** Scan unitaire (un seul code) — utilisé par la caméra live. */
+  onLiveScan?: (code: string) => Promise<{ matched: boolean; itemName?: string } | void> | void;
   lastScanBatch: { totalCodes: number; matchedCodes: string[]; ambiguousCodes: string[]; unknownCodes: string[] } | null;
   draftQuantities: Record<string, string>;
   onDraftQuantityChange: (id: string, v: string) => void;
@@ -124,6 +128,7 @@ export function InventorySessionTab(props: InventorySessionTabProps) {
     scanCodes,
     onScanCodesChange,
     onScan,
+    onLiveScan,
     lastScanBatch,
     draftQuantities,
     onDraftQuantityChange,
@@ -146,6 +151,24 @@ export function InventorySessionTab(props: InventorySessionTabProps) {
   const [filter, setFilter] = useState<'all' | 'pending' | 'found' | 'missing' | 'adjusted'>('all');
   const [reviewTab, setReviewTab] = useState<InventoryReviewTab>('discrepancies');
   const [journalOpen, setJournalOpen] = useState(false);
+  const [cameraOpen, setCameraOpen] = useState(false);
+  const [lastLiveScan, setLastLiveScan] = useState<string | null>(null);
+  const [liveScanCount, setLiveScanCount] = useState(0);
+
+  const handleLiveScan = async (code: string) => {
+    if (!onLiveScan) return;
+    const res = await onLiveScan(code);
+    setLiveScanCount((c) => c + 1);
+    if (res && typeof res === 'object') {
+      if (res.matched) {
+        setLastLiveScan(`${code} → ${res.itemName ?? 'pièce'} (+1)`);
+      } else {
+        setLastLiveScan(`${code} — code inconnu`);
+      }
+    } else {
+      setLastLiveScan(code);
+    }
+  };
 
   const filteredItems = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -405,10 +428,12 @@ export function InventorySessionTab(props: InventorySessionTabProps) {
       {(() => {
         const countingBody = (
           <CardContent className="pt-4">
-            <Tabs defaultValue="manual" className="space-y-4">
+            <Tabs defaultValue={session.mode === 'scan' ? 'scan' : 'manual'} className="space-y-4">
               <TabsList>
                 <TabsTrigger value="manual">Saisie manuelle</TabsTrigger>
-                {session.mode === 'scan' && <TabsTrigger value="scan">Scan code-barres</TabsTrigger>}
+                <TabsTrigger value="scan">
+                  <ScanLine className="h-3.5 w-3.5" />Scan code-barres
+                </TabsTrigger>
               </TabsList>
 
               <TabsContent value="manual" className="mt-0">
@@ -430,31 +455,56 @@ export function InventorySessionTab(props: InventorySessionTabProps) {
                 />
               </TabsContent>
 
-              {session.mode === 'scan' && (
-                <TabsContent value="scan" className="mt-0 space-y-4">
+              <TabsContent value="scan" className="mt-0 space-y-4">
+                <div className="rounded-lg border-2 border-primary/30 bg-primary/5 p-4 flex flex-col sm:flex-row gap-3 sm:items-center">
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium flex items-center gap-2">
+                      <Camera className="h-4 w-4 text-primary" />
+                      Transformez votre téléphone en scanner
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Scan continu : chaque code lu incrémente automatiquement le compteur
+                      de la pièce correspondante (+1 par scan).
+                    </p>
+                  </div>
+                  <Button
+                    size="lg"
+                    onClick={() => { setLiveScanCount(0); setLastLiveScan(null); setCameraOpen(true); }}
+                    disabled={!canEditSession || !onLiveScan}
+                    className="w-full sm:w-auto"
+                  >
+                    <Camera className="h-5 w-5" />Démarrer le scan caméra
+                  </Button>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="text-xs uppercase tracking-wide text-muted-foreground">
+                    Saisie par lot (douchette / copier-coller)
+                  </div>
                   <Textarea
                     value={scanCodes}
                     onChange={(e) => onScanCodesChange(e.target.value)}
-                    placeholder="Scannez ou collez une succession de SKU"
-                    rows={5}
+                    placeholder="Scannez ou collez une succession de SKU (un par ligne ou séparés par un espace)"
+                    rows={4}
                     disabled={!canEditSession}
                   />
-                  <Button onClick={onScan} disabled={!canEditSession}>
+                  <Button variant="outline" onClick={onScan} disabled={!canEditSession || !scanCodes.trim()}>
                     <Barcode className="h-4 w-4" />Traiter les codes
                   </Button>
-                  {lastScanBatch && (
-                    <div className="rounded-md border p-3 text-sm text-muted-foreground">
-                      <div className="font-medium text-foreground">Dernier lot</div>
-                      <div className="mt-1">
-                        {lastScanBatch.totalCodes} code(s) · {lastScanBatch.matchedCodes.length} reconnu(s)
-                      </div>
-                      {!!lastScanBatch.unknownCodes.length && (
-                        <div className="mt-1">Inconnus : {lastScanBatch.unknownCodes.join(', ')}</div>
-                      )}
+                </div>
+
+                {lastScanBatch && (
+                  <div className="rounded-md border p-3 text-sm text-muted-foreground">
+                    <div className="font-medium text-foreground">Dernier lot</div>
+                    <div className="mt-1">
+                      {lastScanBatch.totalCodes} code(s) · {lastScanBatch.matchedCodes.length} reconnu(s)
                     </div>
-                  )}
-                </TabsContent>
-              )}
+                    {!!lastScanBatch.unknownCodes.length && (
+                      <div className="mt-1">Inconnus : {lastScanBatch.unknownCodes.join(', ')}</div>
+                    )}
+                  </div>
+                )}
+              </TabsContent>
             </Tabs>
           </CardContent>
         );
@@ -520,6 +570,14 @@ export function InventorySessionTab(props: InventorySessionTabProps) {
         title={`Journal de l'inventaire — ${session.name}`}
         logs={logs}
         session={session}
+      />
+      <BarcodeScannerDialog
+        open={cameraOpen}
+        onOpenChange={setCameraOpen}
+        onScan={handleLiveScan}
+        title={`Scan — ${session.name}`}
+        subtitle={`Lignes : ${items.length - pendingItems.length}/${items.length} · ${liveScanCount} scan(s) cette session`}
+        lastScanLabel={lastLiveScan}
       />
     </div>
   );
