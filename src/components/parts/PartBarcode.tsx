@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import bwipjs from 'bwip-js';
+import bwipjs from 'bwip-js/browser';
 import { Button } from '@/components/ui/button';
 import { Download, Printer, Barcode as BarcodeIcon } from 'lucide-react';
 
