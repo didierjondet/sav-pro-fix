@@ -151,6 +151,24 @@ export function InventorySessionTab(props: InventorySessionTabProps) {
   const [filter, setFilter] = useState<'all' | 'pending' | 'found' | 'missing' | 'adjusted'>('all');
   const [reviewTab, setReviewTab] = useState<InventoryReviewTab>('discrepancies');
   const [journalOpen, setJournalOpen] = useState(false);
+  const [cameraOpen, setCameraOpen] = useState(false);
+  const [lastLiveScan, setLastLiveScan] = useState<string | null>(null);
+  const [liveScanCount, setLiveScanCount] = useState(0);
+
+  const handleLiveScan = async (code: string) => {
+    if (!onLiveScan) return;
+    const res = await onLiveScan(code);
+    setLiveScanCount((c) => c + 1);
+    if (res && typeof res === 'object') {
+      if (res.matched) {
+        setLastLiveScan(`${code} → ${res.itemName ?? 'pièce'} (+1)`);
+      } else {
+        setLastLiveScan(`${code} — code inconnu`);
+      }
+    } else {
+      setLastLiveScan(code);
+    }
+  };
 
   const filteredItems = useMemo(() => {
     const term = search.trim().toLowerCase();
