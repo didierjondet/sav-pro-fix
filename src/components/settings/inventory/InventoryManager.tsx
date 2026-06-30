@@ -387,6 +387,7 @@ export function InventoryManager({ canApplyStock }: { canApplyStock: boolean }) 
           scanCodes={scanCodes}
           onScanCodesChange={setScanCodes}
           onScan={handleScan}
+          onLiveScan={handleLiveScan}
           lastScanBatch={lastScanBatch}
           draftQuantities={draftQuantities}
           onDraftQuantityChange={setDraftQuantity}
