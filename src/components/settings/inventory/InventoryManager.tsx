@@ -280,6 +280,17 @@ export function InventoryManager({ canApplyStock }: { canApplyStock: boolean }) 
     }
   };
 
+  const handleLiveScan = async (code: string) => {
+    if (!currentSession) return { matched: false };
+    const result = await bulkScanCodes(currentSession.id, [code]);
+    const matched = result.matchedCodes.length > 0;
+    const normalized = code.trim().toUpperCase();
+    const item = items.find(
+      (i) => (i.part_sku || '').trim().toUpperCase() === normalized,
+    );
+    return { matched, itemName: item?.part_name };
+  };
+
   return (
     <div className="space-y-4">
       {/* Onglets */}
