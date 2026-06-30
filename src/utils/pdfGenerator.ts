@@ -721,6 +721,17 @@ export const generateSAVRestitutionPDF = async (savCase: SAVCase, shop?: Shop, o
         </div>
         ` : ''}
 
+        <div style="margin: 6px 0; padding: 8px 10px; background: #fff5f5; border: 2px solid #dc2626; border-radius: 4px;">
+          <div style="font-size: 9px; text-transform: uppercase; letter-spacing: 1px; color: #7f1d1d; margin-bottom: 3px; font-weight: bold;">Appareil concerné</div>
+          <div style="font-size: 16px; font-weight: 900; color: #dc2626; line-height: 1.2;">${[savCase.device_brand, savCase.device_model].filter(Boolean).join(' ') || '—'}</div>
+          <div style="margin-top: 4px; display: flex; flex-wrap: wrap; gap: 14px; font-size: 12px; font-weight: bold; color: #dc2626;">
+            ${(savCase as any).sku ? `<span>SKU : <span style="font-weight: 900;">${(savCase as any).sku}</span></span>` : ''}
+            ${savCase.device_imei ? `<span>IMEI : <span style="font-weight: 900;">${savCase.device_imei}</span></span>` : ''}
+          </div>
+        </div>
+
+
+
         <div class="case-info">
           <h3>Informations du dossier</h3>
           <div class="info-grid">
