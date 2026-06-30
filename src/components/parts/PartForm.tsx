@@ -17,6 +17,7 @@ import { PartPhotoUpload } from './PartPhotoUpload';
 import { cn } from '@/lib/utils';
 import { useBillingConfig } from '@/hooks/useBillingConfig';
 import { Plus } from 'lucide-react';
+import { PartBarcode } from './PartBarcode';
 
 const PART_COLORS = [
   { value: 'black', label: 'Noir', color: '#000000' },
@@ -247,6 +248,18 @@ export function PartForm({ initialData, onSubmit, onCancel, isEdit = false, find
               )}
             </div>
           </div>
+
+          {/* Code-barres */}
+          {!isService && (
+            <div>
+              <Label className="mb-1.5 block">Code-barres</Label>
+              <PartBarcode
+                sku={watch('sku')}
+                reference={watch('reference')}
+                productName={watch('name')}
+              />
+            </div>
+          )}
 
           {/* Catégorie */}
           <div>
