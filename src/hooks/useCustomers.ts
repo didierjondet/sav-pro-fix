@@ -24,6 +24,7 @@ export function useCustomers(page: number = 1, itemsPerPage: number = 10) {
   const [totalCount, setTotalCount] = useState(0);
   const { toast } = useToast();
   const { shop } = useShop();
+  const isCreatingRef = useRef(false);
 
   const fetchCustomers = async () => {
     try {
