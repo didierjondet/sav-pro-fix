@@ -1,7 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useShop } from '@/hooks/useShop';
+
+const normalizePhone = (p?: string | null) => (p || '').replace(/\D/g, '');
+const normalizeText = (s?: string | null) => (s || '').toLowerCase().trim();
 
 export interface Customer {
   id: string;
