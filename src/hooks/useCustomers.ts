@@ -1,7 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useShop } from '@/hooks/useShop';
+
+const normalizePhone = (p?: string | null) => (p || '').replace(/\D/g, '');
+const normalizeText = (s?: string | null) => (s || '').toLowerCase().trim();
 
 export interface Customer {
   id: string;
@@ -21,6 +24,7 @@ export function useCustomers(page: number = 1, itemsPerPage: number = 10) {
   const [totalCount, setTotalCount] = useState(0);
   const { toast } = useToast();
   const { shop } = useShop();
+  const isCreatingRef = useRef(false);
 
   const fetchCustomers = async () => {
     try {
@@ -66,44 +70,49 @@ export function useCustomers(page: number = 1, itemsPerPage: number = 10) {
   }, [page, itemsPerPage]);
 
   const createCustomer = async (customerData: Omit<Customer, 'id' | 'created_at' | 'updated_at'>) => {
+    // Verrou synchrone anti-réentrée (bloque le double-clic avant que setLoading ne re-rende)
+    if (isCreatingRef.current) {
+      return { data: null, error: new Error('Création déjà en cours') };
+    }
+    isCreatingRef.current = true;
+
     try {
-      // Vérification des doublons
+      // Récupérer tous les clients de la boutique pour la détection
       const { data: existingCustomers, error: searchError } = await supabase
         .from('customers')
-        .select('id, first_name, last_name, email')
+        .select('*')
         .eq('shop_id', customerData.shop_id);
 
       if (searchError) throw searchError;
 
-      // Vérifier si un client avec le même nom et prénom existe déjà
-      const nameMatch = existingCustomers?.find(customer => 
-        customer.first_name.toLowerCase().trim() === customerData.first_name.toLowerCase().trim() &&
-        customer.last_name.toLowerCase().trim() === customerData.last_name.toLowerCase().trim()
-      );
+      const targetPhone = normalizePhone(customerData.phone);
+      const targetEmail = normalizeText(customerData.email);
+      const targetFirst = normalizeText(customerData.first_name);
+      const targetLast = normalizeText(customerData.last_name);
 
-      if (nameMatch) {
-        toast({
-          title: "Client déjà existant",
-          description: `Un client avec le nom "${customerData.first_name} ${customerData.last_name}" existe déjà.`,
-          variant: "destructive",
-        });
-        return { data: null, error: new Error("Client déjà existant") };
+      // 1) Match par téléphone (normalisé, chiffres uniquement) → réutiliser
+      if (targetPhone) {
+        const phoneMatch = existingCustomers?.find(c => normalizePhone(c.phone) === targetPhone);
+        if (phoneMatch) {
+          return { data: phoneMatch as Customer, error: null };
+        }
       }
 
-      // Si un email est fourni, vérifier s'il existe déjà
-      if (customerData.email && customerData.email.trim()) {
-        const emailMatch = existingCustomers?.find(customer => 
-          customer.email && customer.email.toLowerCase().trim() === customerData.email!.toLowerCase().trim()
-        );
-
+      // 2) Match par email → réutiliser
+      if (targetEmail) {
+        const emailMatch = existingCustomers?.find(c => normalizeText(c.email) === targetEmail);
         if (emailMatch) {
-          toast({
-            title: "Email déjà utilisé",
-            description: `Un client avec l'email "${customerData.email}" existe déjà.`,
-            variant: "destructive",
-          });
-          return { data: null, error: new Error("Email déjà utilisé") };
+          return { data: emailMatch as Customer, error: null };
         }
+      }
+
+      // 3) Match par nom + prénom → réutiliser (évite duplication silencieuse en cas de double-clic)
+      const nameMatch = existingCustomers?.find(c =>
+        normalizeText(c.first_name) === targetFirst &&
+        normalizeText(c.last_name) === targetLast
+      );
+      if (nameMatch) {
+        return { data: nameMatch as Customer, error: null };
       }
 
       // Si aucun doublon détecté, créer le client
@@ -129,8 +138,11 @@ export function useCustomers(page: number = 1, itemsPerPage: number = 10) {
         variant: "destructive",
       });
       return { data: null, error };
+    } finally {
+      isCreatingRef.current = false;
     }
   };
+
 
   const updateCustomer = async (customerId: string, customerData: Partial<Customer>) => {
     try {
