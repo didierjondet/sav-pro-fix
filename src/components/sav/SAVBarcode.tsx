@@ -1,8 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import bwipjs from 'bwip-js/browser';
 import { Button } from '@/components/ui/button';
-import { Download, Printer, Barcode as BarcodeIcon } from 'lucide-react';
+import { Download, Printer, Barcode as BarcodeIcon, Settings2 } from 'lucide-react';
 import { SAVCase } from '@/hooks/useSAVCases';
+import {
+  SAVBarcodePrinterSettings,
+  loadLabelPrinterSettings,
+  type LabelPrinterSettings,
+} from './SAVBarcodePrinterSettings';
 
 interface SAVBarcodeProps {
   savCase: SAVCase;
@@ -21,6 +26,8 @@ export function SAVBarcode({ savCase, savTypeLabel }: SAVBarcodeProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [dataUrl, setDataUrl] = useState<string | null>(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [printerSettings, setPrinterSettings] = useState<LabelPrinterSettings>(() => loadLabelPrinterSettings());
 
   const customerName = useMemo(() => {
     if (!savCase?.customer) return '';
@@ -71,14 +78,20 @@ export function SAVBarcode({ savCase, savTypeLabel }: SAVBarcodeProps) {
 
   const handlePrint = () => {
     if (!dataUrl || !code) return;
-    const win = window.open('', '_blank', 'width=460,height=360');
+    const s = printerSettings;
+    const inner = Math.max(0, s.widthMm - s.marginMm * 2);
+    const innerH = Math.max(0, s.heightMm - s.marginMm * 2);
+    const win = window.open('', '_blank', `width=${Math.max(300, s.widthMm * 8)},height=${Math.max(240, s.heightMm * 8)}`);
     if (!win) return;
+    const printerHint = s.printerName
+      ? `<div class="hint">Imprimante recommandée : <strong>${esc(s.printerName)}</strong> — sélectionnez-la dans la boîte d'impression.</div>`
+      : '';
     win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Étiquette SAV ${esc(code)}</title>
       <style>
-        @page { size: 60mm 40mm; margin: 2mm; }
+        @page { size: ${s.widthMm}mm ${s.heightMm}mm; margin: ${s.marginMm}mm; }
         html, body { margin: 0; padding: 0; font-family: Arial, sans-serif; color: #000; }
-        .label { width: 56mm; height: 36mm; display: flex; flex-direction: column;
-          padding: 1.5mm; box-sizing: border-box; }
+        .label { width: ${inner}mm; height: ${innerH}mm; display: flex; flex-direction: column;
+          padding: 1mm; box-sizing: border-box; }
         .type { font-size: 7pt; font-weight: 700; text-transform: uppercase;
           letter-spacing: 0.3px; text-align: center; line-height: 1.1; margin-bottom: 0.5mm; }
         .customer { font-size: 8pt; font-weight: 600; text-align: center;
@@ -90,10 +103,13 @@ export function SAVBarcode({ savCase, savTypeLabel }: SAVBarcodeProps) {
         .problem { font-size: 6.5pt; text-align: center; line-height: 1.15;
           margin-bottom: 0.8mm; max-height: 5mm; overflow: hidden; }
         .bc { flex: 1; display: flex; align-items: center; justify-content: center; }
-        .bc img { width: 100%; max-height: 14mm; object-fit: contain; }
+        .bc img { width: 100%; max-height: ${Math.max(8, innerH * 0.4)}mm; object-fit: contain; }
+        .hint { font-size: 11px; color: #555; text-align: center; padding: 8px; }
+        @media print { .hint { display: none; } }
         @media screen { body { background:#f1f1f1; padding:16px; }
           .label { background:#fff; box-shadow:0 1px 4px rgba(0,0,0,.15); margin:auto; } }
       </style></head><body>
+      ${printerHint}
       <div class="label">
         ${typeLabel ? `<div class="type">${esc(typeLabel)}</div>` : ''}
         ${customerName ? `<div class="customer">${esc(customerName)}</div>` : ''}
@@ -101,7 +117,7 @@ export function SAVBarcode({ savCase, savTypeLabel }: SAVBarcodeProps) {
         ${problemSummary ? `<div class="problem">${esc(problemSummary)}</div>` : ''}
         <div class="bc"><img src="${dataUrl}" alt="${esc(code)}" /></div>
       </div>
-      <script>window.onload = () => { setTimeout(() => { window.print(); }, 150); };</script>
+      ${s.autoPrint ? `<script>window.onload = () => { setTimeout(() => { window.print(); }, 150); };</script>` : ''}
       </body></html>`);
     win.document.close();
   };
@@ -137,7 +153,10 @@ export function SAVBarcode({ savCase, savTypeLabel }: SAVBarcodeProps) {
         </div>
         <div className="flex-1 min-w-0 space-y-2">
           <div className="text-xs text-muted-foreground">
-            Étiquette 60×40 mm (Epson) — Code 128 basé sur le numéro de dossier.
+            Étiquette {printerSettings.widthMm}×{printerSettings.heightMm} mm — Code 128 basé sur le numéro de dossier.
+            {printerSettings.printerName && (
+              <> • Imprimante : <span className="font-medium">{printerSettings.printerName}</span></>
+            )}
           </div>
           <div className="text-xs space-y-0.5">
             {typeLabel && <div><span className="text-muted-foreground">Type :</span> <span className="font-medium">{typeLabel}</span></div>}
@@ -152,9 +171,18 @@ export function SAVBarcode({ savCase, savTypeLabel }: SAVBarcodeProps) {
             <Button type="button" size="sm" variant="outline" onClick={handleDownload} disabled={!dataUrl}>
               <Download className="h-4 w-4" />PNG
             </Button>
+            <Button type="button" size="sm" variant="outline" onClick={() => setSettingsOpen(true)}>
+              <Settings2 className="h-4 w-4" />Réglages imprimante
+            </Button>
           </div>
         </div>
       </div>
+      <SAVBarcodePrinterSettings
+        open={settingsOpen}
+        onOpenChange={setSettingsOpen}
+        onSaved={(s) => setPrinterSettings(s)}
+      />
     </div>
   );
 }
+
