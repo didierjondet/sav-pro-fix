@@ -153,7 +153,10 @@ export function SAVBarcode({ savCase, savTypeLabel }: SAVBarcodeProps) {
         </div>
         <div className="flex-1 min-w-0 space-y-2">
           <div className="text-xs text-muted-foreground">
-            Étiquette 60×40 mm (Epson) — Code 128 basé sur le numéro de dossier.
+            Étiquette {printerSettings.widthMm}×{printerSettings.heightMm} mm — Code 128 basé sur le numéro de dossier.
+            {printerSettings.printerName && (
+              <> • Imprimante : <span className="font-medium">{printerSettings.printerName}</span></>
+            )}
           </div>
           <div className="text-xs space-y-0.5">
             {typeLabel && <div><span className="text-muted-foreground">Type :</span> <span className="font-medium">{typeLabel}</span></div>}
@@ -168,9 +171,18 @@ export function SAVBarcode({ savCase, savTypeLabel }: SAVBarcodeProps) {
             <Button type="button" size="sm" variant="outline" onClick={handleDownload} disabled={!dataUrl}>
               <Download className="h-4 w-4" />PNG
             </Button>
+            <Button type="button" size="sm" variant="outline" onClick={() => setSettingsOpen(true)}>
+              <Settings2 className="h-4 w-4" />Réglages imprimante
+            </Button>
           </div>
         </div>
       </div>
+      <SAVBarcodePrinterSettings
+        open={settingsOpen}
+        onOpenChange={setSettingsOpen}
+        onSaved={(s) => setPrinterSettings(s)}
+      />
     </div>
   );
 }
+
