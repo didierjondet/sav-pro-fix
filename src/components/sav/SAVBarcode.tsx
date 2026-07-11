@@ -26,6 +26,8 @@ export function SAVBarcode({ savCase, savTypeLabel }: SAVBarcodeProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [dataUrl, setDataUrl] = useState<string | null>(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [printerSettings, setPrinterSettings] = useState<LabelPrinterSettings>(() => loadLabelPrinterSettings());
 
   const customerName = useMemo(() => {
     if (!savCase?.customer) return '';
