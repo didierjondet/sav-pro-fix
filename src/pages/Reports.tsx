@@ -160,9 +160,11 @@ export default function Reports() {
     // Create synthesis sheet
     const synthesisData = [
       { 'Métrique': 'Nombre total de SAV', 'Valeur': data.totals.count },
-      { 'Métrique': 'Chiffre d\'affaires total', 'Valeur': `${data.totals.revenue.toFixed(2)} €` },
-      { 'Métrique': 'Coûts d\'achat totaux', 'Valeur': `${data.totals.costs.toFixed(2)} €` },
-      { 'Métrique': 'Marge totale', 'Valeur': `${data.totals.margin.toFixed(2)} €` },
+      { 'Métrique': 'Chiffre d\'affaires HT', 'Valeur': `${data.totals.revenue.toFixed(2)} €` },
+      { 'Métrique': 'TVA collectée', 'Valeur': `${data.totals.vat_collected.toFixed(2)} €` },
+      { 'Métrique': 'Chiffre d\'affaires TTC', 'Valeur': `${data.totals.revenue_ttc.toFixed(2)} €` },
+      { 'Métrique': 'Coûts d\'achat HT', 'Valeur': `${data.totals.costs.toFixed(2)} €` },
+      { 'Métrique': 'Marge HT', 'Valeur': `${data.totals.margin.toFixed(2)} €` },
       { 'Métrique': '', 'Valeur': '' },
       { 'Métrique': '--- Par type de SAV ---', 'Valeur': '' }
     ];
@@ -171,11 +173,14 @@ export default function Reports() {
       const typeInfo = getTypeInfo(typeKey);
       synthesisData.push(
         { 'Métrique': `${typeInfo.label} - Nombre`, 'Valeur': subtotal.count },
-        { 'Métrique': `${typeInfo.label} - CA`, 'Valeur': `${subtotal.revenue.toFixed(2)} €` },
-        { 'Métrique': `${typeInfo.label} - Coûts`, 'Valeur': `${subtotal.costs.toFixed(2)} €` },
-        { 'Métrique': `${typeInfo.label} - Marge`, 'Valeur': `${subtotal.margin.toFixed(2)} €` }
+        { 'Métrique': `${typeInfo.label} - CA HT`, 'Valeur': `${subtotal.revenue.toFixed(2)} €` },
+        { 'Métrique': `${typeInfo.label} - TVA`, 'Valeur': `${subtotal.vat_collected.toFixed(2)} €` },
+        { 'Métrique': `${typeInfo.label} - CA TTC`, 'Valeur': `${subtotal.revenue_ttc.toFixed(2)} €` },
+        { 'Métrique': `${typeInfo.label} - Coûts HT`, 'Valeur': `${subtotal.costs.toFixed(2)} €` },
+        { 'Métrique': `${typeInfo.label} - Marge HT`, 'Valeur': `${subtotal.margin.toFixed(2)} €` }
       );
     });
+
 
     const synthesisWs = XLSX.utils.json_to_sheet(synthesisData);
     XLSX.utils.book_append_sheet(wb, synthesisWs, 'Synthèse');
