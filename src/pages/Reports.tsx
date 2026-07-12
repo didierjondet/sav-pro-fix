@@ -679,9 +679,12 @@ export default function Reports() {
                               <TableHead>Appareil</TableHead>
                               <TableHead>SKU</TableHead>
                               <TableHead>IMEI</TableHead>
-                              <TableHead className="text-right">Coût achat</TableHead>
-                              <TableHead className="text-right">Prix vente</TableHead>
-                              <TableHead className="text-right">Marge</TableHead>
+                              <TableHead className="text-right">Coût achat HT</TableHead>
+                              <TableHead className="text-right">Prix vente HT</TableHead>
+                              <TableHead className="text-right">TVA</TableHead>
+                              <TableHead className="text-right">Prix vente TTC</TableHead>
+                              <TableHead className="text-right">Marge HT</TableHead>
+
                             </TableRow>
                           </TableHeader>
                           <TableBody>
@@ -724,13 +727,16 @@ export default function Reports() {
                                       {item.device_imei || '-'}
                                     </TableCell>
                                     <TableCell className="text-right">{formatCurrency(item.purchase_cost)}</TableCell>
-                                    <TableCell className="text-right">{formatCurrency(item.selling_price)}</TableCell>
+                                    <TableCell className="text-right">{formatCurrency(item.selling_price_ht)}</TableCell>
+                                    <TableCell className="text-right text-amber-600">{formatCurrency(item.vat_collected)}</TableCell>
+                                    <TableCell className="text-right text-muted-foreground">{formatCurrency(item.selling_price)}</TableCell>
                                     <TableCell className={cn(
                                       "text-right font-medium",
                                       item.margin >= 0 ? "text-green-600" : "text-destructive"
                                     )}>
                                       {formatCurrency(item.margin)}
                                     </TableCell>
+
                                   </TableRow>
                                   {item.technician_comments && (
                                     <TableRow className="bg-blue-50/50 dark:bg-blue-950/20 hover:bg-blue-50/70">
