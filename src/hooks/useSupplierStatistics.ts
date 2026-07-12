@@ -3,32 +3,39 @@ import { useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useShop } from './useShop';
 import { useShopSAVTypes } from './useShopSAVTypes';
+import { useBillingConfig } from './useBillingConfig';
+import { splitTtcHt } from '@/lib/vatCalculator';
 import { format, startOfMonth } from 'date-fns';
 
 export interface SupplierMonthlyPoint {
-  month: string; // YYYY-MM
-  label: string; // ex: "janv. 24"
-  expenses: number;
-  revenue: number;
-  margin: number;
+  month: string;
+  label: string;
+  expenses: number;      // HT
+  revenue: number;       // HT
+  vat_collected: number;
+  margin: number;        // HT
 }
 
 export interface SupplierPartRow {
   part_name: string;
   quantity: number;
-  expenses: number;
-  revenue: number;
-  margin: number;
+  expenses: number;      // HT
+  revenue: number;       // HT
+  vat_collected: number;
+  margin: number;        // HT
 }
 
 export interface SupplierStatsTotals {
   expenses: number;
-  revenue: number;
-  margin: number;
+  revenue: number;       // HT
+  revenue_ttc: number;
+  vat_collected: number;
+  margin: number;        // HT
   margin_pct: number;
   parts_count: number;
   sav_count: number;
 }
+
 
 export interface SupplierStatsResult {
   totals: SupplierStatsTotals;
