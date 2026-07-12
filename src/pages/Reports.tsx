@@ -738,9 +738,9 @@ export default function Reports() {
                                     </TableCell>
 
                                   </TableRow>
-                                  {item.technician_comments && (
+                                   {item.technician_comments && (
                                     <TableRow className="bg-blue-50/50 dark:bg-blue-950/20 hover:bg-blue-50/70">
-                                      <TableCell colSpan={10} className="py-2 px-4">
+                                      <TableCell colSpan={12} className="py-2 px-4">
                                         <div className="text-xs text-muted-foreground italic">
                                           <span className="font-medium not-italic">Commentaire technicien :</span>{' '}
                                           {item.technician_comments}
@@ -750,7 +750,7 @@ export default function Reports() {
                                   )}
                                   {item.parts.length > 0 && (
                                     <TableRow className="bg-muted/30 hover:bg-muted/40">
-                                      <TableCell colSpan={10} className="py-2 px-4">
+                                      <TableCell colSpan={12} className="py-2 px-4">
                                         <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
                                           <span className="font-medium">Pièces :</span>
                                           {item.parts.map((part, idx) => (
@@ -758,7 +758,7 @@ export default function Reports() {
                                               {part.name}
                                               {part.quantity > 1 && <span className="text-primary">×{part.quantity}</span>}
                                               <span className="text-muted-foreground/70">
-                                                ({formatCurrency(part.purchase_price)} → {formatCurrency(part.unit_price)})
+                                                (achat {formatCurrency(part.purchase_price)} → vente HT {formatCurrency(part.unit_price_ht)} / TTC {formatCurrency(part.unit_price)})
                                               </span>
                                             </span>
                                           ))}
@@ -776,8 +776,11 @@ export default function Reports() {
                               </TableCell>
                               <TableCell className="text-right">{formatCurrency(subtotal.costs)}</TableCell>
                               <TableCell className="text-right">{formatCurrency(subtotal.revenue)}</TableCell>
+                              <TableCell className="text-right text-amber-600">{formatCurrency(subtotal.vat_collected)}</TableCell>
+                              <TableCell className="text-right text-muted-foreground">{formatCurrency(subtotal.revenue_ttc)}</TableCell>
                               <TableCell className={cn(
                                 "text-right",
+
                                 subtotal.margin >= 0 ? "text-green-600" : "text-destructive"
                               )}>
                                 {formatCurrency(subtotal.margin)}
