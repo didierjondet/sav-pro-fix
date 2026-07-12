@@ -804,23 +804,32 @@ export default function Reports() {
                   <div className="font-medium">
                     TOTAL GÉNÉRAL ({data.totals.count} SAV)
                   </div>
-                  <div className="flex gap-6 text-sm">
+                  <div className="flex flex-wrap gap-6 text-sm">
                     <div>
-                      <span className="text-muted-foreground">Coûts : </span>
+                      <span className="text-muted-foreground">Coûts HT : </span>
                       <span className="font-bold">{formatCurrency(data.totals.costs)}</span>
                     </div>
                     <div>
-                      <span className="text-muted-foreground">CA : </span>
+                      <span className="text-muted-foreground">CA HT : </span>
                       <span className="font-bold text-primary">{formatCurrency(data.totals.revenue)}</span>
                     </div>
                     <div>
-                      <span className="text-muted-foreground">Marge : </span>
+                      <span className="text-muted-foreground">TVA : </span>
+                      <span className="font-bold text-amber-600">{formatCurrency(data.totals.vat_collected)}</span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">CA TTC : </span>
+                      <span className="font-bold">{formatCurrency(data.totals.revenue_ttc)}</span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Marge HT : </span>
                       <span className={cn(
                         "font-bold",
                         data.totals.margin >= 0 ? "text-green-600" : "text-destructive"
                       )}>{formatCurrency(data.totals.margin)}</span>
                     </div>
                   </div>
+
                 </div>
               </CardContent>
             </Card>
