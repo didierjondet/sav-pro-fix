@@ -1,66 +1,93 @@
-# Doublons clients — cause et correctifs
 
-## Constat (données réelles)
+## Objectif
 
-Requête sur la table `customers` : la grande majorité des doublons ont exactement **le même téléphone**, **le même nom/prénom**, et sont créés **dans un intervalle de 4 à 15 secondes** (parfois 4 fois en 3 secondes). Exemples :
+1. Garantir que les prix d'un SAV clôturé (ou en cours) restent **figés** dans le temps même si la fiche pièce est modifiée après coup.
+2. Uniformiser tous les calculs de marge en **HT** (rapports, fiches, widgets) et exposer clairement la **TVA** (extraite automatiquement du prix TTC saisi).
 
-- `xavier rocheteau` — 2 créations à 4,8 s d'intervalle
-- `maison d enfant de baldy` — 4 créations en 15 s
-- `mathieu samani` — 4 créations en 80 s
-- `rené guinhut` — 11 créations le même jour
+---
 
-Ce n'est donc pas un chemin oublié dans le code : c'est une **race condition de double-clic**.
+## Partie 1 — Verrouillage des prix historiques (snapshot)
 
-## Cause racine
+### Bug identifié
+Dans `src/components/sav/SAVPartsEditor.tsx` (ligne 79), le prix d'achat affiché est lu depuis `item.parts?.purchase_price` (fiche pièce **actuelle**) au lieu de `item.purchase_price` (snapshot enregistré au moment du SAV). Résultat : modifier une fiche pièce fait bouger la marge des anciens SAV à l'affichage.
 
-Dans `useCustomers.createCustomer` la protection anti-doublon fonctionne en 2 étapes non atomiques :
-1. `SELECT` pour chercher un nom identique
-2. `INSERT` si rien n'est trouvé
+Autre point vérifié : `SAVCloseUnifiedDialog.tsx` (l. 156-163) va jusqu'à **écrire** `parts.purchase_price` dans le snapshot si celui-ci est vide, ce qui écrase la valeur historique.
 
-Quand l'utilisateur clique 2 fois rapidement sur "Créer" (SAVForm, SAVWizardDialog, QuoteForm, EditSAVCustomerDialog, CustomerForm), les 2 handlers partent en parallèle. `setLoading(true)` est asynchrone et ne bloque pas la 2e invocation avant que React re-rende le bouton `disabled`. Les 2 SELECT reviennent vides en même temps, puis les 2 INSERT passent. Résultat : 2 (ou plus) lignes identiques.
+### Correctifs
 
-En plus, la détection actuelle ne compare que `first_name + last_name` (insensible à la casse). Si le téléphone est identique mais que l'utilisateur retape avec une variation (accent, espace en trop, orthographe différente), rien n'est bloqué.
+- **`SAVPartsEditor.tsx`** : lire `purchase_price` depuis `item.purchase_price` (fallback `item.parts?.purchase_price` uniquement si null ET SAV encore non clôturé).
+- **`SAVCloseUnifiedDialog.tsx`** : ne backfill le `purchase_price` depuis la fiche pièce que **si et seulement si** le snapshot est réellement absent (null/undefined), et le figer une fois pour toutes lors du **premier** enregistrement, jamais lors d'une clôture ultérieure.
+- **Vérifier `SAVPartsRequirements.tsx`** et tout autre consommateur (`SAVPrint.tsx`, `useSAVPartsCosts.ts`) : ils lisent déjà le snapshot — OK, mais je passerai une revue rapide.
+- **Audit** : rechercher tous les endroits qui lisent `parts.purchase_price` / `parts.selling_price` dans un contexte SAV existant et les basculer sur le snapshot.
 
-## Correctifs (frontend uniquement, aucun changement UI)
+### Point de conception
+Les colonnes `sav_parts.purchase_price` et `sav_parts.unit_price` existent déjà et sont bien renseignées à la création. La correction est donc purement côté lecture/affichage — pas de migration.
 
-### 1. Verrou synchrone anti-réentrée dans `useCustomers.ts`
-- Ajouter un `useRef<boolean>` `isCreatingRef` incrémenté **synchroniquement** en début de `createCustomer` et remis à `false` dans un `finally`.
-- Si un appel arrive alors que `isCreatingRef.current === true`, retourner immédiatement `{ data: null, error: new Error('Création déjà en cours') }` sans toast (silencieux — c'est un double-clic).
-- Ce verrou bloque les créations parallèles même si `setLoading` n'a pas encore re-rendu.
+---
 
-### 2. Détection anti-doublon élargie au téléphone
-Dans `createCustomer`, ajouter avant l'insert :
-- Match par téléphone normalisé (`replace(/\D/g, '')`) si un phone est fourni : renvoyer le client existant (retourner `{ data: existingCustomer, error: null }`) plutôt qu'une erreur, pour que le flux SAV/Quote continue avec le bon `customer_id`.
-- Idem si l'email existe déjà : retourner le client existant.
-- Match nom+prénom : garder le comportement actuel (erreur bloquante) **mais** aussi retourner le client existant pour le flux SAV, afin que double-clic → 2e appel réutilise le client fraîchement créé au lieu d'échouer.
+## Partie 2 — Calculs HT et isolement de la TVA
 
-Comportement final : un double-clic ne crée plus jamais 2 lignes ; le 2e appel réutilise silencieusement la ligne créée par le 1er.
+### Principe retenu
+Le prix de vente pièce reste saisi **TTC** (comportement actuel), mais toutes les **marges** et **totaux comptables** sont calculés en **HT** en s'appuyant sur `shop_billing_config` (`vat_rate_parts`, `vat_regime`, `prices_include_vat`). Le prix d'achat est déjà HT par convention.
 
-### 3. Désactivation stricte des boutons de soumission
-Vérifier et durcir `disabled={loading}` sur les boutons "Créer" de :
-- `src/components/sav/SAVForm.tsx`
-- `src/components/sav/SAVWizardDialog.tsx` (déjà `disabled={loading}` ligne 1115, OK)
-- `src/components/quotes/QuoteForm.tsx`
-- `src/components/customers/CustomerForm.tsx`
-- `src/components/sav/EditSAVCustomerDialog.tsx`
+Formule :
+- `unit_price_HT = vat_regime === 'none' ? unit_price : unit_price / (1 + vat_rate_parts/100)` (si `prices_include_vat`)
+- `vat_amount = unit_price - unit_price_HT`
+- `marge_HT = unit_price_HT - purchase_price`
 
-Le `useRef` du point 1 reste le vrai garde-fou ; le `disabled` est complémentaire.
+### Fiches pièces (`PartForm.tsx`)
+- Afficher, sous le champ « Prix de vente TTC », deux lignes calculées en direct :
+  - **Prix HT** = prix TTC / (1 + taux)
+  - **TVA** = prix TTC − prix HT (avec taux affiché)
+- Afficher la **marge HT** = prix HT − prix d'achat (déjà HT), en € et en %.
+- Aucune modification du schéma : c'est purement dérivé du prix TTC saisi + config boutique.
+
+### Rapports (`useReportData.ts`, `useSupplierReportData.ts`, `useSupplierStatistics.ts`)
+Chaque calcul par pièce :
+- `revenue_ht = unit_price_ht * quantity * revenue_ratio`
+- `vat_collected = (unit_price - unit_price_ht) * quantity * revenue_ratio`
+- `expense = purchase_price * quantity` (déjà HT)
+- `margin = revenue_ht - expense`
+
+Ajouter dans les objets retournés :
+- `revenue_ht`, `revenue_ttc`, `vat_collected` par SAV, par fournisseur et par total.
+
+### UI Rapports (`Reports.tsx`, `SupplierPerformanceSection.tsx`, `ReportChartsSection.tsx`)
+- Afficher CA **HT** en principal, avec CA TTC en secondaire (plus petit).
+- Nouvelle colonne / bloc **TVA collectée**.
+- La marge affichée devient explicitement « Marge HT ».
+- Exports Excel/PDF : mêmes colonnes ajoutées.
+
+### Widgets statistiques (revenus / marges)
+- `useStatistics.ts`, `useMonthlyStatistics.ts`, `useCustomWidgetData.ts` : basculer les CA/marges en HT via le helper commun.
+- Créer un helper partagé `src/lib/vatCalculator.ts` → `splitTtcHt(unitTtc, config)` pour éviter la duplication.
+
+### Régime « auto-entrepreneur » (`vat_regime === 'none'`)
+Aucune TVA : HT = TTC, `vat_collected = 0`. Comportement inchangé pour ces boutiques.
+
+---
 
 ## Détails techniques
 
-**Fichiers modifiés :**
-- `src/hooks/useCustomers.ts` : verrou `isCreatingRef`, matching phone/email retourne l'existant, matching name retourne l'existant au lieu d'échouer
-- `src/components/sav/SAVForm.tsx` : s'assurer que `disabled={loading}` couvre bien le bouton final
-- `src/components/quotes/QuoteForm.tsx` : idem
-- `src/components/customers/CustomerForm.tsx` : idem (déjà `disabled={loading}`, à vérifier)
-- `src/components/sav/EditSAVCustomerDialog.tsx` : idem
+- Ajouter `splitTtcHt(unitTtc: number, config: BillingConfig): { ht, ttc, vat, rate }` dans `src/lib/vatCalculator.ts`.
+- Les hooks `useReportData`, `useSupplierReportData`, `useSupplierStatistics` prendront un `billingConfig` en entrée (via `useBillingConfig()` déjà dispo côté composant appelant, injecté en paramètre).
+- Pas de migration DB. Pas de changement de saisie utilisateur.
+- Zone impactée strictement : lecture/affichage. Aucun changement UI hors des zones citées.
 
-**Non fait dans ce plan (à valider séparément si souhaité) :**
-- Index unique partiel Postgres sur `(shop_id, lower(trim(first_name)), lower(trim(last_name)), regexp_replace(coalesce(phone,''), '\D', '', 'g'))` — nécessiterait de dédoublonner d'abord la base via le gestionnaire de doublons existant, sinon la migration échouerait. À proposer une fois le stock nettoyé.
-- Nettoyage automatique des doublons déjà présents : peut être fait via le gestionnaire de doublons existant (page Clients).
+---
 
-## Résultat attendu
+## Fichiers touchés (prévisionnel)
 
-- Double-clic sur "Créer" (SAV, devis, client, édition SAV) → **1 seule ligne** créée, le 2e clic réutilise silencieusement la 1re.
-- Si téléphone identique déjà présent → réutilisation du client existant sans nouvel enregistrement.
-- Aucun changement visuel ni de layout.
+```text
+src/components/sav/SAVPartsEditor.tsx        (fix snapshot)
+src/components/sav/SAVCloseUnifiedDialog.tsx (fix backfill destructif)
+src/components/parts/PartForm.tsx            (affichage HT/TVA/marge)
+src/lib/vatCalculator.ts                     (helper splitTtcHt)
+src/hooks/useReportData.ts                   (HT + TVA)
+src/hooks/useSupplierReportData.ts           (HT + TVA)
+src/hooks/useSupplierStatistics.ts           (HT + TVA)
+src/pages/Reports.tsx                        (UI colonnes)
+src/components/reports/SupplierPerformanceSection.tsx (UI)
+src/components/reports/ReportChartsSection.tsx        (UI)
+src/hooks/useStatistics.ts / useMonthlyStatistics.ts  (marges HT)
+```
