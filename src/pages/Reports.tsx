@@ -557,15 +557,27 @@ export default function Reports() {
           </Card>
 
           {/* Synthesis */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <Card className="bg-primary/5 border-primary/20">
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground">Chiffre d'affaires</p>
+                    <p className="text-sm font-medium text-muted-foreground">Chiffre d'affaires HT</p>
                     <p className="text-2xl font-bold text-primary">{formatCurrency(data.totals.revenue)}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">TTC : {formatCurrency(data.totals.revenue_ttc)}</p>
                   </div>
                   <TrendingUp className="h-8 w-8 text-primary/50" />
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="bg-amber-500/5 border-amber-500/20">
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">TVA collectée</p>
+                    <p className="text-2xl font-bold text-amber-600">{formatCurrency(data.totals.vat_collected)}</p>
+                  </div>
+                  <DollarSign className="h-8 w-8 text-amber-500/50" />
                 </div>
               </CardContent>
             </Card>
@@ -573,7 +585,7 @@ export default function Reports() {
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground">Coûts d'achat</p>
+                    <p className="text-sm font-medium text-muted-foreground">Coûts d'achat HT</p>
                     <p className="text-2xl font-bold text-destructive">{formatCurrency(data.totals.costs)}</p>
                   </div>
                   <TrendingDown className="h-8 w-8 text-destructive/50" />
@@ -587,7 +599,7 @@ export default function Reports() {
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground">Marge</p>
+                    <p className="text-sm font-medium text-muted-foreground">Marge HT</p>
                     <p className={cn(
                       "text-2xl font-bold",
                       data.totals.margin >= 0 ? "text-green-600" : "text-destructive"
@@ -601,6 +613,7 @@ export default function Reports() {
               </CardContent>
             </Card>
           </div>
+
 
           {/* Charts Section */}
           {selectedWidgets.length > 0 && (
