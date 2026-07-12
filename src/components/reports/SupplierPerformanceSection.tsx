@@ -44,9 +44,11 @@ export function SupplierPerformanceSection({ reportData, dateRange }: Props) {
                   <TableHead>Fournisseur</TableHead>
                   <TableHead className="text-right">Pièces</TableHead>
                   <TableHead className="text-right">SAV</TableHead>
-                  <TableHead className="text-right">Dépenses</TableHead>
-                  <TableHead className="text-right">CA généré</TableHead>
-                  <TableHead className="text-right">Marge</TableHead>
+                  <TableHead className="text-right">Dépenses HT</TableHead>
+                  <TableHead className="text-right">CA HT</TableHead>
+                  <TableHead className="text-right">TVA</TableHead>
+                  <TableHead className="text-right">CA TTC</TableHead>
+                  <TableHead className="text-right">Marge HT</TableHead>
                   <TableHead className="text-right">% Marge</TableHead>
                 </TableRow>
               </TableHeader>
@@ -61,6 +63,8 @@ export function SupplierPerformanceSection({ reportData, dateRange }: Props) {
                     <TableCell className="text-right">{r.sav_count}</TableCell>
                     <TableCell className="text-right text-destructive">{fmtMoney(r.expenses)}</TableCell>
                     <TableCell className="text-right">{fmtMoney(r.revenue)}</TableCell>
+                    <TableCell className="text-right text-amber-600">{fmtMoney(r.vat_collected)}</TableCell>
+                    <TableCell className="text-right text-muted-foreground">{fmtMoney(r.revenue_ttc)}</TableCell>
                     <TableCell className={cn(
                       'text-right font-semibold',
                       r.margin >= 0 ? 'text-green-600' : 'text-destructive'
@@ -80,6 +84,8 @@ export function SupplierPerformanceSection({ reportData, dateRange }: Props) {
                   <TableCell className="text-right font-semibold">{totals.sav_count}</TableCell>
                   <TableCell className="text-right font-semibold text-destructive">{fmtMoney(totals.expenses)}</TableCell>
                   <TableCell className="text-right font-semibold">{fmtMoney(totals.revenue)}</TableCell>
+                  <TableCell className="text-right font-semibold text-amber-600">{fmtMoney(totals.vat_collected)}</TableCell>
+                  <TableCell className="text-right font-semibold text-muted-foreground">{fmtMoney(totals.revenue_ttc)}</TableCell>
                   <TableCell className={cn(
                     'text-right font-bold',
                     totals.margin >= 0 ? 'text-green-600' : 'text-destructive'
@@ -91,6 +97,7 @@ export function SupplierPerformanceSection({ reportData, dateRange }: Props) {
                   </TableCell>
                 </TableRow>
               </TableFooter>
+
             </Table>
           </div>
         )}

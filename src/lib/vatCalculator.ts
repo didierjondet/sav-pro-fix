@@ -100,3 +100,24 @@ export function regimeLabel(r: BillingConfig['vat_regime']): string {
 function round2(n: number): number {
   return Math.round(n * 100) / 100;
 }
+
+/**
+ * Split a price into HT/TTC/VAT parts using the shop billing config.
+ * If regime is 'none' → no VAT (HT = TTC).
+ * If prices_include_vat → the input is treated as TTC and HT is derived.
+ * Otherwise → input is treated as HT and TTC is derived.
+ */
+export function splitTtcHt(unit: number, config: BillingConfig): { ht: number; ttc: number; vat: number; rate: number } {
+  const price = Number(unit) || 0;
+  if (config.vat_regime === 'none') {
+    return { ht: round2(price), ttc: round2(price), vat: 0, rate: 0 };
+  }
+  const rate = (config.vat_rate_parts || 0) / 100;
+  if (config.prices_include_vat) {
+    const ht = rate > 0 ? price / (1 + rate) : price;
+    return { ht: round2(ht), ttc: round2(price), vat: round2(price - ht), rate: config.vat_rate_parts || 0 };
+  }
+  const ttc = price * (1 + rate);
+  return { ht: round2(price), ttc: round2(ttc), vat: round2(ttc - price), rate: config.vat_rate_parts || 0 };
+}
+

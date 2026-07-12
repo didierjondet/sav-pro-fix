@@ -76,7 +76,11 @@ export function SAVPartsEditor({ savCaseId, onPartsUpdated, trigger }: SAVPartsE
         time_minutes: item.time_minutes || 0,
         unit_price: item.unit_price || 0,
         available_stock: item.parts ? Math.max(0, (item.parts.quantity || 0) - (item.parts.reserved_quantity || 0)) : undefined,
-        purchase_price: item.parts?.purchase_price || 0,
+        // Snapshot price locked at SAV creation. Only fall back to live part price
+        // if the snapshot is truly missing (legacy row without purchase_price recorded).
+        purchase_price: (item.purchase_price !== null && item.purchase_price !== undefined)
+          ? Number(item.purchase_price)
+          : (item.parts?.purchase_price || 0),
         isCustom: !item.part_id
       })) || [];
 

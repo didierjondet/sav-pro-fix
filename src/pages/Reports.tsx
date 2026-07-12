@@ -99,12 +99,13 @@ export default function Reports() {
         'SKU': item.sku || '-',
         'IMEI': item.device_imei || '-',
         'Commentaire technicien': item.technician_comments || '-',
-        'Coût achat (€)': item.purchase_cost,
-        'Prix vente (€)': item.selling_price,
-        'Marge (€)': item.margin
+        'Coût achat HT (€)': Number(item.purchase_cost.toFixed(2)),
+        'Prix vente HT (€)': Number(item.selling_price_ht.toFixed(2)),
+        'TVA (€)': Number(item.vat_collected.toFixed(2)),
+        'Prix vente TTC (€)': Number(item.selling_price.toFixed(2)),
+        'Marge HT (€)': Number(item.margin.toFixed(2))
       }));
 
-      // Add subtotals row
       const subtotal = data.subtotals[typeKey];
       sheetData.push({
         'N° SAV': 'SOUS-TOTAL',
@@ -115,13 +116,16 @@ export default function Reports() {
         'SKU': '',
         'IMEI': '',
         'Commentaire technicien': '',
-        'Coût achat (€)': subtotal.costs,
-        'Prix vente (€)': subtotal.revenue,
-        'Marge (€)': subtotal.margin
+        'Coût achat HT (€)': Number(subtotal.costs.toFixed(2)),
+        'Prix vente HT (€)': Number(subtotal.revenue.toFixed(2)),
+        'TVA (€)': Number(subtotal.vat_collected.toFixed(2)),
+        'Prix vente TTC (€)': Number(subtotal.revenue_ttc.toFixed(2)),
+        'Marge HT (€)': Number(subtotal.margin.toFixed(2))
       });
 
       const ws = XLSX.utils.json_to_sheet(sheetData);
-      XLSX.utils.book_append_sheet(wb, ws, typeInfo.label.substring(0, 31)); // Excel sheet name max 31 chars
+      XLSX.utils.book_append_sheet(wb, ws, typeInfo.label.substring(0, 31));
+
     });
 
     // Suppliers sheet
@@ -130,30 +134,37 @@ export default function Reports() {
         'Fournisseur': r.supplier_name,
         'Pièces': r.parts_count,
         'SAV': r.sav_count,
-        'Dépenses (€)': Number(r.expenses.toFixed(2)),
-        'CA généré (€)': Number(r.revenue.toFixed(2)),
-        'Marge (€)': Number(r.margin.toFixed(2)),
+        'Dépenses HT (€)': Number(r.expenses.toFixed(2)),
+        'CA HT (€)': Number(r.revenue.toFixed(2)),
+        'TVA (€)': Number(r.vat_collected.toFixed(2)),
+        'CA TTC (€)': Number(r.revenue_ttc.toFixed(2)),
+        'Marge HT (€)': Number(r.margin.toFixed(2)),
         '% Marge': r.revenue > 0 ? Number(r.margin_pct.toFixed(1)) : 0
       }));
       supplierSheet.push({
         'Fournisseur': 'TOTAL',
         'Pièces': supplierReport.totals.parts_count,
         'SAV': supplierReport.totals.sav_count,
-        'Dépenses (€)': Number(supplierReport.totals.expenses.toFixed(2)),
-        'CA généré (€)': Number(supplierReport.totals.revenue.toFixed(2)),
-        'Marge (€)': Number(supplierReport.totals.margin.toFixed(2)),
+        'Dépenses HT (€)': Number(supplierReport.totals.expenses.toFixed(2)),
+        'CA HT (€)': Number(supplierReport.totals.revenue.toFixed(2)),
+        'TVA (€)': Number(supplierReport.totals.vat_collected.toFixed(2)),
+        'CA TTC (€)': Number(supplierReport.totals.revenue_ttc.toFixed(2)),
+        'Marge HT (€)': Number(supplierReport.totals.margin.toFixed(2)),
         '% Marge': supplierReport.totals.revenue > 0 ? Number(supplierReport.totals.margin_pct.toFixed(1)) : 0
       });
       const supplierWs = XLSX.utils.json_to_sheet(supplierSheet);
       XLSX.utils.book_append_sheet(wb, supplierWs, 'Fournisseurs');
     }
 
+
     // Create synthesis sheet
     const synthesisData = [
       { 'Métrique': 'Nombre total de SAV', 'Valeur': data.totals.count },
-      { 'Métrique': 'Chiffre d\'affaires total', 'Valeur': `${data.totals.revenue.toFixed(2)} €` },
-      { 'Métrique': 'Coûts d\'achat totaux', 'Valeur': `${data.totals.costs.toFixed(2)} €` },
-      { 'Métrique': 'Marge totale', 'Valeur': `${data.totals.margin.toFixed(2)} €` },
+      { 'Métrique': 'Chiffre d\'affaires HT', 'Valeur': `${data.totals.revenue.toFixed(2)} €` },
+      { 'Métrique': 'TVA collectée', 'Valeur': `${data.totals.vat_collected.toFixed(2)} €` },
+      { 'Métrique': 'Chiffre d\'affaires TTC', 'Valeur': `${data.totals.revenue_ttc.toFixed(2)} €` },
+      { 'Métrique': 'Coûts d\'achat HT', 'Valeur': `${data.totals.costs.toFixed(2)} €` },
+      { 'Métrique': 'Marge HT', 'Valeur': `${data.totals.margin.toFixed(2)} €` },
       { 'Métrique': '', 'Valeur': '' },
       { 'Métrique': '--- Par type de SAV ---', 'Valeur': '' }
     ];
@@ -162,11 +173,14 @@ export default function Reports() {
       const typeInfo = getTypeInfo(typeKey);
       synthesisData.push(
         { 'Métrique': `${typeInfo.label} - Nombre`, 'Valeur': subtotal.count },
-        { 'Métrique': `${typeInfo.label} - CA`, 'Valeur': `${subtotal.revenue.toFixed(2)} €` },
-        { 'Métrique': `${typeInfo.label} - Coûts`, 'Valeur': `${subtotal.costs.toFixed(2)} €` },
-        { 'Métrique': `${typeInfo.label} - Marge`, 'Valeur': `${subtotal.margin.toFixed(2)} €` }
+        { 'Métrique': `${typeInfo.label} - CA HT`, 'Valeur': `${subtotal.revenue.toFixed(2)} €` },
+        { 'Métrique': `${typeInfo.label} - TVA`, 'Valeur': `${subtotal.vat_collected.toFixed(2)} €` },
+        { 'Métrique': `${typeInfo.label} - CA TTC`, 'Valeur': `${subtotal.revenue_ttc.toFixed(2)} €` },
+        { 'Métrique': `${typeInfo.label} - Coûts HT`, 'Valeur': `${subtotal.costs.toFixed(2)} €` },
+        { 'Métrique': `${typeInfo.label} - Marge HT`, 'Valeur': `${subtotal.margin.toFixed(2)} €` }
       );
     });
+
 
     const synthesisWs = XLSX.utils.json_to_sheet(synthesisData);
     XLSX.utils.book_append_sheet(wb, synthesisWs, 'Synthèse');
@@ -557,15 +571,27 @@ export default function Reports() {
           </Card>
 
           {/* Synthesis */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <Card className="bg-primary/5 border-primary/20">
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground">Chiffre d'affaires</p>
+                    <p className="text-sm font-medium text-muted-foreground">Chiffre d'affaires HT</p>
                     <p className="text-2xl font-bold text-primary">{formatCurrency(data.totals.revenue)}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">TTC : {formatCurrency(data.totals.revenue_ttc)}</p>
                   </div>
                   <TrendingUp className="h-8 w-8 text-primary/50" />
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="bg-amber-500/5 border-amber-500/20">
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">TVA collectée</p>
+                    <p className="text-2xl font-bold text-amber-600">{formatCurrency(data.totals.vat_collected)}</p>
+                  </div>
+                  <DollarSign className="h-8 w-8 text-amber-500/50" />
                 </div>
               </CardContent>
             </Card>
@@ -573,7 +599,7 @@ export default function Reports() {
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground">Coûts d'achat</p>
+                    <p className="text-sm font-medium text-muted-foreground">Coûts d'achat HT</p>
                     <p className="text-2xl font-bold text-destructive">{formatCurrency(data.totals.costs)}</p>
                   </div>
                   <TrendingDown className="h-8 w-8 text-destructive/50" />
@@ -587,7 +613,7 @@ export default function Reports() {
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-muted-foreground">Marge</p>
+                    <p className="text-sm font-medium text-muted-foreground">Marge HT</p>
                     <p className={cn(
                       "text-2xl font-bold",
                       data.totals.margin >= 0 ? "text-green-600" : "text-destructive"
@@ -601,6 +627,7 @@ export default function Reports() {
               </CardContent>
             </Card>
           </div>
+
 
           {/* Charts Section */}
           {selectedWidgets.length > 0 && (
@@ -666,9 +693,12 @@ export default function Reports() {
                               <TableHead>Appareil</TableHead>
                               <TableHead>SKU</TableHead>
                               <TableHead>IMEI</TableHead>
-                              <TableHead className="text-right">Coût achat</TableHead>
-                              <TableHead className="text-right">Prix vente</TableHead>
-                              <TableHead className="text-right">Marge</TableHead>
+                              <TableHead className="text-right">Coût achat HT</TableHead>
+                              <TableHead className="text-right">Prix vente HT</TableHead>
+                              <TableHead className="text-right">TVA</TableHead>
+                              <TableHead className="text-right">Prix vente TTC</TableHead>
+                              <TableHead className="text-right">Marge HT</TableHead>
+
                             </TableRow>
                           </TableHeader>
                           <TableBody>
@@ -711,17 +741,20 @@ export default function Reports() {
                                       {item.device_imei || '-'}
                                     </TableCell>
                                     <TableCell className="text-right">{formatCurrency(item.purchase_cost)}</TableCell>
-                                    <TableCell className="text-right">{formatCurrency(item.selling_price)}</TableCell>
+                                    <TableCell className="text-right">{formatCurrency(item.selling_price_ht)}</TableCell>
+                                    <TableCell className="text-right text-amber-600">{formatCurrency(item.vat_collected)}</TableCell>
+                                    <TableCell className="text-right text-muted-foreground">{formatCurrency(item.selling_price)}</TableCell>
                                     <TableCell className={cn(
                                       "text-right font-medium",
                                       item.margin >= 0 ? "text-green-600" : "text-destructive"
                                     )}>
                                       {formatCurrency(item.margin)}
                                     </TableCell>
+
                                   </TableRow>
-                                  {item.technician_comments && (
+                                   {item.technician_comments && (
                                     <TableRow className="bg-blue-50/50 dark:bg-blue-950/20 hover:bg-blue-50/70">
-                                      <TableCell colSpan={10} className="py-2 px-4">
+                                      <TableCell colSpan={12} className="py-2 px-4">
                                         <div className="text-xs text-muted-foreground italic">
                                           <span className="font-medium not-italic">Commentaire technicien :</span>{' '}
                                           {item.technician_comments}
@@ -731,7 +764,7 @@ export default function Reports() {
                                   )}
                                   {item.parts.length > 0 && (
                                     <TableRow className="bg-muted/30 hover:bg-muted/40">
-                                      <TableCell colSpan={10} className="py-2 px-4">
+                                      <TableCell colSpan={12} className="py-2 px-4">
                                         <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
                                           <span className="font-medium">Pièces :</span>
                                           {item.parts.map((part, idx) => (
@@ -739,7 +772,7 @@ export default function Reports() {
                                               {part.name}
                                               {part.quantity > 1 && <span className="text-primary">×{part.quantity}</span>}
                                               <span className="text-muted-foreground/70">
-                                                ({formatCurrency(part.purchase_price)} → {formatCurrency(part.unit_price)})
+                                                (achat {formatCurrency(part.purchase_price)} → vente HT {formatCurrency(part.unit_price_ht)} / TTC {formatCurrency(part.unit_price)})
                                               </span>
                                             </span>
                                           ))}
@@ -757,8 +790,11 @@ export default function Reports() {
                               </TableCell>
                               <TableCell className="text-right">{formatCurrency(subtotal.costs)}</TableCell>
                               <TableCell className="text-right">{formatCurrency(subtotal.revenue)}</TableCell>
+                              <TableCell className="text-right text-amber-600">{formatCurrency(subtotal.vat_collected)}</TableCell>
+                              <TableCell className="text-right text-muted-foreground">{formatCurrency(subtotal.revenue_ttc)}</TableCell>
                               <TableCell className={cn(
                                 "text-right",
+
                                 subtotal.margin >= 0 ? "text-green-600" : "text-destructive"
                               )}>
                                 {formatCurrency(subtotal.margin)}
@@ -782,23 +818,32 @@ export default function Reports() {
                   <div className="font-medium">
                     TOTAL GÉNÉRAL ({data.totals.count} SAV)
                   </div>
-                  <div className="flex gap-6 text-sm">
+                  <div className="flex flex-wrap gap-6 text-sm">
                     <div>
-                      <span className="text-muted-foreground">Coûts : </span>
+                      <span className="text-muted-foreground">Coûts HT : </span>
                       <span className="font-bold">{formatCurrency(data.totals.costs)}</span>
                     </div>
                     <div>
-                      <span className="text-muted-foreground">CA : </span>
+                      <span className="text-muted-foreground">CA HT : </span>
                       <span className="font-bold text-primary">{formatCurrency(data.totals.revenue)}</span>
                     </div>
                     <div>
-                      <span className="text-muted-foreground">Marge : </span>
+                      <span className="text-muted-foreground">TVA : </span>
+                      <span className="font-bold text-amber-600">{formatCurrency(data.totals.vat_collected)}</span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">CA TTC : </span>
+                      <span className="font-bold">{formatCurrency(data.totals.revenue_ttc)}</span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Marge HT : </span>
                       <span className={cn(
                         "font-bold",
                         data.totals.margin >= 0 ? "text-green-600" : "text-destructive"
                       )}>{formatCurrency(data.totals.margin)}</span>
                     </div>
                   </div>
+
                 </div>
               </CardContent>
             </Card>

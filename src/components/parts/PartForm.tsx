@@ -388,11 +388,41 @@ export function PartForm({ initialData, onSubmit, onCancel, isEdit = false, find
                   />
                 )}
               />
+              {(() => {
+                const ttc = Number(watch('selling_price')) || 0;
+                const purchase = Number(watch('purchase_price')) || 0;
+                const rate = billing.vat_regime === 'none' ? 0 : (billing.vat_rate_parts || 0) / 100;
+                const includesVat = billing.vat_regime !== 'none' && billing.prices_include_vat;
+                const ht = includesVat && rate > 0 ? ttc / (1 + rate) : ttc;
+                const vat = ttc - ht;
+                const marginHT = ht - purchase;
+                const marginPct = ht > 0 ? (marginHT / ht) * 100 : 0;
+                return (
+                  <div className="mt-1.5 rounded-md border bg-muted/30 p-2 text-xs space-y-0.5">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Prix HT</span>
+                      <span className="font-medium">{ht.toFixed(2)} €</span>
+                    </div>
+                    {billing.vat_regime !== 'none' && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">TVA ({billing.vat_rate_parts}%)</span>
+                        <span className="text-amber-600">{vat.toFixed(2)} €</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between border-t pt-0.5">
+                      <span className="text-muted-foreground">Marge HT</span>
+                      <span className={cn('font-semibold', marginHT >= 0 ? 'text-green-600' : 'text-destructive')}>
+                        {marginHT.toFixed(2)} € {ht > 0 && `(${marginPct.toFixed(1)}%)`}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })()}
               {initialData?.price_last_updated && (
                 <p className="text-xs text-muted-foreground mt-1">
                   Dernière modification des prix : {new Date(initialData.price_last_updated).toLocaleDateString('fr-FR', {
                     day: '2-digit',
-                    month: '2-digit', 
+                    month: '2-digit',
                     year: 'numeric',
                     hour: '2-digit',
                     minute: '2-digit'
@@ -400,6 +430,7 @@ export function PartForm({ initialData, onSubmit, onCancel, isEdit = false, find
                 </p>
               )}
             </div>
+
           </div>
 
           {!isService && (
