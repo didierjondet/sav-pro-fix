@@ -99,12 +99,13 @@ export default function Reports() {
         'SKU': item.sku || '-',
         'IMEI': item.device_imei || '-',
         'Commentaire technicien': item.technician_comments || '-',
-        'Coût achat (€)': item.purchase_cost,
-        'Prix vente (€)': item.selling_price,
-        'Marge (€)': item.margin
+        'Coût achat HT (€)': Number(item.purchase_cost.toFixed(2)),
+        'Prix vente HT (€)': Number(item.selling_price_ht.toFixed(2)),
+        'TVA (€)': Number(item.vat_collected.toFixed(2)),
+        'Prix vente TTC (€)': Number(item.selling_price.toFixed(2)),
+        'Marge HT (€)': Number(item.margin.toFixed(2))
       }));
 
-      // Add subtotals row
       const subtotal = data.subtotals[typeKey];
       sheetData.push({
         'N° SAV': 'SOUS-TOTAL',
@@ -115,13 +116,16 @@ export default function Reports() {
         'SKU': '',
         'IMEI': '',
         'Commentaire technicien': '',
-        'Coût achat (€)': subtotal.costs,
-        'Prix vente (€)': subtotal.revenue,
-        'Marge (€)': subtotal.margin
+        'Coût achat HT (€)': Number(subtotal.costs.toFixed(2)),
+        'Prix vente HT (€)': Number(subtotal.revenue.toFixed(2)),
+        'TVA (€)': Number(subtotal.vat_collected.toFixed(2)),
+        'Prix vente TTC (€)': Number(subtotal.revenue_ttc.toFixed(2)),
+        'Marge HT (€)': Number(subtotal.margin.toFixed(2))
       });
 
       const ws = XLSX.utils.json_to_sheet(sheetData);
-      XLSX.utils.book_append_sheet(wb, ws, typeInfo.label.substring(0, 31)); // Excel sheet name max 31 chars
+      XLSX.utils.book_append_sheet(wb, ws, typeInfo.label.substring(0, 31));
+
     });
 
     // Suppliers sheet
@@ -130,23 +134,28 @@ export default function Reports() {
         'Fournisseur': r.supplier_name,
         'Pièces': r.parts_count,
         'SAV': r.sav_count,
-        'Dépenses (€)': Number(r.expenses.toFixed(2)),
-        'CA généré (€)': Number(r.revenue.toFixed(2)),
-        'Marge (€)': Number(r.margin.toFixed(2)),
+        'Dépenses HT (€)': Number(r.expenses.toFixed(2)),
+        'CA HT (€)': Number(r.revenue.toFixed(2)),
+        'TVA (€)': Number(r.vat_collected.toFixed(2)),
+        'CA TTC (€)': Number(r.revenue_ttc.toFixed(2)),
+        'Marge HT (€)': Number(r.margin.toFixed(2)),
         '% Marge': r.revenue > 0 ? Number(r.margin_pct.toFixed(1)) : 0
       }));
       supplierSheet.push({
         'Fournisseur': 'TOTAL',
         'Pièces': supplierReport.totals.parts_count,
         'SAV': supplierReport.totals.sav_count,
-        'Dépenses (€)': Number(supplierReport.totals.expenses.toFixed(2)),
-        'CA généré (€)': Number(supplierReport.totals.revenue.toFixed(2)),
-        'Marge (€)': Number(supplierReport.totals.margin.toFixed(2)),
+        'Dépenses HT (€)': Number(supplierReport.totals.expenses.toFixed(2)),
+        'CA HT (€)': Number(supplierReport.totals.revenue.toFixed(2)),
+        'TVA (€)': Number(supplierReport.totals.vat_collected.toFixed(2)),
+        'CA TTC (€)': Number(supplierReport.totals.revenue_ttc.toFixed(2)),
+        'Marge HT (€)': Number(supplierReport.totals.margin.toFixed(2)),
         '% Marge': supplierReport.totals.revenue > 0 ? Number(supplierReport.totals.margin_pct.toFixed(1)) : 0
       });
       const supplierWs = XLSX.utils.json_to_sheet(supplierSheet);
       XLSX.utils.book_append_sheet(wb, supplierWs, 'Fournisseurs');
     }
+
 
     // Create synthesis sheet
     const synthesisData = [
