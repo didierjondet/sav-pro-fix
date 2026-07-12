@@ -153,14 +153,16 @@ export function SAVCloseUnifiedDialog({
     try {
       const { data: parts, error } = await supabase
         .from('sav_parts')
-        .select('id, part_id, purchase_price, parts(purchase_price)')
+        .select('id, part_id, purchase_price')
         .eq('sav_case_id', savCase.id);
 
       if (error) throw error;
 
       const noParts = !parts || parts.length === 0;
-      const noPurchase = parts?.some(part => 
-        !part.purchase_price && (!part.parts || !part.parts.purchase_price)
+      // Le prix d'achat du snapshot fait foi : ne jamais s'appuyer sur la fiche pièce actuelle
+      // pour éviter que la marge historique varie si la fiche est modifiée après coup.
+      const noPurchase = parts?.some(part =>
+        part.purchase_price === null || part.purchase_price === undefined || Number(part.purchase_price) === 0
       ) || false;
 
       setWarnings({ noParts, noPurchase });
