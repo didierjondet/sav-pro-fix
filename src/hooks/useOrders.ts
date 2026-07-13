@@ -363,7 +363,8 @@ export function useOrders() {
         .eq('shop_id', profile.shop_id)
         .eq('part_id', orderData.part_id)
         .eq('reason', orderData.reason)
-        .eq('ordered', false);
+        .eq('ordered', false)
+        .limit(1);
 
       existingQuery = orderData.sav_case_id
         ? existingQuery.eq('sav_case_id', orderData.sav_case_id)
