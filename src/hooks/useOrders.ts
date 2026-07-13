@@ -359,8 +359,8 @@ export function useOrders() {
       // Check if item already exists
       const existingItem = orderItems.find(
         item => item.part_id === orderData.part_id && 
-               item.sav_case_id === orderData.sav_case_id &&
-               item.quote_id === orderData.quote_id &&
+               (item.sav_case_id ?? null) === (orderData.sav_case_id ?? null) &&
+               (item.quote_id ?? null) === (orderData.quote_id ?? null) &&
                item.reason === orderData.reason &&
                !item.ordered
       );
