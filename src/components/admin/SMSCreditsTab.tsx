@@ -227,6 +227,21 @@ export function SMSCreditsTab({
           </CardTitle>
         </CardHeader>
         <CardContent>
+          <div className="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-3 rounded-lg border bg-background">
+            <div className="text-sm">
+              <div className="font-medium">Recharger le stock global Brevo</div>
+              <div className="text-xs text-muted-foreground">Ouvre la page d'achat de crédits SMS Brevo dans un nouvel onglet</div>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => window.open('https://app.brevo.com/billing/plan/customize/transactional-sms', '_blank', 'noopener,noreferrer')}
+            >
+              <ExternalLink className="h-4 w-4 mr-2" />
+              Acheter des SMS sur Brevo
+            </Button>
+          </div>
+
           {realTimeCredits ? (
             <div className="space-y-4">
               {/* Main counter */}
