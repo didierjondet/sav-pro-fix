@@ -43,34 +43,45 @@ export function useSMS() {
         },
       });
 
-      // L'erreur du SDK contient le vrai message si on le parse
+      // Extraire le vrai payload d'erreur (edge function renvoie non-2xx pour les erreurs)
+      let payload: any = data;
       if (error) {
-        // Tenter d'extraire le JSON de la réponse d'erreur
-        let realError = error.message;
         try {
-          // supabase.functions.invoke met le body dans error.context?.body ou error.message
           const ctx = (error as any).context;
-          if (ctx) {
-            const body = await ctx.json?.() || ctx;
-            realError = body?.error || realError;
-          }
-        } catch { /* ignore parse errors */ }
-        throw new Error(realError);
+          if (ctx?.json) payload = await ctx.json();
+          else if (ctx?.text) payload = JSON.parse(await ctx.text());
+        } catch { /* ignore */ }
       }
 
-      if (!data?.success) {
-        // Gérer les erreurs avec popup pour achat de SMS
-        if (data?.action === 'buy_sms_package') {
-          window.location.href = '/subscription';
+      if (!payload?.success) {
+        const code = payload?.error_code;
+        const friendly = payload?.error || error?.message || "Erreur lors de l'envoi du SMS";
+
+        if (code === 'SHOP_NO_CREDITS' || payload?.action === 'buy_sms_package') {
           toast({
             title: "Crédits SMS épuisés",
-            description: "Vos crédits du plan sont épuisés. Achetez un pack SMS pour continuer.",
+            description: "Votre magasin n'a plus de crédits SMS. Redirection vers l'achat de crédits…",
+            variant: "destructive",
+          });
+          setTimeout(() => { window.location.href = '/subscription'; }, 1200);
+          return false;
+        }
+
+        if (code === 'SMSHSFULL') {
+          toast({
+            title: "Réseau SMS indisponible (SMSHSFULL)",
+            description: "Le fournisseur SMS n'a plus de crédits réseau. Merci d'ouvrir un ticket auprès du support pour rétablir le service.",
             variant: "destructive",
           });
           return false;
         }
-        
-        throw new Error(data?.error || 'Erreur lors de l\'envoi du SMS');
+
+        toast({
+          title: "Erreur d'envoi SMS",
+          description: `${friendly} Il s'agit peut-être d'un problème réseau — merci d'ouvrir un ticket auprès du support.`,
+          variant: "destructive",
+        });
+        return false;
       }
 
       toast({
@@ -80,21 +91,11 @@ export function useSMS() {
 
       return true;
     } catch (error: any) {
-      // Gérer les erreurs liées aux crédits
-      if (error.message.includes('Crédits SMS insuffisants') || error.message.includes('épuisés')) {
-        window.location.href = '/subscription';
-        toast({
-          title: "Crédits SMS épuisés",
-          description: "Achetez des crédits supplémentaires pour continuer à envoyer des SMS.",
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Erreur",
-          description: error.message || 'Erreur lors de l\'envoi du SMS',
-          variant: "destructive",
-        });
-      }
+      toast({
+        title: "Erreur",
+        description: error.message || "Erreur lors de l'envoi du SMS",
+        variant: "destructive",
+      });
 
       return false;
     } finally {
