@@ -294,7 +294,7 @@ const partsToInsert = savParts.map(part => ({
               part_name: part.part_name,
               part_reference: part.part_reference,
               quantity_needed: missingQuantity,
-              reason: 'sav_stock_insufficient',
+              reason: 'sav_stock_zero',
               priority: 'high'
             };
           }).filter(order => order.quantity_needed > 0);

@@ -391,7 +391,7 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
           const ordersToInsert = partsWithInsufficientStock.map(part => ({
             shop_id: profile?.shop_id, sav_case_id: newCase.id, part_id: part.part_id,
             part_name: part.name, part_reference: part.reference,
-            quantity_needed: part.missingQuantity, reason: 'sav_stock_insufficient', priority: 'high',
+            quantity_needed: part.missingQuantity, reason: 'sav_stock_zero', priority: 'high',
           }));
           await supabase.from('order_items').insert(ordersToInsert);
           await supabase.from('sav_cases').update({ status: 'parts_to_order' }).eq('id', newCase.id);

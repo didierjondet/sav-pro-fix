@@ -126,7 +126,7 @@ export function useOrders() {
       const { data: existingOrders } = await supabase
         .from('order_items')
         .select('part_id, sav_case_id, ordered')
-        .in('reason', ['sav_stock_zero', 'sav_stock_insufficient'])
+        .eq('reason', 'sav_stock_zero')
         .eq('ordered', true)
         .eq('shop_id', profile.shop_id);
 

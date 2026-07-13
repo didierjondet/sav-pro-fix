@@ -406,7 +406,7 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
               part_name: part.name,
               part_reference: part.reference,
               quantity_needed: part.missingQuantity,
-              reason: 'sav_stock_insufficient',
+              reason: 'sav_stock_zero',
               priority: 'high'
             }));
 

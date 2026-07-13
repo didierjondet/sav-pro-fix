@@ -474,7 +474,7 @@ export default function Quotes() {
               part_name: item.part_name || 'Pièce du devis',
               part_reference: item.part_reference || '',
               quantity_needed: missingQuantity,
-              reason: 'sav_from_quote_stock_insufficient',
+              reason: 'sav_stock_zero',
               priority: 'high'
             });
           }
