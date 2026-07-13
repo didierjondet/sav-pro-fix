@@ -139,6 +139,9 @@ export function useSAVCases() {
         description: "Dossier SAV créé avec succès",
       });
 
+      // Invalider globalement le cache pour que la liste SAV se rafraîchisse
+      // quelle que soit la page où l'utilisateur naviguera ensuite
+      await queryClient.invalidateQueries({ queryKey: ['sav-cases'] });
       refetch();
       return { data, error: null };
     } catch (error: any) {
