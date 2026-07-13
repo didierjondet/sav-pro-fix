@@ -356,14 +356,24 @@ export function useOrders() {
         throw new Error('Shop non trouvé');
       }
 
-      // Check if item already exists
-      const existingItem = orderItems.find(
-        item => item.part_id === orderData.part_id && 
-               (item.sav_case_id ?? null) === (orderData.sav_case_id ?? null) &&
-               (item.quote_id ?? null) === (orderData.quote_id ?? null) &&
-               item.reason === orderData.reason &&
-               !item.ordered
-      );
+      // Check if item already exists in database to avoid duplicates across pages
+      let existingQuery = supabase
+        .from('order_items')
+        .select('id, quantity_needed')
+        .eq('shop_id', profile.shop_id)
+        .eq('part_id', orderData.part_id)
+        .eq('reason', orderData.reason)
+        .eq('ordered', false);
+
+      existingQuery = orderData.sav_case_id
+        ? existingQuery.eq('sav_case_id', orderData.sav_case_id)
+        : existingQuery.is('sav_case_id', null);
+
+      existingQuery = orderData.quote_id
+        ? existingQuery.eq('quote_id', orderData.quote_id)
+        : existingQuery.is('quote_id', null);
+
+      const { data: existingItem } = await existingQuery.maybeSingle();
 
       if (existingItem) {
         // Update quantity
