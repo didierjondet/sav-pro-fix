@@ -5,6 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { NumberInput } from '@/components/ui/number-input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useParts, Part } from '@/hooks/useParts';
 import { usePartCategories } from '@/hooks/usePartCategories';
@@ -38,7 +40,8 @@ import {
   ClipboardCheck,
   Wrench,
   Sparkles,
-  Loader2
+  Loader2,
+  ShoppingCart
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { isPriceOutdated, getMonthsSinceUpdate } from '@/utils/priceUtils';
@@ -48,6 +51,7 @@ import { useGhostReservations } from '@/hooks/useGhostReservations';
 import { useProfile } from '@/hooks/useProfile';
 import { useToast } from '@/hooks/use-toast';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { useOrders } from '@/hooks/useOrders';
 
 export default function Parts() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -65,6 +69,9 @@ export default function Parts() {
   const [viewingPhoto, setViewingPhoto] = useState<Part | null>(null);
   const [aiReranking, setAiReranking] = useState(false);
   const [aiOrderIds, setAiOrderIds] = useState<string[] | null>(null);
+  const [preorderPart, setPreorderPart] = useState<Part | null>(null);
+  const [preorderQuantity, setPreorderQuantity] = useState(1);
+  const [preordering, setPreordering] = useState(false);
 
   const { parts, loading, statistics, createPart, updatePart, deletePart, adjustStock, findSimilarParts, refetch } = useParts();
   const { categories } = usePartCategories();
@@ -74,6 +81,7 @@ export default function Parts() {
   const { ghostByPart, refetch: refetchGhosts, recalculate: recalcReservations } = useGhostReservations();
   const { profile, actualProfile } = useProfile();
   const { toast } = useToast();
+  const { addToOrder } = useOrders();
   const isAdmin = profile?.role === 'admin' || actualProfile?.role === 'super_admin';
   const ghostCount = Object.keys(ghostByPart).length;
   const [recalculating, setRecalculating] = useState(false);
@@ -204,6 +212,33 @@ export default function Parts() {
     const { error } = await deletePart(deletingPart.id);
     if (!error) {
       setDeletingPart(null);
+    }
+  };
+
+  const handleConfirmPreorder = async () => {
+    if (!preorderPart || preordering) return;
+    const quantity = Math.max(1, Math.floor(Number(preorderQuantity) || 1));
+    setPreordering(true);
+    try {
+      const { error } = await addToOrder({
+        part_id: preorderPart.id,
+        part_name: preorderPart.name,
+        part_reference: preorderPart.reference,
+        quantity_needed: quantity,
+        reason: 'manual',
+        priority: 'medium',
+      });
+
+      if (!error) {
+        toast({
+          title: 'Précommande ajoutée',
+          description: `${quantity} pièce(s) ajoutée(s) dans Commandes > Pré-commande.`,
+        });
+        setPreorderPart(null);
+        setPreorderQuantity(1);
+      }
+    } finally {
+      setPreordering(false);
     }
   };
 
@@ -620,16 +655,29 @@ export default function Parts() {
                                 </div>
                               </div>
                               
-                              <div className="flex items-center gap-2 ml-4">
+                              <div className="flex flex-wrap items-center justify-end gap-2 ml-4">
                                 {!(part as any).is_service && (
-                                  <Button 
-                                    variant="outline" 
-                                    size="sm"
-                                    onClick={() => setAdjustingPart(part)}
-                                  >
-                                    <TrendingUp className="h-4 w-4 mr-1" />
-                                    Stock
-                                  </Button>
+                                  <>
+                                    <Button 
+                                      variant="outline" 
+                                      size="sm"
+                                      onClick={() => {
+                                        setPreorderPart(part);
+                                        setPreorderQuantity(Math.max(1, (part.min_stock || 0) - (part.quantity || 0)) || 1);
+                                      }}
+                                    >
+                                      <ShoppingCart className="h-4 w-4 mr-1" />
+                                      Précommande
+                                    </Button>
+                                    <Button 
+                                      variant="outline" 
+                                      size="sm"
+                                      onClick={() => setAdjustingPart(part)}
+                                    >
+                                      <TrendingUp className="h-4 w-4 mr-1" />
+                                      Stock
+                                    </Button>
+                                  </>
                                 )}
                                 <Button 
                                   variant="outline" 
@@ -708,6 +756,41 @@ export default function Parts() {
                     </Button>
                     <Button variant="destructive" onClick={handleDeletePart}>
                       Supprimer
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+
+              <Dialog open={!!preorderPart} onOpenChange={(open) => {
+                if (!open) {
+                  setPreorderPart(null);
+                  setPreorderQuantity(1);
+                }
+              }}>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Précommander une pièce</DialogTitle>
+                    <DialogDescription>
+                      {preorderPart?.name}{preorderPart?.reference ? ` — Réf: ${preorderPart.reference}` : ''}
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-2">
+                    <Label htmlFor="manual-preorder-quantity">Quantité à précommander</Label>
+                    <NumberInput
+                      id="manual-preorder-quantity"
+                      min="1"
+                      step="1"
+                      value={preorderQuantity}
+                      onChange={(e) => setPreorderQuantity(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                    />
+                  </div>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setPreorderPart(null)} disabled={preordering}>
+                      Annuler
+                    </Button>
+                    <Button onClick={handleConfirmPreorder} disabled={preordering}>
+                      {preordering ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <ShoppingCart className="h-4 w-4 mr-2" />}
+                      Valider
                     </Button>
                   </DialogFooter>
                 </DialogContent>

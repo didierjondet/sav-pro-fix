@@ -356,12 +356,24 @@ export function useOrders() {
         throw new Error('Shop non trouvé');
       }
 
-      // Check if item already exists
-      const existingItem = orderItems.find(
-        item => item.part_id === orderData.part_id && 
-               item.sav_case_id === orderData.sav_case_id &&
-               !item.ordered
-      );
+      // Check if item already exists in database to avoid duplicates across pages
+      let existingQuery = supabase
+        .from('order_items')
+        .select('id, quantity_needed')
+        .eq('shop_id', profile.shop_id)
+        .eq('part_id', orderData.part_id)
+        .eq('reason', orderData.reason)
+        .eq('ordered', false);
+
+      existingQuery = orderData.sav_case_id
+        ? existingQuery.eq('sav_case_id', orderData.sav_case_id)
+        : existingQuery.is('sav_case_id', null);
+
+      existingQuery = orderData.quote_id
+        ? existingQuery.eq('quote_id', orderData.quote_id)
+        : existingQuery.is('quote_id', null);
+
+      const { data: existingItem } = await existingQuery.maybeSingle();
 
       if (existingItem) {
         // Update quantity
@@ -674,9 +686,15 @@ export function useOrders() {
     
     switch (filter) {
       case 'sav':
-        // Ne retourner QUE les items générés dynamiquement pour SAV
-        console.log(`🎯 SAV filter - returning partsNeededForSAV:`, partsNeededForSAV.map(p => p.part_name));
-        return partsNeededForSAV;
+        // Pré-commandes SAV + pré-commandes manuelles non liées à un SAV
+        const manualPreorders = orderItems.filter(item =>
+          !item.ordered &&
+          item.reason === 'manual' &&
+          !item.sav_case_id &&
+          !item.quote_id
+        );
+        console.log(`🎯 SAV filter - returning preorders:`, [...manualPreorders, ...partsNeededForSAV].map(p => p.part_name));
+        return [...manualPreorders, ...partsNeededForSAV];
       case 'all':
         // Ne retourner QUE les items générés dynamiquement pour stock minimum
         console.log(`🎯 ALL filter - returning partsNeedingRestock:`, partsNeedingRestock.map(p => p.part_name));
