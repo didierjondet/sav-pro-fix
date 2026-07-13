@@ -148,6 +148,38 @@ Deno.serve(async (req) => {
     const formattedNumber = formatPhoneNumber(toNumber);
     console.log(`📱 SMS to ${formattedNumber} via multi-provider routing`);
 
+    // === Vérification des crédits SMS de la boutique AVANT envoi ===
+    const monthlyLimit = shop.sms_credits_allocated || 0;
+    const monthlyUsed = shop.monthly_sms_used || 0;
+    const adminAdded = shop.admin_added_sms_credits || 0;
+    const purchasedUsed = shop.purchased_sms_credits || 0;
+
+    const { data: pkgs } = await supabase
+      .from('sms_package_purchases')
+      .select('sms_count')
+      .eq('shop_id', shopId)
+      .eq('status', 'completed');
+    const purchasedTotal = (pkgs || []).reduce((s: number, p: any) => s + (p.sms_count || 0), 0);
+
+    const monthlyRemaining = Math.max(0, monthlyLimit - monthlyUsed);
+    const purchasableTotal = purchasedTotal + adminAdded;
+    const purchasableRemaining = Math.max(0, purchasableTotal - purchasedUsed);
+    const shopRemaining = monthlyRemaining + purchasableRemaining;
+
+    if (shopRemaining <= 0) {
+      console.warn(`⛔ Boutique ${shopId} n'a plus de crédits SMS (mensuel=${monthlyRemaining}, achetés=${purchasableRemaining})`);
+      await supabase.from('sms_history').insert({
+        shop_id: shopId, type, message, to_number: formattedNumber,
+        status: 'failed', error_message: 'SHOP_NO_CREDITS', record_id: recordId || null,
+      });
+      return new Response(JSON.stringify({
+        success: false,
+        error_code: 'SHOP_NO_CREDITS',
+        action: 'buy_sms_package',
+        error: "Votre magasin n'a plus de crédits SMS. Achetez un pack SMS pour continuer.",
+      }), { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
     // === Determine active SMS provider ===
     const { data: activeProvider } = await supabase
       .from('messaging_providers')
