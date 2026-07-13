@@ -241,10 +241,19 @@ export function SMSCreditsCenter() {
             </h2>
             <p className="text-sm text-muted-foreground">Vue centralisée : solde Brevo, allocations, réservations, ré-attribution.</p>
           </div>
-          <Button onClick={syncBrevo} disabled={syncing} variant="default">
-            {syncing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
-            Synchroniser Brevo
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={() => window.open('https://app.brevo.com/billing/plan/customize/transactional-sms', '_blank', 'noopener,noreferrer')}
+            >
+              <ExternalLink className="h-4 w-4 mr-2" />
+              Acheter des SMS sur Brevo
+            </Button>
+            <Button onClick={syncBrevo} disabled={syncing} variant="default">
+              {syncing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
+              Synchroniser Brevo
+            </Button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
