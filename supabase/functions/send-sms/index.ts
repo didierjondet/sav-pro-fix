@@ -263,12 +263,32 @@ Deno.serve(async (req) => {
       });
     } else {
       console.error('❌ Échec envoi SMS:', result.error);
+
+      // Détection : le fournisseur SMS (Brevo) n'a plus de crédits globaux
+      const errText = String(result.error || '').toLowerCase();
+      const isProviderOutOfCredits =
+        errText.includes('sufficient credits') ||
+        errText.includes('insufficient credit') ||
+        errText.includes('not enough credit') ||
+        errText.includes('no credits');
+
+      const errorCode = isProviderOutOfCredits ? 'SMSHSFULL' : 'PROVIDER_ERROR';
+      const friendlyError = isProviderOutOfCredits
+        ? "Le fournisseur SMS (réseau) n'a plus de crédits disponibles (SMSHSFULL). Merci de contacter le support avec un ticket."
+        : "Erreur d'envoi SMS. Il s'agit peut-être d'un problème réseau. Veuillez contacter le support avec un ticket.";
+
       await supabase.from('sms_history').insert({
         shop_id: shopId, type, message, to_number: formattedNumber,
-        status: 'failed', error_message: result.error, record_id: recordId || null,
+        status: 'failed', error_message: `${errorCode}: ${result.error}`, record_id: recordId || null,
       });
 
-      return new Response(JSON.stringify({ success: false, error: result.error }), {
+      return new Response(JSON.stringify({
+        success: false,
+        error_code: errorCode,
+        action: isProviderOutOfCredits ? 'contact_support' : 'contact_support',
+        error: friendlyError,
+        provider_error: result.error,
+      }), {
         status: result.status || 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
