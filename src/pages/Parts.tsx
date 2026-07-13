@@ -657,14 +657,27 @@ export default function Parts() {
                               
                               <div className="flex items-center gap-2 ml-4">
                                 {!(part as any).is_service && (
-                                  <Button 
-                                    variant="outline" 
-                                    size="sm"
-                                    onClick={() => setAdjustingPart(part)}
-                                  >
-                                    <TrendingUp className="h-4 w-4 mr-1" />
-                                    Stock
-                                  </Button>
+                                  <>
+                                    <Button 
+                                      variant="outline" 
+                                      size="sm"
+                                      onClick={() => {
+                                        setPreorderPart(part);
+                                        setPreorderQuantity(Math.max(1, (part.min_stock || 0) - (part.quantity || 0)) || 1);
+                                      }}
+                                    >
+                                      <ShoppingCart className="h-4 w-4 mr-1" />
+                                      Précommande
+                                    </Button>
+                                    <Button 
+                                      variant="outline" 
+                                      size="sm"
+                                      onClick={() => setAdjustingPart(part)}
+                                    >
+                                      <TrendingUp className="h-4 w-4 mr-1" />
+                                      Stock
+                                    </Button>
+                                  </>
                                 )}
                                 <Button 
                                   variant="outline" 
@@ -743,6 +756,41 @@ export default function Parts() {
                     </Button>
                     <Button variant="destructive" onClick={handleDeletePart}>
                       Supprimer
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+
+              <Dialog open={!!preorderPart} onOpenChange={(open) => {
+                if (!open) {
+                  setPreorderPart(null);
+                  setPreorderQuantity(1);
+                }
+              }}>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Précommander une pièce</DialogTitle>
+                    <DialogDescription>
+                      {preorderPart?.name}{preorderPart?.reference ? ` — Réf: ${preorderPart.reference}` : ''}
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-2">
+                    <Label htmlFor="manual-preorder-quantity">Quantité à précommander</Label>
+                    <NumberInput
+                      id="manual-preorder-quantity"
+                      min="1"
+                      step="1"
+                      value={preorderQuantity}
+                      onChange={(e) => setPreorderQuantity(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                    />
+                  </div>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setPreorderPart(null)} disabled={preordering}>
+                      Annuler
+                    </Button>
+                    <Button onClick={handleConfirmPreorder} disabled={preordering}>
+                      {preordering ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <ShoppingCart className="h-4 w-4 mr-2" />}
+                      Valider
                     </Button>
                   </DialogFooter>
                 </DialogContent>
