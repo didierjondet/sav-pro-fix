@@ -191,7 +191,7 @@ export default function SAVList() {
       .on(
         'postgres_changes',
         {
-          event: 'UPDATE',
+          event: '*',
           schema: 'public',
           table: 'sav_cases'
         },
@@ -327,7 +327,8 @@ export default function SAVList() {
         case_.device_model,
         case_.device_imei,
         case_.sku,
-        case_.problem_description
+        case_.problem_description,
+        case_.repair_notes
       )
     );
 

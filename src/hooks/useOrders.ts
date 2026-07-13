@@ -360,6 +360,8 @@ export function useOrders() {
       const existingItem = orderItems.find(
         item => item.part_id === orderData.part_id && 
                item.sav_case_id === orderData.sav_case_id &&
+               item.quote_id === orderData.quote_id &&
+               item.reason === orderData.reason &&
                !item.ordered
       );
 
@@ -674,9 +676,15 @@ export function useOrders() {
     
     switch (filter) {
       case 'sav':
-        // Ne retourner QUE les items générés dynamiquement pour SAV
-        console.log(`🎯 SAV filter - returning partsNeededForSAV:`, partsNeededForSAV.map(p => p.part_name));
-        return partsNeededForSAV;
+        // Pré-commandes SAV + pré-commandes manuelles non liées à un SAV
+        const manualPreorders = orderItems.filter(item =>
+          !item.ordered &&
+          item.reason === 'manual' &&
+          !item.sav_case_id &&
+          !item.quote_id
+        );
+        console.log(`🎯 SAV filter - returning preorders:`, [...manualPreorders, ...partsNeededForSAV].map(p => p.part_name));
+        return [...manualPreorders, ...partsNeededForSAV];
       case 'all':
         // Ne retourner QUE les items générés dynamiquement pour stock minimum
         console.log(`🎯 ALL filter - returning partsNeedingRestock:`, partsNeedingRestock.map(p => p.part_name));

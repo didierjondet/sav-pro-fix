@@ -110,6 +110,8 @@ export function useSAVCases() {
     queryKey: ['sav-cases', user?.id],
     queryFn: fetchCases,
     enabled: !!user,
+    refetchOnMount: true,
+    placeholderData: (prev) => prev,
     staleTime: 1 * 60 * 1000, // 1 minute - réduit pour synchronisation
     gcTime: 5 * 60 * 1000, // 5 minutes - réduit pour libérer mémoire
     refetchInterval: (data) => {
