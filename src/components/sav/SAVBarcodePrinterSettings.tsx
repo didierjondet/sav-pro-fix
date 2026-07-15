@@ -416,6 +416,51 @@ export function SAVBarcodePrinterSettings({ open, onOpenChange, onSaved }: Props
             </div>
           </div>
 
+          <div className="space-y-2">
+            <Label>Disposition du code-barres</Label>
+            <div className="grid grid-cols-2 gap-2">
+              {([
+                { key: 'stacked', label: 'Empilé', hint: 'Texte au-dessus, code-barres en bas' },
+                { key: 'left-rotated', label: 'Barcode à gauche pivoté', hint: 'Code-barres vertical à gauche, texte à droite' },
+              ] as const).map((opt) => {
+                const active = settings.barcodeLayout === opt.key;
+                return (
+                  <button
+                    key={opt.key}
+                    type="button"
+                    onClick={() => update('barcodeLayout', opt.key)}
+                    className={`text-left rounded-md border p-2 transition ${active ? 'border-primary ring-2 ring-primary/30 bg-primary/5' : 'hover:border-muted-foreground/40'}`}
+                  >
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <div className="w-14 h-9 bg-white border rounded-sm flex overflow-hidden">
+                        {opt.key === 'stacked' ? (
+                          <div className="flex-1 flex flex-col p-0.5 gap-0.5">
+                            <div className="h-0.5 bg-muted-foreground/60 rounded-sm" />
+                            <div className="h-0.5 bg-muted-foreground/60 rounded-sm w-2/3" />
+                            <div className="flex-1 bg-[repeating-linear-gradient(90deg,#111_0_1px,transparent_1px_2px)] rounded-sm mt-0.5" />
+                          </div>
+                        ) : (
+                          <>
+                            <div className="w-3 bg-[repeating-linear-gradient(0deg,#111_0_1px,transparent_1px_2px)]" />
+                            <div className="flex-1 flex flex-col p-0.5 gap-0.5 justify-center">
+                              <div className="h-0.5 bg-muted-foreground/60 rounded-sm" />
+                              <div className="h-0.5 bg-muted-foreground/60 rounded-sm w-4/5" />
+                              <div className="h-0.5 bg-muted-foreground/60 rounded-sm w-3/5" />
+                            </div>
+                          </>
+                        )}
+                      </div>
+                      <span className="text-sm font-medium">{opt.label}</span>
+                    </div>
+                    <div className="text-[11px] text-muted-foreground leading-tight">{opt.hint}</div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+
+
           <div className="flex items-center justify-between rounded-md border p-3">
             <div>
               <Label htmlFor="auto">Lancer l'impression automatiquement</Label>
