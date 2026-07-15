@@ -26,6 +26,15 @@ export interface LabelMedia {
   isDefault?: boolean;
 }
 
+export interface PrinterSetupStep {
+  /** Titre court de l'étape */
+  title: string;
+  /** Description / chemin exact des menus */
+  body: string;
+  /** Astuce optionnelle affichée en encadré */
+  tip?: string;
+}
+
 export interface LabelPrinterSpec {
   id: string;
   brand: string;
@@ -48,7 +57,10 @@ export interface LabelPrinterSpec {
   driverNotes: string[];
   /** Rappels côté navigateur (boîte d'impression Chrome/Edge) */
   browserNotes: string[];
+  /** Étapes spécifiques pour créer le format papier personnalisé Windows */
+  setupSteps?: PrinterSetupStep[];
 }
+
 
 export const LABEL_PRINTERS: LabelPrinterSpec[] = [
   {
