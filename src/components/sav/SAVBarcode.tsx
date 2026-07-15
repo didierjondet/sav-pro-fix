@@ -86,8 +86,24 @@ export function SAVBarcode({ savCase, savTypeLabel }: SAVBarcodeProps) {
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
   }[c] as string));
 
+  const currentSpec = useMemo(() => findPrinterSpec(printerSettings.printerSpecId), [printerSettings.printerSpecId]);
+
   const handlePrint = () => {
     if (!dataUrl || !code) return;
+    // Rappel de configuration Windows si non validée et non explicitement skippée
+    try {
+      const skipped = localStorage.getItem(skipReminderStorageKey(printerSettings.printerSpecId)) === '1';
+      if (!skipped && !isPrinterSetupDone(printerSettings.printerSpecId)) {
+        setReminderOpen(true);
+        return;
+      }
+    } catch { /* noop */ }
+    doPrint();
+  };
+
+  const doPrint = () => {
+    if (!dataUrl || !code) return;
+
     const s = printerSettings;
     const rot = s.rotateContent ?? 0;
     const isSide = rot === 90 || rot === 270;
