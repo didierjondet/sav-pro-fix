@@ -601,6 +601,17 @@ export function SAVBarcodePrinterSettings({ open, onOpenChange, onSaved }: Props
           <Button onClick={handleSave}>Enregistrer</Button>
         </DialogFooter>
       </DialogContent>
+      {currentSpec && (
+        <PrinterSetupWizard
+          open={wizardOpen}
+          onOpenChange={setWizardOpen}
+          spec={currentSpec}
+          widthMm={settings.widthMm}
+          heightMm={settings.heightMm}
+          onDoneChange={setSetupDone}
+        />
+      )}
     </Dialog>
   );
 }
+
