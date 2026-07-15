@@ -79,19 +79,34 @@ export function SAVBarcode({ savCase, savTypeLabel }: SAVBarcodeProps) {
   const handlePrint = () => {
     if (!dataUrl || !code) return;
     const s = printerSettings;
-    const inner = Math.max(0, s.widthMm - s.marginMm * 2);
-    const innerH = Math.max(0, s.heightMm - s.marginMm * 2);
-    const win = window.open('', '_blank', `width=${Math.max(300, s.widthMm * 8)},height=${Math.max(240, s.heightMm * 8)}`);
+    const rot = s.rotateContent ?? 0;
+    const isSide = rot === 90 || rot === 270;
+    // Physical page = real label size. Content box: if rotated 90/270 we swap
+    // width/height so the rotated content still fills the label, then translate
+    // it back to occupy the page.
+    const pageW = s.widthMm;
+    const pageH = s.heightMm;
+    const margin = s.marginMm;
+    const boxW = (isSide ? pageH : pageW) - margin * 2;
+    const boxH = (isSide ? pageW : pageH) - margin * 2;
+    const win = window.open('', '_blank', `width=${Math.max(320, pageW * 10)},height=${Math.max(260, pageH * 10)}`);
     if (!win) return;
     const printerHint = s.printerName
-      ? `<div class="hint">Imprimante recommandée : <strong>${esc(s.printerName)}</strong> — sélectionnez-la dans la boîte d'impression.</div>`
+      ? `<div class="hint">Imprimante recommandée : <strong>${esc(s.printerName)}</strong> — sélectionnez-la dans la boîte d'impression (marges : Aucune, échelle : 100%).</div>`
       : '';
     win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Étiquette SAV ${esc(code)}</title>
       <style>
-        @page { size: ${s.widthMm}mm ${s.heightMm}mm; margin: ${s.marginMm}mm; }
+        @page { size: ${pageW}mm ${pageH}mm; margin: 0; }
         html, body { margin: 0; padding: 0; font-family: Arial, sans-serif; color: #000; }
-        .label { width: ${inner}mm; height: ${innerH}mm; display: flex; flex-direction: column;
-          padding: 1mm; box-sizing: border-box; }
+        .page { position: relative; width: ${pageW}mm; height: ${pageH}mm; overflow: hidden; }
+        .label {
+          position: absolute; top: 50%; left: 50%;
+          width: ${boxW}mm; height: ${boxH}mm;
+          transform: translate(-50%, -50%) rotate(${rot}deg);
+          transform-origin: center center;
+          display: flex; flex-direction: column;
+          padding: 1mm; box-sizing: border-box;
+        }
         .type { font-size: 7pt; font-weight: 700; text-transform: uppercase;
           letter-spacing: 0.3px; text-align: center; line-height: 1.1; margin-bottom: 0.5mm; }
         .customer { font-size: 8pt; font-weight: 600; text-align: center;
@@ -102,22 +117,24 @@ export function SAVBarcode({ savCase, savTypeLabel }: SAVBarcodeProps) {
           white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .problem { font-size: 6.5pt; text-align: center; line-height: 1.15;
           margin-bottom: 0.8mm; max-height: 5mm; overflow: hidden; }
-        .bc { flex: 1; display: flex; align-items: center; justify-content: center; }
-        .bc img { width: 100%; max-height: ${Math.max(8, innerH * 0.4)}mm; object-fit: contain; }
+        .bc { flex: 1; display: flex; align-items: center; justify-content: center; min-height: 0; }
+        .bc img { max-width: 100%; max-height: 100%; object-fit: contain; }
         .hint { font-size: 11px; color: #555; text-align: center; padding: 8px; }
-        @media print { .hint { display: none; } }
+        @media print { .hint { display: none; } .page { box-shadow: none; } }
         @media screen { body { background:#f1f1f1; padding:16px; }
-          .label { background:#fff; box-shadow:0 1px 4px rgba(0,0,0,.15); margin:auto; } }
+          .page { background:#fff; box-shadow:0 1px 6px rgba(0,0,0,.18); margin:auto; } }
       </style></head><body>
       ${printerHint}
-      <div class="label">
-        ${typeLabel ? `<div class="type">${esc(typeLabel)}</div>` : ''}
-        ${customerName ? `<div class="customer">${esc(customerName)}</div>` : ''}
-        ${deviceLine ? `<div class="device">${esc(deviceLine)}</div>` : ''}
-        ${problemSummary ? `<div class="problem">${esc(problemSummary)}</div>` : ''}
-        <div class="bc"><img src="${dataUrl}" alt="${esc(code)}" /></div>
+      <div class="page">
+        <div class="label">
+          ${typeLabel ? `<div class="type">${esc(typeLabel)}</div>` : ''}
+          ${customerName ? `<div class="customer">${esc(customerName)}</div>` : ''}
+          ${deviceLine ? `<div class="device">${esc(deviceLine)}</div>` : ''}
+          ${problemSummary ? `<div class="problem">${esc(problemSummary)}</div>` : ''}
+          <div class="bc"><img src="${dataUrl}" alt="${esc(code)}" /></div>
+        </div>
       </div>
-      ${s.autoPrint ? `<script>window.onload = () => { setTimeout(() => { window.print(); }, 150); };</script>` : ''}
+      ${s.autoPrint ? `<script>window.onload = () => { setTimeout(() => { window.print(); }, 200); };</script>` : ''}
       </body></html>`);
     win.document.close();
   };
