@@ -1,13 +1,19 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import bwipjs from 'bwip-js/browser';
 import { Button } from '@/components/ui/button';
-import { Download, Printer, Barcode as BarcodeIcon, Settings2 } from 'lucide-react';
+import { Download, Printer, Barcode as BarcodeIcon, Settings2, AlertTriangle, Wand2 } from 'lucide-react';
 import { SAVCase } from '@/hooks/useSAVCases';
 import {
   SAVBarcodePrinterSettings,
   loadLabelPrinterSettings,
   type LabelPrinterSettings,
 } from './SAVBarcodePrinterSettings';
+import { PrinterSetupWizard } from './PrinterSetupWizard';
+import { isPrinterSetupDone, skipReminderStorageKey } from './printerSetupState';
+import { findPrinterSpec } from '@/lib/labelPrinters';
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogAction, AlertDialogCancel } from '@/components/ui/alert-dialog';
+import { Checkbox } from '@/components/ui/checkbox';
+
 
 interface SAVBarcodeProps {
   savCase: SAVCase;
@@ -28,6 +34,10 @@ export function SAVBarcode({ savCase, savTypeLabel }: SAVBarcodeProps) {
   const [dataUrl, setDataUrl] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [printerSettings, setPrinterSettings] = useState<LabelPrinterSettings>(() => loadLabelPrinterSettings());
+  const [reminderOpen, setReminderOpen] = useState(false);
+  const [wizardOpen, setWizardOpen] = useState(false);
+  const [skipReminder, setSkipReminder] = useState(false);
+
 
   const customerName = useMemo(() => {
     if (!savCase?.customer) return '';
@@ -76,8 +86,24 @@ export function SAVBarcode({ savCase, savTypeLabel }: SAVBarcodeProps) {
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
   }[c] as string));
 
+  const currentSpec = useMemo(() => findPrinterSpec(printerSettings.printerSpecId), [printerSettings.printerSpecId]);
+
   const handlePrint = () => {
     if (!dataUrl || !code) return;
+    // Rappel de configuration Windows si non validée et non explicitement skippée
+    try {
+      const skipped = localStorage.getItem(skipReminderStorageKey(printerSettings.printerSpecId)) === '1';
+      if (!skipped && !isPrinterSetupDone(printerSettings.printerSpecId)) {
+        setReminderOpen(true);
+        return;
+      }
+    } catch { /* noop */ }
+    doPrint();
+  };
+
+  const doPrint = () => {
+    if (!dataUrl || !code) return;
+
     const s = printerSettings;
     const rot = s.rotateContent ?? 0;
     const isSide = rot === 90 || rot === 270;
@@ -265,7 +291,67 @@ export function SAVBarcode({ savCase, savTypeLabel }: SAVBarcodeProps) {
         onOpenChange={setSettingsOpen}
         onSaved={(s) => setPrinterSettings(s)}
       />
+      {currentSpec && (
+        <PrinterSetupWizard
+          open={wizardOpen}
+          onOpenChange={setWizardOpen}
+          spec={currentSpec}
+          widthMm={printerSettings.widthMm}
+          heightMm={printerSettings.heightMm}
+        />
+      )}
+      <AlertDialog open={reminderOpen} onOpenChange={setReminderOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-orange-500" />
+              Format papier configuré dans Windows ?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Si le format papier <strong>{printerSettings.widthMm}×{printerSettings.heightMm} mm</strong> n'a pas été créé dans le pilote de l'imprimante,
+              l'aperçu Chrome affichera une grande bande blanche et l'imprimante sautera plusieurs étiquettes.
+              Utilisez l'assistant pour la configurer une fois pour toutes sur ce poste.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="flex items-start gap-2 rounded-md border bg-muted/40 p-3">
+            <Checkbox
+              id="skip-reminder"
+              checked={skipReminder}
+              onCheckedChange={(v) => setSkipReminder(v === true)}
+              className="mt-0.5"
+            />
+            <label htmlFor="skip-reminder" className="text-sm leading-snug cursor-pointer">
+              Ne plus me le rappeler avant impression pour cette imprimante.
+            </label>
+          </div>
+          <AlertDialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setReminderOpen(false);
+                setWizardOpen(true);
+              }}
+            >
+              <Wand2 className="h-4 w-4 mr-2" /> Ouvrir l'assistant
+            </Button>
+            <AlertDialogCancel onClick={() => setReminderOpen(false)}>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (skipReminder) {
+                  try { localStorage.setItem(skipReminderStorageKey(printerSettings.printerSpecId), '1'); } catch { /* noop */ }
+                }
+                setReminderOpen(false);
+                setTimeout(() => doPrint(), 50);
+              }}
+            >
+              Imprimer quand même
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
+
 

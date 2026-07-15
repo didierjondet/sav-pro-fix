@@ -8,7 +8,7 @@ import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Badge } from '@/components/ui/badge';
-import { Printer, Usb, CheckCircle2, XCircle, RotateCw, Info, ExternalLink, HelpCircle, RefreshCw } from 'lucide-react';
+import { Printer, Usb, CheckCircle2, XCircle, RotateCw, Info, ExternalLink, HelpCircle, RefreshCw, Wand2, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   LABEL_PRINTERS,
@@ -18,6 +18,9 @@ import {
   type LabelPrinterSpec,
   type LabelMedia,
 } from '@/lib/labelPrinters';
+import { PrinterSetupWizard } from './PrinterSetupWizard';
+import { isPrinterSetupDone, resetPrinterSetup } from './printerSetupState';
+
 
 export interface LabelPrinterSettings {
   /** Identifiant du modèle dans la base labelPrinters.ts (ou 'custom') */
@@ -95,11 +98,22 @@ interface Props {
 export function SAVBarcodePrinterSettings({ open, onOpenChange, onSaved }: Props) {
   const [settings, setSettings] = useState<LabelPrinterSettings>(DEFAULT_LABEL_SETTINGS);
   const [usbSupported, setUsbSupported] = useState(false);
+  const [wizardOpen, setWizardOpen] = useState(false);
+  const [setupDone, setSetupDone] = useState(false);
 
   useEffect(() => {
-    if (open) setSettings(loadLabelPrinterSettings());
+    if (open) {
+      const s = loadLabelPrinterSettings();
+      setSettings(s);
+      setSetupDone(isPrinterSetupDone(s.printerSpecId));
+    }
     setUsbSupported(typeof navigator !== 'undefined' && 'usb' in navigator);
   }, [open]);
+
+  useEffect(() => {
+    setSetupDone(isPrinterSetupDone(settings.printerSpecId));
+  }, [settings.printerSpecId]);
+
 
   const update = <K extends keyof LabelPrinterSettings>(k: K, v: LabelPrinterSettings[K]) =>
     setSettings((prev) => ({ ...prev, [k]: v }));
@@ -328,6 +342,54 @@ export function SAVBarcodePrinterSettings({ open, onOpenChange, onSaved }: Props
             </div>
           )}
 
+          {currentSpec && (
+            <div className={`rounded-md border p-3 space-y-2 ${setupDone ? 'border-green-500/40 bg-green-50 dark:bg-green-950/20' : 'border-orange-400/50 bg-orange-50 dark:bg-orange-950/20'}`}>
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex items-start gap-2">
+                  {setupDone ? (
+                    <CheckCircle2 className="h-4 w-4 text-green-600 mt-0.5" />
+                  ) : (
+                    <AlertTriangle className="h-4 w-4 text-orange-600 mt-0.5" />
+                  )}
+                  <div className="text-xs">
+                    <div className="font-medium">
+                      {setupDone
+                        ? 'Configuration Windows terminée sur ce poste'
+                        : 'Configuration Windows requise'}
+                    </div>
+                    <div className="text-muted-foreground mt-0.5">
+                      {setupDone
+                        ? `Format papier "Fixway ${settings.widthMm}x${settings.heightMm}" déclaré dans le pilote.`
+                        : `Sans configuration du format papier dans Windows, l'imprimante peut sauter plusieurs étiquettes entre chaque impression.`}
+                    </div>
+                  </div>
+                </div>
+                {setupDone && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 px-2 shrink-0"
+                    onClick={() => { resetPrinterSetup(settings.printerSpecId); setSetupDone(false); toast.success('État réinitialisé'); }}
+                  >
+                    Réinitialiser
+                  </Button>
+                )}
+              </div>
+              <Button
+                type="button"
+                variant={setupDone ? 'outline' : 'default'}
+                size="sm"
+                className="w-full"
+                onClick={() => setWizardOpen(true)}
+              >
+                <Wand2 className="h-4 w-4 mr-2" />
+                {setupDone ? 'Revoir l\'assistant' : 'Ouvrir l\'assistant de configuration Windows'}
+              </Button>
+            </div>
+          )}
+
+
           <div className="space-y-2">
             <Label htmlFor="printer-name">Nom de l'imprimante (mémo)</Label>
             <Input
@@ -539,6 +601,17 @@ export function SAVBarcodePrinterSettings({ open, onOpenChange, onSaved }: Props
           <Button onClick={handleSave}>Enregistrer</Button>
         </DialogFooter>
       </DialogContent>
+      {currentSpec && (
+        <PrinterSetupWizard
+          open={wizardOpen}
+          onOpenChange={setWizardOpen}
+          spec={currentSpec}
+          widthMm={settings.widthMm}
+          heightMm={settings.heightMm}
+          onDoneChange={setSetupDone}
+        />
+      )}
     </Dialog>
   );
 }
+
