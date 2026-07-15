@@ -8,7 +8,7 @@ import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Badge } from '@/components/ui/badge';
-import { Printer, Usb, CheckCircle2, XCircle, RotateCw, Info, ExternalLink, HelpCircle, RefreshCw, Wand2, AlertTriangle } from 'lucide-react';
+import { Printer, Usb, CheckCircle2, XCircle, RotateCw, Info, ExternalLink, HelpCircle, RefreshCw, Wand2, AlertTriangle, Network, Copy, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   LABEL_PRINTERS,
