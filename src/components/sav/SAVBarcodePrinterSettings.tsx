@@ -98,11 +98,22 @@ interface Props {
 export function SAVBarcodePrinterSettings({ open, onOpenChange, onSaved }: Props) {
   const [settings, setSettings] = useState<LabelPrinterSettings>(DEFAULT_LABEL_SETTINGS);
   const [usbSupported, setUsbSupported] = useState(false);
+  const [wizardOpen, setWizardOpen] = useState(false);
+  const [setupDone, setSetupDone] = useState(false);
 
   useEffect(() => {
-    if (open) setSettings(loadLabelPrinterSettings());
+    if (open) {
+      const s = loadLabelPrinterSettings();
+      setSettings(s);
+      setSetupDone(isPrinterSetupDone(s.printerSpecId));
+    }
     setUsbSupported(typeof navigator !== 'undefined' && 'usb' in navigator);
   }, [open]);
+
+  useEffect(() => {
+    setSetupDone(isPrinterSetupDone(settings.printerSpecId));
+  }, [settings.printerSpecId]);
+
 
   const update = <K extends keyof LabelPrinterSettings>(k: K, v: LabelPrinterSettings[K]) =>
     setSettings((prev) => ({ ...prev, [k]: v }));
