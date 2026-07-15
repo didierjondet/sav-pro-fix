@@ -34,6 +34,10 @@ export function SAVBarcode({ savCase, savTypeLabel }: SAVBarcodeProps) {
   const [dataUrl, setDataUrl] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [printerSettings, setPrinterSettings] = useState<LabelPrinterSettings>(() => loadLabelPrinterSettings());
+  const [reminderOpen, setReminderOpen] = useState(false);
+  const [wizardOpen, setWizardOpen] = useState(false);
+  const [skipReminder, setSkipReminder] = useState(false);
+
 
   const customerName = useMemo(() => {
     if (!savCase?.customer) return '';
