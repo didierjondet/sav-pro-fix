@@ -55,6 +55,9 @@ export interface NetworkPrinterMemo {
   address: string;
   /** Nom exact tel qu'il apparaît dans Chrome une fois ajouté à Windows */
   systemName?: string;
+}
+
+
 
 const STORAGE_KEY = 'fixway_label_printer_settings';
 
