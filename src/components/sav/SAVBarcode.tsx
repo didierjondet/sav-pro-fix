@@ -291,7 +291,67 @@ export function SAVBarcode({ savCase, savTypeLabel }: SAVBarcodeProps) {
         onOpenChange={setSettingsOpen}
         onSaved={(s) => setPrinterSettings(s)}
       />
+      {currentSpec && (
+        <PrinterSetupWizard
+          open={wizardOpen}
+          onOpenChange={setWizardOpen}
+          spec={currentSpec}
+          widthMm={printerSettings.widthMm}
+          heightMm={printerSettings.heightMm}
+        />
+      )}
+      <AlertDialog open={reminderOpen} onOpenChange={setReminderOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-orange-500" />
+              Format papier configuré dans Windows ?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Si le format papier <strong>{printerSettings.widthMm}×{printerSettings.heightMm} mm</strong> n'a pas été créé dans le pilote de l'imprimante,
+              l'aperçu Chrome affichera une grande bande blanche et l'imprimante sautera plusieurs étiquettes.
+              Utilisez l'assistant pour la configurer une fois pour toutes sur ce poste.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="flex items-start gap-2 rounded-md border bg-muted/40 p-3">
+            <Checkbox
+              id="skip-reminder"
+              checked={skipReminder}
+              onCheckedChange={(v) => setSkipReminder(v === true)}
+              className="mt-0.5"
+            />
+            <label htmlFor="skip-reminder" className="text-sm leading-snug cursor-pointer">
+              Ne plus me le rappeler avant impression pour cette imprimante.
+            </label>
+          </div>
+          <AlertDialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setReminderOpen(false);
+                setWizardOpen(true);
+              }}
+            >
+              <Wand2 className="h-4 w-4 mr-2" /> Ouvrir l'assistant
+            </Button>
+            <AlertDialogCancel onClick={() => setReminderOpen(false)}>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (skipReminder) {
+                  try { localStorage.setItem(skipReminderStorageKey(printerSettings.printerSpecId), '1'); } catch { /* noop */ }
+                }
+                setReminderOpen(false);
+                setTimeout(() => doPrint(), 50);
+              }}
+            >
+              Imprimer quand même
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
+
 
