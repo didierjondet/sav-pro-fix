@@ -291,3 +291,125 @@ export function findPrinterSpec(id: string): LabelPrinterSpec | undefined {
 export function findDefaultMedia(spec: LabelPrinterSpec): LabelMedia {
   return spec.recommendedMedia.find((m) => m.isDefault) || spec.recommendedMedia[0];
 }
+
+/**
+ * Génère des étapes de configuration Windows adaptées au modèle et au format.
+ * Retourne les étapes spécifiques si disponibles, sinon fallback générique.
+ * Le nom du format est basé sur la taille pour être unique et reconnaissable.
+ */
+export function getSetupSteps(
+  spec: LabelPrinterSpec,
+  media: { widthMm: number; heightMm: number },
+): PrinterSetupStep[] {
+  const formatName = `Fixway ${media.widthMm}x${media.heightMm}`;
+  const printerName = spec.suggestedWindowsName || `${spec.brand} ${spec.model}`;
+
+  // Étapes spécifiques Epson TM-L90 / L100 (pilote APD)
+  if (spec.brand === 'Epson') {
+    return [
+      {
+        title: 'Vérifier le pilote APD Epson',
+        body: `Ouvrez Windows › Paramètres › Bluetooth et appareils › Imprimantes et scanners. L'imprimante doit apparaître sous le nom "${printerName}" (ou similaire).`,
+        tip: `Si elle n'apparaît pas, installez le pilote APD (Advanced Printer Driver) officiel Epson depuis le site constructeur — pas le pilote générique Windows.`,
+      },
+      {
+        title: `Créer le format papier "${formatName}"`,
+        body: `Clic droit sur l'imprimante › "Préférences d'impression" › onglet "Document Settings" (ou "Media Setting") › cliquez sur "User Defined Paper Size" (Format papier défini par l'utilisateur). Créez un format nommé "${formatName}" avec : Largeur = ${media.widthMm} mm, Hauteur = ${media.heightMm} mm. Cliquez sur "Save" puis "OK".`,
+        tip: `Type de média (Media Type) = "Die-cut label" (étiquette prédécoupée). Cochez "Reduce top margin" si disponible pour éviter le saut d'étiquette vide.`,
+      },
+      {
+        title: `Définir "${formatName}" comme format par défaut`,
+        body: `Toujours dans "Préférences d'impression" › onglet "Main" (ou "Principal") › Paper Size = "${formatName}". Cliquez sur "Appliquer" puis "OK".`,
+        tip: `Ceci garantit que Chrome recevra automatiquement le bon format lors de l'impression.`,
+      },
+      {
+        title: 'Choisir le format dans Chrome',
+        body: `Lorsque vous imprimez depuis Fixway, dans la boîte de dialogue Chrome : cliquez sur "Plus de paramètres" › Taille du papier = "${formatName}" › Marges = "Aucune" › Échelle = "Personnalisée : 100" › décochez "En-têtes et pieds de page".`,
+        tip: `Vous ne devriez plus voir une grande bande blanche dans l'aperçu — juste votre étiquette ${media.widthMm}×${media.heightMm} mm.`,
+      },
+    ];
+  }
+
+  // Étapes spécifiques Brother QL
+  if (spec.brand === 'Brother') {
+    return [
+      {
+        title: 'Vérifier le pilote Brother P-touch / QL',
+        body: `L'imprimante doit apparaître dans Windows › Imprimantes et scanners sous le nom "${printerName}".`,
+        tip: `Si absent, installez le pilote officiel Brother depuis brother.fr › Support › Téléchargements.`,
+      },
+      {
+        title: 'Sélectionner la référence DK du rouleau',
+        body: `Clic droit sur l'imprimante › "Préférences d'impression" › choisissez la référence DK exacte du rouleau installé (ex. DK-11209 pour 62×29 mm).`,
+        tip: `Brother utilise des références DK plutôt que des formats personnalisés — le rouleau est reconnu automatiquement.`,
+      },
+      {
+        title: 'Choisir le format dans Chrome',
+        body: `À l'impression : "Plus de paramètres" › Taille du papier = la référence DK sélectionnée › Marges = "Aucune" › Échelle = 100.`,
+      },
+    ];
+  }
+
+  // Étapes spécifiques Zebra
+  if (spec.brand === 'Zebra') {
+    return [
+      {
+        title: 'Installer le pilote ZDesigner',
+        body: `Téléchargez Zebra Setup Utilities depuis zebra.com et installez le pilote ZDesigner pour votre modèle "${spec.model}".`,
+      },
+      {
+        title: 'Calibrer le média',
+        body: `Ouvrez Zebra Setup Utilities › sélectionnez l'imprimante › "Open Communication with Printer" › envoyez la commande de calibration ou utilisez le bouton "Calibrate media". Obligatoire au premier montage d'un rouleau neuf.`,
+      },
+      {
+        title: `Créer le format "${formatName}"`,
+        body: `Clic droit sur l'imprimante › "Préférences d'impression" › onglet "Advanced Setup" › "Custom" › définissez Largeur = ${media.widthMm} mm, Hauteur = ${media.heightMm} mm. Media type = "Labels with gaps".`,
+      },
+      {
+        title: 'Choisir le format dans Chrome',
+        body: `À l'impression : "Plus de paramètres" › Taille du papier = "${formatName}" › Marges = "Aucune" › Échelle = 100.`,
+      },
+    ];
+  }
+
+  // Étapes spécifiques DYMO
+  if (spec.brand === 'DYMO') {
+    return [
+      {
+        title: 'Installer DYMO Connect',
+        body: `Téléchargez DYMO Connect (LabelWriter 550) ou DYMO Label v8 (LabelWriter 450) depuis dymo.com.`,
+        tip: spec.id.includes('550') ? 'La LW 550 n\'accepte que les rouleaux DYMO authentiques (puce RFID).' : undefined,
+      },
+      {
+        title: 'Sélectionner la référence du rouleau',
+        body: `Le rouleau DYMO (ex. 11352 pour 54×25 mm) est reconnu automatiquement. Vérifiez dans "Préférences d'impression" que la bonne référence est sélectionnée.`,
+      },
+      {
+        title: 'Choisir le format dans Chrome',
+        body: `À l'impression : "Plus de paramètres" › Taille du papier = la référence DYMO › Marges = "Aucune" › Échelle = 100.`,
+      },
+    ];
+  }
+
+  // Fallback générique
+  return [
+    {
+      title: 'Vérifier le pilote installé',
+      body: `L'imprimante doit apparaître dans Windows › Paramètres › Imprimantes et scanners. Installez le pilote fourni par le constructeur si nécessaire.`,
+    },
+    {
+      title: `Créer le format papier "${formatName}"`,
+      body: `Clic droit sur l'imprimante › "Préférences d'impression" › cherchez "Format papier personnalisé" (Custom Paper Size). Définissez Largeur = ${media.widthMm} mm, Hauteur = ${media.heightMm} mm et nommez-le "${formatName}".`,
+      tip: `L'emplacement exact varie selon le pilote — consultez la doc du constructeur.`,
+    },
+    {
+      title: `Définir "${formatName}" comme format par défaut`,
+      body: `Dans les mêmes préférences, sélectionnez "${formatName}" comme format actif puis validez avec "OK".`,
+    },
+    {
+      title: 'Choisir le format dans Chrome',
+      body: `À l'impression : "Plus de paramètres" › Taille du papier = "${formatName}" › Marges = "Aucune" › Échelle = 100.`,
+    },
+  ];
+}
+
