@@ -81,11 +81,13 @@ export function SAVBarcode({ savCase, savTypeLabel }: SAVBarcodeProps) {
     const s = printerSettings;
     const rot = s.rotateContent ?? 0;
     const isSide = rot === 90 || rot === 270;
-    // Physical page = real label size. Content box: if rotated 90/270 we swap
-    // width/height so the rotated content still fills the label, then translate
-    // it back to occupy the page.
-    const pageW = s.widthMm;
-    const pageH = s.heightMm;
+    // Plafonne la largeur à la largeur imprimable réelle de la tête (spec constructeur).
+    const cappedW = s.maxPrintWidthMm ? Math.min(s.widthMm, s.maxPrintWidthMm) : s.widthMm;
+    // Marge de sécurité : on rétrécit très légèrement le @page pour éviter que
+    // l'imprimante ne détecte un débordement et saute une étiquette vide.
+    const safety = Math.max(0, s.safetyMarginMm ?? 0);
+    const pageW = Math.max(5, cappedW - safety * 2);
+    const pageH = Math.max(5, s.heightMm - safety * 2);
     const margin = s.marginMm;
     const boxW = (isSide ? pageH : pageW) - margin * 2;
     const boxH = (isSide ? pageW : pageH) - margin * 2;
