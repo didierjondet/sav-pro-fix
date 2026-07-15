@@ -57,6 +57,7 @@ function buildDefaults(): LabelPrinterSettings {
     safetyMarginMm: spec.safetyMarginMm,
     maxPrintWidthMm: spec.maxPrintWidthMm,
     rotateContent: spec.defaultRotationDeg,
+    barcodeLayout: 'stacked',
     autoPrint: true,
     usbVendorId: null,
     usbProductId: null,
