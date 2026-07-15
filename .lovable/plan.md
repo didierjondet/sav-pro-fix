@@ -1,76 +1,58 @@
-# Gestion imprimante & support étiquettes — Epson TM-L90 par défaut
+# Base de specs imprimantes & presets enrichis
 
-## Contexte du problème
+Objectif : améliorer la fidélité d'impression étiquettes (TM-L90 en priorité) uniquement via une base de connaissances intégrée à Fixway. Aucune extension, aucun middleware, aucun driver à installer.
 
-Sur les photos :
-- Écran : étiquette rendue **horizontale** (paysage) 60×40 mm.
-- Sortie papier (Epson TM-L90, rouleau 55×40 mm) : contenu imprimé **tourné 90° à gauche**, tronqué à droite.
+## Ce qui va changer
 
-Cause : le rouleau est chargé "portrait" (le côté court 40 mm alimente en tête), mais le CSS `@page` déclare une taille paysage 60×40 mm et l'imprimante réinterprète l'orientation → décalage systématique. Changer l'orientation Windows aggrave car il tourne à nouveau.
+### 1. Nouveau fichier `src/lib/labelPrinters.ts`
+Base statique TypeScript (source : fiches techniques Epson / Brother / Zebra / DYMO officielles) contenant pour chaque modèle :
 
-Aucun navigateur web ne peut piloter un driver Windows (ESC/POS, densité, cutter, calibrage papier) → on ne peut pas "installer un driver" depuis l'app. On peut par contre **générer le HTML dans la bonne géométrie et faire tourner le contenu côté CSS** pour que ce qui s'imprime ressemble exactement à l'aperçu, quel que soit le sens de chargement du rouleau.
+- `id`, `brand`, `model`, `productUrl` (page constructeur)
+- `printMethod` (thermique direct)
+- `dpi` (203 pour TM-L90)
+- `maxPrintWidthMm` (largeur imprimable réelle — 56 mm pour TM-L90, ≠ largeur du rouleau)
+- `recommendedMedia[]` : liste des étiquettes couramment utilisées (largeur × hauteur × gap × description)
+- `feedGapMm` (gap physique entre étiquettes)
+- `safetyMarginMm` (marge interne recommandée pour éviter les sauts d'étiquette — 0.5 pour TM-L90)
+- `defaultRotationDeg` (90 pour TM-L90 en pose horizontale)
+- `driverNotes` (rappels : "cocher Reduce top margin", "Media type = Die-cut label", "Print speed 90 mm/s", etc.)
+- `browserNotes` (rappels navigateur : marges 0, échelle 100 %, headers off)
 
-## Ce qui change
+Modèles inclus dès la v1 :
+- Epson **TM-L90** (étiquettes 55×40, 58×40, 76×50) — par défaut
+- Epson TM-L100
+- Brother QL-800 / QL-820NWB
+- Zebra ZD220 / ZD421
+- DYMO LabelWriter 450 / 550
+- Générique 60×40
 
-### 1. Presets d'imprimante étiquettes (`SAVBarcodePrinterSettings.tsx`)
+### 2. `SAVBarcodePrinterSettings.tsx` — sélecteur enrichi
+- Le sélecteur "Modèle d'imprimante" lit désormais `labelPrinters.ts`.
+- À la sélection d'un modèle, un second sélecteur "Format d'étiquette" propose les `recommendedMedia` du modèle → applique automatiquement largeur / hauteur / marge / rotation / vitesse recommandées.
+- Bloc "Fiche imprimante" affiché sous le sélecteur : DPI, largeur max, méthode, lien vers la page constructeur, notes driver, notes navigateur.
+- Bouton **"Restaurer les réglages recommandés"** qui réapplique les valeurs de la base pour le modèle choisi.
+- Rétrocompatibilité : les réglages custom dans `localStorage` (`fixway_label_printer_settings`) sont préservés ; on ne réécrit qu'après clic explicite.
 
-Ajout d'une liste déroulante **"Modèle d'imprimante"** avec presets :
+### 3. `SAVBarcode.tsx` — utilisation des specs
+- Utilise `safetyMarginMm` du preset dans `@page` pour éviter les sauts d'étiquette.
+- Plafonne la largeur imprimée à `maxPrintWidthMm` du modèle (au lieu de la largeur brute du rouleau).
+- Applique `defaultRotationDeg` si l'utilisateur n'a jamais modifié la rotation.
+- Aucune autre modification visuelle de l'étiquette (layout compact déjà en place).
 
-- **Epson TM-L90 — étiquette 55×40 mm (par défaut)**
-- Epson TM-L90 — étiquette 58×40 mm
-- Brother QL — 62×29 mm
-- Zebra ZD — 57×32 mm
-- DYMO LabelWriter — 54×25 mm
-- Générique 60×40 mm
-- Personnalisé (garde les champs libres actuels)
+### 4. Page d'aide contextuelle
+- Petit `Popover` "?" à côté du sélecteur modèle affichant `driverNotes` + `browserNotes` du modèle sélectionné.
+- Lien direct vers la page produit Epson pour vérifier les specs.
 
-Sélectionner un preset préremplit : nom imprimante mémo, largeur, hauteur, marge conseillée (1 mm pour thermique), et **orientation du contenu** (voir §2). Les champs restent éditables.
+## Ce qui ne change pas
+- Pas de nouvelle dépendance npm.
+- Pas de table Supabase, pas d'edge function.
+- Pas de modification des autres modules d'impression (PDF SAV, devis, listes).
+- Le layout de l'étiquette (grid QR + texte compact) reste identique.
 
-Nouveau réglage `printerModel: string` ajouté à `LabelPrinterSettings` (stocké dans `localStorage` sous `fixway_label_printer_settings`, rétrocompatible : valeurs manquantes tombent sur les defaults).
+## Fichiers touchés
+- **Créé** : `src/lib/labelPrinters.ts`
+- **Édité** : `src/components/sav/SAVBarcodePrinterSettings.tsx`
+- **Édité** : `src/components/sav/SAVBarcode.tsx`
 
-### 2. Orientation du contenu (le vrai correctif)
-
-Ajout du champ `contentOrientation: 'landscape' | 'portrait'` (défaut `landscape` pour TM-L90 55×40).
-
-Dans le HTML d'impression :
-- `@page { size: <W>mm <H>mm }` = **taille physique réelle** de l'étiquette (55×40 pour TM-L90).
-- Si `contentOrientation === 'landscape'` mais que le rouleau se charge en portrait (cas Epson TM-L90 constaté sur les photos) → on ajoute un bouton **"Faire pivoter le contenu 90°"** (`rotateContent: 0 | 90 | 180 | 270`) qui applique `transform: rotate(...)` sur `.label` avec échange largeur/hauteur pour occuper la page correctement.
-- L'aperçu à l'écran (fenêtre popup avant `window.print()`) applique la même rotation → **WYSIWYG garanti** : ce qu'on voit est ce qui sort.
-
-### 3. Aperçu dans la fiche SAV (`SAVBarcode.tsx`)
-
-Le canvas de prévisualisation dans la carte "Code-barres étiquette" reprend le ratio W×H du preset (au lieu du 220 px fixe actuel) et applique la même rotation choisie → l'utilisateur voit dès la fiche SAV l'orientation finale.
-
-Texte d'aide mis à jour : `Étiquette 55×40 mm — Epson TM-L90 — rotation 90°` par exemple.
-
-### 4. Defaults migrés
-
-`DEFAULT_LABEL_SETTINGS` passe de 60×40 à **55×40 mm, preset TM-L90, marge 1 mm, rotation 90°, autoPrint true**. Migration transparente : les installations existantes conservent leurs valeurs (merge sur le stored JSON).
-
-### 5. Aide utilisateur intégrée
-
-Bloc d'info dans le dialog des réglages :
-- Rappel : dans la boîte d'impression Chrome/Edge → **Marges : "Aucune"**, **Mise à l'échelle : 100 %**, **En-têtes/pieds : décochés**, sélectionner l'imprimante TM-L90.
-- Lien vers le pilote officiel Epson (page produit TM-L90) — on ne peut pas installer le driver mais on peut y renvoyer.
-- Explication courte : "Si l'impression sort tournée, utilisez le bouton Rotation contenu plutôt que l'orientation Windows."
-
-## Détails techniques
-
-Fichiers touchés (aucune logique métier, uniquement UI + génération HTML d'impression) :
-
-- `src/components/sav/SAVBarcodePrinterSettings.tsx`
-  - `LabelPrinterSettings` +`printerModel`, `contentOrientation`, `rotateContent`.
-  - `DEFAULT_LABEL_SETTINGS` → preset TM-L90.
-  - Ajout `<Select>` presets + boutons rotation 0/90/180/270°.
-  - Aperçu miniature de l'étiquette (rectangle SVG à l'échelle) reflétant taille + rotation.
-
-- `src/components/sav/SAVBarcode.tsx`
-  - `handlePrint()` : injecte `transform: rotate(${rotateContent}deg)` et échange W/H de `.label` quand rotation ∈ {90,270}.
-  - Aperçu canvas : wrap dans un conteneur avec `transform` équivalent.
-
-Aucune migration DB, aucun edge function, aucun changement de dépendance. Rétrocompatible avec le `localStorage` existant.
-
-## Ce qui n'est PAS fait (et pourquoi)
-
-- Pilotage direct ESC/POS via WebUSB : déjà présent en association d'appareil mais **impossible d'imprimer réellement** sans embarquer un firmware Epson complet (rendering ESC/POS, calibrage papier, cutter). Hors périmètre. On documente ce point dans l'aide.
-- Détection auto des caractéristiques papier de l'imprimante : le navigateur ne l'expose jamais (sécurité). Seuls des presets manuels sont possibles.
+## Évolution possible (hors scope)
+Si plus tard tu veux passer au pilotage direct (ESC/POS pixel-perfect), la base `labelPrinters.ts` servira de socle pour un futur middleware local ou une extension WebUSB — sans avoir à refaire les presets.
