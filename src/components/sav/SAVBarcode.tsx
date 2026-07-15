@@ -96,6 +96,8 @@ export function SAVBarcode({ savCase, savTypeLabel }: SAVBarcodeProps) {
     const printerHint = s.printerName
       ? `<div class="hint">Imprimante recommandée : <strong>${esc(s.printerName)}</strong> — sélectionnez-la dans la boîte d'impression (marges : Aucune, échelle : 100%).</div>`
       : '';
+    const leftRotated = s.barcodeLayout === 'left-rotated';
+    const bcColMm = leftRotated ? Math.max(8, Math.min(boxW * 0.33, boxH * 0.9)) : 0;
     win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Étiquette SAV ${esc(code)}</title>
       <style>
         @page { size: ${pageW}mm ${pageH}mm; margin: 0; }
@@ -106,21 +108,32 @@ export function SAVBarcode({ savCase, savTypeLabel }: SAVBarcodeProps) {
           width: ${boxW}mm; height: ${boxH}mm;
           transform: translate(-50%, -50%) rotate(${rot}deg);
           transform-origin: center center;
-          display: flex; flex-direction: column;
+          ${leftRotated
+            ? `display: grid; grid-template-columns: ${bcColMm}mm 1fr; gap: 1mm; align-items: stretch;`
+            : `display: flex; flex-direction: column;`}
           padding: 1mm; box-sizing: border-box;
         }
         .type { font-size: 7pt; font-weight: 700; text-transform: uppercase;
-          letter-spacing: 0.3px; text-align: center; line-height: 1.1; margin-bottom: 0.5mm; }
-        .customer { font-size: 8pt; font-weight: 600; text-align: center;
-          line-height: 1.1; margin-bottom: 0.5mm;
-          white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .device { font-size: 8pt; font-weight: 700; text-align: center;
-          line-height: 1.1; margin-bottom: 0.5mm;
-          white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .problem { font-size: 6.5pt; text-align: center; line-height: 1.15;
-          margin-bottom: 0.8mm; max-height: 5mm; overflow: hidden; }
-        .bc { flex: 1; display: flex; align-items: center; justify-content: center; min-height: 0; }
-        .bc img { max-width: 100%; max-height: 100%; object-fit: contain; }
+          letter-spacing: 0.3px; line-height: 1.1; margin-bottom: 0.5mm;
+          text-align: ${leftRotated ? 'left' : 'center'}; }
+        .customer { font-size: 8pt; font-weight: 600; line-height: 1.1; margin-bottom: 0.5mm;
+          white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+          text-align: ${leftRotated ? 'left' : 'center'}; }
+        .device { font-size: 8pt; font-weight: 700; line-height: 1.1; margin-bottom: 0.5mm;
+          white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+          text-align: ${leftRotated ? 'left' : 'center'}; }
+        .problem { font-size: 6.5pt; line-height: 1.15; margin-bottom: 0.8mm;
+          max-height: 5mm; overflow: hidden;
+          text-align: ${leftRotated ? 'left' : 'center'}; }
+        ${leftRotated
+          ? `.bc { position: relative; overflow: hidden; }
+             .bc img { position: absolute; top: 50%; left: 50%;
+               width: ${boxH - 2}mm; height: ${bcColMm - 1}mm;
+               transform: translate(-50%, -50%) rotate(-90deg);
+               transform-origin: center center; object-fit: fill; }
+             .text { min-width: 0; display: flex; flex-direction: column; justify-content: center; }`
+          : `.bc { flex: 1; display: flex; align-items: center; justify-content: center; min-height: 0; }
+             .bc img { max-width: 100%; max-height: 100%; object-fit: contain; }`}
         .hint { font-size: 11px; color: #555; text-align: center; padding: 8px; }
         @media print { .hint { display: none; } .page { box-shadow: none; } }
         @media screen { body { background:#f1f1f1; padding:16px; }
@@ -129,11 +142,12 @@ export function SAVBarcode({ savCase, savTypeLabel }: SAVBarcodeProps) {
       ${printerHint}
       <div class="page">
         <div class="label">
+          ${leftRotated ? `<div class="bc"><img src="${dataUrl}" alt="${esc(code)}" /></div><div class="text">` : ''}
           ${typeLabel ? `<div class="type">${esc(typeLabel)}</div>` : ''}
           ${customerName ? `<div class="customer">${esc(customerName)}</div>` : ''}
           ${deviceLine ? `<div class="device">${esc(deviceLine)}</div>` : ''}
           ${problemSummary ? `<div class="problem">${esc(problemSummary)}</div>` : ''}
-          <div class="bc"><img src="${dataUrl}" alt="${esc(code)}" /></div>
+          ${leftRotated ? `</div>` : `<div class="bc"><img src="${dataUrl}" alt="${esc(code)}" /></div>`}
         </div>
       </div>
       ${s.autoPrint ? `<script>window.onload = () => { setTimeout(() => { window.print(); }, 200); };</script>` : ''}
@@ -190,14 +204,39 @@ export function SAVBarcode({ savCase, savTypeLabel }: SAVBarcodeProps) {
                 transformOrigin: 'center center',
               }}
             >
-              <canvas ref={canvasRef} className="block max-w-full max-h-full" />
+              {printerSettings.barcodeLayout === 'left-rotated' ? (
+                <div className="w-full h-full flex items-stretch gap-[2px] p-[2px]">
+                  <div className="relative overflow-hidden" style={{ width: `${innerW * 0.33}px` }}>
+                    <canvas
+                      ref={canvasRef}
+                      className="block absolute top-1/2 left-1/2"
+                      style={{
+                        width: `${innerH - 4}px`,
+                        height: `${innerW * 0.33 - 2}px`,
+                        transform: 'translate(-50%, -50%) rotate(-90deg)',
+                        transformOrigin: 'center center',
+                      }}
+                    />
+                  </div>
+                  <div className="flex-1 min-w-0 flex flex-col justify-center text-[6px] leading-tight">
+                    {typeLabel && <div className="font-semibold uppercase truncate">{typeLabel}</div>}
+                    {customerName && <div className="truncate">{customerName}</div>}
+                    {deviceLine && <div className="font-semibold truncate">{deviceLine}</div>}
+                    {problemSummary && <div className="text-muted-foreground line-clamp-2">{problemSummary}</div>}
+                  </div>
+                </div>
+              ) : (
+                <canvas ref={canvasRef} className="block max-w-full max-h-full" />
+              )}
             </div>
           )}
         </div>
         <div className="flex-1 min-w-0 space-y-2">
           <div className="text-xs text-muted-foreground">
             Étiquette {printerSettings.widthMm}×{printerSettings.heightMm} mm
-            {rot ? ` — rotation ${rot}°` : ''} — Code 128 basé sur le numéro de dossier.
+            {rot ? ` — rotation ${rot}°` : ''}
+            {printerSettings.barcodeLayout === 'left-rotated' ? ' — barcode à gauche pivoté' : ''}
+            {' '}— Code 128 basé sur le numéro de dossier.
             {printerSettings.printerName && (
               <> • Imprimante : <span className="font-medium">{printerSettings.printerName}</span></>
             )}
