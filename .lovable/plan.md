@@ -1,29 +1,38 @@
-# Option layout : QR pivoté à gauche du texte
+# Assistant impression étiquette — configurer Windows + Chrome
 
-Ajouter un choix de disposition dans les réglages d'étiquette pour placer le code-barres/QR à gauche (pivoté 90° antihoraire) sur toute la hauteur, avec le texte à sa droite.
+## Pourquoi
 
-## Ce qui change
+Chrome sous Windows n'a pas le droit d'imposer une taille de papier au pilote. Si le pilote Epson TM-L90 est réglé sur un format long (bande / reçu 80 mm × 297 mm par défaut), Chrome dessine notre étiquette 55×40 mm dans un coin de cette grande feuille virtuelle, l'imprimante déroule toute la longueur et **saute plusieurs étiquettes physiques**. Aucune ligne de code côté web ne peut corriger cela : il faut créer un **format papier personnalisé** dans le pilote, puis le choisir dans Chrome. On va guider l'utilisateur pas à pas depuis Fixway.
 
-### 1. `SAVBarcodePrinterSettings.tsx`
-- Nouveau champ dans `LabelPrinterSettings` :
-  - `barcodeLayout: 'stacked' | 'left-rotated'` (défaut `stacked` — layout actuel inchangé).
-- Nouveau bloc UI "Disposition du code-barres" avec 2 vignettes cliquables (mini-aperçus SVG) :
-  - **Empilé** (actuel) : texte en haut, barcode en bas horizontal.
-  - **Barcode à gauche pivoté 90°** : barcode vertical collé à gauche, texte à droite.
-- Persistance dans le même `localStorage` (`fixway_label_printer_settings`), migration douce (défaut `stacked` si absent).
+## Ce qu'on ajoute
 
-### 2. `SAVBarcode.tsx`
-- Aperçu interne : quand `barcodeLayout === 'left-rotated'`, rend une grille `[barcode vertical | texte]` au lieu de la pile actuelle. Le canvas garde ses proportions naturelles, on applique `transform: rotate(-90deg)` sur son conteneur.
-- Impression (`handlePrint`) : dans le HTML injecté, si `left-rotated`, remplace le layout `.label` flex-column par une grille CSS 2 colonnes :
-  - Colonne gauche : largeur ≈ 30 % de la boîte, `.bc` avec `transform: rotate(-90deg)`, dimensions échangées pour occuper toute la hauteur.
-  - Colonne droite : texte (type, client, appareil, panne) empilé verticalement, aligné à gauche, tailles de police inchangées.
-- Aucun changement des autres modes ; la rotation globale du contenu (`rotateContent`) reste appliquée par-dessus.
+### 1. Nouveau composant `PrinterSetupWizard` (dans Réglages > Impression étiquette)
 
-## Ce qui ne change pas
-- Aucune nouvelle dépendance, aucun changement DB / edge function.
-- La base `labelPrinters.ts`, les presets, le layout empilé actuel restent identiques.
-- Les autres modules d'impression (PDF SAV, devis) ne sont pas touchés.
+Bouton **« Assistant de configuration Windows »** à côté du sélecteur d'imprimante. Ouvre un dialog en 4 étapes, contenu adapté au modèle sélectionné (données lues dans `src/lib/labelPrinters.ts`) :
 
-## Fichiers touchés
-- **Édité** : `src/components/sav/SAVBarcodePrinterSettings.tsx`
-- **Édité** : `src/components/sav/SAVBarcode.tsx`
+1. **Vérifier le pilote installé** — nom Windows attendu (ex. `EPSON TM-L90 Label`), lien vers le pilote APD Epson officiel.
+2. **Créer le format papier personnalisé** — instructions détaillées : Panneau de configuration → Périphériques et imprimantes → clic droit sur la TM-L90 → *Préférences d'impression* → onglet *Document Settings* → *User Defined Paper Size* → nommer `Fixway 55x40`, largeur 55 mm, hauteur 40 mm → Enregistrer → onglet *Main* → Paper Source = `Fixway 55x40`. Chaque étape avec texte clair + schéma SVG inline (pas de captures externes à héberger).
+3. **Définir comme format par défaut** — *Propriétés de l'imprimante* → *Préférences d'impression* → *Fixway 55x40* → OK.
+4. **Choisir le format dans Chrome** — À l'impression : *Plus de paramètres* → *Taille du papier* → sélectionner `Fixway 55x40` (ou `Défini par l'utilisateur`) → *Marges* : Aucune → *Échelle* : 100 %. Case à cocher **« J'ai terminé la configuration sur ce poste »** stockée dans `localStorage` (`fixway_printer_setup_done_<printerId>`).
+
+### 2. Rappel avant impression
+
+Dans `SAVBarcode.tsx`, avant `handlePrint`, si le flag `fixway_printer_setup_done_<printerId>` est absent : afficher une petite modale de rappel « Format papier configuré dans le pilote ? » avec 2 boutons : *Ouvrir l'assistant* ou *Continuer quand même* (+ case « Ne plus afficher »). Aucune modification de la logique d'impression elle-même.
+
+### 3. Fiche récap dans les réglages
+
+Sous le bouton assistant, badge d'état : ✅ « Configuration terminée sur ce poste » (vert) ou ⚠️ « Non configuré — risque de saut d'étiquettes » (orange), avec bouton *Réinitialiser*.
+
+## Détails techniques
+
+- **Fichiers modifiés** : `src/components/sav/SAVBarcodePrinterSettings.tsx` (bouton + badge), `src/components/sav/SAVBarcode.tsx` (rappel pré-impression).
+- **Fichier créé** : `src/components/sav/PrinterSetupWizard.tsx` (le dialog à étapes, contenu paramétré par `LabelPrinterSpec` déjà présent dans `src/lib/labelPrinters.ts`).
+- **Enrichissement mineur** de `src/lib/labelPrinters.ts` : ajouter par imprimante un tableau `setupSteps` optionnel (nom onglet pilote, chemin exact des menus) pour Epson TM-L90/L100, Brother QL, Zebra ZD, DYMO. Étapes génériques pour l'entrée « Générique ».
+- Aucune dépendance nouvelle, aucun changement DB, aucune edge function, aucune modification de la génération HTML d'impression (déjà correcte).
+- Persistance locale uniquement (`localStorage`), par poste, par modèle d'imprimante — cohérent avec les autres réglages d'étiquette.
+
+## Ce qu'on ne change pas
+
+- La logique d'impression (`@page`, rotation, `barcodeLayout`) reste identique — elle est déjà correcte.
+- Aucune extension Chrome (inutile sous Windows, cf. discussion).
+- Pas de middleware local à cette étape.
