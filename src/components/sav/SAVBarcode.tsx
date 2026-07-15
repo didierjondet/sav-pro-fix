@@ -1,13 +1,19 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import bwipjs from 'bwip-js/browser';
 import { Button } from '@/components/ui/button';
-import { Download, Printer, Barcode as BarcodeIcon, Settings2 } from 'lucide-react';
+import { Download, Printer, Barcode as BarcodeIcon, Settings2, AlertTriangle, Wand2 } from 'lucide-react';
 import { SAVCase } from '@/hooks/useSAVCases';
 import {
   SAVBarcodePrinterSettings,
   loadLabelPrinterSettings,
   type LabelPrinterSettings,
 } from './SAVBarcodePrinterSettings';
+import { PrinterSetupWizard } from './PrinterSetupWizard';
+import { isPrinterSetupDone, skipReminderStorageKey } from './printerSetupState';
+import { findPrinterSpec } from '@/lib/labelPrinters';
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogAction, AlertDialogCancel } from '@/components/ui/alert-dialog';
+import { Checkbox } from '@/components/ui/checkbox';
+
 
 interface SAVBarcodeProps {
   savCase: SAVCase;
