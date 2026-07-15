@@ -342,6 +342,54 @@ export function SAVBarcodePrinterSettings({ open, onOpenChange, onSaved }: Props
             </div>
           )}
 
+          {currentSpec && (
+            <div className={`rounded-md border p-3 space-y-2 ${setupDone ? 'border-green-500/40 bg-green-50 dark:bg-green-950/20' : 'border-orange-400/50 bg-orange-50 dark:bg-orange-950/20'}`}>
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex items-start gap-2">
+                  {setupDone ? (
+                    <CheckCircle2 className="h-4 w-4 text-green-600 mt-0.5" />
+                  ) : (
+                    <AlertTriangle className="h-4 w-4 text-orange-600 mt-0.5" />
+                  )}
+                  <div className="text-xs">
+                    <div className="font-medium">
+                      {setupDone
+                        ? 'Configuration Windows terminée sur ce poste'
+                        : 'Configuration Windows requise'}
+                    </div>
+                    <div className="text-muted-foreground mt-0.5">
+                      {setupDone
+                        ? `Format papier "Fixway ${settings.widthMm}x${settings.heightMm}" déclaré dans le pilote.`
+                        : `Sans configuration du format papier dans Windows, l'imprimante peut sauter plusieurs étiquettes entre chaque impression.`}
+                    </div>
+                  </div>
+                </div>
+                {setupDone && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 px-2 shrink-0"
+                    onClick={() => { resetPrinterSetup(settings.printerSpecId); setSetupDone(false); toast.success('État réinitialisé'); }}
+                  >
+                    Réinitialiser
+                  </Button>
+                )}
+              </div>
+              <Button
+                type="button"
+                variant={setupDone ? 'outline' : 'default'}
+                size="sm"
+                className="w-full"
+                onClick={() => setWizardOpen(true)}
+              >
+                <Wand2 className="h-4 w-4 mr-2" />
+                {setupDone ? 'Revoir l\'assistant' : 'Ouvrir l\'assistant de configuration Windows'}
+              </Button>
+            </div>
+          )}
+
+
           <div className="space-y-2">
             <Label htmlFor="printer-name">Nom de l'imprimante (mémo)</Label>
             <Input
