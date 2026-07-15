@@ -79,6 +79,7 @@ function buildDefaults(): LabelPrinterSettings {
     usbVendorId: null,
     usbProductId: null,
     usbDeviceName: null,
+    networkPrinters: [],
   };
 }
 
