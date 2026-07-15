@@ -158,19 +158,44 @@ export function SAVBarcode({ savCase, savTypeLabel }: SAVBarcodeProps) {
     );
   }
 
+  const rot = printerSettings.rotateContent ?? 0;
+  const isSide = rot === 90 || rot === 270;
+  // Preview box scaled to label ratio (max 220px wide)
+  const previewMaxW = 220;
+  const previewMaxH = 150;
+  const scale = Math.min(previewMaxW / printerSettings.widthMm, previewMaxH / printerSettings.heightMm);
+  const pxW = printerSettings.widthMm * scale;
+  const pxH = printerSettings.heightMm * scale;
+  const innerW = (isSide ? pxH : pxW);
+  const innerH = (isSide ? pxW : pxH);
+
   return (
     <div className="rounded-md border bg-card p-3 w-full">
       <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-        <div className="flex-shrink-0 bg-white rounded p-2 border self-center">
+        <div
+          className="flex-shrink-0 bg-white rounded border relative self-center overflow-hidden"
+          style={{ width: `${pxW}px`, height: `${pxH}px` }}
+        >
           {error ? (
-            <div className="text-xs text-destructive w-[180px] text-center">{error}</div>
+            <div className="text-xs text-destructive w-full h-full flex items-center justify-center text-center p-1">{error}</div>
           ) : (
-            <canvas ref={canvasRef} className="block max-w-[220px] h-auto" />
+            <div
+              className="absolute top-1/2 left-1/2 flex items-center justify-center"
+              style={{
+                width: `${innerW}px`,
+                height: `${innerH}px`,
+                transform: `translate(-50%, -50%) rotate(${rot}deg)`,
+                transformOrigin: 'center center',
+              }}
+            >
+              <canvas ref={canvasRef} className="block max-w-full max-h-full" />
+            </div>
           )}
         </div>
         <div className="flex-1 min-w-0 space-y-2">
           <div className="text-xs text-muted-foreground">
-            Étiquette {printerSettings.widthMm}×{printerSettings.heightMm} mm — Code 128 basé sur le numéro de dossier.
+            Étiquette {printerSettings.widthMm}×{printerSettings.heightMm} mm
+            {rot ? ` — rotation ${rot}°` : ''} — Code 128 basé sur le numéro de dossier.
             {printerSettings.printerName && (
               <> • Imprimante : <span className="font-medium">{printerSettings.printerName}</span></>
             )}
