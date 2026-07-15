@@ -6,109 +6,33 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Printer, Usb, CheckCircle2, XCircle, RotateCw, Info, ExternalLink } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Badge } from '@/components/ui/badge';
+import { Printer, Usb, CheckCircle2, XCircle, RotateCw, Info, ExternalLink, HelpCircle, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
-
-export type PrinterModelKey =
-  | 'epson-tm-l90-55x40'
-  | 'epson-tm-l90-58x40'
-  | 'brother-ql-62x29'
-  | 'zebra-zd-57x32'
-  | 'dymo-lw-54x25'
-  | 'generic-60x40'
-  | 'custom';
-
-export interface PrinterPreset {
-  key: PrinterModelKey;
-  label: string;
-  printerName: string;
-  widthMm: number;
-  heightMm: number;
-  marginMm: number;
-  contentOrientation: 'landscape' | 'portrait';
-  rotateContent: 0 | 90 | 180 | 270;
-}
-
-export const PRINTER_PRESETS: PrinterPreset[] = [
-  {
-    key: 'epson-tm-l90-55x40',
-    label: 'Epson TM-L90 — étiquette 55×40 mm (recommandé)',
-    printerName: 'EPSON TM-L90 Label',
-    widthMm: 55,
-    heightMm: 40,
-    marginMm: 1,
-    contentOrientation: 'landscape',
-    rotateContent: 90,
-  },
-  {
-    key: 'epson-tm-l90-58x40',
-    label: 'Epson TM-L90 — étiquette 58×40 mm',
-    printerName: 'EPSON TM-L90 Label',
-    widthMm: 58,
-    heightMm: 40,
-    marginMm: 1,
-    contentOrientation: 'landscape',
-    rotateContent: 90,
-  },
-  {
-    key: 'brother-ql-62x29',
-    label: 'Brother QL — 62×29 mm',
-    printerName: 'Brother QL',
-    widthMm: 62,
-    heightMm: 29,
-    marginMm: 1,
-    contentOrientation: 'landscape',
-    rotateContent: 0,
-  },
-  {
-    key: 'zebra-zd-57x32',
-    label: 'Zebra ZD — 57×32 mm',
-    printerName: 'Zebra ZD',
-    widthMm: 57,
-    heightMm: 32,
-    marginMm: 1,
-    contentOrientation: 'landscape',
-    rotateContent: 0,
-  },
-  {
-    key: 'dymo-lw-54x25',
-    label: 'DYMO LabelWriter — 54×25 mm',
-    printerName: 'DYMO LabelWriter',
-    widthMm: 54,
-    heightMm: 25,
-    marginMm: 1,
-    contentOrientation: 'landscape',
-    rotateContent: 0,
-  },
-  {
-    key: 'generic-60x40',
-    label: 'Générique 60×40 mm',
-    printerName: '',
-    widthMm: 60,
-    heightMm: 40,
-    marginMm: 2,
-    contentOrientation: 'landscape',
-    rotateContent: 0,
-  },
-  {
-    key: 'custom',
-    label: 'Personnalisé',
-    printerName: '',
-    widthMm: 60,
-    heightMm: 40,
-    marginMm: 2,
-    contentOrientation: 'landscape',
-    rotateContent: 0,
-  },
-];
+import {
+  LABEL_PRINTERS,
+  DEFAULT_PRINTER_ID,
+  findPrinterSpec,
+  findDefaultMedia,
+  type LabelPrinterSpec,
+  type LabelMedia,
+} from '@/lib/labelPrinters';
 
 export interface LabelPrinterSettings {
-  printerModel: PrinterModelKey;
+  /** Identifiant du modèle dans la base labelPrinters.ts (ou 'custom') */
+  printerSpecId: string;
+  /** Identifiant de l'étiquette dans le modèle (ou 'custom') */
+  mediaId: string;
+  /** Nom d'imprimante à sélectionner dans la boîte système */
   printerName: string;
   widthMm: number;
   heightMm: number;
   marginMm: number;
-  contentOrientation: 'landscape' | 'portrait';
+  /** Marge de sécurité interne (soustraite du @page pour éviter les sauts d'étiquette) */
+  safetyMarginMm: number;
+  /** Largeur imprimable maximale de la tête (mm) — plafond appliqué à widthMm */
+  maxPrintWidthMm: number;
   rotateContent: 0 | 90 | 180 | 270;
   autoPrint: boolean;
   usbVendorId?: number | null;
@@ -118,27 +42,40 @@ export interface LabelPrinterSettings {
 
 const STORAGE_KEY = 'fixway_label_printer_settings';
 
-export const DEFAULT_LABEL_SETTINGS: LabelPrinterSettings = {
-  printerModel: 'epson-tm-l90-55x40',
-  printerName: 'EPSON TM-L90 Label',
-  widthMm: 55,
-  heightMm: 40,
-  marginMm: 1,
-  contentOrientation: 'landscape',
-  rotateContent: 90,
-  autoPrint: true,
-  usbVendorId: null,
-  usbProductId: null,
-  usbDeviceName: null,
-};
+function buildDefaults(): LabelPrinterSettings {
+  const spec = findPrinterSpec(DEFAULT_PRINTER_ID)!;
+  const media = findDefaultMedia(spec);
+  return {
+    printerSpecId: spec.id,
+    mediaId: media.id,
+    printerName: spec.suggestedWindowsName,
+    widthMm: media.widthMm,
+    heightMm: media.heightMm,
+    marginMm: 1,
+    safetyMarginMm: spec.safetyMarginMm,
+    maxPrintWidthMm: spec.maxPrintWidthMm,
+    rotateContent: spec.defaultRotationDeg,
+    autoPrint: true,
+    usbVendorId: null,
+    usbProductId: null,
+    usbDeviceName: null,
+  };
+}
+
+export const DEFAULT_LABEL_SETTINGS: LabelPrinterSettings = buildDefaults();
 
 export function loadLabelPrinterSettings(): LabelPrinterSettings {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return DEFAULT_LABEL_SETTINGS;
-    return { ...DEFAULT_LABEL_SETTINGS, ...JSON.parse(raw) };
+    if (!raw) return buildDefaults();
+    const parsed = JSON.parse(raw);
+    // Migration douce depuis l'ancienne shape (printerModel)
+    const migrated: Partial<LabelPrinterSettings> = { ...parsed };
+    if (!migrated.printerSpecId) migrated.printerSpecId = DEFAULT_PRINTER_ID;
+    if (!migrated.mediaId) migrated.mediaId = 'custom';
+    return { ...buildDefaults(), ...migrated } as LabelPrinterSettings;
   } catch {
-    return DEFAULT_LABEL_SETTINGS;
+    return buildDefaults();
   }
 }
 
@@ -164,23 +101,60 @@ export function SAVBarcodePrinterSettings({ open, onOpenChange, onSaved }: Props
   const update = <K extends keyof LabelPrinterSettings>(k: K, v: LabelPrinterSettings[K]) =>
     setSettings((prev) => ({ ...prev, [k]: v }));
 
-  const applyPreset = (key: PrinterModelKey) => {
-    const p = PRINTER_PRESETS.find((x) => x.key === key);
-    if (!p) return;
-    if (key === 'custom') {
-      setSettings((prev) => ({ ...prev, printerModel: 'custom' }));
-      return;
-    }
+  const currentSpec: LabelPrinterSpec | undefined = useMemo(
+    () => findPrinterSpec(settings.printerSpecId),
+    [settings.printerSpecId],
+  );
+
+  const applyPrinterSpec = (specId: string) => {
+    const spec = findPrinterSpec(specId);
+    if (!spec) return;
+    const media = findDefaultMedia(spec);
     setSettings((prev) => ({
       ...prev,
-      printerModel: p.key,
-      printerName: p.printerName || prev.printerName,
-      widthMm: p.widthMm,
-      heightMm: p.heightMm,
-      marginMm: p.marginMm,
-      contentOrientation: p.contentOrientation,
-      rotateContent: p.rotateContent,
+      printerSpecId: spec.id,
+      mediaId: media.id,
+      printerName: spec.suggestedWindowsName || prev.printerName,
+      widthMm: Math.min(media.widthMm, spec.maxPrintWidthMm),
+      heightMm: media.heightMm,
+      safetyMarginMm: spec.safetyMarginMm,
+      maxPrintWidthMm: spec.maxPrintWidthMm,
+      rotateContent: spec.defaultRotationDeg,
     }));
+  };
+
+  const applyMedia = (mediaId: string) => {
+    if (!currentSpec) return;
+    if (mediaId === 'custom') {
+      update('mediaId', 'custom');
+      return;
+    }
+    const media = currentSpec.recommendedMedia.find((m) => m.id === mediaId);
+    if (!media) return;
+    setSettings((prev) => ({
+      ...prev,
+      mediaId: media.id,
+      widthMm: Math.min(media.widthMm, currentSpec.maxPrintWidthMm),
+      heightMm: media.heightMm,
+    }));
+  };
+
+  const restoreRecommended = () => {
+    if (!currentSpec) return;
+    const media = currentSpec.recommendedMedia.find((m) => m.id === settings.mediaId)
+      || findDefaultMedia(currentSpec);
+    setSettings((prev) => ({
+      ...prev,
+      mediaId: media.id,
+      printerName: currentSpec.suggestedWindowsName || prev.printerName,
+      widthMm: Math.min(media.widthMm, currentSpec.maxPrintWidthMm),
+      heightMm: media.heightMm,
+      marginMm: 1,
+      safetyMarginMm: currentSpec.safetyMarginMm,
+      maxPrintWidthMm: currentSpec.maxPrintWidthMm,
+      rotateContent: currentSpec.defaultRotationDeg,
+    }));
+    toast.success('Réglages recommandés restaurés');
   };
 
   const rotateNext = () => {
@@ -211,9 +185,14 @@ export function SAVBarcodePrinterSettings({ open, onOpenChange, onSaved }: Props
   };
 
   const handleSave = () => {
-    saveLabelPrinterSettings(settings);
+    // Sécurité : plafonner la largeur à la largeur imprimable du modèle
+    const safe: LabelPrinterSettings = {
+      ...settings,
+      widthMm: Math.min(settings.widthMm, settings.maxPrintWidthMm || settings.widthMm),
+    };
+    saveLabelPrinterSettings(safe);
     toast.success('Configuration enregistrée');
-    onSaved?.(settings);
+    onSaved?.(safe);
     onOpenChange(false);
   };
 
@@ -246,24 +225,105 @@ export function SAVBarcodePrinterSettings({ open, onOpenChange, onSaved }: Props
 
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label>Modèle d'imprimante / format d'étiquette</Label>
+            <div className="flex items-center justify-between gap-2">
+              <Label>Modèle d'imprimante</Label>
+              {currentSpec && (
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button type="button" variant="ghost" size="sm" className="h-7 px-2">
+                      <HelpCircle className="h-3.5 w-3.5 mr-1" />
+                      Fiche & conseils
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent align="end" className="w-80 max-h-[70vh] overflow-y-auto text-xs space-y-3">
+                    <div>
+                      <div className="text-sm font-semibold">{currentSpec.brand} {currentSpec.model}</div>
+                      <div className="text-muted-foreground">
+                        {currentSpec.dpi} dpi • largeur imprimable {currentSpec.maxPrintWidthMm} mm •{' '}
+                        {currentSpec.printMethod === 'thermal-direct' ? 'thermique direct' : currentSpec.printMethod}
+                      </div>
+                      {currentSpec.productUrl && (
+                        <a
+                          href={currentSpec.productUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-primary hover:underline mt-1"
+                        >
+                          <ExternalLink className="h-3 w-3" /> Fiche constructeur
+                        </a>
+                      )}
+                    </div>
+                    <div>
+                      <div className="font-medium mb-1">Réglages pilote</div>
+                      <ul className="list-disc pl-4 space-y-0.5 text-muted-foreground">
+                        {currentSpec.driverNotes.map((n, i) => <li key={i}>{n}</li>)}
+                      </ul>
+                    </div>
+                    <div>
+                      <div className="font-medium mb-1">Réglages navigateur</div>
+                      <ul className="list-disc pl-4 space-y-0.5 text-muted-foreground">
+                        {currentSpec.browserNotes.map((n, i) => <li key={i}>{n}</li>)}
+                      </ul>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              )}
+            </div>
             <Select
-              value={settings.printerModel}
-              onValueChange={(v) => applyPreset(v as PrinterModelKey)}
+              value={settings.printerSpecId}
+              onValueChange={applyPrinterSpec}
             >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {PRINTER_PRESETS.map((p) => (
-                  <SelectItem key={p.key} value={p.key}>{p.label}</SelectItem>
+                {LABEL_PRINTERS.map((p) => (
+                  <SelectItem key={p.id} value={p.id}>
+                    {p.brand} — {p.model}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-            <p className="text-xs text-muted-foreground">
-              Sélectionner un modèle préremplit taille, marges et rotation adaptée au sens de chargement du rouleau.
-            </p>
           </div>
+
+          {currentSpec && (
+            <div className="space-y-2">
+              <Label>Format d'étiquette</Label>
+              <Select value={settings.mediaId} onValueChange={applyMedia}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {currentSpec.recommendedMedia.map((m) => (
+                    <SelectItem key={m.id} value={m.id}>
+                      {m.widthMm}×{m.heightMm} mm — {m.description}
+                    </SelectItem>
+                  ))}
+                  <SelectItem value="custom">Personnalisé (ci-dessous)</SelectItem>
+                </SelectContent>
+              </Select>
+              <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                <Badge variant="secondary" className="font-normal">
+                  {currentSpec.dpi} dpi
+                </Badge>
+                <Badge variant="secondary" className="font-normal">
+                  Largeur max {currentSpec.maxPrintWidthMm} mm
+                </Badge>
+                <Badge variant="secondary" className="font-normal">
+                  Marge sécurité {currentSpec.safetyMarginMm} mm
+                </Badge>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 px-2 ml-auto"
+                  onClick={restoreRecommended}
+                >
+                  <RefreshCw className="h-3.5 w-3.5 mr-1" /> Restaurer les réglages recommandés
+                </Button>
+              </div>
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label htmlFor="printer-name">Nom de l'imprimante (mémo)</Label>
@@ -285,13 +345,18 @@ export function SAVBarcodePrinterSettings({ open, onOpenChange, onSaved }: Props
               <Label htmlFor="w">Largeur (mm)</Label>
               <Input id="w" type="number" min={10} max={200} step={0.5}
                 value={settings.widthMm}
-                onChange={(e) => { update('widthMm', Number(e.target.value) || 55); update('printerModel', 'custom'); }} />
+                onChange={(e) => { update('widthMm', Number(e.target.value) || 55); update('mediaId', 'custom'); }} />
+              {currentSpec && settings.widthMm > currentSpec.maxPrintWidthMm && (
+                <p className="text-[10px] text-destructive">
+                  Dépasse la largeur imprimable ({currentSpec.maxPrintWidthMm} mm)
+                </p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="h">Hauteur (mm)</Label>
               <Input id="h" type="number" min={10} max={200} step={0.5}
                 value={settings.heightMm}
-                onChange={(e) => { update('heightMm', Number(e.target.value) || 40); update('printerModel', 'custom'); }} />
+                onChange={(e) => { update('heightMm', Number(e.target.value) || 40); update('mediaId', 'custom'); }} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="m">Marge (mm)</Label>
@@ -299,6 +364,16 @@ export function SAVBarcodePrinterSettings({ open, onOpenChange, onSaved }: Props
                 value={settings.marginMm}
                 onChange={(e) => update('marginMm', Number(e.target.value) || 0)} />
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="safety">Marge de sécurité anti-saut d'étiquette (mm)</Label>
+            <Input id="safety" type="number" min={0} max={5} step={0.1}
+              value={settings.safetyMarginMm}
+              onChange={(e) => update('safetyMarginMm', Number(e.target.value) || 0)} />
+            <p className="text-xs text-muted-foreground">
+              Soustraite du format papier envoyé au pilote. Augmenter (0.5 → 1.5 mm) si l'imprimante saute une étiquette vide entre chaque impression.
+            </p>
           </div>
 
           <div className="rounded-md border p-3 space-y-3">
@@ -360,14 +435,16 @@ export function SAVBarcodePrinterSettings({ open, onOpenChange, onSaved }: Props
               <li>En-têtes et pieds de page : <strong>décochés</strong></li>
               <li>Orientation Windows : <strong>ne pas modifier</strong> (utilisez le bouton Rotation ci-dessus)</li>
             </ul>
-            <a
-              href="https://www.epson.fr/fr_FR/support/sc/epson-tm-l90/s/s006"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 text-primary hover:underline"
-            >
-              <ExternalLink className="h-3.5 w-3.5" /> Pilotes officiels Epson TM-L90
-            </a>
+            {currentSpec?.productUrl && (
+              <a
+                href={currentSpec.productUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-primary hover:underline"
+              >
+                <ExternalLink className="h-3.5 w-3.5" /> Fiche & pilotes {currentSpec.brand} {currentSpec.model}
+              </a>
+            )}
           </div>
 
           <Separator />
