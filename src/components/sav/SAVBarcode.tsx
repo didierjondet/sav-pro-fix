@@ -204,14 +204,39 @@ export function SAVBarcode({ savCase, savTypeLabel }: SAVBarcodeProps) {
                 transformOrigin: 'center center',
               }}
             >
-              <canvas ref={canvasRef} className="block max-w-full max-h-full" />
+              {printerSettings.barcodeLayout === 'left-rotated' ? (
+                <div className="w-full h-full flex items-stretch gap-[2px] p-[2px]">
+                  <div className="relative overflow-hidden" style={{ width: `${innerW * 0.33}px` }}>
+                    <canvas
+                      ref={canvasRef}
+                      className="block absolute top-1/2 left-1/2"
+                      style={{
+                        width: `${innerH - 4}px`,
+                        height: `${innerW * 0.33 - 2}px`,
+                        transform: 'translate(-50%, -50%) rotate(-90deg)',
+                        transformOrigin: 'center center',
+                      }}
+                    />
+                  </div>
+                  <div className="flex-1 min-w-0 flex flex-col justify-center text-[6px] leading-tight">
+                    {typeLabel && <div className="font-semibold uppercase truncate">{typeLabel}</div>}
+                    {customerName && <div className="truncate">{customerName}</div>}
+                    {deviceLine && <div className="font-semibold truncate">{deviceLine}</div>}
+                    {problemSummary && <div className="text-muted-foreground line-clamp-2">{problemSummary}</div>}
+                  </div>
+                </div>
+              ) : (
+                <canvas ref={canvasRef} className="block max-w-full max-h-full" />
+              )}
             </div>
           )}
         </div>
         <div className="flex-1 min-w-0 space-y-2">
           <div className="text-xs text-muted-foreground">
             Étiquette {printerSettings.widthMm}×{printerSettings.heightMm} mm
-            {rot ? ` — rotation ${rot}°` : ''} — Code 128 basé sur le numéro de dossier.
+            {rot ? ` — rotation ${rot}°` : ''}
+            {printerSettings.barcodeLayout === 'left-rotated' ? ' — barcode à gauche pivoté' : ''}
+            {' '}— Code 128 basé sur le numéro de dossier.
             {printerSettings.printerName && (
               <> • Imprimante : <span className="font-medium">{printerSettings.printerName}</span></>
             )}
