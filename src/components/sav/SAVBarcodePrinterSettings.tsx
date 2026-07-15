@@ -34,6 +34,8 @@ export interface LabelPrinterSettings {
   /** Largeur imprimable maximale de la tête (mm) — plafond appliqué à widthMm */
   maxPrintWidthMm: number;
   rotateContent: 0 | 90 | 180 | 270;
+  /** Disposition interne : empilé (défaut) ou code-barres pivoté à gauche du texte */
+  barcodeLayout: 'stacked' | 'left-rotated';
   autoPrint: boolean;
   usbVendorId?: number | null;
   usbProductId?: number | null;
