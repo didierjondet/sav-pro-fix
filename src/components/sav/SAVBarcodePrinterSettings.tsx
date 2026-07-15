@@ -43,7 +43,18 @@ export interface LabelPrinterSettings {
   usbVendorId?: number | null;
   usbProductId?: number | null;
   usbDeviceName?: string | null;
+  /** Imprimantes réseau/partagées mémorisées (aide-mémoire uniquement, l'impression passe par le pilote système) */
+  networkPrinters?: NetworkPrinterMemo[];
 }
+
+export interface NetworkPrinterMemo {
+  id: string;
+  /** Libellé affiché (ex: "Atelier - TM-L90") */
+  label: string;
+  /** Chemin UNC (\\serveur\partage) ou IP/hôte (192.168.1.42) */
+  address: string;
+  /** Nom exact tel qu'il apparaît dans Chrome une fois ajouté à Windows */
+  systemName?: string;
 
 const STORAGE_KEY = 'fixway_label_printer_settings';
 
