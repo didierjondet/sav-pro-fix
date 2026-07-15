@@ -642,3 +642,170 @@ export function SAVBarcodePrinterSettings({ open, onOpenChange, onSaved }: Props
   );
 }
 
+// ============================================================
+// Section « Imprimantes réseau / partagées »
+// ------------------------------------------------------------
+// Les navigateurs ne peuvent pas énumérer les imprimantes du système
+// d'exploitation (ni USB ni réseau) : aucune API web ne le permet, pour
+// des raisons de sécurité. Cette section sert donc de carnet d'adresses
+// local (chemin UNC ou IP) et guide l'utilisateur pour ajouter
+// l'imprimante partagée dans Windows — une fois ajoutée, elle apparaîtra
+// automatiquement dans la boîte d'impression de Chrome.
+// ============================================================
+
+interface NetworkPrintersSectionProps {
+  printers: NetworkPrinterMemo[];
+  onChange: (list: NetworkPrinterMemo[]) => void;
+  onUseAsPrinterName: (name: string) => void;
+}
+
+function NetworkPrintersSection({ printers, onChange, onUseAsPrinterName }: NetworkPrintersSectionProps) {
+  const [label, setLabel] = useState('');
+  const [address, setAddress] = useState('');
+  const [systemName, setSystemName] = useState('');
+  const [helpOpen, setHelpOpen] = useState(false);
+
+  const add = () => {
+    const trimmedAddr = address.trim();
+    const trimmedLabel = label.trim();
+    if (!trimmedAddr) {
+      toast.error('Adresse requise (\\\\serveur\\partage ou IP)');
+      return;
+    }
+    const entry: NetworkPrinterMemo = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      label: trimmedLabel || trimmedAddr,
+      address: trimmedAddr,
+      systemName: systemName.trim() || undefined,
+    };
+    onChange([...printers, entry]);
+    setLabel(''); setAddress(''); setSystemName('');
+    toast.success('Imprimante réseau ajoutée');
+  };
+
+  const remove = (id: string) => {
+    onChange(printers.filter((p) => p.id !== id));
+  };
+
+  const copy = (text: string) => {
+    navigator.clipboard?.writeText(text).then(
+      () => toast.success('Copié'),
+      () => toast.error('Impossible de copier'),
+    );
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between gap-2">
+        <Label className="flex items-center gap-2">
+          <Network className="h-4 w-4" />
+          Imprimantes réseau / partagées
+        </Label>
+        <Popover open={helpOpen} onOpenChange={setHelpOpen}>
+          <PopoverTrigger asChild>
+            <Button type="button" variant="ghost" size="sm" className="h-7 px-2">
+              <HelpCircle className="h-3.5 w-3.5 mr-1" />
+              Comment l'ajouter à Windows ?
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent align="end" className="w-96 max-h-[70vh] overflow-y-auto text-xs space-y-2">
+            <div className="font-semibold text-sm">Ajouter une imprimante réseau sous Windows</div>
+            <p className="text-muted-foreground">
+              Le navigateur ne peut pas détecter les imprimantes réseau à votre place (limitation
+              de sécurité). Une fois l'imprimante ajoutée à Windows via la procédure ci-dessous,
+              elle apparaîtra automatiquement dans la boîte d'impression de Chrome.
+            </p>
+            <ol className="list-decimal pl-4 space-y-1">
+              <li>Ouvrir <strong>Paramètres Windows › Bluetooth et appareils › Imprimantes et scanners</strong>.</li>
+              <li>Cliquer sur <strong>« Ajouter un appareil »</strong>. Windows scanne le réseau local.</li>
+              <li>Si l'imprimante apparaît, la sélectionner. Sinon, cliquer sur
+                <strong> « L'imprimante que je veux n'est pas répertoriée »</strong>.</li>
+              <li>Choisir <strong>« Sélectionner une imprimante partagée par son nom »</strong> et saisir
+                <code className="bg-muted px-1 rounded"> \\NOM_PC\NOM_PARTAGE</code>, ou
+                <strong> « Ajouter une imprimante à l'aide d'une adresse TCP/IP »</strong> puis saisir l'IP (ex. <code className="bg-muted px-1 rounded">192.168.1.42</code>).</li>
+              <li>Installer le pilote proposé (ou celui du constructeur si demandé).</li>
+              <li>Vérifier que l'imprimante apparaît maintenant dans <strong>Chrome › Imprimer › Destination</strong>.</li>
+            </ol>
+            <div className="rounded bg-muted/60 p-2 text-muted-foreground">
+              <strong>Astuce :</strong> une fois ajoutée, notez son nom exact tel qu'affiché par Chrome
+              et copiez-le dans le champ « Nom système » ci-dessous — cela vous servira de rappel.
+            </div>
+          </PopoverContent>
+        </Popover>
+      </div>
+
+      {printers.length > 0 ? (
+        <div className="space-y-2">
+          {printers.map((p) => (
+            <div key={p.id} className="rounded-md border p-2 space-y-1">
+              <div className="flex items-center justify-between gap-2">
+                <div className="min-w-0 flex-1">
+                  <div className="text-sm font-medium truncate">{p.label}</div>
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <code className="truncate">{p.address}</code>
+                    <Button type="button" variant="ghost" size="sm" className="h-5 w-5 p-0" onClick={() => copy(p.address)}>
+                      <Copy className="h-3 w-3" />
+                    </Button>
+                  </div>
+                  {p.systemName && (
+                    <div className="text-[11px] text-muted-foreground mt-0.5">
+                      Nom système : <strong>{p.systemName}</strong>
+                    </div>
+                  )}
+                </div>
+                <div className="flex items-center gap-1 shrink-0">
+                  {p.systemName && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 text-xs"
+                      onClick={() => onUseAsPrinterName(p.systemName!)}
+                      title="Utiliser ce nom comme rappel d'impression"
+                    >
+                      Utiliser
+                    </Button>
+                  )}
+                  <Button type="button" variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => remove(p.id)}>
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="text-xs text-muted-foreground">
+          Aucune imprimante réseau mémorisée.
+        </div>
+      )}
+
+      <div className="rounded-md border p-3 space-y-2 bg-muted/20">
+        <div className="text-xs font-medium">Ajouter une imprimante réseau au carnet</div>
+        <div className="grid grid-cols-2 gap-2">
+          <div className="space-y-1">
+            <Label htmlFor="net-label" className="text-xs">Libellé</Label>
+            <Input id="net-label" placeholder="Atelier - TM-L90" value={label} onChange={(e) => setLabel(e.target.value)} />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="net-addr" className="text-xs">Adresse (UNC ou IP)</Label>
+            <Input id="net-addr" placeholder="\\PC-COMPTOIR\TM-L90 ou 192.168.1.42" value={address} onChange={(e) => setAddress(e.target.value)} />
+          </div>
+        </div>
+        <div className="space-y-1">
+          <Label htmlFor="net-sysname" className="text-xs">Nom affiché dans Chrome (optionnel)</Label>
+          <Input id="net-sysname" placeholder="Ex: EPSON TM-L90 Label (Copie 1)" value={systemName} onChange={(e) => setSystemName(e.target.value)} />
+        </div>
+        <Button type="button" variant="outline" size="sm" onClick={add} className="w-full">
+          <Plus className="h-4 w-4 mr-2" /> Ajouter au carnet
+        </Button>
+        <p className="text-[11px] text-muted-foreground">
+          Ce carnet est un aide-mémoire local — l'impression réelle passe toujours par le pilote Windows.
+          Utilisez le bouton « Comment l'ajouter à Windows ? » ci-dessus pour la procédure complète.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+
