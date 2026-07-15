@@ -609,7 +609,19 @@ export function SAVBarcodePrinterSettings({ open, onOpenChange, onSaved }: Props
               L'association USB sert seulement d'aide-mémoire — l'impression réelle passe par le driver système.
             </p>
           </div>
+
+          <Separator />
+
+          <NetworkPrintersSection
+            printers={settings.networkPrinters || []}
+            onChange={(list) => update('networkPrinters', list)}
+            onUseAsPrinterName={(name) => {
+              update('printerName', name);
+              toast.success('Nom d\'imprimante mis à jour');
+            }}
+          />
         </div>
+
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Annuler</Button>
