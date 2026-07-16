@@ -21,6 +21,7 @@ interface Props {
 
 export function ProductHistoryDrawer({ open, onOpenChange, product, cases, title }: Props) {
   const navigate = useNavigate();
+  const [newSavSource, setNewSavSource] = useState<PreviousSAVCase | null>(null);
 
   const stats = useMemo(
     () =>
