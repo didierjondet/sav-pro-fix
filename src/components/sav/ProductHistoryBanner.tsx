@@ -52,16 +52,29 @@ export function ProductHistoryBanner({ shopId, imei, sku, brand, model, excludeS
               : "Un produit avec le même SKU est déjà passé. Vérifiez s'il s'agit du même appareil."}
           </p>
         </div>
-        <Button
-          type="button"
-          size="sm"
-          variant={isExact ? 'default' : 'outline'}
-          onClick={() => setOpen(true)}
-          className="shrink-0"
-        >
-          <History className="h-3.5 w-3.5 mr-1" />
-          Voir l'historique
-        </Button>
+        <div className="flex flex-col gap-2 shrink-0">
+          <Button
+            type="button"
+            size="sm"
+            variant={isExact ? 'default' : 'outline'}
+            onClick={() => setOpen(true)}
+          >
+            <History className="h-3.5 w-3.5 mr-1" />
+            Voir l'historique
+          </Button>
+          {isExact && cases[0] && (
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              onClick={() => setNewSavOpen(true)}
+              title="Créer un nouveau SAV pré-rempli à partir du dernier dossier de ce produit"
+            >
+              <Plus className="h-3.5 w-3.5 mr-1" />
+              Nouveau SAV pour ce produit
+            </Button>
+          )}
+        </div>
       </div>
 
       <ProductHistoryDrawer
@@ -70,6 +83,12 @@ export function ProductHistoryBanner({ shopId, imei, sku, brand, model, excludeS
         product={trackedProduct}
         cases={cases}
         title={isExact ? 'Historique du produit' : 'Dossiers similaires'}
+      />
+      <NewSAVFromProductDialog
+        sourceCase={cases[0] || null}
+        trackedProductId={trackedProduct?.id || null}
+        open={newSavOpen}
+        onOpenChange={setNewSavOpen}
       />
     </>
   );
