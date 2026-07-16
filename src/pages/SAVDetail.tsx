@@ -16,6 +16,7 @@ import { useShopSAVTypes } from '@/hooks/useShopSAVTypes';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { QrCode, ExternalLink, ArrowLeft, Copy, Share, Save, Lock, User, Mail, Phone, MapPin, CheckCircle, X, MessageSquare, Edit, Clock, CalendarPlus, ScrollText, AlertCircle } from 'lucide-react';
 import { SMSButton } from '@/components/sav/SMSButton';
 import { ProblemDescriptionDisplay } from '@/components/sav/ProblemDescriptionHighlight';
@@ -317,7 +318,247 @@ export default function SAVDetail() {
       variant: 'destructive' as const
     }
   };
+  const isSimplifiedView = typeof window !== 'undefined' && localStorage.getItem('fixway_simplified_view') === 'true';
+
+  if (isSimplifiedView) {
+    const customerFullName = `${savCase.customer?.first_name || ''} ${savCase.customer?.last_name || ''}`.trim();
+    const contactName = savCase.sav_type === 'client' ? customerFullName : (savCase.external_contact_name || 'Contact externe');
+    const initialTab = (() => {
+      try { return localStorage.getItem('fixway_sav_detail_tab') || 'apercu'; } catch { return 'apercu'; }
+    })();
+    return (
+      <main className="flex-1 overflow-y-auto">
+        {/* Bandeau sticky de contexte */}
+        <div className="sticky top-0 z-30 bg-background/95 backdrop-blur border-b">
+          <div className="max-w-5xl mx-auto px-4 py-3 flex items-center gap-2 md:gap-3 flex-wrap">
+            <Button variant="ghost" size="sm" onClick={() => navigate('/sav')} className="shrink-0">
+              <ArrowLeft className="h-4 w-4 mr-1" /> Retour
+            </Button>
+            <h1 className="text-lg font-bold whitespace-nowrap">{savCase.case_number}</h1>
+            <Badge
+              variant="outline"
+              className="px-2 py-0.5"
+              style={{
+                backgroundColor: `${getTypeInfo(savCase.sav_type).color}20`,
+                color: getTypeInfo(savCase.sav_type).color,
+                borderColor: getTypeInfo(savCase.sav_type).color,
+              }}
+            >
+              {getTypeInfo(savCase.sav_type).label}
+            </Badge>
+            <Badge variant={getStatusInfo(savCase.status)?.variant || 'secondary'}>
+              {getStatusInfo(savCase.status)?.label || savCase.status}
+            </Badge>
+            {(savCase.device_brand || savCase.device_model) && (
+              <span className="text-sm text-muted-foreground truncate">
+                {[savCase.device_brand, savCase.device_model].filter(Boolean).join(' — ')}
+              </span>
+            )}
+            {(customerFullName || savCase.customer?.phone) && (
+              <span className="ml-auto text-sm font-medium truncate max-w-[240px]">
+                {customerFullName}{savCase.customer?.phone ? ` · ${savCase.customer.phone}` : ''}
+              </span>
+            )}
+          </div>
+        </div>
+
+        <div className="max-w-5xl mx-auto p-4 md:p-6">
+          <Tabs
+            defaultValue={initialTab}
+            onValueChange={(v) => { try { localStorage.setItem('fixway_sav_detail_tab', v); } catch {} }}
+            className="space-y-4"
+          >
+            <TabsList className="w-full justify-start overflow-x-auto">
+              <TabsTrigger value="apercu">Aperçu</TabsTrigger>
+              <TabsTrigger value="communication">Communication</TabsTrigger>
+              <TabsTrigger value="documents">Documents</TabsTrigger>
+            </TabsList>
+
+            {/* Onglet Aperçu */}
+            <TabsContent value="apercu" className="space-y-4">
+              <ProblemDescriptionDisplay value={savCase.problem_description} />
+
+              {getTypeInfo(savCase.sav_type).show_customer_info && (
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <User className="h-4 w-4" /> Client
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                    <div>
+                      <p className="text-xs text-muted-foreground">Nom</p>
+                      <p className="font-medium">{customerFullName || 'Non renseigné'}</p>
+                    </div>
+                    {savCase.customer?.phone && (
+                      <div>
+                        <p className="text-xs text-muted-foreground">Téléphone</p>
+                        <p className="font-medium">{savCase.customer.phone}</p>
+                      </div>
+                    )}
+                    {savCase.customer?.email && (
+                      <div>
+                        <p className="text-xs text-muted-foreground">Email</p>
+                        <p className="font-medium truncate">{savCase.customer.email}</p>
+                      </div>
+                    )}
+                    {savCase.customer?.address && (
+                      <div>
+                        <p className="text-xs text-muted-foreground">Adresse</p>
+                        <p className="font-medium">{savCase.customer.address}</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base">Appareil & dossier</CardTitle>
+                </CardHeader>
+                <CardContent className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Marque / Modèle</p>
+                    <p className="font-medium">{[savCase.device_brand, savCase.device_model].filter(Boolean).join(' ') || '—'}</p>
+                  </div>
+                  {savCase.device_imei && (
+                    <div>
+                      <p className="text-xs text-muted-foreground">IMEI</p>
+                      <p className="font-medium break-all">{savCase.device_imei}</p>
+                    </div>
+                  )}
+                  <div>
+                    <p className="text-xs text-muted-foreground">Créé le</p>
+                    <p className="font-medium">{format(new Date(savCase.created_at), 'dd/MM/yyyy', { locale: fr })}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Coût total</p>
+                    <p className="font-medium">{savCase.total_cost}€</p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <SAVLoanerCard savCaseId={savCase.id} customerId={savCase.customer_id} />
+
+              <SAVStatusManager savCase={savCase} onStatusUpdated={handleStatusUpdated} />
+            </TabsContent>
+
+            {/* Onglet Communication */}
+            <TabsContent value="communication" className="space-y-4">
+              <div className="flex flex-wrap items-center gap-2">
+                {getTypeInfo(savCase.sav_type).show_customer_info && (
+                  <SMSButton
+                    customerPhone={savCase.customer?.phone || savCase.external_contact_phone || ''}
+                    customerName={customerFullName || savCase.external_contact_name || 'Contact'}
+                    caseNumber={savCase.case_number}
+                    caseId={savCase.id}
+                    size="sm"
+                    variant="outline"
+                  />
+                )}
+                {getTypeInfo(savCase.sav_type).show_customer_info && (
+                  <AppointmentProposalDialog
+                    savCaseId={savCase.id}
+                    customerId={savCase.customer_id}
+                    customerName={customerFullName || 'Client'}
+                    customerPhone={savCase.customer?.phone}
+                    caseNumber={savCase.case_number}
+                    deviceInfo={{ brand: savCase.device_brand, model: savCase.device_model }}
+                    trigger={
+                      <Button variant="outline" size="sm">
+                        <CalendarPlus className="h-4 w-4 mr-2" /> Proposer RDV
+                      </Button>
+                    }
+                  />
+                )}
+                <Button variant="outline" size="sm" onClick={copyTrackingUrl}>
+                  <Share className="h-4 w-4 mr-2" /> Partager le lien
+                </Button>
+                {isReadyStatus(savCase.status) && (
+                  <ReviewRequestButton
+                    savCaseId={savCase.id}
+                    shopId={savCase.shop_id}
+                    customerName={contactName}
+                    caseNumber={savCase.case_number}
+                  />
+                )}
+              </div>
+
+              <SAVMessaging
+                savCaseId={savCase.id}
+                savCaseNumber={savCase.case_number}
+                customerPhone={savCase.customer?.phone || savCase.external_contact_phone}
+                customerName={contactName}
+                shopId={savCase.shop_id}
+                customerId={savCase.customer_id}
+                showSatisfactionButton={getTypeInfo(savCase.sav_type).show_satisfaction_survey}
+              />
+
+              {savCase.sav_type !== 'internal' && (
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Share className="h-4 w-4" /> Lien de suivi
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="p-3 bg-primary text-primary-foreground rounded-lg text-sm break-all font-mono">
+                      {savCase?.tracking_slug ? `fixway.fr/track/${savCase.tracking_slug}` : 'Slug non généré'}
+                    </div>
+                    <div className="flex gap-2 flex-wrap">
+                      <Button variant="outline" size="sm" onClick={copyTrackingUrl}>
+                        <Copy className="h-4 w-4 mr-2" /> Copier
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => window.open(generateTrackingUrl(), '_blank')}>
+                        <ExternalLink className="h-4 w-4 mr-2" /> Prévisualiser
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </TabsContent>
+
+            {/* Onglet Documents */}
+            <TabsContent value="documents" className="space-y-4">
+              {isReadyStatus(savCase.status) && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={async () => {
+                    try {
+                      const { data: freshCase } = await supabase
+                        .from('sav_cases')
+                        .select('*, customers(*)')
+                        .eq('id', savCase.id)
+                        .single();
+                      const caseForPDF = freshCase
+                        ? { ...savCase, closure_history: (freshCase.closure_history || []) as any, customer: (freshCase as any).customers || savCase.customer }
+                        : savCase;
+                      await generateSAVRestitutionPDF(caseForPDF, shop);
+                      toast({ title: 'Document de restitution', description: "Le document est en cours d'impression." });
+                    } catch (error) {
+                      toast({ title: 'Erreur', description: 'Impossible de générer le document.', variant: 'destructive' });
+                    }
+                  }}
+                  className="bg-primary/10 hover:bg-primary/20"
+                >
+                  Imprimer restitution
+                </Button>
+              )}
+              <SAVDocuments
+                savCaseId={savCase.id}
+                attachments={savCase.attachments || []}
+                onAttachmentsUpdate={handleAttachmentsUpdate}
+              />
+            </TabsContent>
+          </Tabs>
+        </div>
+      </main>
+    );
+  }
+
   return <main className="flex-1 overflow-y-auto p-6">
+
             <div className="max-w-6xl mx-auto space-y-6">
               {/* En-tête du dossier SAV */}
               <div className="space-y-3">
