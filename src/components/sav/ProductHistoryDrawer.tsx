@@ -110,18 +110,28 @@ export function ProductHistoryDrawer({ open, onOpenChange, product, cases, title
                           <Badge variant="secondary" className="text-xs">Retour (autre panne)</Badge>
                         )}
                       </div>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-7 px-2"
-                        onClick={() => {
-                          onOpenChange(false);
-                          navigate(`/sav/${c.id}`);
-                        }}
-                      >
-                        <ExternalLink className="h-3.5 w-3.5" />
-                      </Button>
-                    </div>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 px-2 text-xs"
+                          onClick={() => setNewSavSource(c)}
+                          title="Créer un nouveau SAV pour ce produit à partir de ce dossier"
+                        >
+                          <Plus className="h-3.5 w-3.5 mr-1" /> Nouveau SAV
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 px-2"
+                          onClick={() => {
+                            onOpenChange(false);
+                            navigate(`/sav/${c.id}`);
+                          }}
+                        >
+                          <ExternalLink className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
                     <div className="text-xs text-muted-foreground flex items-center gap-3 mb-2">
                       <span className="inline-flex items-center gap-1">
                         <Calendar className="h-3 w-3" />
