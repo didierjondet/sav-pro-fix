@@ -551,12 +551,29 @@ export default function SAVDetail() {
                   Imprimer restitution
                 </Button>
               )}
+              <div className="flex flex-wrap items-center gap-2">
+                <SAVPrintButton savCase={savCase} />
+              </div>
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <QrCode className="h-4 w-4" /> Étiquette / QR code
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <SAVBarcode
+                    savCase={savCase}
+                    savTypeLabel={getTypeInfo(savCase.sav_type).label}
+                  />
+                </CardContent>
+              </Card>
               <SAVDocuments
                 savCaseId={savCase.id}
                 attachments={savCase.attachments || []}
                 onAttachmentsUpdate={handleAttachmentsUpdate}
               />
             </TabsContent>
+
           </Tabs>
         </div>
       </main>
