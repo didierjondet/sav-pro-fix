@@ -632,170 +632,186 @@ export default function SAVDetail() {
     );
   }
 
-  return <main className="flex-1 overflow-y-auto p-6">
+  const customerFullNameStd = `${savCase.customer?.first_name || ''} ${savCase.customer?.last_name || ''}`.trim();
+  const contactNameStd = savCase.sav_type === 'client' ? customerFullNameStd : (savCase.external_contact_name || 'Contact externe');
+  const initialTabStd = (() => {
+    try { return localStorage.getItem('fixway_sav_detail_tab') || 'apercu'; } catch { return 'apercu'; }
+  })();
 
-            <div className="max-w-6xl mx-auto space-y-6">
-              {/* En-tête du dossier SAV */}
-              <div className="space-y-3">
-                {/* Ligne 1 : Retour + Numéro + Statut + Appareil */}
-                <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-                  <Button variant="outline" size="sm" onClick={() => navigate('/sav')} className="w-fit">
-                    <ArrowLeft className="h-4 w-4 mr-2" />
-                    Retour
-                  </Button>
-                  <div className="flex items-center gap-3 flex-wrap">
-                    <h1 className="text-xl md:text-2xl font-bold whitespace-nowrap">
-                      {savCase.case_number}
-                    </h1>
-                    <Badge variant={getStatusInfo(savCase.status)?.variant || 'secondary'} className="text-sm">
-                      {getStatusInfo(savCase.status)?.label || savCase.status}
-                    </Badge>
-                    {(savCase as any).taken_over_by && (
-                      <Badge className="text-sm bg-primary text-primary-foreground border-2 border-primary px-3 py-1 font-bold tracking-widest">
-                        👤 {(savCase as any).taken_over_by}
-                      </Badge>
-                    )}
-                    {(savCase.device_brand || savCase.device_model) && (
-                      <span className="text-muted-foreground text-sm font-medium">
-                        {[savCase.device_brand, savCase.device_model].filter(Boolean).join(' — ')}
-                      </span>
-                    )}
-                  </div>
-                </div>
+  return (
+    <main className="flex-1 overflow-y-auto">
+      {/* Bandeau sticky de contexte */}
+      <div className="sticky top-0 z-30 bg-background/95 backdrop-blur border-b">
+        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center gap-2 md:gap-3 flex-wrap">
+          <Button variant="ghost" size="sm" onClick={() => navigate('/sav')} className="shrink-0">
+            <ArrowLeft className="h-4 w-4 mr-1" /> Retour
+          </Button>
+          <h1 className="text-lg md:text-xl font-bold whitespace-nowrap">{savCase.case_number}</h1>
 
-                {/* Ligne 2 : Boutons d'action */}
-                <div className="flex items-center gap-2 flex-wrap">
-                  {isReadyStatus(savCase.status) && <Button variant="outline" size="sm" onClick={async () => {
-                  try {
-                    const { data: freshCase } = await supabase
-                      .from('sav_cases')
-                      .select('*, customers(*)')
-                      .eq('id', savCase.id)
-                      .single();
-                    
-                    const caseForPDF = freshCase ? { ...savCase, closure_history: (freshCase.closure_history || []) as any, customer: (freshCase as any).customers || savCase.customer } : savCase;
-                    await generateSAVRestitutionPDF(caseForPDF, shop);
-                    toast({
-                      title: "Document de restitution",
-                      description: "Le document de restitution est en cours d'impression."
-                    });
-                  } catch (error) {
-                    console.error('Erreur lors de la génération du PDF:', error);
-                    toast({
-                      title: "Erreur",
-                      description: "Impossible de générer le document de restitution.",
-                      variant: "destructive"
-                    });
-                  }
-                }} className="bg-primary/10 hover:bg-primary/20">
-                      Imprimer restitution
-                    </Button>}
-                  
-                  <Button variant="outline" size="sm" onClick={copyTrackingUrl}>
-                    <Share className="h-4 w-4 mr-2" />
-                    Partager
-                  </Button>
-                  
-                  {getTypeInfo(savCase.sav_type).show_customer_info && <SMSButton customerPhone={savCase.customer?.phone || savCase.external_contact_phone || ''} customerName={`${savCase.customer?.first_name || ''} ${savCase.customer?.last_name || ''}`.trim() || savCase.external_contact_name || 'Contact'} caseNumber={savCase.case_number} caseId={savCase.id} size="sm" variant="outline" />}
-                  
-                  {getTypeInfo(savCase.sav_type).show_customer_info && (
-                    <AppointmentProposalDialog
-                      savCaseId={savCase.id}
-                      customerId={savCase.customer_id}
-                      customerName={`${savCase.customer?.first_name || ''} ${savCase.customer?.last_name || ''}`.trim() || 'Client'}
-                      customerPhone={savCase.customer?.phone}
-                      caseNumber={savCase.case_number}
-                      deviceInfo={{
-                        brand: savCase.device_brand,
-                        model: savCase.device_model
-                      }}
-                      trigger={
-                        <Button variant="outline" size="sm">
-                          <CalendarPlus className="h-4 w-4 mr-2" />
-                          Proposer RDV
-                        </Button>
-                      }
-                    />
-                  )}
-                  
-                  <SAVPrintButton savCase={savCase} />
-                  <SAVPartsEditor savCaseId={savCase.id} onPartsUpdated={() => {}} />
-                  
-                  {isAdmin && (
-                    <Button variant="outline" size="sm" onClick={() => navigate(`/sav/${id}/logs`)} className="border-destructive text-destructive hover:bg-destructive/10">
-                      <ScrollText className="h-4 w-4 mr-2" />
-                      Log
-                    </Button>
-                  )}
-                </div>
-              </div>
-
-              <SAVLoanerCard savCaseId={savCase.id} customerId={savCase.customer_id} />
-
-              {/* Contact Information - For types that require customer info */}
-              {getTypeInfo(savCase.sav_type).show_customer_info && <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center justify-between">
+          {editingSavType ? (
+            <div className="flex items-center gap-2">
+              <Select value={tempSavType} onValueChange={setTempSavType}>
+                <SelectTrigger className="w-40 h-8"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {getAllTypes().map((type) => (
+                    <SelectItem key={type.value} value={type.value}>
                       <div className="flex items-center gap-2">
-                        <User className="h-5 w-5" />
-                        Coordonnées du client
+                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: type.color }} />
+                        {type.label}
                       </div>
-                      <EditSAVCustomerDialog
-                        savCaseId={savCase.id}
-                        shopId={savCase.shop_id}
-                        currentCustomerId={savCase.customer_id}
-                        currentCustomerName={savCase.customer ? `${savCase.customer.first_name} ${savCase.customer.last_name}` : undefined}
-                        onCustomerUpdated={() => {
-                          refreshSavCustomer();
-                        }}
-                      />
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button size="sm" onClick={updateSavType} disabled={!tempSavType}><Save className="h-4 w-4" /></Button>
+              <Button size="sm" variant="outline" onClick={cancelEditSavType}><X className="h-4 w-4" /></Button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-1">
+              <Badge
+                variant="outline"
+                className="px-2 py-0.5"
+                style={{
+                  backgroundColor: `${getTypeInfo(savCase.sav_type).color}20`,
+                  color: getTypeInfo(savCase.sav_type).color,
+                  borderColor: getTypeInfo(savCase.sav_type).color,
+                }}
+              >
+                {getTypeInfo(savCase.sav_type).label}
+              </Badge>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-6 w-6 p-0"
+                onClick={() => { setEditingSavType(true); setTempSavType(savCase.sav_type); }}
+              >
+                <Edit className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          )}
+
+          <Badge variant={getStatusInfo(savCase.status)?.variant || 'secondary'}>
+            {getStatusInfo(savCase.status)?.label || savCase.status}
+          </Badge>
+
+          {(savCase as any).taken_over_by && (
+            <Badge className="bg-primary text-primary-foreground border-2 border-primary px-2 py-0.5 font-bold tracking-wider">
+              👤 {(savCase as any).taken_over_by}
+            </Badge>
+          )}
+
+          {(savCase.device_brand || savCase.device_model) && (
+            <span className="text-sm text-muted-foreground truncate">
+              {[savCase.device_brand, savCase.device_model].filter(Boolean).join(' — ')}
+            </span>
+          )}
+
+          <div className="ml-auto flex items-center gap-2">
+            {customerFullNameStd && (
+              <span className="text-sm font-medium truncate max-w-[220px]">
+                {customerFullNameStd}{savCase.customer?.phone ? ` · ${savCase.customer.phone}` : ''}
+              </span>
+            )}
+            {isAdmin && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate(`/sav/${id}/logs`)}
+                className="border-destructive text-destructive hover:bg-destructive/10"
+              >
+                <ScrollText className="h-4 w-4 mr-1" /> Log
+              </Button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-6xl mx-auto p-4 md:p-6">
+        <Tabs
+          defaultValue={initialTabStd}
+          onValueChange={(v) => { try { localStorage.setItem('fixway_sav_detail_tab', v); } catch {} }}
+          className="space-y-4"
+        >
+          <TabsList className="w-full justify-start overflow-x-auto">
+            <TabsTrigger value="apercu">Aperçu</TabsTrigger>
+            <TabsTrigger value="communication">Communication</TabsTrigger>
+            <TabsTrigger value="pieces">Pièces</TabsTrigger>
+            <TabsTrigger value="impression">Impression</TabsTrigger>
+            <TabsTrigger value="documents">Documents</TabsTrigger>
+          </TabsList>
+
+          {/* Onglet Aperçu */}
+          <TabsContent value="apercu" className="space-y-4">
+            <ProductHistoryBanner
+              shopId={savCase.shop_id}
+              imei={savCase.device_imei}
+              sku={savCase.sku}
+              brand={savCase.device_brand}
+              model={savCase.device_model}
+              excludeSavId={savCase.id}
+            />
+
+            <ProblemDescriptionDisplay value={savCase.problem_description} />
+
+            {/* Coordonnées client */}
+            {getTypeInfo(savCase.sav_type).show_customer_info && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <User className="h-4 w-4 text-muted-foreground" />
+                      <User className="h-5 w-5" />
+                      Coordonnées du client
+                    </div>
+                    <EditSAVCustomerDialog
+                      savCaseId={savCase.id}
+                      shopId={savCase.shop_id}
+                      currentCustomerId={savCase.customer_id}
+                      currentCustomerName={savCase.customer ? `${savCase.customer.first_name} ${savCase.customer.last_name}` : undefined}
+                      onCustomerUpdated={() => { refreshSavCustomer(); }}
+                    />
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div className="flex items-center gap-2">
+                    <User className="h-4 w-4 text-muted-foreground" />
+                    <div>
+                      <p className="text-sm text-muted-foreground">Nom complet</p>
+                      <p className="font-medium">{customerFullNameStd || 'Non renseigné'}</p>
+                    </div>
+                  </div>
+                  {savCase.customer?.email && (
+                    <div className="flex items-center gap-2">
+                      <Mail className="h-4 w-4 text-muted-foreground" />
                       <div>
-                        <p className="text-sm text-muted-foreground">Nom complet</p>
-                        <p className="font-medium">
-                          {`${savCase.customer?.first_name || ''} ${savCase.customer?.last_name || ''}`.trim() || 'Non renseigné'}
-                        </p>
+                        <p className="text-sm text-muted-foreground">Email</p>
+                        <p className="font-medium">{savCase.customer.email}</p>
                       </div>
                     </div>
-                    
-                    {savCase.customer?.email && <div className="flex items-center gap-2">
-                        <Mail className="h-4 w-4 text-muted-foreground" />
-                        <div>
-                          <p className="text-sm text-muted-foreground">Email</p>
-                          <p className="font-medium">
-                            {savCase.customer?.email}
-                          </p>
-                        </div>
-                      </div>}
-                    
-                    {savCase.customer?.phone && <div className="flex items-center gap-2">
-                        <Phone className="h-4 w-4 text-muted-foreground" />
-                        <div>
-                          <p className="text-sm text-muted-foreground">Téléphone</p>
-                          <p className="font-medium">
-                            {savCase.customer?.phone}
-                          </p>
-                        </div>
-                      </div>}
-                    
-                    {savCase.customer?.address && <div className="flex items-center gap-2">
-                        <MapPin className="h-4 w-4 text-muted-foreground" />
-                        <div>
-                          <p className="text-sm text-muted-foreground">Adresse</p>
-                          <p className="font-medium">
-                            {savCase.customer?.address}
-                          </p>
-                        </div>
-                      </div>}
-                  </CardContent>
-                </Card>}
+                  )}
+                  {savCase.customer?.phone && (
+                    <div className="flex items-center gap-2">
+                      <Phone className="h-4 w-4 text-muted-foreground" />
+                      <div>
+                        <p className="text-sm text-muted-foreground">Téléphone</p>
+                        <p className="font-medium">{savCase.customer.phone}</p>
+                      </div>
+                    </div>
+                  )}
+                  {savCase.customer?.address && (
+                    <div className="flex items-center gap-2">
+                      <MapPin className="h-4 w-4 text-muted-foreground" />
+                      <div>
+                        <p className="text-sm text-muted-foreground">Adresse</p>
+                        <p className="font-medium">{savCase.customer.address}</p>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
 
-              {/* Case Details */}
-              <Card>
+            {/* Détails du dossier */}
+            <Card>
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
                   <span>Détails du dossier</span>
@@ -808,307 +824,338 @@ export default function SAVDetail() {
                       device_imei: savCase.device_imei,
                       problem_description: savCase.problem_description,
                       repair_notes: savCase.repair_notes,
-                      sku: savCase.sku
+                      sku: savCase.sku,
                     }}
                   />
                 </CardTitle>
               </CardHeader>
-                <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="flex items-center gap-2">
-                    <strong>Type:</strong> 
-                    {editingSavType ? (
-                      <div className="flex items-center gap-2">
-                        <Select value={tempSavType} onValueChange={setTempSavType}>
-                          <SelectTrigger className="w-40">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {getAllTypes().map((type) => (
-                              <SelectItem key={type.value} value={type.value}>
-                                <div className="flex items-center gap-2">
-                                  <div 
-                                    className="w-3 h-3 rounded-full" 
-                                    style={{ backgroundColor: type.color }}
-                                  />
-                                  {type.label}
-                                </div>
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <Button size="sm" onClick={updateSavType} disabled={!tempSavType}>
-                          <Save className="h-4 w-4" />
-                        </Button>
-                        <Button size="sm" variant="outline" onClick={cancelEditSavType}>
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        <Badge 
-                          variant="outline" 
-                          className="px-2 py-1"
-                          style={{ 
-                            backgroundColor: `${getTypeInfo(savCase.sav_type).color}20`,
-                            color: getTypeInfo(savCase.sav_type).color,
-                            borderColor: getTypeInfo(savCase.sav_type).color
-                          }}
-                        >
-                          {getTypeInfo(savCase.sav_type).label}
-                        </Badge>
-                        {/* Ne montrer le bouton d'édition que si le type est modifiable */}
-                        <Button
-                            size="sm" 
-                            variant="outline" 
-                            onClick={() => {
-                              setEditingSavType(true);
-                              setTempSavType(savCase.sav_type);
-                            }}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                      </div>
-                    )}
+              <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div><strong>Appareil:</strong> {savCase.device_brand} {savCase.device_model}</div>
+                {savCase.device_imei && (
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span><strong>IMEI:</strong> {savCase.device_imei}</span>
+                    <ProductRecurrenceBadge shopId={savCase.shop_id} imei={savCase.device_imei} excludeSavId={savCase.id} />
                   </div>
-                  <div>
-                    <strong>Appareil:</strong> {savCase.device_brand} {savCase.device_model}
-                  </div>
-                  {savCase.device_imei && <div className="flex items-center gap-2 flex-wrap">
-                      <span><strong>IMEI:</strong> {savCase.device_imei}</span>
-                      <ProductRecurrenceBadge
-                        shopId={(savCase as any).shop_id}
-                        imei={savCase.device_imei}
-                        excludeSavId={savCase.id}
-                      />
-                    </div>}
-                  {savCase.sku && <div>
-                      <strong>SKU:</strong> {savCase.sku}
-                    </div>}
-                  <div>
-                    <strong>Date de création:</strong> {format(new Date(savCase.created_at), 'dd/MM/yyyy à HH:mm', { locale: fr })}
-                  </div>
-                  <div>
-                    <strong>Coût total:</strong> {savCase.total_cost}€
-                  </div>
+                )}
+                {savCase.sku && <div><strong>SKU:</strong> {savCase.sku}</div>}
+                <div><strong>Date de création:</strong> {format(new Date(savCase.created_at), 'dd/MM/yyyy à HH:mm', { locale: fr })}</div>
+                <div><strong>Coût total:</strong> {savCase.total_cost}€</div>
+                {savCase.repair_notes && (
                   <div className="md:col-span-2">
-                    <ProblemDescriptionDisplay value={savCase.problem_description} />
+                    <strong>Notes de réparation:</strong>
+                    <p className="mt-1 text-muted-foreground">{savCase.repair_notes}</p>
                   </div>
-                  {savCase.repair_notes && <div className="md:col-span-2">
-                      <strong>Notes de réparation:</strong>
-                      <p className="mt-1 text-muted-foreground">{savCase.repair_notes}</p>
-                    </div>}
-                  
-                  {savCase.details_updated_at && (
-                    <div className="md:col-span-2 mt-4 pt-4 border-t">
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Clock className="h-4 w-4" />
-                        <span>
-                          Détails modifiés le {format(new Date(savCase.details_updated_at), 'dd/MM/yyyy à HH:mm', { locale: fr })}
-                          {savCase.updated_by_profile && 
-                            ` par ${savCase.updated_by_profile.first_name} ${savCase.updated_by_profile.last_name}`
-                          }
-                        </span>
-                      </div>
+                )}
+                {savCase.details_updated_at && (
+                  <div className="md:col-span-2 mt-2 pt-2 border-t">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Clock className="h-4 w-4" />
+                      <span>
+                        Détails modifiés le {format(new Date(savCase.details_updated_at), 'dd/MM/yyyy à HH:mm', { locale: fr })}
+                        {savCase.updated_by_profile && ` par ${savCase.updated_by_profile.first_name} ${savCase.updated_by_profile.last_name}`}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Accessoires */}
+            {(savCase.accessories?.charger || savCase.accessories?.case || savCase.accessories?.screen_protector || savCase.accessories?.other) && (
+              <Card>
+                <CardHeader><CardTitle>Accessoires présents</CardTitle></CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="flex items-center gap-2">
+                      {savCase.accessories?.charger ? <CheckCircle className="h-4 w-4 text-green-500" /> : <X className="h-4 w-4 text-muted-foreground" />}
+                      <span className={savCase.accessories?.charger ? 'text-green-600' : 'text-muted-foreground'}>Chargeur</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {savCase.accessories?.case ? <CheckCircle className="h-4 w-4 text-green-500" /> : <X className="h-4 w-4 text-muted-foreground" />}
+                      <span className={savCase.accessories?.case ? 'text-green-600' : 'text-muted-foreground'}>Coque</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {savCase.accessories?.screen_protector ? <CheckCircle className="h-4 w-4 text-green-500" /> : <X className="h-4 w-4 text-muted-foreground" />}
+                      <span className={savCase.accessories?.screen_protector ? 'text-green-600' : 'text-muted-foreground'}>Protection d'écran</span>
+                    </div>
+                  </div>
+                  {savCase.accessories?.other && (
+                    <div className="flex items-center gap-2 mt-3 pt-3 border-t">
+                      <CheckCircle className="h-4 w-4 text-green-500 shrink-0" />
+                      <span className="text-green-600"><span className="font-medium">Autre :</span> {savCase.accessories.other}</span>
                     </div>
                   )}
+                </CardContent>
+              </Card>
+            )}
 
-                  {/* Code-barres étiquette SAV */}
-                  <div className="md:col-span-2 mt-4 pt-4 border-t">
-                    <h4 className="text-sm font-medium text-muted-foreground mb-2">Code-barres étiquette</h4>
-                    <SAVBarcode
-                      savCase={savCase}
-                      savTypeLabel={getTypeInfo(savCase.sav_type).label}
+            {/* Schéma de verrouillage */}
+            {savCase.unlock_pattern && savCase.unlock_pattern.length > 0 && (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <PatternLock pattern={savCase.unlock_pattern} onChange={() => {}} disabled={true} showPattern={true} />
+                <Card>
+                  <CardHeader><CardTitle>Schéma de verrouillage enregistré</CardTitle></CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-muted-foreground">
+                      Ce schéma de verrouillage a été enregistré lors de la création du dossier SAV.
+                      Il contient {savCase.unlock_pattern.length} points connectés.
+                    </p>
+                    <div className="mt-3 p-3 bg-muted rounded-lg">
+                      <p className="text-xs font-medium">Séquence: {savCase.unlock_pattern.join(' → ')}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+
+            {/* Codes de sécurité */}
+            {savCase.status !== 'ready' && savCase.status !== 'cancelled' && (
+              <SecurityCodesDisplay
+                savCase={savCase}
+                onUpdate={async (codes) => {
+                  await supabase.from('sav_cases').update({
+                    security_codes: (codes.unlock_code || codes.icloud_id || codes.icloud_password || codes.sim_pin || codes.email_id || codes.email_password) ? codes as any : null,
+                  }).eq('id', savCase.id);
+                }}
+              />
+            )}
+
+            {/* Commentaire technicien */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <MessageSquare className="h-5 w-5" />
+                  Commentaire technicien
+                </CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Commentaire visible par le client et imprimé sur le bon de restitution.
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <Label htmlFor="technician-comments">Commentaire pour le client</Label>
+                    <AITextReformulator
+                      text={technicianComments}
+                      context="technician_comments"
+                      onReformulated={(reformulatedText) => setTechnicianComments(reformulatedText)}
                     />
                   </div>
-                </CardContent>
-              </Card>
+                  <Textarea id="technician-comments" placeholder="Décrivez l'intervention réalisée, les problèmes rencontrés ou les recommandations pour le client..." value={technicianComments} onChange={e => setTechnicianComments(e.target.value)} rows={4} />
+                </div>
+                <Button onClick={saveTechnicianComments} disabled={savingTechnicianComments} size="sm">
+                  <Save className="h-4 w-4 mr-2" />
+                  {savingTechnicianComments ? 'Sauvegarde...' : 'Sauvegarder le commentaire'}
+                </Button>
+              </CardContent>
+            </Card>
 
-              {/* Accessoires présents */}
-              {(savCase.accessories?.charger || savCase.accessories?.case || savCase.accessories?.screen_protector || savCase.accessories?.other) && <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      Accessoires présents
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="flex items-center gap-2">
-                        {savCase.accessories?.charger ? <CheckCircle className="h-4 w-4 text-green-500" /> : <X className="h-4 w-4 text-muted-foreground" />}
-                        <span className={savCase.accessories?.charger ? 'text-green-600' : 'text-muted-foreground'}>
-                          Chargeur
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {savCase.accessories?.case ? <CheckCircle className="h-4 w-4 text-green-500" /> : <X className="h-4 w-4 text-muted-foreground" />}
-                        <span className={savCase.accessories?.case ? 'text-green-600' : 'text-muted-foreground'}>
-                          Coque
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {savCase.accessories?.screen_protector ? <CheckCircle className="h-4 w-4 text-green-500" /> : <X className="h-4 w-4 text-muted-foreground" />}
-                        <span className={savCase.accessories?.screen_protector ? 'text-green-600' : 'text-muted-foreground'}>
-                          Protection d'écran
-                        </span>
-                      </div>
-                    </div>
-                    {savCase.accessories?.other && (
-                      <div className="flex items-center gap-2 mt-3 pt-3 border-t">
-                        <CheckCircle className="h-4 w-4 text-green-500 shrink-0" />
-                        <span className="text-green-600">
-                          <span className="font-medium">Autre :</span> {savCase.accessories.other}
-                        </span>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>}
+            {/* Commentaires privés */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Lock className="h-5 w-5" />
+                  Commentaires privés magasin
+                </CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Ces commentaires ne sont visibles que par le personnel du magasin. Le client ne peut pas les voir.
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <Label htmlFor="private-comments">Commentaires internes</Label>
+                    <AITextReformulator
+                      text={privateComments}
+                      context="private_comments"
+                      onReformulated={(reformulatedText) => setPrivateComments(reformulatedText)}
+                    />
+                  </div>
+                  <Textarea id="private-comments" placeholder="Ajoutez vos notes et commentaires privés ici..." value={privateComments} onChange={e => setPrivateComments(e.target.value)} rows={4} />
+                </div>
+                <Button onClick={savePrivateComments} disabled={savingComments} size="sm">
+                  <Save className="h-4 w-4 mr-2" />
+                  {savingComments ? 'Sauvegarde...' : 'Sauvegarder les commentaires'}
+                </Button>
+              </CardContent>
+            </Card>
 
-              {/* Schéma de verrouillage */}
-              {savCase.unlock_pattern && savCase.unlock_pattern.length > 0 && <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <PatternLock pattern={savCase.unlock_pattern} onChange={() => {}} // Read-only in view mode
-              disabled={true} showPattern={true} />
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Schéma de verrouillage enregistré</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-sm text-muted-foreground">
-                        Ce schéma de verrouillage a été enregistré lors de la création du dossier SAV. 
-                        Il contient {savCase.unlock_pattern.length} points connectés.
-                      </p>
-                      <div className="mt-3 p-3 bg-muted rounded-lg">
-                        <p className="text-xs font-medium">Séquence: {savCase.unlock_pattern.join(' → ')}</p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>}
+            <SAVLoanerCard savCaseId={savCase.id} customerId={savCase.customer_id} />
+            <SAVPartsRequirements savCaseId={savCase.id} onPartsUpdated={() => {}} />
+            <SAVStatusManager savCase={savCase} onStatusUpdated={handleStatusUpdated} />
+          </TabsContent>
 
-              {/* Codes de sécurité - Visible seulement si le SAV n'est pas terminé */}
-              {savCase.status !== 'ready' && savCase.status !== 'cancelled' && (
-                <SecurityCodesDisplay 
-                  savCase={savCase}
-                  onUpdate={async (codes) => {
-                    await supabase.from('sav_cases').update({ 
-                      security_codes: (codes.unlock_code || codes.icloud_id || codes.icloud_password || codes.sim_pin || codes.email_id || codes.email_password) ? codes as any : null 
-                    }).eq('id', savCase.id);
-                    // Le realtime se charge de la mise à jour
-                  }}
+          {/* Onglet Communication */}
+          <TabsContent value="communication" className="space-y-4">
+            <div className="flex flex-wrap items-center gap-2">
+              {getTypeInfo(savCase.sav_type).show_customer_info && (
+                <SMSButton
+                  customerPhone={savCase.customer?.phone || savCase.external_contact_phone || ''}
+                  customerName={customerFullNameStd || savCase.external_contact_name || 'Contact'}
+                  caseNumber={savCase.case_number}
+                  caseId={savCase.id}
+                  size="sm"
+                  variant="outline"
                 />
               )}
-
-              {/* Technician Comments - Visible to all */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <MessageSquare className="h-5 w-5" />
-                    Commentaire technicien
-                  </CardTitle>
-                  <p className="text-sm text-muted-foreground">
-                    Commentaire visible par le client et imprimé sur le bon de restitution.
-                  </p>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <Label htmlFor="technician-comments">Commentaire pour le client</Label>
-                      <AITextReformulator
-                        text={technicianComments}
-                        context="technician_comments"
-                        onReformulated={(reformulatedText) => setTechnicianComments(reformulatedText)}
-                      />
-                    </div>
-                    <Textarea id="technician-comments" placeholder="Décrivez l'intervention réalisée, les problèmes rencontrés ou les recommandations pour le client..." value={technicianComments} onChange={e => setTechnicianComments(e.target.value)} rows={4} />
-                  </div>
-                  <Button onClick={saveTechnicianComments} disabled={savingTechnicianComments} size="sm">
-                    <Save className="h-4 w-4 mr-2" />
-                    {savingTechnicianComments ? 'Sauvegarde...' : 'Sauvegarder le commentaire'}
-                  </Button>
-                </CardContent>
-              </Card>
-
-              {/* Private Comments - Only visible to shop staff */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Lock className="h-5 w-5" />
-                    Commentaires privés magasin
-                  </CardTitle>
-                  <p className="text-sm text-muted-foreground">
-                    Ces commentaires ne sont visibles que par le personnel du magasin. Le client ne peut pas les voir.
-                  </p>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <Label htmlFor="private-comments">Commentaires internes</Label>
-                      <AITextReformulator
-                        text={privateComments}
-                        context="private_comments"
-                        onReformulated={(reformulatedText) => setPrivateComments(reformulatedText)}
-                      />
-                    </div>
-                    <Textarea id="private-comments" placeholder="Ajoutez vos notes et commentaires privés ici..." value={privateComments} onChange={e => setPrivateComments(e.target.value)} rows={4} />
-                  </div>
-                  <Button onClick={savePrivateComments} disabled={savingComments} size="sm">
-                    <Save className="h-4 w-4 mr-2" />
-                    {savingComments ? 'Sauvegarde...' : 'Sauvegarder les commentaires'}
-                  </Button>
-                </CardContent>
-              </Card>
-
-              {/* Client/Contact Tracking */}
-              {savCase.sav_type !== 'internal' && <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Share className="h-5 w-5" />
-                      {savCase.sav_type === 'client' ? 'Partage client' : 'Partage contact'}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div>
-                      <label className="text-sm font-medium">
-                        Lien de suivi simplifié pour le {savCase.sav_type === 'client' ? 'client' : 'contact'}
-                      </label>
-                      <div className="mt-2 p-3 bg-primary text-primary-foreground rounded-lg border text-sm break-all font-mono">
-                        {savCase?.tracking_slug ? `fixway.fr/track/${savCase.tracking_slug}` : 'Slug de suivi non généré'}
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Le {savCase.sav_type === 'client' ? 'client' : 'contact'} pourra suivre l'état de sa réparation et communiquer avec vous via ce lien
-                      </p>
-                    </div>
-                    <div className="flex gap-2 flex-wrap">
-                      <Button variant="outline" size="sm" onClick={copyTrackingUrl} className="flex-1 sm:flex-initial">
-                        <Copy className="h-4 w-4 mr-2" />
-                        Copier le lien
-                      </Button>
-                      
-                      <Button variant="outline" size="sm" onClick={() => window.open(generateTrackingUrl(), '_blank')} className="flex-1 sm:flex-initial">
-                        <ExternalLink className="h-4 w-4 mr-2" />
-                        Prévisualiser
-                      </Button>
-                      {isReadyStatus(savCase.status) && <ReviewRequestButton savCaseId={savCase.id} shopId={savCase.shop_id} customerName={savCase.sav_type === 'client' ? `${savCase.customer?.first_name || ''} ${savCase.customer?.last_name || ''}`.trim() : savCase.external_contact_name || 'Contact externe'} caseNumber={savCase.case_number} />}
-                    </div>
-                  </CardContent>
-                </Card>}
-
-              {/* Documents and Photos */}
-              <SAVDocuments savCaseId={savCase.id} attachments={savCase.attachments || []} onAttachmentsUpdate={handleAttachmentsUpdate} />
-
-              {/* Parts Requirements */}
-              <SAVPartsRequirements savCaseId={savCase.id} onPartsUpdated={() => {}} />
-
-              {/* Status Management and Messaging */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <SAVStatusManager savCase={savCase} onStatusUpdated={handleStatusUpdated} />
-                <SAVMessaging 
-                  savCaseId={savCase.id} 
-                  savCaseNumber={savCase.case_number} 
-                  customerPhone={savCase.customer?.phone || savCase.external_contact_phone} 
-                  customerName={savCase.sav_type === 'client' ? `${savCase.customer?.first_name || ''} ${savCase.customer?.last_name || ''}`.trim() : savCase.external_contact_name || 'Contact externe'} 
-                  shopId={savCase.shop_id}
+              {getTypeInfo(savCase.sav_type).show_customer_info && (
+                <AppointmentProposalDialog
+                  savCaseId={savCase.id}
                   customerId={savCase.customer_id}
-                  showSatisfactionButton={getTypeInfo(savCase.sav_type).show_satisfaction_survey}
+                  customerName={customerFullNameStd || 'Client'}
+                  customerPhone={savCase.customer?.phone}
+                  caseNumber={savCase.case_number}
+                  deviceInfo={{ brand: savCase.device_brand, model: savCase.device_model }}
+                  trigger={
+                    <Button variant="outline" size="sm">
+                      <CalendarPlus className="h-4 w-4 mr-2" /> Proposer RDV
+                    </Button>
+                  }
                 />
-              </div>
+              )}
+              <Button variant="outline" size="sm" onClick={copyTrackingUrl}>
+                <Share className="h-4 w-4 mr-2" /> Partager le lien
+              </Button>
+              {isReadyStatus(savCase.status) && (
+                <ReviewRequestButton
+                  savCaseId={savCase.id}
+                  shopId={savCase.shop_id}
+                  customerName={contactNameStd}
+                  caseNumber={savCase.case_number}
+                />
+              )}
             </div>
-          </main>;
+
+            <SAVMessaging
+              savCaseId={savCase.id}
+              savCaseNumber={savCase.case_number}
+              customerPhone={savCase.customer?.phone || savCase.external_contact_phone}
+              customerName={contactNameStd}
+              shopId={savCase.shop_id}
+              customerId={savCase.customer_id}
+              showSatisfactionButton={getTypeInfo(savCase.sav_type).show_satisfaction_survey}
+            />
+
+            {savCase.sav_type !== 'internal' && (
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Share className="h-4 w-4" /> Lien de suivi
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="p-3 bg-primary text-primary-foreground rounded-lg text-sm break-all font-mono">
+                    {savCase?.tracking_slug ? `fixway.fr/track/${savCase.tracking_slug}` : 'Slug non généré'}
+                  </div>
+                  <div className="flex gap-2 flex-wrap">
+                    <Button variant="outline" size="sm" onClick={copyTrackingUrl}>
+                      <Copy className="h-4 w-4 mr-2" /> Copier
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => window.open(generateTrackingUrl(), '_blank')}>
+                      <ExternalLink className="h-4 w-4 mr-2" /> Prévisualiser
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+
+          {/* Onglet Pièces */}
+          <TabsContent value="pieces" className="space-y-4">
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">Pièces du dossier</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  Ajoutez, retirez ou ajustez les pièces liées à ce dossier SAV.
+                </p>
+                <div>
+                  <SAVPartsEditor savCaseId={savCase.id} onPartsUpdated={() => {}} />
+                </div>
+                <div className="pt-2 text-sm">
+                  <span className="text-muted-foreground">Coût total actuel : </span>
+                  <span className="font-semibold">{savCase.total_cost}€</span>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Onglet Impression */}
+          <TabsContent value="impression" className="space-y-4">
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base">Document de prise en charge</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <p className="text-sm text-muted-foreground">
+                  Imprimez le récapitulatif du dossier (à remettre au client lors du dépôt).
+                </p>
+                <SAVPrintButton savCase={savCase} />
+              </CardContent>
+            </Card>
+
+            {isReadyStatus(savCase.status) && (
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base">Document de restitution</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <p className="text-sm text-muted-foreground">
+                    À imprimer quand l'appareil est rendu au client.
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={async () => {
+                      try {
+                        const { data: freshCase } = await supabase
+                          .from('sav_cases')
+                          .select('*, customers(*)')
+                          .eq('id', savCase.id)
+                          .single();
+                        const caseForPDF = freshCase
+                          ? { ...savCase, closure_history: (freshCase.closure_history || []) as any, customer: (freshCase as any).customers || savCase.customer }
+                          : savCase;
+                        await generateSAVRestitutionPDF(caseForPDF, shop);
+                        toast({ title: 'Document de restitution', description: "Le document est en cours d'impression." });
+                      } catch (error) {
+                        toast({ title: 'Erreur', description: 'Impossible de générer le document.', variant: 'destructive' });
+                      }
+                    }}
+                    className="bg-primary/10 hover:bg-primary/20"
+                  >
+                    Imprimer restitution
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <QrCode className="h-4 w-4" /> Étiquette / QR code
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <SAVBarcode
+                  savCase={savCase}
+                  savTypeLabel={getTypeInfo(savCase.sav_type).label}
+                />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Onglet Documents */}
+          <TabsContent value="documents" className="space-y-4">
+            <SAVDocuments
+              savCaseId={savCase.id}
+              attachments={savCase.attachments || []}
+              onAttachmentsUpdate={handleAttachmentsUpdate}
+            />
+          </TabsContent>
+        </Tabs>
+      </div>
+    </main>
+  );
 }
