@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { AlertCircle, History } from 'lucide-react';
+import { AlertCircle, History, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useProductHistory } from '@/hooks/useProductHistory';
 import { ProductHistoryDrawer } from './ProductHistoryDrawer';
+import { NewSAVFromProductDialog } from './NewSAVFromProductDialog';
 
 interface Props {
   shopId?: string | null;
