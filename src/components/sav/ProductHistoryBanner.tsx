@@ -20,6 +20,7 @@ interface Props {
  */
 export function ProductHistoryBanner({ shopId, imei, sku, brand, model, excludeSavId }: Props) {
   const [open, setOpen] = useState(false);
+  const [newSavOpen, setNewSavOpen] = useState(false);
   const { trackedProduct, previousCases, suggestions, detection } = useProductHistory({
     shopId, imei, sku, brand, model, excludeSavId,
   });
