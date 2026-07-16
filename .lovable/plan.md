@@ -1,41 +1,66 @@
-## 1. "Nouveau SAV pour ce produit" (récurrence produit)
+## Objectif
 
-### Constat
-- La détection existe déjà par **SKU** et **IMEI** via `useProductHistory` (hook déjà utilisé par `ProductHistoryBanner` dans `SAVForm` et `SAVWizardDialog`, et par `ProductRecurrenceBadge` dans `SAVDetail`).
-- Aujourd'hui, quand un produit est reconnu, on peut consulter l'historique dans `ProductHistoryDrawer`, mais il faut ressaisir tout un nouveau SAV manuellement.
+Uniformiser la fiche SAV standard sur le modèle de la vue simplifiée (organisation en onglets), et unifier le rendu de l'alerte "Produit déjà connu" (IMEI/SKU) partout, en reprenant exactement la card validée par l'utilisateur (capture d'écran fournie).
 
-### Ce qui sera ajouté
-1. **Bouton "Nouveau SAV pour ce produit"** ajouté dans deux endroits :
-   - dans chaque carte de dossier passé du `ProductHistoryDrawer` (à côté du bouton "voir le dossier"),
-   - directement dans le bandeau `ProductHistoryBanner` (raccourci quand un match exact IMEI/SKU est trouvé), pour être visible sur la **vue normale** ET la **vue simplifiée** (les deux utilisent déjà le banner).
-2. Le bouton ouvre une **`NewSAVFromProductDialog`** (nouveau composant) qui pré-remplit à partir du SAV source :
-   - marque, modèle, IMEI, SKU, couleur, grade (verrouillés visuellement mais modifiables via un bouton "Corriger l'appareil"),
-   - historique visible en résumé (dernière panne, dernière intervention).
-   Le technicien doit confirmer 3 choses avant validation :
-   - **Type de SAV** (select alimenté par `useShopSAVTypes`, défaut = type du SAV source),
-   - **Client** : "Même client" (pré-coché si le SAV source avait un client) / "Autre client" (ouvre `CustomerSearch` + option création rapide) / "Sans client" (si le type de SAV le permet),
-   - **Description de la panne** (`Textarea` obligatoire, vide par défaut — on ne recopie pas l'ancienne panne pour éviter les copier-coller trompeurs, mais l'ancienne est affichée en aide).
-3. À la validation : insertion d'un `sav_cases` (mêmes règles que la création via `SAVForm` : `case_number`, `tracking_slug`, `shop_id`, `status` initial, `tracked_product_id` recopié pour lier l'historique), puis `navigate('/sav/<newId>')`.
-4. Aucun changement sur la logique de détection existante — elle couvre déjà IMEI et SKU.
+---
 
-## 2. Réorganisation de la vue SAV simplifiée (`SAVDetail.tsx`, branche `isSimplifiedView`)
+## 1. Fiche SAV — Vue standard alignée sur la vue simplifiée
 
-Onglets actuels : **Aperçu · Communication · Documents**.
-Nouveaux onglets : **Aperçu · Communication · Pièces · Impression · Documents**.
+Le contenu, les hooks et les composants métier de la vue standard restent identiques. Seule la **présentation** change : passage d'une longue page scrollable à la même structure en 5 onglets que la vue simplifiée.
 
-- **Aperçu** : on retire `SAVPartsEditor` et `SAVPrintButton` de la ligne d'actions du haut. On conserve `ProblemDescriptionDisplay`, cartes client/appareil, `SAVLoanerCard`, `SAVStatusManager`.
-- **Pièces** *(nouveau)* : contient uniquement `SAVPartsEditor` (bouton "Modifier les pièces") + rappel du coût total.
-- **Impression** *(nouveau)* : regroupe toutes les impressions dans une carte unique avec libellés explicites :
-  - **Imprimer le document de prise en charge** → `SAVPrintButton` (le label du bouton sera reformulé pour être plus explicite),
-  - **Imprimer l'étiquette / QR code** → bloc `SAVBarcode` déplacé depuis l'onglet Documents,
-  - **Imprimer le document de restitution** → bouton existant (conditionné à `isReadyStatus`) déplacé ici.
-- **Documents** : uniquement `SAVDocuments` (pièces jointes) — on retire le bouton "Imprimer restitution", le `SAVPrintButton` et le bloc étiquette qui s'y trouvent aujourd'hui.
+Fichier : `src/pages/SAVDetail.tsx` (bloc rendu standard, à partir de la ligne 625).
+
+### Structure cible (identique à la vue simplifiée)
+
+- **Bandeau sticky** en haut : bouton Retour, numéro de dossier, badge type, badge statut, appareil, client à droite. Version standard : on garde en plus le badge `taken_over_by` et le bouton `Log` (admin), qui n'existent pas dans la simplifiée.
+- **Tabs** (même ordre, même clé `fixway_sav_detail_tab` pour partager la persistance) :
+  1. **Aperçu** : `ProblemDescriptionDisplay`, `Card` Client (version standard = `Coordonnées du client` avec `EditSAVCustomerDialog`), `Card` Appareil & dossier (version standard = `Détails du dossier` avec `EditSAVDetailsDialog`, `ProductRecurrenceBadge`, `SecurityCodesDisplay`, `PatternLock`, notes de réparation, commentaires technicien + privés, `AITextReformulator`), `SAVLoanerCard`, `SAVPartsRequirements`, `SAVStatusManager`.
+  2. **Communication** : boutons SMS / Proposer RDV / Partager / Demande d'avis, `SAVMessaging`, `Card` Lien de suivi.
+  3. **Pièces** : `SAVPartsEditor` dans une card.
+  4. **Impression** : `SAVPrintButton` (prise en charge), bouton restitution conditionnel (`isReadyStatus`), `SAVBarcode` (étiquette/QR).
+  5. **Documents** : `SAVDocuments`.
+- Les boutons d'action actuellement en haut de la vue standard (SMS, RDV, Partager, Restitution, Print, Parts) sont **déplacés dans leur onglet respectif** — plus de barre d'actions dupliquée en haut.
+- Les blocs Édition (`EditSAVCustomerDialog`, `EditSAVDetailsDialog`, `AITextReformulator`, commentaires technicien/privés, `PatternLock`, `SecurityCodesDisplay`) restent réservés à la vue standard : ils sont placés dans les cards de l'onglet **Aperçu** afin de ne rien perdre par rapport à la version actuelle.
+- Bouton **Log** (admin) et badge **taken_over_by** : conservés dans le bandeau sticky standard.
+
+### Ce qui ne change pas
+
+- Aucune modification des hooks, du realtime, des fonctions save/update, des permissions, ni du contenu métier.
+- La vue simplifiée reste strictement identique.
+- Le toggle `fixway_simplified_view` continue à choisir laquelle des deux vues rendre.
+
+---
+
+## 2. Alerte "Produit déjà connu" — card unique et réutilisée
+
+L'utilisateur valide visuellement la card actuelle rendue par `ProductHistoryBanner` (capture fournie : fond ambre, icône AlertCircle, titre + sous-texte, boutons "Voir l'historique" et "Nouveau SAV pour ce produit" empilés à droite).
+
+### Action
+
+- Faire de `ProductHistoryBanner` la **seule** source de rendu pour l'alerte de récurrence produit (IMEI + SKU).
+- S'assurer qu'elle est présente aux mêmes endroits en **vue standard** et en **vue simplifiée** :
+  - `SAVForm` (formulaire de création : `src/pages/NewSAV.tsx` → `SAVForm.tsx`), dès que l'IMEI ou le SKU saisi déclenche une détection.
+  - `SAVDetail.tsx` — vue standard : injectée en haut de l'onglet **Aperçu**, juste au-dessus de la card `Détails du dossier`.
+  - `SAVDetail.tsx` — vue simplifiée : injectée en haut de l'onglet **Aperçu**, au-dessus de `ProblemDescriptionDisplay`.
+- Vérifier que dans les deux cas :
+  - Le bouton **Nouveau SAV pour ce produit** ouvre `NewSAVFromProductDialog` avec le dernier dossier comme source (comportement actuel du banner).
+  - Le bouton **Voir l'historique** ouvre `ProductHistoryDrawer`.
+  - La détection combine IMEI (exact) **et** SKU (suggestion) via le hook `useProductHistory` existant — pas de duplication de logique.
+- Supprimer tout rendu concurrent (badges/cards ad hoc) qui afficherait une alerte de récurrence avec un style différent, pour éviter les doublons visuels. Le petit `ProductRecurrenceBadge` (badge compact à côté de l'IMEI, sans texte explicatif) reste utilisé uniquement dans les listes/cards SAV — il ne concurrence pas la card d'alerte.
+
+### Ce qui ne change pas
+
+- Le composant `ProductHistoryBanner` conserve ses styles actuels (ceux de la capture d'écran validée).
+- Aucune modification des hooks `useProductHistory` / `useProductHistoryById`, ni du schéma DB.
+
+---
 
 ## Détails techniques
 
-- Nouveau fichier : `src/components/sav/NewSAVFromProductDialog.tsx`. Props : `sourceCase: PreviousSAVCase`, `trackedProductId?: string`, `trigger?: ReactNode`. Réutilise `useShop`, `useShopSAVTypes`, `useAllCustomers`, `CustomerSearch`, insertion via `supabase.from('sav_cases').insert(...)` (calquée sur `SAVForm.handleSubmit`).
-- `ProductHistoryDrawer` : ajout d'un bouton "Nouveau SAV" (icône `Plus`) par carte de dossier, à côté de `ExternalLink`. Il ferme le drawer puis ouvre `NewSAVFromProductDialog`.
-- `ProductHistoryBanner` : ajout d'un second bouton "Nouveau SAV pour ce produit" (visible uniquement quand `detection.level === 'exact'`, donc IMEI confirmé) qui ouvre directement le dialog sur le SAV le plus récent.
-- `SAVDetail.tsx` (branche simplifiée, lignes ~371-577) : ajout de `<TabsTrigger value="pieces">` et `<TabsTrigger value="impression">`, création des `TabsContent` correspondants, suppression des éléments migrés depuis Aperçu et Documents.
-- La `TabsList` reste `overflow-x-auto` pour rester lisible sur mobile.
-- Aucun changement sur la vue normale (SAV standard) ni sur la logique métier des impressions/pièces existantes.
+- Fichiers modifiés :
+  - `src/pages/SAVDetail.tsx` : refonte du bloc rendu standard en Tabs + insertion du banner dans l'onglet Aperçu (standard **et** simplifiée).
+  - `src/components/sav/SAVForm.tsx` : vérification que `ProductHistoryBanner` y est bien rendu (déjà probablement le cas — sinon, l'ajouter en dessous des champs IMEI/SKU).
+- Aucune migration Supabase.
+- Aucun impact sur les rôles/permissions : `isAdmin` continue de piloter le bouton Log.
+- Persistance de l'onglet actif partagée entre les deux vues via `localStorage['fixway_sav_detail_tab']`.
+- Typecheck exécuté après implémentation.
