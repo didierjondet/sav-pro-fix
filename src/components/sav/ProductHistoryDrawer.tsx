@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -6,9 +6,10 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Smartphone, Calendar, ExternalLink, History, Repeat, AlertTriangle } from 'lucide-react';
+import { Smartphone, Calendar, ExternalLink, History, Repeat, AlertTriangle, Plus } from 'lucide-react';
 import type { PreviousSAVCase, TrackedProduct } from '@/hooks/useProductHistory';
 import { computeReturnRate } from '@/lib/productReturnRate';
+import { NewSAVFromProductDialog } from './NewSAVFromProductDialog';
 
 interface Props {
   open: boolean;
