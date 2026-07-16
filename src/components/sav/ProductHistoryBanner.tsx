@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { AlertCircle, History } from 'lucide-react';
+import { AlertCircle, History, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useProductHistory } from '@/hooks/useProductHistory';
 import { ProductHistoryDrawer } from './ProductHistoryDrawer';
+import { NewSAVFromProductDialog } from './NewSAVFromProductDialog';
 
 interface Props {
   shopId?: string | null;
@@ -19,6 +20,7 @@ interface Props {
  */
 export function ProductHistoryBanner({ shopId, imei, sku, brand, model, excludeSavId }: Props) {
   const [open, setOpen] = useState(false);
+  const [newSavOpen, setNewSavOpen] = useState(false);
   const { trackedProduct, previousCases, suggestions, detection } = useProductHistory({
     shopId, imei, sku, brand, model, excludeSavId,
   });
@@ -50,16 +52,29 @@ export function ProductHistoryBanner({ shopId, imei, sku, brand, model, excludeS
               : "Un produit avec le même SKU est déjà passé. Vérifiez s'il s'agit du même appareil."}
           </p>
         </div>
-        <Button
-          type="button"
-          size="sm"
-          variant={isExact ? 'default' : 'outline'}
-          onClick={() => setOpen(true)}
-          className="shrink-0"
-        >
-          <History className="h-3.5 w-3.5 mr-1" />
-          Voir l'historique
-        </Button>
+        <div className="flex flex-col gap-2 shrink-0">
+          <Button
+            type="button"
+            size="sm"
+            variant={isExact ? 'default' : 'outline'}
+            onClick={() => setOpen(true)}
+          >
+            <History className="h-3.5 w-3.5 mr-1" />
+            Voir l'historique
+          </Button>
+          {isExact && cases[0] && (
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              onClick={() => setNewSavOpen(true)}
+              title="Créer un nouveau SAV pré-rempli à partir du dernier dossier de ce produit"
+            >
+              <Plus className="h-3.5 w-3.5 mr-1" />
+              Nouveau SAV pour ce produit
+            </Button>
+          )}
+        </div>
       </div>
 
       <ProductHistoryDrawer
@@ -68,6 +83,12 @@ export function ProductHistoryBanner({ shopId, imei, sku, brand, model, excludeS
         product={trackedProduct}
         cases={cases}
         title={isExact ? 'Historique du produit' : 'Dossiers similaires'}
+      />
+      <NewSAVFromProductDialog
+        sourceCase={cases[0] || null}
+        trackedProductId={trackedProduct?.id || null}
+        open={newSavOpen}
+        onOpenChange={setNewSavOpen}
       />
     </>
   );
