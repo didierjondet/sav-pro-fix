@@ -376,7 +376,13 @@ export default function SAVDetail() {
 
             {/* Onglet Aperçu */}
             <TabsContent value="apercu" className="space-y-4">
+              <div className="flex flex-wrap items-center gap-2">
+                <SAVPrintButton savCase={savCase} />
+                <SAVPartsEditor savCaseId={savCase.id} onPartsUpdated={() => {}} />
+              </div>
+
               <ProblemDescriptionDisplay value={savCase.problem_description} />
+
 
               {getTypeInfo(savCase.sav_type).show_customer_info && (
                 <Card>
