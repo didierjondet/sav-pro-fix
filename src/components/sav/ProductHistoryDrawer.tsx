@@ -163,6 +163,12 @@ export function ProductHistoryDrawer({ open, onOpenChange, product, cases, title
           )}
         </ScrollArea>
       </SheetContent>
+      <NewSAVFromProductDialog
+        sourceCase={newSavSource}
+        trackedProductId={product?.id || null}
+        open={!!newSavSource}
+        onOpenChange={(v) => { if (!v) setNewSavSource(null); }}
+      />
     </Sheet>
   );
 }
