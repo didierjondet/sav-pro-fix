@@ -1,38 +1,72 @@
-# Assistant impression étiquette — configurer Windows + Chrome
+# Réorganisation de la page SAV — vue simplifiée
 
-## Pourquoi
+## Constat
 
-Chrome sous Windows n'a pas le droit d'imposer une taille de papier au pilote. Si le pilote Epson TM-L90 est réglé sur un format long (bande / reçu 80 mm × 297 mm par défaut), Chrome dessine notre étiquette 55×40 mm dans un coin de cette grande feuille virtuelle, l'imprimante déroule toute la longueur et **saute plusieurs étiquettes physiques**. Aucune ligne de code côté web ne peut corriger cela : il faut créer un **format papier personnalisé** dans le pilote, puis le choisir dans Chrome. On va guider l'utilisateur pas à pas depuis Fixway.
+La page `SAVDetail` empile aujourd'hui, sur une seule colonne scrollable très longue :
+en-tête + statut + actions, carte prêt, coordonnées client, détails dossier, description du problème, code-barres, pièces, documents, codes de sécurité, commentaires techniques, commentaires privés, messagerie. Résultat : on scrolle beaucoup, tout a le même poids visuel, on cherche l'info.
 
-## Ce qu'on ajoute
+L'objectif est de **hiérarchiser** (ce qu'on regarde tout le temps vs. ce qu'on ouvre parfois) et de **grouper** (info client, info appareil, opérationnel, communication).
 
-### 1. Nouveau composant `PrinterSetupWizard` (dans Réglages > Impression étiquette)
+## Proposition — 3 axes combinables
 
-Bouton **« Assistant de configuration Windows »** à côté du sélecteur d'imprimante. Ouvre un dialog en 4 étapes, contenu adapté au modèle sélectionné (données lues dans `src/lib/labelPrinters.ts`) :
+### 1. Un bandeau « sticky » de contexte (toujours visible)
 
-1. **Vérifier le pilote installé** — nom Windows attendu (ex. `EPSON TM-L90 Label`), lien vers le pilote APD Epson officiel.
-2. **Créer le format papier personnalisé** — instructions détaillées : Panneau de configuration → Périphériques et imprimantes → clic droit sur la TM-L90 → *Préférences d'impression* → onglet *Document Settings* → *User Defined Paper Size* → nommer `Fixway 55x40`, largeur 55 mm, hauteur 40 mm → Enregistrer → onglet *Main* → Paper Source = `Fixway 55x40`. Chaque étape avec texte clair + schéma SVG inline (pas de captures externes à héberger).
-3. **Définir comme format par défaut** — *Propriétés de l'imprimante* → *Préférences d'impression* → *Fixway 55x40* → OK.
-4. **Choisir le format dans Chrome** — À l'impression : *Plus de paramètres* → *Taille du papier* → sélectionner `Fixway 55x40` (ou `Défini par l'utilisateur`) → *Marges* : Aucune → *Échelle* : 100 %. Case à cocher **« J'ai terminé la configuration sur ce poste »** stockée dans `localStorage` (`fixway_printer_setup_done_<printerId>`).
+Un header condensé qui reste en haut au scroll, avec **uniquement l'essentiel** :
+- Numéro de dossier + badge type (pastille couleur)
+- Nom client + téléphone cliquable (SMS/appel)
+- Appareil (marque + modèle) + IMEI compact
+- Statut courant (sélecteur) + badge « en retard » si applicable
+- Bouton actions rapides (⋯) : imprimer, PDF restitution, partager tracking, logs
 
-### 2. Rappel avant impression
+Bénéfice : quel que soit l'endroit où l'on scrolle, on sait toujours **quel dossier, quel client, quel statut**.
 
-Dans `SAVBarcode.tsx`, avant `handlePrint`, si le flag `fixway_printer_setup_done_<printerId>` est absent : afficher une petite modale de rappel « Format papier configuré dans le pilote ? » avec 2 boutons : *Ouvrir l'assistant* ou *Continuer quand même* (+ case « Ne plus afficher »). Aucune modification de la logique d'impression elle-même.
+### 2. Navigation par onglets plutôt qu'un long scroll
 
-### 3. Fiche récap dans les réglages
+Sous le bandeau, remplacer la longue colonne par **4 onglets** :
 
-Sous le bouton assistant, badge d'état : ✅ « Configuration terminée sur ce poste » (vert) ou ⚠️ « Non configuré — risque de saut d'étiquettes » (orange), avec bouton *Réinitialiser*.
+```text
+[ Aperçu ]  [ Réparation ]  [ Communication ]  [ Documents ]
+```
+
+- **Aperçu** (par défaut) : résumé condensé — coordonnées client (compact 2 colonnes), description du problème (mise en valeur, déjà stylisée), coût total, dates clés, prêt éventuel. Une seule page, pas de scroll ou presque.
+- **Réparation** : détails techniques appareil, pièces requises / éditeur pièces, codes de sécurité / pattern, notes de réparation, commentaires techniques + privés, code-barres étiquette.
+- **Communication** : messagerie interne, bouton SMS, lien tracking + QR, demande d'avis.
+- **Documents** : documents attachés, PDF restitution, historique clôtures.
+
+Bénéfice : chaque onglet tient dans un écran, on va directement à ce qu'on cherche.
+
+### 3. Hiérarchie visuelle des cartes
+
+- **Une seule carte "primaire"** par onglet (fond légèrement teinté, bordure accent) — la carte centrale de l'onglet.
+- Les autres cartes en **secondaire** (fond neutre, bordure discrète) pour créer une lecture en Z.
+- Icônes cohérentes en tête de carte, titres plus petits qu'aujourd'hui.
+- Champs alignés en grille (labels gris clair au-dessus, valeurs en gras) plutôt qu'en `<strong>` inline.
+- Regrouper les métadonnées peu utilisées (date création, SKU, date modif) dans un petit bloc `Infos` repliable en bas de l'onglet Aperçu.
+
+## Vue simplifiée spécifiquement (`shop_admin`)
+
+En vue simplifiée on peut aller plus loin :
+- Masquer par défaut les onglets **Réparation** techniques (pièces, codes) → un seul onglet **Aperçu** + **Communication** + **Documents**.
+- Cacher les blocs commentaires privés, logs, éditeur pièces.
+- Description du problème reste la carte primaire de l'aperçu (déjà bien stylisée).
 
 ## Détails techniques
 
-- **Fichiers modifiés** : `src/components/sav/SAVBarcodePrinterSettings.tsx` (bouton + badge), `src/components/sav/SAVBarcode.tsx` (rappel pré-impression).
-- **Fichier créé** : `src/components/sav/PrinterSetupWizard.tsx` (le dialog à étapes, contenu paramétré par `LabelPrinterSpec` déjà présent dans `src/lib/labelPrinters.ts`).
-- **Enrichissement mineur** de `src/lib/labelPrinters.ts` : ajouter par imprimante un tableau `setupSteps` optionnel (nom onglet pilote, chemin exact des menus) pour Epson TM-L90/L100, Brother QL, Zebra ZD, DYMO. Étapes génériques pour l'entrée « Générique ».
-- Aucune dépendance nouvelle, aucun changement DB, aucune edge function, aucune modification de la génération HTML d'impression (déjà correcte).
-- Persistance locale uniquement (`localStorage`), par poste, par modèle d'imprimante — cohérent avec les autres réglages d'étiquette.
+- Refactor de `src/pages/SAVDetail.tsx` uniquement (presentation, pas de logique métier).
+- Utiliser `Tabs` de shadcn (`@/components/ui/tabs`) pour la navigation.
+- Un composant `SAVStickyHeader` extrait pour le bandeau sticky (`position: sticky; top: 0; z-index`).
+- Détecter la vue simplifiée via `localStorage.getItem('fixway_simplified_view')` + `useRolePermissions` (déjà utilisé ailleurs) pour conditionner les onglets visibles.
+- Aucune modification de hooks, requêtes, RLS, DB, edge functions.
+- Conserver **exactement** les composants existants (`SAVMessaging`, `SAVPartsEditor`, `SAVLoanerCard`, `ProblemDescriptionDisplay`, `SAVBarcode`, `SecurityCodesDisplay`, `SAVDocuments`, dialogs d'édition, etc.) — on ne change que leur emplacement et leur enveloppe visuelle.
+- Onglet actif mémorisé en `localStorage` (`fixway_sav_detail_tab`) pour retrouver son contexte après retour arrière.
 
-## Ce qu'on ne change pas
+## Ce qui reste inchangé
 
-- La logique d'impression (`@page`, rotation, `barcodeLayout`) reste identique — elle est déjà correcte.
-- Aucune extension Chrome (inutile sous Windows, cf. discussion).
-- Pas de middleware local à cette étape.
+- Toute la logique métier, hooks, mutations, permissions.
+- Les composants enfants et leurs props.
+- Les autres pages (liste SAV, dashboard, etc.).
+- Le mode standard peut garder tout ou basculer aussi selon ton retour.
+
+## Question ouverte avant implémentation
+
+Souhaites-tu que **le mode standard** (admin/technicien) reçoive aussi ces onglets, ou uniquement la **vue simplifiée** ? Les deux sont possibles ; je peux aussi n'appliquer les onglets qu'en simplifié et garder l'existant pour les techniciens.
