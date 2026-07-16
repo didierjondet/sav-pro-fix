@@ -371,18 +371,14 @@ export default function SAVDetail() {
             <TabsList className="w-full justify-start overflow-x-auto">
               <TabsTrigger value="apercu">Aperçu</TabsTrigger>
               <TabsTrigger value="communication">Communication</TabsTrigger>
+              <TabsTrigger value="pieces">Pièces</TabsTrigger>
+              <TabsTrigger value="impression">Impression</TabsTrigger>
               <TabsTrigger value="documents">Documents</TabsTrigger>
             </TabsList>
 
             {/* Onglet Aperçu */}
             <TabsContent value="apercu" className="space-y-4">
-              <div className="flex flex-wrap items-center gap-2">
-                <SAVPrintButton savCase={savCase} />
-                <SAVPartsEditor savCaseId={savCase.id} onPartsUpdated={() => {}} />
-              </div>
-
               <ProblemDescriptionDisplay value={savCase.problem_description} />
-
 
               {getTypeInfo(savCase.sav_type).show_customer_info && (
                 <Card>
@@ -524,36 +520,77 @@ export default function SAVDetail() {
               )}
             </TabsContent>
 
-            {/* Onglet Documents */}
-            <TabsContent value="documents" className="space-y-4">
+            {/* Onglet Pièces */}
+            <TabsContent value="pieces" className="space-y-4">
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base">Pièces du dossier</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <p className="text-sm text-muted-foreground">
+                    Ajoutez, retirez ou ajustez les pièces liées à ce dossier SAV.
+                  </p>
+                  <div>
+                    <SAVPartsEditor savCaseId={savCase.id} onPartsUpdated={() => {}} />
+                  </div>
+                  <div className="pt-2 text-sm">
+                    <span className="text-muted-foreground">Coût total actuel : </span>
+                    <span className="font-semibold">{savCase.total_cost}€</span>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Onglet Impression */}
+            <TabsContent value="impression" className="space-y-4">
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base">Document de prise en charge</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <p className="text-sm text-muted-foreground">
+                    Imprimez le récapitulatif du dossier (à remettre au client lors du dépôt).
+                  </p>
+                  <SAVPrintButton savCase={savCase} />
+                </CardContent>
+              </Card>
+
               {isReadyStatus(savCase.status) && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={async () => {
-                    try {
-                      const { data: freshCase } = await supabase
-                        .from('sav_cases')
-                        .select('*, customers(*)')
-                        .eq('id', savCase.id)
-                        .single();
-                      const caseForPDF = freshCase
-                        ? { ...savCase, closure_history: (freshCase.closure_history || []) as any, customer: (freshCase as any).customers || savCase.customer }
-                        : savCase;
-                      await generateSAVRestitutionPDF(caseForPDF, shop);
-                      toast({ title: 'Document de restitution', description: "Le document est en cours d'impression." });
-                    } catch (error) {
-                      toast({ title: 'Erreur', description: 'Impossible de générer le document.', variant: 'destructive' });
-                    }
-                  }}
-                  className="bg-primary/10 hover:bg-primary/20"
-                >
-                  Imprimer restitution
-                </Button>
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base">Document de restitution</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    <p className="text-sm text-muted-foreground">
+                      À imprimer quand l'appareil est rendu au client.
+                    </p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={async () => {
+                        try {
+                          const { data: freshCase } = await supabase
+                            .from('sav_cases')
+                            .select('*, customers(*)')
+                            .eq('id', savCase.id)
+                            .single();
+                          const caseForPDF = freshCase
+                            ? { ...savCase, closure_history: (freshCase.closure_history || []) as any, customer: (freshCase as any).customers || savCase.customer }
+                            : savCase;
+                          await generateSAVRestitutionPDF(caseForPDF, shop);
+                          toast({ title: 'Document de restitution', description: "Le document est en cours d'impression." });
+                        } catch (error) {
+                          toast({ title: 'Erreur', description: 'Impossible de générer le document.', variant: 'destructive' });
+                        }
+                      }}
+                      className="bg-primary/10 hover:bg-primary/20"
+                    >
+                      Imprimer restitution
+                    </Button>
+                  </CardContent>
+                </Card>
               )}
-              <div className="flex flex-wrap items-center gap-2">
-                <SAVPrintButton savCase={savCase} />
-              </div>
+
               <Card>
                 <CardHeader className="pb-3">
                   <CardTitle className="text-base flex items-center gap-2">
@@ -567,12 +604,17 @@ export default function SAVDetail() {
                   />
                 </CardContent>
               </Card>
+            </TabsContent>
+
+            {/* Onglet Documents */}
+            <TabsContent value="documents" className="space-y-4">
               <SAVDocuments
                 savCaseId={savCase.id}
                 attachments={savCase.attachments || []}
                 onAttachmentsUpdate={handleAttachmentsUpdate}
               />
             </TabsContent>
+
 
           </Tabs>
         </div>
