@@ -379,7 +379,16 @@ export default function SAVDetail() {
 
             {/* Onglet Aperçu */}
             <TabsContent value="apercu" className="space-y-4">
+              <ProductHistoryBanner
+                shopId={savCase.shop_id}
+                imei={savCase.device_imei}
+                sku={savCase.sku}
+                brand={savCase.device_brand}
+                model={savCase.device_model}
+                excludeSavId={savCase.id}
+              />
               <ProblemDescriptionDisplay value={savCase.problem_description} />
+
 
               {getTypeInfo(savCase.sav_type).show_customer_info && (
                 <Card>
