@@ -61,7 +61,7 @@ const DEFAULT_FILTERS = {
   statusFilter: 'all-except-ready',
   colorFilter: 'all',
   gradeFilter: 'all',
-  sortOrder: 'priority',
+  sortOrder: 'newest',
   itemsPerPage: 20,
 };
 
