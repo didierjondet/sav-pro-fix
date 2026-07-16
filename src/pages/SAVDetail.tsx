@@ -39,6 +39,7 @@ import { AppointmentProposalDialog } from '@/components/agenda/AppointmentPropos
 import { useProfile } from '@/hooks/useProfile';
 import { logSAVChange, getCurrentUserName } from '@/hooks/useSAVAuditLog';
 import { ProductRecurrenceBadge } from '@/components/sav/ProductRecurrenceBadge';
+import { ProductHistoryBanner } from '@/components/sav/ProductHistoryBanner';
 export default function SAVDetail() {
   const {
     id
