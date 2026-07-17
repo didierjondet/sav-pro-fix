@@ -55,6 +55,7 @@ import SAVLogs from "./pages/SAVLogs";
 import Inventory from "./pages/Inventory";
 import HelpBot from "./components/help/HelpBot";
 import AppLayout from "./components/layout/AppLayout";
+import MobileSAVLookup from "./pages/MobileSAVLookup";
 
 const queryClient = new QueryClient({
   defaultOptions: {
