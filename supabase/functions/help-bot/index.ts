@@ -302,6 +302,25 @@ const TOOL_DEFS = [
   {
     type: 'function',
     function: {
+      name: 'get_revenue_by_product_category',
+      description: "CA réparti par CATÉGORIE DE PRODUIT (Téléphones, Informatique, Consoles, Tablettes, Autres) — miroir exact du widget « Répartition du chiffre d'affaires ». Applique la même formule (sav_parts × ratio prise en charge + exclusions par sav_type). Si `category` est fourni, retourne aussi la liste des SAV contributifs.",
+      parameters: {
+        type: 'object',
+        properties: {
+          period: { type: 'string', enum: ['today', 'week', 'month', 'year', 'custom'] },
+          date_from: { type: 'string' },
+          date_to: { type: 'string' },
+          category: { type: 'string', enum: ['Téléphones', 'Informatique', 'Consoles', 'Tablettes', 'Autres'] },
+          include_cases: { type: 'boolean' },
+          limit: { type: 'number' },
+        },
+        required: ['period'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
       name: 'get_late_savs',
       description: 'Liste des SAV actuellement en retard selon les règles métier (max_processing_days par type, statuts non finaux, hors statuts pause).',
       parameters: {
