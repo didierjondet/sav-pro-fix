@@ -329,10 +329,10 @@ export const SAVPrintButton = React.forwardRef<SAVPrintButtonRef, SAVPrintButton
   <meta charset="utf-8" />
   <title>Impression Dossier SAV ${savCase.case_number}</title>
   <style>
-    @page { size: A4 portrait; margin: 1.2cm; }
+    @page { size: A4 landscape; margin: 0.8cm; }
     body { font-family: Arial, sans-serif; font-size: 10px; color: #111; }
-    .dual-content { display: flex; flex-direction: column; gap: 20px; width: 50%; }
-    .content-block { width: 100%; }
+    .dual-content { display: flex; flex-direction: row; gap: 12px; width: 100%; align-items: stretch; }
+    .content-block { width: calc(50% - 18px); page-break-inside: avoid; break-inside: avoid; }
     .header { display:flex; align-items:flex-start; justify-content:flex-start; margin-bottom: 12px; }
     .shop-header { display:flex; align-items:center; gap: 6px; border-bottom: 1px solid #ddd; padding-bottom: 4px; justify-content: flex-start; margin-bottom: 6px; }
     .shop-logo { max-height: 30px; max-width: 50px; }
