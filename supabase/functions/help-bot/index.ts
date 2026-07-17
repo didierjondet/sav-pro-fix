@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { categorizeDevice, PRODUCT_CATEGORIES, type ProductCategory } from '../_shared/deviceCategory.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
