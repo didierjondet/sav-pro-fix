@@ -1,21 +1,20 @@
-## Modification — Impression SAV côte à côte
+## Correction — HelpBot ne récupère pas l'historique client
 
-### Objectif
-Afficher les deux exemplaires (souche magasin + volet client) **côte à côte sur une seule feuille A4 paysage**, au lieu de l'un en dessous de l'autre. Cela évite les débordements sur 2 pages quand le contenu est un peu long et améliore la lisibilité.
+### Diagnostic
+- Les logs montrent `search_customers ok` : l'outil s'exécute correctement.
+- Mais le bot répond « je n'ai pas l'identifiant » sans enchaîner sur `get_customer_history`.
+- Deux causes probables :
+  1. Le prompt système contient la règle « **Ne renvoie JAMAIS les coordonnées clients (téléphone, email, adresse)** ». Comme `search_customers` renvoie `phone` et `email`, Gemini interprète parfois cette règle comme un blocage et refuse de poursuivre.
+  2. Gemini ne réutilise pas toujours un `id` UUID d'un tour à l'autre → il vaut mieux permettre à `get_customer_history` d'accepter un nom en secours.
 
-### Changements dans `src/components/sav/SAVPrint.tsx`
+### Modifications ciblées — `supabase/functions/help-bot/index.ts`
 
-1. **Format d'impression** : `@page { size: A4 landscape; margin: 0.8cm; }` au lieu de portrait.
-2. **Conteneur `.dual-content`** :
-   - Passe en `flex-direction: row` (au lieu de `column`).
-   - `gap: 12px`, `align-items: flex-start`.
-3. **Blocs `.content-block`** :
-   - `width: calc(50% - 12px)` chacun, avec `page-break-inside: avoid` pour rester d'un seul tenant.
-4. **Trait de découpe `.cut-line`** :
-   - Devient une barre verticale (largeur 1px, hauteur 100%) au centre, avec l'icône ciseaux tournée à 90°.
-5. **Ajustements mineurs** :
-   - Réduire légèrement les marges internes des tableaux et images (QR / code-barres) si nécessaire pour tenir dans la moitié de largeur paysage.
-   - Aucune modification du contenu affiché : mêmes blocs (client, appareil, description, pièces, prêt, historique, pièces jointes, QR).
+1. **`search_customers`** : ne renvoyer que `id, first_name, last_name` (retirer `phone`/`email` du payload) afin de ne pas confondre Gemini avec la règle "coordonnées". Les coordonnées restent accessibles via `get_customer_history` ou `get_sav_case_detail` si vraiment utiles côté fiche.
+2. **`get_customer_history`** : rendre `customer_id` optionnel et accepter aussi un paramètre `query` (nom/prénom). Si `query` est fourni, résoudre server-side le/les clients correspondants (limite 3), puis retourner un tableau `results: [{ customer: {id, first_name, last_name}, savs, quotes, appointments }]`. Si `customer_id` est fourni, comportement inchangé (mais réponse enveloppée dans le même format).
+3. **Prompt système** : ajouter une phrase explicite dans les règles d'usage :
+   > « Pour l'historique d'un client : appelle `search_customers`, prends l'`id` du 1er résultat pertinent et enchaîne `get_customer_history`. Si tu hésites, passe directement le nom via `query` à `get_customer_history`. »
 
 ### Hors périmètre
-Aucun changement métier, aucun changement sur les autres PDF (restitution, étiquettes, devis) ni sur les composants React.
+- Pas de changement de RLS ni de schéma DB.
+- Pas de modification des autres outils du bot.
+- Pas d'impact sur la messagerie client interne (les logs pertinents proviennent d'un autre flux, pas du bot).
