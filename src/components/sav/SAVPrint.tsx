@@ -329,10 +329,10 @@ export const SAVPrintButton = React.forwardRef<SAVPrintButtonRef, SAVPrintButton
   <meta charset="utf-8" />
   <title>Impression Dossier SAV ${savCase.case_number}</title>
   <style>
-    @page { size: A4 portrait; margin: 1.2cm; }
+    @page { size: A4 landscape; margin: 0.8cm; }
     body { font-family: Arial, sans-serif; font-size: 10px; color: #111; }
-    .dual-content { display: flex; flex-direction: column; gap: 20px; width: 50%; }
-    .content-block { width: 100%; }
+    .dual-content { display: flex; flex-direction: row; gap: 12px; width: 100%; align-items: stretch; }
+    .content-block { width: calc(50% - 18px); page-break-inside: avoid; break-inside: avoid; }
     .header { display:flex; align-items:flex-start; justify-content:flex-start; margin-bottom: 12px; }
     .shop-header { display:flex; align-items:center; gap: 6px; border-bottom: 1px solid #ddd; padding-bottom: 4px; justify-content: flex-start; margin-bottom: 6px; }
     .shop-logo { max-height: 30px; max-width: 50px; }
@@ -363,9 +363,9 @@ export const SAVPrintButton = React.forwardRef<SAVPrintButtonRef, SAVPrintButton
     .footer { margin-top: 12px; font-size: 7px; color:#777; text-align:left; }
     .highlight-red { color: #dc2626; font-weight: bold; }
     .sav-type { color: #16a34a; font-weight: bold; font-size: 1.4em; }
-    .cut-line { margin: 15px 0; display: flex; align-items: center; justify-content: center; position: relative; }
-    .cut-line::before { content: ''; position: absolute; left: 0; right: 0; height: 1px; background: repeating-linear-gradient(to right, #666 0, #666 5px, transparent 5px, transparent 10px); }
-    .cut-line .scissors { background: white; padding: 0 8px; color: #666; font-size: 12px; }
+    .cut-line { width: 12px; align-self: stretch; display: flex; align-items: center; justify-content: center; position: relative; flex-shrink: 0; }
+    .cut-line::before { content: ''; position: absolute; top: 0; bottom: 0; left: 50%; width: 1px; background: repeating-linear-gradient(to bottom, #666 0, #666 5px, transparent 5px, transparent 10px); }
+    .cut-line .scissors { background: white; padding: 6px 0; color: #666; font-size: 12px; transform: rotate(90deg); z-index: 1; }
     .closure-history { border: 1px solid #e5e7eb; border-radius: 4px; padding: 4px 6px; background: #f0fdf4; }
     .closure-entry { font-size: 8px; padding: 2px 0; border-bottom: 1px solid #e5e7eb; }
     .closure-entry:last-child { border-bottom: none; }
