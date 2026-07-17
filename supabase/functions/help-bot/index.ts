@@ -824,6 +824,136 @@ async function runTool(name: string, args: any, supa: any, shopId: string): Prom
         }
       }
 
+      case 'get_revenue_by_product_category': {
+        const now = new Date()
+        let from: Date, to: Date = now
+        switch (args.period) {
+          case 'today': from = new Date(now.getFullYear(), now.getMonth(), now.getDate()); break
+          case 'week': from = new Date(now.getTime() - 7 * 86400000); break
+          case 'year': from = new Date(now.getFullYear(), 0, 1); break
+          case 'custom':
+            from = args.date_from ? new Date(args.date_from) : new Date(now.getFullYear(), now.getMonth(), 1)
+            to = args.date_to ? new Date(args.date_to) : now
+            break
+          case 'month':
+          default: from = new Date(now.getFullYear(), now.getMonth(), 1)
+        }
+
+        const requestedCategory: ProductCategory | undefined =
+          args.category && PRODUCT_CATEGORIES.includes(args.category) ? args.category : undefined
+        const includeCases = args.include_cases !== undefined
+          ? Boolean(args.include_cases)
+          : Boolean(requestedCategory)
+        const caseLimit = clamp(args.limit, 50, 200)
+
+        // 1) Types SAV : exclusions granulaires (miroir useStatistics.ts)
+        const typesRes = await supa
+          .from('shop_sav_types')
+          .select('type_key, exclude_from_stats, exclude_purchase_costs, exclude_sales_revenue')
+          .eq('shop_id', shopId)
+          .eq('is_active', true)
+        if (typesRes.error) return { error: typesRes.error.message }
+        const excludeFromPurchaseCosts = (typesRes.data || [])
+          .filter((t: any) => t.exclude_purchase_costs || t.exclude_from_stats)
+          .map((t: any) => t.type_key)
+        const excludeFromSalesRevenue = (typesRes.data || [])
+          .filter((t: any) => t.exclude_sales_revenue || t.exclude_from_stats)
+          .map((t: any) => t.type_key)
+
+        // 2) SAV de la période + pièces + prise en charge + client
+        const casesRes = await supa
+          .from('sav_cases')
+          .select(`
+            id, case_number, sav_type, status, device_brand, device_model,
+            total_cost, taken_over, partial_takeover, takeover_amount, created_at,
+            customer:customers(first_name, last_name),
+            sav_parts(unit_price, purchase_price, quantity, part:parts(selling_price, purchase_price))
+          `)
+          .eq('shop_id', shopId)
+          .gte('created_at', from.toISOString())
+          .lte('created_at', to.toISOString())
+        if (casesRes.error) return { error: casesRes.error.message }
+        const cases = casesRes.data || []
+
+        // 3) Agrégation par catégorie (formule identique à useStatistics)
+        const perCategory: Record<string, { revenue: number; count: number; cases: any[] }> = {}
+        let totalRevenue = 0
+
+        for (const sc of cases) {
+          const excludeCosts = excludeFromPurchaseCosts.includes(sc.sav_type)
+          const excludeRevenue = excludeFromSalesRevenue.includes(sc.sav_type)
+          let caseCost = 0
+          let caseRevenue = 0
+          for (const sp of (sc.sav_parts || [])) {
+            const partCost = (sp.purchase_price ?? sp.part?.purchase_price ?? 0) * (sp.quantity || 0)
+            const partRev = ((sp.unit_price ?? sp.part?.selling_price) || 0) * (sp.quantity || 0)
+            if (!excludeCosts) caseCost += Number(partCost) || 0
+            if (!excludeRevenue) caseRevenue += Number(partRev) || 0
+          }
+          if (!excludeRevenue) {
+            if (sc.partial_takeover && sc.takeover_amount) {
+              const rawRatio = Number(sc.takeover_amount) / (Number(sc.total_cost) || 1)
+              const ratio = Math.min(1, Math.max(0, rawRatio))
+              caseRevenue = caseCost + (caseRevenue - caseCost) * (1 - ratio)
+            } else if (sc.taken_over) {
+              caseRevenue = 0
+            }
+          }
+
+          const category = categorizeDevice(sc.device_brand || '', sc.device_model || '')
+          perCategory[category] = perCategory[category] || { revenue: 0, count: 0, cases: [] }
+          perCategory[category].revenue += caseRevenue
+          perCategory[category].count += 1
+          totalRevenue += caseRevenue
+
+          if (includeCases && (!requestedCategory || requestedCategory === category)) {
+            perCategory[category].cases.push({
+              case_number: sc.case_number,
+              customer_name: sc.customer
+                ? `${sc.customer.first_name || ''} ${sc.customer.last_name || ''}`.trim() || null
+                : null,
+              device_brand: sc.device_brand,
+              device_model: sc.device_model,
+              sav_type: sc.sav_type,
+              status: sc.status,
+              revenue: Number(caseRevenue.toFixed(2)),
+              created_at: sc.created_at,
+            })
+          }
+        }
+
+        const categories = Object.entries(perCategory)
+          .map(([category, d]) => ({
+            category,
+            revenue: Number(d.revenue.toFixed(2)),
+            count: d.count,
+            average_value: d.count > 0 ? Number((d.revenue / d.count).toFixed(2)) : 0,
+            percentage: totalRevenue > 0 ? Number(((d.revenue / totalRevenue) * 100).toFixed(1)) : 0,
+          }))
+          .sort((a, b) => b.revenue - a.revenue)
+
+        const result: any = {
+          period: args.period,
+          from: from.toISOString(),
+          to: to.toISOString(),
+          total_revenue: Number(totalRevenue.toFixed(2)),
+          categories,
+        }
+        if (includeCases) {
+          if (requestedCategory) {
+            const bucket = perCategory[requestedCategory]?.cases || []
+            result.cases = bucket
+              .sort((a, b) => b.revenue - a.revenue)
+              .slice(0, caseLimit)
+          } else {
+            const all: any[] = []
+            for (const cat of Object.keys(perCategory)) all.push(...perCategory[cat].cases)
+            result.cases = all.sort((a, b) => b.revenue - a.revenue).slice(0, caseLimit)
+          }
+        }
+        return result
+      }
+
       case 'get_late_savs': {
         const limit = clamp(args.limit, 50, 200)
         const [statusesRes, typesRes, casesRes] = await Promise.all([
