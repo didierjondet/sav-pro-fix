@@ -55,6 +55,7 @@ import SAVLogs from "./pages/SAVLogs";
 import Inventory from "./pages/Inventory";
 import HelpBot from "./components/help/HelpBot";
 import AppLayout from "./components/layout/AppLayout";
+import MobileSAVLookup from "./pages/MobileSAVLookup";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -131,6 +132,7 @@ const App = () => {
                 <Route path="/satisfaction/:token" element={<Satisfaction />} />
                 <Route path="/rdv/:token" element={<AppointmentConfirm />} />
                 <Route path="/test" element={<TestLanding />} />
+                <Route path="/m/sav" element={<MobileSAVLookup />} />
                 <Route path="/super-admin" element={<SuperAdmin />} />
                 <Route path="/landing" element={<Landing />} />
                 <Route path="/features" element={<Features />} />

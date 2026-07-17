@@ -1,44 +1,54 @@
-# Rattachement automatique du fournisseur sur les pièces
+# Accès SAV optimisé smartphone
 
-## Constat
+## Objectif
 
-Sur les cartes de pièces, le petit texte fournisseur visible (ex. `utopya`, `MOBILAX`) provient de l'ancien champ libre `parts.supplier`. Depuis l'ajout de l'annuaire fournisseurs (`parts.supplier_id` → `suppliers.id`), ce champ libre n'est plus rattaché automatiquement. Résultat : le détail de la pièce affiche un sélecteur fournisseur vide, alors que le nom est écrit sur la carte.
+Une URL dédiée, à enregistrer sur l'écran d'accueil du téléphone, qui permet à un utilisateur connecté du magasin de :
 
-Requête sur la base : **288 pièces** ont un texte fournisseur mais aucun `supplier_id`. Les cas dominants :
+1. Rechercher un SAV manuellement (numéro de dossier, nom client, marque, modèle, IMEI) — même moteur que la vue classique.
+2. Scanner directement le QR code d'un SAV avec l'appareil photo, et être envoyé sur la fiche du dossier.
+3. Rester derrière l'authentification existante (redirection vers `/auth` si non connecté, retour automatique après login).
 
-| Texte sur carte | Occurrences | Fournisseur cible |
-|---|---|---|
-| `utopya` / `UTOPYA` / `Utopya` / `(UTOPYA)` / `UTOPI` | 237 | `UTOPYA` |
-| `MOBILAX` / `mobilax ` / `mobilaxe` | 41 | `MOBILAX` |
-| `amazon` | 7 | `AMAZON` |
-| `easycash` | 7 | `EASYCASH AGDE` |
-| autres (`CLIENT`, `G.G`, `TOUT_pour_phone`, `Phone réparation (slim)`) | 4 | pas de match → laissés tels quels |
+## URL
 
-Deux shops sont concernés ; chacun a son propre `UTOPYA` en base, donc le rattachement doit se faire **shop par shop**.
+- Route protégée : **`/m/sav`** (courte, facile à retenir, "m" pour mobile).
+- Ajoutée dans le bloc `AppLayout` de `src/App.tsx` → hérite automatiquement du `RequireAuth` déjà en place pour les routes internes. Pas de nouvelle logique d'auth à écrire.
 
-## Ce que je vais faire
+## Page
 
-Une seule opération data (via l'outil `supabase--insert`, aucune modification de schéma ni de code) : un `UPDATE parts` qui, pour chaque pièce ayant `supplier_id IS NULL` et un texte `supplier` non vide, tente de matcher un fournisseur du même shop via un nom **normalisé** :
+Nouvelle page `src/pages/MobileSAVLookup.tsx`, pensée pour l'écran vertical d'un téléphone :
 
-- trim des espaces
-- retrait des parenthèses/ponctuation autour (`(UTOPYA)` → `UTOPYA`)
-- comparaison insensible à la casse et aux accents
-- match sur le nom du fournisseur **ou** sur un alias explicite pour couvrir les fautes de frappe fréquentes :
-  - `UTOPYA` ← `utopya`, `Utopya`, `UTOPI`, `(UTOPYA)`
-  - `MOBILAX` ← `mobilax`, `mobilaxe`
-  - `AMAZON` ← `amazon`
-  - `EASYCASH AGDE` ← `easycash`
+- En‑tête compact : logo boutique + titre "Recherche SAV".
+- Gros bouton **Scanner un QR code** (icône appareil photo).
+- Champ **Recherche** (numéro dossier / client / IMEI / marque / modèle).
+- Liste des résultats en cartes tactiles (grande cible) reprenant les infos clés déjà utilisées dans la vue standard : n° dossier, statut coloré, client, appareil, date. Tap = ouvre `/sav/:id`.
+- État vide : message d'accueil + suggestion de scanner ou de saisir.
 
-Toutes les autres pièces (texte non reconnu comme `CLIENT`, `G.G`, `TOUT_pour_phone`, `Phone réparation (slim)`) restent inchangées : je ne devine pas de fournisseur qui n'existe pas dans l'annuaire.
+La recherche réutilise le hook existant (`useSAVCases` déjà utilisé par `SAVList`) et filtre côté client sur les mêmes champs que la liste standard, avec un debounce léger.
 
-Le champ texte `parts.supplier` est **conservé** pour l'affichage sur la carte — on ne fait qu'ajouter le lien `supplier_id`.
+## Scanner QR / code-barres
 
-## Portée volontairement limitée
+- Composant `MobileQRScanner` (nouveau) qui ouvre l'appareil photo via l'API `BarcodeDetector` du navigateur quand disponible, avec fallback sur la librairie `@zxing/browser` (déjà utilisée ailleurs dans le projet pour le scan de pièces, à confirmer à l'implémentation ; sinon ajout de `@zxing/browser`).
+- Demande la permission caméra à l'ouverture, préférence caméra arrière (`facingMode: 'environment'`).
+- Interprétation de la valeur scannée :
+  - URL de suivi (`/track/<slug>` ou URL courte générée par `generateShortTrackingUrl`) → résout le `tracking_slug`, retrouve le SAV du magasin courant, redirige vers `/sav/:id`.
+  - Numéro de dossier brut (format `YYYY-MM-DD-NNN`, code-barres 128 imprimé sur l'étiquette) → cherche par `case_number` dans le shop courant, redirige vers `/sav/:id`.
+  - Valeur non reconnue → toast d'erreur, reste sur l'écran de scan.
+- Si aucun SAV correspondant dans le shop → toast "SAV introuvable dans votre boutique".
+- Bouton "Annuler" pour fermer la caméra proprement (arrêt du `MediaStream`).
 
-- Pas de changement UI, pas de changement de hook, pas de migration de schéma.
-- Pas de suppression du champ texte `supplier`.
-- Pas de règle d'auto-rattachement à la création : l'objet de la demande est de nettoyer l'existant. Si tu veux qu'on l'applique aussi automatiquement sur les futures pièces (création manuelle et imports), dis-le et je le fais dans un second temps.
+## Authentification
 
-## Vérification
+Aucun changement au système d'auth. La route étant placée sous `AppLayout`, si l'utilisateur ouvre `/m/sav` sans session, il est redirigé vers `/auth` puis renvoyé sur `/m/sav` après connexion — comme pour toutes les routes internes. À noter pour toi : après avoir enregistré l'URL sur l'écran d'accueil, la première ouverture demandera la connexion, puis la session reste active tant que le navigateur la conserve.
 
-Avant/après je te donne le nombre de pièces mises à jour par fournisseur (attendu : ~237 UTOPYA, ~41 MOBILAX, 7 AMAZON, 7 EASYCASH).
+## Hors périmètre (je n'y touche pas)
+
+- Pas de modification de la liste SAV classique (`SAVList`), de la fiche SAV, du QR déjà imprimé, ni de `AppLayout` / sidebar.
+- Pas de PWA / installation "vraie appli" (sauf demande explicite ultérieure).
+- Pas de nouvelle table ni de migration.
+
+## Fichiers touchés
+
+- `src/App.tsx` — ajout de la route `/m/sav` dans le bloc `AppLayout`.
+- `src/pages/MobileSAVLookup.tsx` — nouvelle page.
+- `src/components/sav/MobileQRScanner.tsx` — nouveau composant scanner caméra.
+- Éventuellement `package.json` si `@zxing/browser` n'est pas déjà présent.
