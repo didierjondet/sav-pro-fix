@@ -197,13 +197,13 @@ const TOOL_DEFS = [
     type: 'function',
     function: {
       name: 'get_customer_history',
-      description: 'Historique complet d\'un client : tous ses SAV, devis, RDV.',
+      description: "Historique complet d'un client : SAV, devis, RDV. Fournir soit customer_id (UUID), soit query (nom/prénom) pour résoudre automatiquement le client.",
       parameters: {
         type: 'object',
         properties: {
-          customer_id: { type: 'string' },
+          customer_id: { type: 'string', description: 'UUID du client (optionnel si query fourni).' },
+          query: { type: 'string', description: 'Nom, prénom ou fragment (optionnel si customer_id fourni).' },
         },
-        required: ['customer_id'],
       },
     },
   },
