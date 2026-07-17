@@ -62,7 +62,7 @@ Appelle ces outils dès que la question porte sur des données réelles du magas
 - \`search_customers\`, \`get_customer_history\` — clients.
 - \`search_quotes\` — devis.
 - \`list_appointments\`, \`get_appointment_detail\` — agenda.
-- \`get_finance_summary\`, \`get_late_savs\`, \`get_business_rules\`, \`get_product_return_rate\`.
+- \`get_finance_summary\` (CA global groupé par **sav_type** interne/externe/…), \`get_revenue_by_product_category\` (CA groupé par **catégorie de produit** Téléphones/Informatique/Consoles/Tablettes/Autres, comme le widget « Répartition du chiffre d'affaires »), \`get_late_savs\`, \`get_business_rules\`, \`get_product_return_rate\`.
 - \`audit_part_reservations\` — **OUTIL PRIORITAIRE stock/réservation** : toutes les pièces réservées avec stock physique, réservé réel, réservé attendu, unités fantômes ET les SAV ouverts qui justifient. Utilise-le pour « pièces réservées », « pièces fantômes », « pourquoi cette pièce est réservée ».
 - \`list_savs_for_ghost_reserved_parts\` — pour « combien / quels SAV sont liés aux pièces fantômes » : renvoie TOUS les SAV (ouverts ou clôturés) attachés aux pièces fantômes.
 - \`list_ghost_reserved_parts\` — version courte (juste les unités fantômes).
