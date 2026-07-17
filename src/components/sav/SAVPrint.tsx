@@ -414,6 +414,7 @@ export const SAVPrintButton = React.forwardRef<SAVPrintButtonRef, SAVPrintButton
     <div class="header">
       <div class="header-left">
         <div class="title">Dossier SAV N° ${savCase.case_number}</div>
+        <img class="case-barcode" src="https://barcodeapi.org/api/code128/${encodeURIComponent(savCase.case_number)}" alt="${savCase.case_number}" />
         <div class="sav-type">${getTypeInfo(savCase.sav_type).label}</div>
         <div class="meta">Créé le ${(savCase.created_at ? new Date(savCase.created_at).toLocaleDateString() : "")} · Statut: ${getStatusLabel(savCase.status)}</div>
       </div>
