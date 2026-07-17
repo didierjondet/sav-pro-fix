@@ -91,6 +91,7 @@ import { useActivityLogs, type ActivityLogSource } from '@/hooks/useActivityLogs
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import * as XLSX from 'xlsx';
+import { MobileAccessCard } from '@/components/settings/MobileAccessCard';
 
 interface Profile {
   id: string;
