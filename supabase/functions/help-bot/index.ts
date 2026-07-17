@@ -78,8 +78,9 @@ Appelle ces outils dès que la question porte sur des données réelles du magas
 4. IMEI/SKU mentionné → \`get_product_return_rate\`.
 5. Demande de PDF/rapport/export → \`generate_printable_report\` avec le bon type. Pour des données tabulaires (audit, liste pièces, liste SAV…) construis un \`data_report\` avec sections + tableaux.
 6. **Ne renvoie JAMAIS les coordonnées clients** (téléphone, email, adresse). Nom/prénom seul OK.
-7. Tu peux enchaîner jusqu'à 6 tours d'outils. N'abandonne pas après un seul appel.
-8. Si pièce jointe (image/PDF), analyse-la et croise avec les outils.
+7. **Historique client** : appelle \`search_customers\` puis enchaîne \`get_customer_history\` avec l'\`id\` du 1er résultat pertinent. En cas de doute (id manquant, plusieurs résultats), appelle directement \`get_customer_history\` avec le paramètre \`query\` (nom/prénom) — il résout le client côté serveur.
+8. Tu peux enchaîner jusqu'à 6 tours d'outils. N'abandonne pas après un seul appel.
+9. Si pièce jointe (image/PDF), analyse-la et croise avec les outils.
 
 ## Mode "super technicien" (diagnostic guidé)
 Quand l'utilisateur décrit une panne :
@@ -197,13 +198,13 @@ const TOOL_DEFS = [
     type: 'function',
     function: {
       name: 'get_customer_history',
-      description: 'Historique complet d\'un client : tous ses SAV, devis, RDV.',
+      description: "Historique complet d'un client : SAV, devis, RDV. Fournir soit customer_id (UUID), soit query (nom/prénom) pour résoudre automatiquement le client.",
       parameters: {
         type: 'object',
         properties: {
-          customer_id: { type: 'string' },
+          customer_id: { type: 'string', description: 'UUID du client (optionnel si query fourni).' },
+          query: { type: 'string', description: 'Nom, prénom ou fragment (optionnel si customer_id fourni).' },
         },
-        required: ['customer_id'],
       },
     },
   },
@@ -645,21 +646,54 @@ async function runTool(name: string, args: any, supa: any, shopId: string): Prom
         const limit = clamp(args.limit, 20, 100)
         const term = String(args.query || '').replace(/[%,]/g, ' ')
         const { data, error } = await supa.from('customers')
-          .select('id, first_name, last_name, phone, email')
+          .select('id, first_name, last_name')
           .eq('shop_id', shopId)
           .or(`last_name.ilike.%${term}%,first_name.ilike.%${term}%,phone.ilike.%${term}%,email.ilike.%${term}%`)
           .limit(limit)
         if (error) return { error: error.message }
-        return { count: data?.length || 0, customers: data || [] }
+        return {
+          count: data?.length || 0,
+          customers: data || [],
+          note: "Utilise l'id (UUID) d'un client pour appeler get_customer_history."
+        }
       }
 
       case 'get_customer_history': {
-        const [savs, quotes, appts] = await Promise.all([
-          supa.from('sav_cases').select('case_number,status,sav_type,device_brand,device_model,total_cost,created_at').eq('shop_id', shopId).eq('customer_id', args.customer_id).order('created_at', { ascending: false }).limit(100),
-          supa.from('quotes').select('quote_number,status,total_amount,created_at').eq('shop_id', shopId).eq('customer_id', args.customer_id).order('created_at', { ascending: false }).limit(50),
-          supa.from('appointments').select('id, appointment_type, start_datetime, duration_minutes, status, notes').eq('shop_id', shopId).eq('customer_id', args.customer_id).order('start_datetime', { ascending: false }).limit(50),
-        ])
-        return { savs: savs.data || [], quotes: quotes.data || [], appointments: appts.data || [] }
+        let targets: Array<{ id: string; first_name: string | null; last_name: string | null }> = []
+        if (args.customer_id) {
+          const { data: c } = await supa.from('customers')
+            .select('id, first_name, last_name')
+            .eq('shop_id', shopId)
+            .eq('id', args.customer_id)
+            .maybeSingle()
+          if (c) targets.push(c as any)
+        } else if (args.query) {
+          const term = String(args.query).replace(/[%,]/g, ' ')
+          const { data: found } = await supa.from('customers')
+            .select('id, first_name, last_name')
+            .eq('shop_id', shopId)
+            .or(`last_name.ilike.%${term}%,first_name.ilike.%${term}%`)
+            .limit(3)
+          targets = (found || []) as any
+        } else {
+          return { error: 'Fournir customer_id ou query.' }
+        }
+        if (targets.length === 0) return { results: [], note: 'Aucun client trouvé.' }
+
+        const results = await Promise.all(targets.map(async (cust) => {
+          const [savs, quotes, appts] = await Promise.all([
+            supa.from('sav_cases').select('case_number,status,sav_type,device_brand,device_model,total_cost,created_at').eq('shop_id', shopId).eq('customer_id', cust.id).order('created_at', { ascending: false }).limit(100),
+            supa.from('quotes').select('quote_number,status,total_amount,created_at').eq('shop_id', shopId).eq('customer_id', cust.id).order('created_at', { ascending: false }).limit(50),
+            supa.from('appointments').select('id, appointment_type, start_datetime, duration_minutes, status, notes').eq('shop_id', shopId).eq('customer_id', cust.id).order('start_datetime', { ascending: false }).limit(50),
+          ])
+          return {
+            customer: cust,
+            savs: savs.data || [],
+            quotes: quotes.data || [],
+            appointments: appts.data || [],
+          }
+        }))
+        return { results }
       }
 
       case 'search_quotes': {
