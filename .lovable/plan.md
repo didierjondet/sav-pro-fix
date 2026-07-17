@@ -1,70 +1,44 @@
-## Problème
+# Rattachement automatique du fournisseur sur les pièces
 
-Le widget « Répartition du chiffre d'affaires » ne regroupe **pas** le CA par `sav_type` (interne/externe/…), mais par **catégorie de produit** déduite de la marque/modèle : `Téléphones`, `Informatique`, `Consoles`, `Tablettes`, `Autres` (`src/hooks/useStatistics.ts` → `categorizeDevice` + `productCategoryData`).
+## Constat
 
-Or le seul outil finance du bot (`get_finance_summary` dans `supabase/functions/help-bot/index.ts`) :
-- regroupe uniquement par `sav_type`,
-- calcule le CA à partir de `sav_cases.total_cost` (pas via `sav_parts` + prise en charge + exclusions comme le widget),
-- ne peut pas énumérer les SAV derrière un montant.
+Sur les cartes de pièces, le petit texte fournisseur visible (ex. `utopya`, `MOBILAX`) provient de l'ancien champ libre `parts.supplier`. Depuis l'ajout de l'annuaire fournisseurs (`parts.supplier_id` → `suppliers.id`), ce champ libre n'est plus rattaché automatiquement. Résultat : le détail de la pièce affiche un sélecteur fournisseur vide, alors que le nom est écrit sur la carte.
 
-Résultat : quand on lui demande à quoi correspondent les 240 € de la catégorie « Autres », il n'a ni la bonne granularité, ni les bons chiffres, ni la liste des SAV.
+Requête sur la base : **288 pièces** ont un texte fournisseur mais aucun `supplier_id`. Les cas dominants :
 
-## Solution
+| Texte sur carte | Occurrences | Fournisseur cible |
+|---|---|---|
+| `utopya` / `UTOPYA` / `Utopya` / `(UTOPYA)` / `UTOPI` | 237 | `UTOPYA` |
+| `MOBILAX` / `mobilax ` / `mobilaxe` | 41 | `MOBILAX` |
+| `amazon` | 7 | `AMAZON` |
+| `easycash` | 7 | `EASYCASH AGDE` |
+| autres (`CLIENT`, `G.G`, `TOUT_pour_phone`, `Phone réparation (slim)`) | 4 | pas de match → laissés tels quels |
 
-Ajouter un outil dédié qui reproduit exactement la logique du widget et permet de drill-down par catégorie, puis apprendre au bot à l'utiliser.
+Deux shops sont concernés ; chacun a son propre `UTOPYA` en base, donc le rattachement doit se faire **shop par shop**.
 
-### 1. Nouvelle fonction outil `get_revenue_by_product_category`
+## Ce que je vais faire
 
-Dans `supabase/functions/help-bot/index.ts` :
+Une seule opération data (via l'outil `supabase--insert`, aucune modification de schéma ni de code) : un `UPDATE parts` qui, pour chaque pièce ayant `supplier_id IS NULL` et un texte `supplier` non vide, tente de matcher un fournisseur du même shop via un nom **normalisé** :
 
-- **Params** :
-  - `period` : `today | week | month | year | custom` (obligatoire)
-  - `date_from`, `date_to` (si `custom`)
-  - `category` (optionnel) : `Téléphones | Informatique | Consoles | Tablettes | Autres`
-  - `include_cases` (bool, défaut `true` si `category` fourni, sinon `false`)
-  - `limit` cases (clamp 50, max 200)
+- trim des espaces
+- retrait des parenthèses/ponctuation autour (`(UTOPYA)` → `UTOPYA`)
+- comparaison insensible à la casse et aux accents
+- match sur le nom du fournisseur **ou** sur un alias explicite pour couvrir les fautes de frappe fréquentes :
+  - `UTOPYA` ← `utopya`, `Utopya`, `UTOPI`, `(UTOPYA)`
+  - `MOBILAX` ← `mobilax`, `mobilaxe`
+  - `AMAZON` ← `amazon`
+  - `EASYCASH AGDE` ← `easycash`
 
-- **Logique** (miroir strict de `useStatistics.ts`) :
-  1. Charger `shop_sav_types` pour récupérer les listes `excludeFromSalesRevenue` et `excludeFromPurchaseCosts` (mêmes flags qu'aujourd'hui côté front).
-  2. Charger les `sav_cases` de la période avec `id, case_number, sav_type, status, device_brand, device_model, total_cost, taken_over, partial_takeover, takeover_amount, created_at, customer:customers(first_name,last_name)` + `sav_parts(unit_price, purchase_price, quantity, part:parts(selling_price, purchase_price))`.
-  3. Pour chaque case : calculer `caseRevenue` / `caseCost` via `sav_parts` (avec `unit_price || part.selling_price`, exclusions par `sav_type`), appliquer la prise en charge partielle (ratio) ou totale (`caseRevenue = 0`).
-  4. Catégoriser via un helper `categorizeDevice(brand, model)` **identique** à celui du front.
-  5. Agréger `{ category → { revenue, count, cases: [...] } }`, trier par revenu décroissant, calculer `percentage`.
+Toutes les autres pièces (texte non reconnu comme `CLIENT`, `G.G`, `TOUT_pour_phone`, `Phone réparation (slim)`) restent inchangées : je ne devine pas de fournisseur qui n'existe pas dans l'annuaire.
 
-- **Retour** :
-  ```
-  {
-    period, from, to,
-    total_revenue,
-    categories: [
-      { category, revenue, count, average_value, percentage }
-    ],
-    cases?: [   // seulement si category demandée
-      { case_number, customer_name, device_brand, device_model,
-        sav_type, status, revenue, created_at }
-    ]
-  }
-  ```
+Le champ texte `parts.supplier` est **conservé** pour l'affichage sur la carte — on ne fait qu'ajouter le lien `supplier_id`.
 
-### 2. Helper partagé pour la catégorisation
+## Portée volontairement limitée
 
-Créer `supabase/functions/_shared/deviceCategory.ts` avec la fonction `categorizeDevice(brand, model)` — copie fidèle de `src/hooks/useStatistics.ts` (mêmes listes de marques, mêmes regex, même fallback `'Autres'`). Utilisé uniquement par le help-bot ; `useStatistics.ts` reste inchangé (pas de refacto côté front demandée).
+- Pas de changement UI, pas de changement de hook, pas de migration de schéma.
+- Pas de suppression du champ texte `supplier`.
+- Pas de règle d'auto-rattachement à la création : l'objet de la demande est de nettoyer l'existant. Si tu veux qu'on l'applique aussi automatiquement sur les futures pièces (création manuelle et imports), dis-le et je le fais dans un second temps.
 
-### 3. Déclaration de l'outil + prompt
+## Vérification
 
-- Ajouter la déclaration `tool` (`name`, `description`, `parameters`) dans le tableau `tools` de `help-bot/index.ts`.
-- Ajouter la branche `case 'get_revenue_by_product_category'` dans `runTool`.
-- Compléter le prompt système :
-  - Nouvelle règle : *« Le widget "Répartition du chiffre d'affaires" regroupe le CA par catégorie de produit (Téléphones, Informatique, Consoles, Tablettes, Autres) déduite de la marque/modèle, PAS par sav_type. Pour toute question portant sur ce widget ou sur une catégorie produit, utiliser `get_revenue_by_product_category`. Ne PAS utiliser `get_finance_summary` (qui regroupe par sav_type interne/externe). »*
-  - Consigne de drill-down : *« Si l'utilisateur demande à quoi correspond un montant d'une catégorie (ex. 240 € en "Autres"), rappeler `get_revenue_by_product_category` avec `category` renseignée pour lister les SAV contributifs. »*
-
-### 4. Hors périmètre
-
-- Aucune modification du widget ni de `useStatistics.ts`.
-- Aucune modification de `get_finance_summary` (conservé pour les questions par `sav_type`).
-- Pas de nouvelle table, pas de migration.
-
-## Fichiers touchés
-
-- `supabase/functions/help-bot/index.ts` (déclaration outil, prompt, branche runTool)
-- `supabase/functions/_shared/deviceCategory.ts` (nouveau)
+Avant/après je te donne le nombre de pièces mises à jour par fournisseur (attendu : ~237 UTOPYA, ~41 MOBILAX, 7 AMAZON, 7 EASYCASH).
