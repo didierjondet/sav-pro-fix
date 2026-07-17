@@ -131,6 +131,7 @@ const App = () => {
                 <Route path="/satisfaction/:token" element={<Satisfaction />} />
                 <Route path="/rdv/:token" element={<AppointmentConfirm />} />
                 <Route path="/test" element={<TestLanding />} />
+                <Route path="/m/sav" element={<MobileSAVLookup />} />
                 <Route path="/super-admin" element={<SuperAdmin />} />
                 <Route path="/landing" element={<Landing />} />
                 <Route path="/features" element={<Features />} />
