@@ -1143,6 +1143,8 @@ export default function Settings() {
                   </div>
                 </CardContent>
               </Card>
+
+              <MobileAccessCard />
             </TabsContent>
 
             <TabsContent value="notifications" className="space-y-6">

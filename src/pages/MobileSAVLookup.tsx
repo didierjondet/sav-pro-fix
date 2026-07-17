@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { BarcodeScannerDialog } from '@/components/inventory/BarcodeScannerDialog';
-import { Camera, Search, ArrowLeft, Loader2 } from 'lucide-react';
+import { Camera, Search, ArrowLeft, Loader2, ClipboardList } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 /**
@@ -125,6 +125,16 @@ export default function MobileSAVLookup() {
         >
           <Camera className="h-5 w-5 mr-2" />
           Scanner un QR code
+        </Button>
+
+        <Button
+          size="lg"
+          variant="outline"
+          className="w-full h-14 text-base"
+          onClick={() => navigate('/inventory')}
+        >
+          <ClipboardList className="h-5 w-5 mr-2" />
+          Lancer un inventaire
         </Button>
 
         <div className="relative">
