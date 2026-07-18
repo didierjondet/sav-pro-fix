@@ -40,6 +40,10 @@ import { useProfile } from '@/hooks/useProfile';
 import { logSAVChange, getCurrentUserName } from '@/hooks/useSAVAuditLog';
 import { ProductRecurrenceBadge } from '@/components/sav/ProductRecurrenceBadge';
 import { ProductHistoryBanner } from '@/components/sav/ProductHistoryBanner';
+import { SAVCodesTab } from '@/components/sav/SAVCodesTab';
+import { SAVDiagnosticTab } from '@/components/sav/SAVDiagnosticTab';
+import { useSAVCaseUnreadCount, useSAVCaseHasActiveLoan } from '@/hooks/useSAVCaseIndicators';
+import { Stethoscope, KeyRound, Smartphone } from 'lucide-react';
 export default function SAVDetail() {
   const {
     id
@@ -91,6 +95,8 @@ export default function SAVDetail() {
   const [editingSavType, setEditingSavType] = useState(false);
   const [tempSavType, setTempSavType] = useState('');
   const [savingTechnicianComments, setSavingTechnicianComments] = useState(false);
+  const { data: unreadCount = 0 } = useSAVCaseUnreadCount(id);
+  const { data: hasActiveLoan = false } = useSAVCaseHasActiveLoan(id);
   useEffect(() => {
     if (cases && id) {
       const foundCase = cases.find(c => c.id === id);
@@ -330,7 +336,7 @@ export default function SAVDetail() {
     return (
       <main className="flex-1 overflow-y-auto">
         {/* Bandeau sticky de contexte */}
-        <div className="sticky top-0 z-30 bg-background/95 backdrop-blur border-b">
+        <div className="sticky top-0 z-30 bg-slate-800 text-slate-50 border-b border-slate-900 shadow-md">
           <div className="max-w-5xl mx-auto px-4 py-3 flex items-center gap-2 md:gap-3 flex-wrap">
             <Button variant="ghost" size="sm" onClick={() => navigate('/sav')} className="shrink-0">
               <ArrowLeft className="h-4 w-4 mr-1" /> Retour
@@ -371,8 +377,26 @@ export default function SAVDetail() {
           >
             <TabsList className="w-full justify-start overflow-x-auto">
               <TabsTrigger value="apercu">Aperçu</TabsTrigger>
-              <TabsTrigger value="communication">Communication</TabsTrigger>
+              <TabsTrigger value="communication" className="relative">
+                Communication
+                {unreadCount > 0 && (
+                  <span className="ml-2 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold">
+                    {unreadCount}
+                  </span>
+                )}
+              </TabsTrigger>
               <TabsTrigger value="pieces">Pièces</TabsTrigger>
+              <TabsTrigger value="codes">
+                <KeyRound className="h-3.5 w-3.5 mr-1" /> Codes
+              </TabsTrigger>
+              <TabsTrigger value="diagnostic">
+                <Stethoscope className="h-3.5 w-3.5 mr-1" /> Diagnostic
+              </TabsTrigger>
+              {hasActiveLoan && (
+                <TabsTrigger value="loaner" className="text-destructive data-[state=active]:text-destructive data-[state=active]:border-destructive">
+                  <Smartphone className="h-3.5 w-3.5 mr-1" /> Prêt matériel
+                </TabsTrigger>
+              )}
               <TabsTrigger value="impression">Impression</TabsTrigger>
               <TabsTrigger value="documents">Documents</TabsTrigger>
             </TabsList>
@@ -450,7 +474,7 @@ export default function SAVDetail() {
                 </CardContent>
               </Card>
 
-              <SAVLoanerCard savCaseId={savCase.id} customerId={savCase.customer_id} />
+
 
               <SAVStatusManager savCase={savCase} onStatusUpdated={handleStatusUpdated} />
             </TabsContent>
@@ -616,6 +640,23 @@ export default function SAVDetail() {
               </Card>
             </TabsContent>
 
+            {/* Onglet Codes */}
+            <TabsContent value="codes" className="space-y-4">
+              <SAVCodesTab savCase={savCase} />
+            </TabsContent>
+
+            {/* Onglet Diagnostic IA */}
+            <TabsContent value="diagnostic" className="space-y-4">
+              <SAVDiagnosticTab savCase={savCase} />
+            </TabsContent>
+
+            {/* Onglet Prêt matériel */}
+            {hasActiveLoan && (
+              <TabsContent value="loaner" className="space-y-4">
+                <SAVLoanerCard savCaseId={savCase.id} customerId={savCase.customer_id} />
+              </TabsContent>
+            )}
+
             {/* Onglet Documents */}
             <TabsContent value="documents" className="space-y-4">
               <SAVDocuments
@@ -641,7 +682,7 @@ export default function SAVDetail() {
   return (
     <main className="flex-1 overflow-y-auto">
       {/* Bandeau sticky de contexte */}
-      <div className="sticky top-0 z-30 bg-background/95 backdrop-blur border-b">
+      <div className="sticky top-0 z-30 bg-slate-800 text-slate-50 border-b border-slate-900 shadow-md">
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center gap-2 md:gap-3 flex-wrap">
           <Button variant="ghost" size="sm" onClick={() => navigate('/sav')} className="shrink-0">
             <ArrowLeft className="h-4 w-4 mr-1" /> Retour
@@ -734,8 +775,26 @@ export default function SAVDetail() {
         >
           <TabsList className="w-full justify-start overflow-x-auto">
             <TabsTrigger value="apercu">Aperçu</TabsTrigger>
-            <TabsTrigger value="communication">Communication</TabsTrigger>
+            <TabsTrigger value="communication" className="relative">
+              Communication
+              {unreadCount > 0 && (
+                <span className="ml-2 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold">
+                  {unreadCount}
+                </span>
+              )}
+            </TabsTrigger>
             <TabsTrigger value="pieces">Pièces</TabsTrigger>
+            <TabsTrigger value="codes">
+              <KeyRound className="h-3.5 w-3.5 mr-1" /> Codes
+            </TabsTrigger>
+            <TabsTrigger value="diagnostic">
+              <Stethoscope className="h-3.5 w-3.5 mr-1" /> Diagnostic
+            </TabsTrigger>
+            {hasActiveLoan && (
+              <TabsTrigger value="loaner" className="text-destructive data-[state=active]:text-destructive data-[state=active]:border-destructive">
+                <Smartphone className="h-3.5 w-3.5 mr-1" /> Prêt matériel
+              </TabsTrigger>
+            )}
             <TabsTrigger value="impression">Impression</TabsTrigger>
             <TabsTrigger value="documents">Documents</TabsTrigger>
           </TabsList>
@@ -889,36 +948,8 @@ export default function SAVDetail() {
               </Card>
             )}
 
-            {/* Schéma de verrouillage */}
-            {savCase.unlock_pattern && savCase.unlock_pattern.length > 0 && (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <PatternLock pattern={savCase.unlock_pattern} onChange={() => {}} disabled={true} showPattern={true} />
-                <Card>
-                  <CardHeader><CardTitle>Schéma de verrouillage enregistré</CardTitle></CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-muted-foreground">
-                      Ce schéma de verrouillage a été enregistré lors de la création du dossier SAV.
-                      Il contient {savCase.unlock_pattern.length} points connectés.
-                    </p>
-                    <div className="mt-3 p-3 bg-muted rounded-lg">
-                      <p className="text-xs font-medium">Séquence: {savCase.unlock_pattern.join(' → ')}</p>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            )}
 
-            {/* Codes de sécurité */}
-            {savCase.status !== 'ready' && savCase.status !== 'cancelled' && (
-              <SecurityCodesDisplay
-                savCase={savCase}
-                onUpdate={async (codes) => {
-                  await supabase.from('sav_cases').update({
-                    security_codes: (codes.unlock_code || codes.icloud_id || codes.icloud_password || codes.sim_pin || codes.email_id || codes.email_password) ? codes as any : null,
-                  }).eq('id', savCase.id);
-                }}
-              />
-            )}
+
 
             {/* Commentaire technicien */}
             <Card>
@@ -980,7 +1011,6 @@ export default function SAVDetail() {
               </CardContent>
             </Card>
 
-            <SAVLoanerCard savCaseId={savCase.id} customerId={savCase.customer_id} />
             <SAVPartsRequirements savCaseId={savCase.id} onPartsUpdated={() => {}} />
             <SAVStatusManager savCase={savCase} onStatusUpdated={handleStatusUpdated} />
           </TabsContent>
@@ -1145,6 +1175,23 @@ export default function SAVDetail() {
               </CardContent>
             </Card>
           </TabsContent>
+
+          {/* Onglet Codes */}
+          <TabsContent value="codes" className="space-y-4">
+            <SAVCodesTab savCase={savCase} />
+          </TabsContent>
+
+          {/* Onglet Diagnostic IA */}
+          <TabsContent value="diagnostic" className="space-y-4">
+            <SAVDiagnosticTab savCase={savCase} />
+          </TabsContent>
+
+          {/* Onglet Prêt matériel */}
+          {hasActiveLoan && (
+            <TabsContent value="loaner" className="space-y-4">
+              <SAVLoanerCard savCaseId={savCase.id} customerId={savCase.customer_id} />
+            </TabsContent>
+          )}
 
           {/* Onglet Documents */}
           <TabsContent value="documents" className="space-y-4">
