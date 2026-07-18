@@ -1992,6 +1992,8 @@ export type Database = {
       sav_cases: {
         Row: {
           accessories: Json | null
+          ai_diagnostic: string | null
+          ai_diagnostic_generated_at: string | null
           attachments: Json | null
           case_number: string
           closure_history: Json | null
@@ -2031,6 +2033,8 @@ export type Database = {
         }
         Insert: {
           accessories?: Json | null
+          ai_diagnostic?: string | null
+          ai_diagnostic_generated_at?: string | null
           attachments?: Json | null
           case_number: string
           closure_history?: Json | null
@@ -2070,6 +2074,8 @@ export type Database = {
         }
         Update: {
           accessories?: Json | null
+          ai_diagnostic?: string | null
+          ai_diagnostic_generated_at?: string | null
           attachments?: Json | null
           case_number?: string
           closure_history?: Json | null
@@ -2134,6 +2140,44 @@ export type Database = {
             columns: ["tracked_product_id"]
             isOneToOne: false
             referencedRelation: "tracked_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sav_diagnostic_messages: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          role: string
+          sav_case_id: string
+          shop_id: string
+          user_id: string | null
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          role: string
+          sav_case_id: string
+          shop_id: string
+          user_id?: string | null
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          role?: string
+          sav_case_id?: string
+          shop_id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sav_diagnostic_messages_sav_case_id_fkey"
+            columns: ["sav_case_id"]
+            isOneToOne: false
+            referencedRelation: "sav_cases"
             referencedColumns: ["id"]
           },
         ]
