@@ -377,8 +377,26 @@ export default function SAVDetail() {
           >
             <TabsList className="w-full justify-start overflow-x-auto">
               <TabsTrigger value="apercu">Aperçu</TabsTrigger>
-              <TabsTrigger value="communication">Communication</TabsTrigger>
+              <TabsTrigger value="communication" className="relative">
+                Communication
+                {unreadCount > 0 && (
+                  <span className="ml-2 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold">
+                    {unreadCount}
+                  </span>
+                )}
+              </TabsTrigger>
               <TabsTrigger value="pieces">Pièces</TabsTrigger>
+              <TabsTrigger value="codes">
+                <KeyRound className="h-3.5 w-3.5 mr-1" /> Codes
+              </TabsTrigger>
+              <TabsTrigger value="diagnostic">
+                <Stethoscope className="h-3.5 w-3.5 mr-1" /> Diagnostic
+              </TabsTrigger>
+              {hasActiveLoan && (
+                <TabsTrigger value="loaner" className="text-destructive data-[state=active]:text-destructive data-[state=active]:border-destructive">
+                  <Smartphone className="h-3.5 w-3.5 mr-1" /> Prêt matériel
+                </TabsTrigger>
+              )}
               <TabsTrigger value="impression">Impression</TabsTrigger>
               <TabsTrigger value="documents">Documents</TabsTrigger>
             </TabsList>
