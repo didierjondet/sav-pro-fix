@@ -1176,6 +1176,23 @@ export default function SAVDetail() {
             </Card>
           </TabsContent>
 
+          {/* Onglet Codes */}
+          <TabsContent value="codes" className="space-y-4">
+            <SAVCodesTab savCase={savCase} />
+          </TabsContent>
+
+          {/* Onglet Diagnostic IA */}
+          <TabsContent value="diagnostic" className="space-y-4">
+            <SAVDiagnosticTab savCase={savCase} />
+          </TabsContent>
+
+          {/* Onglet Prêt matériel */}
+          {hasActiveLoan && (
+            <TabsContent value="loaner" className="space-y-4">
+              <SAVLoanerCard savCaseId={savCase.id} customerId={savCase.customer_id} />
+            </TabsContent>
+          )}
+
           {/* Onglet Documents */}
           <TabsContent value="documents" className="space-y-4">
             <SAVDocuments
