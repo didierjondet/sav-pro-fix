@@ -1011,7 +1011,6 @@ export default function SAVDetail() {
               </CardContent>
             </Card>
 
-            <SAVLoanerCard savCaseId={savCase.id} customerId={savCase.customer_id} />
             <SAVPartsRequirements savCaseId={savCase.id} onPartsUpdated={() => {}} />
             <SAVStatusManager savCase={savCase} onStatusUpdated={handleStatusUpdated} />
           </TabsContent>
