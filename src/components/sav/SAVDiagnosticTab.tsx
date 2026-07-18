@@ -102,7 +102,7 @@ export function SAVDiagnosticTab({ savCase }: Props) {
           shop_id: savCase.shop_id,
           role: 'user',
           content: text,
-          created_by: user?.id || null,
+          user_id: user?.id || null,
         })
         .select()
         .single();

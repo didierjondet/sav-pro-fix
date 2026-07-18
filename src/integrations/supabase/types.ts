@@ -2144,6 +2144,60 @@ export type Database = {
           },
         ]
       }
+      sav_certificates: {
+        Row: {
+          certificate_type: string
+          content: string
+          created_at: string
+          created_by: string | null
+          id: string
+          sav_case_id: string
+          shop_id: string
+          snapshot: Json | null
+          title: string | null
+          updated_at: string
+        }
+        Insert: {
+          certificate_type?: string
+          content: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          sav_case_id: string
+          shop_id: string
+          snapshot?: Json | null
+          title?: string | null
+          updated_at?: string
+        }
+        Update: {
+          certificate_type?: string
+          content?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          sav_case_id?: string
+          shop_id?: string
+          snapshot?: Json | null
+          title?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sav_certificates_sav_case_id_fkey"
+            columns: ["sav_case_id"]
+            isOneToOne: false
+            referencedRelation: "sav_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sav_certificates_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sav_diagnostic_messages: {
         Row: {
           content: string
