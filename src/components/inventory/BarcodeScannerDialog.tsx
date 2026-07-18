@@ -1,21 +1,17 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { BrowserMultiFormatReader } from '@zxing/browser';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Camera, CameraOff, RefreshCw, Keyboard, X } from 'lucide-react';
+import { Camera, CameraOff, RefreshCw, Keyboard, X, ScanLine, RotateCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface BarcodeScannerDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  /** Callback déclenché à chaque scan/saisie valide. */
   onScan: (code: string) => void;
-  /** Titre du dialog. */
   title?: string;
-  /** Sous-titre (ex: « X / Y comptés »). */
   subtitle?: string;
-  /** Dernier code scanné, affiché en feedback. */
   lastScanLabel?: string | null;
 }
 
@@ -50,105 +46,170 @@ export function BarcodeScannerDialog({
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const readerRef = useRef<BrowserMultiFormatReader | null>(null);
   const controlsRef = useRef<{ stop: () => void } | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
   const lastCodeRef = useRef<{ code: string; at: number } | null>(null);
 
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
   const [deviceId, setDeviceId] = useState<string | undefined>(undefined);
   const [cameraOn, setCameraOn] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [starting, setStarting] = useState(false);
+  const [ready, setReady] = useState(false);
   const [manualCode, setManualCode] = useState('');
 
-  // Init reader / device list when opening.
-  useEffect(() => {
-    if (!open) return;
-    let cancelled = false;
-    setError(null);
-    readerRef.current = new BrowserMultiFormatReader();
+  const stopAll = useCallback(() => {
+    try { controlsRef.current?.stop?.(); } catch { /* noop */ }
+    controlsRef.current = null;
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((t) => { try { t.stop(); } catch { /* noop */ } });
+      streamRef.current = null;
+    }
+    if (videoRef.current) {
+      try { (videoRef.current as any).srcObject = null; } catch { /* noop */ }
+    }
+    setReady(false);
+  }, []);
 
-    (async () => {
+  const emit = useCallback((raw: string) => {
+    const code = raw.trim();
+    if (!code) return;
+    const now = Date.now();
+    if (
+      lastCodeRef.current &&
+      lastCodeRef.current.code === code &&
+      now - lastCodeRef.current.at < 800
+    ) return;
+    lastCodeRef.current = { code, at: now };
+    beep();
+    if (navigator.vibrate) navigator.vibrate(60);
+    onScan(code);
+  }, [onScan]);
+
+  const startCamera = useCallback(async (preferredDeviceId?: string) => {
+    setError(null);
+    setStarting(true);
+    setReady(false);
+    try {
+      if (!navigator.mediaDevices?.getUserMedia) {
+        throw new Error('Votre navigateur ne supporte pas l\'accès caméra.');
+      }
+      if (!window.isSecureContext) {
+        throw new Error('La caméra nécessite une connexion sécurisée (HTTPS).');
+      }
+
+      // Stop previous
+      stopAll();
+
+      // Ask permission first; this also unlocks device labels
+      const constraints: MediaStreamConstraints = preferredDeviceId
+        ? { video: { deviceId: { exact: preferredDeviceId } }, audio: false }
+        : { video: { facingMode: { ideal: 'environment' } }, audio: false };
+
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      streamRef.current = stream;
+
+      const video = videoRef.current;
+      if (!video) {
+        stream.getTracks().forEach((t) => t.stop());
+        throw new Error('Lecteur vidéo indisponible.');
+      }
+      (video as any).srcObject = stream;
+      video.setAttribute('playsinline', 'true');
+      video.muted = true;
+      await video.play().catch(() => { /* ignored */ });
+
+      // List devices now that permission is granted (labels available)
       try {
         const list = await BrowserMultiFormatReader.listVideoInputDevices();
-        if (cancelled) return;
         setDevices(list);
-        // Préférer caméra arrière
-        const back = list.find((d) => /back|rear|environment/i.test(d.label));
-        setDeviceId(back?.deviceId || list[0]?.deviceId);
-      } catch (e: any) {
-        setError(e?.message || 'Impossible d\'accéder à la caméra.');
+        if (!preferredDeviceId) {
+          const currentTrack = stream.getVideoTracks()[0];
+          const settings = currentTrack?.getSettings?.();
+          const activeId = settings?.deviceId
+            || list.find((d) => /back|rear|environment/i.test(d.label))?.deviceId
+            || list[0]?.deviceId;
+          if (activeId) setDeviceId(activeId);
+        } else {
+          setDeviceId(preferredDeviceId);
+        }
+      } catch { /* noop */ }
+
+      // Start ZXing decoding on the already-attached video element
+      if (!readerRef.current) readerRef.current = new BrowserMultiFormatReader();
+      const controls = await readerRef.current.decodeFromVideoElement(video, (result) => {
+        if (result) emit(result.getText());
+      });
+      controlsRef.current = controls;
+      setReady(true);
+    } catch (e: any) {
+      const name = e?.name || '';
+      let msg = e?.message || 'Impossible de démarrer la caméra.';
+      if (name === 'NotAllowedError' || name === 'PermissionDeniedError') {
+        msg = 'Permission caméra refusée. Autorisez l\'accès dans les réglages du navigateur puis réessayez.';
+      } else if (name === 'NotFoundError' || name === 'OverconstrainedError') {
+        msg = 'Aucune caméra compatible détectée sur cet appareil.';
+      } else if (name === 'NotReadableError') {
+        msg = 'La caméra est déjà utilisée par une autre application.';
       }
-    })();
+      setError(msg);
+      stopAll();
+    } finally {
+      setStarting(false);
+    }
+  }, [emit, stopAll]);
 
-    return () => {
-      cancelled = true;
-      controlsRef.current?.stop?.();
-      controlsRef.current = null;
-      readerRef.current = null;
-    };
-  }, [open]);
-
-  // Start / stop scan when device or camera state changes.
+  // Launch when opened / cameraOn re-enabled
   useEffect(() => {
-    if (!open || !cameraOn || !readerRef.current || !videoRef.current) return;
-    let active = true;
-    controlsRef.current?.stop?.();
-    controlsRef.current = null;
-
-    (async () => {
-      try {
-        const controls = await readerRef.current!.decodeFromVideoDevice(
-          deviceId,
-          videoRef.current!,
-          (result) => {
-            if (!active || !result) return;
-            const code = result.getText().trim();
-            if (!code) return;
-            const now = Date.now();
-            // Debounce 800ms par code identique
-            if (
-              lastCodeRef.current &&
-              lastCodeRef.current.code === code &&
-              now - lastCodeRef.current.at < 800
-            ) {
-              return;
-            }
-            lastCodeRef.current = { code, at: now };
-            beep();
-            if (navigator.vibrate) navigator.vibrate(60);
-            onScan(code);
-          },
-        );
-        controlsRef.current = controls;
-      } catch (e: any) {
-        setError(e?.message || 'Impossible de démarrer la caméra.');
-      }
-    })();
-
+    if (open && cameraOn) {
+      startCamera(deviceId);
+    }
     return () => {
-      active = false;
-      controlsRef.current?.stop?.();
-      controlsRef.current = null;
+      if (!open) stopAll();
     };
-  }, [open, cameraOn, deviceId, onScan]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, cameraOn]);
+
+  // Stop when closing
+  useEffect(() => {
+    if (!open) stopAll();
+  }, [open, stopAll]);
 
   const handleManualSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const code = manualCode.trim();
     if (!code) return;
-    beep();
-    if (navigator.vibrate) navigator.vibrate(40);
-    onScan(code);
+    emit(code);
     setManualCode('');
   };
 
-  const switchCamera = () => {
-    if (devices.length < 2 || !deviceId) return;
+  const switchCamera = async () => {
+    if (devices.length < 2) return;
     const idx = devices.findIndex((d) => d.deviceId === deviceId);
     const next = devices[(idx + 1) % devices.length];
     setDeviceId(next.deviceId);
+    await startCamera(next.deviceId);
+  };
+
+  const captureNow = async () => {
+    const video = videoRef.current;
+    if (!video || !readerRef.current) return;
+    try {
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const result = await readerRef.current.decodeFromCanvas(canvas);
+      if (result) emit(result.getText());
+    } catch {
+      setError('Aucun code détecté sur l\'image. Rapprochez-vous et réessayez.');
+      setTimeout(() => setError(null), 2500);
+    }
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(o) => { if (!o) stopAll(); onOpenChange(o); }}>
       <DialogContent className="max-w-md p-0 gap-0 overflow-hidden sm:rounded-lg h-[100svh] sm:h-auto sm:max-h-[90vh] flex flex-col">
         <DialogHeader className="p-3 border-b shrink-0">
           <div className="flex items-center justify-between gap-2">
@@ -171,27 +232,42 @@ export function BarcodeScannerDialog({
               className={cn('absolute inset-0 w-full h-full object-cover', !cameraOn && 'hidden')}
               muted
               playsInline
+              autoPlay
             />
-            {/* Overlay viseur */}
-            {cameraOn && !error && (
+            {cameraOn && !error && ready && (
               <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
                 <div className="w-4/5 h-1/3 border-2 border-primary rounded-md shadow-[0_0_0_9999px_rgba(0,0,0,0.35)]" />
               </div>
             )}
-            {!cameraOn && (
+            {cameraOn && starting && (
+              <div className="absolute inset-0 flex items-center justify-center text-white/80 text-sm">
+                Démarrage de la caméra…
+              </div>
+            )}
+            {!cameraOn && !error && (
               <div className="absolute inset-0 flex items-center justify-center text-white/70 text-sm">
                 Caméra désactivée
               </div>
             )}
             {error && (
-              <div className="absolute inset-0 flex items-center justify-center p-4 text-center text-sm text-white">
-                {error}
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-4 text-center text-sm text-white">
+                <p>{error}</p>
+                <Button size="sm" variant="secondary" onClick={() => startCamera(deviceId)}>
+                  <RotateCw className="h-4 w-4 mr-1" /> Réessayer
+                </Button>
               </div>
             )}
           </div>
 
           <div className="p-3 space-y-3">
             <div className="flex flex-wrap gap-2">
+              <Button
+                size="sm"
+                onClick={captureNow}
+                disabled={!ready}
+              >
+                <ScanLine className="h-4 w-4" /> Capturer
+              </Button>
               <Button
                 size="sm"
                 variant="outline"
