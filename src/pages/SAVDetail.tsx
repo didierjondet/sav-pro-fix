@@ -474,7 +474,7 @@ export default function SAVDetail() {
                 </CardContent>
               </Card>
 
-              <SAVLoanerCard savCaseId={savCase.id} customerId={savCase.customer_id} />
+
 
               <SAVStatusManager savCase={savCase} onStatusUpdated={handleStatusUpdated} />
             </TabsContent>
