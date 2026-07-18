@@ -1,81 +1,62 @@
-## Objectif
-Réorganiser la page SAV (vues standard + simplifiée) avec 4 nouveaux onglets et améliorer la visibilité contextuelle du bandeau supérieur et de la messagerie.
 
-## Modifications par onglet
+## 1. Certificat de non-réparabilité (onglet Documents)
 
-### 1. Nouvel onglet "Codes"
-- Créer `TabsTrigger value="codes"` avec icône cadenas.
-- Déplacer de l'onglet Aperçu la carte contenant : code de déverrouillage, PatternLock, `SecurityCodesDisplay` (iCloud, mail, PIN SIM).
-- Supprimer cette zone de l'Aperçu (l'Aperçu reste : description problème, historique produit, client, appareil, commentaires technicien/privés).
+Ajouter dans l'onglet **Documents** du SAV (vue simplifiée ET vue standard) une carte "Certificat de non-réparabilité" avec :
 
-### 2. Onglet "Pièces" enrichi
-- Actuellement l'onglet affiche seulement `SAVPartsRequirements` (résumé/coûts).
-- Ajouter au-dessus le composant complet `SAVPartsEditor` (déjà utilisé ailleurs) permettant : ajout, modification quantité/prix, suppression de pièces.
-- Conserver `SAVPartsRequirements` en dessous comme récapitulatif coûts/marge.
-- Dans l'Aperçu : retirer l'éditeur de pièces s'il y est, laisser uniquement un rappel léger (total).
+- Un bouton **"Générer le certificat"** qui ouvre un dialog.
+- Dans le dialog : un `Textarea` pré-rempli avec un texte type éditable par l'utilisateur avant impression.
+- Un bouton **"Imprimer / PDF"** qui ouvre une fenêtre d'impression A4 formatée avec :
+  - **En-tête magasin** : logo (si présent), nom, adresse, code postal + ville, téléphone, email, SIRET (récupérés depuis `useShop()`).
+  - **Titre** : « CERTIFICAT DE NON-RÉPARABILITÉ ».
+  - **Bloc client** : nom, prénom, téléphone, email.
+  - **Bloc appareil** : marque, modèle, IMEI/SN, référence SAV + code-barres Code128.
+  - **Corps** : le texte modifiable.
+  - **Motifs techniques** : liste puce (invention plausible selon le type d'appareil / panne — voir ci-dessous).
+  - **Zones signatures** : Technicien / Client / Date.
 
-### 3. Nouvel onglet "Diagnostic" (IA)
-- Créer `TabsTrigger value="diagnostic"` avec icône `Stethoscope` ou `AlertCircle`.
-- Structure de l'onglet :
-  1. **Panne détectée** : bloc affichant `problem_description` du SAV (lecture seule, mise en évidence).
-  2. **Causes possibles & pistes de réparation** : au premier affichage, appel automatique à une edge function `ai-diagnostic-sav` qui envoie `{ problem_description, device_brand, device_model, sav_type }` au modèle `google/gemini-3-flash-preview` via `LOVABLE_API_KEY`. Réponse structurée : liste de causes probables + solutions/étapes de vérification, rendue en markdown (`react-markdown`).
-     - Résultat mis en cache dans une nouvelle colonne texte `sav_cases.ai_diagnostic` (via migration) pour éviter de reconsommer des crédits à chaque ouverture. Bouton "Régénérer" disponible.
-  3. **Chat technicien ↔ IA** : zone conversationnelle locale (persistée dans une nouvelle table `sav_diagnostic_messages` avec `sav_case_id, role, content, created_at, user_id`) où le technicien peut poser des questions de suivi. L'edge function reçoit l'historique + contexte SAV et répond.
-- Composants nouveaux : `src/components/sav/SAVDiagnosticTab.tsx`, edge function `supabase/functions/ai-diagnostic-sav/index.ts`.
+### Texte pré-rempli (généré dynamiquement)
 
-### 4. Nouvel onglet conditionnel "Prêt matériel"
-- Affiché **uniquement** si un prêt existe (détecté via `useLoanerLoans` filtré par `sav_case_id` — retourner un booléen `hasLoan`).
-- Onglet stylé en rouge : `TabsTrigger` avec `className="data-[state=active]:bg-destructive data-[state=active]:text-destructive-foreground text-destructive"`.
-- Contenu = `SAVLoanerCard` complet (déjà supporte ajouter/modifier/supprimer/restituer).
-- Retirer `SAVLoanerCard` de l'Aperçu.
+Construit à partir de `sav_case` (device_brand, device_model, problem_description, sav_type) :
 
-### 5. Pastille onglet "Communication"
-- Utiliser `useSAVUnreadMessages` (existant) pour compter les messages non lus **et** les messages reçus depuis l'ouverture du SAV tant que le SAV n'est pas dans un statut final.
-- Afficher un `Badge` rouge à côté du label "Communication" avec le compteur.
-- La pastille reste visible tant que `savCase.status` n'est pas un statut final (via `isReadyStatus` / `is_final_status`).
+> Après examen approfondi de l'appareil **{marque} {modèle}** (IMEI/SN : *{imei}*) confié dans le cadre du dossier SAV **{case_number}** en date du *{created_at}*, nos techniciens qualifiés ont procédé à un diagnostic complet.
+>
+> **Panne constatée :** {problem_description}
+>
+> À l'issue de nos investigations, nous sommes au regret de vous informer que **la réparation de cet appareil n'est pas réalisable** dans nos ateliers, pour les raisons techniques suivantes :
+>
+> - Dommages internes irréversibles affectant la carte-mère (composants BGA hors-service, pistes coupées non reconstructibles).
+> - Pièces détachées d'origine constructeur indisponibles sur le marché ou en fin de vie (EOL).
+> - Coût estimatif de la réparation supérieur à la valeur résiduelle de l'appareil.
+> - Absence de garantie de fonctionnement post-intervention (risque élevé de récidive).
+>
+> Nous restons à votre disposition pour vous conseiller sur les alternatives possibles (reprise, recyclage, remplacement).
+>
+> *Le présent certificat est établi pour servir et valoir ce que de droit.*
 
-### 6. Bandeau supérieur plus visible
-- Actuellement `bg-background/95 backdrop-blur border-b` → peu contrasté.
-- Remplacer par un fond plus prononcé : `bg-slate-700 text-slate-50` (ou `bg-primary/90 text-primary-foreground`) avec `border-b border-slate-800`.
-- Adapter les couleurs du bouton Retour, du numéro de dossier, badges (garder leurs couleurs propres) et texte client pour rester lisibles sur fond foncé.
-- Appliquer à la fois à la vue simplifiée et à la vue standard.
+Les motifs techniques listés seront adaptables (l'utilisateur peut tout modifier dans le Textarea). Le texte complet est mis dans **un seul Textarea** pour édition libre.
 
-## Application aux deux vues
-Toutes les modifications ci-dessus s'appliquent identiquement à la vue standard et à la vue simplifiée dans `src/pages/SAVDetail.tsx` (structure d'onglets déjà unifiée).
+### Fichiers
 
-## Détails techniques
+- Créer `src/components/sav/NonRepairabilityCertificateDialog.tsx` — dialog avec textarea, bouton imprimer, template HTML A4 (inspiré de `SAVPrint.tsx`).
+- Éditer `src/pages/SAVDetail.tsx` — ajouter la carte "Certificat de non-réparabilité" dans le `TabsContent value="documents"` des deux vues (simplifiée + standard), à côté / au-dessus de `SAVDocuments`.
 
-**Migrations Supabase** :
-```sql
--- Cache diagnostic IA
-ALTER TABLE public.sav_cases ADD COLUMN ai_diagnostic TEXT;
-ALTER TABLE public.sav_cases ADD COLUMN ai_diagnostic_generated_at TIMESTAMPTZ;
+## 2. Couleur du bandeau + onglets sélectionnés
 
--- Chat diagnostic
-CREATE TABLE public.sav_diagnostic_messages (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  sav_case_id UUID NOT NULL REFERENCES sav_cases(id) ON DELETE CASCADE,
-  shop_id UUID NOT NULL,
-  role TEXT NOT NULL CHECK (role IN ('user','assistant')),
-  content TEXT NOT NULL,
-  user_id UUID,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
--- + GRANTs authenticated/service_role, RLS scope shop_id via has_role/profile.shop_id
-```
+Le bandeau sticky actuel `bg-slate-800 text-slate-50` est trop foncé et hors palette. Le remplacer par la teinte **`primary`** déjà utilisée pour attirer l'attention sur les éléments importants du SAV (cf. `ProblemDescriptionHighlight.tsx` qui utilise `primary/10`, `primary/5`, `border-l-primary`).
 
-**Edge function** `ai-diagnostic-sav` :
-- Mode 1 (diagnostic initial) : renvoie markdown structuré "## Causes possibles\n...\n## Solutions\n...".
-- Mode 2 (chat) : reçoit `{ messages, savContext }`, appelle Lovable AI Gateway, renvoie réponse.
-- Gestion 429/402 comme les autres fonctions IA existantes.
+### Changements dans `src/pages/SAVDetail.tsx`
 
-**Fichiers modifiés/créés** :
-- `src/pages/SAVDetail.tsx` : ajout des 4 TabsTrigger, réorganisation TabsContent, bandeau recoloré, pastille Communication.
-- `src/components/sav/SAVDiagnosticTab.tsx` (nouveau).
-- `src/components/sav/SAVCodesTab.tsx` (nouveau, regroupe unlock/pattern/security codes).
-- `supabase/functions/ai-diagnostic-sav/index.ts` (nouveau).
-- Migration SQL.
+- Bandeau sticky (les deux vues) :
+  - Remplacer `bg-slate-800 text-slate-50 border-b border-slate-900 shadow-md`
+  - Par `bg-primary/10 border-b-2 border-primary/40 shadow-sm` (fond discret teinté, bordure basse marquée). Le texte reprend `text-foreground` par défaut — bien lisible en clair et sombre.
+- Onglet actif : ajouter sur chaque `TabsTrigger` la classe :
+  ```
+  data-[state=active]:bg-primary/15 data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary
+  ```
+  pour marquer visuellement l'onglet sélectionné avec la même teinte que le bandeau. À appliquer sur les deux `TabsList` (simplifiée + standard), sans toucher aux règles existantes du "Prêt matériel" en rouge.
 
-## Hors périmètre
-- Pas de changement de logique métier sur pièces, prêts, statuts.
-- Pas de refonte visuelle globale ; uniquement le bandeau SAV.
+## Notes
+
+- Aucun changement backend / DB : le certificat est généré côté client à partir des données déjà chargées (`savCase`, `shop`).
+- Utilisation de `window.open` + `document.write` pour l'impression, comme `SAVPrint.tsx` et `SAVDocuments.tsx`.
+- Le code-barres Code128 réutilise `JsBarcode` déjà présent (via `SAVBarcode.tsx`).

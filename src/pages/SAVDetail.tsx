@@ -44,6 +44,10 @@ import { SAVCodesTab } from '@/components/sav/SAVCodesTab';
 import { SAVDiagnosticTab } from '@/components/sav/SAVDiagnosticTab';
 import { useSAVCaseUnreadCount, useSAVCaseHasActiveLoan } from '@/hooks/useSAVCaseIndicators';
 import { Stethoscope, KeyRound, Smartphone } from 'lucide-react';
+import { NonRepairabilityCertificateDialog } from '@/components/sav/NonRepairabilityCertificateDialog';
+
+const TAB_ACTIVE_CLASSES = 'data-[state=active]:bg-primary/15 data-[state=active]:text-primary data-[state=active]:shadow-sm';
+const STICKY_HEADER_CLASSES = 'sticky top-0 z-30 bg-primary/10 border-b-2 border-primary/40 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-primary/10';
 export default function SAVDetail() {
   const {
     id
@@ -336,7 +340,7 @@ export default function SAVDetail() {
     return (
       <main className="flex-1 overflow-y-auto">
         {/* Bandeau sticky de contexte */}
-        <div className="sticky top-0 z-30 bg-slate-800 text-slate-50 border-b border-slate-900 shadow-md">
+        <div className={STICKY_HEADER_CLASSES}>
           <div className="max-w-5xl mx-auto px-4 py-3 flex items-center gap-2 md:gap-3 flex-wrap">
             <Button variant="ghost" size="sm" onClick={() => navigate('/sav')} className="shrink-0">
               <ArrowLeft className="h-4 w-4 mr-1" /> Retour
@@ -376,8 +380,8 @@ export default function SAVDetail() {
             className="space-y-4"
           >
             <TabsList className="w-full justify-start overflow-x-auto">
-              <TabsTrigger value="apercu">Aperçu</TabsTrigger>
-              <TabsTrigger value="communication" className="relative">
+              <TabsTrigger value="apercu" className={TAB_ACTIVE_CLASSES}>Aperçu</TabsTrigger>
+              <TabsTrigger value="communication" className={`relative ${TAB_ACTIVE_CLASSES}`}>
                 Communication
                 {unreadCount > 0 && (
                   <span className="ml-2 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold">
@@ -385,11 +389,11 @@ export default function SAVDetail() {
                   </span>
                 )}
               </TabsTrigger>
-              <TabsTrigger value="pieces">Pièces</TabsTrigger>
-              <TabsTrigger value="codes">
+              <TabsTrigger value="pieces" className={TAB_ACTIVE_CLASSES}>Pièces</TabsTrigger>
+              <TabsTrigger value="codes" className={TAB_ACTIVE_CLASSES}>
                 <KeyRound className="h-3.5 w-3.5 mr-1" /> Codes
               </TabsTrigger>
-              <TabsTrigger value="diagnostic">
+              <TabsTrigger value="diagnostic" className={TAB_ACTIVE_CLASSES}>
                 <Stethoscope className="h-3.5 w-3.5 mr-1" /> Diagnostic
               </TabsTrigger>
               {hasActiveLoan && (
@@ -397,8 +401,8 @@ export default function SAVDetail() {
                   <Smartphone className="h-3.5 w-3.5 mr-1" /> Prêt matériel
                 </TabsTrigger>
               )}
-              <TabsTrigger value="impression">Impression</TabsTrigger>
-              <TabsTrigger value="documents">Documents</TabsTrigger>
+              <TabsTrigger value="impression" className={TAB_ACTIVE_CLASSES}>Impression</TabsTrigger>
+              <TabsTrigger value="documents" className={TAB_ACTIVE_CLASSES}>Documents</TabsTrigger>
             </TabsList>
 
             {/* Onglet Aperçu */}
@@ -659,6 +663,14 @@ export default function SAVDetail() {
 
             {/* Onglet Documents */}
             <TabsContent value="documents" className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Documents administratifs</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <NonRepairabilityCertificateDialog savCase={savCase} shop={shop} />
+                </CardContent>
+              </Card>
               <SAVDocuments
                 savCaseId={savCase.id}
                 attachments={savCase.attachments || []}
@@ -682,7 +694,7 @@ export default function SAVDetail() {
   return (
     <main className="flex-1 overflow-y-auto">
       {/* Bandeau sticky de contexte */}
-      <div className="sticky top-0 z-30 bg-slate-800 text-slate-50 border-b border-slate-900 shadow-md">
+      <div className={STICKY_HEADER_CLASSES}>
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center gap-2 md:gap-3 flex-wrap">
           <Button variant="ghost" size="sm" onClick={() => navigate('/sav')} className="shrink-0">
             <ArrowLeft className="h-4 w-4 mr-1" /> Retour
@@ -774,8 +786,8 @@ export default function SAVDetail() {
           className="space-y-4"
         >
           <TabsList className="w-full justify-start overflow-x-auto">
-            <TabsTrigger value="apercu">Aperçu</TabsTrigger>
-            <TabsTrigger value="communication" className="relative">
+            <TabsTrigger value="apercu" className={TAB_ACTIVE_CLASSES}>Aperçu</TabsTrigger>
+            <TabsTrigger value="communication" className={`relative ${TAB_ACTIVE_CLASSES}`}>
               Communication
               {unreadCount > 0 && (
                 <span className="ml-2 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold">
@@ -783,11 +795,11 @@ export default function SAVDetail() {
                 </span>
               )}
             </TabsTrigger>
-            <TabsTrigger value="pieces">Pièces</TabsTrigger>
-            <TabsTrigger value="codes">
+            <TabsTrigger value="pieces" className={TAB_ACTIVE_CLASSES}>Pièces</TabsTrigger>
+            <TabsTrigger value="codes" className={TAB_ACTIVE_CLASSES}>
               <KeyRound className="h-3.5 w-3.5 mr-1" /> Codes
             </TabsTrigger>
-            <TabsTrigger value="diagnostic">
+            <TabsTrigger value="diagnostic" className={TAB_ACTIVE_CLASSES}>
               <Stethoscope className="h-3.5 w-3.5 mr-1" /> Diagnostic
             </TabsTrigger>
             {hasActiveLoan && (
@@ -795,8 +807,8 @@ export default function SAVDetail() {
                 <Smartphone className="h-3.5 w-3.5 mr-1" /> Prêt matériel
               </TabsTrigger>
             )}
-            <TabsTrigger value="impression">Impression</TabsTrigger>
-            <TabsTrigger value="documents">Documents</TabsTrigger>
+            <TabsTrigger value="impression" className={TAB_ACTIVE_CLASSES}>Impression</TabsTrigger>
+            <TabsTrigger value="documents" className={TAB_ACTIVE_CLASSES}>Documents</TabsTrigger>
           </TabsList>
 
           {/* Onglet Aperçu */}
@@ -1195,6 +1207,14 @@ export default function SAVDetail() {
 
           {/* Onglet Documents */}
           <TabsContent value="documents" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Documents administratifs</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <NonRepairabilityCertificateDialog savCase={savCase} shop={shop} />
+              </CardContent>
+            </Card>
             <SAVDocuments
               savCaseId={savCase.id}
               attachments={savCase.attachments || []}
