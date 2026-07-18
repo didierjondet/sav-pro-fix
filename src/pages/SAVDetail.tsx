@@ -778,8 +778,8 @@ export default function SAVDetail() {
           className="space-y-4"
         >
           <TabsList className="w-full justify-start overflow-x-auto">
-            <TabsTrigger value="apercu">Aperçu</TabsTrigger>
-            <TabsTrigger value="communication" className="relative">
+            <TabsTrigger value="apercu" className={TAB_ACTIVE_CLASSES}>Aperçu</TabsTrigger>
+            <TabsTrigger value="communication" className={`relative ${TAB_ACTIVE_CLASSES}`}>
               Communication
               {unreadCount > 0 && (
                 <span className="ml-2 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold">
@@ -787,11 +787,11 @@ export default function SAVDetail() {
                 </span>
               )}
             </TabsTrigger>
-            <TabsTrigger value="pieces">Pièces</TabsTrigger>
-            <TabsTrigger value="codes">
+            <TabsTrigger value="pieces" className={TAB_ACTIVE_CLASSES}>Pièces</TabsTrigger>
+            <TabsTrigger value="codes" className={TAB_ACTIVE_CLASSES}>
               <KeyRound className="h-3.5 w-3.5 mr-1" /> Codes
             </TabsTrigger>
-            <TabsTrigger value="diagnostic">
+            <TabsTrigger value="diagnostic" className={TAB_ACTIVE_CLASSES}>
               <Stethoscope className="h-3.5 w-3.5 mr-1" /> Diagnostic
             </TabsTrigger>
             {hasActiveLoan && (
@@ -799,8 +799,8 @@ export default function SAVDetail() {
                 <Smartphone className="h-3.5 w-3.5 mr-1" /> Prêt matériel
               </TabsTrigger>
             )}
-            <TabsTrigger value="impression">Impression</TabsTrigger>
-            <TabsTrigger value="documents">Documents</TabsTrigger>
+            <TabsTrigger value="impression" className={TAB_ACTIVE_CLASSES}>Impression</TabsTrigger>
+            <TabsTrigger value="documents" className={TAB_ACTIVE_CLASSES}>Documents</TabsTrigger>
           </TabsList>
 
           {/* Onglet Aperçu */}
