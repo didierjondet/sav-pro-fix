@@ -1,37 +1,81 @@
-## Problème
+## Objectif
+Réorganiser la page SAV (vues standard + simplifiée) avec 4 nouveaux onglets et améliorer la visibilité contextuelle du bandeau supérieur et de la messagerie.
 
-Sur `/m/sav` (et partout où `BarcodeScannerDialog` est utilisé), le viseur s'affiche mais aucune détection ne se déclenche, et il n'y a pas de bouton de validation manuelle du flux vidéo.
+## Modifications par onglet
 
-## Causes probables identifiées dans `src/components/inventory/BarcodeScannerDialog.tsx`
+### 1. Nouvel onglet "Codes"
+- Créer `TabsTrigger value="codes"` avec icône cadenas.
+- Déplacer de l'onglet Aperçu la carte contenant : code de déverrouillage, PatternLock, `SecurityCodesDisplay` (iCloud, mail, PIN SIM).
+- Supprimer cette zone de l'Aperçu (l'Aperçu reste : description problème, historique produit, client, appareil, commentaires technicien/privés).
 
-1. **Perte du contexte de geste utilisateur (cause principale sur mobile)**
-   Aujourd'hui : clic → `setScannerOpen(true)` → montage du dialog → `useEffect` async → `listVideoInputDevices()` → `decodeFromVideoDevice()`. Tous les `await` avant l'ouverture de la caméra cassent le contexte de geste, ce qui fait échouer silencieusement `getUserMedia` sur Safari iOS et certaines versions de Chrome Android. Résultat : le `<video>` reste noir/figé, aucun frame n'est décodé, aucune erreur visible.
+### 2. Onglet "Pièces" enrichi
+- Actuellement l'onglet affiche seulement `SAVPartsRequirements` (résumé/coûts).
+- Ajouter au-dessus le composant complet `SAVPartsEditor` (déjà utilisé ailleurs) permettant : ajout, modification quantité/prix, suppression de pièces.
+- Conserver `SAVPartsRequirements` en dessous comme récapitulatif coûts/marge.
+- Dans l'Aperçu : retirer l'éditeur de pièces s'il y est, laisser uniquement un rappel léger (total).
 
-2. **Aucun `getUserMedia` explicite avant l'énumération**
-   `listVideoInputDevices()` ne renvoie les `label` (utilisés pour détecter la caméra arrière) que si la permission caméra a déjà été accordée. Sans appel explicite préalable, on peut se retrouver avec un `deviceId` invalide, et `decodeFromVideoDevice` ne démarre jamais réellement le flux.
+### 3. Nouvel onglet "Diagnostic" (IA)
+- Créer `TabsTrigger value="diagnostic"` avec icône `Stethoscope` ou `AlertCircle`.
+- Structure de l'onglet :
+  1. **Panne détectée** : bloc affichant `problem_description` du SAV (lecture seule, mise en évidence).
+  2. **Causes possibles & pistes de réparation** : au premier affichage, appel automatique à une edge function `ai-diagnostic-sav` qui envoie `{ problem_description, device_brand, device_model, sav_type }` au modèle `google/gemini-3-flash-preview` via `LOVABLE_API_KEY`. Réponse structurée : liste de causes probables + solutions/étapes de vérification, rendue en markdown (`react-markdown`).
+     - Résultat mis en cache dans une nouvelle colonne texte `sav_cases.ai_diagnostic` (via migration) pour éviter de reconsommer des crédits à chaque ouverture. Bouton "Régénérer" disponible.
+  3. **Chat technicien ↔ IA** : zone conversationnelle locale (persistée dans une nouvelle table `sav_diagnostic_messages` avec `sav_case_id, role, content, created_at, user_id`) où le technicien peut poser des questions de suivi. L'edge function reçoit l'historique + contexte SAV et répond.
+- Composants nouveaux : `src/components/sav/SAVDiagnosticTab.tsx`, edge function `supabase/functions/ai-diagnostic-sav/index.ts`.
 
-3. **Pas de fallback ni de feedback**
-   Si `decodeFromVideoDevice` échoue silencieusement, l'utilisateur voit uniquement le viseur sans indication ni bouton de secours.
+### 4. Nouvel onglet conditionnel "Prêt matériel"
+- Affiché **uniquement** si un prêt existe (détecté via `useLoanerLoans` filtré par `sav_case_id` — retourner un booléen `hasLoan`).
+- Onglet stylé en rouge : `TabsTrigger` avec `className="data-[state=active]:bg-destructive data-[state=active]:text-destructive-foreground text-destructive"`.
+- Contenu = `SAVLoanerCard` complet (déjà supporte ajouter/modifier/supprimer/restituer).
+- Retirer `SAVLoanerCard` de l'Aperçu.
 
-## Correctifs prévus (uniquement `BarcodeScannerDialog.tsx`)
+### 5. Pastille onglet "Communication"
+- Utiliser `useSAVUnreadMessages` (existant) pour compter les messages non lus **et** les messages reçus depuis l'ouverture du SAV tant que le SAV n'est pas dans un statut final.
+- Afficher un `Badge` rouge à côté du label "Communication" avec le compteur.
+- La pastille reste visible tant que `savCase.status` n'est pas un statut final (via `isReadyStatus` / `is_final_status`).
 
-1. **Démarrer la caméra dans le geste d'ouverture**
-   - Exposer une méthode ou déclencher `getUserMedia({ video: { facingMode: 'environment' } })` immédiatement à l'ouverture, puis attacher le stream au `<video>` avant de lancer le décodage ZXing (`decodeFromStream` / `decodeFromVideoElement`) au lieu de `decodeFromVideoDevice`. Cela évite la chaîne d'`await` bloquante.
-   - Énumérer les devices après avoir obtenu la permission (les `label` seront alors disponibles pour détecter correctement la caméra arrière).
+### 6. Bandeau supérieur plus visible
+- Actuellement `bg-background/95 backdrop-blur border-b` → peu contrasté.
+- Remplacer par un fond plus prononcé : `bg-slate-700 text-slate-50` (ou `bg-primary/90 text-primary-foreground`) avec `border-b border-slate-800`.
+- Adapter les couleurs du bouton Retour, du numéro de dossier, badges (garder leurs couleurs propres) et texte client pour rester lisibles sur fond foncé.
+- Appliquer à la fois à la vue simplifiée et à la vue standard.
 
-2. **Gestion d'erreurs explicite**
-   - Afficher clairement les erreurs `NotAllowedError` (permission refusée), `NotFoundError` (pas de caméra), et contexte non sécurisé (HTTP au lieu de HTTPS).
-   - Ajouter un bouton « Réessayer » qui relance proprement le flux dans un nouveau geste utilisateur.
+## Application aux deux vues
+Toutes les modifications ci-dessus s'appliquent identiquement à la vue standard et à la vue simplifiée dans `src/pages/SAVDetail.tsx` (structure d'onglets déjà unifiée).
 
-3. **Bouton de validation / capture manuelle**
-   - Ajouter un bouton « Capturer maintenant » qui force un décodage ponctuel de l'image courante via `decodeFromCanvas` (ZXing), utile quand l'auto-détection peine (mauvaise lumière, code abîmé).
-   - Conserver la saisie manuelle existante inchangée.
+## Détails techniques
 
-4. **Cycle de vie propre**
-   - À la fermeture du dialog ou changement de caméra : `stop()` les contrôles ZXing et couper les tracks du `MediaStream` pour libérer la caméra.
+**Migrations Supabase** :
+```sql
+-- Cache diagnostic IA
+ALTER TABLE public.sav_cases ADD COLUMN ai_diagnostic TEXT;
+ALTER TABLE public.sav_cases ADD COLUMN ai_diagnostic_generated_at TIMESTAMPTZ;
 
-## Ce qui ne change pas
+-- Chat diagnostic
+CREATE TABLE public.sav_diagnostic_messages (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  sav_case_id UUID NOT NULL REFERENCES sav_cases(id) ON DELETE CASCADE,
+  shop_id UUID NOT NULL,
+  role TEXT NOT NULL CHECK (role IN ('user','assistant')),
+  content TEXT NOT NULL,
+  user_id UUID,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+-- + GRANTs authenticated/service_role, RLS scope shop_id via has_role/profile.shop_id
+```
 
-- Aucun changement d'UI hors du dialog scanner.
-- Aucun changement de logique dans `MobileSAVLookup.tsx`, ni dans les autres appelants du scanner.
-- Le format d'appel `onScan(code)` reste identique.
+**Edge function** `ai-diagnostic-sav` :
+- Mode 1 (diagnostic initial) : renvoie markdown structuré "## Causes possibles\n...\n## Solutions\n...".
+- Mode 2 (chat) : reçoit `{ messages, savContext }`, appelle Lovable AI Gateway, renvoie réponse.
+- Gestion 429/402 comme les autres fonctions IA existantes.
+
+**Fichiers modifiés/créés** :
+- `src/pages/SAVDetail.tsx` : ajout des 4 TabsTrigger, réorganisation TabsContent, bandeau recoloré, pastille Communication.
+- `src/components/sav/SAVDiagnosticTab.tsx` (nouveau).
+- `src/components/sav/SAVCodesTab.tsx` (nouveau, regroupe unlock/pattern/security codes).
+- `supabase/functions/ai-diagnostic-sav/index.ts` (nouveau).
+- Migration SQL.
+
+## Hors périmètre
+- Pas de changement de logique métier sur pièces, prêts, statuts.
+- Pas de refonte visuelle globale ; uniquement le bandeau SAV.
