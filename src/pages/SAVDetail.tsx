@@ -686,7 +686,7 @@ export default function SAVDetail() {
   return (
     <main className="flex-1 overflow-y-auto">
       {/* Bandeau sticky de contexte */}
-      <div className="sticky top-0 z-30 bg-slate-800 text-slate-50 border-b border-slate-900 shadow-md">
+      <div className={STICKY_HEADER_CLASSES}>
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center gap-2 md:gap-3 flex-wrap">
           <Button variant="ghost" size="sm" onClick={() => navigate('/sav')} className="shrink-0">
             <ArrowLeft className="h-4 w-4 mr-1" /> Retour
