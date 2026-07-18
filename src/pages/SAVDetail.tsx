@@ -948,36 +948,8 @@ export default function SAVDetail() {
               </Card>
             )}
 
-            {/* Schéma de verrouillage */}
-            {savCase.unlock_pattern && savCase.unlock_pattern.length > 0 && (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <PatternLock pattern={savCase.unlock_pattern} onChange={() => {}} disabled={true} showPattern={true} />
-                <Card>
-                  <CardHeader><CardTitle>Schéma de verrouillage enregistré</CardTitle></CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-muted-foreground">
-                      Ce schéma de verrouillage a été enregistré lors de la création du dossier SAV.
-                      Il contient {savCase.unlock_pattern.length} points connectés.
-                    </p>
-                    <div className="mt-3 p-3 bg-muted rounded-lg">
-                      <p className="text-xs font-medium">Séquence: {savCase.unlock_pattern.join(' → ')}</p>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            )}
 
-            {/* Codes de sécurité */}
-            {savCase.status !== 'ready' && savCase.status !== 'cancelled' && (
-              <SecurityCodesDisplay
-                savCase={savCase}
-                onUpdate={async (codes) => {
-                  await supabase.from('sav_cases').update({
-                    security_codes: (codes.unlock_code || codes.icloud_id || codes.icloud_password || codes.sim_pin || codes.email_id || codes.email_password) ? codes as any : null,
-                  }).eq('id', savCase.id);
-                }}
-              />
-            )}
+
 
             {/* Commentaire technicien */}
             <Card>
