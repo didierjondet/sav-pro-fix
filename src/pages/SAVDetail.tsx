@@ -560,24 +560,13 @@ export default function SAVDetail() {
 
             {/* Onglet Pièces */}
             <TabsContent value="pieces" className="space-y-4">
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base">Pièces du dossier</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <p className="text-sm text-muted-foreground">
-                    Ajoutez, retirez ou ajustez les pièces liées à ce dossier SAV.
-                  </p>
-                  <div>
-                    <SAVPartsEditor savCaseId={savCase.id} onPartsUpdated={() => {}} />
-                  </div>
-                  <div className="pt-2 text-sm">
-                    <span className="text-muted-foreground">Coût total actuel : </span>
-                    <span className="font-semibold">{savCase.total_cost}€</span>
-                  </div>
-                </CardContent>
-              </Card>
+              <SAVPartsRequirements savCaseId={savCase.id} onPartsUpdated={() => {}} />
+              <div className="px-1 text-sm">
+                <span className="text-muted-foreground">Coût total actuel : </span>
+                <span className="font-semibold">{savCase.total_cost}€</span>
+              </div>
             </TabsContent>
+
 
             {/* Onglet Impression */}
             <TabsContent value="impression" className="space-y-4">
@@ -1104,24 +1093,13 @@ export default function SAVDetail() {
 
           {/* Onglet Pièces */}
           <TabsContent value="pieces" className="space-y-4">
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base">Pièces du dossier</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <p className="text-sm text-muted-foreground">
-                  Ajoutez, retirez ou ajustez les pièces liées à ce dossier SAV.
-                </p>
-                <div>
-                  <SAVPartsEditor savCaseId={savCase.id} onPartsUpdated={() => {}} />
-                </div>
-                <div className="pt-2 text-sm">
-                  <span className="text-muted-foreground">Coût total actuel : </span>
-                  <span className="font-semibold">{savCase.total_cost}€</span>
-                </div>
-              </CardContent>
-            </Card>
+            <SAVPartsRequirements savCaseId={savCase.id} onPartsUpdated={() => {}} />
+            <div className="px-1 text-sm">
+              <span className="text-muted-foreground">Coût total actuel : </span>
+              <span className="font-semibold">{savCase.total_cost}€</span>
+            </div>
           </TabsContent>
+
 
           {/* Onglet Impression */}
           <TabsContent value="impression" className="space-y-4">
