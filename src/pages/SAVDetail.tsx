@@ -663,6 +663,14 @@ export default function SAVDetail() {
 
             {/* Onglet Documents */}
             <TabsContent value="documents" className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Documents administratifs</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <NonRepairabilityCertificateDialog savCase={savCase} shop={shop} />
+                </CardContent>
+              </Card>
               <SAVDocuments
                 savCaseId={savCase.id}
                 attachments={savCase.attachments || []}
