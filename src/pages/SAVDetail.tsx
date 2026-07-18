@@ -40,6 +40,10 @@ import { useProfile } from '@/hooks/useProfile';
 import { logSAVChange, getCurrentUserName } from '@/hooks/useSAVAuditLog';
 import { ProductRecurrenceBadge } from '@/components/sav/ProductRecurrenceBadge';
 import { ProductHistoryBanner } from '@/components/sav/ProductHistoryBanner';
+import { SAVCodesTab } from '@/components/sav/SAVCodesTab';
+import { SAVDiagnosticTab } from '@/components/sav/SAVDiagnosticTab';
+import { useSAVCaseUnreadCount, useSAVCaseHasActiveLoan } from '@/hooks/useSAVCaseIndicators';
+import { Stethoscope, KeyRound, Smartphone } from 'lucide-react';
 export default function SAVDetail() {
   const {
     id
