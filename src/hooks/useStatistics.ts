@@ -425,13 +425,22 @@ export function useStatistics(
             dailyData[dateKey].count += 1;
           }
           
-          // Catégoriser le produit et accumuler les revenus par catégorie
+          // Catégoriser le produit (règle déterministe) et accumuler par catégorie.
           const category = categorizeDevice(savCase.device_brand || '', savCase.device_model || '');
           if (!productCategoryData[category]) {
             productCategoryData[category] = { revenue: 0, count: 0 };
           }
           productCategoryData[category].revenue += caseRevenue;
           productCategoryData[category].count += 1;
+          if (category === 'Autres') {
+            othersCandidates.push({
+              id: String(savCase.id),
+              brand: savCase.device_brand || '',
+              model: savCase.device_model || '',
+              problem_description: savCase.problem_description || '',
+              revenue: caseRevenue,
+            });
+          }
         });
 
         // Calculer le taux de retard sur les SAV CLÔTURÉS dans la période
