@@ -9,6 +9,7 @@ import type { SAVCase } from "@/hooks/useSAVCases";
 import { Printer, Scissors } from "lucide-react";
 import { generateShortTrackingUrl } from '@/utils/trackingUtils';
 import { fetchBillingConfig, aggregateTotals, buildVatHtmlBlock } from '@/utils/pdfVatHelpers';
+import bwipjs from 'bwip-js/browser';
 
 interface SAVPrintButtonRef {
   print: (override?: SAVPrintButtonProps['savCase']) => Promise<void>;
