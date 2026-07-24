@@ -166,6 +166,31 @@ export const SAVPrintButton = React.forwardRef<SAVPrintButtonRef, SAVPrintButton
         ? `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(trackingUrl)}`
         : "";
 
+      // Génère le code-barres Code128 localement pour garantir sa présence sur tous les SAV
+      // (indépendamment du type et sans dépendance réseau).
+      let caseBarcodeDataUrl = "";
+      try {
+        if (savCase?.case_number) {
+          const canvas = document.createElement('canvas');
+          bwipjs.toCanvas(canvas, {
+            bcid: 'code128',
+            text: String(savCase.case_number),
+            scale: 2,
+            height: 12,
+            includetext: false,
+            backgroundcolor: 'FFFFFF',
+            paddingwidth: 2,
+            paddingheight: 2,
+          });
+          caseBarcodeDataUrl = canvas.toDataURL('image/png');
+        }
+      } catch (e) {
+        console.warn('Barcode generation failed:', e);
+      }
+      const caseBarcodeImg = caseBarcodeDataUrl
+        ? `<img class="case-barcode" src="${caseBarcodeDataUrl}" alt="${savCase.case_number}" />`
+        : "";
+
       // Utiliser les libellés personnalisés du magasin
       const getStatusLabel = (status: string) => {
         const statusInfo = getStatusInfo(status);
