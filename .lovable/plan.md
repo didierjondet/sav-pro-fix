@@ -1,18 +1,22 @@
-## Objectif
-Améliorer la tooltip "SAV en retard" (sidebar) pour voir tous les dossiers concernés et retirer une info inutile.
+## Problème
 
-## Modifications — `src/components/layout/Sidebar.tsx` (tooltip "SAV en retard", lignes ~296-317)
+Dans la tooltip « SAV en retard », le badge affiche 27 dossiers mais la liste propose « +883 autres » car les deux calculs n'utilisent pas le même filtre :
 
-1. **Retirer** la ligne "Nombre de SAV: {count}" (l.299) — information redondante avec le badge déjà visible.
+- **Badge (27)** : utilise `isActiveStatus(savCase.status)` qui exclut dynamiquement tous les statuts marqués comme finaux dans `shop_sav_statuses` (livré, restitué, annulé, prêt, statuts personnalisés du magasin, etc.).
+- **Tooltip (891)** : utilise une liste codée en dur `['delivered', 'cancelled', 'ready']` qui rate tous les autres statuts finaux (statuts personnalisés, `is_final_status = true`), et inclut donc des SAV archivés/clos qui ne sont plus « en cours ».
 
-2. **Remplacer** le texte statique "+X autres..." par un bouton cliquable qui **déplie la liste complète** des SAV en retard dans la même tooltip.
-   - Ajouter un state local `showAllLateSAV` (`useState(false)`).
-   - Si `showAllLateSAV` est faux : afficher les 8 premiers + bouton "+{cases.length - 8} autres SAV en retard — afficher tout".
-   - Si `showAllLateSAV` est vrai : afficher `cases` en entier, avec un bouton "Réduire" en bas.
-   - Wrapper la liste dans un conteneur `max-h-[60vh] overflow-y-auto` pour rester utilisable même avec 800+ dossiers.
+Résultat : la tooltip compte des dossiers déjà terminés comme « en retard ».
 
-3. **Empêcher la fermeture de la tooltip au clic** sur le bouton d'expansion : `onClick` avec `e.preventDefault()` + `e.stopPropagation()` (le Tooltip Radix ne se ferme pas sur clic interne, mais on sécurise le comportement).
+## Correction
 
-## Hors périmètre
-- Aucun changement sur les autres tooltips (types SAV, statuts) ni sur le calcul des retards.
-- Aucun changement de style visuel du bloc "SAV en retard".
+Dans `src/components/layout/Sidebar.tsx`, aligner `getLateSAVInfo()` sur la logique du badge :
+
+- Remplacer le filtre codé en dur `['delivered', 'cancelled', 'ready'].includes(savCase.status)` par le même appel `isActiveStatus(savCase.status)` que celui utilisé pour `lateSAVCount`.
+- Conserver le reste inchangé (pause timer, `calculateSAVDelay`, affichage, bouton « afficher tout »).
+
+Après correction : le badge et la tooltip afficheront le même nombre (27), et le bouton indiquera « +19 autres SAV en retard » (27 − 8) au lieu de +883.
+
+## Périmètre
+
+- Un seul fichier modifié : `src/components/layout/Sidebar.tsx` (fonction `getLateSAVInfo`).
+- Aucun changement de logique métier, aucun autre composant touché.
