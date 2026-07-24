@@ -4,6 +4,18 @@ import { useShop } from './useShop';
 import { format, subDays, subMonths, startOfDay, endOfDay, startOfMonth } from 'date-fns';
 import { useQueryClient } from '@tanstack/react-query';
 import { getClosureDate, isClosedLate, getMaxProcessingDays, filterClosedForLateRate, computeLateRateForPeriod, getRangeForPeriod, LatePeriodKey } from '@/lib/lateRate';
+import { categorizeDevice, normalizeText, type ProductCategory } from '@/lib/deviceCategorization';
+
+// Cache localStorage pour éviter de rappeler l'IA sur les mêmes SAV.
+const AI_CATEGORY_CACHE_KEY = 'fixway_sav_category_cache_v1';
+const loadAiCategoryCache = (): Record<string, ProductCategory> => {
+  try { return JSON.parse(localStorage.getItem(AI_CATEGORY_CACHE_KEY) || '{}'); } catch { return {}; }
+};
+const saveAiCategoryCache = (c: Record<string, ProductCategory>) => {
+  try { localStorage.setItem(AI_CATEGORY_CACHE_KEY, JSON.stringify(c)); } catch { /* ignore */ }
+};
+const aiCacheKey = (brand: string, model: string, desc: string) =>
+  `${normalizeText(brand)}|${normalizeText(model)}|${normalizeText(desc).slice(0, 200)}`;
 
 interface ProductCategoryRevenue {
   category: string;
