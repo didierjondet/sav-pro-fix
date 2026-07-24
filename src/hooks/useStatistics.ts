@@ -536,6 +536,71 @@ export function useStatistics(
           averageProcessingDays: averageProcessingDays + ' jours'
         });
 
+        // ===== Fallback IA sur les cas rangés en "Autres" =====
+        // Objectif : reclasser les SAV mal saisis (typo marque, marque/modèle
+        // inversés, n° tel dans la marque…) grâce à la description de la panne.
+        try {
+          const cache = loadAiCategoryCache();
+          const toAsk: typeof othersCandidates = [];
+          const preResolved: Array<{ item: typeof othersCandidates[number]; category: ProductCategory }> = [];
+          for (const item of othersCandidates) {
+            const key = aiCacheKey(item.brand, item.model, item.problem_description);
+            const cached = cache[key];
+            if (cached && cached !== 'Autres') {
+              preResolved.push({ item, category: cached });
+            } else if (!cached && (item.brand || item.model || item.problem_description)) {
+              toAsk.push(item);
+            }
+          }
+
+          let aiResults: Record<string, ProductCategory> = {};
+          if (toAsk.length > 0) {
+            const { data: aiData, error: aiErr } = await supabase.functions.invoke('classify-sav-category', {
+              body: {
+                items: toAsk.map(i => ({
+                  id: i.id,
+                  brand: i.brand,
+                  model: i.model,
+                  problem_description: i.problem_description,
+                })),
+              },
+            });
+            if (aiErr) console.warn('[stats] classify-sav-category error', aiErr);
+            aiResults = (aiData?.results as Record<string, ProductCategory>) || {};
+          }
+
+          // Appliquer les reclassements (cache + IA) en repartant du bucket "Autres".
+          const reclassify = (item: typeof othersCandidates[number], category: ProductCategory) => {
+            if (category === 'Autres') return;
+            if (productCategoryData['Autres']) {
+              productCategoryData['Autres'].revenue -= item.revenue;
+              productCategoryData['Autres'].count -= 1;
+              if (productCategoryData['Autres'].count <= 0) delete productCategoryData['Autres'];
+            }
+            if (!productCategoryData[category]) productCategoryData[category] = { revenue: 0, count: 0 };
+            productCategoryData[category].revenue += item.revenue;
+            productCategoryData[category].count += 1;
+            const key = aiCacheKey(item.brand, item.model, item.problem_description);
+            cache[key] = category;
+            console.debug('[stats] reclass IA', item.brand, '/', item.model, '->', category);
+          };
+          for (const { item, category } of preResolved) reclassify(item, category);
+          for (const item of toAsk) {
+            const cat = aiResults[item.id];
+            if (cat) reclassify(item, cat);
+            else {
+              // Mémoriser un "Autres" confirmé pour ne pas rappeler l'IA.
+              const key = aiCacheKey(item.brand, item.model, item.problem_description);
+              cache[key] = 'Autres';
+            }
+          }
+          saveAiCategoryCache(cache);
+        } catch (e) {
+          console.warn('[stats] fallback IA catégorisation ignoré:', e);
+        }
+
+
+
         setData({
           revenue: totalRevenue,
           expenses: totalExpenses,
