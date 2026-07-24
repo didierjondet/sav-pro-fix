@@ -213,8 +213,8 @@ function SidebarComponent({
   // Get detailed info about late SAV cases for tooltip
   const getLateSAVInfo = () => {
     const lateSAVs = (cases || []).filter(savCase => {
-      // Only count non-completed SAV cases (exclude delivered, cancelled, and ready)
-      if (['delivered', 'cancelled', 'ready'].includes(savCase.status)) {
+      // Only count active SAV cases (same logic as the badge)
+      if (!isActiveStatus(savCase.status)) {
         return false;
       }
 
