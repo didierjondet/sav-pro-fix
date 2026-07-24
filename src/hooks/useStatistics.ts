@@ -4,6 +4,18 @@ import { useShop } from './useShop';
 import { format, subDays, subMonths, startOfDay, endOfDay, startOfMonth } from 'date-fns';
 import { useQueryClient } from '@tanstack/react-query';
 import { getClosureDate, isClosedLate, getMaxProcessingDays, filterClosedForLateRate, computeLateRateForPeriod, getRangeForPeriod, LatePeriodKey } from '@/lib/lateRate';
+import { categorizeDevice, normalizeText, type ProductCategory } from '@/lib/deviceCategorization';
+
+// Cache localStorage pour éviter de rappeler l'IA sur les mêmes SAV.
+const AI_CATEGORY_CACHE_KEY = 'fixway_sav_category_cache_v1';
+const loadAiCategoryCache = (): Record<string, ProductCategory> => {
+  try { return JSON.parse(localStorage.getItem(AI_CATEGORY_CACHE_KEY) || '{}'); } catch { return {}; }
+};
+const saveAiCategoryCache = (c: Record<string, ProductCategory>) => {
+  try { localStorage.setItem(AI_CATEGORY_CACHE_KEY, JSON.stringify(c)); } catch { /* ignore */ }
+};
+const aiCacheKey = (brand: string, model: string, desc: string) =>
+  `${normalizeText(brand)}|${normalizeText(model)}|${normalizeText(desc).slice(0, 200)}`;
 
 interface ProductCategoryRevenue {
   category: string;
@@ -78,90 +90,19 @@ export function useStatistics(
   // pour garantir l'identité de fenêtre entre KPI et chart.
   const getDateRange = () => getRangeForPeriod(period as LatePeriodKey);
 
-  // Fonction de catégorisation intelligente des produits
-  const categorizeDevice = (brand: string, model: string): string => {
-    const brandUpper = (brand || '').toUpperCase().trim();
-    const modelUpper = (model || '').toUpperCase().trim();
-    const combined = `${brandUpper} ${modelUpper}`;
-    
-    // ===== CONSOLES DE JEUX =====
-    if (['MICROSOFT', 'XBOX', 'NINTENDO'].includes(brandUpper)) return 'Consoles';
-    if (brandUpper === 'SONY' && (modelUpper.includes('PS') || modelUpper.includes('PLAYSTATION') || modelUpper.includes('DUALSENSE') || modelUpper.includes('DUALSHOCK'))) {
-      return 'Consoles';
-    }
-    if (combined.match(/PS[345]|XBOX|SWITCH|NINTENDO|PLAYSTATION|CONSOLE|MANETTE|DUALSENSE|DUALSHOCK|JOY-?CON/i)) {
-      return 'Consoles';
-    }
-    
-    // ===== INFORMATIQUE (PC, Laptops, Tours, Accessoires PC) =====
-    // Marques informatique pures
-    const pcBrands = ['TOSHIBA', 'HP', 'LENOVO', 'DELL', 'ASUS', 'ACER', 'MSI', 'GIGABYTE', 'RAZER', 
-                      'CORSAIR', 'LOGITECH', 'COOLER MASTER', 'NZXT', 'THERMALTAKE', 'OMEN', 'ALIENWARE',
-                      'PREDATOR', 'REPUBLIC OF GAMERS', 'ROG', 'STEELSERIES', 'HYPERX', 'ROCCAT',
-                      'EVGA', 'ZOTAC', 'SAPPHIRE', 'ASROCK', 'BIOSTAR', 'PALIT', 'PNY', 'INNO3D'];
-    if (pcBrands.includes(brandUpper)) {
-      return 'Informatique';
-    }
-    
-    // Modèles Mac (informatique)
-    if (modelUpper.match(/MACBOOK|IMAC|MAC MINI|MAC PRO|MAC STUDIO/)) return 'Informatique';
-    
-    // Mots-clés informatique génériques
-    if (combined.match(/PC|LAPTOP|NOTEBOOK|TOUR|GAMER|PROBOOK|IDEAPAD|VIVOBOOK|THINKPAD|PAVILION|INSPIRON|ORDINATEUR|DESKTOP|CLAVIER|SOURIS|ECRAN|MONITEUR|CARTE GRAPHIQUE|GPU|CPU|PROCESSEUR|RAM|SSD|HDD|DISQUE DUR|ALIMENTATION|BOITIER|VENTILATEUR|WATERCOOLING|GAMING PC|TOUR GAMER|STATION|WORKSTATION/i)) {
-      return 'Informatique';
-    }
-    
-    // ===== TABLETTES =====
-    if (modelUpper.match(/IPAD|GALAXY TAB|TAB S\d|TAB A\d|SURFACE|TABLETTE|MEDIAPAD|MATEPAD/i)) return 'Tablettes';
-    
-    // ===== TÉLÉPHONES =====
-    // Marques téléphones
-    const phoneBrands = ['APPLE', 'SAMSUNG', 'HUAWEI', 'XIAOMI', 'OPPO', 'GOOGLE', 'ONEPLUS', 
-                         'HONOR', 'REALME', 'VIVO', 'MOTOROLA', 'NOKIA', 'LG', 'WIKO', 'FAIRPHONE',
-                         'NOTHING', 'POCO', 'REDMI', 'INFINIX', 'TECNO', 'ZTE', 'ALCATEL', 'DORO',
-                         'CROSSCALL', 'BLACKVIEW', 'CUBOT', 'UMIDIGI', 'OUKITEL'];
-    
-    // OnePlus (marque "ONE" ou "ONEPLUS")
-    if (brandUpper === 'ONE' || brandUpper === 'ONEPLUS' || combined.includes('ONEPLUS')) {
-      return 'Téléphones';
-    }
-    
-    // iPhones - Patterns courants
-    if (modelUpper.match(/IPHONE|^[0-9]+ PRO|^XS|^XR|^X$|^SE$|^MINI$|^PRO MAX$/i)) {
-      if (brandUpper === 'APPLE' || brandUpper === '') return 'Téléphones';
-    }
-    
-    // Samsung - distinguer téléphones des tablettes
-    if (brandUpper === 'SAMSUNG') {
-      if (modelUpper.match(/TAB|TABLETTE/i)) return 'Tablettes';
-      if (modelUpper.match(/GALAXY|^S\d|^A\d|^M\d|^F\d|^Z FOLD|^Z FLIP|NOTE|ULTRA/i)) return 'Téléphones';
-    }
-    
-    // Autres marques téléphones
-    if (phoneBrands.includes(brandUpper)) {
-      // Vérifier que ce n'est pas un PC ou tablette
-      if (!modelUpper.match(/MACBOOK|IMAC|IPAD|TAB|PC|LAPTOP/i)) {
-        return 'Téléphones';
-      }
-    }
-    
-    // Mots-clés téléphones génériques
-    if (modelUpper.match(/GALAXY S|GALAXY A|GALAXY M|GALAXY Z|REDMI|PIXEL|MATE|XPERIA|PHONE|SMARTPHONE|POCO|FIND X|RENO|MI \d|NOTE \d/i)) {
-      return 'Téléphones';
-    }
-    
-    // ===== AUTRES =====
-    return 'Autres';
-  };
+  // Catégorisation déterministe centralisée dans src/lib/deviceCategorization.ts
 
   // Couleurs pour les catégories de produits
   const categoryColors: Record<string, string> = {
-    'Téléphones': 'hsl(217, 91%, 60%)', // Bleu
-    'Informatique': 'hsl(142, 71%, 45%)', // Vert
-    'Consoles': 'hsl(32, 95%, 50%)', // Orange
-    'Tablettes': 'hsl(270, 70%, 60%)', // Violet
-    'Autres': 'hsl(220, 9%, 46%)' // Gris
+    'Téléphones': 'hsl(217, 91%, 60%)',
+    'Informatique': 'hsl(142, 71%, 45%)',
+    'Consoles': 'hsl(32, 95%, 50%)',
+    'Tablettes': 'hsl(270, 70%, 60%)',
+    'Autres': 'hsl(220, 9%, 46%)',
   };
+
+
+
 
   const normalizeDeviceName = (brand: string, model: string) => {
     // Normaliser la marque (garder en majuscules comme dans les données)
@@ -333,6 +274,9 @@ export function useStatistics(
         const partsUsage: Record<string, { quantity: number; revenue: number; name: string }> = {};
         const deviceUsage: Record<string, { model: string; brand: string; count: number }> = {};
         const productCategoryData: Record<string, { revenue: number; count: number }> = {};
+        // Cas rangés en "Autres" par la règle déterministe : candidats à un
+        // reclassement IA via `classify-sav-category`.
+        const othersCandidates: Array<{ id: string; brand: string; model: string; problem_description: string; revenue: number }> = [];
         const dailyData: Record<string, { revenue: number; expenses: number; count: number; completed: number; lateCount: number; activeCount: number }> = {};
 
         const currentDate = new Date();
@@ -481,13 +425,22 @@ export function useStatistics(
             dailyData[dateKey].count += 1;
           }
           
-          // Catégoriser le produit et accumuler les revenus par catégorie
+          // Catégoriser le produit (règle déterministe) et accumuler par catégorie.
           const category = categorizeDevice(savCase.device_brand || '', savCase.device_model || '');
           if (!productCategoryData[category]) {
             productCategoryData[category] = { revenue: 0, count: 0 };
           }
           productCategoryData[category].revenue += caseRevenue;
           productCategoryData[category].count += 1;
+          if (category === 'Autres') {
+            othersCandidates.push({
+              id: String(savCase.id),
+              brand: savCase.device_brand || '',
+              model: savCase.device_model || '',
+              problem_description: savCase.problem_description || '',
+              revenue: caseRevenue,
+            });
+          }
         });
 
         // Calculer le taux de retard sur les SAV CLÔTURÉS dans la période
@@ -582,6 +535,71 @@ export function useStatistics(
           closedSavCount,
           averageProcessingDays: averageProcessingDays + ' jours'
         });
+
+        // ===== Fallback IA sur les cas rangés en "Autres" =====
+        // Objectif : reclasser les SAV mal saisis (typo marque, marque/modèle
+        // inversés, n° tel dans la marque…) grâce à la description de la panne.
+        try {
+          const cache = loadAiCategoryCache();
+          const toAsk: typeof othersCandidates = [];
+          const preResolved: Array<{ item: typeof othersCandidates[number]; category: ProductCategory }> = [];
+          for (const item of othersCandidates) {
+            const key = aiCacheKey(item.brand, item.model, item.problem_description);
+            const cached = cache[key];
+            if (cached && cached !== 'Autres') {
+              preResolved.push({ item, category: cached });
+            } else if (!cached && (item.brand || item.model || item.problem_description)) {
+              toAsk.push(item);
+            }
+          }
+
+          let aiResults: Record<string, ProductCategory> = {};
+          if (toAsk.length > 0) {
+            const { data: aiData, error: aiErr } = await supabase.functions.invoke('classify-sav-category', {
+              body: {
+                items: toAsk.map(i => ({
+                  id: i.id,
+                  brand: i.brand,
+                  model: i.model,
+                  problem_description: i.problem_description,
+                })),
+              },
+            });
+            if (aiErr) console.warn('[stats] classify-sav-category error', aiErr);
+            aiResults = (aiData?.results as Record<string, ProductCategory>) || {};
+          }
+
+          // Appliquer les reclassements (cache + IA) en repartant du bucket "Autres".
+          const reclassify = (item: typeof othersCandidates[number], category: ProductCategory) => {
+            if (category === 'Autres') return;
+            if (productCategoryData['Autres']) {
+              productCategoryData['Autres'].revenue -= item.revenue;
+              productCategoryData['Autres'].count -= 1;
+              if (productCategoryData['Autres'].count <= 0) delete productCategoryData['Autres'];
+            }
+            if (!productCategoryData[category]) productCategoryData[category] = { revenue: 0, count: 0 };
+            productCategoryData[category].revenue += item.revenue;
+            productCategoryData[category].count += 1;
+            const key = aiCacheKey(item.brand, item.model, item.problem_description);
+            cache[key] = category;
+            console.debug('[stats] reclass IA', item.brand, '/', item.model, '->', category);
+          };
+          for (const { item, category } of preResolved) reclassify(item, category);
+          for (const item of toAsk) {
+            const cat = aiResults[item.id];
+            if (cat) reclassify(item, cat);
+            else {
+              // Mémoriser un "Autres" confirmé pour ne pas rappeler l'IA.
+              const key = aiCacheKey(item.brand, item.model, item.problem_description);
+              cache[key] = 'Autres';
+            }
+          }
+          saveAiCategoryCache(cache);
+        } catch (e) {
+          console.warn('[stats] fallback IA catégorisation ignoré:', e);
+        }
+
+
 
         setData({
           revenue: totalRevenue,
