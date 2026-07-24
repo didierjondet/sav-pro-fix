@@ -296,22 +296,32 @@ function SidebarComponent({
                       <TooltipContent side="bottom" className="max-w-sm">
                         <div className="space-y-2">
                           <p className="font-medium">{getLateSAVInfo().description}</p>
-                          <p className="text-sm">Nombre de SAV: {getLateSAVInfo().count}</p>
                           {getLateSAVInfo().cases.length > 0 && <div className="text-xs space-y-1">
                               <p className="font-medium">SAV concernés:</p>
-                              {getLateSAVInfo().cases.slice(0, 8).map(savCase => <button key={savCase.id} onClick={e => {
-                          e.stopPropagation();
-                          navigate(`/sav/${savCase.id}`);
-                          onClose();
-                        }} className="block text-primary hover:underline text-left w-full">
-                                  {savCase.case_number} - {savCase.device_brand} {savCase.device_model} - 
-                                  <span className="text-destructive">
-                                    {Math.floor((new Date().getTime() - new Date(savCase.created_at).getTime()) / (1000 * 60 * 60 * 24))} jours
-                                  </span>
-                                </button>)}
-                              {getLateSAVInfo().cases.length > 8 && <p className="text-muted-foreground">
-                                  +{getLateSAVInfo().cases.length - 8} autres...
-                                </p>}
+                              <div className={showAllLateSAV ? "max-h-[60vh] overflow-y-auto pr-1 space-y-1" : "space-y-1"}>
+                                {(showAllLateSAV ? getLateSAVInfo().cases : getLateSAVInfo().cases.slice(0, 8)).map(savCase => <button key={savCase.id} onClick={e => {
+                            e.stopPropagation();
+                            navigate(`/sav/${savCase.id}`);
+                            onClose();
+                          }} className="block text-primary hover:underline text-left w-full">
+                                    {savCase.case_number} - {savCase.device_brand} {savCase.device_model} - 
+                                    <span className="text-destructive">
+                                      {Math.floor((new Date().getTime() - new Date(savCase.created_at).getTime()) / (1000 * 60 * 60 * 24))} jours
+                                    </span>
+                                  </button>)}
+                              </div>
+                              {getLateSAVInfo().cases.length > 8 && !showAllLateSAV && <button
+                                  onClick={e => { e.preventDefault(); e.stopPropagation(); setShowAllLateSAV(true); }}
+                                  className="text-primary hover:underline font-medium text-left w-full"
+                                >
+                                  +{getLateSAVInfo().cases.length - 8} autres SAV en retard — afficher tout
+                                </button>}
+                              {showAllLateSAV && getLateSAVInfo().cases.length > 8 && <button
+                                  onClick={e => { e.preventDefault(); e.stopPropagation(); setShowAllLateSAV(false); }}
+                                  className="text-muted-foreground hover:underline text-left w-full"
+                                >
+                                  Réduire
+                                </button>}
                             </div>}
                         </div>
                       </TooltipContent>
