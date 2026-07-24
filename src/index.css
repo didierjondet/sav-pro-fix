@@ -59,47 +59,58 @@
   }
 
   .dark {
-    --background: 240 10% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 240 10% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 240 10% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 221 83% 53%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 240 3.7% 15.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 240 3.7% 15.9%;
-    --muted-foreground: 240 5% 64.9%;
-    --accent: 240 3.7% 15.9%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 240 3.7% 15.9%;
-    --input: 240 3.7% 15.9%;
-    --ring: 221 83% 53%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
-    
+    /* Navy-based dark palette — calm, low-contrast, elegant */
+    --background: 220 30% 10%;
+    --foreground: 215 25% 82%;
+    --card: 220 28% 13%;
+    --card-foreground: 215 25% 82%;
+    --popover: 220 30% 12%;
+    --popover-foreground: 215 25% 82%;
+    --primary: 217 75% 62%;
+    --primary-foreground: 220 30% 10%;
+    --secondary: 220 22% 18%;
+    --secondary-foreground: 215 22% 80%;
+    --muted: 220 22% 16%;
+    --muted-foreground: 215 15% 60%;
+    --accent: 220 24% 20%;
+    --accent-foreground: 215 25% 85%;
+    --destructive: 0 55% 45%;
+    --destructive-foreground: 215 25% 90%;
+    --border: 220 20% 20%;
+    --input: 220 22% 18%;
+    --ring: 217 70% 55%;
+    --chart-1: 217 65% 60%;
+    --chart-2: 160 45% 50%;
+    --chart-3: 30 65% 58%;
+    --chart-4: 270 45% 65%;
+    --chart-5: 340 55% 60%;
+
     /* SAV App specific colors - dark mode */
-    --primary-glow: 221 83% 45%;
-    --success: 142 76% 36%;
-    --success-foreground: 210 40% 98%;
-    --warning: 43 74% 66%;
-    --warning-foreground: 222.2 84% 4.9%;
-    --info: 197 37% 50%;
-    --info-foreground: 210 40% 98%;
-    
+    --primary-glow: 217 70% 55%;
+    --success: 150 45% 45%;
+    --success-foreground: 215 25% 90%;
+    --warning: 38 65% 60%;
+    --warning-foreground: 220 30% 12%;
+    --info: 200 45% 55%;
+    --info-foreground: 215 25% 90%;
+
     /* Gradients - dark mode */
     --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)));
     --gradient-card: linear-gradient(145deg, hsl(var(--card)), hsl(var(--muted)));
-    
+
     /* Shadows - dark mode */
-    --shadow-card: 0 2px 8px hsl(0 0% 0% / 0.3);
-    --shadow-hover: 0 4px 12px hsl(var(--primary) / 0.3);
+    --shadow-card: 0 2px 8px hsl(220 40% 4% / 0.5);
+    --shadow-hover: 0 4px 12px hsl(var(--primary) / 0.25);
+
+    /* Sidebar - navy family */
+    --sidebar-background: 220 32% 9%;
+    --sidebar-foreground: 215 22% 78%;
+    --sidebar-primary: 217 70% 58%;
+    --sidebar-primary-foreground: 220 30% 10%;
+    --sidebar-accent: 220 24% 16%;
+    --sidebar-accent-foreground: 215 25% 85%;
+    --sidebar-border: 220 20% 18%;
+    --sidebar-ring: 217 70% 55%;
   }
 }
 
