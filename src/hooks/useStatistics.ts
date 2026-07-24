@@ -101,88 +101,8 @@ export function useStatistics(
     'Autres': 'hsl(220, 9%, 46%)',
   };
 
-    const brandUpper = (brand || '').toUpperCase().trim();
-    const modelUpper = (model || '').toUpperCase().trim();
-    const combined = `${brandUpper} ${modelUpper}`;
-    
-    // ===== CONSOLES DE JEUX =====
-    if (['MICROSOFT', 'XBOX', 'NINTENDO'].includes(brandUpper)) return 'Consoles';
-    if (brandUpper === 'SONY' && (modelUpper.includes('PS') || modelUpper.includes('PLAYSTATION') || modelUpper.includes('DUALSENSE') || modelUpper.includes('DUALSHOCK'))) {
-      return 'Consoles';
-    }
-    if (combined.match(/PS[345]|XBOX|SWITCH|NINTENDO|PLAYSTATION|CONSOLE|MANETTE|DUALSENSE|DUALSHOCK|JOY-?CON/i)) {
-      return 'Consoles';
-    }
-    
-    // ===== INFORMATIQUE (PC, Laptops, Tours, Accessoires PC) =====
-    // Marques informatique pures
-    const pcBrands = ['TOSHIBA', 'HP', 'LENOVO', 'DELL', 'ASUS', 'ACER', 'MSI', 'GIGABYTE', 'RAZER', 
-                      'CORSAIR', 'LOGITECH', 'COOLER MASTER', 'NZXT', 'THERMALTAKE', 'OMEN', 'ALIENWARE',
-                      'PREDATOR', 'REPUBLIC OF GAMERS', 'ROG', 'STEELSERIES', 'HYPERX', 'ROCCAT',
-                      'EVGA', 'ZOTAC', 'SAPPHIRE', 'ASROCK', 'BIOSTAR', 'PALIT', 'PNY', 'INNO3D'];
-    if (pcBrands.includes(brandUpper)) {
-      return 'Informatique';
-    }
-    
-    // Modèles Mac (informatique)
-    if (modelUpper.match(/MACBOOK|IMAC|MAC MINI|MAC PRO|MAC STUDIO/)) return 'Informatique';
-    
-    // Mots-clés informatique génériques
-    if (combined.match(/PC|LAPTOP|NOTEBOOK|TOUR|GAMER|PROBOOK|IDEAPAD|VIVOBOOK|THINKPAD|PAVILION|INSPIRON|ORDINATEUR|DESKTOP|CLAVIER|SOURIS|ECRAN|MONITEUR|CARTE GRAPHIQUE|GPU|CPU|PROCESSEUR|RAM|SSD|HDD|DISQUE DUR|ALIMENTATION|BOITIER|VENTILATEUR|WATERCOOLING|GAMING PC|TOUR GAMER|STATION|WORKSTATION/i)) {
-      return 'Informatique';
-    }
-    
-    // ===== TABLETTES =====
-    if (modelUpper.match(/IPAD|GALAXY TAB|TAB S\d|TAB A\d|SURFACE|TABLETTE|MEDIAPAD|MATEPAD/i)) return 'Tablettes';
-    
-    // ===== TÉLÉPHONES =====
-    // Marques téléphones
-    const phoneBrands = ['APPLE', 'SAMSUNG', 'HUAWEI', 'XIAOMI', 'OPPO', 'GOOGLE', 'ONEPLUS', 
-                         'HONOR', 'REALME', 'VIVO', 'MOTOROLA', 'NOKIA', 'LG', 'WIKO', 'FAIRPHONE',
-                         'NOTHING', 'POCO', 'REDMI', 'INFINIX', 'TECNO', 'ZTE', 'ALCATEL', 'DORO',
-                         'CROSSCALL', 'BLACKVIEW', 'CUBOT', 'UMIDIGI', 'OUKITEL'];
-    
-    // OnePlus (marque "ONE" ou "ONEPLUS")
-    if (brandUpper === 'ONE' || brandUpper === 'ONEPLUS' || combined.includes('ONEPLUS')) {
-      return 'Téléphones';
-    }
-    
-    // iPhones - Patterns courants
-    if (modelUpper.match(/IPHONE|^[0-9]+ PRO|^XS|^XR|^X$|^SE$|^MINI$|^PRO MAX$/i)) {
-      if (brandUpper === 'APPLE' || brandUpper === '') return 'Téléphones';
-    }
-    
-    // Samsung - distinguer téléphones des tablettes
-    if (brandUpper === 'SAMSUNG') {
-      if (modelUpper.match(/TAB|TABLETTE/i)) return 'Tablettes';
-      if (modelUpper.match(/GALAXY|^S\d|^A\d|^M\d|^F\d|^Z FOLD|^Z FLIP|NOTE|ULTRA/i)) return 'Téléphones';
-    }
-    
-    // Autres marques téléphones
-    if (phoneBrands.includes(brandUpper)) {
-      // Vérifier que ce n'est pas un PC ou tablette
-      if (!modelUpper.match(/MACBOOK|IMAC|IPAD|TAB|PC|LAPTOP/i)) {
-        return 'Téléphones';
-      }
-    }
-    
-    // Mots-clés téléphones génériques
-    if (modelUpper.match(/GALAXY S|GALAXY A|GALAXY M|GALAXY Z|REDMI|PIXEL|MATE|XPERIA|PHONE|SMARTPHONE|POCO|FIND X|RENO|MI \d|NOTE \d/i)) {
-      return 'Téléphones';
-    }
-    
-    // ===== AUTRES =====
-    return 'Autres';
-  };
 
-  // Couleurs pour les catégories de produits
-  const categoryColors: Record<string, string> = {
-    'Téléphones': 'hsl(217, 91%, 60%)', // Bleu
-    'Informatique': 'hsl(142, 71%, 45%)', // Vert
-    'Consoles': 'hsl(32, 95%, 50%)', // Orange
-    'Tablettes': 'hsl(270, 70%, 60%)', // Violet
-    'Autres': 'hsl(220, 9%, 46%)' // Gris
-  };
+
 
   const normalizeDeviceName = (brand: string, model: string) => {
     // Normaliser la marque (garder en majuscules comme dans les données)
