@@ -90,8 +90,17 @@ export function useStatistics(
   // pour garantir l'identité de fenêtre entre KPI et chart.
   const getDateRange = () => getRangeForPeriod(period as LatePeriodKey);
 
-  // Fonction de catégorisation intelligente des produits
-  const categorizeDevice = (brand: string, model: string): string => {
+  // Catégorisation déterministe centralisée dans src/lib/deviceCategorization.ts
+
+  // Couleurs pour les catégories de produits
+  const categoryColors: Record<string, string> = {
+    'Téléphones': 'hsl(217, 91%, 60%)',
+    'Informatique': 'hsl(142, 71%, 45%)',
+    'Consoles': 'hsl(32, 95%, 50%)',
+    'Tablettes': 'hsl(270, 70%, 60%)',
+    'Autres': 'hsl(220, 9%, 46%)',
+  };
+
     const brandUpper = (brand || '').toUpperCase().trim();
     const modelUpper = (model || '').toUpperCase().trim();
     const combined = `${brandUpper} ${modelUpper}`;
