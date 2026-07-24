@@ -274,6 +274,9 @@ export function useStatistics(
         const partsUsage: Record<string, { quantity: number; revenue: number; name: string }> = {};
         const deviceUsage: Record<string, { model: string; brand: string; count: number }> = {};
         const productCategoryData: Record<string, { revenue: number; count: number }> = {};
+        // Cas rangés en "Autres" par la règle déterministe : candidats à un
+        // reclassement IA via `classify-sav-category`.
+        const othersCandidates: Array<{ id: string; brand: string; model: string; problem_description: string; revenue: number }> = [];
         const dailyData: Record<string, { revenue: number; expenses: number; count: number; completed: number; lateCount: number; activeCount: number }> = {};
 
         const currentDate = new Date();
