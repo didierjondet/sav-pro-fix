@@ -88,6 +88,7 @@ function SidebarComponent({
   const totalUnread = (savWithUnreadMessages || []).reduce((sum, s) => sum + s.unread_count, 0);
 
   // Simplified view state
+  const [showAllLateSAV, setShowAllLateSAV] = useState(false);
   const [isSimplifiedView, setIsSimplifiedView] = useState(() => {
     return localStorage.getItem('fixway_simplified_view') === 'true';
   });
