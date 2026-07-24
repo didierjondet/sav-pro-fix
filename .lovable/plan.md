@@ -1,48 +1,79 @@
-## 1. Corriger l'erreur du chat diagnostic IA
+# Améliorer la catégorisation des SAV (widget « Répartition du CA »)
 
-**Cause identifiée :** dans `src/components/sav/SAVDiagnosticTab.tsx`, l'insertion dans `sav_diagnostic_messages` utilise `created_by: user?.id`, mais la colonne réelle en base s'appelle `user_id`. L'INSERT échoue donc systématiquement (violation de schéma), d'où le toast rouge après envoi d'une question.
+## Constat
 
-**Fix :** remplacer `created_by` par `user_id` dans l'insert du message utilisateur (une seule ligne à modifier). Aucun changement de schéma nécessaire.
+Le classement actuel (`categorizeDevice` dans `src/hooks/useStatistics.ts`) s'appuie sur une comparaison stricte de la marque à une liste blanche + quelques regex sur le modèle. Résultat : dès qu'un utilisateur saisit une variante (faute de frappe, champ inversé, marque tronquée, numéro à la place de la marque…), le SAV bascule en « Autres ».
 
-## 2. Archivage des certificats de non-réparabilité
+Vérification en base pour le mois en cours — les SAV rangés à tort dans « Autres » sont bien des téléphones :
 
-**Objectif :** conserver l'historique des certificats générés pour un SAV, avec possibilité de :
-- lister les certificats déjà créés dans l'onglet Documents,
-- rouvrir/modifier le texte d'un certificat archivé et le réimprimer,
-- en créer plusieurs versions (bouton "Nouveau certificat").
+- `SAMASUNG / S21 FE` (typo Samsung)
+- `SASMUNG / A25 5G` (typo Samsung)
+- `APP / IPHONE 14 PRO 128GB SILVER` (marque tronquée)
+- `IPHONE / 12 PRO MAX` (marque et modèle inversés)
+- `14 PRO / APPLE` (marque et modèle inversés)
+- `075627082289 / IPHONE 12` (numéro de téléphone dans la marque)
 
-### Base de données (migration)
+Les autres lignes (ASUS/HP/DELL/LENOVO portables, bijou, cafetière, casque, vélo) restent correctement hors « Téléphones ».
 
-Nouvelle table `public.sav_certificates` :
-- `sav_case_id` (FK → `sav_cases`, cascade)
-- `shop_id` (FK → `shops`)
-- `certificate_type` (text, défaut `'non_repairability'` — extensible pour d'autres modèles futurs)
-- `title` (text)
-- `content` (text — le corps éditable imprimé)
-- `snapshot` (jsonb — copie figée des infos client/appareil/magasin au moment de la génération, pour réimpression fidèle même si le SAV évolue)
-- `created_by` (uuid, nullable)
-- `created_at`, `updated_at` (+ trigger)
+## Objectif
 
-RLS : lecture/écriture pour les membres du même `shop_id` (via `get_current_user_shop_id()`), service_role complet. GRANT `SELECT, INSERT, UPDATE, DELETE` à `authenticated`, GRANT ALL à `service_role`.
+Rendre la catégorisation tolérante aux fautes en combinant trois niveaux de signaux :
+1. **Normalisation** systématique des champs (majuscules, sans accent, sans ponctuation, numéros purs filtrés).
+2. **Détection déterministe** enrichie (alias de marques, distance de Levenshtein, patterns marque/modèle inversés, fusion marque+modèle).
+3. **Confirmation IA optionnelle** sur le champ « panne / description du problème » quand les règles déterministes retournent `Autres`, afin de reclasser à partir des indices textuels (« écran iPhone cassé », « batterie Galaxy S21 »…).
 
-### UI
+Aucun changement d'UI, aucun changement de schéma. Seul le pipeline de classement évolue, avec un cache pour ne pas rappeler l'IA à chaque rendu.
 
-Refonte de `src/components/sav/NonRepairabilityCertificateDialog.tsx` en deux composants :
+## Étapes
 
-- `NonRepairabilityCertificatesCard.tsx` (nouveau) — carte affichée dans l'onglet Documents :
-  - Bouton **"Nouveau certificat"** → ouvre le dialog en mode création.
-  - Liste des certificats archivés (date, aperçu 1re ligne) avec, sur chaque ligne, 3 actions : **Imprimer**, **Modifier**, **Supprimer** (confirmation).
-- `NonRepairabilityCertificateDialog.tsx` (mis à jour) :
-  - Reçoit `certificateId?` optionnel.
-  - À l'ouverture, charge le contenu existant (édition) ou pré-remplit le texte type (création).
-  - Bouton **"Enregistrer"** (insert/update dans `sav_certificates` avec snapshot magasin/client/appareil).
-  - Bouton **"Imprimer / PDF"** — imprime toujours à partir du snapshot enregistré si disponible, sinon des données live.
-  - À la création, on enregistre automatiquement avant impression pour garantir l'archivage.
+### 1. Utilitaire de normalisation (`src/lib/deviceCategorization.ts`)
 
-Intégration : remplacer dans `src/pages/SAVDetail.tsx` les deux occurrences actuelles de `<NonRepairabilityCertificateDialog ... />` (onglet Documents vue simplifiée + vue standard) par `<NonRepairabilityCertificatesCard ... />`. Aucun autre changement à la page SAV.
+Extraire la logique du hook vers un module dédié :
+- `normalizeText(str)` : `toUpperCase()`, retrait des accents (`normalize('NFD').replace(/[\u0300-\u036f]/g,'')`), compactage des espaces, suppression de la ponctuation superflue, retrait des séquences purement numériques de plus de 6 chiffres (numéros de téléphone).
+- `brandAliases` : map des fautes fréquentes observées en base → marque canonique (`SAMASUNG|SASMUNG|SAMSNUG → SAMSUNG` ; `APP|APPLR|APLE|IPHONE → APPLE` ; `HAUWEI → HUAWEI` ; `XIOMI → XIAOMI` ; `REDMII → REDMI`…). Structure ouverte pour ajouts futurs.
+- Résolution de marque : alias exact → sinon distance de Levenshtein ≤ 2 sur la liste des marques téléphones connues → sinon marque brute.
 
-### Détails techniques
+### 2. Refonte `categorizeDevice` (déterministe, sans IA)
 
-- Hook léger `useSAVCertificates(savCaseId)` avec React Query (`['sav_certificates', savCaseId]`) — list, create, update, delete + invalidation.
-- Le snapshot évite qu'une modification ultérieure du client ou du magasin ne réécrive l'historique imprimé.
-- Le template d'impression HTML A4 existant (en-tête magasin, code-barres Code128, zones signatures) est réutilisé tel quel — seule la source du contenu change (DB au lieu de state local).
+Travailler sur `combined = normalizeText(brand) + " " + normalizeText(model)` avec la marque résolue :
+- **Consoles** : mots-clés `PS3|PS4|PS5|XBOX|SWITCH|JOY.?CON|DUALSENSE|DUALSHOCK|MANETTE|NINTENDO|PLAYSTATION`.
+- **Tablettes** : `IPAD|GALAXY TAB|TAB S\d|TAB A\d|SURFACE|MEDIAPAD|MATEPAD|TABLETTE`.
+- **Informatique** : marques PC (ASUS, HP, DELL, LENOVO, ACER, MSI…) + mots-clés `MACBOOK|IMAC|MAC MINI|MAC STUDIO|LAPTOP|NOTEBOOK|PROBOOK|IDEAPAD|VIVOBOOK|THINKPAD|PAVILION|INSPIRON|LATITUDE|XPS|SWIFT|PREDATOR|OMEN|TUF|ROG|LOQ|ASPIRE|SSD|HDD|RAM|GPU|CPU`.
+- **Téléphones** (évalué après les 3 catégories ci-dessus) :
+  - marque canonique résolue dans la liste téléphones, OU
+  - modèle contenant `IPHONE|GALAXY [SAMFZ]\d|REDMI|PIXEL|MATE|XPERIA|SMARTPHONE|POCO|FIND X|RENO|ONEPLUS|NORD|ZFLIP|Z FLIP|ZFOLD|Z FOLD`, OU
+  - pattern iPhone marque-libre (`^\d{1,2}(\s|$)`, `\d{1,2}\s?(PRO|PRO MAX|MINI|PLUS)`, `^XS|^XR|^SE\b`) quand la marque est `APPLE`, vide, ou tombe côté modèle (inversion marque/modèle : détection croisée), OU
+  - pattern Samsung marque-libre : `^[SAMFZ]\d{1,2}(\s|FE|ULTRA|PLUS|\+)?`.
+- **Fallback** : `Autres` — mais on ne s'y arrête pas encore, on tente l'étape 3.
+
+### 3. Analyse IA complémentaire sur la panne (fallback)
+
+Quand la règle déterministe retourne `Autres` **et** qu'un texte de panne (`problem_description`) est disponible, appeler l'IA via une nouvelle Edge Function `classify-sav-category` pour trancher à partir du texte :
+
+- **Fonction** `supabase/functions/classify-sav-category/index.ts` :
+  - Entrée : `{ brand, model, problem_description }` (déjà normalisés côté client).
+  - Modèle : `google/gemini-3.6-flash` via la Lovable AI Gateway (rapide, économique, adapté à une classification simple).
+  - Prompt : renvoyer une catégorie parmi `Téléphones | Informatique | Consoles | Tablettes | Autres` en s'appuyant sur les indices marque + modèle + description (« écran cassé », « batterie iPhone », « clavier PC »…).
+  - Sortie structurée via `Output.object` (schéma minimal `{ category: 'Téléphones' | ... , confidence: number }`).
+  - Gestion 402/429 : renvoyer `Autres` sans faire échouer la requête.
+
+- **Côté hook** :
+  - Cache en mémoire par SAV (`Map<caseId, category>`) et cache localStorage `fixway_sav_category_cache_v1` (clé = hash `brand|model|desc`).
+  - Batch : rassembler les cas déterministes = `Autres` sur la période, appeler la fonction en lot (une requête, tableau d'entrées) pour limiter le coût.
+  - Recalcul déclenché uniquement à la (re)construction des stats — pas à chaque render.
+  - Log dev `console.debug` des cas où l'IA a reclassé, pour enrichir `brandAliases` plus tard.
+
+### 4. Vérification manuelle
+
+Dérouler la chaîne sur l'échantillon confirmé en base :
+- Doivent passer en `Téléphones` : SAMASUNG S21 FE, SASMUNG A25 5G, APP IPHONE 14 PRO…, IPHONE 12 PRO MAX, 14 PRO / APPLE, 075627082289 / IPHONE 12.
+- Doivent rester en `Informatique` : ASUS TUF, HP PAVILION, DELL XPS, LENOVO LOQ, MSI, ACER SWIFT.
+- Doivent rester en `Consoles` : NINTENDO JOYCON, SONY PS5.
+- Doivent rester en `Tablettes` : APPLE IPAD 7.
+- Doivent rester en `Autres` : bijouterie, cafetière Bosch Tassimo, casque Marshall, vélo (l'IA doit confirmer que la description ne suggère aucun appareil électronique).
+
+## Hors périmètre
+
+- Aucune modification du widget lui-même, ni des couleurs, ni de l'UI.
+- Aucun changement de schéma DB, aucune recatégorisation historique en base (la fonction s'applique à la volée).
+- Aucun rewriting/normalisation des données stockées : on lit tel quel, on normalise pour catégoriser.
