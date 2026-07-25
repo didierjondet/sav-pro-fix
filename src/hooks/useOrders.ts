@@ -415,7 +415,45 @@ export function useOrders() {
     }
   };
 
+  // Recalcule le statut d'un SAV lié à des commandes de pièces :
+  // - parts_ordered si toutes les pièces manquantes sont commandées
+  // - parts_to_order s'il reste des pièces manquantes non commandées
+  const syncSAVStatusAfterOrder = async (savCaseId: string) => {
+    try {
+      const { data: savParts } = await supabase
+        .from('sav_parts')
+        .select('part_id, quantity, parts(quantity)')
+        .eq('sav_case_id', savCaseId);
+
+      const { data: orderedItems } = await supabase
+        .from('order_items')
+        .select('part_id, quantity_needed')
+        .eq('sav_case_id', savCaseId)
+        .eq('ordered', true);
+
+      const stillMissing = (savParts || []).some((sp: any) => {
+        const physicalStock = sp.parts?.quantity || 0;
+        const missing = Math.max(0, sp.quantity - physicalStock);
+        if (missing === 0) return false;
+        const orderedQty = (orderedItems || [])
+          .filter((o: any) => o.part_id === sp.part_id)
+          .reduce((sum: number, o: any) => sum + (o.quantity_needed || 0), 0);
+        return orderedQty < missing;
+      });
+
+      const { error } = await supabase
+        .from('sav_cases')
+        .update({ status: (stillMissing ? 'parts_to_order' : 'parts_ordered') as any })
+        .eq('id', savCaseId);
+
+      if (error) console.error('Erreur lors de la mise à jour du statut SAV:', error);
+    } catch (e) {
+      console.error('Erreur syncSAVStatusAfterOrder:', e);
+    }
+  };
+
   const markAsOrdered = async (itemId: string) => {
+
     try {
       // Vérifier si c'est un item généré dynamiquement
       if (itemId.startsWith('sav-needed-') || itemId.startsWith('quote-needed-') || itemId.startsWith('restock-')) {
