@@ -220,7 +220,14 @@ export function SAVPartsRequirements({ savCaseId, onPartsUpdated }: SAVPartsRequ
         { event: 'UPDATE', schema: 'public', table: 'parts' },
         () => fetchPartsRequirements()
       )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'order_items', filter: `sav_case_id=eq.${savCaseId}` },
+        () => fetchPartsRequirements()
+      )
       .subscribe();
+
+
 
     const onStockEvent = () => fetchPartsRequirements();
     window.addEventListener('parts-stock-updated', onStockEvent);
