@@ -755,40 +755,69 @@ export function useOrders() {
         // Récupérer la quantité actuelle
         const { data: currentPart } = await supabase
           .from('parts')
-          .select('quantity')
+          .select('quantity, reserved_quantity')
           .eq('id', orderItem.part_id)
           .single();
+
+        const currentReserved = currentPart?.reserved_quantity || 0;
+        // La pièce reçue vient combler la réservation posée par le SAV :
+        // on libère la réservation correspondante pour ne pas bloquer la dispo.
+        const reservedToRelease = orderItem.sav_case_id
+          ? Math.min(quantityReceived, currentReserved)
+          : 0;
 
         // Mettre à jour la quantité
         const { error: stockUpdateError } = await supabase
           .from('parts')
           .update({ 
-            quantity: (currentPart?.quantity || 0) + quantityReceived
+            quantity: (currentPart?.quantity || 0) + quantityReceived,
+            reserved_quantity: Math.max(0, currentReserved - reservedToRelease)
           })
           .eq('id', orderItem.part_id);
 
         if (stockUpdateError) throw stockUpdateError;
       }
 
-      // Supprimer l'item de commande (réception terminée)
-      const { error: deleteError } = await supabase
-        .from('order_items')
-        .delete()
-        .eq('id', itemId);
+      // Réception partielle : on décrémente la quantité restante à recevoir.
+      // Réception complète : on supprime la ligne de commande.
+      const remainingToReceive = (orderItem.quantity_needed || 0) - quantityReceived;
+      if (remainingToReceive > 0) {
+        const { error: partialError } = await supabase
+          .from('order_items')
+          .update({ quantity_needed: remainingToReceive })
+          .eq('id', itemId);
 
-      if (deleteError) throw deleteError;
+        if (partialError) throw partialError;
+      } else {
+        const { error: deleteError } = await supabase
+          .from('order_items')
+          .delete()
+          .eq('id', itemId);
+
+        if (deleteError) throw deleteError;
+      }
 
       // Si lié à un SAV, mettre à jour le statut et envoyer un message
       if (orderItem.sav_case_id) {
-        // Mettre à jour le statut du SAV
+        // Vérifier s'il reste des commandes en attente de réception pour ce SAV
+        const { data: pendingOrders } = await supabase
+          .from('order_items')
+          .select('id')
+          .eq('sav_case_id', orderItem.sav_case_id)
+          .eq('ordered', true);
+
+        const allReceived = !pendingOrders || pendingOrders.length === 0;
+
+        // Mettre à jour le statut du SAV seulement si tout est réceptionné
         const { error: savUpdateError } = await supabase
           .from('sav_cases')
-          .update({ status: 'parts_received' as any })
+          .update({ status: (allReceived ? 'parts_received' : 'parts_ordered') as any })
           .eq('id', orderItem.sav_case_id);
 
         if (savUpdateError) {
           console.error('Erreur lors de la mise à jour du statut SAV:', savUpdateError);
         }
+
 
         // Récupérer les informations du shop pour le message
         const { data: shop, error: shopError } = await supabase
