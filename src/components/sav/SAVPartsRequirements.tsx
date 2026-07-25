@@ -65,8 +65,11 @@ export function SAVPartsRequirements({ savCaseId, onPartsUpdated }: SAVPartsRequ
           const reserved = part?.reserved_quantity || 0;
           const availableStock = Math.max(0, physicalStock - reserved);
           const neededQuantity = savPart.quantity;
-          const missingQuantity = Math.max(0, neededQuantity - availableStock);
+          // La réservation posée par CE SAV ne doit pas se compter contre lui :
+          // on évalue le besoin de commande sur le stock physique réel.
+          const missingQuantity = Math.max(0, neededQuantity - physicalStock);
           const needsOrdering = missingQuantity > 0;
+
 
           return {
             id: savPart.id,
@@ -217,7 +220,14 @@ export function SAVPartsRequirements({ savCaseId, onPartsUpdated }: SAVPartsRequ
         { event: 'UPDATE', schema: 'public', table: 'parts' },
         () => fetchPartsRequirements()
       )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'order_items', filter: `sav_case_id=eq.${savCaseId}` },
+        () => fetchPartsRequirements()
+      )
       .subscribe();
+
+
 
     const onStockEvent = () => fetchPartsRequirements();
     window.addEventListener('parts-stock-updated', onStockEvent);
