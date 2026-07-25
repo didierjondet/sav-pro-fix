@@ -503,14 +503,7 @@ export function useOrders() {
 
         // Si c'est un SAV qui a des pièces commandées, mettre à jour le statut du SAV
         if (virtualItem.sav_case_id && itemId.startsWith('sav-needed-')) {
-          const { error: updateSAVError } = await supabase
-            .from('sav_cases')
-            .update({ status: 'parts_ordered' })
-            .eq('id', virtualItem.sav_case_id);
-
-          if (updateSAVError) {
-            console.error('Erreur lors de la mise à jour du statut SAV:', updateSAVError);
-          }
+          await syncSAVStatusAfterOrder(virtualItem.sav_case_id);
         }
       } else {
         // Pour les vrais items de order_items
@@ -530,16 +523,10 @@ export function useOrders() {
 
         // Si c'est lié à un SAV, mettre à jour son statut
         if (orderItem?.sav_case_id) {
-          const { error: updateSAVError } = await supabase
-            .from('sav_cases')
-            .update({ status: 'parts_ordered' })
-            .eq('id', orderItem.sav_case_id);
-
-          if (updateSAVError) {
-            console.error('Erreur lors de la mise à jour du statut SAV:', updateSAVError);
-          }
+          await syncSAVStatusAfterOrder(orderItem.sav_case_id);
         }
       }
+
 
       toast({
         title: "Succès",
