@@ -546,8 +546,67 @@ export function AppointmentDialog({ open, onClose, appointment, defaultDate, sav
                   </Command>
                 </PopoverContent>
               </Popover>
+
+              {showCreateCustomer && (
+                <div className="p-3 border rounded-lg space-y-3 bg-muted/40">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-sm font-semibold flex items-center gap-2">
+                      <UserPlus className="h-4 w-4 text-primary" />
+                      Nouveau client
+                    </h4>
+                    <Button variant="ghost" size="sm" className="h-7 px-2" onClick={() => setShowCreateCustomer(false)}>
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Input placeholder="Prénom *" value={newFirstName} onChange={(e) => setNewFirstName(e.target.value)} />
+                    <Input placeholder="Nom *" value={newLastName} onChange={(e) => setNewLastName(e.target.value)} />
+                  </div>
+                  <Input
+                    placeholder="Téléphone (ex: 06.12.34.56.78)"
+                    value={newPhone}
+                    onChange={(e) => setNewPhone(formatPhoneInput(e.target.value))}
+                  />
+                  <Input
+                    type="email"
+                    placeholder="Email (optionnel)"
+                    value={newEmail}
+                    onChange={(e) => setNewEmail(e.target.value)}
+                  />
+                  <Button
+                    size="sm"
+                    className="w-full"
+                    onClick={handleCreateCustomer}
+                    disabled={creatingCustomer}
+                  >
+                    {creatingCustomer ? 'Création...' : 'Créer et sélectionner'}
+                  </Button>
+                </div>
+              )}
+
+              <div className="flex items-center gap-2 pt-1">
+                <Checkbox
+                  id="send-appointment-sms"
+                  checked={sendSms && !!selectedCustomer?.phone}
+                  disabled={!selectedCustomer?.phone}
+                  onCheckedChange={(v) => setSendSms(!!v)}
+                />
+                <Label
+                  htmlFor="send-appointment-sms"
+                  className={cn('text-sm font-normal flex items-center gap-1', !selectedCustomer?.phone && 'text-muted-foreground')}
+                >
+                  <MessageSquare className="h-3.5 w-3.5" />
+                  Prévenir le client par SMS
+                </Label>
+              </div>
+              {!selectedCustomer?.phone && (
+                <p className="text-xs text-muted-foreground">
+                  Sélectionnez un client avec un numéro de téléphone pour activer l'envoi du SMS.
+                </p>
+              )}
             </div>
           )}
+
 
           {/* Notes */}
           <div className="space-y-2">
