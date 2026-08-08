@@ -1093,6 +1093,19 @@ export default function SAVDetail() {
             )}
           </TabsContent>
 
+          {/* Onglet Agenda */}
+          <TabsContent value="agenda" className="space-y-4">
+            <SAVAgendaTab
+              savCaseId={savCase.id}
+              customerId={savCase.customer_id}
+              customerName={customerFullNameStd || 'Client'}
+              customerPhone={savCase.customer?.phone}
+              caseNumber={savCase.case_number}
+              deviceInfo={{ brand: savCase.device_brand, model: savCase.device_model }}
+              canPropose={getTypeInfo(savCase.sav_type).show_customer_info}
+            />
+          </TabsContent>
+
           {/* Onglet Pièces */}
           <TabsContent value="pieces" className="space-y-4">
             <SAVPartsRequirements savCaseId={savCase.id} onPartsUpdated={() => {}} />
