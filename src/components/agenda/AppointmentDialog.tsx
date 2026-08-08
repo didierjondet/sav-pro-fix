@@ -140,8 +140,8 @@ export function AppointmentDialog({ open, onClose, appointment, defaultDate, sav
 
   // Get selected customer info
   const selectedCustomer = useMemo(() => {
-    return customers.find(c => c.id === customerId);
-  }, [customers, customerId]);
+    return customers.find(c => c.id === customerId) || (createdCustomer?.id === customerId ? createdCustomer : undefined);
+  }, [customers, customerId, createdCustomer]);
 
   useEffect(() => {
     if (appointment) {
@@ -162,7 +162,47 @@ export function AppointmentDialog({ open, onClose, appointment, defaultDate, sav
       setCustomerSearch('');
       setNotes('');
     }
+    setShowCreateCustomer(false);
+    setNewFirstName('');
+    setNewLastName('');
+    setNewPhone('');
+    setNewEmail('');
+    setCreatedCustomer(null);
+    setSendSms(true);
   }, [appointment, defaultDate, open]);
+
+  const handleCreateCustomer = async () => {
+    if (!shop?.id) return;
+    if (!newFirstName.trim() || !newLastName.trim()) {
+      toast({ title: 'Champs requis', description: 'Le prénom et le nom sont requis', variant: 'destructive' });
+      return;
+    }
+    if (newPhone.trim()) {
+      const validation = validateFrenchPhoneNumber(newPhone);
+      if (!validation.isValid) {
+        toast({ title: 'Téléphone invalide', description: validation.message, variant: 'destructive' });
+        return;
+      }
+    }
+
+    setCreatingCustomer(true);
+    const { data, error } = await createCustomer({
+      first_name: newFirstName.trim(),
+      last_name: newLastName.trim(),
+      phone: newPhone.trim() || undefined,
+      email: newEmail.trim() || undefined,
+      shop_id: shop.id,
+    } as any);
+    setCreatingCustomer(false);
+
+    if (!error && data) {
+      setCreatedCustomer(data as any);
+      setCustomerId((data as any).id);
+      setShowCreateCustomer(false);
+      setCustomerSearch('');
+      refetchCustomers();
+    }
+  };
 
   const handleSubmit = async () => {
     const [hours, minutes] = selectedTime.split(':').map(Number);
@@ -186,8 +226,28 @@ export function AppointmentDialog({ open, onClose, appointment, defaultDate, sav
         sav_case_id: savCaseId,
         notes: notes || undefined,
       };
-      await createAppointment(createData);
+      const created: any = await createAppointment(createData);
+
+      // Envoi SMS au client (non bloquant pour la création du RDV)
+      if (sendSms && selectedCustomer?.phone && created?.confirmation_token) {
+        try {
+          const confirmUrl = generatePublicAppointmentUrl(created.confirmation_token);
+          const typeLabel = APPOINTMENT_TYPES.find(t => t.value === appointmentType)?.label || 'rendez-vous';
+          await sendAppointmentSMS(
+            selectedCustomer.phone,
+            `${selectedCustomer.first_name} ${selectedCustomer.last_name}`.trim(),
+            startDatetime,
+            typeLabel,
+            duration,
+            confirmUrl,
+            savCaseId
+          );
+        } catch (e) {
+          // L'erreur est déjà signalée par useSMS
+        }
+      }
     }
+
     onClose();
   };
 
