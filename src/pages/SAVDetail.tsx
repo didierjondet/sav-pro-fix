@@ -498,21 +498,6 @@ export default function SAVDetail() {
                     variant="outline"
                   />
                 )}
-                {getTypeInfo(savCase.sav_type).show_customer_info && (
-                  <AppointmentProposalDialog
-                    savCaseId={savCase.id}
-                    customerId={savCase.customer_id}
-                    customerName={customerFullName || 'Client'}
-                    customerPhone={savCase.customer?.phone}
-                    caseNumber={savCase.case_number}
-                    deviceInfo={{ brand: savCase.device_brand, model: savCase.device_model }}
-                    trigger={
-                      <Button variant="outline" size="sm">
-                        <CalendarPlus className="h-4 w-4 mr-2" /> Proposer RDV
-                      </Button>
-                    }
-                  />
-                )}
                 <Button variant="outline" size="sm" onClick={copyTrackingUrl}>
                   <Share className="h-4 w-4 mr-2" /> Partager le lien
                 </Button>
