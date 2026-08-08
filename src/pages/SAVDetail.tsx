@@ -36,6 +36,7 @@ import { AITextReformulator } from '@/components/sav/AITextReformulator';
 import { EditSAVCustomerDialog } from '@/components/sav/EditSAVCustomerDialog';
 import { EditSAVDetailsDialog } from '@/components/sav/EditSAVDetailsDialog';
 import { AppointmentProposalDialog } from '@/components/agenda/AppointmentProposalDialog';
+import { SAVAgendaTab, useSAVCaseAppointments } from '@/components/sav/SAVAgendaTab';
 import { useProfile } from '@/hooks/useProfile';
 import { logSAVChange, getCurrentUserName } from '@/hooks/useSAVAuditLog';
 import { ProductRecurrenceBadge } from '@/components/sav/ProductRecurrenceBadge';
