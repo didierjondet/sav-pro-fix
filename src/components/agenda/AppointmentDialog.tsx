@@ -17,6 +17,13 @@ import { CalendarIcon, Trash2, Check, X, Clock, ChevronsUpDown, User, AlertTrian
 import { useAppointments, Appointment, AppointmentType, CreateAppointmentData, UpdateAppointmentData } from '@/hooks/useAppointments';
 import { useWorkingHours } from '@/hooks/useWorkingHours';
 import { useAllCustomers } from '@/hooks/useAllCustomers';
+import { useCustomers } from '@/hooks/useCustomers';
+import { useShop } from '@/hooks/useShop';
+import { useSMS } from '@/hooks/useSMS';
+import { useToast } from '@/hooks/use-toast';
+import { Checkbox } from '@/components/ui/checkbox';
+import { generatePublicAppointmentUrl } from '@/utils/trackingUtils';
+import { validateFrenchPhoneNumber, formatPhoneInput } from '@/utils/phoneValidation';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { cn } from '@/lib/utils';
