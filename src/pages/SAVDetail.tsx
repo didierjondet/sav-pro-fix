@@ -36,6 +36,7 @@ import { AITextReformulator } from '@/components/sav/AITextReformulator';
 import { EditSAVCustomerDialog } from '@/components/sav/EditSAVCustomerDialog';
 import { EditSAVDetailsDialog } from '@/components/sav/EditSAVDetailsDialog';
 import { AppointmentProposalDialog } from '@/components/agenda/AppointmentProposalDialog';
+import { SAVAgendaTab, useSAVCaseAppointments } from '@/components/sav/SAVAgendaTab';
 import { useProfile } from '@/hooks/useProfile';
 import { logSAVChange, getCurrentUserName } from '@/hooks/useSAVAuditLog';
 import { ProductRecurrenceBadge } from '@/components/sav/ProductRecurrenceBadge';
@@ -101,6 +102,7 @@ export default function SAVDetail() {
   const [savingTechnicianComments, setSavingTechnicianComments] = useState(false);
   const { data: unreadCount = 0 } = useSAVCaseUnreadCount(id);
   const { data: hasActiveLoan = false } = useSAVCaseHasActiveLoan(id);
+  const { activeCount: agendaActiveCount } = useSAVCaseAppointments(id);
   useEffect(() => {
     if (cases && id) {
       const foundCase = cases.find(c => c.id === id);
@@ -389,6 +391,14 @@ export default function SAVDetail() {
                   </span>
                 )}
               </TabsTrigger>
+              <TabsTrigger value="agenda" className={`relative ${TAB_ACTIVE_CLASSES}`}>
+                <CalendarPlus className="h-3.5 w-3.5 mr-1" /> Agenda
+                {agendaActiveCount > 0 && (
+                  <span className="ml-2 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-primary text-primary-foreground text-[10px] font-bold">
+                    {agendaActiveCount}
+                  </span>
+                )}
+              </TabsTrigger>
               <TabsTrigger value="pieces" className={TAB_ACTIVE_CLASSES}>Pièces</TabsTrigger>
               <TabsTrigger value="codes" className={TAB_ACTIVE_CLASSES}>
                 <KeyRound className="h-3.5 w-3.5 mr-1" /> Codes
@@ -496,21 +506,6 @@ export default function SAVDetail() {
                     variant="outline"
                   />
                 )}
-                {getTypeInfo(savCase.sav_type).show_customer_info && (
-                  <AppointmentProposalDialog
-                    savCaseId={savCase.id}
-                    customerId={savCase.customer_id}
-                    customerName={customerFullName || 'Client'}
-                    customerPhone={savCase.customer?.phone}
-                    caseNumber={savCase.case_number}
-                    deviceInfo={{ brand: savCase.device_brand, model: savCase.device_model }}
-                    trigger={
-                      <Button variant="outline" size="sm">
-                        <CalendarPlus className="h-4 w-4 mr-2" /> Proposer RDV
-                      </Button>
-                    }
-                  />
-                )}
                 <Button variant="outline" size="sm" onClick={copyTrackingUrl}>
                   <Share className="h-4 w-4 mr-2" /> Partager le lien
                 </Button>
@@ -556,6 +551,19 @@ export default function SAVDetail() {
                   </CardContent>
                 </Card>
               )}
+            </TabsContent>
+
+            {/* Onglet Agenda */}
+            <TabsContent value="agenda" className="space-y-4">
+              <SAVAgendaTab
+                savCaseId={savCase.id}
+                customerId={savCase.customer_id}
+                customerName={customerFullName || 'Client'}
+                customerPhone={savCase.customer?.phone}
+                caseNumber={savCase.case_number}
+                deviceInfo={{ brand: savCase.device_brand, model: savCase.device_model }}
+                canPropose={getTypeInfo(savCase.sav_type).show_customer_info}
+              />
             </TabsContent>
 
             {/* Onglet Pièces */}
@@ -781,6 +789,14 @@ export default function SAVDetail() {
               {unreadCount > 0 && (
                 <span className="ml-2 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold">
                   {unreadCount}
+                </span>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="agenda" className={`relative ${TAB_ACTIVE_CLASSES}`}>
+              <CalendarPlus className="h-3.5 w-3.5 mr-1" /> Agenda
+              {agendaActiveCount > 0 && (
+                <span className="ml-2 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-primary text-primary-foreground text-[10px] font-bold">
+                  {agendaActiveCount}
                 </span>
               )}
             </TabsTrigger>
@@ -1029,21 +1045,6 @@ export default function SAVDetail() {
                   variant="outline"
                 />
               )}
-              {getTypeInfo(savCase.sav_type).show_customer_info && (
-                <AppointmentProposalDialog
-                  savCaseId={savCase.id}
-                  customerId={savCase.customer_id}
-                  customerName={customerFullNameStd || 'Client'}
-                  customerPhone={savCase.customer?.phone}
-                  caseNumber={savCase.case_number}
-                  deviceInfo={{ brand: savCase.device_brand, model: savCase.device_model }}
-                  trigger={
-                    <Button variant="outline" size="sm">
-                      <CalendarPlus className="h-4 w-4 mr-2" /> Proposer RDV
-                    </Button>
-                  }
-                />
-              )}
               <Button variant="outline" size="sm" onClick={copyTrackingUrl}>
                 <Share className="h-4 w-4 mr-2" /> Partager le lien
               </Button>
@@ -1089,6 +1090,19 @@ export default function SAVDetail() {
                 </CardContent>
               </Card>
             )}
+          </TabsContent>
+
+          {/* Onglet Agenda */}
+          <TabsContent value="agenda" className="space-y-4">
+            <SAVAgendaTab
+              savCaseId={savCase.id}
+              customerId={savCase.customer_id}
+              customerName={customerFullNameStd || 'Client'}
+              customerPhone={savCase.customer?.phone}
+              caseNumber={savCase.case_number}
+              deviceInfo={{ brand: savCase.device_brand, model: savCase.device_model }}
+              canPropose={getTypeInfo(savCase.sav_type).show_customer_info}
+            />
           </TabsContent>
 
           {/* Onglet Pièces */}
