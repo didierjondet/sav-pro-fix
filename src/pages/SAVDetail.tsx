@@ -102,6 +102,7 @@ export default function SAVDetail() {
   const [savingTechnicianComments, setSavingTechnicianComments] = useState(false);
   const { data: unreadCount = 0 } = useSAVCaseUnreadCount(id);
   const { data: hasActiveLoan = false } = useSAVCaseHasActiveLoan(id);
+  const { activeCount: agendaActiveCount } = useSAVCaseAppointments(id);
   useEffect(() => {
     if (cases && id) {
       const foundCase = cases.find(c => c.id === id);
