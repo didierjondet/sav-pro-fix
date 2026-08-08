@@ -479,8 +479,28 @@ export function AppointmentDialog({ open, onClose, appointment, defaultDate, sav
                       onValueChange={setCustomerSearch}
                     />
                     <CommandList>
-                      <CommandEmpty>Aucun client trouvé.</CommandEmpty>
+                      <CommandEmpty>
+                        <div className="p-2 text-sm text-muted-foreground">Aucun client trouvé.</div>
+                      </CommandEmpty>
                       <CommandGroup>
+                        <CommandItem
+                          value="__create__"
+                          onSelect={() => {
+                            const parts = customerSearch.trim().split(/\s+/);
+                            setNewFirstName(parts[0] || '');
+                            setNewLastName(parts.slice(1).join(' ') || '');
+                            setShowCreateCustomer(true);
+                            setCustomerPopoverOpen(false);
+                          }}
+                        >
+                          <UserPlus className="mr-2 h-4 w-4 text-primary" />
+                          <span>
+                            {customerSearch.trim()
+                              ? `Créer le client « ${customerSearch.trim()} »`
+                              : 'Créer un nouveau client'}
+                          </span>
+                        </CommandItem>
+
                         <CommandItem
                           value="none"
                           onSelect={() => {
