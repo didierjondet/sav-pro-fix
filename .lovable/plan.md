@@ -1,59 +1,26 @@
-## Diagnostic
+# RDV libre : création client + envoi SMS
 
-Après lecture de `useOrders.ts` (fonctions `markAsOrdered`, `receiveOrderItem`), de `SAVPartsRequirements.tsx` (calcul du badge « À commander ») et de `PartStatusIcon.tsx`, j'ai identifié plusieurs bugs qui expliquent pourquoi le SAV lié ne se met pas à jour après validation d'une réception.
+Améliorer la fenêtre "Nouveau rendez-vous" (agenda, RDV sans SAV) pour pouvoir créer un client à la volée et prévenir le client par SMS dès la création.
 
-### Bugs confirmés
+## 1. Créer un client depuis la fenêtre RDV
 
-1. **`receiveOrderItem` ne libère pas la réservation** — la fonction incrémente bien `parts.quantity` (stock physique) et passe le SAV en `parts_received`, mais elle ne décrémente jamais `parts.reserved_quantity`. La réservation posée à la création du SAV reste active.
+Dans le sélecteur de client (liste déroulante de recherche) :
+- Ajouter en bas de liste une entrée "Créer le client « … »" quand la recherche ne correspond à personne.
+- Un petit formulaire inline apparaît dans la fenêtre : prénom, nom, téléphone (validé au format français), email (optionnel).
+- À la validation, le client est créé via la logique existante anti-doublon (si un client avec le même téléphone / email / nom existe déjà, il est réutilisé au lieu d'en créer un nouveau) puis sélectionné automatiquement pour le RDV.
 
-2. **Le badge « À commander » se calcule sur le stock disponible et non le stock physique** — dans `SAVPartsRequirements.tsx` :
-   ```
-   availableStock = physicalStock - reserved_quantity
-   needs_ordering = quantitéSAV > availableStock
-   ```
-   Comme la réservation du SAV lui‑même est comptée dans `reserved_quantity`, la pièce reste marquée « À commander » même après réception. C'est la vraie cause du symptôme visible.
+## 2. Envoi SMS du RDV fixé
 
-3. **Le statut SAV `parts_received` est appliqué globalement** — même si le SAV a plusieurs pièces et qu'une seule vient d'être réceptionnée, le statut passe à `parts_received`. Idem pour `parts_ordered` dans `markAsOrdered`.
-
-4. **Pas de propagation cross‑page** — quand la réception se fait sur `/orders`, l'écran SAV ouvert ailleurs ne recharge pas ses pièces (pas d'event `parts-stock-updated` émis par `receiveOrderItem`).
-
-5. **Réception partielle mal gérée** — `receiveOrderItem` supprime toujours la ligne `order_items` même si la quantité reçue est inférieure à la quantité commandée.
-
-## Correctifs proposés (uniquement `src/hooks/useOrders.ts` et `src/components/sav/SAVPartsRequirements.tsx`)
-
-### 1. `SAVPartsRequirements.tsx` — logique d'affichage
-Remplacer le calcul de `needs_ordering` pour se baser sur le stock **physique** vs la quantité nécessaire pour ce SAV (la réservation du SAV lui‑même ne doit pas se compter contre lui) :
-```
-needs_ordering = physicalStock < neededQuantity
-missing_quantity = max(0, neededQuantity - physicalStock)
-```
-Effet immédiat : dès que la réception augmente `parts.quantity`, le badge repasse en « Disponible ».
-
-### 2. `useOrders.receiveOrderItem` — libérer la réservation + statut cohérent
-- Après incrément de `parts.quantity`, décrémenter `parts.reserved_quantity` de `min(quantityReceived, reserved_quantity)` (la pièce reçue vient combler la réservation posée par le SAV).
-- Avant de forcer `status = parts_received`, vérifier qu'il ne reste **aucune** autre ligne `order_items` non reçue pour ce SAV. Sinon laisser le SAV en `parts_ordered`.
-- Émettre `window.dispatchEvent(new CustomEvent('parts-stock-updated'))` (déjà fait par `refreshAllData`, mais s'assurer que le SAV ouvert écoute cet event dans `SAVPartsRequirements` pour rappeler `fetchPartsRequirements`).
-- Gérer la réception partielle : si `quantityReceived < quantity_needed`, décrémenter `quantity_needed` au lieu de supprimer la ligne.
-
-### 3. `useOrders.markAsOrdered` — statut plus fin
-Ne passer le SAV en `parts_ordered` que si toutes les pièces nécessaires du SAV ont maintenant un `order_items.ordered = true` ou sont disponibles en stock. Sinon laisser en `parts_to_order`.
-
-### 4. `SAVPartsRequirements.tsx` — écoute realtime
-Ajouter un `useEffect` qui écoute :
-- l'event window `parts-stock-updated`,
-- un canal Supabase realtime sur `sav_parts` filtré par `sav_case_id` et sur `order_items` filtré par `sav_case_id`,
-et rappelle `fetchPartsRequirements` (cleanup avec `supabase.removeChannel`).
+- Ajouter une case à cocher "Prévenir le client par SMS" dans la fenêtre de création, activée par défaut dès qu'un client avec téléphone est sélectionné, désactivée (et grisée) sinon.
+- À la création du RDV, si la case est cochée : envoi d'un SMS reprenant la date, l'heure, le type de RDV, la durée, et le lien de confirmation public (`/rdv/:token`) — même format que la proposition de RDV existante.
+- Le résultat de l'envoi est affiché (SMS envoyé / erreur), sans bloquer la création du RDV : le RDV reste créé même si le SMS échoue.
+- Les erreurs de crédits SMS (magasin sans crédits, réseau saturé) restent gérées par le mécanisme existant.
 
 ## Détails techniques
 
-- Aucun changement de schéma DB requis, uniquement de la logique.
-- Les corrections ne touchent pas l'UI de la page `/orders` ni les autres onglets — seul le comportement métier de réception et l'affichage du badge sur la fiche SAV sont modifiés.
-- Aucune modification aux composants d'impression, wizard, ou ailleurs.
-
-## Validation
-
-1. Créer un SAV avec une pièce en stock 0 (badge « À commander » attendu).
-2. Depuis `/orders`, marquer « Commandé » → SAV passe en `parts_ordered`, badge inchangé.
-3. Valider la réception → SAV passe en `parts_received`, `parts.quantity` +1, `reserved_quantity` −1, badge SAV bascule sur « Disponible » sans rechargement manuel.
-4. Cas multi‑pièces : réception d'une seule → SAV reste en `parts_ordered`, badge de la pièce reçue devient « Disponible », les autres restent « À commander ».
-5. Réception partielle (2 sur 3) → la ligne reste dans l'onglet Réception avec quantité mise à jour.
+- `src/hooks/useAppointments.ts` : la mutation de création retourne déjà la ligne insérée ; s'assurer que `confirmation_token` est bien renvoyé dans le `select()` pour construire l'URL publique.
+- `src/components/agenda/AppointmentDialog.tsx` :
+  - état local pour le mini-formulaire client + case SMS ;
+  - création client via `createCustomer` de `useCustomers` (protection doublons existante) avec `shop_id` du profil ;
+  - envoi via `sendAppointmentSMS` de `useSMS` et `generatePublicAppointmentUrl` (même appel que `AppointmentProposalDialog`).
+- Aucun changement de base de données, aucune modification des autres écrans de l'agenda.
