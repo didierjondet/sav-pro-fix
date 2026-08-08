@@ -13,10 +13,17 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { CalendarIcon, Trash2, Check, X, Clock, ChevronsUpDown, User, AlertTriangle, ExternalLink, Smartphone, Wrench, Phone, Mail, MessageSquare } from 'lucide-react';
+import { CalendarIcon, Trash2, Check, X, Clock, ChevronsUpDown, User, AlertTriangle, ExternalLink, UserPlus, Smartphone, Wrench, Phone, Mail, MessageSquare } from 'lucide-react';
 import { useAppointments, Appointment, AppointmentType, CreateAppointmentData, UpdateAppointmentData } from '@/hooks/useAppointments';
 import { useWorkingHours } from '@/hooks/useWorkingHours';
 import { useAllCustomers } from '@/hooks/useAllCustomers';
+import { useCustomers } from '@/hooks/useCustomers';
+import { useShop } from '@/hooks/useShop';
+import { useSMS } from '@/hooks/useSMS';
+import { useToast } from '@/hooks/use-toast';
+import { Checkbox } from '@/components/ui/checkbox';
+import { generatePublicAppointmentUrl } from '@/utils/trackingUtils';
+import { validateFrenchPhoneNumber, formatPhoneInput } from '@/utils/phoneValidation';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { cn } from '@/lib/utils';
@@ -77,6 +84,21 @@ export function AppointmentDialog({ open, onClose, appointment, defaultDate, sav
   const [customerSearch, setCustomerSearch] = useState<string>('');
   const [customerPopoverOpen, setCustomerPopoverOpen] = useState(false);
   const [notes, setNotes] = useState<string>('');
+
+  // Création client à la volée
+  const { createCustomer } = useCustomers();
+  const { shop } = useShop();
+  const { toast } = useToast();
+  const { sendAppointmentSMS } = useSMS();
+  const { refetch: refetchCustomers } = useAllCustomers();
+  const [showCreateCustomer, setShowCreateCustomer] = useState(false);
+  const [creatingCustomer, setCreatingCustomer] = useState(false);
+  const [createdCustomer, setCreatedCustomer] = useState<any>(null);
+  const [newFirstName, setNewFirstName] = useState('');
+  const [newLastName, setNewLastName] = useState('');
+  const [newPhone, setNewPhone] = useState('');
+  const [newEmail, setNewEmail] = useState('');
+  const [sendSms, setSendSms] = useState(true);
 
   const isEditing = !!appointment;
   const availableSlots = getAvailableSlots(selectedDate, 30);
@@ -140,8 +162,8 @@ export function AppointmentDialog({ open, onClose, appointment, defaultDate, sav
 
   // Get selected customer info
   const selectedCustomer = useMemo(() => {
-    return customers.find(c => c.id === customerId);
-  }, [customers, customerId]);
+    return customers.find(c => c.id === customerId) || (createdCustomer?.id === customerId ? createdCustomer : undefined);
+  }, [customers, customerId, createdCustomer]);
 
   useEffect(() => {
     if (appointment) {
@@ -162,7 +184,47 @@ export function AppointmentDialog({ open, onClose, appointment, defaultDate, sav
       setCustomerSearch('');
       setNotes('');
     }
+    setShowCreateCustomer(false);
+    setNewFirstName('');
+    setNewLastName('');
+    setNewPhone('');
+    setNewEmail('');
+    setCreatedCustomer(null);
+    setSendSms(true);
   }, [appointment, defaultDate, open]);
+
+  const handleCreateCustomer = async () => {
+    if (!shop?.id) return;
+    if (!newFirstName.trim() || !newLastName.trim()) {
+      toast({ title: 'Champs requis', description: 'Le prénom et le nom sont requis', variant: 'destructive' });
+      return;
+    }
+    if (newPhone.trim()) {
+      const validation = validateFrenchPhoneNumber(newPhone);
+      if (!validation.isValid) {
+        toast({ title: 'Téléphone invalide', description: validation.message, variant: 'destructive' });
+        return;
+      }
+    }
+
+    setCreatingCustomer(true);
+    const { data, error } = await createCustomer({
+      first_name: newFirstName.trim(),
+      last_name: newLastName.trim(),
+      phone: newPhone.trim() || undefined,
+      email: newEmail.trim() || undefined,
+      shop_id: shop.id,
+    } as any);
+    setCreatingCustomer(false);
+
+    if (!error && data) {
+      setCreatedCustomer(data as any);
+      setCustomerId((data as any).id);
+      setShowCreateCustomer(false);
+      setCustomerSearch('');
+      refetchCustomers();
+    }
+  };
 
   const handleSubmit = async () => {
     const [hours, minutes] = selectedTime.split(':').map(Number);
@@ -186,8 +248,28 @@ export function AppointmentDialog({ open, onClose, appointment, defaultDate, sav
         sav_case_id: savCaseId,
         notes: notes || undefined,
       };
-      await createAppointment(createData);
+      const created: any = await createAppointment(createData);
+
+      // Envoi SMS au client (non bloquant pour la création du RDV)
+      if (sendSms && selectedCustomer?.phone && created?.confirmation_token) {
+        try {
+          const confirmUrl = generatePublicAppointmentUrl(created.confirmation_token);
+          const typeLabel = APPOINTMENT_TYPES.find(t => t.value === appointmentType)?.label || 'rendez-vous';
+          await sendAppointmentSMS(
+            selectedCustomer.phone,
+            `${selectedCustomer.first_name} ${selectedCustomer.last_name}`.trim(),
+            startDatetime,
+            typeLabel,
+            duration,
+            confirmUrl,
+            savCaseId
+          );
+        } catch (e) {
+          // L'erreur est déjà signalée par useSMS
+        }
+      }
     }
+
     onClose();
   };
 
@@ -397,8 +479,28 @@ export function AppointmentDialog({ open, onClose, appointment, defaultDate, sav
                       onValueChange={setCustomerSearch}
                     />
                     <CommandList>
-                      <CommandEmpty>Aucun client trouvé.</CommandEmpty>
+                      <CommandEmpty>
+                        <div className="p-2 text-sm text-muted-foreground">Aucun client trouvé.</div>
+                      </CommandEmpty>
                       <CommandGroup>
+                        <CommandItem
+                          value="__create__"
+                          onSelect={() => {
+                            const parts = customerSearch.trim().split(/\s+/);
+                            setNewFirstName(parts[0] || '');
+                            setNewLastName(parts.slice(1).join(' ') || '');
+                            setShowCreateCustomer(true);
+                            setCustomerPopoverOpen(false);
+                          }}
+                        >
+                          <UserPlus className="mr-2 h-4 w-4 text-primary" />
+                          <span>
+                            {customerSearch.trim()
+                              ? `Créer le client « ${customerSearch.trim()} »`
+                              : 'Créer un nouveau client'}
+                          </span>
+                        </CommandItem>
+
                         <CommandItem
                           value="none"
                           onSelect={() => {
@@ -444,8 +546,67 @@ export function AppointmentDialog({ open, onClose, appointment, defaultDate, sav
                   </Command>
                 </PopoverContent>
               </Popover>
+
+              {showCreateCustomer && (
+                <div className="p-3 border rounded-lg space-y-3 bg-muted/40">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-sm font-semibold flex items-center gap-2">
+                      <UserPlus className="h-4 w-4 text-primary" />
+                      Nouveau client
+                    </h4>
+                    <Button variant="ghost" size="sm" className="h-7 px-2" onClick={() => setShowCreateCustomer(false)}>
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Input placeholder="Prénom *" value={newFirstName} onChange={(e) => setNewFirstName(e.target.value)} />
+                    <Input placeholder="Nom *" value={newLastName} onChange={(e) => setNewLastName(e.target.value)} />
+                  </div>
+                  <Input
+                    placeholder="Téléphone (ex: 06.12.34.56.78)"
+                    value={newPhone}
+                    onChange={(e) => setNewPhone(formatPhoneInput(e.target.value))}
+                  />
+                  <Input
+                    type="email"
+                    placeholder="Email (optionnel)"
+                    value={newEmail}
+                    onChange={(e) => setNewEmail(e.target.value)}
+                  />
+                  <Button
+                    size="sm"
+                    className="w-full"
+                    onClick={handleCreateCustomer}
+                    disabled={creatingCustomer}
+                  >
+                    {creatingCustomer ? 'Création...' : 'Créer et sélectionner'}
+                  </Button>
+                </div>
+              )}
+
+              <div className="flex items-center gap-2 pt-1">
+                <Checkbox
+                  id="send-appointment-sms"
+                  checked={sendSms && !!selectedCustomer?.phone}
+                  disabled={!selectedCustomer?.phone}
+                  onCheckedChange={(v) => setSendSms(!!v)}
+                />
+                <Label
+                  htmlFor="send-appointment-sms"
+                  className={cn('text-sm font-normal flex items-center gap-1', !selectedCustomer?.phone && 'text-muted-foreground')}
+                >
+                  <MessageSquare className="h-3.5 w-3.5" />
+                  Prévenir le client par SMS
+                </Label>
+              </div>
+              {!selectedCustomer?.phone && (
+                <p className="text-xs text-muted-foreground">
+                  Sélectionnez un client avec un numéro de téléphone pour activer l'envoi du SMS.
+                </p>
+              )}
             </div>
           )}
+
 
           {/* Notes */}
           <div className="space-y-2">
