@@ -85,6 +85,21 @@ export function AppointmentDialog({ open, onClose, appointment, defaultDate, sav
   const [customerPopoverOpen, setCustomerPopoverOpen] = useState(false);
   const [notes, setNotes] = useState<string>('');
 
+  // Création client à la volée
+  const { createCustomer } = useCustomers();
+  const { shop } = useShop();
+  const { toast } = useToast();
+  const { sendAppointmentSMS } = useSMS();
+  const { refetch: refetchCustomers } = useAllCustomers();
+  const [showCreateCustomer, setShowCreateCustomer] = useState(false);
+  const [creatingCustomer, setCreatingCustomer] = useState(false);
+  const [createdCustomer, setCreatedCustomer] = useState<any>(null);
+  const [newFirstName, setNewFirstName] = useState('');
+  const [newLastName, setNewLastName] = useState('');
+  const [newPhone, setNewPhone] = useState('');
+  const [newEmail, setNewEmail] = useState('');
+  const [sendSms, setSendSms] = useState(true);
+
   const isEditing = !!appointment;
   const availableSlots = getAvailableSlots(selectedDate, 30);
 
