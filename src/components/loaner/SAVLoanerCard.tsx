@@ -28,7 +28,9 @@ export function SAVLoanerCard({ savCaseId, customerId }: Props) {
   const [returnCondition, setReturnCondition] = useState('');
   const [returnPhotos, setReturnPhotos] = useState<string[]>([]);
   const [expectedReturn, setExpectedReturn] = useState('');
+  const [deposit, setDeposit] = useState('');
   const [notesDraft, setNotesDraft] = useState<Record<string, string>>({});
+  const [depositDraft, setDepositDraft] = useState<Record<string, string>>({});
 
   const categoryLabel = (cat: string) =>
     LOANER_CATEGORIES.find((c) => c.value === cat)?.label || cat;
@@ -39,9 +41,12 @@ export function SAVLoanerCard({ savCaseId, customerId }: Props) {
       sav_case_id: savCaseId,
       customer_id: customerId || null,
       expected_return_at: expectedReturn || null,
+      deposit_amount: deposit.trim() !== '' && !Number.isNaN(Number(deposit)) ? Number(deposit) : null,
     });
     setExpectedReturn('');
+    setDeposit('');
   };
+
 
   const openReturn = (loan: LoanerLoan) => {
     setReturnTarget(loan);
