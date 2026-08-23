@@ -1201,11 +1201,9 @@ export default function SAVDetail() {
           </TabsContent>
 
           {/* Onglet Prêt matériel */}
-          {hasActiveLoan && (
-            <TabsContent value="loaner" className="space-y-4">
-              <SAVLoanerCard savCaseId={savCase.id} customerId={savCase.customer_id} />
-            </TabsContent>
-          )}
+          <TabsContent value="loaner" className="space-y-4">
+            <SAVLoanerCard savCaseId={savCase.id} customerId={savCase.customer_id} />
+          </TabsContent>
 
           {/* Onglet Documents */}
           <TabsContent value="documents" className="space-y-4">
