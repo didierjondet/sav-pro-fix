@@ -44,6 +44,11 @@ export function PrintConfirmDialog({
   requireUnlockPattern = false,
   hasUnlockPattern = false,
   hasUnlockMethod,
+  unlockCode,
+  onUnlockCodeChange,
+  noUnlockCode = false,
+  onNoUnlockCodeChange,
+  onGoToCodesStep,
   onPersistBeforeAction,
 }: PrintConfirmDialogProps) {
   const [sendingSMS, setSendingSMS] = useState(false);
