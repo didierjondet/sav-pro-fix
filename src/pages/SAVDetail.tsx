@@ -337,7 +337,10 @@ export default function SAVDetail() {
     const customerFullName = `${savCase.customer?.first_name || ''} ${savCase.customer?.last_name || ''}`.trim();
     const contactName = savCase.sav_type === 'client' ? customerFullName : (savCase.external_contact_name || 'Contact externe');
     const initialTab = (() => {
-      try { return localStorage.getItem('fixway_sav_detail_tab') || 'apercu'; } catch { return 'apercu'; }
+      try {
+        const t = localStorage.getItem('fixway_sav_detail_tab') || 'apercu';
+        return t === 'impression' ? 'documents' : t;
+      } catch { return 'apercu'; }
     })();
     return (
       <main className="flex-1 overflow-y-auto">
@@ -417,7 +420,6 @@ export default function SAVDetail() {
                   </span>
                 )}
               </TabsTrigger>
-              <TabsTrigger value="impression" className={TAB_ACTIVE_CLASSES}>Impression</TabsTrigger>
               <TabsTrigger value="documents" className={TAB_ACTIVE_CLASSES}>Documents</TabsTrigger>
             </TabsList>
 
@@ -582,8 +584,23 @@ export default function SAVDetail() {
             </TabsContent>
 
 
-            {/* Onglet Impression */}
-            <TabsContent value="impression" className="space-y-4">
+            {/* Onglet Codes */}
+            <TabsContent value="codes" className="space-y-4">
+              <SAVCodesTab savCase={savCase} />
+            </TabsContent>
+
+            {/* Onglet Diagnostic IA */}
+            <TabsContent value="diagnostic" className="space-y-4">
+              <SAVDiagnosticTab savCase={savCase} />
+            </TabsContent>
+
+            {/* Onglet Prêt matériel */}
+            <TabsContent value="loaner" className="space-y-4">
+              <SAVLoanerCard savCaseId={savCase.id} customerId={savCase.customer_id} />
+            </TabsContent>
+
+            {/* Onglet Documents */}
+            <TabsContent value="documents" className="space-y-4">
               <Card>
                 <CardHeader className="pb-3">
                   <CardTitle className="text-base">Document de prise en charge</CardTitle>
@@ -645,25 +662,7 @@ export default function SAVDetail() {
                   />
                 </CardContent>
               </Card>
-            </TabsContent>
 
-            {/* Onglet Codes */}
-            <TabsContent value="codes" className="space-y-4">
-              <SAVCodesTab savCase={savCase} />
-            </TabsContent>
-
-            {/* Onglet Diagnostic IA */}
-            <TabsContent value="diagnostic" className="space-y-4">
-              <SAVDiagnosticTab savCase={savCase} />
-            </TabsContent>
-
-            {/* Onglet Prêt matériel */}
-            <TabsContent value="loaner" className="space-y-4">
-              <SAVLoanerCard savCaseId={savCase.id} customerId={savCase.customer_id} />
-            </TabsContent>
-
-            {/* Onglet Documents */}
-            <TabsContent value="documents" className="space-y-4">
               <Card>
                 <CardHeader>
                   <CardTitle className="text-base">Documents administratifs</CardTitle>
@@ -822,7 +821,6 @@ export default function SAVDetail() {
                 </span>
               )}
             </TabsTrigger>
-            <TabsTrigger value="impression" className={TAB_ACTIVE_CLASSES}>Impression</TabsTrigger>
             <TabsTrigger value="documents" className={TAB_ACTIVE_CLASSES}>Documents</TabsTrigger>
           </TabsList>
 
@@ -1125,8 +1123,23 @@ export default function SAVDetail() {
           </TabsContent>
 
 
-          {/* Onglet Impression */}
-          <TabsContent value="impression" className="space-y-4">
+          {/* Onglet Codes */}
+          <TabsContent value="codes" className="space-y-4">
+            <SAVCodesTab savCase={savCase} />
+          </TabsContent>
+
+          {/* Onglet Diagnostic IA */}
+          <TabsContent value="diagnostic" className="space-y-4">
+            <SAVDiagnosticTab savCase={savCase} />
+          </TabsContent>
+
+          {/* Onglet Prêt matériel */}
+          <TabsContent value="loaner" className="space-y-4">
+            <SAVLoanerCard savCaseId={savCase.id} customerId={savCase.customer_id} />
+          </TabsContent>
+
+          {/* Onglet Documents */}
+          <TabsContent value="documents" className="space-y-4">
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-base">Document de prise en charge</CardTitle>
@@ -1188,25 +1201,7 @@ export default function SAVDetail() {
                 />
               </CardContent>
             </Card>
-          </TabsContent>
 
-          {/* Onglet Codes */}
-          <TabsContent value="codes" className="space-y-4">
-            <SAVCodesTab savCase={savCase} />
-          </TabsContent>
-
-          {/* Onglet Diagnostic IA */}
-          <TabsContent value="diagnostic" className="space-y-4">
-            <SAVDiagnosticTab savCase={savCase} />
-          </TabsContent>
-
-          {/* Onglet Prêt matériel */}
-          <TabsContent value="loaner" className="space-y-4">
-            <SAVLoanerCard savCaseId={savCase.id} customerId={savCase.customer_id} />
-          </TabsContent>
-
-          {/* Onglet Documents */}
-          <TabsContent value="documents" className="space-y-4">
             <Card>
               <CardHeader>
                 <CardTitle className="text-base">Documents administratifs</CardTitle>
