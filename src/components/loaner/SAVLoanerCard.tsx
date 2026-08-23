@@ -6,8 +6,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { PackageOpen, CheckCircle2, Calendar as CalendarIcon, Plus } from 'lucide-react';
-import { useLoanerLoans } from '@/hooks/useLoanerLoans';
+import { PackageOpen, CheckCircle2, Calendar as CalendarIcon, Plus, Save, Trash2 } from 'lucide-react';
+import { useLoanerLoans, type LoanerLoan } from '@/hooks/useLoanerLoans';
 import { LOANER_CATEGORIES } from '@/hooks/useLoanerEquipment';
 import { LoanerPickerDialog } from './LoanerPickerDialog';
 import { LoanerConditionPhotos } from '@/components/settings/loaner/LoanerConditionPhotos';
@@ -21,14 +21,14 @@ interface Props {
 }
 
 export function SAVLoanerCard({ savCaseId, customerId }: Props) {
-  const { loans, activeLoan, createLoan, returnLoan, deleteLoan } = useLoanerLoans(savCaseId);
+  const { loans, createLoan, returnLoan, updateLoan, deleteLoan } = useLoanerLoans(savCaseId);
   const [pickerOpen, setPickerOpen] = useState(false);
-  const [returnOpen, setReturnOpen] = useState(false);
+  const [returnTarget, setReturnTarget] = useState<LoanerLoan | null>(null);
   const [returnNotes, setReturnNotes] = useState('');
   const [returnCondition, setReturnCondition] = useState('');
   const [returnPhotos, setReturnPhotos] = useState<string[]>([]);
   const [expectedReturn, setExpectedReturn] = useState('');
-
+  const [notesDraft, setNotesDraft] = useState<Record<string, string>>({});
 
   const categoryLabel = (cat: string) =>
     LOANER_CATEGORIES.find((c) => c.value === cat)?.label || cat;
@@ -43,21 +43,28 @@ export function SAVLoanerCard({ savCaseId, customerId }: Props) {
     setExpectedReturn('');
   };
 
+  const openReturn = (loan: LoanerLoan) => {
+    setReturnTarget(loan);
+    setReturnCondition('');
+    setReturnNotes(loan.notes || '');
+    setReturnPhotos([]);
+  };
+
   const handleReturn = async () => {
-    if (!activeLoan) return;
+    if (!returnTarget) return;
     await returnLoan({
-      id: activeLoan.id,
+      id: returnTarget.id,
       return_condition: returnCondition || null,
-      notes: returnNotes || activeLoan.notes,
+      notes: returnNotes || returnTarget.notes,
       return_photos: returnPhotos,
     });
-    setReturnOpen(false);
+    setReturnTarget(null);
     setReturnCondition('');
     setReturnNotes('');
     setReturnPhotos([]);
   };
 
-
+  const activeLoans = loans.filter((l) => !l.returned_at);
   const pastLoans = loans.filter((l) => l.returned_at);
 
   return (
@@ -67,46 +74,80 @@ export function SAVLoanerCard({ savCaseId, customerId }: Props) {
           <CardTitle className="flex items-center gap-2 text-base">
             <PackageOpen className="h-5 w-5" /> Matériel de prêt
           </CardTitle>
-          {!activeLoan && (
-            <Button size="sm" onClick={() => setPickerOpen(true)}>
-              <Plus className="h-4 w-4 mr-1" /> Prêter du matériel
-            </Button>
-          )}
+          <Button size="sm" onClick={() => setPickerOpen(true)}>
+            <Plus className="h-4 w-4 mr-1" />
+            {activeLoans.length > 0 ? 'Attribuer un autre appareil' : 'Prêter du matériel'}
+          </Button>
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
-        {activeLoan && activeLoan.equipment ? (
-          <div className="p-3 border-2 border-orange-500/30 bg-orange-500/5 rounded-lg space-y-2">
-            <div className="flex items-start justify-between gap-2">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <Badge className="bg-orange-500 text-white">EN COURS</Badge>
-                  <span className="font-medium">{activeLoan.equipment.name}</span>
-                  <Badge variant="outline" className="text-xs">{categoryLabel(activeLoan.equipment.category)}</Badge>
-                </div>
-                <div className="text-xs text-muted-foreground mt-1">
-                  {[activeLoan.equipment.brand, activeLoan.equipment.model].filter(Boolean).join(' ') || '—'}
-                </div>
-                {(activeLoan.equipment.imei || activeLoan.equipment.serial_number) && (
-                  <div className="text-xs font-mono text-muted-foreground">
-                    {activeLoan.equipment.imei && <span>IMEI: {activeLoan.equipment.imei}</span>}
-                    {activeLoan.equipment.imei && activeLoan.equipment.serial_number && <span> · </span>}
-                    {activeLoan.equipment.serial_number && <span>SN: {activeLoan.equipment.serial_number}</span>}
+        {activeLoans.length > 0 ? (
+          activeLoans.map((loan) => (
+            <div key={loan.id} className="p-3 border-2 border-orange-500/30 bg-orange-500/5 rounded-lg space-y-3">
+              <div className="flex items-start justify-between gap-2 flex-wrap">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Badge className="bg-orange-500 text-white">EN COURS</Badge>
+                    <span className="font-medium">{loan.equipment?.name || '—'}</span>
+                    {loan.equipment?.category && (
+                      <Badge variant="outline" className="text-xs">{categoryLabel(loan.equipment.category)}</Badge>
+                    )}
                   </div>
-                )}
-                <div className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
-                  <CalendarIcon className="h-3 w-3" />
-                  Prêté le {format(new Date(activeLoan.loaned_at), 'dd/MM/yyyy', { locale: fr })}
-                  {activeLoan.expected_return_at && (
-                    <> · Retour prévu le {format(new Date(activeLoan.expected_return_at), 'dd/MM/yyyy', { locale: fr })}</>
+                  <div className="text-xs text-muted-foreground mt-1">
+                    {[loan.equipment?.brand, loan.equipment?.model].filter(Boolean).join(' ') || '—'}
+                  </div>
+                  {(loan.equipment?.imei || loan.equipment?.serial_number) && (
+                    <div className="text-xs font-mono text-muted-foreground">
+                      {loan.equipment?.imei && <span>IMEI: {loan.equipment.imei}</span>}
+                      {loan.equipment?.imei && loan.equipment?.serial_number && <span> · </span>}
+                      {loan.equipment?.serial_number && <span>SN: {loan.equipment.serial_number}</span>}
+                    </div>
                   )}
+                  <div className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                    <CalendarIcon className="h-3 w-3" />
+                    Prêté le {format(new Date(loan.loaned_at), 'dd/MM/yyyy', { locale: fr })}
+                    {loan.expected_return_at && (
+                      <> · Retour prévu le {format(new Date(loan.expected_return_at), 'dd/MM/yyyy', { locale: fr })}</>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button size="sm" onClick={() => openReturn(loan)}>
+                    <CheckCircle2 className="h-4 w-4 mr-1" /> Marquer rendu
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={() => deleteLoan(loan.id)}>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 </div>
               </div>
-              <Button size="sm" onClick={() => setReturnOpen(true)}>
-                <CheckCircle2 className="h-4 w-4 mr-1" /> Marquer rendu
-              </Button>
+
+              <div className="space-y-1">
+                <Label className="text-xs">Notes du prêt</Label>
+                <Textarea
+                  rows={2}
+                  placeholder="Accessoires remis, caution, état, consignes…"
+                  value={notesDraft[loan.id] ?? loan.notes ?? ''}
+                  onChange={(e) => setNotesDraft({ ...notesDraft, [loan.id]: e.target.value })}
+                />
+                {(notesDraft[loan.id] ?? loan.notes ?? '') !== (loan.notes ?? '') && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={async () => {
+                      await updateLoan({ id: loan.id, notes: notesDraft[loan.id] ?? '' });
+                      setNotesDraft((d) => {
+                        const next = { ...d };
+                        delete next[loan.id];
+                        return next;
+                      });
+                    }}
+                  >
+                    <Save className="h-4 w-4 mr-1" /> Enregistrer les notes
+                  </Button>
+                )}
+              </div>
             </div>
-          </div>
+          ))
         ) : (
           <p className="text-sm text-muted-foreground text-center py-2">
             Aucun matériel actuellement prêté pour ce SAV.
@@ -119,13 +160,14 @@ export function SAVLoanerCard({ savCaseId, customerId }: Props) {
             <div className="space-y-1">
               {pastLoans.map((l) => (
                 <div key={l.id} className="text-xs p-2 border rounded flex items-center justify-between gap-2">
-                  <div>
+                  <div className="min-w-0">
                     <span className="font-medium">{l.equipment?.name || '—'}</span>
                     <span className="text-muted-foreground ml-2">
                       du {format(new Date(l.loaned_at), 'dd/MM/yy', { locale: fr })}
                       {' au '}
                       {l.returned_at && format(new Date(l.returned_at), 'dd/MM/yy', { locale: fr })}
                     </span>
+                    {l.notes && <div className="text-muted-foreground italic mt-0.5 break-words">{l.notes}</div>}
                   </div>
                   <Button
                     size="sm"
@@ -147,7 +189,7 @@ export function SAVLoanerCard({ savCaseId, customerId }: Props) {
         onSelect={handlePick}
       />
 
-      <Dialog open={returnOpen} onOpenChange={setReturnOpen}>
+      <Dialog open={!!returnTarget} onOpenChange={(o) => !o && setReturnTarget(null)}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Retour du matériel</DialogTitle>
@@ -173,7 +215,7 @@ export function SAVLoanerCard({ savCaseId, customerId }: Props) {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setReturnOpen(false)}>Annuler</Button>
+            <Button variant="outline" onClick={() => setReturnTarget(null)}>Annuler</Button>
             <Button onClick={handleReturn}>Confirmer le retour</Button>
           </DialogFooter>
         </DialogContent>
