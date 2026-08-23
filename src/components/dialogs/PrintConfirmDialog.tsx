@@ -210,6 +210,42 @@ export function PrintConfirmDialog({
                   <p className="text-sm text-red-700 dark:text-red-300 break-words">
                     Saisissez un <strong>code numérique</strong>, un <strong>schéma</strong>, ou cochez <strong>« N'a pas de code »</strong> avant de continuer.
                   </p>
+
+                  {(onUnlockCodeChange || onNoUnlockCodeChange || onGoToCodesStep) && (
+                    <div className="mt-3 space-y-2">
+                      {onUnlockCodeChange && (
+                        <div className="flex items-center gap-2">
+                          <Input
+                            autoComplete="off"
+                            maxLength={8}
+                            placeholder="Code de déverrouillage"
+                            value={unlockCode || ''}
+                            onChange={(e) => onUnlockCodeChange(e.target.value.replace(/[^a-zA-Z0-9]/g, ''))}
+                            disabled={noUnlockCode}
+                            className="h-9 bg-background"
+                          />
+                        </div>
+                      )}
+                      {onNoUnlockCodeChange && (
+                        <div className="flex items-start space-x-2">
+                          <Checkbox
+                            id="quick-no-unlock-code"
+                            checked={noUnlockCode}
+                            onCheckedChange={(checked) => onNoUnlockCodeChange(checked === true)}
+                            className="mt-0.5"
+                          />
+                          <label htmlFor="quick-no-unlock-code" className="text-sm font-medium text-red-800 dark:text-red-200 cursor-pointer leading-5">
+                            Cet appareil n'a pas de code de déverrouillage
+                          </label>
+                        </div>
+                      )}
+                      {onGoToCodesStep && (
+                        <Button variant="outline" size="sm" onClick={onGoToCodesStep}>
+                          Revenir à l'étape Codes
+                        </Button>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
