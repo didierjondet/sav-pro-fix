@@ -7,6 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useState } from 'react';
 import { useShopSettings } from '@/hooks/useShopSettings';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
 
 interface PrintConfirmDialogProps {
   isOpen: boolean;
