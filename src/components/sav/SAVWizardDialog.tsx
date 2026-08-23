@@ -1143,6 +1143,21 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
           securityCodes.unlock_code.trim().length > 0 ||
           noUnlockCode
         }
+        unlockCode={securityCodes.unlock_code}
+        onUnlockCodeChange={(v) => setSecurityCodes({ ...securityCodes, unlock_code: v })}
+        noUnlockCode={noUnlockCode}
+        onNoUnlockCodeChange={(checked) => {
+          setNoUnlockCode(checked);
+          if (checked) {
+            setUnlockPattern([]);
+            setSecurityCodes({ ...securityCodes, unlock_code: '' });
+          }
+        }}
+        onGoToCodesStep={() => {
+          const idx = activeSteps.findIndex((s) => s.key === 'accessories');
+          setShowPrintDialog(false);
+          if (idx >= 0) setCurrentStep(idx);
+        }}
         onPersistBeforeAction={persistSAV}
       />
     </>
