@@ -1,0 +1,1 @@
+ALTER TABLE public.loaner_loans ADD COLUMN IF NOT EXISTS deposit_amount numeric(10,2);

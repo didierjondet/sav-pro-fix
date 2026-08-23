@@ -17,6 +17,7 @@ export interface LoanerLoan {
   loan_condition: string | null;
   return_condition: string | null;
   return_photos: string[] | null;
+  deposit_amount: number | null;
   notes: string | null;
   created_by: string | null;
   created_at: string;
@@ -31,6 +32,7 @@ export interface LoanerLoanInput {
   customer_id?: string | null;
   expected_return_at?: string | null;
   loan_condition?: string | null;
+  deposit_amount?: number | null;
   notes?: string | null;
 }
 
@@ -105,7 +107,7 @@ export function useLoanerLoans(savCaseId?: string) {
 
 
   const updateLoan = useMutation({
-    mutationFn: async ({ id, ...payload }: { id: string; notes?: string | null; expected_return_at?: string | null; loan_condition?: string | null }) => {
+    mutationFn: async ({ id, ...payload }: { id: string; notes?: string | null; expected_return_at?: string | null; loan_condition?: string | null; deposit_amount?: number | null }) => {
       const { error } = await supabase.from('loaner_loans' as any).update(payload).eq('id', id);
       if (error) throw error;
     },

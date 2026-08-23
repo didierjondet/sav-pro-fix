@@ -1239,6 +1239,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           customer_id: string | null
+          deposit_amount: number | null
           equipment_id: string
           expected_return_at: string | null
           id: string
@@ -1256,6 +1257,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           customer_id?: string | null
+          deposit_amount?: number | null
           equipment_id: string
           expected_return_at?: string | null
           id?: string
@@ -1273,6 +1275,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           customer_id?: string | null
+          deposit_amount?: number | null
           equipment_id?: string
           expected_return_at?: string | null
           id?: string

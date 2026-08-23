@@ -28,7 +28,9 @@ export function SAVLoanerCard({ savCaseId, customerId }: Props) {
   const [returnCondition, setReturnCondition] = useState('');
   const [returnPhotos, setReturnPhotos] = useState<string[]>([]);
   const [expectedReturn, setExpectedReturn] = useState('');
+  const [deposit, setDeposit] = useState('');
   const [notesDraft, setNotesDraft] = useState<Record<string, string>>({});
+  const [depositDraft, setDepositDraft] = useState<Record<string, string>>({});
 
   const categoryLabel = (cat: string) =>
     LOANER_CATEGORIES.find((c) => c.value === cat)?.label || cat;
@@ -39,9 +41,12 @@ export function SAVLoanerCard({ savCaseId, customerId }: Props) {
       sav_case_id: savCaseId,
       customer_id: customerId || null,
       expected_return_at: expectedReturn || null,
+      deposit_amount: deposit.trim() !== '' && !Number.isNaN(Number(deposit)) ? Number(deposit) : null,
     });
     setExpectedReturn('');
+    setDeposit('');
   };
+
 
   const openReturn = (loan: LoanerLoan) => {
     setReturnTarget(loan);
@@ -81,6 +86,24 @@ export function SAVLoanerCard({ savCaseId, customerId }: Props) {
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
+        <div className="grid grid-cols-2 gap-2">
+          <div className="space-y-1">
+            <Label className="text-xs">Retour prévu (nouveau prêt)</Label>
+            <Input type="date" value={expectedReturn} onChange={(e) => setExpectedReturn(e.target.value)} />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs">Caution (€)</Label>
+            <Input
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder="ex. 50"
+              value={deposit}
+              onChange={(e) => setDeposit(e.target.value)}
+            />
+          </div>
+        </div>
+
         {activeLoans.length > 0 ? (
           activeLoans.map((loan) => (
             <div key={loan.id} className="p-3 border-2 border-orange-500/30 bg-orange-500/5 rounded-lg space-y-3">
@@ -91,6 +114,11 @@ export function SAVLoanerCard({ savCaseId, customerId }: Props) {
                     <span className="font-medium">{loan.equipment?.name || '—'}</span>
                     {loan.equipment?.category && (
                       <Badge variant="outline" className="text-xs">{categoryLabel(loan.equipment.category)}</Badge>
+                    )}
+                    {loan.deposit_amount !== null && loan.deposit_amount !== undefined && (
+                      <Badge variant="secondary" className="text-xs">
+                        Caution : {Number(loan.deposit_amount).toFixed(2)} €
+                      </Badge>
                     )}
                   </div>
                   <div className="text-xs text-muted-foreground mt-1">
@@ -122,27 +150,52 @@ export function SAVLoanerCard({ savCaseId, customerId }: Props) {
               </div>
 
               <div className="space-y-1">
+                <Label className="text-xs">Caution (€)</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="Aucune caution"
+                  value={depositDraft[loan.id] ?? (loan.deposit_amount != null ? String(loan.deposit_amount) : '')}
+                  onChange={(e) => setDepositDraft({ ...depositDraft, [loan.id]: e.target.value })}
+                />
+              </div>
+
+              <div className="space-y-1">
                 <Label className="text-xs">Notes du prêt</Label>
                 <Textarea
                   rows={2}
-                  placeholder="Accessoires remis, caution, état, consignes…"
+                  placeholder="Accessoires remis, état, consignes…"
                   value={notesDraft[loan.id] ?? loan.notes ?? ''}
                   onChange={(e) => setNotesDraft({ ...notesDraft, [loan.id]: e.target.value })}
                 />
-                {(notesDraft[loan.id] ?? loan.notes ?? '') !== (loan.notes ?? '') && (
+                {((notesDraft[loan.id] ?? loan.notes ?? '') !== (loan.notes ?? '') ||
+                  (depositDraft[loan.id] ?? (loan.deposit_amount != null ? String(loan.deposit_amount) : '')) !==
+                    (loan.deposit_amount != null ? String(loan.deposit_amount) : '')) && (
                   <Button
                     size="sm"
                     variant="outline"
                     onClick={async () => {
-                      await updateLoan({ id: loan.id, notes: notesDraft[loan.id] ?? '' });
+                      const rawDeposit = depositDraft[loan.id];
+                      const payload: any = { id: loan.id, notes: notesDraft[loan.id] ?? loan.notes ?? '' };
+                      if (rawDeposit !== undefined) {
+                        payload.deposit_amount =
+                          rawDeposit.trim() === '' || Number.isNaN(Number(rawDeposit)) ? null : Number(rawDeposit);
+                      }
+                      await updateLoan(payload);
                       setNotesDraft((d) => {
+                        const next = { ...d };
+                        delete next[loan.id];
+                        return next;
+                      });
+                      setDepositDraft((d) => {
                         const next = { ...d };
                         delete next[loan.id];
                         return next;
                       });
                     }}
                   >
-                    <Save className="h-4 w-4 mr-1" /> Enregistrer les notes
+                    <Save className="h-4 w-4 mr-1" /> Enregistrer
                   </Button>
                 )}
               </div>
@@ -167,6 +220,9 @@ export function SAVLoanerCard({ savCaseId, customerId }: Props) {
                       {' au '}
                       {l.returned_at && format(new Date(l.returned_at), 'dd/MM/yy', { locale: fr })}
                     </span>
+                    {l.deposit_amount !== null && l.deposit_amount !== undefined && (
+                      <span className="text-muted-foreground ml-2">· Caution : {Number(l.deposit_amount).toFixed(2)} €</span>
+                    )}
                     {l.notes && <div className="text-muted-foreground italic mt-0.5 break-words">{l.notes}</div>}
                   </div>
                   <Button
