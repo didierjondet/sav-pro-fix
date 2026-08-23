@@ -79,7 +79,7 @@ export const SAVPrintButton = React.forwardRef<SAVPrintButtonRef, SAVPrintButton
       // Récupérer le prêt de matériel actif lié à ce SAV
       const { data: loanData } = await supabase
         .from('loaner_loans' as any)
-        .select('loaned_at, expected_return_at, loan_condition, notes, equipment:loaner_equipment(name, category, brand, model, imei, serial_number, color)')
+        .select('loaned_at, expected_return_at, loan_condition, notes, deposit_amount, equipment:loaner_equipment(name, category, brand, model, imei, serial_number, color)')
         .eq('sav_case_id', savCase.id)
         .is('returned_at', null)
         .order('loaned_at', { ascending: false })
@@ -99,6 +99,7 @@ export const SAVPrintButton = React.forwardRef<SAVPrintButtonRef, SAVPrintButton
             ${loan.equipment.serial_number ? `<div><span class="label">N° série:</span> ${loan.equipment.serial_number}</div>` : ''}
             <div><span class="label">Prêté le:</span> ${loan.loaned_at ? new Date(loan.loaned_at).toLocaleDateString() : '-'}</div>
             ${loan.expected_return_at ? `<div><span class="label">Retour prévu:</span> ${new Date(loan.expected_return_at).toLocaleDateString()}</div>` : ''}
+            ${loan.deposit_amount !== null && loan.deposit_amount !== undefined ? `<div><span class="label">Caution:</span> <strong>${Number(loan.deposit_amount).toFixed(2)} €</strong></div>` : ''}
             ${loan.loan_condition ? `<div class="col-span-2"><span class="label">État au prêt:</span> ${loan.loan_condition}</div>` : ''}
           </div>
           <div style="margin-top:6px;font-size:10px;color:#92400e;font-style:italic;">Le client s'engage à restituer ce matériel en bon état lors de la récupération de son appareil.</div>
@@ -319,14 +320,11 @@ export const SAVPrintButton = React.forwardRef<SAVPrintButtonRef, SAVPrintButton
           ${vatHtml}
         </div>`;
 
-      const qrBlock = trackingUrl
+      const qrHeaderBlock = trackingUrl
         ? `
-        <div class="block">
-          <div class="block-title">Suivi client</div>
-          <div class="qr">
-            <img src="${qrCodeUrl}" alt="QR Code" />
-            <div class="url">${trackingUrl}</div>
-          </div>
+        <div class="header-qr">
+          <img src="${qrCodeUrl}" alt="QR Code" />
+          <div class="url">${trackingUrl}</div>
         </div>`
         : "";
 
@@ -359,7 +357,10 @@ export const SAVPrintButton = React.forwardRef<SAVPrintButtonRef, SAVPrintButton
     body { font-family: Arial, sans-serif; font-size: 10px; color: #111; }
     .dual-content { display: flex; flex-direction: row; gap: 12px; width: 100%; align-items: stretch; }
     .content-block { width: calc(50% - 18px); page-break-inside: avoid; break-inside: avoid; }
-    .header { display:flex; align-items:flex-start; justify-content:flex-start; margin-bottom: 12px; }
+    .header { display:flex; align-items:flex-start; justify-content:space-between; gap: 8px; margin-bottom: 12px; }
+    .header-qr { text-align:center; flex-shrink:0; }
+    .header-qr img { border:1px solid #ddd; padding:2px; width: 55px; height: 55px; }
+    .header-qr .url { font-size: 6px; max-width: 60px; margin: 0 auto; }
     .shop-header { display:flex; align-items:center; gap: 6px; border-bottom: 1px solid #ddd; padding-bottom: 4px; justify-content: flex-start; margin-bottom: 6px; }
     .shop-logo { max-height: 30px; max-width: 50px; }
     .shop-info { line-height: 1.1; text-align: left; }
@@ -420,6 +421,7 @@ export const SAVPrintButton = React.forwardRef<SAVPrintButtonRef, SAVPrintButton
         <div class="sav-type">${getTypeInfo(savCase.sav_type).label}</div>
         <div class="meta">Créé le ${(savCase.created_at ? new Date(savCase.created_at).toLocaleDateString() : "")} · Statut: ${getStatusLabel(savCase.status)}</div>
       </div>
+      ${qrHeaderBlock}
     </div>
     ${customerBlock}
     ${deviceBlock}
@@ -430,7 +432,6 @@ export const SAVPrintButton = React.forwardRef<SAVPrintButtonRef, SAVPrintButton
     ${loanerBlock}
     ${closureHistoryBlock}
     ${attachmentsBlock}
-    ${qrBlock}
   </div>
   <div class="cut-line">
     <span class="scissors">✂</span>
@@ -444,6 +445,7 @@ export const SAVPrintButton = React.forwardRef<SAVPrintButtonRef, SAVPrintButton
         <div class="sav-type">${getTypeInfo(savCase.sav_type).label}</div>
         <div class="meta">Créé le ${(savCase.created_at ? new Date(savCase.created_at).toLocaleDateString() : "")} · Statut: ${getStatusLabel(savCase.status)}</div>
       </div>
+      ${qrHeaderBlock}
     </div>
     ${customerBlock}
     ${deviceBlock}
