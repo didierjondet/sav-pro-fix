@@ -104,6 +104,18 @@ export function useLoanerLoans(savCaseId?: string) {
   });
 
 
+  const updateLoan = useMutation({
+    mutationFn: async ({ id, ...payload }: { id: string; notes?: string | null; expected_return_at?: string | null; loan_condition?: string | null }) => {
+      const { error } = await supabase.from('loaner_loans' as any).update(payload).eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      invalidate();
+      toast({ title: 'Prêt mis à jour' });
+    },
+    onError: (e: any) => toast({ title: 'Erreur', description: e.message, variant: 'destructive' }),
+  });
+
   const deleteLoan = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase.from('loaner_loans' as any).delete().eq('id', id);
@@ -122,9 +134,11 @@ export function useLoanerLoans(savCaseId?: string) {
     isLoading,
     createLoan: createLoan.mutateAsync,
     returnLoan: returnLoan.mutateAsync,
+    updateLoan: updateLoan.mutateAsync,
     deleteLoan: deleteLoan.mutateAsync,
   };
 }
+
 
 export function useEquipmentLoanHistory(equipmentId: string | null | undefined) {
   const { shop } = useShop();

@@ -7,6 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useState } from 'react';
 import { useShopSettings } from '@/hooks/useShopSettings';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
 
 interface PrintConfirmDialogProps {
   isOpen: boolean;
@@ -20,6 +21,13 @@ interface PrintConfirmDialogProps {
   hasUnlockPattern?: boolean;
   /** True si un schéma OU un code numérique OU "n'a pas de code" est défini */
   hasUnlockMethod?: boolean;
+  /** Correction rapide du code de déverrouillage depuis cette fenêtre */
+  unlockCode?: string;
+  onUnlockCodeChange?: (value: string) => void;
+  noUnlockCode?: boolean;
+  onNoUnlockCodeChange?: (value: boolean) => void;
+  /** Retour à l'étape "Codes" de l'assistant */
+  onGoToCodesStep?: () => void;
   /**
    * Si fourni, persiste le SAV avant Imprimer/Valider/SMS.
    * Doit retourner le SAV créé (avec tracking_slug, case_number, customer) ou null en cas d'échec.
@@ -37,6 +45,11 @@ export function PrintConfirmDialog({
   requireUnlockPattern = false,
   hasUnlockPattern = false,
   hasUnlockMethod,
+  unlockCode,
+  onUnlockCodeChange,
+  noUnlockCode = false,
+  onNoUnlockCodeChange,
+  onGoToCodesStep,
   onPersistBeforeAction,
 }: PrintConfirmDialogProps) {
   const [sendingSMS, setSendingSMS] = useState(false);
@@ -198,6 +211,42 @@ export function PrintConfirmDialog({
                   <p className="text-sm text-red-700 dark:text-red-300 break-words">
                     Saisissez un <strong>code numérique</strong>, un <strong>schéma</strong>, ou cochez <strong>« N'a pas de code »</strong> avant de continuer.
                   </p>
+
+                  {(onUnlockCodeChange || onNoUnlockCodeChange || onGoToCodesStep) && (
+                    <div className="mt-3 space-y-2">
+                      {onUnlockCodeChange && (
+                        <div className="flex items-center gap-2">
+                          <Input
+                            autoComplete="off"
+                            maxLength={8}
+                            placeholder="Code de déverrouillage"
+                            value={unlockCode || ''}
+                            onChange={(e) => onUnlockCodeChange(e.target.value.replace(/[^a-zA-Z0-9]/g, ''))}
+                            disabled={noUnlockCode}
+                            className="h-9 bg-background"
+                          />
+                        </div>
+                      )}
+                      {onNoUnlockCodeChange && (
+                        <div className="flex items-start space-x-2">
+                          <Checkbox
+                            id="quick-no-unlock-code"
+                            checked={noUnlockCode}
+                            onCheckedChange={(checked) => onNoUnlockCodeChange(checked === true)}
+                            className="mt-0.5"
+                          />
+                          <label htmlFor="quick-no-unlock-code" className="text-sm font-medium text-red-800 dark:text-red-200 cursor-pointer leading-5">
+                            Cet appareil n'a pas de code de déverrouillage
+                          </label>
+                        </div>
+                      )}
+                      {onGoToCodesStep && (
+                        <Button variant="outline" size="sm" onClick={onGoToCodesStep}>
+                          Revenir à l'étape Codes
+                        </Button>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

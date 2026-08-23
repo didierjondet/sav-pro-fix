@@ -406,11 +406,17 @@ export default function SAVDetail() {
               <TabsTrigger value="diagnostic" className={TAB_ACTIVE_CLASSES}>
                 <Stethoscope className="h-3.5 w-3.5 mr-1" /> Diagnostic
               </TabsTrigger>
-              {hasActiveLoan && (
-                <TabsTrigger value="loaner" className="text-destructive data-[state=active]:text-destructive data-[state=active]:border-destructive">
-                  <Smartphone className="h-3.5 w-3.5 mr-1" /> Prêt matériel
-                </TabsTrigger>
-              )}
+              <TabsTrigger
+                value="loaner"
+                className={hasActiveLoan ? 'text-destructive data-[state=active]:text-destructive data-[state=active]:border-destructive' : TAB_ACTIVE_CLASSES}
+              >
+                <Smartphone className="h-3.5 w-3.5 mr-1" /> Prêt matériel
+                {hasActiveLoan && (
+                  <span className="ml-2 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold">
+                    !
+                  </span>
+                )}
+              </TabsTrigger>
               <TabsTrigger value="impression" className={TAB_ACTIVE_CLASSES}>Impression</TabsTrigger>
               <TabsTrigger value="documents" className={TAB_ACTIVE_CLASSES}>Documents</TabsTrigger>
             </TabsList>
@@ -652,11 +658,9 @@ export default function SAVDetail() {
             </TabsContent>
 
             {/* Onglet Prêt matériel */}
-            {hasActiveLoan && (
-              <TabsContent value="loaner" className="space-y-4">
-                <SAVLoanerCard savCaseId={savCase.id} customerId={savCase.customer_id} />
-              </TabsContent>
-            )}
+            <TabsContent value="loaner" className="space-y-4">
+              <SAVLoanerCard savCaseId={savCase.id} customerId={savCase.customer_id} />
+            </TabsContent>
 
             {/* Onglet Documents */}
             <TabsContent value="documents" className="space-y-4">
@@ -807,11 +811,17 @@ export default function SAVDetail() {
             <TabsTrigger value="diagnostic" className={TAB_ACTIVE_CLASSES}>
               <Stethoscope className="h-3.5 w-3.5 mr-1" /> Diagnostic
             </TabsTrigger>
-            {hasActiveLoan && (
-              <TabsTrigger value="loaner" className="text-destructive data-[state=active]:text-destructive data-[state=active]:border-destructive">
-                <Smartphone className="h-3.5 w-3.5 mr-1" /> Prêt matériel
-              </TabsTrigger>
-            )}
+            <TabsTrigger
+              value="loaner"
+              className={hasActiveLoan ? 'text-destructive data-[state=active]:text-destructive data-[state=active]:border-destructive' : TAB_ACTIVE_CLASSES}
+            >
+              <Smartphone className="h-3.5 w-3.5 mr-1" /> Prêt matériel
+              {hasActiveLoan && (
+                <span className="ml-2 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold">
+                  !
+                </span>
+              )}
+            </TabsTrigger>
             <TabsTrigger value="impression" className={TAB_ACTIVE_CLASSES}>Impression</TabsTrigger>
             <TabsTrigger value="documents" className={TAB_ACTIVE_CLASSES}>Documents</TabsTrigger>
           </TabsList>
@@ -1191,11 +1201,9 @@ export default function SAVDetail() {
           </TabsContent>
 
           {/* Onglet Prêt matériel */}
-          {hasActiveLoan && (
-            <TabsContent value="loaner" className="space-y-4">
-              <SAVLoanerCard savCaseId={savCase.id} customerId={savCase.customer_id} />
-            </TabsContent>
-          )}
+          <TabsContent value="loaner" className="space-y-4">
+            <SAVLoanerCard savCaseId={savCase.id} customerId={savCase.customer_id} />
+          </TabsContent>
 
           {/* Onglet Documents */}
           <TabsContent value="documents" className="space-y-4">
