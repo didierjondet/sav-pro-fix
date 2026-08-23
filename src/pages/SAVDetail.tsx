@@ -688,7 +688,11 @@ export default function SAVDetail() {
   const customerFullNameStd = `${savCase.customer?.first_name || ''} ${savCase.customer?.last_name || ''}`.trim();
   const contactNameStd = savCase.sav_type === 'client' ? customerFullNameStd : (savCase.external_contact_name || 'Contact externe');
   const initialTabStd = (() => {
-    try { return localStorage.getItem('fixway_sav_detail_tab') || 'apercu'; } catch { return 'apercu'; }
+    try {
+      const t = localStorage.getItem('fixway_sav_detail_tab') || 'apercu';
+      return t === 'impression' ? 'documents' : t;
+    } catch { return 'apercu'; }
+
   })();
 
   return (
