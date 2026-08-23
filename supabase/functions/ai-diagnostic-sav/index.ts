@@ -31,7 +31,25 @@ const SYSTEM_PROMPT_INITIAL = `Tu es un technicien senior expert en réparation 
 
 Sois factuel, concis, orienté atelier. N'invente pas de références produit. Si l'information est insuffisante, dis-le clairement à la fin dans une section "## Informations manquantes".`;
 
-const SYSTEM_PROMPT_CHAT = `Tu es un technicien senior expert en réparation d'appareils électroniques. Tu assistes un collègue technicien sur un dossier SAV précis. Réponds en français, de manière concise et technique, en markdown. Base-toi sur le contexte du SAV fourni et l'historique de la conversation.`;
+const SYSTEM_PROMPT_CHAT = `Tu es un technicien senior expert en réparation d'appareils électroniques. Tu assistes un collègue technicien sur un dossier SAV précis. Réponds en français, de manière concise et technique, en markdown. Base-toi sur le contexte du SAV fourni et l'historique de la conversation. Si le technicien joint des photos ou vidéos de l'appareil, analyse-les visuellement (casse, oxydation, connecteurs, écran, traces de chocs) et appuie ton diagnostic dessus.`;
+
+type Attachment = { url: string; type?: string; name?: string };
+
+// Construit un contenu multimodal (texte + images/vidéos) pour le gateway IA
+function buildContent(text: string, attachments?: Attachment[]): any {
+  if (!attachments || attachments.length === 0) return text;
+  const blocks: any[] = [{ type: "text", text: text || "Analyse les médias joints." }];
+  for (const att of attachments) {
+    if (!att?.url) continue;
+    const mime = att.type || "";
+    if (mime.startsWith("video/")) {
+      blocks.push({ type: "video_url", video_url: { url: att.url } });
+    } else if (mime.startsWith("image/")) {
+      blocks.push({ type: "image_url", image_url: { url: att.url } });
+    }
+  }
+  return blocks;
+}
 
 async function callLovableAI(messages: any[], maxTokens = 1200): Promise<string> {
   const key = Deno.env.get("LOVABLE_API_KEY");
@@ -82,10 +100,12 @@ Deno.serve(async (req) => {
 - Type de SAV : ${savContext.sav_type || "?"}
 - Description de la panne : ${savContext.problem_description || "(non fournie)"}`;
 
+    const hasMedia = Array.isArray(body.attachments) && body.attachments.length > 0;
+
     if (mode === "initial") {
       const text = await callLovableAI([
-        { role: "system", content: SYSTEM_PROMPT_INITIAL },
-        { role: "user", content: contextBlock },
+        { role: "system", content: SYSTEM_PROMPT_INITIAL + (hasMedia ? "\n\nDes photos et/ou vidéos de l'appareil sont jointes : analyse-les visuellement (casse, oxydation, connecteurs, écran, traces de chocs) et intègre ces constats dans ton analyse." : "") },
+        { role: "user", content: buildContent(contextBlock, body.attachments) },
       ], 1500);
       return new Response(JSON.stringify({ text }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -93,7 +113,11 @@ Deno.serve(async (req) => {
     }
 
     // Chat mode
-    const history: { role: string; content: string }[] = body.messages || [];
+    const rawHistory: { role: string; content: string; attachments?: Attachment[] }[] = body.messages || [];
+    const history = rawHistory.map((m) => ({
+      role: m.role,
+      content: m.role === "user" ? buildContent(m.content, m.attachments) : m.content,
+    }));
     const text = await callLovableAI([
       { role: "system", content: SYSTEM_PROMPT_CHAT },
       { role: "system", content: contextBlock },
