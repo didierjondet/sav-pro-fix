@@ -2203,6 +2203,7 @@ export type Database = {
       }
       sav_diagnostic_messages: {
         Row: {
+          attachments: Json
           content: string
           created_at: string
           id: string
@@ -2212,6 +2213,7 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          attachments?: Json
           content: string
           created_at?: string
           id?: string
@@ -2221,6 +2223,7 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          attachments?: Json
           content?: string
           created_at?: string
           id?: string
