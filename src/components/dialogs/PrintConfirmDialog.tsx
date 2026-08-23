@@ -20,6 +20,13 @@ interface PrintConfirmDialogProps {
   hasUnlockPattern?: boolean;
   /** True si un schéma OU un code numérique OU "n'a pas de code" est défini */
   hasUnlockMethod?: boolean;
+  /** Correction rapide du code de déverrouillage depuis cette fenêtre */
+  unlockCode?: string;
+  onUnlockCodeChange?: (value: string) => void;
+  noUnlockCode?: boolean;
+  onNoUnlockCodeChange?: (value: boolean) => void;
+  /** Retour à l'étape "Codes" de l'assistant */
+  onGoToCodesStep?: () => void;
   /**
    * Si fourni, persiste le SAV avant Imprimer/Valider/SMS.
    * Doit retourner le SAV créé (avec tracking_slug, case_number, customer) ou null en cas d'échec.
