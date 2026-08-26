@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -21,6 +21,12 @@ interface SAVPrintFilterDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onPrint: (selection: SAVPrintSelection) => void;
+  initialTypes?: string[];
+  initialStatuses?: string[];
+  initialProviders?: string[];
+  providerCaseCounts?: Record<string, number>;
+  unassignedProviderCount?: number;
+  hideEmptyProviders?: boolean;
 }
 
 function SectionActions({
@@ -45,10 +51,21 @@ function SectionActions({
   );
 }
 
-export function SAVPrintFilterDialog({ isOpen, onClose, onPrint }: SAVPrintFilterDialogProps) {
+export function SAVPrintFilterDialog({
+  isOpen,
+  onClose,
+  onPrint,
+  initialTypes = [],
+  initialStatuses = [],
+  initialProviders = [],
+  providerCaseCounts = {},
+  unassignedProviderCount = 0,
+  hideEmptyProviders = false,
+}: SAVPrintFilterDialogProps) {
   const { getAllTypes, getTypeInfo } = useShopSAVTypes();
   const { statuses } = useShopSAVStatuses();
   const { providers } = useSAVProviders();
+  const initializedForOpenRef = useRef(false);
 
   // Uniquement les éléments visibles dans la barre latérale (réglages)
   const visibleTypes = useMemo(
@@ -63,20 +80,56 @@ export function SAVPrintFilterDialog({ isOpen, onClose, onPrint }: SAVPrintFilte
     [statuses]
   );
   const visibleProviders = useMemo(
-    () => providers.filter(p => p.is_active !== false && p.show_in_sidebar !== false),
-    [providers]
+    () =>
+      providers
+        .filter(p => p.is_active !== false && p.show_in_sidebar !== false)
+        .filter(p => !hideEmptyProviders || (providerCaseCounts[p.id] || 0) > 0),
+    [providers, hideEmptyProviders, providerCaseCounts]
   );
+  const showUnassignedProvider = unassignedProviderCount > 0;
+  const providerTotal = visibleProviders.length + (showUnassignedProvider ? 1 : 0);
 
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
   const [selectedProviders, setSelectedProviders] = useState<string[]>([]);
-  const [initialized, setInitialized] = useState(false);
+  const visibleTypeKeys = visibleTypes.map(t => t.value).join('|');
+  const visibleStatusKeys = visibleStatuses.map(s => s.status_key).join('|');
+  const visibleProviderKeys = visibleProviders.map(p => p.id).join('|');
 
-  // Sélectionner tous les types visibles par défaut, une fois chargés
-  if (!initialized && visibleTypes.length > 0) {
-    setSelectedTypes(visibleTypes.map(t => t.value));
-    setInitialized(true);
-  }
+  useEffect(() => {
+    if (!isOpen) {
+      initializedForOpenRef.current = false;
+      return;
+    }
+
+    if (initializedForOpenRef.current || visibleTypes.length === 0) return;
+    initializedForOpenRef.current = true;
+
+    const typeSet = new Set(visibleTypes.map(t => t.value));
+    const requestedTypes = initialTypes.filter(type => typeSet.has(type));
+    setSelectedTypes(requestedTypes.length > 0 ? requestedTypes : visibleTypes.map(t => t.value));
+
+    const statusSet = new Set(visibleStatuses.map(s => s.status_key));
+    setSelectedStatuses(initialStatuses.filter(status => statusSet.has(status)));
+
+    const providerSet = new Set([
+      ...visibleProviders.map(p => p.id),
+      ...(showUnassignedProvider ? ['none'] : []),
+    ]);
+    setSelectedProviders(initialProviders.filter(provider => providerSet.has(provider)));
+  }, [
+    isOpen,
+    visibleTypeKeys,
+    visibleStatusKeys,
+    visibleProviderKeys,
+    showUnassignedProvider,
+    initialTypes,
+    initialStatuses,
+    initialProviders,
+    visibleTypes,
+    visibleStatuses,
+    visibleProviders,
+  ]);
 
   const toggle = (list: string[], setList: (v: string[]) => void, value: string) => {
     setList(list.includes(value) ? list.filter(v => v !== value) : [...list, value]);
@@ -93,7 +146,7 @@ export function SAVPrintFilterDialog({ isOpen, onClose, onPrint }: SAVPrintFilte
   };
 
   const showStatusesTab = visibleStatuses.length > 0;
-  const showProvidersTab = visibleProviders.length > 0;
+  const showProvidersTab = providerTotal > 0;
   const tabsCount = 1 + (showStatusesTab ? 1 : 0) + (showProvidersTab ? 1 : 0);
 
   return (
@@ -200,21 +253,26 @@ export function SAVPrintFilterDialog({ isOpen, onClose, onPrint }: SAVPrintFilte
               <TabsContent value="providers" className="mt-0 space-y-2.5">
                 <SectionActions
                   count={selectedProviders.length}
-                  total={visibleProviders.length + 1}
-                  onAll={() => setSelectedProviders(['none', ...visibleProviders.map(p => p.id)])}
+                  total={providerTotal}
+                  onAll={() => setSelectedProviders([
+                    ...(showUnassignedProvider ? ['none'] : []),
+                    ...visibleProviders.map(p => p.id),
+                  ])}
                   onNone={() => setSelectedProviders([])}
                 />
                 <p className="text-xs text-muted-foreground">
                   Aucun prestataire coché = tous les dossiers.
                 </p>
                 <div className="grid grid-cols-2 gap-2">
-                  <label className="flex items-center gap-2 rounded-md border p-2.5 cursor-pointer hover:bg-accent/50 transition-colors">
-                    <Checkbox
-                      checked={selectedProviders.includes('none')}
-                      onCheckedChange={() => toggle(selectedProviders, setSelectedProviders, 'none')}
-                    />
-                    <span className="text-sm truncate">Sans prestataire</span>
-                  </label>
+                  {showUnassignedProvider && (
+                    <label className="flex items-center gap-2 rounded-md border p-2.5 cursor-pointer hover:bg-accent/50 transition-colors">
+                      <Checkbox
+                        checked={selectedProviders.includes('none')}
+                        onCheckedChange={() => toggle(selectedProviders, setSelectedProviders, 'none')}
+                      />
+                      <span className="text-sm truncate">Sans prestataire</span>
+                    </label>
+                  )}
                   {visibleProviders.map(p => (
                     <label
                       key={p.id}
@@ -231,6 +289,11 @@ export function SAVPrintFilterDialog({ isOpen, onClose, onPrint }: SAVPrintFilte
                       <span className="text-sm truncate">{p.name}</span>
                     </label>
                   ))}
+                  {providerTotal === 0 && (
+                    <p className="text-sm text-muted-foreground col-span-2 text-center py-4">
+                      Aucun prestataire affiché dans la barre latérale.
+                    </p>
+                  )}
                 </div>
               </TabsContent>
             )}
