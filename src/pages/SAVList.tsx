@@ -413,7 +413,8 @@ export default function SAVList() {
       return;
     }
 
-    const visibleTypeCount = types.filter(t => t.show_in_sidebar !== false).length;
+    const availableTypeSet = new Set(availablePrintTypes);
+    const visibleTypeCount = types.filter(t => t.show_in_sidebar !== false || availableTypeSet.has(t.type_key)).length;
     const printTypeLabel = selectedTypes.length === visibleTypeCount
       ? 'Tous les types affichés'
       : selectedTypes.map(type => getTypeInfo(type).label).join(', ');
