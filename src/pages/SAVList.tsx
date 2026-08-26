@@ -15,6 +15,7 @@ import { useSAVCases } from '@/hooks/useSAVCases';
 import { useShop } from '@/hooks/useShop';
 import { useShopSAVTypes } from '@/hooks/useShopSAVTypes';
 import { useSAVProviders, useActiveProviderAssignments } from '@/hooks/useSAVProviders';
+import { useShopSettings } from '@/hooks/useShopSettings';
 import { useSAVVisits } from '@/hooks/useSAVVisits';
 import { generateSAVListPDF } from '@/utils/pdfGenerator';
 import { toast } from 'sonner';
@@ -127,6 +128,7 @@ export default function SAVList() {
   const [searchParams] = useSearchParams();
   const { providers: savProviders } = useSAVProviders();
   const { data: activeProviderAssignments = [] } = useActiveProviderAssignments();
+  const { settings } = useShopSettings();
   const providerFilter = searchParams.get('provider');
   const providerByCaseId = useMemo(() => {
     const map = new Map<string, { id: string; name: string; color: string }>();
@@ -136,6 +138,21 @@ export default function SAVList() {
     });
     return map;
   }, [activeProviderAssignments, savProviders]);
+  const providerCaseCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    (cases || []).forEach(savCase => {
+      if (!isActiveStatus(savCase.status)) return;
+      const provider = providerByCaseId.get(savCase.id);
+      if (provider) {
+        counts[provider.id] = (counts[provider.id] || 0) + 1;
+      }
+    });
+    return counts;
+  }, [cases, providerByCaseId, isActiveStatus]);
+  const unassignedProviderCount = useMemo(
+    () => (cases || []).filter(savCase => isActiveStatus(savCase.status) && !providerByCaseId.has(savCase.id)).length,
+    [cases, providerByCaseId, isActiveStatus]
+  );
 
   // Les fonctions utilitaires sont maintenant disponibles via le hook useShopSAVStatuses
 
@@ -251,15 +268,37 @@ export default function SAVList() {
     }
   };
 
+  const getTypeFilterLabel = useCallback((value: string) => {
+    if (value === 'all') return 'Tous les SAV';
+    if (value === 'shop') return 'SAV CLIENTS (INTERNE+EXTERNE)';
+    return getTypeInfo(value).label;
+  }, [getTypeInfo]);
+
+  const getStatusFilterLabel = useCallback((value: string) => {
+    if (value === 'all') return 'Tous les statuts';
+    if (value === 'all-except-ready') return 'Masquer les prêts';
+    if (value === 'overdue') return 'En retard';
+    return statuses.find(s => s.status_key === value)?.status_label || value;
+  }, [statuses]);
+
+  const colorLabels: Record<string, string> = {
+    all: 'Toutes',
+    black: 'Noir',
+    white: 'Blanc',
+    grey: 'Gris',
+    blue: 'Bleu',
+    red: 'Rouge',
+    gold: 'Or',
+    silver: 'Argent',
+    green: 'Vert',
+    pink: 'Rose',
+    purple: 'Violet',
+    other: 'Autre',
+  };
+
   const handlePrintWithFilters = useCallback(async (selection: { types: string[]; statuses: string[]; providers: string[] }) => {
     const { types: selectedTypes, statuses: selectedStatuses, providers: selectedProviders } = selection;
-    // Recalculate filtered cases based on dialog selections
-    const casesWithDelay = cases.map((case_) => ({
-      ...case_,
-      delayInfo: calculateSAVDelay(case_, shop, types)
-    }));
-
-    let filtered = casesWithDelay.filter(c => selectedTypes.includes(c.sav_type));
+    let filtered = filteredAndSortedCases.filter(c => selectedTypes.includes(c.sav_type));
 
     if (selectedStatuses.length > 0) {
       filtered = filtered.filter(c => selectedStatuses.includes(c.status));
@@ -272,25 +311,40 @@ export default function SAVList() {
       });
     }
 
-    filtered.sort((a, b) => a.delayInfo.totalRemainingHours - b.delayInfo.totalRemainingHours);
-
     if (filtered.length === 0) {
       toast.error("Aucun dossier SAV à imprimer avec ces critères");
       return;
     }
 
-    const statusLabel = selectedStatuses.length === 0
-      ? 'all'
+    const printTypeLabel = selectedTypes.length === types.filter(t => t.show_in_sidebar !== false).length
+      ? 'Tous les types affichés'
+      : selectedTypes.map(type => getTypeInfo(type).label).join(', ');
+    const printStatusLabel = selectedStatuses.length === 0
+      ? 'Tous les statuts affichés'
       : selectedStatuses
           .map(key => statuses.find(s => s.status_key === key)?.status_label || key)
           .join(', ');
+    const printProviderLabel = selectedProviders.length === 0
+      ? 'Tous les prestataires affichés'
+      : selectedProviders
+          .map(id => id === 'none' ? 'Sans prestataire' : savProviders.find(p => p.id === id)?.name || id)
+          .join(', ');
+    const currentProviderLabel = providerFilter
+      ? savProviders.find(p => p.id === providerFilter)?.name || providerFilter
+      : 'Tous les prestataires';
 
     try {
       const result = await generateSAVListPDF(filtered, shop, {
-        searchTerm: '',
-        filterType: selectedTypes.length === types.length ? 'all' : selectedTypes.join(', '),
-        statusFilter: statusLabel,
-        sortOrder
+        searchTerm,
+        filterType: getTypeFilterLabel(filterType),
+        statusFilter: getStatusFilterLabel(statusFilter),
+        sortOrder,
+        colorFilter: colorLabels[colorFilter] || colorFilter,
+        gradeFilter: gradeFilter === 'all' ? 'Tous' : `Grade ${gradeFilter}`,
+        providerFilter: currentProviderLabel,
+        printTypeFilter: printTypeLabel,
+        printStatusFilter: printStatusLabel,
+        printProviderFilter: printProviderLabel,
       }, statuses, types);
       if (result) {
         toast.success("Ouverture de la boîte de dialogue d'impression...");
@@ -299,7 +353,25 @@ export default function SAVList() {
       console.error('Erreur lors de la génération de la liste:', error);
       toast.error("Erreur lors de la génération du document");
     }
-  }, [cases, shop, types, statuses, sortOrder, providerByCaseId]);
+  }, [
+    filteredAndSortedCases,
+    shop,
+    types,
+    statuses,
+    sortOrder,
+    providerByCaseId,
+    searchTerm,
+    filterType,
+    statusFilter,
+    colorFilter,
+    gradeFilter,
+    providerFilter,
+    savProviders,
+    getTypeInfo,
+    getTypeFilterLabel,
+    getStatusFilterLabel,
+    colorLabels,
+  ]);
 
 
   // Calculer les informations de délai et appliquer filtres et tri
