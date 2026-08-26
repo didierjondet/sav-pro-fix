@@ -48,6 +48,7 @@ import { SAVProviderTab } from '@/components/sav/SAVProviderTab';
 import { useSAVCaseActiveProvider, useSAVProviders } from '@/hooks/useSAVProviders';
 import { Stethoscope, KeyRound, Smartphone, Wrench } from 'lucide-react';
 import { NonRepairabilityCertificateDialog } from '@/components/sav/NonRepairabilityCertificateDialog';
+import { SAVCustomerTab } from '@/components/sav/SAVCustomerTab';
 
 const TAB_ACTIVE_CLASSES = 'data-[state=active]:bg-primary/15 data-[state=active]:text-primary data-[state=active]:shadow-sm';
 const STICKY_HEADER_CLASSES = 'sticky top-0 z-30 bg-primary/10 border-b-2 border-primary/40 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-primary/10';
@@ -393,6 +394,17 @@ export default function SAVDetail() {
           >
             <TabsList className="w-full justify-start overflow-x-auto">
               <TabsTrigger value="apercu" className={TAB_ACTIVE_CLASSES}>Aperçu</TabsTrigger>
+              <TabsTrigger
+                value="client"
+                className={!savCase.customer_id ? 'text-destructive data-[state=active]:text-destructive data-[state=active]:border-destructive' : TAB_ACTIVE_CLASSES}
+              >
+                <User className="h-3.5 w-3.5 mr-1" /> Client
+                {!savCase.customer_id && (
+                  <span className="ml-2 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold">
+                    !
+                  </span>
+                )}
+              </TabsTrigger>
               <TabsTrigger value="communication" className={`relative ${TAB_ACTIVE_CLASSES}`}>
                 Communication
                 {unreadCount > 0 && (
@@ -522,6 +534,19 @@ export default function SAVDetail() {
 
               <SAVStatusManager savCase={savCase} onStatusUpdated={handleStatusUpdated} />
             </TabsContent>
+
+            {/* Onglet Client */}
+            <TabsContent value="client" className="space-y-4">
+              <SAVCustomerTab
+                savCaseId={savCase.id}
+                shopId={savCase.shop_id}
+                customerId={savCase.customer_id}
+                customer={savCase.customer}
+                onCustomerUpdated={() => { refreshSavCustomer(); }}
+              />
+            </TabsContent>
+
+
 
             {/* Onglet Communication */}
             <TabsContent value="communication" className="space-y-4">
@@ -817,6 +842,17 @@ export default function SAVDetail() {
         >
           <TabsList className="w-full justify-start overflow-x-auto">
             <TabsTrigger value="apercu" className={TAB_ACTIVE_CLASSES}>Aperçu</TabsTrigger>
+            <TabsTrigger
+              value="client"
+              className={!savCase.customer_id ? 'text-destructive data-[state=active]:text-destructive data-[state=active]:border-destructive' : TAB_ACTIVE_CLASSES}
+            >
+              <User className="h-3.5 w-3.5 mr-1" /> Client
+              {!savCase.customer_id && (
+                <span className="ml-2 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold">
+                  !
+                </span>
+              )}
+            </TabsTrigger>
             <TabsTrigger value="communication" className={`relative ${TAB_ACTIVE_CLASSES}`}>
               Communication
               {unreadCount > 0 && (
@@ -1084,6 +1120,19 @@ export default function SAVDetail() {
             <SAVPartsRequirements savCaseId={savCase.id} onPartsUpdated={() => {}} />
             <SAVStatusManager savCase={savCase} onStatusUpdated={handleStatusUpdated} />
           </TabsContent>
+
+          {/* Onglet Client */}
+          <TabsContent value="client" className="space-y-4">
+            <SAVCustomerTab
+              savCaseId={savCase.id}
+              shopId={savCase.shop_id}
+              customerId={savCase.customer_id}
+              customer={savCase.customer}
+              onCustomerUpdated={() => { refreshSavCustomer(); }}
+            />
+          </TabsContent>
+
+
 
           {/* Onglet Communication */}
           <TabsContent value="communication" className="space-y-4">
