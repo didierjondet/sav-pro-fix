@@ -373,6 +373,13 @@ export default function SAVList() {
     [providerFilter]
   );
 
+  // Types présents dans la liste imprimable (y compris les types masqués de la barre latérale)
+  const availablePrintTypes = useMemo(
+    () => Array.from(new Set(filteredAndSortedCases.map(c => c.sav_type).filter(Boolean) as string[])),
+    [filteredAndSortedCases]
+  );
+
+
   const getTypeFilterLabel = useCallback((value: string) => {
     if (value === 'all') return 'Tous les SAV';
     if (value === 'shop') return 'SAV CLIENTS (INTERNE+EXTERNE)';
