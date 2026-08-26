@@ -493,7 +493,7 @@ function SidebarComponent({
                         <TooltipTrigger asChild>
                           <button
                             onClick={() => {
-                              navigate(`/sav?provider=${provider.id}`);
+                              navigate(`/sav?provider=${provider.id}&exclude_ready=true`);
                               onClose();
                             }}
                             className="flex items-center justify-between p-1 text-sm hover:bg-accent hover:text-accent-foreground rounded-md transition-colors w-full cursor-pointer"
