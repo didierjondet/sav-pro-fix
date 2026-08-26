@@ -370,6 +370,8 @@ function SidebarComponent({
                   </div>
                   <div className="space-y-1">
                     {savTypes.filter(type => {
+                      // Masquer les types désactivés pour la sidebar
+                      if (type.show_in_sidebar === false) return false;
                       // Si le paramètre est activé, filtrer par count > 0
                       if (settings?.hide_empty_sav_types) {
                         const count = savTypeCounts[type.type_key]?.count || 0;
