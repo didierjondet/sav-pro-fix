@@ -68,6 +68,21 @@ const DEFAULT_FILTERS = {
   itemsPerPage: 20,
 };
 
+const COLOR_FILTER_LABELS: Record<string, string> = {
+  all: 'Toutes',
+  black: 'Noir',
+  white: 'Blanc',
+  grey: 'Gris',
+  blue: 'Bleu',
+  red: 'Rouge',
+  gold: 'Or',
+  silver: 'Argent',
+  green: 'Vert',
+  pink: 'Rose',
+  purple: 'Violet',
+  other: 'Autre',
+};
+
 function loadSavedFilters() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -268,112 +283,6 @@ export default function SAVList() {
     }
   };
 
-  const getTypeFilterLabel = useCallback((value: string) => {
-    if (value === 'all') return 'Tous les SAV';
-    if (value === 'shop') return 'SAV CLIENTS (INTERNE+EXTERNE)';
-    return getTypeInfo(value).label;
-  }, [getTypeInfo]);
-
-  const getStatusFilterLabel = useCallback((value: string) => {
-    if (value === 'all') return 'Tous les statuts';
-    if (value === 'all-except-ready') return 'Masquer les prêts';
-    if (value === 'overdue') return 'En retard';
-    return statuses.find(s => s.status_key === value)?.status_label || value;
-  }, [statuses]);
-
-  const colorLabels: Record<string, string> = {
-    all: 'Toutes',
-    black: 'Noir',
-    white: 'Blanc',
-    grey: 'Gris',
-    blue: 'Bleu',
-    red: 'Rouge',
-    gold: 'Or',
-    silver: 'Argent',
-    green: 'Vert',
-    pink: 'Rose',
-    purple: 'Violet',
-    other: 'Autre',
-  };
-
-  const handlePrintWithFilters = useCallback(async (selection: { types: string[]; statuses: string[]; providers: string[] }) => {
-    const { types: selectedTypes, statuses: selectedStatuses, providers: selectedProviders } = selection;
-    let filtered = filteredAndSortedCases.filter(c => selectedTypes.includes(c.sav_type));
-
-    if (selectedStatuses.length > 0) {
-      filtered = filtered.filter(c => selectedStatuses.includes(c.status));
-    }
-
-    if (selectedProviders.length > 0) {
-      filtered = filtered.filter(c => {
-        const provider = providerByCaseId.get(c.id);
-        return provider ? selectedProviders.includes(provider.id) : selectedProviders.includes('none');
-      });
-    }
-
-    if (filtered.length === 0) {
-      toast.error("Aucun dossier SAV à imprimer avec ces critères");
-      return;
-    }
-
-    const printTypeLabel = selectedTypes.length === types.filter(t => t.show_in_sidebar !== false).length
-      ? 'Tous les types affichés'
-      : selectedTypes.map(type => getTypeInfo(type).label).join(', ');
-    const printStatusLabel = selectedStatuses.length === 0
-      ? 'Tous les statuts affichés'
-      : selectedStatuses
-          .map(key => statuses.find(s => s.status_key === key)?.status_label || key)
-          .join(', ');
-    const printProviderLabel = selectedProviders.length === 0
-      ? 'Tous les prestataires affichés'
-      : selectedProviders
-          .map(id => id === 'none' ? 'Sans prestataire' : savProviders.find(p => p.id === id)?.name || id)
-          .join(', ');
-    const currentProviderLabel = providerFilter
-      ? savProviders.find(p => p.id === providerFilter)?.name || providerFilter
-      : 'Tous les prestataires';
-
-    try {
-      const result = await generateSAVListPDF(filtered, shop, {
-        searchTerm,
-        filterType: getTypeFilterLabel(filterType),
-        statusFilter: getStatusFilterLabel(statusFilter),
-        sortOrder,
-        colorFilter: colorLabels[colorFilter] || colorFilter,
-        gradeFilter: gradeFilter === 'all' ? 'Tous' : `Grade ${gradeFilter}`,
-        providerFilter: currentProviderLabel,
-        printTypeFilter: printTypeLabel,
-        printStatusFilter: printStatusLabel,
-        printProviderFilter: printProviderLabel,
-      }, statuses, types);
-      if (result) {
-        toast.success("Ouverture de la boîte de dialogue d'impression...");
-      }
-    } catch (error) {
-      console.error('Erreur lors de la génération de la liste:', error);
-      toast.error("Erreur lors de la génération du document");
-    }
-  }, [
-    filteredAndSortedCases,
-    shop,
-    types,
-    statuses,
-    sortOrder,
-    providerByCaseId,
-    searchTerm,
-    filterType,
-    statusFilter,
-    colorFilter,
-    gradeFilter,
-    providerFilter,
-    savProviders,
-    getTypeInfo,
-    getTypeFilterLabel,
-    getStatusFilterLabel,
-    colorLabels,
-  ]);
-
-
   // Calculer les informations de délai et appliquer filtres et tri
   const filteredAndSortedCases = useMemo(() => {
     // 1. Ajouter les informations de délai
@@ -447,6 +356,112 @@ export default function SAVList() {
       }
     });
   }, [cases, shop, filterType, statusFilter, colorFilter, gradeFilter, sortOrder, searchTerm, types, getAllTypes, isReadyStatus, providerFilter, providerByCaseId]);
+
+  const initialPrintTypes = useMemo(() => {
+    if (filterType === 'shop') return ['client', 'external'];
+    return filterType === 'all' ? [] : [filterType];
+  }, [filterType]);
+
+  const initialPrintStatuses = useMemo(() => {
+    return statusFilter === 'all' || statusFilter === 'all-except-ready' || statusFilter === 'overdue'
+      ? []
+      : [statusFilter];
+  }, [statusFilter]);
+
+  const initialPrintProviders = useMemo(
+    () => providerFilter ? [providerFilter] : [],
+    [providerFilter]
+  );
+
+  const getTypeFilterLabel = useCallback((value: string) => {
+    if (value === 'all') return 'Tous les SAV';
+    if (value === 'shop') return 'SAV CLIENTS (INTERNE+EXTERNE)';
+    return getTypeInfo(value).label;
+  }, [getTypeInfo]);
+
+  const getStatusFilterLabel = useCallback((value: string) => {
+    if (value === 'all') return 'Tous les statuts';
+    if (value === 'all-except-ready') return 'Masquer les prêts';
+    if (value === 'overdue') return 'En retard';
+    return statuses.find(s => s.status_key === value)?.status_label || value;
+  }, [statuses]);
+
+  const handlePrintWithFilters = useCallback(async (selection: { types: string[]; statuses: string[]; providers: string[] }) => {
+    const { types: selectedTypes, statuses: selectedStatuses, providers: selectedProviders } = selection;
+    let filtered = filteredAndSortedCases.filter(c => selectedTypes.includes(c.sav_type));
+
+    if (selectedStatuses.length > 0) {
+      filtered = filtered.filter(c => selectedStatuses.includes(c.status));
+    }
+
+    if (selectedProviders.length > 0) {
+      filtered = filtered.filter(c => {
+        const provider = providerByCaseId.get(c.id);
+        return provider ? selectedProviders.includes(provider.id) : selectedProviders.includes('none');
+      });
+    }
+
+    if (filtered.length === 0) {
+      toast.error("Aucun dossier SAV à imprimer avec ces critères");
+      return;
+    }
+
+    const visibleTypeCount = types.filter(t => t.show_in_sidebar !== false).length;
+    const printTypeLabel = selectedTypes.length === visibleTypeCount
+      ? 'Tous les types affichés'
+      : selectedTypes.map(type => getTypeInfo(type).label).join(', ');
+    const printStatusLabel = selectedStatuses.length === 0
+      ? 'Tous les statuts affichés'
+      : selectedStatuses
+          .map(key => statuses.find(s => s.status_key === key)?.status_label || key)
+          .join(', ');
+    const printProviderLabel = selectedProviders.length === 0
+      ? 'Tous les prestataires affichés'
+      : selectedProviders
+          .map(id => id === 'none' ? 'Sans prestataire' : savProviders.find(p => p.id === id)?.name || id)
+          .join(', ');
+    const currentProviderLabel = providerFilter
+      ? savProviders.find(p => p.id === providerFilter)?.name || providerFilter
+      : 'Tous les prestataires';
+
+    try {
+      const result = await generateSAVListPDF(filtered, shop, {
+        searchTerm,
+        filterType: getTypeFilterLabel(filterType),
+        statusFilter: getStatusFilterLabel(statusFilter),
+        sortOrder,
+        colorFilter: COLOR_FILTER_LABELS[colorFilter] || colorFilter,
+        gradeFilter: gradeFilter === 'all' ? 'Tous' : `Grade ${gradeFilter}`,
+        providerFilter: currentProviderLabel,
+        printTypeFilter: printTypeLabel,
+        printStatusFilter: printStatusLabel,
+        printProviderFilter: printProviderLabel,
+      }, statuses, types);
+      if (result) {
+        toast.success("Ouverture de la boîte de dialogue d'impression...");
+      }
+    } catch (error) {
+      console.error('Erreur lors de la génération de la liste:', error);
+      toast.error("Erreur lors de la génération du document");
+    }
+  }, [
+    filteredAndSortedCases,
+    shop,
+    types,
+    statuses,
+    sortOrder,
+    providerByCaseId,
+    searchTerm,
+    filterType,
+    statusFilter,
+    colorFilter,
+    gradeFilter,
+    providerFilter,
+    savProviders,
+    getTypeInfo,
+    getTypeFilterLabel,
+    getStatusFilterLabel,
+  ]);
 
   // Calculs de pagination
   const totalItems = filteredAndSortedCases.length;
