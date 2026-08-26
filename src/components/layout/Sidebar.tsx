@@ -17,7 +17,7 @@ import { calculateSAVDelay } from '@/hooks/useSAVDelay';
 import { useMenuPermissions } from '@/hooks/useMenuPermissions';
 import { useRolePermissions } from '@/hooks/useRolePermissions';
 import { usePendingAppointments } from '@/hooks/usePendingAppointments';
-import { MessageSquare, Package, Users, BarChart3, FileText, Settings, X, Plus, Shield, CreditCard, HelpCircle, Info, FileBarChart, Calendar, ClipboardList, Wrench } from 'lucide-react';
+import { MessageSquare, Package, Users, BarChart3, FileText, Settings, X, Plus, Shield, CreditCard, HelpCircle, Info, FileBarChart, Calendar, ClipboardList } from 'lucide-react';
 import { useSAVProviders, useActiveProviderAssignments } from '@/hooks/useSAVProviders';
 import { useQuotes } from '@/hooks/useQuotes';
 interface SidebarProps {
