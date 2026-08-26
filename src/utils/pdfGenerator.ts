@@ -1062,6 +1062,12 @@ export const generateSAVListPDF = async (savCases: SAVCase[], shop?: Shop, filte
   filterType: string;
   statusFilter: string;
   sortOrder: string;
+  colorFilter?: string;
+  gradeFilter?: string;
+  providerFilter?: string;
+  printTypeFilter?: string;
+  printStatusFilter?: string;
+  printProviderFilter?: string;
 }, statuses?: any[], types?: any[]) => {
   // Utiliser directement les cases filtrées passées en paramètre
   const filteredCases = savCases;
@@ -1386,6 +1392,12 @@ export const generateSAVListPDF = async (savCases: SAVCase[], shop?: Shop, filte
             ${filterInfo.searchTerm ? `<br>• Recherche : "${filterInfo.searchTerm}"` : ''}
             <br>• Type : ${getFilterTypeLabel(filterInfo.filterType)}
             <br>• Statut : ${getStatusFilterLabel(filterInfo.statusFilter)}
+            ${filterInfo.providerFilter ? `<br>• Prestataire page : ${filterInfo.providerFilter}` : ''}
+            ${filterInfo.colorFilter ? `<br>• Couleur : ${filterInfo.colorFilter}` : ''}
+            ${filterInfo.gradeFilter ? `<br>• Grade : ${filterInfo.gradeFilter}` : ''}
+            ${filterInfo.printTypeFilter ? `<br>• Impression types : ${filterInfo.printTypeFilter}` : ''}
+            ${filterInfo.printStatusFilter ? `<br>• Impression statuts : ${filterInfo.printStatusFilter}` : ''}
+            ${filterInfo.printProviderFilter ? `<br>• Impression prestataires : ${filterInfo.printProviderFilter}` : ''}
             <br>• Tri : ${getSortOrderLabel(filterInfo.sortOrder)}
           </div>
         ` : ''}
