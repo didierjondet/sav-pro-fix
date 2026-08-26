@@ -49,6 +49,7 @@ import { useSAVCaseActiveProvider, useSAVProviders } from '@/hooks/useSAVProvide
 import { Stethoscope, KeyRound, Smartphone, Wrench } from 'lucide-react';
 import { NonRepairabilityCertificateDialog } from '@/components/sav/NonRepairabilityCertificateDialog';
 import { SAVCustomerTab } from '@/components/sav/SAVCustomerTab';
+import { getDeviceColorInfo } from '@/lib/deviceColors';
 
 const TAB_ACTIVE_CLASSES = 'data-[state=active]:bg-primary/15 data-[state=active]:text-primary data-[state=active]:shadow-sm';
 const STICKY_HEADER_CLASSES = 'sticky top-0 z-30 bg-primary/10 border-b-2 border-primary/40 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-primary/10';
@@ -617,6 +618,18 @@ export default function SAVDetail() {
                     <p className="text-xs text-muted-foreground">Marque / Modèle</p>
                     <p className="font-medium">{[savCase.device_brand, savCase.device_model].filter(Boolean).join(' ') || '—'}</p>
                   </div>
+                  {getDeviceColorInfo(savCase.device_color) && (
+                    <div>
+                      <p className="text-xs text-muted-foreground">Couleur</p>
+                      <p className="font-medium flex items-center gap-2">
+                        <span
+                          className="inline-block w-4 h-4 rounded-full border border-border"
+                          style={{ backgroundColor: getDeviceColorInfo(savCase.device_color)!.hsl }}
+                        />
+                        {getDeviceColorInfo(savCase.device_color)!.label}
+                      </p>
+                    </div>
+                  )}
                   {savCase.device_imei && (
                     <div>
                       <p className="text-xs text-muted-foreground">IMEI</p>
@@ -1181,6 +1194,16 @@ export default function SAVDetail() {
               </CardHeader>
               <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div><strong>Appareil:</strong> {savCase.device_brand} {savCase.device_model}</div>
+                {getDeviceColorInfo(savCase.device_color) && (
+                  <div className="flex items-center gap-2">
+                    <strong>Couleur:</strong>
+                    <span
+                      className="inline-block w-4 h-4 rounded-full border border-border"
+                      style={{ backgroundColor: getDeviceColorInfo(savCase.device_color)!.hsl }}
+                    />
+                    <span>{getDeviceColorInfo(savCase.device_color)!.label}</span>
+                  </div>
+                )}
                 {savCase.device_imei && (
                   <div className="flex items-center gap-2 flex-wrap">
                     <span><strong>IMEI:</strong> {savCase.device_imei}</span>
