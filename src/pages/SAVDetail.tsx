@@ -296,6 +296,37 @@ export default function SAVDetail() {
     }
   };
 
+  // Autosave (debounce 1,2 s) du commentaire technicien
+  useEffect(() => {
+    if (!savCase?.id) return;
+    if (technicianComments === lastSavedTechRef.current) return;
+    setTechSaveState('dirty');
+    const t = setTimeout(() => { saveTechnicianComments({ silent: true }); }, 1200);
+    return () => clearTimeout(t);
+  }, [technicianComments, savCase?.id]);
+
+  // Autosave (debounce 1,2 s) des commentaires privés
+  useEffect(() => {
+    if (!savCase?.id) return;
+    if (privateComments === lastSavedPrivRef.current) return;
+    setPrivSaveState('dirty');
+    const t = setTimeout(() => { savePrivateComments({ silent: true }); }, 1200);
+    return () => clearTimeout(t);
+  }, [privateComments, savCase?.id]);
+
+  const renderSaveIndicator = (state: SaveState, at: Date | null) => {
+    if (state === 'dirty') return <span className="text-xs text-muted-foreground">Modifications non enregistrées…</span>;
+    if (state === 'saving') return <span className="text-xs text-muted-foreground">Enregistrement…</span>;
+    if (state === 'error') return <span className="text-xs text-destructive">Échec de l'enregistrement</span>;
+    if (state === 'saved') return (
+      <span className="text-xs text-green-600 flex items-center gap-1">
+        <CheckCircle className="h-3 w-3" />
+        Enregistré{at ? ` à ${format(at, 'HH:mm')}` : ''}
+      </span>
+    );
+    return null;
+  };
+
 
   const updateSavType = async () => {
     if (!savCase?.id || !tempSavType) {
