@@ -400,7 +400,9 @@ export default function SAVList() {
 
   const handlePrintWithFilters = useCallback(async (selection: { types: string[]; statuses: string[]; providers: string[] }) => {
     const { types: selectedTypes, statuses: selectedStatuses, providers: selectedProviders } = selection;
-    let filtered = filteredAndSortedCases.filter(c => selectedTypes.includes(c.sav_type));
+    let filtered = selectedTypes.length > 0
+      ? filteredAndSortedCases.filter(c => selectedTypes.includes(c.sav_type))
+      : filteredAndSortedCases;
 
     if (selectedStatuses.length > 0) {
       filtered = filtered.filter(c => selectedStatuses.includes(c.status));
@@ -420,7 +422,7 @@ export default function SAVList() {
 
     const availableTypeSet = new Set(availablePrintTypes);
     const visibleTypeCount = types.filter(t => t.show_in_sidebar !== false || availableTypeSet.has(t.type_key)).length;
-    const printTypeLabel = selectedTypes.length === visibleTypeCount
+    const printTypeLabel = selectedTypes.length === 0 || selectedTypes.length === visibleTypeCount
       ? 'Tous les types affichés'
       : selectedTypes.map(type => getTypeInfo(type).label).join(', ');
     const printStatusLabel = selectedStatuses.length === 0
