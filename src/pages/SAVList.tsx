@@ -994,6 +994,12 @@ export default function SAVList() {
         isOpen={showPrintDialog}
         onClose={() => setShowPrintDialog(false)}
         onPrint={handlePrintWithFilters}
+        initialTypes={initialPrintTypes}
+        initialStatuses={initialPrintStatuses}
+        initialProviders={initialPrintProviders}
+        providerCaseCounts={providerCaseCounts}
+        unassignedProviderCount={unassignedProviderCount}
+        hideEmptyProviders={settings?.hide_empty_sav_providers ?? false}
       />
       <SAVWizardDialog
         open={showWizard}
