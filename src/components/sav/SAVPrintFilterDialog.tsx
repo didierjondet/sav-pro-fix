@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Printer, Tags, ListChecks, Building2 } from 'lucide-react';
 import { useShopSAVTypes } from '@/hooks/useShopSAVTypes';
 import { useShopSAVStatuses } from '@/hooks/useShopSAVStatuses';
@@ -22,16 +23,12 @@ interface SAVPrintFilterDialogProps {
   onPrint: (selection: SAVPrintSelection) => void;
 }
 
-function SectionHeader({
-  icon: Icon,
-  title,
+function SectionActions({
   count,
   total,
   onAll,
   onNone,
 }: {
-  icon: any;
-  title: string;
   count: number;
   total: number;
   onAll: () => void;
@@ -39,11 +36,7 @@ function SectionHeader({
 }) {
   return (
     <div className="flex items-center justify-between">
-      <div className="flex items-center gap-2">
-        <Icon className="h-4 w-4 text-muted-foreground" />
-        <span className="text-sm font-semibold">{title}</span>
-        <Badge variant="secondary" className="text-[11px]">{count}/{total}</Badge>
-      </div>
+      <Badge variant="secondary" className="text-[11px]">{count}/{total} sélectionné(s)</Badge>
       <div className="flex gap-1">
         <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={onAll}>Tout</Button>
         <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={onNone}>Aucun</Button>
@@ -53,18 +46,37 @@ function SectionHeader({
 }
 
 export function SAVPrintFilterDialog({ isOpen, onClose, onPrint }: SAVPrintFilterDialogProps) {
-  const { getAllTypes } = useShopSAVTypes();
+  const { getAllTypes, getTypeInfo } = useShopSAVTypes();
   const { statuses } = useShopSAVStatuses();
   const { providers } = useSAVProviders();
-  const allTypes = getAllTypes();
-  const activeStatuses = statuses
-    .filter(s => s.is_active)
-    .sort((a, b) => a.display_order - b.display_order);
-  const activeProviders = providers.filter(p => p.is_active !== false);
 
-  const [selectedTypes, setSelectedTypes] = useState<string[]>(allTypes.map(t => t.value));
+  // Uniquement les éléments visibles dans la barre latérale (réglages)
+  const visibleTypes = useMemo(
+    () => getAllTypes().filter(t => getTypeInfo(t.value).show_in_sidebar !== false),
+    [getAllTypes, getTypeInfo]
+  );
+  const visibleStatuses = useMemo(
+    () =>
+      statuses
+        .filter(s => s.is_active && s.show_in_sidebar !== false)
+        .sort((a, b) => a.display_order - b.display_order),
+    [statuses]
+  );
+  const visibleProviders = useMemo(
+    () => providers.filter(p => p.is_active !== false && p.show_in_sidebar !== false),
+    [providers]
+  );
+
+  const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
   const [selectedProviders, setSelectedProviders] = useState<string[]>([]);
+  const [initialized, setInitialized] = useState(false);
+
+  // Sélectionner tous les types visibles par défaut, une fois chargés
+  if (!initialized && visibleTypes.length > 0) {
+    setSelectedTypes(visibleTypes.map(t => t.value));
+    setInitialized(true);
+  }
 
   const toggle = (list: string[], setList: (v: string[]) => void, value: string) => {
     setList(list.includes(value) ? list.filter(v => v !== value) : [...list, value]);
@@ -80,6 +92,10 @@ export function SAVPrintFilterDialog({ isOpen, onClose, onPrint }: SAVPrintFilte
     onClose();
   };
 
+  const showStatusesTab = visibleStatuses.length > 0;
+  const showProvidersTab = visibleProviders.length > 0;
+  const tabsCount = 1 + (showStatusesTab ? 1 : 0) + (showProvidersTab ? 1 : 0);
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-lg max-h-[90vh] flex flex-col">
@@ -89,24 +105,46 @@ export function SAVPrintFilterDialog({ isOpen, onClose, onPrint }: SAVPrintFilte
             Imprimer la liste SAV
           </DialogTitle>
           <DialogDescription>
-            Sélectionnez les types, statuts et prestataires à inclure. Une section vide = aucun filtre sur ce critère.
+            Choisissez les types, statuts et prestataires à inclure. Un onglet sans sélection = aucun filtre sur ce critère.
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 min-h-0 pr-3">
-          <div className="space-y-5 pb-2">
-            {/* Types de SAV */}
-            <div className="space-y-2.5">
-              <SectionHeader
-                icon={Tags}
-                title="Types de SAV"
+        <Tabs defaultValue="types" className="flex-1 min-h-0 flex flex-col">
+          <TabsList className="flex-shrink-0" style={{ gridTemplateColumns: `repeat(${tabsCount}, minmax(0, 1fr))` }}>
+            <TabsTrigger value="types" className="gap-1.5">
+              <Tags className="h-3.5 w-3.5" />
+              Types
+              <Badge variant="secondary" className="ml-1 text-[10px]">{selectedTypes.length}</Badge>
+            </TabsTrigger>
+            {showStatusesTab && (
+              <TabsTrigger value="statuses" className="gap-1.5">
+                <ListChecks className="h-3.5 w-3.5" />
+                Statuts
+                <Badge variant="secondary" className="ml-1 text-[10px]">{selectedStatuses.length}</Badge>
+              </TabsTrigger>
+            )}
+            {showProvidersTab && (
+              <TabsTrigger value="providers" className="gap-1.5">
+                <Building2 className="h-3.5 w-3.5" />
+                Prestataires
+                <Badge variant="secondary" className="ml-1 text-[10px]">{selectedProviders.length}</Badge>
+              </TabsTrigger>
+            )}
+          </TabsList>
+
+          <ScrollArea className="flex-1 min-h-0 pr-3 mt-3">
+            <TabsContent value="types" className="mt-0 space-y-2.5">
+              <SectionActions
                 count={selectedTypes.length}
-                total={allTypes.length}
-                onAll={() => setSelectedTypes(allTypes.map(t => t.value))}
+                total={visibleTypes.length}
+                onAll={() => setSelectedTypes(visibleTypes.map(t => t.value))}
                 onNone={() => setSelectedTypes([])}
               />
+              <p className="text-xs text-muted-foreground">
+                Au moins un type doit être sélectionné.
+              </p>
               <div className="grid grid-cols-2 gap-2">
-                {allTypes.map(type => (
+                {visibleTypes.map(type => (
                   <label
                     key={type.value}
                     className="flex items-center gap-2 rounded-md border p-2.5 cursor-pointer hover:bg-accent/50 transition-colors"
@@ -122,79 +160,82 @@ export function SAVPrintFilterDialog({ isOpen, onClose, onPrint }: SAVPrintFilte
                     <span className="text-sm truncate">{type.label}</span>
                   </label>
                 ))}
+                {visibleTypes.length === 0 && (
+                  <p className="text-sm text-muted-foreground col-span-2 text-center py-4">
+                    Aucun type affiché dans la barre latérale.
+                  </p>
+                )}
               </div>
-            </div>
+            </TabsContent>
 
-            {/* Statuts */}
-            <div className="space-y-2.5">
-              <SectionHeader
-                icon={ListChecks}
-                title="Statuts"
-                count={selectedStatuses.length}
-                total={activeStatuses.length}
-                onAll={() => setSelectedStatuses(activeStatuses.map(s => s.status_key))}
-                onNone={() => setSelectedStatuses([])}
-              />
-              <p className="text-xs text-muted-foreground -mt-1">
-                Aucun statut coché = tous les statuts.
-              </p>
-              <div className="grid grid-cols-2 gap-2">
-                {activeStatuses.map(s => (
-                  <label
-                    key={s.status_key}
-                    className="flex items-center gap-2 rounded-md border p-2.5 cursor-pointer hover:bg-accent/50 transition-colors"
-                  >
-                    <Checkbox
-                      checked={selectedStatuses.includes(s.status_key)}
-                      onCheckedChange={() => toggle(selectedStatuses, setSelectedStatuses, s.status_key)}
-                    />
-                    <span className="text-sm truncate">{s.status_label}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
+            {showStatusesTab && (
+              <TabsContent value="statuses" className="mt-0 space-y-2.5">
+                <SectionActions
+                  count={selectedStatuses.length}
+                  total={visibleStatuses.length}
+                  onAll={() => setSelectedStatuses(visibleStatuses.map(s => s.status_key))}
+                  onNone={() => setSelectedStatuses([])}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Aucun statut coché = tous les statuts.
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  {visibleStatuses.map(s => (
+                    <label
+                      key={s.status_key}
+                      className="flex items-center gap-2 rounded-md border p-2.5 cursor-pointer hover:bg-accent/50 transition-colors"
+                    >
+                      <Checkbox
+                        checked={selectedStatuses.includes(s.status_key)}
+                        onCheckedChange={() => toggle(selectedStatuses, setSelectedStatuses, s.status_key)}
+                      />
+                      <span className="text-sm truncate">{s.status_label}</span>
+                    </label>
+                  ))}
+                </div>
+              </TabsContent>
+            )}
 
-            {/* Prestataires */}
-            <div className="space-y-2.5">
-              <SectionHeader
-                icon={Building2}
-                title="Prestataires"
-                count={selectedProviders.length}
-                total={activeProviders.length + 1}
-                onAll={() => setSelectedProviders(['none', ...activeProviders.map(p => p.id)])}
-                onNone={() => setSelectedProviders([])}
-              />
-              <p className="text-xs text-muted-foreground -mt-1">
-                Aucun prestataire coché = tous les dossiers.
-              </p>
-              <div className="grid grid-cols-2 gap-2">
-                <label className="flex items-center gap-2 rounded-md border p-2.5 cursor-pointer hover:bg-accent/50 transition-colors">
-                  <Checkbox
-                    checked={selectedProviders.includes('none')}
-                    onCheckedChange={() => toggle(selectedProviders, setSelectedProviders, 'none')}
-                  />
-                  <span className="text-sm truncate">Sans prestataire</span>
-                </label>
-                {activeProviders.map(p => (
-                  <label
-                    key={p.id}
-                    className="flex items-center gap-2 rounded-md border p-2.5 cursor-pointer hover:bg-accent/50 transition-colors"
-                  >
+            {showProvidersTab && (
+              <TabsContent value="providers" className="mt-0 space-y-2.5">
+                <SectionActions
+                  count={selectedProviders.length}
+                  total={visibleProviders.length + 1}
+                  onAll={() => setSelectedProviders(['none', ...visibleProviders.map(p => p.id)])}
+                  onNone={() => setSelectedProviders([])}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Aucun prestataire coché = tous les dossiers.
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  <label className="flex items-center gap-2 rounded-md border p-2.5 cursor-pointer hover:bg-accent/50 transition-colors">
                     <Checkbox
-                      checked={selectedProviders.includes(p.id)}
-                      onCheckedChange={() => toggle(selectedProviders, setSelectedProviders, p.id)}
+                      checked={selectedProviders.includes('none')}
+                      onCheckedChange={() => toggle(selectedProviders, setSelectedProviders, 'none')}
                     />
-                    <span
-                      className="h-2.5 w-2.5 rounded-full flex-shrink-0"
-                      style={{ backgroundColor: p.color }}
-                    />
-                    <span className="text-sm truncate">{p.name}</span>
+                    <span className="text-sm truncate">Sans prestataire</span>
                   </label>
-                ))}
-              </div>
-            </div>
-          </div>
-        </ScrollArea>
+                  {visibleProviders.map(p => (
+                    <label
+                      key={p.id}
+                      className="flex items-center gap-2 rounded-md border p-2.5 cursor-pointer hover:bg-accent/50 transition-colors"
+                    >
+                      <Checkbox
+                        checked={selectedProviders.includes(p.id)}
+                        onCheckedChange={() => toggle(selectedProviders, setSelectedProviders, p.id)}
+                      />
+                      <span
+                        className="h-2.5 w-2.5 rounded-full flex-shrink-0"
+                        style={{ backgroundColor: p.color }}
+                      />
+                      <span className="text-sm truncate">{p.name}</span>
+                    </label>
+                  ))}
+                </div>
+              </TabsContent>
+            )}
+          </ScrollArea>
+        </Tabs>
 
         <DialogFooter className="flex-shrink-0 gap-2 pt-2">
           <Button variant="outline" onClick={onClose}>Annuler</Button>
