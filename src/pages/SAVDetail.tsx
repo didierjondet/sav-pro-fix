@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { SAVMessaging } from '@/components/sav/SAVMessaging';
 import { SAVLoanerCard } from '@/components/loaner/SAVLoanerCard';
