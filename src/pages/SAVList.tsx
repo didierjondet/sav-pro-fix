@@ -181,7 +181,11 @@ export default function SAVList() {
 
     if (savType) {
       setFilterType(savType);
+    } else if (provider) {
+      // Vue prestataire : tous les types de SAV
+      setFilterType('all');
     }
+
     
     if (status) {
       setStatusFilter(status);
