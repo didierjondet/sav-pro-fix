@@ -618,6 +618,18 @@ export default function SAVDetail() {
                     <p className="text-xs text-muted-foreground">Marque / Modèle</p>
                     <p className="font-medium">{[savCase.device_brand, savCase.device_model].filter(Boolean).join(' ') || '—'}</p>
                   </div>
+                  {getDeviceColorInfo(savCase.device_color) && (
+                    <div>
+                      <p className="text-xs text-muted-foreground">Couleur</p>
+                      <p className="font-medium flex items-center gap-2">
+                        <span
+                          className="inline-block w-4 h-4 rounded-full border border-border"
+                          style={{ backgroundColor: getDeviceColorInfo(savCase.device_color)!.hsl }}
+                        />
+                        {getDeviceColorInfo(savCase.device_color)!.label}
+                      </p>
+                    </div>
+                  )}
                   {savCase.device_imei && (
                     <div>
                       <p className="text-xs text-muted-foreground">IMEI</p>
