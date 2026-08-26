@@ -1000,6 +1000,8 @@ export default function SAVList() {
         providerCaseCounts={providerCaseCounts}
         unassignedProviderCount={unassignedProviderCount}
         hideEmptyProviders={settings?.hide_empty_sav_providers ?? false}
+        availableTypes={availablePrintTypes}
+
       />
       <SAVWizardDialog
         open={showWizard}
