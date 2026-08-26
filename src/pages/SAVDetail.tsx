@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { SAVMessaging } from '@/components/sav/SAVMessaging';
 import { SAVLoanerCard } from '@/components/loaner/SAVLoanerCard';
@@ -111,17 +111,34 @@ export default function SAVDetail() {
   const activeProvider = activeProviderAssignment
     ? savProviders.find(p => p.id === activeProviderAssignment.provider_id)
     : null;
+  // --- Enregistrement automatique des commentaires ---
+  type SaveState = 'idle' | 'dirty' | 'saving' | 'saved' | 'error';
+  const [techSaveState, setTechSaveState] = useState<SaveState>('idle');
+  const [privSaveState, setPrivSaveState] = useState<SaveState>('idle');
+  const [techSavedAt, setTechSavedAt] = useState<Date | null>(null);
+  const [privSavedAt, setPrivSavedAt] = useState<Date | null>(null);
+  const technicianCommentsRef = useRef('');
+  const privateCommentsRef = useRef('');
+  const lastSavedTechRef = useRef('');
+  const lastSavedPrivRef = useRef('');
+  technicianCommentsRef.current = technicianComments;
+  privateCommentsRef.current = privateComments;
+
   useEffect(() => {
     if (cases && id) {
       const foundCase = cases.find(c => c.id === id);
       setSavCase(foundCase);
-      // Charger les commentaires privés
-      if (foundCase?.private_comments) {
-        setPrivateComments(foundCase.private_comments);
+      // Charger les commentaires privés (sans écraser une saisie en cours)
+      if (foundCase && privSaveState === 'idle') {
+        const val = foundCase.private_comments || '';
+        lastSavedPrivRef.current = val;
+        setPrivateComments(val);
       }
-      // Charger les commentaires technicien
-      if (foundCase?.technician_comments) {
-        setTechnicianComments(foundCase.technician_comments);
+      // Charger les commentaires technicien (sans écraser une saisie en cours)
+      if (foundCase && techSaveState === 'idle') {
+        const val = foundCase.technician_comments || '';
+        lastSavedTechRef.current = val;
+        setTechnicianComments(val);
       }
     }
   }, [cases, id]);
@@ -150,15 +167,28 @@ export default function SAVDetail() {
             customer: customerChanged ? undefined : prevCase?.customer,
           };
         });
-        // Mettre à jour les commentaires privés si ils ont changé
+        // Commentaires privés : ne pas écraser une saisie locale en cours
         if (payload.new.private_comments !== undefined) {
-          setPrivateComments(payload.new.private_comments || '');
+          const incoming = payload.new.private_comments || '';
+          if (privateCommentsRef.current === lastSavedPrivRef.current) {
+            lastSavedPrivRef.current = incoming;
+            setPrivateComments(incoming);
+          } else if (incoming === privateCommentsRef.current) {
+            lastSavedPrivRef.current = incoming;
+          }
         }
-        // Mettre à jour les commentaires technicien si ils ont changé
+        // Commentaires technicien : ne pas écraser une saisie locale en cours
         if (payload.new.technician_comments !== undefined) {
-          setTechnicianComments(payload.new.technician_comments || '');
+          const incoming = payload.new.technician_comments || '';
+          if (technicianCommentsRef.current === lastSavedTechRef.current) {
+            lastSavedTechRef.current = incoming;
+            setTechnicianComments(incoming);
+          } else if (incoming === technicianCommentsRef.current) {
+            lastSavedTechRef.current = incoming;
+          }
         }
       }
+
     }).on('postgres_changes', {
       event: '*',
       schema: 'public',
@@ -205,38 +235,98 @@ export default function SAVDetail() {
   const handleStatusUpdated = () => {
     // Plus besoin de refetch, le realtime se charge de la mise à jour
   };
-  const saveTechnicianComments = async () => {
+  const saveTechnicianComments = async (options?: { silent?: boolean }) => {
     if (!savCase?.id) return;
+    const value = technicianCommentsRef.current;
     setSavingTechnicianComments(true);
+    setTechSaveState('saving');
     try {
-      const oldVal = savCase.technician_comments || '';
-      await updateTechnicianComments(savCase.id, technicianComments);
-      if (oldVal !== technicianComments && savCase.shop_id) {
+      const oldVal = lastSavedTechRef.current;
+      const { error } = await supabase
+        .from('sav_cases')
+        .update({ technician_comments: value })
+        .eq('id', savCase.id);
+      if (error) throw error;
+      lastSavedTechRef.current = value;
+      if (oldVal !== value && savCase.shop_id) {
         const name = await getCurrentUserName();
-        await logSAVChange(savCase.id, savCase.shop_id, 'sav_cases', 'update', 'technician_comments', oldVal || null, technicianComments || null, name);
+        await logSAVChange(savCase.id, savCase.shop_id, 'sav_cases', 'update', 'technician_comments', oldVal || null, value || null, name);
       }
-      setSavCase({ ...savCase, technician_comments: technicianComments });
-    } catch (error) {
+      setSavCase((prev: any) => prev ? { ...prev, technician_comments: value } : prev);
+      setTechSavedAt(new Date());
+      setTechSaveState('saved');
+      if (!options?.silent) {
+        toast({ title: "Succès", description: "Commentaire technicien enregistré" });
+      }
+    } catch (error: any) {
+      setTechSaveState('error');
+      toast({ title: "Erreur", description: error?.message || "Enregistrement impossible", variant: "destructive" });
     } finally {
       setSavingTechnicianComments(false);
     }
   };
-  const savePrivateComments = async () => {
+  const savePrivateComments = async (options?: { silent?: boolean }) => {
     if (!savCase?.id) return;
+    const value = privateCommentsRef.current;
     setSavingComments(true);
+    setPrivSaveState('saving');
     try {
-      const oldVal = savCase.private_comments || '';
-      await updatePrivateComments(savCase.id, privateComments);
-      if (oldVal !== privateComments && savCase.shop_id) {
+      const oldVal = lastSavedPrivRef.current;
+      const { error } = await supabase
+        .from('sav_cases')
+        .update({ private_comments: value })
+        .eq('id', savCase.id);
+      if (error) throw error;
+      lastSavedPrivRef.current = value;
+      if (oldVal !== value && savCase.shop_id) {
         const name = await getCurrentUserName();
-        await logSAVChange(savCase.id, savCase.shop_id, 'sav_cases', 'update', 'private_comments', oldVal || null, privateComments || null, name);
+        await logSAVChange(savCase.id, savCase.shop_id, 'sav_cases', 'update', 'private_comments', oldVal || null, value || null, name);
       }
-      setSavCase({ ...savCase, private_comments: privateComments });
-    } catch (error) {
+      setSavCase((prev: any) => prev ? { ...prev, private_comments: value } : prev);
+      setPrivSavedAt(new Date());
+      setPrivSaveState('saved');
+      if (!options?.silent) {
+        toast({ title: "Succès", description: "Commentaires privés enregistrés" });
+      }
+    } catch (error: any) {
+      setPrivSaveState('error');
+      toast({ title: "Erreur", description: error?.message || "Enregistrement impossible", variant: "destructive" });
     } finally {
       setSavingComments(false);
     }
   };
+
+  // Autosave (debounce 1,2 s) du commentaire technicien
+  useEffect(() => {
+    if (!savCase?.id) return;
+    if (technicianComments === lastSavedTechRef.current) return;
+    setTechSaveState('dirty');
+    const t = setTimeout(() => { saveTechnicianComments({ silent: true }); }, 1200);
+    return () => clearTimeout(t);
+  }, [technicianComments, savCase?.id]);
+
+  // Autosave (debounce 1,2 s) des commentaires privés
+  useEffect(() => {
+    if (!savCase?.id) return;
+    if (privateComments === lastSavedPrivRef.current) return;
+    setPrivSaveState('dirty');
+    const t = setTimeout(() => { savePrivateComments({ silent: true }); }, 1200);
+    return () => clearTimeout(t);
+  }, [privateComments, savCase?.id]);
+
+  const renderSaveIndicator = (state: SaveState, at: Date | null) => {
+    if (state === 'dirty') return <span className="text-xs text-muted-foreground">Modifications non enregistrées…</span>;
+    if (state === 'saving') return <span className="text-xs text-muted-foreground">Enregistrement…</span>;
+    if (state === 'error') return <span className="text-xs text-destructive">Échec de l'enregistrement</span>;
+    if (state === 'saved') return (
+      <span className="text-xs text-green-600 flex items-center gap-1">
+        <CheckCircle className="h-3 w-3" />
+        Enregistré{at ? ` à ${format(at, 'HH:mm')}` : ''}
+      </span>
+    );
+    return null;
+  };
+
 
   const updateSavType = async () => {
     if (!savCase?.id || !tempSavType) {
@@ -506,7 +596,21 @@ export default function SAVDetail() {
 
               <Card>
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-base">Appareil & dossier</CardTitle>
+                  <CardTitle className="text-base flex items-center justify-between gap-2">
+                    <span>Appareil & dossier</span>
+                    <EditSAVDetailsDialog
+                      savCaseId={savCase.id}
+                      shopId={savCase.shop_id}
+                      currentDetails={{
+                        device_brand: savCase.device_brand,
+                        device_model: savCase.device_model,
+                        device_imei: savCase.device_imei,
+                        problem_description: savCase.problem_description,
+                        repair_notes: savCase.repair_notes,
+                        sku: savCase.sku,
+                      }}
+                    />
+                  </CardTitle>
                 </CardHeader>
                 <CardContent className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
                   <div>
@@ -527,12 +631,93 @@ export default function SAVDetail() {
                     <p className="text-xs text-muted-foreground">Coût total</p>
                     <p className="font-medium">{savCase.total_cost}€</p>
                   </div>
+                  {savCase.repair_notes && (
+                    <div className="col-span-2 sm:col-span-4">
+                      <p className="text-xs text-muted-foreground">Notes de réparation</p>
+                      <p className="font-medium whitespace-pre-wrap">{savCase.repair_notes}</p>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
 
+              {/* Commentaire technicien */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base flex items-center justify-between gap-2">
+                    <span className="flex items-center gap-2">
+                      <MessageSquare className="h-4 w-4" />
+                      Commentaire technicien
+                    </span>
+                    {renderSaveIndicator(techSaveState, techSavedAt)}
+                  </CardTitle>
+                  <p className="text-xs text-muted-foreground">
+                    Visible par le client et imprimé sur le bon de restitution. Enregistrement automatique.
+                  </p>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="technician-comments-simple" className="text-sm">Commentaire pour le client</Label>
+                    <AITextReformulator
+                      text={technicianComments}
+                      context="technician_comments"
+                      onReformulated={(reformulatedText) => setTechnicianComments(reformulatedText)}
+                    />
+                  </div>
+                  <Textarea
+                    id="technician-comments-simple"
+                    placeholder="Décrivez l'intervention réalisée, les problèmes rencontrés ou les recommandations pour le client..."
+                    value={technicianComments}
+                    onChange={e => setTechnicianComments(e.target.value)}
+                    onBlur={() => { if (technicianComments !== lastSavedTechRef.current) saveTechnicianComments({ silent: true }); }}
+                    rows={4}
+                  />
+                  <Button onClick={() => saveTechnicianComments()} disabled={savingTechnicianComments} size="sm" variant="outline">
+                    <Save className="h-4 w-4 mr-2" />
+                    {savingTechnicianComments ? 'Sauvegarde...' : 'Enregistrer maintenant'}
+                  </Button>
+                </CardContent>
+              </Card>
 
+              {/* Commentaires privés magasin */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base flex items-center justify-between gap-2">
+                    <span className="flex items-center gap-2">
+                      <Lock className="h-4 w-4" />
+                      Commentaires privés magasin
+                    </span>
+                    {renderSaveIndicator(privSaveState, privSavedAt)}
+                  </CardTitle>
+                  <p className="text-xs text-muted-foreground">
+                    Visibles uniquement par le personnel du magasin. Enregistrement automatique.
+                  </p>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="private-comments-simple" className="text-sm">Commentaires internes</Label>
+                    <AITextReformulator
+                      text={privateComments}
+                      context="private_comments"
+                      onReformulated={(reformulatedText) => setPrivateComments(reformulatedText)}
+                    />
+                  </div>
+                  <Textarea
+                    id="private-comments-simple"
+                    placeholder="Ajoutez vos notes et commentaires privés ici..."
+                    value={privateComments}
+                    onChange={e => setPrivateComments(e.target.value)}
+                    onBlur={() => { if (privateComments !== lastSavedPrivRef.current) savePrivateComments({ silent: true }); }}
+                    rows={4}
+                  />
+                  <Button onClick={() => savePrivateComments()} disabled={savingComments} size="sm" variant="outline">
+                    <Save className="h-4 w-4 mr-2" />
+                    {savingComments ? 'Sauvegarde...' : 'Enregistrer maintenant'}
+                  </Button>
+                </CardContent>
+              </Card>
 
               <SAVStatusManager savCase={savCase} onStatusUpdated={handleStatusUpdated} />
+
             </TabsContent>
 
             {/* Onglet Client */}
@@ -1060,12 +1245,15 @@ export default function SAVDetail() {
             {/* Commentaire technicien */}
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <MessageSquare className="h-5 w-5" />
-                  Commentaire technicien
+                <CardTitle className="flex items-center justify-between gap-2">
+                  <span className="flex items-center gap-2">
+                    <MessageSquare className="h-5 w-5" />
+                    Commentaire technicien
+                  </span>
+                  {renderSaveIndicator(techSaveState, techSavedAt)}
                 </CardTitle>
                 <p className="text-sm text-muted-foreground">
-                  Commentaire visible par le client et imprimé sur le bon de restitution.
+                  Commentaire visible par le client et imprimé sur le bon de restitution. Enregistrement automatique.
                 </p>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -1078,11 +1266,18 @@ export default function SAVDetail() {
                       onReformulated={(reformulatedText) => setTechnicianComments(reformulatedText)}
                     />
                   </div>
-                  <Textarea id="technician-comments" placeholder="Décrivez l'intervention réalisée, les problèmes rencontrés ou les recommandations pour le client..." value={technicianComments} onChange={e => setTechnicianComments(e.target.value)} rows={4} />
+                  <Textarea
+                    id="technician-comments"
+                    placeholder="Décrivez l'intervention réalisée, les problèmes rencontrés ou les recommandations pour le client..."
+                    value={technicianComments}
+                    onChange={e => setTechnicianComments(e.target.value)}
+                    onBlur={() => { if (technicianComments !== lastSavedTechRef.current) saveTechnicianComments({ silent: true }); }}
+                    rows={4}
+                  />
                 </div>
-                <Button onClick={saveTechnicianComments} disabled={savingTechnicianComments} size="sm">
+                <Button onClick={() => saveTechnicianComments()} disabled={savingTechnicianComments} size="sm" variant="outline">
                   <Save className="h-4 w-4 mr-2" />
-                  {savingTechnicianComments ? 'Sauvegarde...' : 'Sauvegarder le commentaire'}
+                  {savingTechnicianComments ? 'Sauvegarde...' : 'Enregistrer maintenant'}
                 </Button>
               </CardContent>
             </Card>
@@ -1090,12 +1285,15 @@ export default function SAVDetail() {
             {/* Commentaires privés */}
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Lock className="h-5 w-5" />
-                  Commentaires privés magasin
+                <CardTitle className="flex items-center justify-between gap-2">
+                  <span className="flex items-center gap-2">
+                    <Lock className="h-5 w-5" />
+                    Commentaires privés magasin
+                  </span>
+                  {renderSaveIndicator(privSaveState, privSavedAt)}
                 </CardTitle>
                 <p className="text-sm text-muted-foreground">
-                  Ces commentaires ne sont visibles que par le personnel du magasin. Le client ne peut pas les voir.
+                  Ces commentaires ne sont visibles que par le personnel du magasin. Le client ne peut pas les voir. Enregistrement automatique.
                 </p>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -1108,14 +1306,22 @@ export default function SAVDetail() {
                       onReformulated={(reformulatedText) => setPrivateComments(reformulatedText)}
                     />
                   </div>
-                  <Textarea id="private-comments" placeholder="Ajoutez vos notes et commentaires privés ici..." value={privateComments} onChange={e => setPrivateComments(e.target.value)} rows={4} />
+                  <Textarea
+                    id="private-comments"
+                    placeholder="Ajoutez vos notes et commentaires privés ici..."
+                    value={privateComments}
+                    onChange={e => setPrivateComments(e.target.value)}
+                    onBlur={() => { if (privateComments !== lastSavedPrivRef.current) savePrivateComments({ silent: true }); }}
+                    rows={4}
+                  />
                 </div>
-                <Button onClick={savePrivateComments} disabled={savingComments} size="sm">
+                <Button onClick={() => savePrivateComments()} disabled={savingComments} size="sm" variant="outline">
                   <Save className="h-4 w-4 mr-2" />
-                  {savingComments ? 'Sauvegarde...' : 'Sauvegarder les commentaires'}
+                  {savingComments ? 'Sauvegarde...' : 'Enregistrer maintenant'}
                 </Button>
               </CardContent>
             </Card>
+
 
             <SAVPartsRequirements savCaseId={savCase.id} onPartsUpdated={() => {}} />
             <SAVStatusManager savCase={savCase} onStatusUpdated={handleStatusUpdated} />
