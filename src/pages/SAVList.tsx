@@ -177,6 +177,7 @@ export default function SAVList() {
     const status = searchParams.get('status');
     const excludeReady = searchParams.get('exclude_ready');
     const takenOver = searchParams.get('taken_over');
+    const provider = searchParams.get('provider');
 
     if (savType) {
       setFilterType(savType);
@@ -184,8 +185,8 @@ export default function SAVList() {
     
     if (status) {
       setStatusFilter(status);
-    } else if (excludeReady === 'true') {
-      // Si exclude_ready est true, utiliser le filtre par défaut qui exclut les "prêts"
+    } else if (excludeReady === 'true' || provider || savType) {
+      // Par défaut depuis le menu latéral : masquer les prêts
       setStatusFilter('all-except-ready');
     }
     
