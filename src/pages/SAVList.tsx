@@ -251,7 +251,8 @@ export default function SAVList() {
     }
   };
 
-  const handlePrintWithFilters = useCallback(async (selectedTypes: string[], printStatusFilter: string) => {
+  const handlePrintWithFilters = useCallback(async (selection: { types: string[]; statuses: string[]; providers: string[] }) => {
+    const { types: selectedTypes, statuses: selectedStatuses, providers: selectedProviders } = selection;
     // Recalculate filtered cases based on dialog selections
     const casesWithDelay = cases.map((case_) => ({
       ...case_,
@@ -260,12 +261,15 @@ export default function SAVList() {
 
     let filtered = casesWithDelay.filter(c => selectedTypes.includes(c.sav_type));
 
-    if (printStatusFilter === 'all-except-ready') {
-      filtered = filtered.filter(c => !isReadyStatus(c.status));
-    } else if (printStatusFilter === 'overdue') {
-      filtered = filtered.filter(c => c.delayInfo.isOverdue && c.status !== 'cancelled' && !isReadyStatus(c.status));
-    } else if (printStatusFilter !== 'all') {
-      filtered = filtered.filter(c => c.status === printStatusFilter);
+    if (selectedStatuses.length > 0) {
+      filtered = filtered.filter(c => selectedStatuses.includes(c.status));
+    }
+
+    if (selectedProviders.length > 0) {
+      filtered = filtered.filter(c => {
+        const provider = providerByCaseId.get(c.id);
+        return provider ? selectedProviders.includes(provider.id) : selectedProviders.includes('none');
+      });
     }
 
     filtered.sort((a, b) => a.delayInfo.totalRemainingHours - b.delayInfo.totalRemainingHours);
@@ -275,11 +279,17 @@ export default function SAVList() {
       return;
     }
 
+    const statusLabel = selectedStatuses.length === 0
+      ? 'all'
+      : selectedStatuses
+          .map(key => statuses.find(s => s.status_key === key)?.status_label || key)
+          .join(', ');
+
     try {
       const result = await generateSAVListPDF(filtered, shop, {
         searchTerm: '',
         filterType: selectedTypes.length === types.length ? 'all' : selectedTypes.join(', '),
-        statusFilter: printStatusFilter,
+        statusFilter: statusLabel,
         sortOrder
       }, statuses, types);
       if (result) {
@@ -289,7 +299,8 @@ export default function SAVList() {
       console.error('Erreur lors de la génération de la liste:', error);
       toast.error("Erreur lors de la génération du document");
     }
-  }, [cases, shop, types, statuses, sortOrder, isReadyStatus]);
+  }, [cases, shop, types, statuses, sortOrder, providerByCaseId]);
+
 
   // Calculer les informations de délai et appliquer filtres et tri
   const filteredAndSortedCases = useMemo(() => {
