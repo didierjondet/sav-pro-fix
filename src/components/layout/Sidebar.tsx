@@ -196,8 +196,9 @@ function SidebarComponent({
           byType[c.sav_type] = (byType[c.sav_type] || 0) + 1;
         });
         return { provider, cases: relatedCases, count: relatedCases.length, byType };
-      });
-  }, [cases, savProviders, activeAssignments]);
+      })
+      .filter(p => (settings?.hide_empty_sav_providers ? p.count > 0 : true));
+  }, [cases, savProviders, activeAssignments, settings?.hide_empty_sav_providers]);
 
   // Calculate counts for statuses that should be shown in sidebar
   const sidebarStatusCounts = statuses.filter(status => status.show_in_sidebar).map(status => {
