@@ -5,7 +5,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
-import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useSAVCases } from '@/hooks/useSAVCases';
 import { useProfile } from '@/hooks/useProfile';
 import { useSAVUnreadMessages } from '@/hooks/useSAVUnreadMessages';
@@ -17,7 +17,7 @@ import { calculateSAVDelay } from '@/hooks/useSAVDelay';
 import { useMenuPermissions } from '@/hooks/useMenuPermissions';
 import { useRolePermissions } from '@/hooks/useRolePermissions';
 import { usePendingAppointments } from '@/hooks/usePendingAppointments';
-import { MessageSquare, Package, Users, BarChart3, FileText, Settings, X, Plus, Shield, CreditCard, HelpCircle, Info, FileBarChart, Calendar, ClipboardList, Wrench } from 'lucide-react';
+import { MessageSquare, Package, Users, BarChart3, FileText, Settings, X, Plus, Shield, CreditCard, HelpCircle, Info, FileBarChart, Calendar, ClipboardList } from 'lucide-react';
 import { useSAVProviders, useActiveProviderAssignments } from '@/hooks/useSAVProviders';
 import { useQuotes } from '@/hooks/useQuotes';
 interface SidebarProps {
@@ -477,9 +477,14 @@ function SidebarComponent({
 
               {/* Prestataires techniques */}
               {!isSimplifiedView && providerCounts.length > 0 && <div className="mt-4 p-3 bg-muted rounded-lg">
-                  <h3 className="text-base font-semibold text-foreground mb-1 pl-1 flex items-center gap-2">
-                    <Wrench className="h-4 w-4" /> Chez un prestataire
-                  </h3>
+                  <div className="flex items-center justify-between mb-2 pl-1">
+                    <h3 className="text-sm font-medium text-foreground">
+                      Chez un prestataire
+                    </h3>
+                    <Badge variant="secondary" className="text-xs">
+                      {providerCounts.reduce((total, p) => total + p.count, 0)}
+                    </Badge>
+                  </div>
                   <div className="space-y-1">
                     {providerCounts.map(({ provider, count, byType, cases: providerCases }) => <Tooltip key={provider.id}>
                         <TooltipTrigger asChild>
@@ -488,10 +493,9 @@ function SidebarComponent({
                               navigate(`/sav?provider=${provider.id}`);
                               onClose();
                             }}
-                            className="w-full flex items-center justify-between p-1 text-sm hover:bg-accent hover:text-accent-foreground rounded-md transition-colors"
+                            className="flex items-center justify-between p-1 text-sm hover:bg-accent hover:text-accent-foreground rounded-md transition-colors w-full cursor-pointer"
                           >
-                            <span className="text-muted-foreground flex items-center gap-2">
-                              <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: provider.color }} />
+                            <span className="text-muted-foreground truncate flex-1 text-left">
                               {provider.name}
                             </span>
                             <Badge variant="secondary" className="ml-2" style={{
@@ -524,6 +528,9 @@ function SidebarComponent({
                           </div>
                         </TooltipContent>
                       </Tooltip>)}
+                    {providerCounts.length === 0 && <div className="text-sm text-muted-foreground text-center py-2">
+                        Aucun prestataire configuré
+                       </div>}
                   </div>
                 </div>}
              </TooltipProvider>
