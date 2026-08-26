@@ -44,7 +44,9 @@ import { ProductHistoryBanner } from '@/components/sav/ProductHistoryBanner';
 import { SAVCodesTab } from '@/components/sav/SAVCodesTab';
 import { SAVDiagnosticTab } from '@/components/sav/SAVDiagnosticTab';
 import { useSAVCaseUnreadCount, useSAVCaseHasActiveLoan } from '@/hooks/useSAVCaseIndicators';
-import { Stethoscope, KeyRound, Smartphone } from 'lucide-react';
+import { SAVProviderTab } from '@/components/sav/SAVProviderTab';
+import { useSAVCaseActiveProvider, useSAVProviders } from '@/hooks/useSAVProviders';
+import { Stethoscope, KeyRound, Smartphone, Wrench } from 'lucide-react';
 import { NonRepairabilityCertificateDialog } from '@/components/sav/NonRepairabilityCertificateDialog';
 
 const TAB_ACTIVE_CLASSES = 'data-[state=active]:bg-primary/15 data-[state=active]:text-primary data-[state=active]:shadow-sm';
@@ -103,6 +105,11 @@ export default function SAVDetail() {
   const { data: unreadCount = 0 } = useSAVCaseUnreadCount(id);
   const { data: hasActiveLoan = false } = useSAVCaseHasActiveLoan(id);
   const { activeCount: agendaActiveCount } = useSAVCaseAppointments(id);
+  const { data: activeProviderAssignment } = useSAVCaseActiveProvider(id);
+  const { providers: savProviders } = useSAVProviders();
+  const activeProvider = activeProviderAssignment
+    ? savProviders.find(p => p.id === activeProviderAssignment.provider_id)
+    : null;
   useEffect(() => {
     if (cases && id) {
       const foundCase = cases.find(c => c.id === id);
@@ -420,6 +427,21 @@ export default function SAVDetail() {
                   </span>
                 )}
               </TabsTrigger>
+              <TabsTrigger
+                value="prestataire"
+                className={activeProvider ? 'font-semibold data-[state=active]:bg-primary/15' : TAB_ACTIVE_CLASSES}
+                style={activeProvider ? { color: activeProvider.color } : undefined}
+              >
+                <Wrench className="h-3.5 w-3.5 mr-1" /> Prestataire
+                {activeProvider && (
+                  <span
+                    className="ml-2 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold text-white"
+                    style={{ backgroundColor: activeProvider.color }}
+                  >
+                    1
+                  </span>
+                )}
+              </TabsTrigger>
               <TabsTrigger value="documents" className={TAB_ACTIVE_CLASSES}>Documents</TabsTrigger>
             </TabsList>
 
@@ -595,6 +617,10 @@ export default function SAVDetail() {
             </TabsContent>
 
             {/* Onglet Prêt matériel */}
+            <TabsContent value="prestataire" className="space-y-4">
+              <SAVProviderTab savCaseId={savCase.id} shopId={savCase.shop_id} />
+            </TabsContent>
+
             <TabsContent value="loaner" className="space-y-4">
               <SAVLoanerCard savCaseId={savCase.id} customerId={savCase.customer_id} />
             </TabsContent>
@@ -822,6 +848,21 @@ export default function SAVDetail() {
               {hasActiveLoan && (
                 <span className="ml-2 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold">
                   !
+                </span>
+              )}
+            </TabsTrigger>
+            <TabsTrigger
+              value="prestataire"
+              className={activeProvider ? 'font-semibold data-[state=active]:bg-primary/15' : TAB_ACTIVE_CLASSES}
+              style={activeProvider ? { color: activeProvider.color } : undefined}
+            >
+              <Wrench className="h-3.5 w-3.5 mr-1" /> Prestataire
+              {activeProvider && (
+                <span
+                  className="ml-2 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold text-white"
+                  style={{ backgroundColor: activeProvider.color }}
+                >
+                  1
                 </span>
               )}
             </TabsTrigger>
@@ -1138,6 +1179,10 @@ export default function SAVDetail() {
           </TabsContent>
 
           {/* Onglet Prêt matériel */}
+          <TabsContent value="prestataire" className="space-y-4">
+            <SAVProviderTab savCaseId={savCase.id} shopId={savCase.shop_id} />
+          </TabsContent>
+
           <TabsContent value="loaner" className="space-y-4">
             <SAVLoanerCard savCaseId={savCase.id} customerId={savCase.customer_id} />
           </TabsContent>
