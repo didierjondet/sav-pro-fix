@@ -373,6 +373,13 @@ export default function SAVList() {
     [providerFilter]
   );
 
+  // Types présents dans la liste imprimable (y compris les types masqués de la barre latérale)
+  const availablePrintTypes = useMemo(
+    () => Array.from(new Set(filteredAndSortedCases.map(c => c.sav_type).filter(Boolean) as string[])),
+    [filteredAndSortedCases]
+  );
+
+
   const getTypeFilterLabel = useCallback((value: string) => {
     if (value === 'all') return 'Tous les SAV';
     if (value === 'shop') return 'SAV CLIENTS (INTERNE+EXTERNE)';
@@ -406,7 +413,8 @@ export default function SAVList() {
       return;
     }
 
-    const visibleTypeCount = types.filter(t => t.show_in_sidebar !== false).length;
+    const availableTypeSet = new Set(availablePrintTypes);
+    const visibleTypeCount = types.filter(t => t.show_in_sidebar !== false || availableTypeSet.has(t.type_key)).length;
     const printTypeLabel = selectedTypes.length === visibleTypeCount
       ? 'Tous les types affichés'
       : selectedTypes.map(type => getTypeInfo(type).label).join(', ');
@@ -446,6 +454,8 @@ export default function SAVList() {
     }
   }, [
     filteredAndSortedCases,
+    availablePrintTypes,
+
     shop,
     types,
     statuses,
@@ -1000,6 +1010,8 @@ export default function SAVList() {
         providerCaseCounts={providerCaseCounts}
         unassignedProviderCount={unassignedProviderCount}
         hideEmptyProviders={settings?.hide_empty_sav_providers ?? false}
+        availableTypes={availablePrintTypes}
+
       />
       <SAVWizardDialog
         open={showWizard}

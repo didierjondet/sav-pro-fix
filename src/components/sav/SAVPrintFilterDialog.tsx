@@ -27,7 +27,10 @@ interface SAVPrintFilterDialogProps {
   providerCaseCounts?: Record<string, number>;
   unassignedProviderCount?: number;
   hideEmptyProviders?: boolean;
+  /** Types de SAV réellement présents dans la liste imprimable (même s'ils sont masqués de la barre latérale) */
+  availableTypes?: string[];
 }
+
 
 function SectionActions({
   count,
@@ -61,17 +64,23 @@ export function SAVPrintFilterDialog({
   providerCaseCounts = {},
   unassignedProviderCount = 0,
   hideEmptyProviders = false,
+  availableTypes = [],
 }: SAVPrintFilterDialogProps) {
   const { getAllTypes, getTypeInfo } = useShopSAVTypes();
   const { statuses } = useShopSAVStatuses();
   const { providers } = useSAVProviders();
   const initializedForOpenRef = useRef(false);
 
-  // Uniquement les éléments visibles dans la barre latérale (réglages)
-  const visibleTypes = useMemo(
-    () => getAllTypes().filter(t => getTypeInfo(t.value).show_in_sidebar !== false),
-    [getAllTypes, getTypeInfo]
-  );
+  const availableTypesKey = availableTypes.join('|');
+  // Types visibles dans la barre latérale + types réellement présents dans la liste imprimable
+  const visibleTypes = useMemo(() => {
+    const availableSet = new Set(availableTypes);
+    return getAllTypes().filter(
+      t => getTypeInfo(t.value).show_in_sidebar !== false || availableSet.has(t.value)
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [getAllTypes, getTypeInfo, availableTypesKey]);
+
   const visibleStatuses = useMemo(
     () =>
       statuses
