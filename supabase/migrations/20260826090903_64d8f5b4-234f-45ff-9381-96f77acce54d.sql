@@ -1,0 +1,1 @@
+ALTER TABLE public.shops ADD COLUMN IF NOT EXISTS hide_empty_sav_providers boolean NOT NULL DEFAULT false;
