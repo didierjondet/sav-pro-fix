@@ -1085,6 +1085,19 @@ export default function SAVDetail() {
             <SAVStatusManager savCase={savCase} onStatusUpdated={handleStatusUpdated} />
           </TabsContent>
 
+          {/* Onglet Client */}
+          <TabsContent value="client" className="space-y-4">
+            <SAVCustomerTab
+              savCaseId={savCase.id}
+              shopId={savCase.shop_id}
+              customerId={savCase.customer_id}
+              customer={savCase.customer}
+              onCustomerUpdated={() => { refreshSavCustomer(); }}
+            />
+          </TabsContent>
+
+
+
           {/* Onglet Communication */}
           <TabsContent value="communication" className="space-y-4">
             <div className="flex flex-wrap items-center gap-2">
