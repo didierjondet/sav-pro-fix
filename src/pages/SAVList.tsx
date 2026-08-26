@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { useSAVCases } from '@/hooks/useSAVCases';
 import { useShop } from '@/hooks/useShop';
 import { useShopSAVTypes } from '@/hooks/useShopSAVTypes';
+import { useSAVProviders, useActiveProviderAssignments } from '@/hooks/useSAVProviders';
 import { useSAVVisits } from '@/hooks/useSAVVisits';
 import { generateSAVListPDF } from '@/utils/pdfGenerator';
 import { toast } from 'sonner';
@@ -49,7 +50,8 @@ import {
   LayoutGrid,
   LayoutList,
   RotateCcw,
-  Calendar
+  Calendar,
+  Wrench
 } from 'lucide-react';
 import { useSAVAppointments } from '@/hooks/useSAVAppointments';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -123,6 +125,17 @@ export default function SAVList() {
   const { getAllTypes, getTypeInfo, types } = useShopSAVTypes();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { providers: savProviders } = useSAVProviders();
+  const { data: activeProviderAssignments = [] } = useActiveProviderAssignments();
+  const providerFilter = searchParams.get('provider');
+  const providerByCaseId = useMemo(() => {
+    const map = new Map<string, { id: string; name: string; color: string }>();
+    activeProviderAssignments.forEach(a => {
+      const p = savProviders.find(sp => sp.id === a.provider_id);
+      if (p) map.set(a.sav_case_id, { id: p.id, name: p.name, color: p.color });
+    });
+    return map;
+  }, [activeProviderAssignments, savProviders]);
 
   // Les fonctions utilitaires sont maintenant disponibles via le hook useShopSAVStatuses
 
@@ -288,6 +301,11 @@ export default function SAVList() {
 
     let filtered = casesWithDelay;
 
+    // Filtrer par prestataire technique (paramètre URL)
+    if (providerFilter) {
+      filtered = filtered.filter(case_ => providerByCaseId.get(case_.id)?.id === providerFilter);
+    }
+
     // 2. Filtrer par type de SAV avec types dynamiques
     if (filterType !== 'all') {
       if (filterType === 'shop') {
@@ -345,7 +363,7 @@ export default function SAVList() {
         return a.delayInfo.totalRemainingHours - b.delayInfo.totalRemainingHours;
       }
     });
-  }, [cases, shop, filterType, statusFilter, colorFilter, gradeFilter, sortOrder, searchTerm, types, getAllTypes, isReadyStatus]);
+  }, [cases, shop, filterType, statusFilter, colorFilter, gradeFilter, sortOrder, searchTerm, types, getAllTypes, isReadyStatus, providerFilter, providerByCaseId]);
 
   // Calculs de pagination
   const totalItems = filteredAndSortedCases.length;
@@ -731,6 +749,19 @@ export default function SAVList() {
                           )}
                         </div>
                         <div className="flex items-center gap-2 flex-wrap">
+                          {providerByCaseId.get(savCase.id) && (
+                            <span
+                              className="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full border"
+                              style={{
+                                color: providerByCaseId.get(savCase.id)!.color,
+                                borderColor: providerByCaseId.get(savCase.id)!.color,
+                                backgroundColor: `${providerByCaseId.get(savCase.id)!.color}18`,
+                              }}
+                            >
+                              <Wrench className="h-3 w-3" />
+                              {providerByCaseId.get(savCase.id)!.name}
+                            </span>
+                          )}
                           {!(savCase.sav_type === 'internal' && !savCase.customer) && (
                             <span className="text-xs text-muted-foreground font-mono">N° {savCase.case_number}</span>
                           )}

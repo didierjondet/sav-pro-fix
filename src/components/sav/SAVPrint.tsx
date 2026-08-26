@@ -58,6 +58,27 @@ export const SAVPrintButton = React.forwardRef<SAVPrintButtonRef, SAVPrintButton
 
     try {
 
+      // Récupérer le prestataire technique en cours (information interne)
+      let providerName: string | null = null;
+      try {
+        const { data: assignment } = await supabase
+          .from("sav_provider_assignments")
+          .select("provider_id")
+          .eq("sav_case_id", savCase.id)
+          .is("returned_at", null)
+          .maybeSingle();
+        if (assignment?.provider_id) {
+          const { data: provider } = await supabase
+            .from("shop_sav_providers")
+            .select("name")
+            .eq("id", assignment.provider_id)
+            .maybeSingle();
+          providerName = provider?.name || null;
+        }
+      } catch (_) {
+        providerName = null;
+      }
+
       // Récupérer les pièces
       const { data: partsData } = await supabase
         .from("sav_parts")
@@ -418,7 +439,7 @@ export const SAVPrintButton = React.forwardRef<SAVPrintButtonRef, SAVPrintButton
       <div class="header-left">
         <div class="title">Dossier SAV N° ${savCase.case_number}</div>
         ${caseBarcodeImg}
-        <div class="sav-type">${getTypeInfo(savCase.sav_type).label}</div>
+        <div class="sav-type">Exemplaire client</div>
         <div class="meta">Créé le ${(savCase.created_at ? new Date(savCase.created_at).toLocaleDateString() : "")} · Statut: ${getStatusLabel(savCase.status)}</div>
       </div>
       ${qrHeaderBlock}
@@ -442,7 +463,7 @@ export const SAVPrintButton = React.forwardRef<SAVPrintButtonRef, SAVPrintButton
       <div class="header-left">
         <div class="title">Dossier SAV N° ${savCase.case_number}</div>
         ${caseBarcodeImg}
-        <div class="sav-type">${getTypeInfo(savCase.sav_type).label}</div>
+        <div class="sav-type">${getTypeInfo(savCase.sav_type).label}${providerName ? ` · Prestataire : ${providerName}` : ''} <span style="font-weight:400;">(exemplaire magasin)</span></div>
         <div class="meta">Créé le ${(savCase.created_at ? new Date(savCase.created_at).toLocaleDateString() : "")} · Statut: ${getStatusLabel(savCase.status)}</div>
       </div>
       ${qrHeaderBlock}

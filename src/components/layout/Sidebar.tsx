@@ -17,7 +17,8 @@ import { calculateSAVDelay } from '@/hooks/useSAVDelay';
 import { useMenuPermissions } from '@/hooks/useMenuPermissions';
 import { useRolePermissions } from '@/hooks/useRolePermissions';
 import { usePendingAppointments } from '@/hooks/usePendingAppointments';
-import { MessageSquare, Package, Users, BarChart3, FileText, Settings, X, Plus, Shield, CreditCard, HelpCircle, Info, FileBarChart, Calendar, ClipboardList } from 'lucide-react';
+import { MessageSquare, Package, Users, BarChart3, FileText, Settings, X, Plus, Shield, CreditCard, HelpCircle, Info, FileBarChart, Calendar, ClipboardList, Wrench } from 'lucide-react';
+import { useSAVProviders, useActiveProviderAssignments } from '@/hooks/useSAVProviders';
 import { useQuotes } from '@/hooks/useQuotes';
 interface SidebarProps {
   isOpen: boolean;
@@ -85,6 +86,8 @@ function SidebarComponent({
   const {
     pendingCount: pendingAppointmentsCount
   } = usePendingAppointments();
+  const { providers: savProviders } = useSAVProviders();
+  const { data: activeAssignments = [] } = useActiveProviderAssignments();
   const totalUnread = (savWithUnreadMessages || []).reduce((sum, s) => sum + s.unread_count, 0);
 
   // Simplified view state
@@ -177,6 +180,24 @@ function SidebarComponent({
     });
     return counts;
   }, [cases, savTypes]);
+
+  // Prestataires techniques : dossiers actuellement chez un prestataire
+  const providerCounts = useMemo(() => {
+    const activeCases = (cases || []).filter(c => isActiveStatus(c.status));
+    return (savProviders || [])
+      .filter(p => p.is_active && p.show_in_sidebar)
+      .map(provider => {
+        const providerCaseIds = (activeAssignments || [])
+          .filter(a => a.provider_id === provider.id)
+          .map(a => a.sav_case_id);
+        const relatedCases = activeCases.filter(c => providerCaseIds.includes(c.id));
+        const byType: Record<string, number> = {};
+        relatedCases.forEach(c => {
+          byType[c.sav_type] = (byType[c.sav_type] || 0) + 1;
+        });
+        return { provider, cases: relatedCases, count: relatedCases.length, byType };
+      });
+  }, [cases, savProviders, activeAssignments]);
 
   // Calculate counts for statuses that should be shown in sidebar
   const sidebarStatusCounts = statuses.filter(status => status.show_in_sidebar).map(status => {
@@ -453,6 +474,58 @@ function SidebarComponent({
                        </div>}
                    </div>
                  </div>}
+
+              {/* Prestataires techniques */}
+              {!isSimplifiedView && providerCounts.length > 0 && <div className="mt-4 p-3 bg-muted rounded-lg">
+                  <h3 className="text-base font-semibold text-foreground mb-1 pl-1 flex items-center gap-2">
+                    <Wrench className="h-4 w-4" /> Chez un prestataire
+                  </h3>
+                  <div className="space-y-1">
+                    {providerCounts.map(({ provider, count, byType, cases: providerCases }) => <Tooltip key={provider.id}>
+                        <TooltipTrigger asChild>
+                          <button
+                            onClick={() => {
+                              navigate(`/sav?provider=${provider.id}`);
+                              onClose();
+                            }}
+                            className="w-full flex items-center justify-between p-1 text-sm hover:bg-accent hover:text-accent-foreground rounded-md transition-colors"
+                          >
+                            <span className="text-muted-foreground flex items-center gap-2">
+                              <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: provider.color }} />
+                              {provider.name}
+                            </span>
+                            <Badge variant="secondary" className="ml-2" style={{
+                        backgroundColor: `${provider.color}20`,
+                        color: provider.color,
+                        borderColor: provider.color
+                      }}>
+                              {count}
+                            </Badge>
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent side="right" className="max-w-xs">
+                          <div className="space-y-2">
+                            <p className="font-medium">{provider.name}</p>
+                            <p className="text-sm">{count} dossier(s) en cours chez ce prestataire</p>
+                            {Object.keys(byType).length > 0 && <div className="space-y-0.5">
+                                <p className="text-xs font-medium">Origine des dossiers :</p>
+                                {Object.entries(byType).map(([typeKey, nb]) => <p key={typeKey} className="text-xs text-muted-foreground">
+                                    {getTypeInfo(typeKey).label} : {nb}
+                                  </p>)}
+                              </div>}
+                            {providerCases.slice(0, 5).map(savCase => <button key={savCase.id} onClick={e => {
+                        e.stopPropagation();
+                        navigate(`/sav/${savCase.id}`);
+                        onClose();
+                      }} className="block text-primary hover:underline text-left w-full text-xs">
+                                {savCase.case_number} - {savCase.device_brand} {savCase.device_model}
+                              </button>)}
+                            {providerCases.length > 5 && <p className="text-xs text-muted-foreground">+{providerCases.length - 5} autres...</p>}
+                          </div>
+                        </TooltipContent>
+                      </Tooltip>)}
+                  </div>
+                </div>}
              </TooltipProvider>
           </ScrollArea>
 

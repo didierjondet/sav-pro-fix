@@ -2338,6 +2338,73 @@ export type Database = {
           },
         ]
       }
+      sav_provider_assignments: {
+        Row: {
+          cost: number | null
+          created_at: string
+          external_ref: string | null
+          id: string
+          notes: string | null
+          provider_id: string
+          reason: string | null
+          returned_at: string | null
+          sav_case_id: string
+          sent_at: string
+          shop_id: string
+          updated_at: string
+        }
+        Insert: {
+          cost?: number | null
+          created_at?: string
+          external_ref?: string | null
+          id?: string
+          notes?: string | null
+          provider_id: string
+          reason?: string | null
+          returned_at?: string | null
+          sav_case_id: string
+          sent_at?: string
+          shop_id: string
+          updated_at?: string
+        }
+        Update: {
+          cost?: number | null
+          created_at?: string
+          external_ref?: string | null
+          id?: string
+          notes?: string | null
+          provider_id?: string
+          reason?: string | null
+          returned_at?: string | null
+          sav_case_id?: string
+          sent_at?: string
+          shop_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sav_provider_assignments_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "shop_sav_providers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sav_provider_assignments_sav_case_id_fkey"
+            columns: ["sav_case_id"]
+            isOneToOne: false
+            referencedRelation: "sav_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sav_provider_assignments_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sav_status_history: {
         Row: {
           changed_by: string | null
@@ -2566,6 +2633,71 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "shop_role_permissions_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shop_sav_providers: {
+        Row: {
+          address: string | null
+          avg_delay_days: number | null
+          color: string
+          contact_name: string | null
+          created_at: string
+          display_order: number
+          email: string | null
+          id: string
+          is_active: boolean
+          name: string
+          notes: string | null
+          phone: string | null
+          shop_id: string
+          show_in_sidebar: boolean
+          specialties: string | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          avg_delay_days?: number | null
+          color?: string
+          contact_name?: string | null
+          created_at?: string
+          display_order?: number
+          email?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          notes?: string | null
+          phone?: string | null
+          shop_id: string
+          show_in_sidebar?: boolean
+          specialties?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          avg_delay_days?: number | null
+          color?: string
+          contact_name?: string | null
+          created_at?: string
+          display_order?: number
+          email?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          notes?: string | null
+          phone?: string | null
+          shop_id?: string
+          show_in_sidebar?: boolean
+          specialties?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shop_sav_providers_shop_id_fkey"
             columns: ["shop_id"]
             isOneToOne: false
             referencedRelation: "shops"

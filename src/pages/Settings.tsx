@@ -66,11 +66,12 @@ import { MenuConfigurationTab } from '@/components/settings/MenuConfigurationTab
 import { RolePermissionsManager } from '@/components/settings/RolePermissionsManager';
 import { PartCategoriesManager } from '@/components/settings/PartCategoriesManager';
 import { SuppliersManager } from '@/components/settings/SuppliersManager';
+import { SAVProvidersManager } from '@/components/settings/SAVProvidersManager';
 import { LoanerEquipmentManager } from '@/components/settings/loaner/LoanerEquipmentManager';
 import { SMSPackagesDisplay } from '@/components/subscription/SMSPackagesDisplay';
 import { BillingInvoices } from '@/components/billing/BillingInvoices';
 import { BillingVatTab } from '@/components/settings/BillingVatTab';
-import { Percent } from 'lucide-react';
+import { Percent, Wrench } from 'lucide-react';
 import { ImportStock } from '@/components/parts/ImportStock';
 import { ImportQuotes } from '@/components/import/ImportQuotes';
 import { ImportSAVs } from '@/components/import/ImportSAVs';
@@ -926,6 +927,7 @@ export default function Settings() {
     ...(isAdmin && rolePermissions.settings_users ? ['users'] : []),
     ...(rolePermissions.settings_part_categories ? ['part-categories'] : []),
     ...(isAdmin ? ['suppliers'] : []),
+    ...(isAdmin ? ['sav-providers'] : []),
     ...(isAdmin ? ['loaners'] : []),
     ...(isAdmin ? ['logs'] : []),
   ];
@@ -1040,6 +1042,12 @@ export default function Settings() {
                 <TabsTrigger value="suppliers" className="flex items-center gap-2 px-3 py-2 shrink-0">
                   <Truck className="h-4 w-4 shrink-0" />
                   <span className="hidden sm:inline">Fournisseurs</span>
+                </TabsTrigger>
+              )}
+              {isAdmin && (
+                <TabsTrigger value="sav-providers" className="flex items-center gap-2 px-3 py-2 shrink-0">
+                  <Wrench className="h-4 w-4 shrink-0" />
+                  <span className="hidden sm:inline">Prestataires techniques</span>
                 </TabsTrigger>
               )}
               {isAdmin && (
@@ -1903,6 +1911,12 @@ export default function Settings() {
             {isAdmin && (
               <TabsContent value="suppliers" className="space-y-6">
                 <SuppliersManager />
+              </TabsContent>
+            )}
+
+            {isAdmin && (
+              <TabsContent value="sav-providers" className="space-y-6">
+                <SAVProvidersManager />
               </TabsContent>
             )}
 
