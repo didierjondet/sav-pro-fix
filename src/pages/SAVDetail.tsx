@@ -1182,6 +1182,16 @@ export default function SAVDetail() {
               </CardHeader>
               <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div><strong>Appareil:</strong> {savCase.device_brand} {savCase.device_model}</div>
+                {getDeviceColorInfo(savCase.device_color) && (
+                  <div className="flex items-center gap-2">
+                    <strong>Couleur:</strong>
+                    <span
+                      className="inline-block w-4 h-4 rounded-full border border-border"
+                      style={{ backgroundColor: getDeviceColorInfo(savCase.device_color)!.hsl }}
+                    />
+                    <span>{getDeviceColorInfo(savCase.device_color)!.label}</span>
+                  </div>
+                )}
                 {savCase.device_imei && (
                   <div className="flex items-center gap-2 flex-wrap">
                     <span><strong>IMEI:</strong> {savCase.device_imei}</span>
