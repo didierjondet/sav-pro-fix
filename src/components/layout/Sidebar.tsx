@@ -432,7 +432,7 @@ function SidebarComponent({
                 </div>}
 
               {/* Statuts SAV */}
-              {permissions.sidebar_sav_statuses && !isSimplifiedView && <div className="mt-4 p-3 bg-muted rounded-lg">
+              {permissions.sidebar_sav_statuses && <div className="mt-4 p-3 bg-muted rounded-lg">
                   <h3 className="text-base font-semibold text-foreground mb-1 pl-1">
                     Statuts SAV
                   </h3>
@@ -479,7 +479,7 @@ function SidebarComponent({
                  </div>}
 
               {/* Prestataires techniques */}
-              {!isSimplifiedView && providerCounts.length > 0 && <div className="mt-4 p-3 bg-muted rounded-lg">
+              {providerCounts.length > 0 && <div className="mt-4 p-3 bg-muted rounded-lg">
                   <div className="flex items-center justify-between mb-2 pl-1">
                     <h3 className="text-sm font-medium text-foreground">
                       Chez un prestataire
