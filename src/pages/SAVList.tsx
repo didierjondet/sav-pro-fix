@@ -454,6 +454,8 @@ export default function SAVList() {
     }
   }, [
     filteredAndSortedCases,
+    availablePrintTypes,
+
     shop,
     types,
     statuses,
