@@ -111,17 +111,34 @@ export default function SAVDetail() {
   const activeProvider = activeProviderAssignment
     ? savProviders.find(p => p.id === activeProviderAssignment.provider_id)
     : null;
+  // --- Enregistrement automatique des commentaires ---
+  type SaveState = 'idle' | 'dirty' | 'saving' | 'saved' | 'error';
+  const [techSaveState, setTechSaveState] = useState<SaveState>('idle');
+  const [privSaveState, setPrivSaveState] = useState<SaveState>('idle');
+  const [techSavedAt, setTechSavedAt] = useState<Date | null>(null);
+  const [privSavedAt, setPrivSavedAt] = useState<Date | null>(null);
+  const technicianCommentsRef = useRef('');
+  const privateCommentsRef = useRef('');
+  const lastSavedTechRef = useRef('');
+  const lastSavedPrivRef = useRef('');
+  technicianCommentsRef.current = technicianComments;
+  privateCommentsRef.current = privateComments;
+
   useEffect(() => {
     if (cases && id) {
       const foundCase = cases.find(c => c.id === id);
       setSavCase(foundCase);
-      // Charger les commentaires privés
-      if (foundCase?.private_comments) {
-        setPrivateComments(foundCase.private_comments);
+      // Charger les commentaires privés (sans écraser une saisie en cours)
+      if (foundCase && privSaveState === 'idle') {
+        const val = foundCase.private_comments || '';
+        lastSavedPrivRef.current = val;
+        setPrivateComments(val);
       }
-      // Charger les commentaires technicien
-      if (foundCase?.technician_comments) {
-        setTechnicianComments(foundCase.technician_comments);
+      // Charger les commentaires technicien (sans écraser une saisie en cours)
+      if (foundCase && techSaveState === 'idle') {
+        const val = foundCase.technician_comments || '';
+        lastSavedTechRef.current = val;
+        setTechnicianComments(val);
       }
     }
   }, [cases, id]);
@@ -150,15 +167,28 @@ export default function SAVDetail() {
             customer: customerChanged ? undefined : prevCase?.customer,
           };
         });
-        // Mettre à jour les commentaires privés si ils ont changé
+        // Commentaires privés : ne pas écraser une saisie locale en cours
         if (payload.new.private_comments !== undefined) {
-          setPrivateComments(payload.new.private_comments || '');
+          const incoming = payload.new.private_comments || '';
+          if (privateCommentsRef.current === lastSavedPrivRef.current) {
+            lastSavedPrivRef.current = incoming;
+            setPrivateComments(incoming);
+          } else if (incoming === privateCommentsRef.current) {
+            lastSavedPrivRef.current = incoming;
+          }
         }
-        // Mettre à jour les commentaires technicien si ils ont changé
+        // Commentaires technicien : ne pas écraser une saisie locale en cours
         if (payload.new.technician_comments !== undefined) {
-          setTechnicianComments(payload.new.technician_comments || '');
+          const incoming = payload.new.technician_comments || '';
+          if (technicianCommentsRef.current === lastSavedTechRef.current) {
+            lastSavedTechRef.current = incoming;
+            setTechnicianComments(incoming);
+          } else if (incoming === technicianCommentsRef.current) {
+            lastSavedTechRef.current = incoming;
+          }
         }
       }
+
     }).on('postgres_changes', {
       event: '*',
       schema: 'public',
