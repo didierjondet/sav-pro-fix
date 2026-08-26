@@ -27,7 +27,10 @@ interface SAVPrintFilterDialogProps {
   providerCaseCounts?: Record<string, number>;
   unassignedProviderCount?: number;
   hideEmptyProviders?: boolean;
+  /** Types de SAV réellement présents dans la liste imprimable (même s'ils sont masqués de la barre latérale) */
+  availableTypes?: string[];
 }
+
 
 function SectionActions({
   count,
