@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 import { SAVProvider, useSAVProviders } from '@/hooks/useSAVProviders';
 import { useShopSettings } from '@/hooks/useShopSettings';
-import { useAuth } from '@/contexts/AuthContext';
+import { useProfile } from '@/hooks/useProfile';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -44,7 +44,7 @@ export function SAVProvidersManager() {
   const [formData, setFormData] = useState({ ...emptyForm });
   const [saving, setSaving] = useState(false);
   const { settings, refetch: refetchSettings } = useShopSettings();
-  const { profile } = useAuth();
+  const { profile } = useProfile();
   const { toast } = useToast();
 
   const handleToggleHideEmpty = async (checked: boolean) => {
