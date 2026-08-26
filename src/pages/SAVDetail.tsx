@@ -596,7 +596,21 @@ export default function SAVDetail() {
 
               <Card>
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-base">Appareil & dossier</CardTitle>
+                  <CardTitle className="text-base flex items-center justify-between gap-2">
+                    <span>Appareil & dossier</span>
+                    <EditSAVDetailsDialog
+                      savCaseId={savCase.id}
+                      shopId={savCase.shop_id}
+                      currentDetails={{
+                        device_brand: savCase.device_brand,
+                        device_model: savCase.device_model,
+                        device_imei: savCase.device_imei,
+                        problem_description: savCase.problem_description,
+                        repair_notes: savCase.repair_notes,
+                        sku: savCase.sku,
+                      }}
+                    />
+                  </CardTitle>
                 </CardHeader>
                 <CardContent className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
                   <div>
@@ -617,12 +631,93 @@ export default function SAVDetail() {
                     <p className="text-xs text-muted-foreground">Coût total</p>
                     <p className="font-medium">{savCase.total_cost}€</p>
                   </div>
+                  {savCase.repair_notes && (
+                    <div className="col-span-2 sm:col-span-4">
+                      <p className="text-xs text-muted-foreground">Notes de réparation</p>
+                      <p className="font-medium whitespace-pre-wrap">{savCase.repair_notes}</p>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
 
+              {/* Commentaire technicien */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base flex items-center justify-between gap-2">
+                    <span className="flex items-center gap-2">
+                      <MessageSquare className="h-4 w-4" />
+                      Commentaire technicien
+                    </span>
+                    {renderSaveIndicator(techSaveState, techSavedAt)}
+                  </CardTitle>
+                  <p className="text-xs text-muted-foreground">
+                    Visible par le client et imprimé sur le bon de restitution. Enregistrement automatique.
+                  </p>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="technician-comments-simple" className="text-sm">Commentaire pour le client</Label>
+                    <AITextReformulator
+                      text={technicianComments}
+                      context="technician_comments"
+                      onReformulated={(reformulatedText) => setTechnicianComments(reformulatedText)}
+                    />
+                  </div>
+                  <Textarea
+                    id="technician-comments-simple"
+                    placeholder="Décrivez l'intervention réalisée, les problèmes rencontrés ou les recommandations pour le client..."
+                    value={technicianComments}
+                    onChange={e => setTechnicianComments(e.target.value)}
+                    onBlur={() => { if (technicianComments !== lastSavedTechRef.current) saveTechnicianComments({ silent: true }); }}
+                    rows={4}
+                  />
+                  <Button onClick={() => saveTechnicianComments()} disabled={savingTechnicianComments} size="sm" variant="outline">
+                    <Save className="h-4 w-4 mr-2" />
+                    {savingTechnicianComments ? 'Sauvegarde...' : 'Enregistrer maintenant'}
+                  </Button>
+                </CardContent>
+              </Card>
 
+              {/* Commentaires privés magasin */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base flex items-center justify-between gap-2">
+                    <span className="flex items-center gap-2">
+                      <Lock className="h-4 w-4" />
+                      Commentaires privés magasin
+                    </span>
+                    {renderSaveIndicator(privSaveState, privSavedAt)}
+                  </CardTitle>
+                  <p className="text-xs text-muted-foreground">
+                    Visibles uniquement par le personnel du magasin. Enregistrement automatique.
+                  </p>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="private-comments-simple" className="text-sm">Commentaires internes</Label>
+                    <AITextReformulator
+                      text={privateComments}
+                      context="private_comments"
+                      onReformulated={(reformulatedText) => setPrivateComments(reformulatedText)}
+                    />
+                  </div>
+                  <Textarea
+                    id="private-comments-simple"
+                    placeholder="Ajoutez vos notes et commentaires privés ici..."
+                    value={privateComments}
+                    onChange={e => setPrivateComments(e.target.value)}
+                    onBlur={() => { if (privateComments !== lastSavedPrivRef.current) savePrivateComments({ silent: true }); }}
+                    rows={4}
+                  />
+                  <Button onClick={() => savePrivateComments()} disabled={savingComments} size="sm" variant="outline">
+                    <Save className="h-4 w-4 mr-2" />
+                    {savingComments ? 'Sauvegarde...' : 'Enregistrer maintenant'}
+                  </Button>
+                </CardContent>
+              </Card>
 
               <SAVStatusManager savCase={savCase} onStatusUpdated={handleStatusUpdated} />
+
             </TabsContent>
 
             {/* Onglet Client */}
