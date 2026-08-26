@@ -49,6 +49,7 @@ import { useSAVCaseActiveProvider, useSAVProviders } from '@/hooks/useSAVProvide
 import { Stethoscope, KeyRound, Smartphone, Wrench } from 'lucide-react';
 import { NonRepairabilityCertificateDialog } from '@/components/sav/NonRepairabilityCertificateDialog';
 import { SAVCustomerTab } from '@/components/sav/SAVCustomerTab';
+import { getDeviceColorInfo } from '@/lib/deviceColors';
 
 const TAB_ACTIVE_CLASSES = 'data-[state=active]:bg-primary/15 data-[state=active]:text-primary data-[state=active]:shadow-sm';
 const STICKY_HEADER_CLASSES = 'sticky top-0 z-30 bg-primary/10 border-b-2 border-primary/40 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-primary/10';
