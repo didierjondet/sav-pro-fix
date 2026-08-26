@@ -205,38 +205,67 @@ export default function SAVDetail() {
   const handleStatusUpdated = () => {
     // Plus besoin de refetch, le realtime se charge de la mise à jour
   };
-  const saveTechnicianComments = async () => {
+  const saveTechnicianComments = async (options?: { silent?: boolean }) => {
     if (!savCase?.id) return;
+    const value = technicianCommentsRef.current;
     setSavingTechnicianComments(true);
+    setTechSaveState('saving');
     try {
-      const oldVal = savCase.technician_comments || '';
-      await updateTechnicianComments(savCase.id, technicianComments);
-      if (oldVal !== technicianComments && savCase.shop_id) {
+      const oldVal = lastSavedTechRef.current;
+      const { error } = await supabase
+        .from('sav_cases')
+        .update({ technician_comments: value })
+        .eq('id', savCase.id);
+      if (error) throw error;
+      lastSavedTechRef.current = value;
+      if (oldVal !== value && savCase.shop_id) {
         const name = await getCurrentUserName();
-        await logSAVChange(savCase.id, savCase.shop_id, 'sav_cases', 'update', 'technician_comments', oldVal || null, technicianComments || null, name);
+        await logSAVChange(savCase.id, savCase.shop_id, 'sav_cases', 'update', 'technician_comments', oldVal || null, value || null, name);
       }
-      setSavCase({ ...savCase, technician_comments: technicianComments });
-    } catch (error) {
+      setSavCase((prev: any) => prev ? { ...prev, technician_comments: value } : prev);
+      setTechSavedAt(new Date());
+      setTechSaveState('saved');
+      if (!options?.silent) {
+        toast({ title: "Succès", description: "Commentaire technicien enregistré" });
+      }
+    } catch (error: any) {
+      setTechSaveState('error');
+      toast({ title: "Erreur", description: error?.message || "Enregistrement impossible", variant: "destructive" });
     } finally {
       setSavingTechnicianComments(false);
     }
   };
-  const savePrivateComments = async () => {
+  const savePrivateComments = async (options?: { silent?: boolean }) => {
     if (!savCase?.id) return;
+    const value = privateCommentsRef.current;
     setSavingComments(true);
+    setPrivSaveState('saving');
     try {
-      const oldVal = savCase.private_comments || '';
-      await updatePrivateComments(savCase.id, privateComments);
-      if (oldVal !== privateComments && savCase.shop_id) {
+      const oldVal = lastSavedPrivRef.current;
+      const { error } = await supabase
+        .from('sav_cases')
+        .update({ private_comments: value })
+        .eq('id', savCase.id);
+      if (error) throw error;
+      lastSavedPrivRef.current = value;
+      if (oldVal !== value && savCase.shop_id) {
         const name = await getCurrentUserName();
-        await logSAVChange(savCase.id, savCase.shop_id, 'sav_cases', 'update', 'private_comments', oldVal || null, privateComments || null, name);
+        await logSAVChange(savCase.id, savCase.shop_id, 'sav_cases', 'update', 'private_comments', oldVal || null, value || null, name);
       }
-      setSavCase({ ...savCase, private_comments: privateComments });
-    } catch (error) {
+      setSavCase((prev: any) => prev ? { ...prev, private_comments: value } : prev);
+      setPrivSavedAt(new Date());
+      setPrivSaveState('saved');
+      if (!options?.silent) {
+        toast({ title: "Succès", description: "Commentaires privés enregistrés" });
+      }
+    } catch (error: any) {
+      setPrivSaveState('error');
+      toast({ title: "Erreur", description: error?.message || "Enregistrement impossible", variant: "destructive" });
     } finally {
       setSavingComments(false);
     }
   };
+
 
   const updateSavType = async () => {
     if (!savCase?.id || !tempSavType) {
