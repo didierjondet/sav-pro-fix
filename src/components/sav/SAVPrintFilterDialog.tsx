@@ -111,7 +111,7 @@ export function SAVPrintFilterDialog({
       return;
     }
 
-    if (initializedForOpenRef.current || visibleTypes.length === 0) return;
+    if (initializedForOpenRef.current) return;
     initializedForOpenRef.current = true;
 
     const typeSet = new Set(visibleTypes.map(t => t.value));
@@ -145,7 +145,6 @@ export function SAVPrintFilterDialog({
   };
 
   const handlePrint = () => {
-    if (selectedTypes.length === 0) return;
     onPrint({
       types: selectedTypes,
       statuses: selectedStatuses,
@@ -203,7 +202,7 @@ export function SAVPrintFilterDialog({
                 onNone={() => setSelectedTypes([])}
               />
               <p className="text-xs text-muted-foreground">
-                Au moins un type doit être sélectionné.
+                Aucun type coché = tous les types.
               </p>
               <div className="grid grid-cols-2 gap-2">
                 {visibleTypes.map(type => (
@@ -311,7 +310,7 @@ export function SAVPrintFilterDialog({
 
         <DialogFooter className="flex-shrink-0 gap-2 pt-2">
           <Button variant="outline" onClick={onClose}>Annuler</Button>
-          <Button onClick={handlePrint} disabled={selectedTypes.length === 0}>
+          <Button onClick={handlePrint}>
             <Printer className="h-4 w-4 mr-2" />
             Imprimer
           </Button>
