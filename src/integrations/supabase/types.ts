@@ -3100,6 +3100,7 @@ export type Database = {
           custom_status_sms_message: string | null
           email: string | null
           forced_features: Json | null
+          hide_empty_sav_providers: boolean
           hide_empty_sav_types: boolean | null
           id: string
           inactivity_policy_acknowledged_at: string | null
@@ -3160,6 +3161,7 @@ export type Database = {
           custom_status_sms_message?: string | null
           email?: string | null
           forced_features?: Json | null
+          hide_empty_sav_providers?: boolean
           hide_empty_sav_types?: boolean | null
           id?: string
           inactivity_policy_acknowledged_at?: string | null
@@ -3220,6 +3222,7 @@ export type Database = {
           custom_status_sms_message?: string | null
           email?: string | null
           forced_features?: Json | null
+          hide_empty_sav_providers?: boolean
           hide_empty_sav_types?: boolean | null
           id?: string
           inactivity_policy_acknowledged_at?: string | null

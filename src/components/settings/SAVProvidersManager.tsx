@@ -18,6 +18,10 @@ import {
   Edit, Trash2, Plus, Info, Clock, Mail, Phone, User, MapPin, Wrench, Sidebar, Power,
 } from 'lucide-react';
 import { SAVProvider, useSAVProviders } from '@/hooks/useSAVProviders';
+import { useShopSettings } from '@/hooks/useShopSettings';
+import { useProfile } from '@/hooks/useProfile';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 const emptyForm = {
   name: '',
@@ -39,6 +43,33 @@ export function SAVProvidersManager() {
   const [editing, setEditing] = useState<SAVProvider | null>(null);
   const [formData, setFormData] = useState({ ...emptyForm });
   const [saving, setSaving] = useState(false);
+  const { settings, refetch: refetchSettings } = useShopSettings();
+  const { profile } = useProfile();
+  const { toast } = useToast();
+
+  const handleToggleHideEmpty = async (checked: boolean) => {
+    if (!profile?.shop_id) return;
+    try {
+      const { error } = await supabase
+        .from('shops')
+        .update({ hide_empty_sav_providers: checked } as any)
+        .eq('id', profile.shop_id);
+      if (error) throw error;
+      toast({
+        title: 'Paramètre mis à jour',
+        description: checked
+          ? 'Les prestataires sans dossier en cours seront masqués dans la barre latérale'
+          : 'Tous les prestataires seront affichés dans la barre latérale',
+      });
+      refetchSettings();
+    } catch (error: any) {
+      toast({
+        title: 'Erreur',
+        description: 'Impossible de mettre à jour le paramètre',
+        variant: 'destructive',
+      });
+    }
+  };
 
   const resetForm = () => {
     setFormData({ ...emptyForm });
@@ -299,6 +330,24 @@ export function SAVProvidersManager() {
       </CardHeader>
 
       <CardContent>
+        <div className="mb-4 p-4 border rounded-lg">
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label className="text-sm font-medium flex items-center gap-2">
+                <Sidebar className="w-4 h-4" />
+                Masquer les prestataires vides
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                N'afficher dans la barre latérale que les prestataires ayant au moins 1 SAV en cours
+              </p>
+            </div>
+            <Switch
+              checked={settings?.hide_empty_sav_providers ?? false}
+              onCheckedChange={handleToggleHideEmpty}
+            />
+          </div>
+        </div>
+
         <div className="space-y-4">
           {providers.length === 0 ? (
             <div className="text-center py-8">
