@@ -817,6 +817,17 @@ export default function SAVDetail() {
         >
           <TabsList className="w-full justify-start overflow-x-auto">
             <TabsTrigger value="apercu" className={TAB_ACTIVE_CLASSES}>Aperçu</TabsTrigger>
+            <TabsTrigger
+              value="client"
+              className={!savCase.customer_id ? 'text-destructive data-[state=active]:text-destructive data-[state=active]:border-destructive' : TAB_ACTIVE_CLASSES}
+            >
+              <User className="h-3.5 w-3.5 mr-1" /> Client
+              {!savCase.customer_id && (
+                <span className="ml-2 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold">
+                  !
+                </span>
+              )}
+            </TabsTrigger>
             <TabsTrigger value="communication" className={`relative ${TAB_ACTIVE_CLASSES}`}>
               Communication
               {unreadCount > 0 && (
