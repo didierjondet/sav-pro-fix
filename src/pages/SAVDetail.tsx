@@ -1150,12 +1150,15 @@ export default function SAVDetail() {
             {/* Commentaire technicien */}
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <MessageSquare className="h-5 w-5" />
-                  Commentaire technicien
+                <CardTitle className="flex items-center justify-between gap-2">
+                  <span className="flex items-center gap-2">
+                    <MessageSquare className="h-5 w-5" />
+                    Commentaire technicien
+                  </span>
+                  {renderSaveIndicator(techSaveState, techSavedAt)}
                 </CardTitle>
                 <p className="text-sm text-muted-foreground">
-                  Commentaire visible par le client et imprimé sur le bon de restitution.
+                  Commentaire visible par le client et imprimé sur le bon de restitution. Enregistrement automatique.
                 </p>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -1168,11 +1171,18 @@ export default function SAVDetail() {
                       onReformulated={(reformulatedText) => setTechnicianComments(reformulatedText)}
                     />
                   </div>
-                  <Textarea id="technician-comments" placeholder="Décrivez l'intervention réalisée, les problèmes rencontrés ou les recommandations pour le client..." value={technicianComments} onChange={e => setTechnicianComments(e.target.value)} rows={4} />
+                  <Textarea
+                    id="technician-comments"
+                    placeholder="Décrivez l'intervention réalisée, les problèmes rencontrés ou les recommandations pour le client..."
+                    value={technicianComments}
+                    onChange={e => setTechnicianComments(e.target.value)}
+                    onBlur={() => { if (technicianComments !== lastSavedTechRef.current) saveTechnicianComments({ silent: true }); }}
+                    rows={4}
+                  />
                 </div>
-                <Button onClick={saveTechnicianComments} disabled={savingTechnicianComments} size="sm">
+                <Button onClick={() => saveTechnicianComments()} disabled={savingTechnicianComments} size="sm" variant="outline">
                   <Save className="h-4 w-4 mr-2" />
-                  {savingTechnicianComments ? 'Sauvegarde...' : 'Sauvegarder le commentaire'}
+                  {savingTechnicianComments ? 'Sauvegarde...' : 'Enregistrer maintenant'}
                 </Button>
               </CardContent>
             </Card>
@@ -1180,12 +1190,15 @@ export default function SAVDetail() {
             {/* Commentaires privés */}
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Lock className="h-5 w-5" />
-                  Commentaires privés magasin
+                <CardTitle className="flex items-center justify-between gap-2">
+                  <span className="flex items-center gap-2">
+                    <Lock className="h-5 w-5" />
+                    Commentaires privés magasin
+                  </span>
+                  {renderSaveIndicator(privSaveState, privSavedAt)}
                 </CardTitle>
                 <p className="text-sm text-muted-foreground">
-                  Ces commentaires ne sont visibles que par le personnel du magasin. Le client ne peut pas les voir.
+                  Ces commentaires ne sont visibles que par le personnel du magasin. Le client ne peut pas les voir. Enregistrement automatique.
                 </p>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -1198,14 +1211,22 @@ export default function SAVDetail() {
                       onReformulated={(reformulatedText) => setPrivateComments(reformulatedText)}
                     />
                   </div>
-                  <Textarea id="private-comments" placeholder="Ajoutez vos notes et commentaires privés ici..." value={privateComments} onChange={e => setPrivateComments(e.target.value)} rows={4} />
+                  <Textarea
+                    id="private-comments"
+                    placeholder="Ajoutez vos notes et commentaires privés ici..."
+                    value={privateComments}
+                    onChange={e => setPrivateComments(e.target.value)}
+                    onBlur={() => { if (privateComments !== lastSavedPrivRef.current) savePrivateComments({ silent: true }); }}
+                    rows={4}
+                  />
                 </div>
-                <Button onClick={savePrivateComments} disabled={savingComments} size="sm">
+                <Button onClick={() => savePrivateComments()} disabled={savingComments} size="sm" variant="outline">
                   <Save className="h-4 w-4 mr-2" />
-                  {savingComments ? 'Sauvegarde...' : 'Sauvegarder les commentaires'}
+                  {savingComments ? 'Sauvegarde...' : 'Enregistrer maintenant'}
                 </Button>
               </CardContent>
             </Card>
+
 
             <SAVPartsRequirements savCaseId={savCase.id} onPartsUpdated={() => {}} />
             <SAVStatusManager savCase={savCase} onStatusUpdated={handleStatusUpdated} />
