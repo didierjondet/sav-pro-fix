@@ -1,270 +1,429 @@
 import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import {
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { NumberInput } from '@/components/ui/number-input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Switch } from '@/components/ui/switch';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { Edit, Plus, Trash2, Wrench, Mail, Phone } from 'lucide-react';
+import {
+  Edit, Trash2, Plus, Info, Clock, Mail, Phone, User, MapPin, Wrench, Sidebar, Power,
+} from 'lucide-react';
 import { SAVProvider, useSAVProviders } from '@/hooks/useSAVProviders';
 
-const emptyForm: Partial<SAVProvider> = {
+const emptyForm = {
   name: '',
   contact_name: '',
   phone: '',
   email: '',
   address: '',
   specialties: '',
-  avg_delay_days: null,
+  avg_delay_days: undefined as number | undefined,
   color: '#8b5cf6',
   notes: '',
   is_active: true,
   show_in_sidebar: true,
-  display_order: 0,
 };
 
 export function SAVProvidersManager() {
   const { providers, isLoading, createProvider, updateProvider, deleteProvider } = useSAVProviders();
-  const [open, setOpen] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<SAVProvider | null>(null);
-  const [form, setForm] = useState<Partial<SAVProvider>>(emptyForm);
-  const [deleting, setDeleting] = useState<SAVProvider | null>(null);
+  const [formData, setFormData] = useState({ ...emptyForm });
   const [saving, setSaving] = useState(false);
 
-  const openNew = () => {
+  const resetForm = () => {
+    setFormData({ ...emptyForm });
     setEditing(null);
-    setForm({ ...emptyForm, display_order: providers.length });
-    setOpen(true);
   };
 
-  const openEdit = (p: SAVProvider) => {
+  const openEditDialog = (p: SAVProvider) => {
     setEditing(p);
-    setForm({ ...p });
-    setOpen(true);
+    setFormData({
+      name: p.name,
+      contact_name: p.contact_name || '',
+      phone: p.phone || '',
+      email: p.email || '',
+      address: p.address || '',
+      specialties: p.specialties || '',
+      avg_delay_days: p.avg_delay_days ?? undefined,
+      color: p.color || '#8b5cf6',
+      notes: p.notes || '',
+      is_active: p.is_active,
+      show_in_sidebar: p.show_in_sidebar,
+    });
+    setDialogOpen(true);
   };
 
   const save = async () => {
-    if (!form.name?.trim()) return;
+    if (!formData.name.trim()) return;
     setSaving(true);
     try {
+      const payload = {
+        name: formData.name,
+        contact_name: formData.contact_name || null,
+        phone: formData.phone || null,
+        email: formData.email || null,
+        address: formData.address || null,
+        specialties: formData.specialties || null,
+        avg_delay_days: formData.avg_delay_days ?? null,
+        color: formData.color || '#8b5cf6',
+        notes: formData.notes || null,
+        is_active: formData.is_active,
+        show_in_sidebar: formData.show_in_sidebar,
+      };
       if (editing) {
-        await updateProvider(editing.id, {
-          name: form.name,
-          contact_name: form.contact_name || null,
-          phone: form.phone || null,
-          email: form.email || null,
-          address: form.address || null,
-          specialties: form.specialties || null,
-          avg_delay_days: form.avg_delay_days ?? null,
-          color: form.color || '#8b5cf6',
-          notes: form.notes || null,
-          is_active: form.is_active ?? true,
-          show_in_sidebar: form.show_in_sidebar ?? true,
-          display_order: form.display_order ?? 0,
-        });
+        await updateProvider(editing.id, payload);
       } else {
-        await createProvider(form);
+        await createProvider({ ...payload, display_order: providers.length });
       }
-      setOpen(false);
+      setDialogOpen(false);
+      resetForm();
     } finally {
       setSaving(false);
     }
   };
 
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Prestataires techniques</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-4">Chargement des prestataires…</div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between gap-2 flex-wrap">
-          <CardTitle className="flex items-center gap-2">
-            <Wrench className="h-5 w-5" /> Prestataires techniques
-          </CardTitle>
-          <Button onClick={openNew}>
-            <Plus className="h-4 w-4 mr-2" /> Nouveau prestataire
-          </Button>
-        </div>
-        <p className="text-sm text-muted-foreground">
-          Entreprises tierces (micro-soudure, broker…) auxquelles vous pouvez confier un dossier SAV.
-          Cette information reste interne : elle n'est jamais visible par le client.
-        </p>
+        <CardTitle className="flex items-center justify-between">
+          Prestataires techniques
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogTrigger asChild>
+              <Button onClick={resetForm}>
+                <Plus className="w-4 h-4 mr-2" />
+                Nouveau prestataire
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-h-[90vh] flex flex-col">
+              <DialogHeader>
+                <DialogTitle>
+                  {editing ? 'Modifier le prestataire' : 'Nouveau prestataire'}
+                </DialogTitle>
+                <DialogDescription>
+                  Configurez l'identité, l'activité et les spécialités du prestataire. Ces informations restent internes.
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="flex-1 overflow-y-auto space-y-4 pr-2">
+                <div>
+                  <Label htmlFor="provider_name">Nom</Label>
+                  <Input
+                    id="provider_name"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    placeholder="ex: Atelier Micro-Soudure Pro"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label htmlFor="provider_contact">Contact</Label>
+                    <Input
+                      id="provider_contact"
+                      value={formData.contact_name}
+                      onChange={(e) => setFormData({ ...formData, contact_name: e.target.value })}
+                      placeholder="ex: Jean Dupont"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="provider_phone">Téléphone</Label>
+                    <Input
+                      id="provider_phone"
+                      value={formData.phone}
+                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      placeholder="ex: 06 12 34 56 78"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="provider_email">Email</Label>
+                  <Input
+                    id="provider_email"
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    placeholder="ex: contact@prestataire.fr"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="provider_address">Adresse</Label>
+                  <Input
+                    id="provider_address"
+                    value={formData.address}
+                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                    placeholder="ex: 12 rue des Ateliers, 75011 Paris"
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="provider_specialties">Spécialités</Label>
+                  <Input
+                    id="provider_specialties"
+                    value={formData.specialties}
+                    onChange={(e) => setFormData({ ...formData, specialties: e.target.value })}
+                    placeholder="ex: Micro-soudure, récupération de données"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Activités confiées à ce prestataire, séparées par des virgules
+                  </p>
+                </div>
+
+                <div>
+                  <Label htmlFor="provider_delay" className="text-sm font-normal flex items-center gap-2">
+                    <Clock className="w-4 h-4" />
+                    Délai moyen de traitement (jours)
+                  </Label>
+                  <NumberInput
+                    id="provider_delay"
+                    min="0"
+                    max="365"
+                    value={formData.avg_delay_days ?? ''}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      avg_delay_days: e.target.value === '' ? undefined : parseInt(e.target.value, 10),
+                    })}
+                    placeholder="5"
+                    className="mt-1"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Nombre de jours habituellement nécessaires à ce prestataire
+                  </p>
+                </div>
+
+                <div>
+                  <Label htmlFor="provider_color">Couleur</Label>
+                  <div className="flex items-center space-x-2">
+                    <Input
+                      id="provider_color"
+                      type="color"
+                      value={formData.color}
+                      onChange={(e) => setFormData({ ...formData, color: e.target.value })}
+                      className="w-16 h-10"
+                    />
+                    <Input
+                      value={formData.color}
+                      onChange={(e) => setFormData({ ...formData, color: e.target.value })}
+                      placeholder="#8b5cf6"
+                      className="flex-1"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="provider_notes">Notes internes</Label>
+                  <Textarea
+                    id="provider_notes"
+                    rows={3}
+                    value={formData.notes}
+                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                    placeholder="Conditions tarifaires, modalités d'envoi…"
+                  />
+                </div>
+
+                <div className="space-y-4">
+                  <h4 className="text-sm font-medium">Options avancées</h4>
+
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label className="text-sm font-normal flex items-center gap-2">
+                        <Sidebar className="w-4 h-4" />
+                        Afficher dans la barre latérale
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        Ce prestataire apparaît avec le compteur des dossiers en cours chez lui
+                      </p>
+                    </div>
+                    <Switch
+                      checked={formData.show_in_sidebar}
+                      onCheckedChange={(checked) => setFormData({ ...formData, show_in_sidebar: checked })}
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label className="text-sm font-normal flex items-center gap-2">
+                        <Power className="w-4 h-4" />
+                        Prestataire actif
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        Un prestataire inactif ne peut plus être choisi lors de l'attribution d'un SAV
+                      </p>
+                    </div>
+                    <Switch
+                      checked={formData.is_active}
+                      onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <DialogFooter className="flex-shrink-0 pt-4 border-t">
+                <Button variant="outline" onClick={() => setDialogOpen(false)}>
+                  Annuler
+                </Button>
+                <Button onClick={save} disabled={saving || !formData.name.trim()}>
+                  {editing ? 'Modifier' : 'Créer'}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </CardTitle>
+        <CardDescription>
+          Gérez les entreprises tierces (micro-soudure, broker…) auxquelles vous pouvez confier un dossier SAV
+        </CardDescription>
       </CardHeader>
+
       <CardContent>
-        {isLoading ? (
-          <p className="text-sm text-muted-foreground text-center py-6">Chargement…</p>
-        ) : providers.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
-            <Wrench className="h-10 w-10 mx-auto mb-2 opacity-50" />
-            <p>Aucun prestataire enregistré.</p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nom</TableHead>
-                  <TableHead>Spécialités</TableHead>
-                  <TableHead>Coordonnées</TableHead>
-                  <TableHead>Délai moyen</TableHead>
-                  <TableHead>Sidebar</TableHead>
-                  <TableHead>État</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {providers.map((p) => (
-                  <TableRow key={p.id}>
-                    <TableCell className="font-medium">
-                      <span className="inline-flex items-center gap-2">
-                        <span className="h-3 w-3 rounded-full" style={{ backgroundColor: p.color }} />
-                        {p.name}
-                      </span>
-                      {p.contact_name && (
-                        <div className="text-xs text-muted-foreground">{p.contact_name}</div>
+        <div className="space-y-4">
+          {providers.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-muted-foreground">Aucun prestataire configuré</p>
+            </div>
+          ) : (
+            providers.map((p) => (
+              <div key={p.id} className="flex items-center justify-between p-4 border rounded-lg">
+                <div className="flex items-center space-x-3 flex-1">
+                  <div
+                    className="w-4 h-4 rounded-full border"
+                    style={{ backgroundColor: p.color }}
+                  />
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-2">
+                      <span className="font-medium">{p.name}</span>
+                      {!p.is_active && (
+                        <Badge variant="secondary" className="text-xs">Inactif</Badge>
                       )}
-                    </TableCell>
-                    <TableCell className="text-sm">{p.specialties || '—'}</TableCell>
-                    <TableCell>
-                      <div className="flex flex-col gap-0.5 text-xs">
-                        {p.email && <span className="flex items-center gap-1"><Mail className="h-3 w-3" />{p.email}</span>}
-                        {p.phone && <span className="flex items-center gap-1"><Phone className="h-3 w-3" />{p.phone}</span>}
-                        {!p.email && !p.phone && '—'}
+                    </div>
+                    <div className="flex items-center flex-wrap gap-x-3 gap-y-1 mt-2">
+                      {p.contact_name && (
+                        <div className="flex items-center space-x-1 text-xs text-muted-foreground">
+                          <User className="w-3 h-3" />
+                          <span>{p.contact_name}</span>
+                        </div>
+                      )}
+                      {p.phone && (
+                        <div className="flex items-center space-x-1 text-xs text-muted-foreground">
+                          <Phone className="w-3 h-3" />
+                          <span>{p.phone}</span>
+                        </div>
+                      )}
+                      {p.email && (
+                        <div className="flex items-center space-x-1 text-xs text-muted-foreground">
+                          <Mail className="w-3 h-3" />
+                          <span>{p.email}</span>
+                        </div>
+                      )}
+                      {p.address && (
+                        <div className="flex items-center space-x-1 text-xs text-muted-foreground">
+                          <MapPin className="w-3 h-3" />
+                          <span>{p.address}</span>
+                        </div>
+                      )}
+                      {p.specialties && (
+                        <div className="flex items-center space-x-1 text-xs">
+                          <Wrench className="w-3 h-3" />
+                          <span className="text-green-600">{p.specialties}</span>
+                        </div>
+                      )}
+                      {p.avg_delay_days != null && (
+                        <div className="flex items-center space-x-1 text-xs text-muted-foreground">
+                          <Clock className="w-3 h-3" />
+                          <span>{p.avg_delay_days}j moyen</span>
+                        </div>
+                      )}
+                      <div className="flex items-center space-x-1 text-xs">
+                        <Sidebar className="w-3 h-3" />
+                        <span className={p.show_in_sidebar ? 'text-green-600' : 'text-muted-foreground'}>
+                          {p.show_in_sidebar ? 'Visible sidebar' : 'Masqué sidebar'}
+                        </span>
                       </div>
-                    </TableCell>
-                    <TableCell className="text-sm">{p.avg_delay_days ? `${p.avg_delay_days} j` : '—'}</TableCell>
-                    <TableCell>
-                      <Switch
-                        checked={p.show_in_sidebar}
-                        onCheckedChange={(v) => updateProvider(p.id, { show_in_sidebar: v })}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={p.is_active ? 'default' : 'secondary'}>
-                        {p.is_active ? 'Actif' : 'Inactif'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex gap-1 justify-end">
-                        <Button size="sm" variant="outline" onClick={() => openEdit(p)}>
-                          <Edit className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button size="sm" variant="outline" onClick={() => setDeleting(p)}>
-                          <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                        </Button>
+                      <div className="flex items-center space-x-1 text-xs">
+                        <Power className="w-3 h-3" />
+                        <span className={p.is_active ? 'text-green-600' : 'text-red-600'}>
+                          {p.is_active ? 'Actif' : 'Inactif'}
+                        </span>
                       </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <Button variant="ghost" size="sm" onClick={() => openEditDialog(p)}>
+                    <Edit className="w-4 h-4" />
+                  </Button>
+
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="ghost" size="sm">
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Supprimer le prestataire</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Êtes-vous sûr de vouloir supprimer « {p.name} » ? Si des dossiers SAV lui sont
+                          encore rattachés, la suppression sera refusée : désactivez-le à la place.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Annuler</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={async () => {
+                            try { await deleteProvider(p.id); } catch {}
+                          }}
+                        >
+                          Supprimer
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        <div className="mt-6 p-4 bg-muted/30 rounded-lg">
+          <div className="flex items-start space-x-2">
+            <Info className="w-4 h-4 mt-0.5 text-muted-foreground" />
+            <div className="text-sm text-muted-foreground space-y-1">
+              <p><strong>Prestataires techniques :</strong></p>
+              <ul className="list-disc list-inside space-y-1 ml-4">
+                <li>Cette information reste interne : elle n'est jamais visible par le client</li>
+                <li>Un prestataire rattaché à des dossiers ne peut pas être supprimé : désactivez-le</li>
+                <li>Les couleurs sont utilisées dans l'interface pour identifier visuellement les prestataires</li>
+                <li>Les prestataires visibles en barre latérale affichent le nombre de dossiers en cours chez eux</li>
+              </ul>
+            </div>
           </div>
-        )}
+        </div>
       </CardContent>
-
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{editing ? 'Modifier le prestataire' : 'Nouveau prestataire'}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3">
-            <div>
-              <Label>Nom *</Label>
-              <Input value={form.name || ''} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label>Contact</Label>
-                <Input value={form.contact_name || ''} onChange={(e) => setForm({ ...form, contact_name: e.target.value })} />
-              </div>
-              <div>
-                <Label>Téléphone</Label>
-                <Input value={form.phone || ''} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
-              </div>
-            </div>
-            <div>
-              <Label>Email</Label>
-              <Input type="email" value={form.email || ''} onChange={(e) => setForm({ ...form, email: e.target.value })} />
-            </div>
-            <div>
-              <Label>Adresse</Label>
-              <Input value={form.address || ''} onChange={(e) => setForm({ ...form, address: e.target.value })} />
-            </div>
-            <div>
-              <Label>Spécialités</Label>
-              <Input
-                placeholder="Micro-soudure, récupération de données…"
-                value={form.specialties || ''}
-                onChange={(e) => setForm({ ...form, specialties: e.target.value })}
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label>Délai moyen (jours)</Label>
-                <Input
-                  type="number"
-                  min={0}
-                  value={form.avg_delay_days ?? ''}
-                  onChange={(e) => setForm({ ...form, avg_delay_days: e.target.value === '' ? null : parseInt(e.target.value, 10) })}
-                />
-              </div>
-              <div>
-                <Label>Couleur</Label>
-                <Input type="color" value={form.color || '#8b5cf6'} onChange={(e) => setForm({ ...form, color: e.target.value })} />
-              </div>
-            </div>
-            <div>
-              <Label>Notes internes</Label>
-              <Textarea rows={3} value={form.notes || ''} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
-            </div>
-            <div className="flex items-center justify-between rounded-md border p-3">
-              <div>
-                <Label>Afficher dans la barre latérale</Label>
-                <p className="text-xs text-muted-foreground">Compteur des dossiers en cours chez ce prestataire</p>
-              </div>
-              <Switch checked={form.show_in_sidebar ?? true} onCheckedChange={(v) => setForm({ ...form, show_in_sidebar: v })} />
-            </div>
-            <div className="flex items-center justify-between rounded-md border p-3">
-              <Label>Prestataire actif</Label>
-              <Switch checked={form.is_active ?? true} onCheckedChange={(v) => setForm({ ...form, is_active: v })} />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setOpen(false)}>Annuler</Button>
-            <Button onClick={save} disabled={saving || !form.name?.trim()}>
-              {editing ? 'Enregistrer' : 'Créer'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <AlertDialog open={!!deleting} onOpenChange={(o) => !o && setDeleting(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Supprimer ce prestataire ?</AlertDialogTitle>
-            <AlertDialogDescription>
-              « {deleting?.name} » sera supprimé. Si des dossiers SAV lui sont encore rattachés, la
-              suppression sera refusée : désactivez-le à la place.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Annuler</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={async () => {
-                if (!deleting) return;
-                try { await deleteProvider(deleting.id); } catch {}
-                setDeleting(null);
-              }}
-            >
-              Supprimer
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </Card>
   );
 }
