@@ -51,7 +51,7 @@ import { NonRepairabilityCertificateDialog } from '@/components/sav/NonRepairabi
 import { SAVCustomerTab } from '@/components/sav/SAVCustomerTab';
 import { getDeviceColorInfo } from '@/lib/deviceColors';
 import { FileText } from 'lucide-react';
-import { SAVQuotesTab, useSAVCaseQuotes } from '@/components/sav/SAVQuotesTab';
+import { SAVQuotesTab, useSAVCaseQuotes, getSAVQuotesIndicator } from '@/components/sav/SAVQuotesTab';
 import { SAVPaymentCard } from '@/components/sav/SAVPaymentCard';
 
 
@@ -551,10 +551,13 @@ export default function SAVDetail() {
                   </span>
                 )}
               </TabsTrigger>
-              <TabsTrigger value="devis" className={TAB_ACTIVE_CLASSES}>
+              <TabsTrigger
+                value="devis"
+                className={quotesIndicator.pending > 0 ? 'text-destructive data-[state=active]:text-destructive data-[state=active]:border-destructive' : TAB_ACTIVE_CLASSES}
+              >
                 <FileText className="h-3.5 w-3.5 mr-1" /> Devis
                 {savQuotes.length > 0 && (
-                  <span className="ml-2 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-primary text-primary-foreground text-[10px] font-bold">
+                  <span className={`ml-2 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold ${quotesIndicator.pending > 0 ? 'bg-destructive text-destructive-foreground' : 'bg-primary text-primary-foreground'}`}>
                     {savQuotes.length}
                   </span>
                 )}
@@ -1136,10 +1139,13 @@ export default function SAVDetail() {
                 </span>
               )}
             </TabsTrigger>
-            <TabsTrigger value="devis" className={TAB_ACTIVE_CLASSES}>
+            <TabsTrigger
+              value="devis"
+              className={quotesIndicator.pending > 0 ? 'text-destructive data-[state=active]:text-destructive data-[state=active]:border-destructive' : TAB_ACTIVE_CLASSES}
+            >
               <FileText className="h-3.5 w-3.5 mr-1" /> Devis
               {savQuotes.length > 0 && (
-                <span className="ml-2 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-primary text-primary-foreground text-[10px] font-bold">
+                <span className={`ml-2 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-bold ${quotesIndicator.pending > 0 ? 'bg-destructive text-destructive-foreground' : 'bg-primary text-primary-foreground'}`}>
                   {savQuotes.length}
                 </span>
               )}
