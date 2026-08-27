@@ -30,9 +30,14 @@ interface QuoteFormProps {
   initialQuote?: Quote;
   submitLabel?: string;
   title?: string;
+  /** Pré-remplissage (création depuis un SAV par exemple) */
+  prefill?: Partial<Quote>;
+  /** Masque l'en-tête (titre + retour) quand le formulaire est affiché dans une modale */
+  hideHeader?: boolean;
 }
 
-export function QuoteForm({ onSubmit, onCancel, initialQuote, submitLabel, title }: QuoteFormProps) {
+export function QuoteForm({ onSubmit, onCancel, initialQuote, submitLabel, title, prefill, hideHeader }: QuoteFormProps) {
+
   const { parts } = useParts();
   const { customers, createCustomer } = useCustomers();
   const { profile } = useProfile();
