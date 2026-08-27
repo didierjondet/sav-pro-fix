@@ -114,6 +114,7 @@ export default function SAVDetail() {
   const { data: activeProviderAssignment } = useSAVCaseActiveProvider(id);
   const { providers: savProviders } = useSAVProviders();
   const savQuotes = useSAVCaseQuotes(id);
+  const quotesIndicator = getSAVQuotesIndicator(savQuotes);
 
   const activeProvider = activeProviderAssignment
     ? savProviders.find(p => p.id === activeProviderAssignment.provider_id)
