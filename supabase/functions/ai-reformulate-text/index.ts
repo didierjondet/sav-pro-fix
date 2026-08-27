@@ -310,7 +310,7 @@ Deno.serve(async (req) => {
 
     console.log(`[AI-REFORMULATE] Appel IA: provider=${aiConfig.provider}, model=${aiConfig.model}, url=${aiConfig.url}`);
 
-    const systemPrompt = getSystemPrompt(context);
+    const systemPrompt = getSystemPrompt(context) + buildRecipientBlock(context, recipient);
 
     const requestBody = JSON.stringify({
       model: aiConfig.model,
