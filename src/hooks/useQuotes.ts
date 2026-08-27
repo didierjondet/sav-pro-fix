@@ -160,8 +160,11 @@ export function useQuotes() {
         repair_notes: quoteData.repair_notes ?? null,
         items: JSON.stringify(quoteData.items), // Ensure JSON serialization
         total_amount: quoteData.total_amount,
+        deposit_amount: quoteData.deposit_amount ?? 0,
+        sav_case_id: quoteData.sav_case_id ?? null,
         status: quoteData.status,
         shop_id: profile.shop_id
+
       };
 
       console.log('Insert data prepared:', insertData);
