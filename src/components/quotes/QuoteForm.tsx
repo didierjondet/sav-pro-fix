@@ -76,10 +76,29 @@ export function QuoteForm({ onSubmit, onCancel, initialQuote, submitLabel, title
         problemDescription: (initialQuote as any).problem_description || '',
         attachments: (initialQuote as any).attachments || [],
       });
+      setDepositAmount(Number(initialQuote.deposit_amount || 0));
       // Customer id is optional in quotes schema
       setSelectedCustomerId(null);
+    } else if (prefill) {
+      const [firstName, ...rest] = (prefill.customer_name || '').split(' ');
+      setCustomerInfo({
+        firstName: firstName || '',
+        lastName: rest.join(' ') || '',
+        email: prefill.customer_email || '',
+        phone: prefill.customer_phone || '',
+        address: '',
+      });
+      setDeviceInfo({
+        brand: prefill.device_brand || '',
+        model: prefill.device_model || '',
+        imei: prefill.device_imei || '',
+        sku: prefill.sku || '',
+        problemDescription: prefill.problem_description || '',
+        attachments: [],
+      });
     }
-  }, [initialQuote]);
+  }, [initialQuote, prefill]);
+
   
   // Validation du numéro de téléphone en temps réel
   useEffect(() => {
