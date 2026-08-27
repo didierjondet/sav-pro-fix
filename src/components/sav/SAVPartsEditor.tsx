@@ -118,6 +118,30 @@ export function SAVPartsEditor({ savCaseId, onPartsUpdated, trigger, defaultSear
     };
   }, [open, savCaseId]);
 
+  // Pré-remplir la recherche avec la marque + modèle de l'appareil du SAV
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+
+    const prefill = async () => {
+      if (defaultSearch?.trim()) {
+        setSearchTerm(defaultSearch.trim());
+        return;
+      }
+      const { data } = await supabase
+        .from('sav_cases')
+        .select('device_brand, device_model')
+        .eq('id', savCaseId)
+        .maybeSingle();
+      if (cancelled || !data) return;
+      const label = [data.device_brand, data.device_model].filter(Boolean).join(' ').trim();
+      if (label) setSearchTerm(label);
+    };
+
+    prefill();
+    return () => { cancelled = true; };
+  }, [open, savCaseId, defaultSearch]);
+
   const addPartFromStock = (part: any) => {
     // Calculer le stock disponible
     const availableStock = Math.max(0, (part.quantity || 0) - (part.reserved_quantity || 0));
