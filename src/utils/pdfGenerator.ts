@@ -229,6 +229,20 @@ export const generateQuotePDF = async (quote: Quote, shop?: Shop) => {
             <div style="font-size: 18px; font-weight: bold;">
               TOTAL: ${quote.total_amount.toFixed(2)}€
             </div>
+            ${(() => {
+              const deposit = Math.max(0, Number((quote as any).deposit_amount || 0));
+              if (deposit <= 0) return '';
+              const remaining = Math.max(0, quote.total_amount - deposit);
+              return `
+                <div style="margin-top: 8px; text-align: right; color: #0066cc;">
+                  <span>Acompte / règlement reçu: -${deposit.toFixed(2)}€</span>
+                </div>
+                <div style="margin-top: 4px; text-align: right; font-weight: bold;">
+                  <span>${remaining === 0 ? 'RÉGLÉ EN TOTALITÉ' : `RESTE À PAYER: ${remaining.toFixed(2)}€`}</span>
+                </div>
+              `;
+            })()}
+
           `;
         })()}
         ${vatBlockHtml}
@@ -885,7 +899,27 @@ export const generateSAVRestitutionPDF = async (savCase: SAVCase, shop?: Shop, o
                 )
               ).toFixed(2)}€</strong></span>
             </div>
+            ${(() => {
+              const deposit = Math.max(0, Number((savCase as any).deposit_amount || 0));
+              if (deposit <= 0) return '';
+              const net = (savCase.total_cost || 0) -
+                (((savCase as any).taken_over || (savCase as any).partial_takeover)
+                  ? ((savCase as any).partial_takeover ? ((savCase as any).takeover_amount || 0) : (savCase.total_cost || 0))
+                  : 0);
+              const remaining = Math.max(0, net - deposit);
+              return `
+                <div class="total-row" style="color: #0066cc;">
+                  <span>Acompte / règlement reçu :</span>
+                  <span>-${deposit.toFixed(2)}€</span>
+                </div>
+                <div class="total-row" style="font-weight: bold;">
+                  <span>${remaining === 0 ? 'RÉGLÉ EN TOTALITÉ' : 'RESTE À PAYER :'}</span>
+                  <span>${remaining === 0 ? '0.00€' : `${remaining.toFixed(2)}€`}</span>
+                </div>
+              `;
+            })()}
           </div>
+
           ${vatBlockHtml}
           ${(((savCase as any).taken_over && !(savCase as any).partial_takeover) || (savCase.total_cost || 0) === 0) ? `
             <div class="no-charge-info">

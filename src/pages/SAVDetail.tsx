@@ -50,6 +50,10 @@ import { Stethoscope, KeyRound, Smartphone, Wrench } from 'lucide-react';
 import { NonRepairabilityCertificateDialog } from '@/components/sav/NonRepairabilityCertificateDialog';
 import { SAVCustomerTab } from '@/components/sav/SAVCustomerTab';
 import { getDeviceColorInfo } from '@/lib/deviceColors';
+import { FileText } from 'lucide-react';
+import { SAVQuotesTab, useSAVCaseQuotes } from '@/components/sav/SAVQuotesTab';
+import { SAVPaymentCard } from '@/components/sav/SAVPaymentCard';
+
 
 const TAB_ACTIVE_CLASSES = 'data-[state=active]:bg-primary/15 data-[state=active]:text-primary data-[state=active]:shadow-sm';
 const STICKY_HEADER_CLASSES = 'sticky top-0 z-30 bg-primary/10 border-b-2 border-primary/40 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-primary/10';
@@ -109,6 +113,8 @@ export default function SAVDetail() {
   const { activeCount: agendaActiveCount } = useSAVCaseAppointments(id);
   const { data: activeProviderAssignment } = useSAVCaseActiveProvider(id);
   const { providers: savProviders } = useSAVProviders();
+  const savQuotes = useSAVCaseQuotes(id);
+
   const activeProvider = activeProviderAssignment
     ? savProviders.find(p => p.id === activeProviderAssignment.provider_id)
     : null;
@@ -545,7 +551,16 @@ export default function SAVDetail() {
                   </span>
                 )}
               </TabsTrigger>
+              <TabsTrigger value="devis" className={TAB_ACTIVE_CLASSES}>
+                <FileText className="h-3.5 w-3.5 mr-1" /> Devis
+                {savQuotes.length > 0 && (
+                  <span className="ml-2 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-primary text-primary-foreground text-[10px] font-bold">
+                    {savQuotes.length}
+                  </span>
+                )}
+              </TabsTrigger>
               <TabsTrigger value="documents" className={TAB_ACTIVE_CLASSES}>Documents</TabsTrigger>
+
             </TabsList>
 
             {/* Onglet Aperçu */}
@@ -833,7 +848,21 @@ export default function SAVDetail() {
                 <span className="text-muted-foreground">Coût total actuel : </span>
                 <span className="font-semibold">{savCase.total_cost}€</span>
               </div>
+              <SAVPaymentCard
+                savCaseId={savCase.id}
+                totalCost={savCase.total_cost}
+                takeoverAmount={(savCase as any).takeover_amount}
+                takenOver={(savCase as any).taken_over}
+                partialTakeover={(savCase as any).partial_takeover}
+                depositAmount={(savCase as any).deposit_amount}
+              />
             </TabsContent>
+
+            {/* Onglet Devis */}
+            <TabsContent value="devis" className="space-y-4">
+              <SAVQuotesTab savCase={savCase as any} />
+            </TabsContent>
+
 
 
             {/* Onglet Codes */}
@@ -1107,7 +1136,16 @@ export default function SAVDetail() {
                 </span>
               )}
             </TabsTrigger>
+            <TabsTrigger value="devis" className={TAB_ACTIVE_CLASSES}>
+              <FileText className="h-3.5 w-3.5 mr-1" /> Devis
+              {savQuotes.length > 0 && (
+                <span className="ml-2 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-primary text-primary-foreground text-[10px] font-bold">
+                  {savQuotes.length}
+                </span>
+              )}
+            </TabsTrigger>
             <TabsTrigger value="documents" className={TAB_ACTIVE_CLASSES}>Documents</TabsTrigger>
+
           </TabsList>
 
           {/* Onglet Aperçu */}
@@ -1457,7 +1495,21 @@ export default function SAVDetail() {
               <span className="text-muted-foreground">Coût total actuel : </span>
               <span className="font-semibold">{savCase.total_cost}€</span>
             </div>
+            <SAVPaymentCard
+              savCaseId={savCase.id}
+              totalCost={savCase.total_cost}
+              takeoverAmount={(savCase as any).takeover_amount}
+              takenOver={(savCase as any).taken_over}
+              partialTakeover={(savCase as any).partial_takeover}
+              depositAmount={(savCase as any).deposit_amount}
+            />
           </TabsContent>
+
+          {/* Onglet Devis */}
+          <TabsContent value="devis" className="space-y-4">
+            <SAVQuotesTab savCase={savCase as any} />
+          </TabsContent>
+
 
 
           {/* Onglet Codes */}

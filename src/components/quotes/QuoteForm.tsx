@@ -30,9 +30,14 @@ interface QuoteFormProps {
   initialQuote?: Quote;
   submitLabel?: string;
   title?: string;
+  /** Pré-remplissage (création depuis un SAV par exemple) */
+  prefill?: Partial<Quote>;
+  /** Masque l'en-tête (titre + retour) quand le formulaire est affiché dans une modale */
+  hideHeader?: boolean;
 }
 
-export function QuoteForm({ onSubmit, onCancel, initialQuote, submitLabel, title }: QuoteFormProps) {
+export function QuoteForm({ onSubmit, onCancel, initialQuote, submitLabel, title, prefill, hideHeader }: QuoteFormProps) {
+
   const { parts } = useParts();
   const { customers, createCustomer } = useCustomers();
   const { profile } = useProfile();
@@ -71,10 +76,29 @@ export function QuoteForm({ onSubmit, onCancel, initialQuote, submitLabel, title
         problemDescription: (initialQuote as any).problem_description || '',
         attachments: (initialQuote as any).attachments || [],
       });
+      setDepositAmount(Number(initialQuote.deposit_amount || 0));
       // Customer id is optional in quotes schema
       setSelectedCustomerId(null);
+    } else if (prefill) {
+      const [firstName, ...rest] = (prefill.customer_name || '').split(' ');
+      setCustomerInfo({
+        firstName: firstName || '',
+        lastName: rest.join(' ') || '',
+        email: prefill.customer_email || '',
+        phone: prefill.customer_phone || '',
+        address: '',
+      });
+      setDeviceInfo({
+        brand: prefill.device_brand || '',
+        model: prefill.device_model || '',
+        imei: prefill.device_imei || '',
+        sku: prefill.sku || '',
+        problemDescription: prefill.problem_description || '',
+        attachments: [],
+      });
     }
-  }, [initialQuote]);
+  }, [initialQuote, prefill]);
+
   
   // Validation du numéro de téléphone en temps réel
   useEffect(() => {
@@ -377,7 +401,9 @@ const updateUnitPurchasePrice = (partId: string, unitPrice: number) => {
         items: selectedItems,
         total_amount: totalAmount,
         deposit_amount: depositAmount,
+        sav_case_id: initialQuote?.sav_case_id ?? prefill?.sav_case_id ?? null,
         status: initialQuote?.status ?? 'draft'
+
       });
 
       if (!error) {
@@ -396,13 +422,16 @@ const updateUnitPurchasePrice = (partId: string, unitPrice: number) => {
 
   return (
     <div className="max-w-4xl mx-auto">
-      <div className="flex items-center gap-4 mb-6">
-        <Button variant="outline" onClick={onCancel}>
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Retour
-        </Button>
-        <h1 className="text-2xl font-bold">{title ?? (initialQuote ? 'Modifier le devis' : 'Nouveau devis')}</h1>
-      </div>
+      {!hideHeader && (
+        <div className="flex items-center gap-4 mb-6">
+          <Button variant="outline" onClick={onCancel}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Retour
+          </Button>
+          <h1 className="text-2xl font-bold">{title ?? (initialQuote ? 'Modifier le devis' : 'Nouveau devis')}</h1>
+        </div>
+      )}
+
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Informations client */}
@@ -819,6 +848,24 @@ const updateUnitPurchasePrice = (partId: string, unitPrice: number) => {
                           placeholder="0.00"
                           className="text-right"
                         />
+                        <div className="flex flex-wrap gap-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setDepositAmount(Number(totalAmount.toFixed(2)))}
+                          >
+                            Réglé en totalité
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setDepositAmount(0)}
+                          >
+                            Aucun règlement
+                          </Button>
+                        </div>
                         {depositAmount > 0 && (
                           <div className="flex justify-between text-sm text-muted-foreground pt-1 font-medium">
                             <span>Reste à payer:</span>
@@ -827,6 +874,7 @@ const updateUnitPurchasePrice = (partId: string, unitPrice: number) => {
                             </span>
                           </div>
                         )}
+
                       </div>
                     </div>
                   </div>
