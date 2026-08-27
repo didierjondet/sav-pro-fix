@@ -10,11 +10,20 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
+export interface AIReformulatorRecipient {
+  customerFirstName?: string;
+  customerLastName?: string;
+  customerName?: string;
+  shopName?: string;
+  caseNumber?: string;
+}
+
 interface AITextReformulatorProps {
   text: string;
-  context: "problem_description" | "repair_notes" | "technician_comments" | "private_comments" | "chat_message" | "sms_message";
+  context: "problem_description" | "repair_notes" | "technician_comments" | "private_comments" | "chat_message" | "sms_message" | "customer_message";
   onReformulated: (reformulatedText: string) => void;
   className?: string;
+  recipient?: AIReformulatorRecipient;
 }
 
 export function AITextReformulator({
@@ -22,6 +31,7 @@ export function AITextReformulator({
   context,
   onReformulated,
   className = "",
+  recipient,
 }: AITextReformulatorProps) {
   const [isReformulating, setIsReformulating] = useState(false);
   const { toast } = useToast();
@@ -43,8 +53,10 @@ export function AITextReformulator({
         body: {
           text: text.trim(),
           context,
+          recipient,
         },
       });
+
 
       // Extract real error from edge function response
       if (error) {
