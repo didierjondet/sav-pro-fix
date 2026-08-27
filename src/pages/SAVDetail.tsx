@@ -113,6 +113,8 @@ export default function SAVDetail() {
   const { activeCount: agendaActiveCount } = useSAVCaseAppointments(id);
   const { data: activeProviderAssignment } = useSAVCaseActiveProvider(id);
   const { providers: savProviders } = useSAVProviders();
+  const savQuotes = useSAVCaseQuotes(id);
+
   const activeProvider = activeProviderAssignment
     ? savProviders.find(p => p.id === activeProviderAssignment.provider_id)
     : null;
