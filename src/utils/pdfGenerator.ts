@@ -229,6 +229,20 @@ export const generateQuotePDF = async (quote: Quote, shop?: Shop) => {
             <div style="font-size: 18px; font-weight: bold;">
               TOTAL: ${quote.total_amount.toFixed(2)}€
             </div>
+            ${(() => {
+              const deposit = Math.max(0, Number((quote as any).deposit_amount || 0));
+              if (deposit <= 0) return '';
+              const remaining = Math.max(0, quote.total_amount - deposit);
+              return `
+                <div style="margin-top: 8px; text-align: right; color: #0066cc;">
+                  <span>Acompte / règlement reçu: -${deposit.toFixed(2)}€</span>
+                </div>
+                <div style="margin-top: 4px; text-align: right; font-weight: bold;">
+                  <span>${remaining === 0 ? 'RÉGLÉ EN TOTALITÉ' : `RESTE À PAYER: ${remaining.toFixed(2)}€`}</span>
+                </div>
+              `;
+            })()}
+
           `;
         })()}
         ${vatBlockHtml}
