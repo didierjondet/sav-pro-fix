@@ -401,7 +401,9 @@ const updateUnitPurchasePrice = (partId: string, unitPrice: number) => {
         items: selectedItems,
         total_amount: totalAmount,
         deposit_amount: depositAmount,
+        sav_case_id: initialQuote?.sav_case_id ?? prefill?.sav_case_id ?? null,
         status: initialQuote?.status ?? 'draft'
+
       });
 
       if (!error) {
