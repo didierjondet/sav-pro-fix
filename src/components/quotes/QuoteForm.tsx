@@ -421,7 +421,7 @@ const updateUnitPurchasePrice = (partId: string, unitPrice: number) => {
 
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className={hideHeader ? 'w-full' : 'max-w-4xl mx-auto'}>
       {!hideHeader && (
         <div className="flex items-center gap-4 mb-6">
           <Button variant="outline" onClick={onCancel}>
