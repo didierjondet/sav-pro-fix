@@ -422,13 +422,16 @@ const updateUnitPurchasePrice = (partId: string, unitPrice: number) => {
 
   return (
     <div className="max-w-4xl mx-auto">
-      <div className="flex items-center gap-4 mb-6">
-        <Button variant="outline" onClick={onCancel}>
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Retour
-        </Button>
-        <h1 className="text-2xl font-bold">{title ?? (initialQuote ? 'Modifier le devis' : 'Nouveau devis')}</h1>
-      </div>
+      {!hideHeader && (
+        <div className="flex items-center gap-4 mb-6">
+          <Button variant="outline" onClick={onCancel}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Retour
+          </Button>
+          <h1 className="text-2xl font-bold">{title ?? (initialQuote ? 'Modifier le devis' : 'Nouveau devis')}</h1>
+        </div>
+      )}
+
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Informations client */}
