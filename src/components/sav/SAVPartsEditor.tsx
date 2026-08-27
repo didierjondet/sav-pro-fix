@@ -400,7 +400,7 @@ const partsToInsert = savParts.map(part => ({
             
             {/* Résultats de recherche */}
             {searchTerm && (
-              <div className="mt-2 max-h-40 overflow-y-auto border rounded-md">
+              <div className="mt-2 max-h-[45vh] overflow-y-auto border rounded-md [scrollbar-width:auto]">
                 {filteredParts.length === 0 ? (
                   <div className="p-3">
                     <p className="text-sm text-muted-foreground mb-2">Aucune pièce trouvée en stock</p>
