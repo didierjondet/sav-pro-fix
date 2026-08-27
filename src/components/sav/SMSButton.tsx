@@ -273,8 +273,10 @@ export function SMSButton({
                 <AITextReformulator
                   text={customMessage}
                   context="sms_message"
+                  recipient={{ customerName, caseNumber }}
                   onReformulated={handleAIReformulation}
                 />
+
               </div>
             </div>
             <p className="text-sm text-muted-foreground mt-1">
