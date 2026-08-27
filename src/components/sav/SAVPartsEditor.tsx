@@ -33,9 +33,11 @@ interface SAVPartsEditorProps {
   savCaseId: string;
   onPartsUpdated: () => void;
   trigger?: ReactNode;
+  /** Recherche pré-remplie à l'ouverture (marque + modèle de l'appareil) */
+  defaultSearch?: string;
 }
 
-export function SAVPartsEditor({ savCaseId, onPartsUpdated, trigger }: SAVPartsEditorProps) {
+export function SAVPartsEditor({ savCaseId, onPartsUpdated, trigger, defaultSearch }: SAVPartsEditorProps) {
   const [open, setOpen] = useState(false);
   const [savParts, setSavParts] = useState<SAVPart[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
