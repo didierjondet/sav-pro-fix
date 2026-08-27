@@ -1457,7 +1457,21 @@ export default function SAVDetail() {
               <span className="text-muted-foreground">Coût total actuel : </span>
               <span className="font-semibold">{savCase.total_cost}€</span>
             </div>
+            <SAVPaymentCard
+              savCaseId={savCase.id}
+              totalCost={savCase.total_cost}
+              takeoverAmount={(savCase as any).takeover_amount}
+              takenOver={(savCase as any).taken_over}
+              partialTakeover={(savCase as any).partial_takeover}
+              depositAmount={(savCase as any).deposit_amount}
+            />
           </TabsContent>
+
+          {/* Onglet Devis */}
+          <TabsContent value="devis" className="space-y-4">
+            <SAVQuotesTab savCase={savCase as any} />
+          </TabsContent>
+
 
 
           {/* Onglet Codes */}
