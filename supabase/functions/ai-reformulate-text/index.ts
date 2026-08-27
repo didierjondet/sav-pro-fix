@@ -202,19 +202,32 @@ Ton rôle est de :
 - Garder un style direct et factuel
 - Conserver tous les détails techniques importants
 - Répondre UNIQUEMENT avec le texte reformulé, sans commentaire ni introduction`;
-    case "chat_message":
-      return `Tu es un assistant qui aide à reformuler les messages de chat pour qu'ils soient clairs, polis et professionnels.
+    case "customer_message":
+      return `Tu es le/la chargé(e) de relation client d'un atelier de réparation.
+CONTEXTE IMPORTANT :
+- Ce texte est DESTINÉ AU CLIENT FINAL (un particulier), il sera lu par lui (document de restitution, message, note de rendez-vous)
+- Le client n'est PAS technicien : il ne doit pas lire de jargon interne, de codes internes ni de remarques destinées aux collègues
+
 Ton rôle est de :
 - Corriger l'orthographe et la grammaire
-- Rendre le message plus fluide et naturel
+- Rédiger un message clair, courtois et rassurant, à la 1re personne du pluriel (« nous »)
+- Expliquer simplement ce qui a été constaté, ce qui a été fait et ce que le client doit retenir ou faire ensuite
+- Supprimer/traduire le jargon technique et toute remarque interne
+- Rester factuel : n'invente jamais d'information, de prix, de délai ou de garantie absents du texte
+- Répondre UNIQUEMENT avec le texte reformulé, sans commentaire ni introduction`;
+    case "chat_message":
+      return `Tu es un assistant qui aide à reformuler les messages de chat ADRESSÉS AU CLIENT final.
+Ton rôle est de :
+- Corriger l'orthographe et la grammaire
+- Rendre le message plus fluide, naturel et compréhensible par un particulier (pas de jargon interne)
 - Garder un ton professionnel mais amical
-- Conserver le sens original du message
+- Conserver le sens original du message, sans inventer d'information
 - Répondre UNIQUEMENT avec le texte reformulé, sans commentaire ni introduction`;
     case "sms_message":
-      return `Tu es un assistant qui aide à reformuler les SMS professionnels pour qu'ils soient clairs et efficaces.
+      return `Tu es un assistant qui aide à reformuler les SMS professionnels ADRESSÉS AU CLIENT final.
 Ton rôle est de :
 - Corriger l'orthographe et la grammaire
-- Garder un ton professionnel mais chaleureux
+- Garder un ton professionnel mais chaleureux, compréhensible par un particulier
 - IMPÉRATIF : Respecter une limite stricte de 160 caractères maximum
 - Conserver les émojis appropriés s'ils sont présents
 - Ne pas ajouter de formules de politesse excessives
@@ -228,13 +241,49 @@ Réponds UNIQUEMENT avec le texte reformulé, sans commentaire ni introduction.`
   }
 }
 
+interface Recipient {
+  customerFirstName?: string;
+  customerLastName?: string;
+  customerName?: string;
+  shopName?: string;
+  caseNumber?: string;
+}
+
+const CUSTOMER_FACING_CONTEXTS = ["customer_message", "chat_message", "sms_message"];
+
+function buildRecipientBlock(context: string, recipient?: Recipient | null): string {
+  if (!recipient) return "";
+  const fullName = (recipient.customerName ||
+    `${recipient.customerFirstName || ""} ${recipient.customerLastName || ""}`.trim()).trim();
+
+  const lines: string[] = [];
+  if (fullName) lines.push(`- Nom du client : ${fullName}`);
+  if (recipient.shopName) lines.push(`- Nom de l'atelier/magasin : ${recipient.shopName}`);
+  if (recipient.caseNumber) lines.push(`- Numéro de dossier : ${recipient.caseNumber}`);
+  if (lines.length === 0) return "";
+
+  const isCustomerFacing = CUSTOMER_FACING_CONTEXTS.includes(context);
+
+  return `
+
+INFORMATIONS DE PERSONNALISATION (à utiliser uniquement si pertinent, ne jamais inventer) :
+${lines.join("\n")}
+${
+  isCustomerFacing
+    ? `- Tu peux personnaliser l'adresse au client avec son nom (ex. « Bonjour ${fullName || "…"}, »), si le texte s'y prête et si ce n'est pas déjà fait.
+- N'ajoute pas la personnalisation si le texte est un SMS déjà proche de la limite de 160 caractères.`
+    : `- Ces informations servent uniquement de contexte : ce texte reste une note INTERNE, ne l'adresse pas au client.`
+}`;
+}
+
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { text, context } = await req.json();
+    const { text, context, recipient } = await req.json();
 
     if (!text || text.trim() === "") {
       return new Response(
@@ -261,7 +310,7 @@ Deno.serve(async (req) => {
 
     console.log(`[AI-REFORMULATE] Appel IA: provider=${aiConfig.provider}, model=${aiConfig.model}, url=${aiConfig.url}`);
 
-    const systemPrompt = getSystemPrompt(context);
+    const systemPrompt = getSystemPrompt(context) + buildRecipientBlock(context, recipient);
 
     const requestBody = JSON.stringify({
       model: aiConfig.model,

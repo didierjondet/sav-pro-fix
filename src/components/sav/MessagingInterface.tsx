@@ -475,8 +475,10 @@ export function MessagingInterface({
                 <AITextReformulator
                   text={newMessage}
                   context="chat_message"
+                  recipient={userType === 'shop' ? { customerName, caseNumber } : undefined}
                   onReformulated={setNewMessage}
                 />
+
               </div>
             </div>
             

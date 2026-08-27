@@ -10,11 +10,20 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
+export interface AIReformulatorRecipient {
+  customerFirstName?: string;
+  customerLastName?: string;
+  customerName?: string;
+  shopName?: string;
+  caseNumber?: string;
+}
+
 interface AITextReformulatorProps {
   text: string;
-  context: "problem_description" | "repair_notes" | "technician_comments" | "private_comments" | "chat_message" | "sms_message";
+  context: "problem_description" | "repair_notes" | "technician_comments" | "private_comments" | "chat_message" | "sms_message" | "customer_message";
   onReformulated: (reformulatedText: string) => void;
   className?: string;
+  recipient?: AIReformulatorRecipient;
 }
 
 export function AITextReformulator({
@@ -22,6 +31,7 @@ export function AITextReformulator({
   context,
   onReformulated,
   className = "",
+  recipient,
 }: AITextReformulatorProps) {
   const [isReformulating, setIsReformulating] = useState(false);
   const { toast } = useToast();
@@ -43,8 +53,10 @@ export function AITextReformulator({
         body: {
           text: text.trim(),
           context,
+          recipient,
         },
       });
+
 
       // Extract real error from edge function response
       if (error) {
@@ -86,19 +98,22 @@ export function AITextReformulator({
   const getTooltipText = () => {
     switch (context) {
       case "problem_description":
-        return "Reformuler et corriger la description du problème avec l'IA";
+        return "Reformuler la description du problème (note interne)";
       case "repair_notes":
-        return "Reformuler et corriger les notes de réparation avec l'IA";
+        return "Reformuler les notes de réparation (note interne)";
       case "technician_comments":
-        return "Reformuler et corriger les commentaires avec l'IA";
+        return "Reformuler les commentaires (note interne)";
       case "private_comments":
-        return "Reformuler et corriger les commentaires privés avec l'IA";
+        return "Reformuler les commentaires privés (note interne)";
+      case "customer_message":
+        return "Reformuler pour le client (message lisible par le client)";
       case "chat_message":
-        return "Reformuler et corriger le message avec l'IA";
+        return "Reformuler pour le client (message de discussion)";
       case "sms_message":
-        return "Reformuler et optimiser le SMS (max 160 caractères)";
+        return "Reformuler pour le client (SMS, max 160 caractères)";
       default:
         return "Reformuler et corriger avec l'IA";
+
     }
   };
 

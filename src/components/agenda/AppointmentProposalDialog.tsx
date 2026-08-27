@@ -278,9 +278,11 @@ Confirmez votre RDV via le lien dans votre espace de suivi.`;
               <Label>Notes (optionnel)</Label>
               <AITextReformulator
                 text={notes}
-                context="technician_comments"
+                context="customer_message"
+                recipient={{ customerName, caseNumber }}
                 onReformulated={setNotes}
               />
+
             </div>
             <Textarea
               placeholder="Informations supplémentaires pour le client..."

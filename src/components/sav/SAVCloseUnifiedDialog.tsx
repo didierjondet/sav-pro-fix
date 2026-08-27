@@ -755,9 +755,16 @@ export function SAVCloseUnifiedDialog({
                   <Label htmlFor="technician-comments">Commentaires</Label>
                   <AITextReformulator
                     text={technicianComments}
-                    context="technician_comments"
+                    context="customer_message"
+                    recipient={{
+                      customerFirstName: savCase.customer?.first_name,
+                      customerLastName: savCase.customer?.last_name,
+                      shopName: shop?.name,
+                      caseNumber: savCase.case_number,
+                    }}
                     onReformulated={(reformulatedText) => setTechnicianComments(reformulatedText)}
                   />
+
                 </div>
                 <Textarea
                   id="technician-comments"
