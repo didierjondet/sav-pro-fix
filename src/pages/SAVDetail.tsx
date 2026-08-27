@@ -1107,7 +1107,16 @@ export default function SAVDetail() {
                 </span>
               )}
             </TabsTrigger>
+            <TabsTrigger value="devis" className={TAB_ACTIVE_CLASSES}>
+              <FileText className="h-3.5 w-3.5 mr-1" /> Devis
+              {savQuotes.length > 0 && (
+                <span className="ml-2 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-primary text-primary-foreground text-[10px] font-bold">
+                  {savQuotes.length}
+                </span>
+              )}
+            </TabsTrigger>
             <TabsTrigger value="documents" className={TAB_ACTIVE_CLASSES}>Documents</TabsTrigger>
+
           </TabsList>
 
           {/* Onglet Aperçu */}
