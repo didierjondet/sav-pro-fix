@@ -843,6 +843,24 @@ const updateUnitPurchasePrice = (partId: string, unitPrice: number) => {
                           placeholder="0.00"
                           className="text-right"
                         />
+                        <div className="flex flex-wrap gap-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setDepositAmount(Number(totalAmount.toFixed(2)))}
+                          >
+                            Réglé en totalité
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setDepositAmount(0)}
+                          >
+                            Aucun règlement
+                          </Button>
+                        </div>
                         {depositAmount > 0 && (
                           <div className="flex justify-between text-sm text-muted-foreground pt-1 font-medium">
                             <span>Reste à payer:</span>
@@ -851,6 +869,7 @@ const updateUnitPurchasePrice = (partId: string, unitPrice: number) => {
                             </span>
                           </div>
                         )}
+
                       </div>
                     </div>
                   </div>
