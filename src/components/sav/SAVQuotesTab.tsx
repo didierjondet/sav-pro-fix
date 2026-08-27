@@ -243,7 +243,7 @@ export function SAVQuotesTab({ savCase }: { savCase: SAVQuotesTabCase }) {
       </Card>
 
       <Dialog open={showForm} onOpenChange={(open) => { if (!open) closeForm(); }}>
-        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="w-[95vw] max-w-6xl max-h-[92vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {editingQuote ? `Modifier le devis ${editingQuote.quote_number}` : `Nouveau devis — ${savCase.case_number}`}
