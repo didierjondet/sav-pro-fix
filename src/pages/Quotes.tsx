@@ -152,7 +152,9 @@ export default function Quotes() {
         problem_description: data.problem_description,
         items: data.items,
         total_amount: data.total_amount,
+        deposit_amount: data.deposit_amount ?? 0,
         status: data.status,
+
       });
       if (!result.error) {
         setShowForm(false);
