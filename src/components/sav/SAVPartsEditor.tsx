@@ -33,9 +33,11 @@ interface SAVPartsEditorProps {
   savCaseId: string;
   onPartsUpdated: () => void;
   trigger?: ReactNode;
+  /** Recherche pré-remplie à l'ouverture (marque + modèle de l'appareil) */
+  defaultSearch?: string;
 }
 
-export function SAVPartsEditor({ savCaseId, onPartsUpdated, trigger }: SAVPartsEditorProps) {
+export function SAVPartsEditor({ savCaseId, onPartsUpdated, trigger, defaultSearch }: SAVPartsEditorProps) {
   const [open, setOpen] = useState(false);
   const [savParts, setSavParts] = useState<SAVPart[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -115,6 +117,30 @@ export function SAVPartsEditor({ savCaseId, onPartsUpdated, trigger }: SAVPartsE
       window.removeEventListener('parts-stock-updated', onStockEvent);
     };
   }, [open, savCaseId]);
+
+  // Pré-remplir la recherche avec la marque + modèle de l'appareil du SAV
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+
+    const prefill = async () => {
+      if (defaultSearch?.trim()) {
+        setSearchTerm(defaultSearch.trim());
+        return;
+      }
+      const { data } = await supabase
+        .from('sav_cases')
+        .select('device_brand, device_model')
+        .eq('id', savCaseId)
+        .maybeSingle();
+      if (cancelled || !data) return;
+      const label = [data.device_brand, data.device_model].filter(Boolean).join(' ').trim();
+      if (label) setSearchTerm(label);
+    };
+
+    prefill();
+    return () => { cancelled = true; };
+  }, [open, savCaseId, defaultSearch]);
 
   const addPartFromStock = (part: any) => {
     // Calculer le stock disponible
@@ -378,7 +404,7 @@ const partsToInsert = savParts.map(part => ({
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="w-[95vw] max-w-6xl max-h-[92vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Modifier les pièces du dossier SAV</DialogTitle>
         </DialogHeader>
@@ -400,7 +426,7 @@ const partsToInsert = savParts.map(part => ({
             
             {/* Résultats de recherche */}
             {searchTerm && (
-              <div className="mt-2 max-h-40 overflow-y-auto border rounded-md">
+              <div className="mt-2 max-h-[45vh] overflow-y-auto border rounded-md [scrollbar-width:auto]">
                 {filteredParts.length === 0 ? (
                   <div className="p-3">
                     <p className="text-sm text-muted-foreground mb-2">Aucune pièce trouvée en stock</p>
