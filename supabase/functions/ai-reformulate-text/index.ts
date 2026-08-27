@@ -283,7 +283,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { text, context } = await req.json();
+    const { text, context, recipient } = await req.json();
 
     if (!text || text.trim() === "") {
       return new Response(
