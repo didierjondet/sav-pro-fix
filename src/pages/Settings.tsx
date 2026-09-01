@@ -913,26 +913,50 @@ export default function Settings() {
     }
   };
   const isAdmin = profile?.role === 'admin' || actualProfile?.role === 'super_admin';
-  const availableTabs = [
-    'shop',
-    'notifications',
-    'appearance',
-    'sav-statuses',
-    'sav-types',
-    'billing',
-    'ai',
-    ...(isAdmin ? ['billing-vat'] : []),
-    ...(rolePermissions.settings_sms_purchase ? ['sms'] : []),
-    ...(rolePermissions.settings_import_export ? ['import-export'] : []),
-    ...(rolePermissions.settings_subscription ? ['subscription'] : []),
-    ...(isAdmin && rolePermissions.settings_users ? ['users'] : []),
-    ...(rolePermissions.settings_part_categories ? ['part-categories'] : []),
-    ...(isAdmin ? ['suppliers'] : []),
-    ...(isAdmin ? ['sav-providers'] : []),
-    ...(isAdmin ? ['loaners'] : []),
-    ...(isAdmin ? ['logs'] : []),
-  ];
+
+  const SETTINGS_CATEGORIES = [
+    { id: 'shop-group', label: 'Mon magasin' },
+    { id: 'sav-group', label: 'Activité SAV' },
+    { id: 'stock-group', label: 'Stock & partenaires' },
+    { id: 'billing-group', label: 'Facturation' },
+    { id: 'system-group', label: 'Système' },
+  ] as const;
+
+  const settingsSections = [
+    { id: 'shop', label: 'Magasin', icon: Store, category: 'shop-group', visible: true },
+    { id: 'partner-profile', label: 'Vitrine partenaire', icon: Handshake, category: 'shop-group', visible: isAdmin },
+    { id: 'appearance', label: 'Apparence', icon: Monitor, category: 'shop-group', visible: true },
+    { id: 'notifications', label: 'Notifications', icon: MessageSquare, category: 'shop-group', visible: true },
+
+    { id: 'sav-types', label: 'Types de SAV', icon: Package, category: 'sav-group', visible: true },
+    { id: 'sav-statuses', label: 'Statuts SAV', icon: Tag, category: 'sav-group', visible: true },
+    { id: 'sav-providers', label: 'Prestataires techniques', icon: Wrench, category: 'sav-group', visible: isAdmin },
+    { id: 'loaners', label: 'Matériel de prêt', icon: PackageOpen, category: 'sav-group', visible: isAdmin },
+
+    { id: 'part-categories', label: 'Catégories pièces', icon: Tag, category: 'stock-group', visible: !!rolePermissions.settings_part_categories },
+    { id: 'suppliers', label: 'Fournisseurs', icon: Truck, category: 'stock-group', visible: isAdmin },
+
+    { id: 'subscription', label: 'Abonnement', icon: CreditCard, category: 'billing-group', visible: !!rolePermissions.settings_subscription },
+    { id: 'billing', label: 'Facturation', icon: FileText, category: 'billing-group', visible: true },
+    { id: 'billing-vat', label: 'TVA & MO', icon: Percent, category: 'billing-group', visible: isAdmin },
+    { id: 'sms', label: 'Crédits SMS', icon: Mail, category: 'billing-group', visible: !!rolePermissions.settings_sms_purchase },
+
+    { id: 'users', label: 'Utilisateurs', icon: Users, category: 'system-group', visible: isAdmin && !!rolePermissions.settings_users },
+    { id: 'ai', label: 'IA', icon: Sparkles, category: 'system-group', visible: true },
+    { id: 'import-export', label: 'Import/Export', icon: Upload, category: 'system-group', visible: !!rolePermissions.settings_import_export },
+    { id: 'logs', label: 'Logs', icon: ScrollText, category: 'system-group', visible: isAdmin },
+  ].filter(s => s.visible);
+
+  const visibleCategories = SETTINGS_CATEGORIES.filter(c =>
+    settingsSections.some(s => s.category === c.id)
+  );
+
+  const availableTabs = settingsSections.map(s => s.id);
   const safeActiveTab = availableTabs.includes(activeTab) ? activeTab : availableTabs[0];
+  const activeCategory =
+    settingsSections.find(s => s.id === safeActiveTab)?.category || visibleCategories[0]?.id;
+  const categorySections = settingsSections.filter(s => s.category === activeCategory);
+
   useEffect(() => {
     if (safeActiveTab === activeTab) return;
     setActiveTab(safeActiveTab);
