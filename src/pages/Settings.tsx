@@ -72,7 +72,7 @@ import { LoanerEquipmentManager } from '@/components/settings/loaner/LoanerEquip
 import { SMSPackagesDisplay } from '@/components/subscription/SMSPackagesDisplay';
 import { BillingInvoices } from '@/components/billing/BillingInvoices';
 import { BillingVatTab } from '@/components/settings/BillingVatTab';
-import { Percent, Wrench } from 'lucide-react';
+import { Percent, Wrench, Handshake } from 'lucide-react';
 import { ImportStock } from '@/components/parts/ImportStock';
 import { ImportQuotes } from '@/components/import/ImportQuotes';
 import { ImportSAVs } from '@/components/import/ImportSAVs';
