@@ -44,7 +44,7 @@ interface HistoryRow {
   total_cost: number | null;
 }
 
-export function SAVCustomerTab({ savCaseId, shopId, customerId, customer, onCustomerUpdated }: SAVCustomerTabProps) {
+export function SAVCustomerTab({ savCaseId, shopId, customerId, customer, onCustomerUpdated, requiresCustomer = true }: SAVCustomerTabProps) {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { customers } = useAllCustomers();
