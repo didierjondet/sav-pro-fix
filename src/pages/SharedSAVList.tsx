@@ -10,7 +10,7 @@ import {
 import { Search, Handshake, Smartphone, MessagesSquare, Info } from 'lucide-react';
 import { useSharedSAVs, SharedSAVRow } from '@/hooks/useSharedSAVs';
 import { ShareThread } from '@/components/partners/ShareThread';
-import { getDeviceColorHex } from '@/lib/deviceColors';
+import { getDeviceColorInfo } from '@/lib/deviceColors';
 
 export default function SharedSAVList() {
   const { data: shares = [], isLoading } = useSharedSAVs();
@@ -95,8 +95,8 @@ export default function SharedSAVList() {
                   {s.device_color && (
                     <span
                       className="inline-block w-3 h-3 rounded-full border"
-                      style={{ backgroundColor: getDeviceColorHex(s.device_color) }}
-                      title={s.device_color}
+                      style={{ backgroundColor: getDeviceColorInfo(s.device_color)?.hsl }}
+                      title={getDeviceColorInfo(s.device_color)?.label}
                     />
                   )}
                   {s.device_imei && <span className="text-xs text-muted-foreground">IMEI {s.device_imei}</span>}
