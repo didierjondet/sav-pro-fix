@@ -768,6 +768,7 @@ export default function SAVDetail() {
                 customerId={savCase.customer_id}
                 customer={savCase.customer}
                 onCustomerUpdated={() => { refreshSavCustomer(); }}
+                requiresCustomer={requiresCustomer}
               />
             </TabsContent>
 
