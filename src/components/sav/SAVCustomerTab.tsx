@@ -31,6 +31,7 @@ interface SAVCustomerTabProps {
     address?: string;
   } | null;
   onCustomerUpdated?: () => void;
+  requiresCustomer?: boolean;
 }
 
 interface HistoryRow {
