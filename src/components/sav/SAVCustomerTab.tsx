@@ -213,12 +213,20 @@ export function SAVCustomerTab({ savCaseId, shopId, customerId, customer, onCust
                 </Button>
               </div>
             </>
-          ) : (
+          ) : requiresCustomer ? (
             <div className="flex items-start gap-2 rounded-lg border border-destructive/40 bg-destructive/5 p-3 text-sm">
               <AlertCircle className="h-4 w-4 text-destructive mt-0.5" />
               <div>
                 <p className="font-medium text-destructive">Aucun client rattaché à ce dossier</p>
                 <p className="text-muted-foreground">Recherchez un client existant ou créez-en un nouveau ci-dessous.</p>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-start gap-2 rounded-lg border p-3 text-sm text-muted-foreground">
+              <User className="h-4 w-4 mt-0.5" />
+              <div>
+                <p className="font-medium">Ce type de SAV ne nécessite pas de client.</p>
+                <p>Vous pouvez tout de même en lier un manuellement ci-dessous.</p>
               </div>
             </div>
           )}
