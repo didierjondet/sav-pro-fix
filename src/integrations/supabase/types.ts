@@ -1619,9 +1619,12 @@ export type Database = {
           shop_id: string
           slug: string | null
           specialties: string | null
+          specialty_tags: string[]
           updated_at: string
           vat_exempt: boolean
           vat_rate: number
+          visible_pro: boolean
+          visible_public: boolean
           warranty_terms: string | null
           website_url: string | null
         }
@@ -1646,9 +1649,12 @@ export type Database = {
           shop_id: string
           slug?: string | null
           specialties?: string | null
+          specialty_tags?: string[]
           updated_at?: string
           vat_exempt?: boolean
           vat_rate?: number
+          visible_pro?: boolean
+          visible_public?: boolean
           warranty_terms?: string | null
           website_url?: string | null
         }
@@ -1673,9 +1679,12 @@ export type Database = {
           shop_id?: string
           slug?: string | null
           specialties?: string | null
+          specialty_tags?: string[]
           updated_at?: string
           vat_exempt?: boolean
           vat_rate?: number
+          visible_pro?: boolean
+          visible_public?: boolean
           warranty_terms?: string | null
           website_url?: string | null
         }
@@ -4472,6 +4481,7 @@ export type Database = {
           shop_id: string
           slug: string
           specialties: string
+          specialty_tags: string[]
           vat_exempt: boolean
           vat_rate: number
           warranty_terms: string
@@ -4491,6 +4501,7 @@ export type Database = {
           public_name: string
           slug: string
           specialties: string
+          specialty_tags: string[]
         }[]
       }
       get_satisfaction_survey_by_token: {
