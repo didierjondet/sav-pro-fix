@@ -193,9 +193,15 @@ export function SAVProvidersManager() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center justify-between">
+        <CardTitle className="flex items-center justify-between gap-2 flex-wrap">
           Prestataires techniques
+          <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => setDirectoryOpen(true)}>
+            <Search className="w-4 h-4 mr-2" />
+            Rechercher un partenaire
+          </Button>
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+
             <DialogTrigger asChild>
               <Button onClick={resetForm}>
                 <Plus className="w-4 h-4 mr-2" />
