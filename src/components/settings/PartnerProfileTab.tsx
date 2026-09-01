@@ -107,17 +107,29 @@ export function PartnerProfileTab() {
   const partnerCode = (shop as any)?.partner_code as string | undefined;
   const optIn = !!(shop as any)?.partner_directory_opt_in;
 
+  const missingFields = [
+    !form.public_name.trim() && 'nom public',
+    !form.city.trim() && 'ville',
+    !form.postal_code.trim() && 'code postal',
+  ].filter(Boolean) as string[];
+  const wantsVisibility = form.visible_public || form.visible_pro;
+
   const prefillFromShop = () => {
     if (!shop) return;
+    const address = ((shop as any).address || '') as string;
+    const match = address.match(/(\d{5})\s+([^\n,]+)/);
     setForm((f) => ({
       ...f,
       public_name: f.public_name || (shop as any).name || '',
       logo_url: f.logo_url || (shop as any).logo_url || '',
       public_phone: f.public_phone || (shop as any).phone || '',
       public_email: f.public_email || (shop as any).email || '',
+      postal_code: f.postal_code || (match?.[1] ?? ''),
+      city: f.city || (match?.[2]?.trim() ?? ''),
     }));
     toast({ title: 'Informations du magasin reprises', description: 'Pensez à enregistrer la fiche.' });
   };
+
 
   const copyCode = () => {
     if (!partnerCode) return;
@@ -146,10 +158,10 @@ export function PartnerProfileTab() {
     setSaving(true);
     try {
       await saveProfile({
-        public_name: form.public_name,
+        public_name: form.public_name.trim(),
         logo_url: form.logo_url || null,
-        city: form.city || null,
-        postal_code: form.postal_code || null,
+        city: form.city.trim() || null,
+        postal_code: form.postal_code.trim() || null,
         coverage_area: form.coverage_area || null,
         public_phone: form.public_phone || null,
         public_email: form.public_email || null,
@@ -165,12 +177,14 @@ export function PartnerProfileTab() {
         prices_include_vat: form.prices_include_vat,
         vat_rate: form.vat_rate,
         vat_exempt: form.vat_exempt,
-        is_published: form.is_published,
+        is_published: form.visible_public || form.visible_pro,
         visible_public: form.visible_public,
         visible_pro: form.visible_pro,
         specialty_tags: tags,
         specialties: tags.length > 0 ? tags.join(', ') : (form.specialties || null),
       } as any);
+      setForm((f) => ({ ...f, is_published: f.visible_public || f.visible_pro }));
+
     } finally {
       setSaving(false);
     }
@@ -300,14 +314,39 @@ export function PartnerProfileTab() {
               onCheckedChange={(v) => setForm({ ...form, visible_pro: v })} />
           </div>
 
-          {!form.visible_public && !form.visible_pro && (
-            <p className="text-xs text-muted-foreground flex items-center gap-2">
-              <Info className="h-3 w-3" /> Aucun rôle sélectionné : votre fiche ne sera visible nulle part.
-            </p>
+          {!wantsVisibility ? (
+            <div className="flex items-start gap-2 p-3 rounded-lg border bg-muted/40 text-xs text-muted-foreground">
+              <EyeOff className="h-4 w-4 shrink-0 mt-0.5" />
+              <span>Aucun rôle sélectionné : votre fiche n’apparaît dans aucun annuaire.</span>
+            </div>
+          ) : !optIn ? (
+            <div className="flex items-start gap-2 p-3 rounded-lg border border-orange-300 bg-orange-50 dark:bg-orange-950/30 text-xs text-orange-800 dark:text-orange-300">
+              <Info className="h-4 w-4 shrink-0 mt-0.5" />
+              <span>L’interrupteur général « Apparaître dans l’annuaire Fixway » est désactivé : votre fiche reste invisible.</span>
+            </div>
+          ) : missingFields.length > 0 ? (
+            <div className="flex items-start gap-2 p-3 rounded-lg border border-orange-300 bg-orange-50 dark:bg-orange-950/30 text-xs text-orange-800 dark:text-orange-300">
+              <Info className="h-4 w-4 shrink-0 mt-0.5" />
+              <span>
+                Pour être trouvé dans l’annuaire, complétez : {missingFields.join(', ')}. Sans ville ni code postal,
+                une recherche par commune ne remontera pas votre fiche.
+              </span>
+            </div>
+          ) : (
+            <div className="flex items-start gap-2 p-3 rounded-lg border border-green-300 bg-green-50 dark:bg-green-950/30 text-xs text-green-800 dark:text-green-300">
+              <Eye className="h-4 w-4 shrink-0 mt-0.5" />
+              <span>
+                Votre fiche est visible {form.visible_public && 'dans l’annuaire grand public'}
+                {form.visible_public && form.visible_pro && ' et '}
+                {form.visible_pro && 'dans l’annuaire professionnel'}.
+              </span>
+            </div>
           )}
           <p className="text-xs text-muted-foreground">
-            N’oubliez pas d’enregistrer la fiche en bas de page pour appliquer ces choix.
+            Activer l’un de ces rôles publie automatiquement votre fiche. N’oubliez pas d’enregistrer la fiche
+            en bas de page pour appliquer ces choix.
           </p>
+
         </CardContent>
       </Card>
 
@@ -316,7 +355,7 @@ export function PartnerProfileTab() {
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
             Ma fiche partenaire
-            {partnerProfile?.slug && form.is_published && optIn && form.visible_public && (
+            {partnerProfile?.slug && optIn && form.visible_public && (
               <Button variant="outline" size="sm" asChild>
                 <a href={`/partenaires/${partnerProfile.slug}`} target="_blank" rel="noreferrer">
                   <ExternalLink className="h-4 w-4 mr-2" /> Voir ma page publique
@@ -504,21 +543,8 @@ export function PartnerProfileTab() {
                 </div>
               </div>
             )}
-
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label className="text-sm font-normal flex items-center gap-2">
-                  {form.is_published ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-                  Publier ma fiche
-                </Label>
-                <p className="text-xs text-muted-foreground">
-                  Tant que la fiche n’est pas publiée, elle reste invisible partout
-                </p>
-              </div>
-              <Switch checked={form.is_published}
-                onCheckedChange={(v) => setForm({ ...form, is_published: v })} />
-            </div>
           </div>
+
 
           <div className="flex justify-end">
             <Button onClick={submit} disabled={saving || !form.public_name.trim()}>
