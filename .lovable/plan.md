@@ -45,8 +45,9 @@ ville/code postal — la publication effective reste une décision du magasin.
 
 ## Détails techniques
 
-- `src/components/settings/PartnerProfileTab.tsx` : déplacement du switch `is_published` dans la
-  carte visibilité, bandeau d'état, contrôle des champs requis.
+- `src/components/settings/PartnerProfileTab.tsx` : suppression du switch `is_published` isolé,
+  `is_published` déduit de `visible_public || visible_pro` à l'enregistrement, bandeau d'état et
+  contrôle des champs requis.
 - Migration : mise à jour de `get_public_partner_directory` et `get_pro_partner_directory`
   (unaccent/trim, jointure sur `shops.name`, code postal en préfixe) + `trim()` sur les
   `public_name` existants.
