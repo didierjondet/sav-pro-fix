@@ -913,26 +913,50 @@ export default function Settings() {
     }
   };
   const isAdmin = profile?.role === 'admin' || actualProfile?.role === 'super_admin';
-  const availableTabs = [
-    'shop',
-    'notifications',
-    'appearance',
-    'sav-statuses',
-    'sav-types',
-    'billing',
-    'ai',
-    ...(isAdmin ? ['billing-vat'] : []),
-    ...(rolePermissions.settings_sms_purchase ? ['sms'] : []),
-    ...(rolePermissions.settings_import_export ? ['import-export'] : []),
-    ...(rolePermissions.settings_subscription ? ['subscription'] : []),
-    ...(isAdmin && rolePermissions.settings_users ? ['users'] : []),
-    ...(rolePermissions.settings_part_categories ? ['part-categories'] : []),
-    ...(isAdmin ? ['suppliers'] : []),
-    ...(isAdmin ? ['sav-providers'] : []),
-    ...(isAdmin ? ['loaners'] : []),
-    ...(isAdmin ? ['logs'] : []),
-  ];
+
+  const SETTINGS_CATEGORIES = [
+    { id: 'shop-group', label: 'Mon magasin' },
+    { id: 'sav-group', label: 'Activité SAV' },
+    { id: 'stock-group', label: 'Stock & partenaires' },
+    { id: 'billing-group', label: 'Facturation' },
+    { id: 'system-group', label: 'Système' },
+  ] as const;
+
+  const settingsSections = [
+    { id: 'shop', label: 'Magasin', icon: Store, category: 'shop-group', visible: true },
+    { id: 'partner-profile', label: 'Vitrine partenaire', icon: Handshake, category: 'shop-group', visible: isAdmin },
+    { id: 'appearance', label: 'Apparence', icon: Monitor, category: 'shop-group', visible: true },
+    { id: 'notifications', label: 'Notifications', icon: MessageSquare, category: 'shop-group', visible: true },
+
+    { id: 'sav-types', label: 'Types de SAV', icon: Package, category: 'sav-group', visible: true },
+    { id: 'sav-statuses', label: 'Statuts SAV', icon: Tag, category: 'sav-group', visible: true },
+    { id: 'sav-providers', label: 'Prestataires techniques', icon: Wrench, category: 'sav-group', visible: isAdmin },
+    { id: 'loaners', label: 'Matériel de prêt', icon: PackageOpen, category: 'sav-group', visible: isAdmin },
+
+    { id: 'part-categories', label: 'Catégories pièces', icon: Tag, category: 'stock-group', visible: !!rolePermissions.settings_part_categories },
+    { id: 'suppliers', label: 'Fournisseurs', icon: Truck, category: 'stock-group', visible: isAdmin },
+
+    { id: 'subscription', label: 'Abonnement', icon: CreditCard, category: 'billing-group', visible: !!rolePermissions.settings_subscription },
+    { id: 'billing', label: 'Facturation', icon: FileText, category: 'billing-group', visible: true },
+    { id: 'billing-vat', label: 'TVA & MO', icon: Percent, category: 'billing-group', visible: isAdmin },
+    { id: 'sms', label: 'Crédits SMS', icon: Mail, category: 'billing-group', visible: !!rolePermissions.settings_sms_purchase },
+
+    { id: 'users', label: 'Utilisateurs', icon: Users, category: 'system-group', visible: isAdmin && !!rolePermissions.settings_users },
+    { id: 'ai', label: 'IA', icon: Sparkles, category: 'system-group', visible: true },
+    { id: 'import-export', label: 'Import/Export', icon: Upload, category: 'system-group', visible: !!rolePermissions.settings_import_export },
+    { id: 'logs', label: 'Logs', icon: ScrollText, category: 'system-group', visible: isAdmin },
+  ].filter(s => s.visible);
+
+  const visibleCategories = SETTINGS_CATEGORIES.filter(c =>
+    settingsSections.some(s => s.category === c.id)
+  );
+
+  const availableTabs = settingsSections.map(s => s.id);
   const safeActiveTab = availableTabs.includes(activeTab) ? activeTab : availableTabs[0];
+  const activeCategory =
+    settingsSections.find(s => s.id === safeActiveTab)?.category || visibleCategories[0]?.id;
+  const categorySections = settingsSections.filter(s => s.category === activeCategory);
+
   useEffect(() => {
     if (safeActiveTab === activeTab) return;
     setActiveTab(safeActiveTab);
@@ -960,7 +984,7 @@ export default function Settings() {
     );
   }
   return (<><main className="flex-1 overflow-y-auto p-6">
-            <div className="max-w-4xl mx-auto">
+            <div className="max-w-6xl mx-auto">
               <div className="flex items-center gap-2 mb-6">
                 <SettingsIcon className="h-6 w-6" />
                 <h1 className="text-2xl font-bold">Paramètres</h1>
@@ -974,102 +998,51 @@ export default function Settings() {
                 return p;
               });
             }} className="space-y-6">
-            <TabsList className="flex flex-wrap w-full gap-1 h-auto p-1">
-              <TabsTrigger value="shop" className="flex items-center gap-2 px-3 py-2 shrink-0">
-                <Store className="h-4 w-4 shrink-0" />
-                <span className="hidden sm:inline">Magasin</span>
-              </TabsTrigger>
-              <TabsTrigger value="notifications" className="flex items-center gap-2 px-3 py-2 shrink-0">
-                <MessageSquare className="h-4 w-4 shrink-0" />
-                <span className="hidden sm:inline">Notifications</span>
-              </TabsTrigger>
-              <TabsTrigger value="appearance" className="flex items-center gap-2 px-3 py-2 shrink-0">
-                <Monitor className="h-4 w-4 shrink-0" />
-                <span className="hidden sm:inline">Apparence</span>
-              </TabsTrigger>
-              {rolePermissions.settings_sms_purchase && (
-                <TabsTrigger value="sms" className="flex items-center gap-2 px-3 py-2 shrink-0">
-                  <Mail className="h-4 w-4 shrink-0" />
-                  <span className="hidden sm:inline">Crédits SMS</span>
-                </TabsTrigger>
-              )}
-              {rolePermissions.settings_import_export && (
-                <TabsTrigger value="import-export" className="flex items-center gap-2 px-3 py-2 shrink-0">
-                  <Upload className="h-4 w-4 shrink-0" />
-                  <span className="hidden sm:inline">Import/Export</span>
-                </TabsTrigger>
-              )}
-              <TabsTrigger value="sav-statuses" className="flex items-center gap-2 px-3 py-2 shrink-0">
-                <Tag className="h-4 w-4 shrink-0" />
-                <span className="hidden sm:inline">Statuts SAV</span>
-              </TabsTrigger>
-              <TabsTrigger value="sav-types" className="flex items-center gap-2 px-3 py-2 shrink-0">
-                <Package className="h-4 w-4 shrink-0" />
-                <span className="hidden sm:inline">Types de SAV</span>
-              </TabsTrigger>
-              {rolePermissions.settings_subscription && (
-                <TabsTrigger value="subscription" className="flex items-center gap-2 px-3 py-2 shrink-0">
-                  <CreditCard className="h-4 w-4 shrink-0" />
-                  <span className="hidden sm:inline">Abonnement</span>
-                </TabsTrigger>
-              )}
-              <TabsTrigger value="billing" className="flex items-center gap-2 px-3 py-2 shrink-0">
-                <FileText className="h-4 w-4 shrink-0" />
-                <span className="hidden sm:inline">Facturation</span>
-              </TabsTrigger>
-              {isAdmin && (
-                <TabsTrigger value="billing-vat" className="flex items-center gap-2 px-3 py-2 shrink-0">
-                  <Percent className="h-4 w-4 shrink-0" />
-                  <span className="hidden sm:inline">TVA & MO</span>
-                </TabsTrigger>
-              )}
-              <TabsTrigger value="ai" className="flex items-center gap-2 px-3 py-2 shrink-0">
-                <Sparkles className="h-4 w-4 shrink-0" />
-                <span className="hidden sm:inline">IA</span>
-              </TabsTrigger>
-              {isAdmin && rolePermissions.settings_users && (
-                <TabsTrigger value="users" className="flex items-center gap-2 px-3 py-2 shrink-0">
-                  <Users className="h-4 w-4 shrink-0" />
-                  <span className="hidden sm:inline">Utilisateurs</span>
-                </TabsTrigger>
-              )}
-              {rolePermissions.settings_part_categories && (
-                <TabsTrigger value="part-categories" className="flex items-center gap-2 px-3 py-2 shrink-0">
-                  <Tag className="h-4 w-4 shrink-0" />
-                  <span className="hidden sm:inline">Catégories pièces</span>
-                </TabsTrigger>
-              )}
-              {isAdmin && (
-                <TabsTrigger value="suppliers" className="flex items-center gap-2 px-3 py-2 shrink-0">
-                  <Truck className="h-4 w-4 shrink-0" />
-                  <span className="hidden sm:inline">Fournisseurs</span>
-                </TabsTrigger>
-              )}
-              {isAdmin && (
-                <TabsTrigger value="sav-providers" className="flex items-center gap-2 px-3 py-2 shrink-0">
-                  <Wrench className="h-4 w-4 shrink-0" />
-                  <span className="hidden sm:inline">Prestataires techniques</span>
-                </TabsTrigger>
-              )}
-              {isAdmin && (
-                <TabsTrigger value="partner-profile" className="flex items-center gap-2 px-3 py-2 shrink-0">
-                  <Handshake className="h-4 w-4 shrink-0" />
-                  <span className="hidden sm:inline">Vitrine partenaire</span>
-                </TabsTrigger>
-              )}
-              {isAdmin && (
-                <TabsTrigger value="loaners" className="flex items-center gap-2 px-3 py-2 shrink-0">
-                  <PackageOpen className="h-4 w-4 shrink-0" />
-                  <span className="hidden sm:inline">Matériel de prêt</span>
-                </TabsTrigger>
-              )}
-              {isAdmin && (
-                <TabsTrigger value="logs" className="flex items-center gap-2 px-3 py-2 shrink-0">
-                  <ScrollText className="h-4 w-4 shrink-0" />
-                  <span className="hidden sm:inline">Logs</span>
-                </TabsTrigger>
-              )}
-            </TabsList>
+            <div className="flex flex-wrap gap-1 rounded-lg bg-muted p-1">
+              {visibleCategories.map(cat => {
+                const isActiveCat = cat.id === activeCategory;
+                return (
+                  <button
+                    key={cat.id}
+                    type="button"
+                    onClick={() => {
+                      const first = settingsSections.find(s => s.category === cat.id);
+                      if (!first) return;
+                      setActiveTab(first.id);
+                      setSearchParams(prev => {
+                        const p = new URLSearchParams(prev);
+                        p.set('tab', first.id);
+                        return p;
+                      });
+                    }}
+                    className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                      isActiveCat
+                        ? 'bg-background text-foreground shadow-sm'
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    {cat.label}
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="grid gap-6 md:grid-cols-[220px_minmax(0,1fr)]">
+              <TabsList className="flex md:flex-col w-full gap-1 h-auto p-1 overflow-x-auto md:overflow-visible justify-start">
+                {categorySections.map(section => (
+                  <TabsTrigger
+                    key={section.id}
+                    value={section.id}
+                    className="flex items-center gap-2 px-3 py-2 shrink-0 md:w-full md:justify-start"
+                  >
+                    <section.icon className="h-4 w-4 shrink-0" />
+                    <span>{section.label}</span>
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+
+              <div className="min-w-0 space-y-6">
+
 
             <TabsContent value="shop" className="space-y-6">
               <Card>
@@ -2311,8 +2284,10 @@ export default function Settings() {
               </TabsContent>
             )}
 
-
+              </div>
+            </div>
           </Tabs>
+
             </div>
           </main>
       
