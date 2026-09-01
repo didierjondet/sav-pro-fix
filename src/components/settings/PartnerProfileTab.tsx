@@ -543,21 +543,8 @@ export function PartnerProfileTab() {
                 </div>
               </div>
             )}
-
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label className="text-sm font-normal flex items-center gap-2">
-                  {form.is_published ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-                  Publier ma fiche
-                </Label>
-                <p className="text-xs text-muted-foreground">
-                  Tant que la fiche n’est pas publiée, elle reste invisible partout
-                </p>
-              </div>
-              <Switch checked={form.is_published}
-                onCheckedChange={(v) => setForm({ ...form, is_published: v })} />
-            </div>
           </div>
+
 
           <div className="flex justify-end">
             <Button onClick={submit} disabled={saving || !form.public_name.trim()}>
