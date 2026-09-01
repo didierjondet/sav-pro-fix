@@ -104,6 +104,7 @@ const App = () => {
   }, []);
 
   return (
+    <HelmetProvider>
     <PersistQueryClientProvider
     client={queryClient} 
     persistOptions={{ 
@@ -191,6 +192,7 @@ const App = () => {
     </AuthProvider>
     </ThemeProvider>
   </PersistQueryClientProvider>
+    </HelmetProvider>
   );
 };
 
