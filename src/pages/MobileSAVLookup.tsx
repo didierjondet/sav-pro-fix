@@ -131,7 +131,7 @@ export default function MobileSAVLookup() {
           size="lg"
           variant="outline"
           className="w-full h-14 text-base"
-          onClick={() => navigate('/inventory')}
+          onClick={() => navigate('/m/inventaire')}
         >
           <ClipboardList className="h-5 w-5 mr-2" />
           Lancer un inventaire
