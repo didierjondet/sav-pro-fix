@@ -336,7 +336,7 @@ export function SAVProvidersManager() {
                   />
                 </div>
 
-                {!editing?.linked_shop_id && (
+                {!(editing as any)?.linked_shop_id && (
                   <div className="p-3 border rounded-lg bg-muted/20 space-y-2">
                     <Label htmlFor="provider_partner_code" className="flex items-center gap-2">
                       <ShieldCheck className="w-4 h-4" />
@@ -578,11 +578,18 @@ export function SAVProvidersManager() {
                 <li>Un prestataire rattaché à des dossiers ne peut pas être supprimé : désactivez-le</li>
                 <li>Les couleurs sont utilisées dans l'interface pour identifier visuellement les prestataires</li>
                 <li>Les prestataires visibles en barre latérale affichent le nombre de dossiers en cours chez eux</li>
+                <li>Un prestataire relié par code Fixway reçoit automatiquement les dossiers que vous lui confiez</li>
               </ul>
             </div>
           </div>
         </div>
       </CardContent>
+
+      <PartnerDirectoryDialog
+        open={directoryOpen}
+        onOpenChange={setDirectoryOpen}
+        onSelect={addFromDirectory}
+      />
     </Card>
   );
 }
