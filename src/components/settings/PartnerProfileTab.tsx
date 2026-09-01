@@ -107,17 +107,29 @@ export function PartnerProfileTab() {
   const partnerCode = (shop as any)?.partner_code as string | undefined;
   const optIn = !!(shop as any)?.partner_directory_opt_in;
 
+  const missingFields = [
+    !form.public_name.trim() && 'nom public',
+    !form.city.trim() && 'ville',
+    !form.postal_code.trim() && 'code postal',
+  ].filter(Boolean) as string[];
+  const wantsVisibility = form.visible_public || form.visible_pro;
+
   const prefillFromShop = () => {
     if (!shop) return;
+    const address = ((shop as any).address || '') as string;
+    const match = address.match(/(\d{5})\s+([^\n,]+)/);
     setForm((f) => ({
       ...f,
       public_name: f.public_name || (shop as any).name || '',
       logo_url: f.logo_url || (shop as any).logo_url || '',
       public_phone: f.public_phone || (shop as any).phone || '',
       public_email: f.public_email || (shop as any).email || '',
+      postal_code: f.postal_code || (match?.[1] ?? ''),
+      city: f.city || (match?.[2]?.trim() ?? ''),
     }));
     toast({ title: 'Informations du magasin reprises', description: 'Pensez à enregistrer la fiche.' });
   };
+
 
   const copyCode = () => {
     if (!partnerCode) return;
