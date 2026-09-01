@@ -9,6 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Wrench, ArrowRightLeft, CheckCircle2, Trash2, Truck, Clock } from 'lucide-react';
 import { useSAVProviders, useSAVCaseAssignments } from '@/hooks/useSAVProviders';
+import { useCaseShare } from '@/hooks/useSharedSAVs';
+import { ShareThread } from '@/components/partners/ShareThread';
 
 interface Props {
   savCaseId: string;
@@ -25,6 +27,7 @@ export function SAVProviderTab({ savCaseId, shopId }: Props) {
   const [cost, setCost] = useState('');
   const [notes, setNotes] = useState('');
   const [saving, setSaving] = useState(false);
+  const { data: share } = useCaseShare(savCaseId);
 
   const activeProviders = providers.filter((p) => p.is_active);
   const providerById = (id: string) => providers.find((p) => p.id === id);
@@ -124,6 +127,10 @@ export function SAVProviderTab({ savCaseId, shopId }: Props) {
           </p>
         </CardContent>
       </Card>
+
+      {share && share.status === 'active' && (
+        <ShareThread shareId={share.id} title="Discussion avec le partenaire Fixway" />
+      )}
 
       {assignments.filter((a) => a.returned_at).length > 0 && (
         <Card>
