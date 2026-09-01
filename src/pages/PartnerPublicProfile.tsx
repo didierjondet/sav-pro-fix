@@ -4,8 +4,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { MapPin, Clock, Wrench, Phone, Mail, Globe, ArrowLeft, ShieldCheck } from 'lucide-react';
-import LandingHeader from '@/components/landing/LandingHeader';
-import LandingFooter from '@/components/landing/LandingFooter';
+import { LandingHeader } from '@/components/landing/LandingHeader';
+import { LandingFooter } from '@/components/landing/LandingFooter';
 import { usePublicPartner } from '@/hooks/usePartnerDirectory';
 import { formatPartnerPrice } from '@/lib/partnerPricing';
 
