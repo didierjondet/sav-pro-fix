@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
+import { getPublicAppOrigin } from '@/utils/trackingUtils';
 
 /**
  * Carte "Accès rapide mobile" - affiche l'URL /m/sav avec QR code,
@@ -12,12 +13,10 @@ import { useToast } from '@/hooks/use-toast';
 export function MobileAccessCard() {
   const { toast } = useToast();
 
-  const url = useMemo(() => {
-    if (typeof window === 'undefined') return '';
-    return `${window.location.origin}/m/sav`;
-  }, []);
+  const url = useMemo(() => `${getPublicAppOrigin()}/m/sav`, []);
 
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(url)}`;
+
 
   const copy = async () => {
     try {

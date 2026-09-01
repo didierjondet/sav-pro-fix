@@ -30,6 +30,27 @@ export function getPublicSmsHost(): string {
   return host;
 }
 
+/**
+ * Origine publique de l'application (jamais une URL de preview Lovable),
+ * utilisable pour les QR codes / liens à ouvrir sur smartphone.
+ */
+export function getPublicAppOrigin(): string {
+  const fallback = 'https://fixway.fr';
+  if (typeof window === 'undefined') return fallback;
+  const host = window.location.hostname;
+  if (
+    host.includes('lovableproject.com') ||
+    host.includes('lovable.dev') ||
+    host.startsWith('id-preview--') ||
+    host.startsWith('preview--') ||
+    host === 'localhost' ||
+    host.startsWith('127.')
+  ) {
+    return fallback;
+  }
+  return window.location.origin;
+}
+
 export function generatePublicQuoteUrl(quoteId: string): string {
   return `${getPublicSmsHost()}/quote/${quoteId}`;
 }

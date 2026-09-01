@@ -57,6 +57,7 @@ import Inventory from "./pages/Inventory";
 import HelpBot from "./components/help/HelpBot";
 import AppLayout from "./components/layout/AppLayout";
 import MobileSAVLookup from "./pages/MobileSAVLookup";
+import MobileInventory from "./pages/MobileInventory";
 import PartnersDirectory from "./pages/PartnersDirectory";
 import PartnerPublicProfile from "./pages/PartnerPublicProfile";
 import SharedSAVList from "./pages/SharedSAVList";
@@ -138,6 +139,7 @@ const App = () => {
                 <Route path="/rdv/:token" element={<AppointmentConfirm />} />
                 <Route path="/test" element={<TestLanding />} />
                 <Route path="/m/sav" element={<MobileSAVLookup />} />
+                <Route path="/m/inventaire" element={<MobileInventory />} />
                 <Route path="/super-admin" element={<SuperAdmin />} />
                 <Route path="/landing" element={<Landing />} />
                 <Route path="/features" element={<Features />} />
