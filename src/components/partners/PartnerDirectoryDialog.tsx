@@ -65,7 +65,7 @@ export function PartnerDirectoryDialog({ open, onOpenChange, onSelect }: Props) 
                           <MapPin className="h-3 w-3" /> {[p.postal_code, p.city].filter(Boolean).join(' ')}
                         </span>
                       )}
-                      {p.specialties && (
+                      {false && (
                         <span className="flex items-center gap-1 text-green-600">
                           <Wrench className="h-3 w-3" /> {p.specialties}
                         </span>

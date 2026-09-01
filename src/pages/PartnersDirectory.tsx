@@ -9,6 +9,7 @@ import { Search, MapPin, Clock, Wrench, ArrowRight } from 'lucide-react';
 import { LandingHeader } from '@/components/landing/LandingHeader';
 import { LandingFooter } from '@/components/landing/LandingFooter';
 import { usePublicPartnerDirectory } from '@/hooks/usePartnerDirectory';
+import { resolveSpecialtyTags } from '@/lib/partnerSpecialties';
 
 export default function PartnersDirectory() {
   const [search, setSearch] = useState('');
@@ -95,11 +96,11 @@ export default function PartnersDirectory() {
                   )}
 
                   <div className="flex flex-wrap gap-2 mt-auto pt-2">
-                    {p.specialties && (
-                      <Badge variant="secondary" className="text-xs">
-                        <Wrench className="h-3 w-3 mr-1" />{p.specialties}
+                    {resolveSpecialtyTags(p.specialty_tags, p.specialties).map((sp) => (
+                      <Badge key={sp} variant="secondary" className="text-xs">
+                        <Wrench className="h-3 w-3 mr-1" />{sp}
                       </Badge>
-                    )}
+                    ))}
                     {p.avg_delay_days != null && (
                       <Badge variant="outline" className="text-xs">
                         <Clock className="h-3 w-3 mr-1" />{p.avg_delay_days} j

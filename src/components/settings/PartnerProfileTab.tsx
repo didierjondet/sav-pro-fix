@@ -115,9 +115,6 @@ export function PartnerProfileTab() {
       logo_url: f.logo_url || (shop as any).logo_url || '',
       public_phone: f.public_phone || (shop as any).phone || '',
       public_email: f.public_email || (shop as any).email || '',
-      city: f.city || (shop as any).city || '',
-      postal_code: f.postal_code || (shop as any).postal_code || '',
-      website_url: f.website_url || (shop as any).website || '',
     }));
     toast({ title: 'Informations du magasin reprises', description: 'Pensez à enregistrer la fiche.' });
   };
