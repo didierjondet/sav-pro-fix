@@ -64,9 +64,16 @@ export default function PartnersDirectory() {
           {isLoading ? (
             <p className="text-sm text-muted-foreground col-span-full text-center">Chargement…</p>
           ) : partners.length === 0 ? (
-            <p className="text-sm text-muted-foreground col-span-full text-center">
-              Aucun réparateur ne correspond à cette recherche.
-            </p>
+            <div className="col-span-full text-center space-y-3 py-8">
+              <p className="text-sm text-muted-foreground">
+                Aucun réparateur ne correspond à cette recherche pour le moment. L'annuaire est encore
+                jeune : de nouveaux ateliers le rejoignent régulièrement.
+              </p>
+              <Button asChild variant="outline" size="sm">
+                <Link to="/auth">Vous êtes réparateur ? Référencez votre atelier</Link>
+              </Button>
+            </div>
+
           ) : (
             partners.map((p) => (
               <Card key={p.slug} className="flex flex-col">
