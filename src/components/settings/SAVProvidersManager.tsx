@@ -330,6 +330,28 @@ export function SAVProvidersManager() {
                   />
                 </div>
 
+                {!editing?.linked_shop_id && (
+                  <div className="p-3 border rounded-lg bg-muted/20 space-y-2">
+                    <Label htmlFor="provider_partner_code" className="flex items-center gap-2">
+                      <ShieldCheck className="w-4 h-4" />
+                      Code partenaire Fixway (optionnel)
+                    </Label>
+                    <Input
+                      id="provider_partner_code"
+                      value={formData.partner_code}
+                      onChange={(e) => setFormData({ ...formData, partner_code: e.target.value.toUpperCase() })}
+                      placeholder="FW-XXXX-XXXX"
+                      className="font-mono"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Si ce prestataire utilise Fixway, saisissez le code qu'il vous a communiqué : les dossiers
+                      que vous lui confiez apparaîtront automatiquement dans son logiciel.
+                    </p>
+                  </div>
+                )}
+
+
+
                 <div className="space-y-4">
                   <h4 className="text-sm font-medium">Options avancées</h4>
 
