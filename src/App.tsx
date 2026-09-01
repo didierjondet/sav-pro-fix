@@ -56,6 +56,9 @@ import Inventory from "./pages/Inventory";
 import HelpBot from "./components/help/HelpBot";
 import AppLayout from "./components/layout/AppLayout";
 import MobileSAVLookup from "./pages/MobileSAVLookup";
+import PartnersDirectory from "./pages/PartnersDirectory";
+import PartnerPublicProfile from "./pages/PartnerPublicProfile";
+import SharedSAVList from "./pages/SharedSAVList";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -138,6 +141,8 @@ const App = () => {
                 <Route path="/features" element={<Features />} />
                 <Route path="/about" element={<About />} />
                 <Route path="/contact" element={<Contact />} />
+                <Route path="/partenaires" element={<PartnersDirectory />} />
+                <Route path="/partenaires/:slug" element={<PartnerPublicProfile />} />
                 <Route path="/shop/:slug" element={<ShopWebsite />} />
 
                 <Route element={<AppLayout />}>
@@ -145,6 +150,7 @@ const App = () => {
                   <Route path="/settings" element={<Settings />} />
                   <Route path="/sav" element={<SAVList />} />
                   <Route path="/sav/new" element={<NewSAV />} />
+                  <Route path="/sav-partenaires" element={<SharedSAVList />} />
                   <Route path="/sav/:id" element={<SAVDetail />} />
                   <Route path="/sav/:id/logs" element={<SAVLogs />} />
                   <Route path="/parts" element={<Parts />} />

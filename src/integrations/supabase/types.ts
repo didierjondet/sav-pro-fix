@@ -1531,6 +1531,164 @@ export type Database = {
           },
         ]
       }
+      partner_price_items: {
+        Row: {
+          created_at: string
+          delay_days: number | null
+          device_family: string | null
+          display_order: number
+          id: string
+          label: string
+          note: string | null
+          pro_price: number | null
+          profile_id: string
+          public_price: number | null
+          shop_id: string
+          updated_at: string
+          visible_pro: boolean
+          visible_public: boolean
+        }
+        Insert: {
+          created_at?: string
+          delay_days?: number | null
+          device_family?: string | null
+          display_order?: number
+          id?: string
+          label: string
+          note?: string | null
+          pro_price?: number | null
+          profile_id: string
+          public_price?: number | null
+          shop_id: string
+          updated_at?: string
+          visible_pro?: boolean
+          visible_public?: boolean
+        }
+        Update: {
+          created_at?: string
+          delay_days?: number | null
+          device_family?: string | null
+          display_order?: number
+          id?: string
+          label?: string
+          note?: string | null
+          pro_price?: number | null
+          profile_id?: string
+          public_price?: number | null
+          shop_id?: string
+          updated_at?: string
+          visible_pro?: boolean
+          visible_public?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_price_items_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "partner_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partner_price_items_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      partner_profiles: {
+        Row: {
+          avg_delay_days: number | null
+          certifications: string | null
+          city: string | null
+          coverage_area: string | null
+          created_at: string
+          description: string | null
+          failure_policy: string | null
+          id: string
+          is_published: boolean
+          logo_url: string | null
+          postal_code: string | null
+          prices_include_vat: boolean
+          public_email: string | null
+          public_name: string
+          public_phone: string | null
+          return_policy: string | null
+          shipping_modes: string | null
+          shop_id: string
+          slug: string | null
+          specialties: string | null
+          updated_at: string
+          vat_exempt: boolean
+          vat_rate: number
+          warranty_terms: string | null
+          website_url: string | null
+        }
+        Insert: {
+          avg_delay_days?: number | null
+          certifications?: string | null
+          city?: string | null
+          coverage_area?: string | null
+          created_at?: string
+          description?: string | null
+          failure_policy?: string | null
+          id?: string
+          is_published?: boolean
+          logo_url?: string | null
+          postal_code?: string | null
+          prices_include_vat?: boolean
+          public_email?: string | null
+          public_name: string
+          public_phone?: string | null
+          return_policy?: string | null
+          shipping_modes?: string | null
+          shop_id: string
+          slug?: string | null
+          specialties?: string | null
+          updated_at?: string
+          vat_exempt?: boolean
+          vat_rate?: number
+          warranty_terms?: string | null
+          website_url?: string | null
+        }
+        Update: {
+          avg_delay_days?: number | null
+          certifications?: string | null
+          city?: string | null
+          coverage_area?: string | null
+          created_at?: string
+          description?: string | null
+          failure_policy?: string | null
+          id?: string
+          is_published?: boolean
+          logo_url?: string | null
+          postal_code?: string | null
+          prices_include_vat?: boolean
+          public_email?: string | null
+          public_name?: string
+          public_phone?: string | null
+          return_policy?: string | null
+          shipping_modes?: string | null
+          shop_id?: string
+          slug?: string | null
+          specialties?: string | null
+          updated_at?: string
+          vat_exempt?: boolean
+          vat_rate?: number
+          warranty_terms?: string | null
+          website_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_profiles_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: true
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       parts: {
         Row: {
           category_id: string | null
@@ -2405,6 +2563,125 @@ export type Database = {
           },
         ]
       }
+      sav_share_messages: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          read_at: string | null
+          sender_name: string | null
+          sender_shop_id: string
+          sender_user_id: string | null
+          share_id: string
+          updated_at: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          read_at?: string | null
+          sender_name?: string | null
+          sender_shop_id: string
+          sender_user_id?: string | null
+          share_id: string
+          updated_at?: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          read_at?: string | null
+          sender_name?: string | null
+          sender_shop_id?: string
+          sender_user_id?: string | null
+          share_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sav_share_messages_sender_shop_id_fkey"
+            columns: ["sender_shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sav_share_messages_share_id_fkey"
+            columns: ["share_id"]
+            isOneToOne: false
+            referencedRelation: "sav_shares"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sav_shares: {
+        Row: {
+          assignment_id: string | null
+          created_at: string
+          ended_at: string | null
+          id: string
+          owner_shop_id: string
+          partner_shop_id: string
+          sav_case_id: string
+          started_at: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          assignment_id?: string | null
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          owner_shop_id: string
+          partner_shop_id: string
+          sav_case_id: string
+          started_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          assignment_id?: string | null
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          owner_shop_id?: string
+          partner_shop_id?: string
+          sav_case_id?: string
+          started_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sav_shares_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "sav_provider_assignments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sav_shares_owner_shop_id_fkey"
+            columns: ["owner_shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sav_shares_partner_shop_id_fkey"
+            columns: ["partner_shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sav_shares_sav_case_id_fkey"
+            columns: ["sav_case_id"]
+            isOneToOne: false
+            referencedRelation: "sav_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sav_status_history: {
         Row: {
           changed_by: string | null
@@ -2651,6 +2928,8 @@ export type Database = {
           email: string | null
           id: string
           is_active: boolean
+          linked_at: string | null
+          linked_shop_id: string | null
           name: string
           notes: string | null
           phone: string | null
@@ -2669,6 +2948,8 @@ export type Database = {
           email?: string | null
           id?: string
           is_active?: boolean
+          linked_at?: string | null
+          linked_shop_id?: string | null
           name: string
           notes?: string | null
           phone?: string | null
@@ -2687,6 +2968,8 @@ export type Database = {
           email?: string | null
           id?: string
           is_active?: boolean
+          linked_at?: string | null
+          linked_shop_id?: string | null
           name?: string
           notes?: string | null
           phone?: string | null
@@ -2696,6 +2979,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "shop_sav_providers_linked_shop_id_fkey"
+            columns: ["linked_shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "shop_sav_providers_shop_id_fkey"
             columns: ["shop_id"]
@@ -3119,6 +3409,8 @@ export type Database = {
           monthly_sav_count: number | null
           monthly_sms_used: number | null
           name: string
+          partner_code: string | null
+          partner_directory_opt_in: boolean
           phone: string | null
           purchased_sms_credits: number | null
           review_link: string | null
@@ -3180,6 +3472,8 @@ export type Database = {
           monthly_sav_count?: number | null
           monthly_sms_used?: number | null
           name: string
+          partner_code?: string | null
+          partner_directory_opt_in?: boolean
           phone?: string | null
           purchased_sms_credits?: number | null
           review_link?: string | null
@@ -3241,6 +3535,8 @@ export type Database = {
           monthly_sav_count?: number | null
           monthly_sms_used?: number | null
           name?: string
+          partner_code?: string | null
+          partner_directory_opt_in?: boolean
           phone?: string | null
           purchased_sms_credits?: number | null
           review_link?: string | null
@@ -4124,6 +4420,7 @@ export type Database = {
         Args: { invoice_type: string }
         Returns: string
       }
+      generate_partner_code: { Args: never; Returns: string }
       generate_quote_number: { Args: never; Returns: string }
       generate_satisfaction_token: { Args: never; Returns: string }
       generate_shop_slug: { Args: { shop_name: string }; Returns: string }
@@ -4153,6 +4450,49 @@ export type Database = {
           total_value: number
         }[]
       }
+      get_pro_partner_directory: {
+        Args: { _search?: string }
+        Returns: {
+          avg_delay_days: number
+          certifications: string
+          city: string
+          coverage_area: string
+          description: string
+          failure_policy: string
+          logo_url: string
+          partner_code: string
+          postal_code: string
+          prices_include_vat: boolean
+          pro_prices: Json
+          public_email: string
+          public_name: string
+          public_phone: string
+          return_policy: string
+          shipping_modes: string
+          shop_id: string
+          slug: string
+          specialties: string
+          vat_exempt: boolean
+          vat_rate: number
+          warranty_terms: string
+        }[]
+      }
+      get_public_partner: { Args: { _slug: string }; Returns: Json }
+      get_public_partner_directory: {
+        Args: { _search?: string }
+        Returns: {
+          avg_delay_days: number
+          certifications: string
+          city: string
+          coverage_area: string
+          description: string
+          logo_url: string
+          postal_code: string
+          public_name: string
+          slug: string
+          specialties: string
+        }[]
+      }
       get_satisfaction_survey_by_token: {
         Args: { p_token: string }
         Returns: {
@@ -4174,6 +4514,59 @@ export type Database = {
         Returns: {
           sav_case_id: string
           visit_count: number
+        }[]
+      }
+      get_shared_sav_case: {
+        Args: { _share_id: string }
+        Returns: {
+          accessories: Json
+          ai_diagnostic: string
+          attachments: Json
+          case_number: string
+          cost: number
+          device_brand: string
+          device_color: string
+          device_imei: string
+          device_model: string
+          external_ref: string
+          owner_shop_email: string
+          owner_shop_name: string
+          owner_shop_phone: string
+          problem_description: string
+          reason: string
+          returned_at: string
+          sav_case_id: string
+          security_codes: Json
+          sent_at: string
+          share_id: string
+          share_status: string
+          sku: string
+          status: string
+          technician_comments: string
+          unlock_pattern: string
+        }[]
+      }
+      get_shared_sav_cases: {
+        Args: never
+        Returns: {
+          accessories: Json
+          case_number: string
+          cost: number
+          device_brand: string
+          device_color: string
+          device_imei: string
+          device_model: string
+          external_ref: string
+          owner_shop_id: string
+          owner_shop_name: string
+          problem_description: string
+          reason: string
+          sav_case_id: string
+          sent_at: string
+          share_id: string
+          sku: string
+          status: string
+          unread_count: number
         }[]
       }
       get_shop_last_activity: { Args: { _shop_id: string }; Returns: string }
@@ -4304,6 +4697,17 @@ export type Database = {
       }
       reset_monthly_counters: { Args: never; Returns: undefined }
       reset_monthly_sms_credits: { Args: never; Returns: undefined }
+      resolve_partner_code: {
+        Args: { _code: string }
+        Returns: {
+          city: string
+          is_published: boolean
+          public_name: string
+          shop_id: string
+          shop_name: string
+          specialties: string
+        }[]
+      }
       respond_to_appointment_by_token: {
         Args: {
           _action: string
@@ -4368,6 +4772,7 @@ export type Database = {
         Args: { p_comment: string; p_rating: number; p_token: string }
         Returns: Json
       }
+      unaccent_fallback: { Args: { input: string }; Returns: string }
     }
     Enums: {
       appointment_status:

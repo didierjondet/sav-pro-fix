@@ -16,12 +16,15 @@ import {
 } from '@/components/ui/alert-dialog';
 import {
   Edit, Trash2, Plus, Info, Clock, Mail, Phone, User, MapPin, Wrench, Sidebar, Power,
+  Link2, Unlink, Search, ShieldCheck,
 } from 'lucide-react';
 import { SAVProvider, useSAVProviders } from '@/hooks/useSAVProviders';
 import { useShopSettings } from '@/hooks/useShopSettings';
 import { useProfile } from '@/hooks/useProfile';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { PartnerDirectoryDialog } from '@/components/partners/PartnerDirectoryDialog';
+import { usePartnerLink } from '@/hooks/usePartnerDirectory';
 
 const emptyForm = {
   name: '',
@@ -35,17 +38,21 @@ const emptyForm = {
   notes: '',
   is_active: true,
   show_in_sidebar: true,
+  partner_code: '',
 };
 
 export function SAVProvidersManager() {
-  const { providers, isLoading, createProvider, updateProvider, deleteProvider } = useSAVProviders();
+  const { providers, isLoading, createProvider, updateProvider, deleteProvider, refetch } = useSAVProviders();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<SAVProvider | null>(null);
   const [formData, setFormData] = useState({ ...emptyForm });
   const [saving, setSaving] = useState(false);
+  const [directoryOpen, setDirectoryOpen] = useState(false);
   const { settings, refetch: refetchSettings } = useShopSettings();
   const { profile } = useProfile();
   const { toast } = useToast();
+  const { linkProvider, unlinkProvider } = usePartnerLink();
+
 
   const handleToggleHideEmpty = async (checked: boolean) => {
     if (!profile?.shop_id) return;
@@ -90,8 +97,40 @@ export function SAVProvidersManager() {
       notes: p.notes || '',
       is_active: p.is_active,
       show_in_sidebar: p.show_in_sidebar,
+      partner_code: '',
     });
     setDialogOpen(true);
+  };
+
+  /** Ajoute un prestataire directement depuis l'annuaire professionnel Fixway. */
+  const addFromDirectory = async (partner: any) => {
+    if (!profile?.shop_id) return;
+    try {
+      const { error } = await supabase.from('shop_sav_providers').insert({
+        shop_id: profile.shop_id,
+        name: partner.public_name,
+        phone: partner.public_phone || null,
+        email: partner.public_email || null,
+        address: [partner.postal_code, partner.city].filter(Boolean).join(' ') || null,
+        specialties: partner.specialties || null,
+        avg_delay_days: partner.avg_delay_days ?? null,
+        color: '#8b5cf6',
+        is_active: true,
+        show_in_sidebar: true,
+        display_order: providers.length,
+        linked_shop_id: partner.shop_id,
+        linked_at: new Date().toISOString(),
+      } as any);
+      if (error) throw error;
+      toast({
+        title: 'Partenaire ajouté',
+        description: `${partner.public_name} est connecté à son compte Fixway`,
+      });
+      setDirectoryOpen(false);
+      refetch();
+    } catch (e: any) {
+      toast({ title: 'Erreur', description: e.message, variant: 'destructive' });
+    }
   };
 
   const save = async () => {
@@ -111,16 +150,31 @@ export function SAVProvidersManager() {
         is_active: formData.is_active,
         show_in_sidebar: formData.show_in_sidebar,
       };
+      let providerId = editing?.id;
       if (editing) {
         await updateProvider(editing.id, payload);
       } else {
         await createProvider({ ...payload, display_order: providers.length });
+        const { data } = await supabase
+          .from('shop_sav_providers')
+          .select('id')
+          .eq('shop_id', profile?.shop_id ?? '')
+          .eq('name', formData.name)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        providerId = (data as any)?.id;
+      }
+      if (formData.partner_code.trim() && providerId) {
+        await linkProvider(providerId, formData.partner_code.trim().toUpperCase());
+        refetch();
       }
       setDialogOpen(false);
       resetForm();
     } finally {
       setSaving(false);
     }
+
   };
 
   if (isLoading) {
@@ -139,9 +193,15 @@ export function SAVProvidersManager() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center justify-between">
+        <CardTitle className="flex items-center justify-between gap-2 flex-wrap">
           Prestataires techniques
+          <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => setDirectoryOpen(true)}>
+            <Search className="w-4 h-4 mr-2" />
+            Rechercher un partenaire
+          </Button>
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+
             <DialogTrigger asChild>
               <Button onClick={resetForm}>
                 <Plus className="w-4 h-4 mr-2" />
@@ -276,6 +336,28 @@ export function SAVProvidersManager() {
                   />
                 </div>
 
+                {!(editing as any)?.linked_shop_id && (
+                  <div className="p-3 border rounded-lg bg-muted/20 space-y-2">
+                    <Label htmlFor="provider_partner_code" className="flex items-center gap-2">
+                      <ShieldCheck className="w-4 h-4" />
+                      Code partenaire Fixway (optionnel)
+                    </Label>
+                    <Input
+                      id="provider_partner_code"
+                      value={formData.partner_code}
+                      onChange={(e) => setFormData({ ...formData, partner_code: e.target.value.toUpperCase() })}
+                      placeholder="FW-XXXX-XXXX"
+                      className="font-mono"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Si ce prestataire utilise Fixway, saisissez le code qu'il vous a communiqué : les dossiers
+                      que vous lui confiez apparaîtront automatiquement dans son logiciel.
+                    </p>
+                  </div>
+                )}
+
+
+
                 <div className="space-y-4">
                   <h4 className="text-sm font-medium">Options avancées</h4>
 
@@ -323,7 +405,9 @@ export function SAVProvidersManager() {
               </DialogFooter>
             </DialogContent>
           </Dialog>
+          </div>
         </CardTitle>
+
         <CardDescription>
           Gérez les entreprises tierces (micro-soudure, broker…) auxquelles vous pouvez confier un dossier SAV
         </CardDescription>
@@ -417,14 +501,40 @@ export function SAVProvidersManager() {
                           {p.is_active ? 'Actif' : 'Inactif'}
                         </span>
                       </div>
+                      {(p as any).linked_shop_id && (
+                        <div className="flex items-center space-x-1 text-xs text-blue-600">
+                          <ShieldCheck className="w-3 h-3" />
+                          <span>Compte Fixway connecté</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
 
                 <div className="flex items-center space-x-2">
+                  {(p as any).linked_shop_id ? (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      title="Délier le compte Fixway"
+                      onClick={async () => { await unlinkProvider(p.id); refetch(); }}
+                    >
+                      <Unlink className="w-4 h-4" />
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      title="Lier un compte Fixway"
+                      onClick={() => openEditDialog(p)}
+                    >
+                      <Link2 className="w-4 h-4" />
+                    </Button>
+                  )}
                   <Button variant="ghost" size="sm" onClick={() => openEditDialog(p)}>
                     <Edit className="w-4 h-4" />
                   </Button>
+
 
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
@@ -468,11 +578,18 @@ export function SAVProvidersManager() {
                 <li>Un prestataire rattaché à des dossiers ne peut pas être supprimé : désactivez-le</li>
                 <li>Les couleurs sont utilisées dans l'interface pour identifier visuellement les prestataires</li>
                 <li>Les prestataires visibles en barre latérale affichent le nombre de dossiers en cours chez eux</li>
+                <li>Un prestataire relié par code Fixway reçoit automatiquement les dossiers que vous lui confiez</li>
               </ul>
             </div>
           </div>
         </div>
       </CardContent>
+
+      <PartnerDirectoryDialog
+        open={directoryOpen}
+        onOpenChange={setDirectoryOpen}
+        onSelect={addFromDirectory}
+      />
     </Card>
   );
 }
