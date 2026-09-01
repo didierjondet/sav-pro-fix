@@ -2284,8 +2284,10 @@ export default function Settings() {
               </TabsContent>
             )}
 
-
+              </div>
+            </div>
           </Tabs>
+
             </div>
           </main>
       
