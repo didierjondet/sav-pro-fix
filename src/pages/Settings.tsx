@@ -1054,7 +1054,7 @@ export default function Settings() {
               {isAdmin && (
                 <TabsTrigger value="partner-profile" className="flex items-center gap-2 px-3 py-2 shrink-0">
                   <Handshake className="h-4 w-4 shrink-0" />
-                  <span className="hidden sm:inline">Ma fiche partenaire</span>
+                  <span className="hidden sm:inline">Vitrine partenaire</span>
                 </TabsTrigger>
               )}
               {isAdmin && (
