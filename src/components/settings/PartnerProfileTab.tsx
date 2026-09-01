@@ -355,7 +355,7 @@ export function PartnerProfileTab() {
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
             Ma fiche partenaire
-            {partnerProfile?.slug && form.is_published && optIn && form.visible_public && (
+            {partnerProfile?.slug && optIn && form.visible_public && (
               <Button variant="outline" size="sm" asChild>
                 <a href={`/partenaires/${partnerProfile.slug}`} target="_blank" rel="noreferrer">
                   <ExternalLink className="h-4 w-4 mr-2" /> Voir ma page publique
