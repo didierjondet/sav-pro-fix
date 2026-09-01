@@ -501,14 +501,40 @@ export function SAVProvidersManager() {
                           {p.is_active ? 'Actif' : 'Inactif'}
                         </span>
                       </div>
+                      {(p as any).linked_shop_id && (
+                        <div className="flex items-center space-x-1 text-xs text-blue-600">
+                          <ShieldCheck className="w-3 h-3" />
+                          <span>Compte Fixway connecté</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
 
                 <div className="flex items-center space-x-2">
+                  {(p as any).linked_shop_id ? (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      title="Délier le compte Fixway"
+                      onClick={async () => { await unlinkProvider(p.id); refetch(); }}
+                    >
+                      <Unlink className="w-4 h-4" />
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      title="Lier un compte Fixway"
+                      onClick={() => openEditDialog(p)}
+                    >
+                      <Link2 className="w-4 h-4" />
+                    </Button>
+                  )}
                   <Button variant="ghost" size="sm" onClick={() => openEditDialog(p)}>
                     <Edit className="w-4 h-4" />
                   </Button>
+
 
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
