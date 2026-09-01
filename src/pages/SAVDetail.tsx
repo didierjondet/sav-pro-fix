@@ -104,6 +104,7 @@ export default function SAVDetail() {
   const isAdmin = userProfile?.role === 'admin' || actualProfile?.role === 'super_admin';
   const { getAllTypes, getTypeInfo } = useShopSAVTypes();
   const [savCase, setSavCase] = useState<any>(null);
+  const requiresCustomer = savCase ? getTypeInfo(savCase.sav_type).show_customer_info : true;
   const [technicianComments, setTechnicianComments] = useState('');
   const [editingSavType, setEditingSavType] = useState(false);
   const [tempSavType, setTempSavType] = useState('');
@@ -494,10 +495,10 @@ export default function SAVDetail() {
               <TabsTrigger value="apercu" className={TAB_ACTIVE_CLASSES}>Aperçu</TabsTrigger>
               <TabsTrigger
                 value="client"
-                className={!savCase.customer_id ? 'text-destructive data-[state=active]:text-destructive data-[state=active]:border-destructive' : TAB_ACTIVE_CLASSES}
+                className={!savCase.customer_id && requiresCustomer ? 'text-destructive data-[state=active]:text-destructive data-[state=active]:border-destructive' : TAB_ACTIVE_CLASSES}
               >
                 <User className="h-3.5 w-3.5 mr-1" /> Client
-                {!savCase.customer_id && (
+                {!savCase.customer_id && requiresCustomer && (
                   <span className="ml-2 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold">
                     !
                   </span>
@@ -767,6 +768,7 @@ export default function SAVDetail() {
                 customerId={savCase.customer_id}
                 customer={savCase.customer}
                 onCustomerUpdated={() => { refreshSavCustomer(); }}
+                requiresCustomer={requiresCustomer}
               />
             </TabsContent>
 
@@ -1082,10 +1084,10 @@ export default function SAVDetail() {
             <TabsTrigger value="apercu" className={TAB_ACTIVE_CLASSES}>Aperçu</TabsTrigger>
             <TabsTrigger
               value="client"
-              className={!savCase.customer_id ? 'text-destructive data-[state=active]:text-destructive data-[state=active]:border-destructive' : TAB_ACTIVE_CLASSES}
+              className={!savCase.customer_id && requiresCustomer ? 'text-destructive data-[state=active]:text-destructive data-[state=active]:border-destructive' : TAB_ACTIVE_CLASSES}
             >
               <User className="h-3.5 w-3.5 mr-1" /> Client
-              {!savCase.customer_id && (
+              {!savCase.customer_id && requiresCustomer && (
                 <span className="ml-2 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold">
                   !
                 </span>
@@ -1417,6 +1419,7 @@ export default function SAVDetail() {
               customerId={savCase.customer_id}
               customer={savCase.customer}
               onCustomerUpdated={() => { refreshSavCustomer(); }}
+              requiresCustomer={requiresCustomer}
             />
           </TabsContent>
 
