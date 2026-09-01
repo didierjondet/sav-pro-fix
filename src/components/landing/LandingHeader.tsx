@@ -1,13 +1,16 @@
 import { Smartphone } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 
 interface LandingHeaderProps {
-  onAuthClick: () => void;
+  onAuthClick?: () => void;
   onLoginClick?: () => void;
 }
 
 export function LandingHeader({ onAuthClick, onLoginClick }: LandingHeaderProps) {
-  const handleLogin = onLoginClick ?? onAuthClick;
+  const navigate = useNavigate();
+  const handleAuth = onAuthClick ?? (() => navigate('/auth'));
+  const handleLogin = onLoginClick ?? handleAuth;
   return (
     <header className="bg-white/95 backdrop-blur-sm shadow-sm sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -24,6 +27,13 @@ export function LandingHeader({ onAuthClick, onLoginClick }: LandingHeaderProps)
           </div>
           
           <div className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              className="text-gray-600 hover:text-gray-900 hidden sm:flex"
+              onClick={() => navigate('/partenaires')}
+            >
+              Réparateurs
+            </Button>
             <Button 
               variant="ghost" 
               className="text-gray-600 hover:text-gray-900 hidden sm:flex"
@@ -33,7 +43,7 @@ export function LandingHeader({ onAuthClick, onLoginClick }: LandingHeaderProps)
             </Button>
             <Button 
               className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg hover:shadow-xl transition-all"
-              onClick={onAuthClick}
+              onClick={handleAuth}
             >
               Essai Gratuit
             </Button>
