@@ -4783,6 +4783,7 @@ export type Database = {
         Args: { p_comment: string; p_rating: number; p_token: string }
         Returns: Json
       }
+      unaccent: { Args: { "": string }; Returns: string }
       unaccent_fallback: { Args: { input: string }; Returns: string }
     }
     Enums: {
