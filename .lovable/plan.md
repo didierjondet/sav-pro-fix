@@ -2,27 +2,32 @@
 
 ## Ce que montre la base
 
-Il n'existe aujourd'hui qu'une seule fiche partenaire (Easycash Agde) et elle n'est **pas publiée** :
+Vos deux interrupteurs de visibilité **ont bien été enregistrés** : en base, la fiche
+Easycash Agde a `visible_public = true`, `visible_pro = true`, et l'opt-in annuaire du magasin
+est actif. Ce n'est donc pas un problème de switch non pris en compte.
 
-- `is_published = false` → l'annuaire public la filtre systématiquement
-- `city` et `postal_code` sont **vides** → même publiée, une recherche « agde » ou « 34300 » ne la trouverait pas
-- `public_name` commence par un espace (« ␣Easycash Agde ») → tri et affichage dégradés
-- Les autres réglages sont bons : `visible_public`, `visible_pro` et l'opt-in annuaire du magasin sont à `true`
+Ce qui bloque, c'est un **troisième** interrupteur, « Publier ma fiche », situé beaucoup plus bas
+dans la page, dans une autre carte : il est resté à `false`. Or l'annuaire exige les trois
+conditions à la fois. D'où l'impression que rien ne se passe.
 
-Donc l'annuaire fonctionne, mais il n'a réellement aucune fiche éligible à afficher.
+Deuxième problème : `city` et `postal_code` sont vides sur la fiche. Même publiée, une recherche
+« agde » ou « 34300 » ne la trouverait pas. Le `public_name` commence aussi par un espace
+(« ␣Easycash Agde »), ce qui dégrade tri et recherche.
 
 ## Ce qu'on va faire
 
-### 1. Rendre la publication évidente dans « Vitrine partenaire »
-Aujourd'hui l'interrupteur « Publier ma fiche » est isolé en bas de page, loin de la carte
-« Où souhaitez-vous apparaître ? ». On le remonte dans cette carte, avec un bandeau d'état clair :
-- fiche non publiée → bandeau orange « Votre fiche n'apparaît dans aucun annuaire »
-- champs obligatoires manquants (nom public, ville, code postal) → liste explicite des champs à
-  remplir, et publication signalée comme incomplète.
+### 1. Un seul endroit pour décider de sa visibilité
+On supprime l'interrupteur « Publier ma fiche » isolé en bas de page et on fusionne la logique
+dans la carte « Où souhaitez-vous apparaître ? » : activer « Visible pour les particuliers » ou
+« Visible pour les magasins Fixway » publie automatiquement la fiche ; tout désactiver la dépublie.
+Un bandeau d'état affiche en clair « Votre fiche est visible dans l'annuaire public » ou
+« Votre fiche n'apparaît dans aucun annuaire », et liste les champs manquants
+(nom public, ville, code postal) le cas échéant.
 
 ### 2. Ville et code postal requis pour l'annuaire
-Marquer ville / code postal comme nécessaires à la publication (avertissement, pas de blocage
-brutal), et le bouton « Reprendre les infos du magasin » les reprend depuis la fiche Magasin.
+Marquer ville / code postal comme nécessaires à la publication (avertissement visible, pas de
+blocage brutal), et le bouton « Reprendre les infos du magasin » les reprend depuis la fiche Magasin.
+
 
 ### 3. Recherche plus tolérante côté annuaire public
 La recherche actuelle exige une correspondance exacte de chaîne. On l'assouplit :
