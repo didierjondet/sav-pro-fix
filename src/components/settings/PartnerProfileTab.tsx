@@ -314,14 +314,39 @@ export function PartnerProfileTab() {
               onCheckedChange={(v) => setForm({ ...form, visible_pro: v })} />
           </div>
 
-          {!form.visible_public && !form.visible_pro && (
-            <p className="text-xs text-muted-foreground flex items-center gap-2">
-              <Info className="h-3 w-3" /> Aucun rôle sélectionné : votre fiche ne sera visible nulle part.
-            </p>
+          {!wantsVisibility ? (
+            <div className="flex items-start gap-2 p-3 rounded-lg border bg-muted/40 text-xs text-muted-foreground">
+              <EyeOff className="h-4 w-4 shrink-0 mt-0.5" />
+              <span>Aucun rôle sélectionné : votre fiche n’apparaît dans aucun annuaire.</span>
+            </div>
+          ) : !optIn ? (
+            <div className="flex items-start gap-2 p-3 rounded-lg border border-orange-300 bg-orange-50 dark:bg-orange-950/30 text-xs text-orange-800 dark:text-orange-300">
+              <Info className="h-4 w-4 shrink-0 mt-0.5" />
+              <span>L’interrupteur général « Apparaître dans l’annuaire Fixway » est désactivé : votre fiche reste invisible.</span>
+            </div>
+          ) : missingFields.length > 0 ? (
+            <div className="flex items-start gap-2 p-3 rounded-lg border border-orange-300 bg-orange-50 dark:bg-orange-950/30 text-xs text-orange-800 dark:text-orange-300">
+              <Info className="h-4 w-4 shrink-0 mt-0.5" />
+              <span>
+                Pour être trouvé dans l’annuaire, complétez : {missingFields.join(', ')}. Sans ville ni code postal,
+                une recherche par commune ne remontera pas votre fiche.
+              </span>
+            </div>
+          ) : (
+            <div className="flex items-start gap-2 p-3 rounded-lg border border-green-300 bg-green-50 dark:bg-green-950/30 text-xs text-green-800 dark:text-green-300">
+              <Eye className="h-4 w-4 shrink-0 mt-0.5" />
+              <span>
+                Votre fiche est visible {form.visible_public && 'dans l’annuaire grand public'}
+                {form.visible_public && form.visible_pro && ' et '}
+                {form.visible_pro && 'dans l’annuaire professionnel'}.
+              </span>
+            </div>
           )}
           <p className="text-xs text-muted-foreground">
-            N’oubliez pas d’enregistrer la fiche en bas de page pour appliquer ces choix.
+            Activer l’un de ces rôles publie automatiquement votre fiche. N’oubliez pas d’enregistrer la fiche
+            en bas de page pour appliquer ces choix.
           </p>
+
         </CardContent>
       </Card>
 
