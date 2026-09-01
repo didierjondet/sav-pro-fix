@@ -67,6 +67,7 @@ import { RolePermissionsManager } from '@/components/settings/RolePermissionsMan
 import { PartCategoriesManager } from '@/components/settings/PartCategoriesManager';
 import { SuppliersManager } from '@/components/settings/SuppliersManager';
 import { SAVProvidersManager } from '@/components/settings/SAVProvidersManager';
+import { PartnerProfileTab } from '@/components/settings/PartnerProfileTab';
 import { LoanerEquipmentManager } from '@/components/settings/loaner/LoanerEquipmentManager';
 import { SMSPackagesDisplay } from '@/components/subscription/SMSPackagesDisplay';
 import { BillingInvoices } from '@/components/billing/BillingInvoices';
@@ -1051,6 +1052,12 @@ export default function Settings() {
                 </TabsTrigger>
               )}
               {isAdmin && (
+                <TabsTrigger value="partner-profile" className="flex items-center gap-2 px-3 py-2 shrink-0">
+                  <Handshake className="h-4 w-4 shrink-0" />
+                  <span className="hidden sm:inline">Ma fiche partenaire</span>
+                </TabsTrigger>
+              )}
+              {isAdmin && (
                 <TabsTrigger value="loaners" className="flex items-center gap-2 px-3 py-2 shrink-0">
                   <PackageOpen className="h-4 w-4 shrink-0" />
                   <span className="hidden sm:inline">Matériel de prêt</span>
@@ -1915,6 +1922,10 @@ export default function Settings() {
             )}
 
             {isAdmin && (
+              <TabsContent value="partner-profile" className="space-y-6">
+                <PartnerProfileTab />
+              </TabsContent>
+
               <TabsContent value="sav-providers" className="space-y-6">
                 <SAVProvidersManager />
               </TabsContent>
