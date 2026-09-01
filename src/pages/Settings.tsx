@@ -998,102 +998,51 @@ export default function Settings() {
                 return p;
               });
             }} className="space-y-6">
-            <TabsList className="flex flex-wrap w-full gap-1 h-auto p-1">
-              <TabsTrigger value="shop" className="flex items-center gap-2 px-3 py-2 shrink-0">
-                <Store className="h-4 w-4 shrink-0" />
-                <span className="hidden sm:inline">Magasin</span>
-              </TabsTrigger>
-              <TabsTrigger value="notifications" className="flex items-center gap-2 px-3 py-2 shrink-0">
-                <MessageSquare className="h-4 w-4 shrink-0" />
-                <span className="hidden sm:inline">Notifications</span>
-              </TabsTrigger>
-              <TabsTrigger value="appearance" className="flex items-center gap-2 px-3 py-2 shrink-0">
-                <Monitor className="h-4 w-4 shrink-0" />
-                <span className="hidden sm:inline">Apparence</span>
-              </TabsTrigger>
-              {rolePermissions.settings_sms_purchase && (
-                <TabsTrigger value="sms" className="flex items-center gap-2 px-3 py-2 shrink-0">
-                  <Mail className="h-4 w-4 shrink-0" />
-                  <span className="hidden sm:inline">Crédits SMS</span>
-                </TabsTrigger>
-              )}
-              {rolePermissions.settings_import_export && (
-                <TabsTrigger value="import-export" className="flex items-center gap-2 px-3 py-2 shrink-0">
-                  <Upload className="h-4 w-4 shrink-0" />
-                  <span className="hidden sm:inline">Import/Export</span>
-                </TabsTrigger>
-              )}
-              <TabsTrigger value="sav-statuses" className="flex items-center gap-2 px-3 py-2 shrink-0">
-                <Tag className="h-4 w-4 shrink-0" />
-                <span className="hidden sm:inline">Statuts SAV</span>
-              </TabsTrigger>
-              <TabsTrigger value="sav-types" className="flex items-center gap-2 px-3 py-2 shrink-0">
-                <Package className="h-4 w-4 shrink-0" />
-                <span className="hidden sm:inline">Types de SAV</span>
-              </TabsTrigger>
-              {rolePermissions.settings_subscription && (
-                <TabsTrigger value="subscription" className="flex items-center gap-2 px-3 py-2 shrink-0">
-                  <CreditCard className="h-4 w-4 shrink-0" />
-                  <span className="hidden sm:inline">Abonnement</span>
-                </TabsTrigger>
-              )}
-              <TabsTrigger value="billing" className="flex items-center gap-2 px-3 py-2 shrink-0">
-                <FileText className="h-4 w-4 shrink-0" />
-                <span className="hidden sm:inline">Facturation</span>
-              </TabsTrigger>
-              {isAdmin && (
-                <TabsTrigger value="billing-vat" className="flex items-center gap-2 px-3 py-2 shrink-0">
-                  <Percent className="h-4 w-4 shrink-0" />
-                  <span className="hidden sm:inline">TVA & MO</span>
-                </TabsTrigger>
-              )}
-              <TabsTrigger value="ai" className="flex items-center gap-2 px-3 py-2 shrink-0">
-                <Sparkles className="h-4 w-4 shrink-0" />
-                <span className="hidden sm:inline">IA</span>
-              </TabsTrigger>
-              {isAdmin && rolePermissions.settings_users && (
-                <TabsTrigger value="users" className="flex items-center gap-2 px-3 py-2 shrink-0">
-                  <Users className="h-4 w-4 shrink-0" />
-                  <span className="hidden sm:inline">Utilisateurs</span>
-                </TabsTrigger>
-              )}
-              {rolePermissions.settings_part_categories && (
-                <TabsTrigger value="part-categories" className="flex items-center gap-2 px-3 py-2 shrink-0">
-                  <Tag className="h-4 w-4 shrink-0" />
-                  <span className="hidden sm:inline">Catégories pièces</span>
-                </TabsTrigger>
-              )}
-              {isAdmin && (
-                <TabsTrigger value="suppliers" className="flex items-center gap-2 px-3 py-2 shrink-0">
-                  <Truck className="h-4 w-4 shrink-0" />
-                  <span className="hidden sm:inline">Fournisseurs</span>
-                </TabsTrigger>
-              )}
-              {isAdmin && (
-                <TabsTrigger value="sav-providers" className="flex items-center gap-2 px-3 py-2 shrink-0">
-                  <Wrench className="h-4 w-4 shrink-0" />
-                  <span className="hidden sm:inline">Prestataires techniques</span>
-                </TabsTrigger>
-              )}
-              {isAdmin && (
-                <TabsTrigger value="partner-profile" className="flex items-center gap-2 px-3 py-2 shrink-0">
-                  <Handshake className="h-4 w-4 shrink-0" />
-                  <span className="hidden sm:inline">Vitrine partenaire</span>
-                </TabsTrigger>
-              )}
-              {isAdmin && (
-                <TabsTrigger value="loaners" className="flex items-center gap-2 px-3 py-2 shrink-0">
-                  <PackageOpen className="h-4 w-4 shrink-0" />
-                  <span className="hidden sm:inline">Matériel de prêt</span>
-                </TabsTrigger>
-              )}
-              {isAdmin && (
-                <TabsTrigger value="logs" className="flex items-center gap-2 px-3 py-2 shrink-0">
-                  <ScrollText className="h-4 w-4 shrink-0" />
-                  <span className="hidden sm:inline">Logs</span>
-                </TabsTrigger>
-              )}
-            </TabsList>
+            <div className="flex flex-wrap gap-1 rounded-lg bg-muted p-1">
+              {visibleCategories.map(cat => {
+                const isActiveCat = cat.id === activeCategory;
+                return (
+                  <button
+                    key={cat.id}
+                    type="button"
+                    onClick={() => {
+                      const first = settingsSections.find(s => s.category === cat.id);
+                      if (!first) return;
+                      setActiveTab(first.id);
+                      setSearchParams(prev => {
+                        const p = new URLSearchParams(prev);
+                        p.set('tab', first.id);
+                        return p;
+                      });
+                    }}
+                    className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                      isActiveCat
+                        ? 'bg-background text-foreground shadow-sm'
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    {cat.label}
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="grid gap-6 md:grid-cols-[220px_minmax(0,1fr)]">
+              <TabsList className="flex md:flex-col w-full gap-1 h-auto p-1 overflow-x-auto md:overflow-visible justify-start">
+                {categorySections.map(section => (
+                  <TabsTrigger
+                    key={section.id}
+                    value={section.id}
+                    className="flex items-center gap-2 px-3 py-2 shrink-0 md:w-full md:justify-start"
+                  >
+                    <section.icon className="h-4 w-4 shrink-0" />
+                    <span>{section.label}</span>
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+
+              <div className="min-w-0 space-y-6">
+
 
             <TabsContent value="shop" className="space-y-6">
               <Card>
