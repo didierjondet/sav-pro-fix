@@ -4423,6 +4423,7 @@ export type Database = {
         }
         Returns: string
       }
+      fx_norm: { Args: { _t: string }; Returns: string }
       generate_case_number: { Args: never; Returns: string }
       generate_invite_code: { Args: never; Returns: string }
       generate_invoice_number: {
@@ -4783,7 +4784,6 @@ export type Database = {
         Args: { p_comment: string; p_rating: number; p_token: string }
         Returns: Json
       }
-      unaccent: { Args: { "": string }; Returns: string }
       unaccent_fallback: { Args: { input: string }; Returns: string }
     }
     Enums: {
