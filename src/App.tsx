@@ -57,6 +57,7 @@ import Inventory from "./pages/Inventory";
 import HelpBot from "./components/help/HelpBot";
 import AppLayout from "./components/layout/AppLayout";
 import MobileSAVLookup from "./pages/MobileSAVLookup";
+import MobileInventory from "./pages/MobileInventory";
 import PartnersDirectory from "./pages/PartnersDirectory";
 import PartnerPublicProfile from "./pages/PartnerPublicProfile";
 import SharedSAVList from "./pages/SharedSAVList";
