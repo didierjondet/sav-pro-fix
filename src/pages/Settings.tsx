@@ -1925,7 +1925,9 @@ export default function Settings() {
               <TabsContent value="partner-profile" className="space-y-6">
                 <PartnerProfileTab />
               </TabsContent>
+            )}
 
+            {isAdmin && (
               <TabsContent value="sav-providers" className="space-y-6">
                 <SAVProvidersManager />
               </TabsContent>
