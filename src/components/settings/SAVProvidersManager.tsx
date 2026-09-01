@@ -97,8 +97,40 @@ export function SAVProvidersManager() {
       notes: p.notes || '',
       is_active: p.is_active,
       show_in_sidebar: p.show_in_sidebar,
+      partner_code: '',
     });
     setDialogOpen(true);
+  };
+
+  /** Ajoute un prestataire directement depuis l'annuaire professionnel Fixway. */
+  const addFromDirectory = async (partner: any) => {
+    if (!profile?.shop_id) return;
+    try {
+      const { error } = await supabase.from('shop_sav_providers').insert({
+        shop_id: profile.shop_id,
+        name: partner.public_name,
+        phone: partner.public_phone || null,
+        email: partner.public_email || null,
+        address: [partner.postal_code, partner.city].filter(Boolean).join(' ') || null,
+        specialties: partner.specialties || null,
+        avg_delay_days: partner.avg_delay_days ?? null,
+        color: '#8b5cf6',
+        is_active: true,
+        show_in_sidebar: true,
+        display_order: providers.length,
+        linked_shop_id: partner.shop_id,
+        linked_at: new Date().toISOString(),
+      } as any);
+      if (error) throw error;
+      toast({
+        title: 'Partenaire ajouté',
+        description: `${partner.public_name} est connecté à son compte Fixway`,
+      });
+      setDirectoryOpen(false);
+      refetch();
+    } catch (e: any) {
+      toast({ title: 'Erreur', description: e.message, variant: 'destructive' });
+    }
   };
 
   const save = async () => {
@@ -118,16 +150,31 @@ export function SAVProvidersManager() {
         is_active: formData.is_active,
         show_in_sidebar: formData.show_in_sidebar,
       };
+      let providerId = editing?.id;
       if (editing) {
         await updateProvider(editing.id, payload);
       } else {
         await createProvider({ ...payload, display_order: providers.length });
+        const { data } = await supabase
+          .from('shop_sav_providers')
+          .select('id')
+          .eq('shop_id', profile?.shop_id ?? '')
+          .eq('name', formData.name)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        providerId = (data as any)?.id;
+      }
+      if (formData.partner_code.trim() && providerId) {
+        await linkProvider(providerId, formData.partner_code.trim().toUpperCase());
+        refetch();
       }
       setDialogOpen(false);
       resetForm();
     } finally {
       setSaving(false);
     }
+
   };
 
   if (isLoading) {
