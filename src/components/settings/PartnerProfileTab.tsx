@@ -158,10 +158,10 @@ export function PartnerProfileTab() {
     setSaving(true);
     try {
       await saveProfile({
-        public_name: form.public_name,
+        public_name: form.public_name.trim(),
         logo_url: form.logo_url || null,
-        city: form.city || null,
-        postal_code: form.postal_code || null,
+        city: form.city.trim() || null,
+        postal_code: form.postal_code.trim() || null,
         coverage_area: form.coverage_area || null,
         public_phone: form.public_phone || null,
         public_email: form.public_email || null,
@@ -177,12 +177,14 @@ export function PartnerProfileTab() {
         prices_include_vat: form.prices_include_vat,
         vat_rate: form.vat_rate,
         vat_exempt: form.vat_exempt,
-        is_published: form.is_published,
+        is_published: form.visible_public || form.visible_pro,
         visible_public: form.visible_public,
         visible_pro: form.visible_pro,
         specialty_tags: tags,
         specialties: tags.length > 0 ? tags.join(', ') : (form.specialties || null),
       } as any);
+      setForm((f) => ({ ...f, is_published: f.visible_public || f.visible_pro }));
+
     } finally {
       setSaving(false);
     }
