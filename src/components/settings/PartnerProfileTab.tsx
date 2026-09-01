@@ -155,7 +155,7 @@ export function PartnerProfileTab() {
         public_email: form.public_email || null,
         website_url: form.website_url || null,
         description: form.description || null,
-        description_placeholder_unused: undefined,
+        
         certifications: form.certifications || null,
         warranty_terms: form.warranty_terms || null,
         shipping_modes: form.shipping_modes || null,
