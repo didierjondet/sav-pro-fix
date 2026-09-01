@@ -17,6 +17,9 @@ export interface PartnerProfile {
   website_url: string | null;
   description: string | null;
   specialties: string | null;
+  specialty_tags: string[];
+  visible_public: boolean;
+  visible_pro: boolean;
   certifications: string | null;
   warranty_terms: string | null;
   shipping_modes: string | null;

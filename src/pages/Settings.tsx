@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useAuth } from '@/contexts/AuthContext';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Calendar } from '@/components/ui/calendar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -1054,7 +1054,7 @@ export default function Settings() {
               {isAdmin && (
                 <TabsTrigger value="partner-profile" className="flex items-center gap-2 px-3 py-2 shrink-0">
                   <Handshake className="h-4 w-4 shrink-0" />
-                  <span className="hidden sm:inline">Ma fiche partenaire</span>
+                  <span className="hidden sm:inline">Vitrine partenaire</span>
                 </TabsTrigger>
               )}
               {isAdmin && (
@@ -1078,6 +1078,10 @@ export default function Settings() {
                     <Store className="h-5 w-5" />
                     Informations du Magasin
                   </CardTitle>
+                  <CardDescription>
+                    Identité interne : factures, PDF et suivi client. Votre vitrine visible par les particuliers
+                    et les autres magasins Fixway se configure dans l’onglet « Vitrine partenaire ».
+                  </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>

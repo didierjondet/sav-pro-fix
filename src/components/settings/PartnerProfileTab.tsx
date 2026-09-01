@@ -16,8 +16,10 @@ import {
 } from '@/components/ui/alert-dialog';
 import {
   Copy, Globe, Info, Plus, Edit, Trash2, ShieldCheck, Eye, EyeOff, Save, ExternalLink,
+  Store, Users, Download, X,
 } from 'lucide-react';
 import { usePartnerProfile, PartnerPriceItem } from '@/hooks/usePartnerProfile';
+import { PARTNER_SPECIALTIES, resolveSpecialtyTags } from '@/lib/partnerSpecialties';
 import { useShop } from '@/hooks/useShop';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -64,7 +66,11 @@ export function PartnerProfileTab() {
     vat_rate: 20,
     vat_exempt: false,
     is_published: false,
+    visible_public: false,
+    visible_pro: false,
   });
+  const [tags, setTags] = useState<string[]>([]);
+  const [customTag, setCustomTag] = useState('');
 
   useEffect(() => {
     if (partnerProfile) {
@@ -89,7 +95,10 @@ export function PartnerProfileTab() {
         vat_rate: Number(partnerProfile.vat_rate ?? 20),
         vat_exempt: partnerProfile.vat_exempt,
         is_published: partnerProfile.is_published,
+        visible_public: (partnerProfile as any).visible_public ?? false,
+        visible_pro: (partnerProfile as any).visible_pro ?? false,
       });
+      setTags(resolveSpecialtyTags((partnerProfile as any).specialty_tags, partnerProfile.specialties));
     } else if (shop?.name) {
       setForm((f) => ({ ...f, public_name: f.public_name || shop.name }));
     }
@@ -97,6 +106,18 @@ export function PartnerProfileTab() {
 
   const partnerCode = (shop as any)?.partner_code as string | undefined;
   const optIn = !!(shop as any)?.partner_directory_opt_in;
+
+  const prefillFromShop = () => {
+    if (!shop) return;
+    setForm((f) => ({
+      ...f,
+      public_name: f.public_name || (shop as any).name || '',
+      logo_url: f.logo_url || (shop as any).logo_url || '',
+      public_phone: f.public_phone || (shop as any).phone || '',
+      public_email: f.public_email || (shop as any).email || '',
+    }));
+    toast({ title: 'Informations du magasin reprises', description: 'Pensez à enregistrer la fiche.' });
+  };
 
   const copyCode = () => {
     if (!partnerCode) return;
@@ -134,7 +155,7 @@ export function PartnerProfileTab() {
         public_email: form.public_email || null,
         website_url: form.website_url || null,
         description: form.description || null,
-        specialties: form.specialties || null,
+        
         certifications: form.certifications || null,
         warranty_terms: form.warranty_terms || null,
         shipping_modes: form.shipping_modes || null,
@@ -145,7 +166,11 @@ export function PartnerProfileTab() {
         vat_rate: form.vat_rate,
         vat_exempt: form.vat_exempt,
         is_published: form.is_published,
-      });
+        visible_public: form.visible_public,
+        visible_pro: form.visible_pro,
+        specialty_tags: tags,
+        specialties: tags.length > 0 ? tags.join(', ') : (form.specialties || null),
+      } as any);
     } finally {
       setSaving(false);
     }
@@ -230,11 +255,59 @@ export function PartnerProfileTab() {
                 <Globe className="h-4 w-4" /> Apparaître dans l’annuaire Fixway
               </Label>
               <p className="text-xs text-muted-foreground">
-                Rend votre fiche visible dans l’annuaire public et dans l’annuaire professionnel des magasins
+                Interrupteur général : sans lui, votre fiche n’apparaît nulle part
               </p>
             </div>
             <Switch checked={optIn} onCheckedChange={toggleOptIn} />
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Visibilité */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Eye className="h-5 w-5" /> Où souhaitez-vous apparaître ?
+          </CardTitle>
+          <CardDescription>
+            Choisissez le ou les rôles sous lesquels vous voulez être trouvé. Les deux peuvent être activés.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="flex items-center justify-between p-4 border rounded-lg">
+            <div className="space-y-0.5">
+              <Label className="text-sm font-medium flex items-center gap-2">
+                <Store className="h-4 w-4 text-primary" /> Magasin visible par les particuliers
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Votre fiche et vos tarifs publics apparaissent dans l’annuaire grand public fixway.fr/partenaires
+              </p>
+            </div>
+            <Switch checked={form.visible_public}
+              onCheckedChange={(v) => setForm({ ...form, visible_public: v })} />
+          </div>
+
+          <div className="flex items-center justify-between p-4 border rounded-lg">
+            <div className="space-y-0.5">
+              <Label className="text-sm font-medium flex items-center gap-2">
+                <Users className="h-4 w-4 text-primary" /> Prestataire visible par les magasins Fixway
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Vous apparaissez dans l’annuaire professionnel avec vos tarifs pro et pouvez recevoir des SAV délégués
+              </p>
+            </div>
+            <Switch checked={form.visible_pro}
+              onCheckedChange={(v) => setForm({ ...form, visible_pro: v })} />
+          </div>
+
+          {!form.visible_public && !form.visible_pro && (
+            <p className="text-xs text-muted-foreground flex items-center gap-2">
+              <Info className="h-3 w-3" /> Aucun rôle sélectionné : votre fiche ne sera visible nulle part.
+            </p>
+          )}
+          <p className="text-xs text-muted-foreground">
+            N’oubliez pas d’enregistrer la fiche en bas de page pour appliquer ces choix.
+          </p>
         </CardContent>
       </Card>
 
@@ -243,7 +316,7 @@ export function PartnerProfileTab() {
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
             Ma fiche partenaire
-            {partnerProfile?.slug && form.is_published && optIn && (
+            {partnerProfile?.slug && form.is_published && optIn && form.visible_public && (
               <Button variant="outline" size="sm" asChild>
                 <a href={`/partenaires/${partnerProfile.slug}`} target="_blank" rel="noreferrer">
                   <ExternalLink className="h-4 w-4 mr-2" /> Voir ma page publique
@@ -252,10 +325,20 @@ export function PartnerProfileTab() {
             )}
           </CardTitle>
           <CardDescription>
-            Décrivez votre activité, votre process et vos garanties pour les magasins et les particuliers
+            Cette fiche est votre vitrine externe : elle est indépendante de l’onglet « Magasin », qui sert à
+            votre identité interne (factures, PDF, suivi client).
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
+          <div className="flex items-center justify-between gap-3 p-3 border rounded-lg bg-muted/40">
+            <p className="text-xs text-muted-foreground flex items-center gap-2">
+              <Info className="h-4 w-4 shrink-0" />
+              Vous pouvez reprendre les coordonnées déjà saisies dans l’onglet Magasin.
+            </p>
+            <Button type="button" variant="outline" size="sm" onClick={prefillFromShop}>
+              <Download className="h-4 w-4 mr-2" /> Reprendre les infos du magasin
+            </Button>
+          </div>
           <div className="grid md:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="pp_name">Nom public</Label>
@@ -317,13 +400,47 @@ export function PartnerProfileTab() {
               placeholder="Votre activité, votre expérience, vos équipements…" />
           </div>
 
-          <div className="grid md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="pp_spec">Spécialités</Label>
-              <Input id="pp_spec" value={form.specialties}
-                onChange={(e) => setForm({ ...form, specialties: e.target.value })}
-                placeholder="Micro-soudure, récupération de données…" />
+          <div className="space-y-2">
+            <Label>Spécialités</Label>
+            <p className="text-xs text-muted-foreground">
+              Sélectionnez vos domaines d’expertise : ils servent de filtres dans les annuaires.
+            </p>
+            <div className="flex flex-wrap gap-2 pt-1">
+              {PARTNER_SPECIALTIES.map((sp) => {
+                const active = tags.includes(sp);
+                return (
+                  <Badge
+                    key={sp}
+                    variant={active ? 'default' : 'outline'}
+                    className="cursor-pointer select-none"
+                    onClick={() => setTags(active ? tags.filter((t) => t !== sp) : [...tags, sp])}
+                  >
+                    {sp}
+                  </Badge>
+                );
+              })}
+              {tags.filter((t) => !PARTNER_SPECIALTIES.includes(t)).map((t) => (
+                <Badge key={t} variant="secondary" className="cursor-pointer select-none"
+                  onClick={() => setTags(tags.filter((x) => x !== t))}>
+                  {t} <X className="h-3 w-3 ml-1" />
+                </Badge>
+              ))}
             </div>
+            <div className="flex gap-2 pt-1 max-w-md">
+              <Input value={customTag} onChange={(e) => setCustomTag(e.target.value)}
+                placeholder="Ajouter une spécialité personnalisée" />
+              <Button type="button" variant="outline"
+                onClick={() => {
+                  const v = customTag.trim();
+                  if (v && !tags.includes(v)) setTags([...tags, v]);
+                  setCustomTag('');
+                }}>
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="pp_cert">Certifications</Label>
               <Input id="pp_cert" value={form.certifications}

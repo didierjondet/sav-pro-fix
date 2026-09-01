@@ -1,5 +1,6 @@
 import { Helmet } from 'react-helmet-async';
 import { Link, useParams } from 'react-router-dom';
+import { resolveSpecialtyTags } from '@/lib/partnerSpecialties';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -90,9 +91,9 @@ export default function PartnerPublicProfile() {
               {partner.avg_delay_days != null && (
                 <Badge variant="outline"><Clock className="h-3 w-3 mr-1" />{partner.avg_delay_days} j en moyenne</Badge>
               )}
-              {partner.specialties && (
-                <Badge variant="outline"><Wrench className="h-3 w-3 mr-1" />{partner.specialties}</Badge>
-              )}
+              {resolveSpecialtyTags(partner.specialty_tags, partner.specialties).map((sp: string) => (
+                <Badge key={sp} variant="outline"><Wrench className="h-3 w-3 mr-1" />{sp}</Badge>
+              ))}
             </div>
           </div>
         </header>

@@ -15,6 +15,7 @@ export interface ProPartner {
   public_email: string | null;
   description: string | null;
   specialties: string | null;
+  specialty_tags: string[] | null;
   certifications: string | null;
   warranty_terms: string | null;
   shipping_modes: string | null;
@@ -43,6 +44,7 @@ export interface PublicPartner {
   coverage_area: string | null;
   description: string | null;
   specialties: string | null;
+  specialty_tags: string[] | null;
   avg_delay_days: number | null;
   certifications: string | null;
 }

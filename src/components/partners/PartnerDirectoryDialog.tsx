@@ -4,6 +4,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { resolveSpecialtyTags } from '@/lib/partnerSpecialties';
 import { Badge } from '@/components/ui/badge';
 import { Search, MapPin, Clock, Wrench, Link2, ShieldCheck, Truck } from 'lucide-react';
 import { useProPartnerDirectory, ProPartner } from '@/hooks/usePartnerDirectory';
@@ -65,11 +66,11 @@ export function PartnerDirectoryDialog({ open, onOpenChange, onSelect }: Props) 
                           <MapPin className="h-3 w-3" /> {[p.postal_code, p.city].filter(Boolean).join(' ')}
                         </span>
                       )}
-                      {p.specialties && (
-                        <span className="flex items-center gap-1 text-green-600">
-                          <Wrench className="h-3 w-3" /> {p.specialties}
+                      {resolveSpecialtyTags(p.specialty_tags, p.specialties).map((sp) => (
+                        <span key={sp} className="flex items-center gap-1 text-green-600">
+                          <Wrench className="h-3 w-3" /> {sp}
                         </span>
-                      )}
+                      ))}
                       {p.avg_delay_days != null && (
                         <span className="flex items-center gap-1">
                           <Clock className="h-3 w-3" /> {p.avg_delay_days}j moyen
