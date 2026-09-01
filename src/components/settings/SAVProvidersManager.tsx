@@ -405,7 +405,9 @@ export function SAVProvidersManager() {
               </DialogFooter>
             </DialogContent>
           </Dialog>
+          </div>
         </CardTitle>
+
         <CardDescription>
           Gérez les entreprises tierces (micro-soudure, broker…) auxquelles vous pouvez confier un dossier SAV
         </CardDescription>
