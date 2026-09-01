@@ -16,12 +16,15 @@ import {
 } from '@/components/ui/alert-dialog';
 import {
   Edit, Trash2, Plus, Info, Clock, Mail, Phone, User, MapPin, Wrench, Sidebar, Power,
+  Link2, Unlink, Search, ShieldCheck,
 } from 'lucide-react';
 import { SAVProvider, useSAVProviders } from '@/hooks/useSAVProviders';
 import { useShopSettings } from '@/hooks/useShopSettings';
 import { useProfile } from '@/hooks/useProfile';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { PartnerDirectoryDialog } from '@/components/partners/PartnerDirectoryDialog';
+import { usePartnerLink } from '@/hooks/usePartnerDirectory';
 
 const emptyForm = {
   name: '',
@@ -35,17 +38,21 @@ const emptyForm = {
   notes: '',
   is_active: true,
   show_in_sidebar: true,
+  partner_code: '',
 };
 
 export function SAVProvidersManager() {
-  const { providers, isLoading, createProvider, updateProvider, deleteProvider } = useSAVProviders();
+  const { providers, isLoading, createProvider, updateProvider, deleteProvider, refetch } = useSAVProviders();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<SAVProvider | null>(null);
   const [formData, setFormData] = useState({ ...emptyForm });
   const [saving, setSaving] = useState(false);
+  const [directoryOpen, setDirectoryOpen] = useState(false);
   const { settings, refetch: refetchSettings } = useShopSettings();
   const { profile } = useProfile();
   const { toast } = useToast();
+  const { linkProvider, unlinkProvider } = usePartnerLink();
+
 
   const handleToggleHideEmpty = async (checked: boolean) => {
     if (!profile?.shop_id) return;
