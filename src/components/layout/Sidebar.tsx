@@ -3,6 +3,8 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
+import { Handshake } from 'lucide-react';
+import { useSharedSAVs } from '@/hooks/useSharedSAVs';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -35,6 +37,7 @@ const baseNavigation: NavItem[] = [
   // Bloc « Travail au quotidien »
   { name: 'Tableau de bord', href: '/dashboard', icon: BarChart3, group: 'work' },
   { name: 'Dossiers SAV', href: '/sav', icon: FileText, group: 'work' },
+  { name: 'SAV partenaires', href: '/sav-partenaires', icon: Handshake, group: 'work' },
   { name: 'Devis', href: '/quotes', icon: FileText, group: 'work' },
   { name: 'Clients', href: '/customers', icon: Users, group: 'work' },
   { name: 'Agenda', href: '/agenda', icon: Calendar, group: 'work' },
@@ -89,6 +92,8 @@ function SidebarComponent({
   const { providers: savProviders } = useSAVProviders();
   const { data: activeAssignments = [] } = useActiveProviderAssignments();
   const totalUnread = (savWithUnreadMessages || []).reduce((sum, s) => sum + s.unread_count, 0);
+  const { data: sharedCases = [] } = useSharedSAVs();
+  const sharedUnread = sharedCases.reduce((sum, s) => sum + (s.unread_count || 0), 0);
 
   // Simplified view state
   const [showAllLateSAV, setShowAllLateSAV] = useState(false);
@@ -104,7 +109,7 @@ function SidebarComponent({
     return () => window.removeEventListener('simplifiedViewChanged', handler);
   }, []);
 
-  const simplifiedPaths = ['/sav', '/quotes', '/agenda', '/client-chats'];
+  const simplifiedPaths = ['/sav', '/sav-partenaires', '/quotes', '/agenda', '/client-chats'];
   const openConversationsCount = (savWithUnreadMessages || []).length;
   const {
     quotes
@@ -144,6 +149,9 @@ function SidebarComponent({
         return checkBoth(permissions.dashboard, 'menu_dashboard');
       case '/sav':
         return checkBoth(permissions.sav, 'menu_sav');
+      case '/sav-partenaires':
+        // Visible uniquement si des magasins Fixway nous ont confié des dossiers
+        return sharedCases.length > 0 && checkBoth(permissions.sav, 'menu_sav');
       case '/parts':
         return checkBoth(permissions.parts, 'menu_parts');
       case '/quotes':
@@ -287,6 +295,8 @@ function SidebarComponent({
                     }}>
                       <Icon className="mr-3 h-5 w-5" />
                       <span>{item.name}</span>
+                      {item.href === '/sav-partenaires' && sharedCases.length > 0 && <Badge variant="secondary" className="ml-auto text-xs">{sharedCases.length}</Badge>}
+                      {item.href === '/sav-partenaires' && sharedUnread > 0 && <Badge variant="destructive" className="ml-1 text-xs">{sharedUnread}</Badge>}
                       {item.href === '/client-chats' && openConversationsCount > 0 && <Badge variant="destructive" className="ml-auto text-xs">{openConversationsCount}</Badge>}
                       {item.href === '/quotes' && quoteCounts.inProgress > 0 && <Badge className="ml-auto text-xs bg-blue-600 text-white hover:bg-blue-700" title="Devis en cours">{quoteCounts.inProgress}</Badge>}
                       {item.href === '/quotes' && quoteCounts.clientAccepted > 0 && <Badge className="ml-1 text-xs bg-green-600 text-white hover:bg-green-700" title="Acceptés par le client">{quoteCounts.clientAccepted}</Badge>}
