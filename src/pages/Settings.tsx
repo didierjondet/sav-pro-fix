@@ -1078,6 +1078,10 @@ export default function Settings() {
                     <Store className="h-5 w-5" />
                     Informations du Magasin
                   </CardTitle>
+                  <CardDescription>
+                    Identité interne : factures, PDF et suivi client. Votre vitrine visible par les particuliers
+                    et les autres magasins Fixway se configure dans l’onglet « Vitrine partenaire ».
+                  </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
