@@ -35,21 +35,55 @@ Droits : lecture + échanges. Le partenaire peut écrire dans un fil de discussi
 
 Le partage démarre à l'attribution du SAV au prestataire lié, et s'arrête automatiquement quand le dossier est marqué « retour reçu » ou que l'attribution est retirée (le fil de discussion reste consultable en historique).
 
-## 4. Annuaire des partenaires (opt-in)
+## 4. Fiche partenaire (vitrine professionnelle)
 
-Réglage « Apparaître dans l'annuaire Fixway » (désactivé par défaut). Un magasin qui l'active publie : nom commercial, ville, spécialités, délai moyen, contact pro — jamais ses données internes.
+Tout abonné Fixway peut choisir de devenir partenaire technique et se publier. Un nouvel onglet Réglages « Ma fiche partenaire » permet de remplir :
 
-Les autres magasins peuvent rechercher l'annuaire (par nom, ville, spécialité) depuis la création d'un prestataire et créer la fiche pré-remplie + liée en un clic, sans avoir besoin du code.
+- identité publique : nom commercial, logo, ville/département, zone d'intervention, contact pro,
+- présentation : description de l'activité, spécialités, certifications, garanties offertes,
+- process de travail : mode d'envoi (dépôt, colis, coursier), délai moyen, conditions de retour, politique en cas d'échec (« pas de réparation, pas de frais » par exemple),
+- grille tarifaire : lignes libres (intitulé de la prestation, appareil/famille concernée, prix public, prix professionnel, délai, note). Chaque ligne peut être marquée « publique » et/ou « réservée aux magasins ».
 
-## 5. Détails techniques
+Tant que la fiche n'est pas publiée, rien n'est visible. Publication = interrupteur explicite.
+
+## 5. Prix HT / TTC
+
+Les prix de la grille sont saisis dans l'unité choisie par le magasin (réglage TVA existant : assujetti ou non, taux par défaut). L'affichage indique toujours clairement « HT » ou « TTC » :
+
+- magasin non assujetti à la TVA : les prix sont affichés tels quels avec la mention « TVA non applicable, art. 293 B du CGI »,
+- magasin assujetti : les deux valeurs sont calculées et affichées (HT et TTC) via la logique TVA déjà en place,
+- dans l'annuaire public (grand public), c'est le prix TTC qui est mis en avant ; dans l'annuaire pro (entre magasins Fixway), c'est le prix HT professionnel.
+
+## 6. Deux annuaires distincts
+
+**Annuaire public (landing)** — nouvelle page publique « Trouver un réparateur / partenaire », référencée depuis la landing page (entrée dans le menu, bloc dédié dans la page d'accueil, page indexable SEO avec JSON-LD LocalBusiness) :
+- recherche par ville, appareil, spécialité,
+- liste de fiches, puis page détaillée par partenaire : présentation, process, spécialités, garanties, tarifs **publics** uniquement, formulaire/bouton de contact,
+- aucun tarif professionnel ni donnée interne n'y apparaît.
+
+**Annuaire pro (dans Fixway)** — accessible depuis « Prestataires techniques » → « Rechercher un partenaire » :
+- mêmes fiches, mais réservées aux magasins connectés : on y voit en plus la **grille tarifaire professionnelle**, le code partenaire et le bouton « Ajouter comme prestataire » qui crée la fiche locale déjà liée,
+- possibilité de lier manuellement par code, comme prévu au point 2.
+
+## 7. Détails techniques
 
 - Migration :
-  - `shops.partner_code` (texte unique, généré par trigger sur les nouveaux magasins + backfill), `shops.partner_directory_opt_in`, `shops.partner_public_name/city/specialties`.
+  - `shops.partner_code` (texte unique, trigger sur les nouveaux magasins + backfill), `shops.partner_directory_opt_in`.
+  - `partner_profiles` : `shop_id` (unique), `public_name`, `logo_url`, `city`, `postal_code`, `coverage_area`, `public_phone`, `public_email`, `description`, `specialties`, `certifications`, `warranty_terms`, `shipping_modes`, `avg_delay_days`, `return_policy`, `failure_policy`, `prices_include_vat`, `vat_rate`, `is_published`.
+  - `partner_price_items` : `profile_id`, `label`, `device_family`, `public_price`, `pro_price`, `delay_days`, `note`, `visible_public`, `visible_pro`, `display_order`.
   - `shop_sav_providers.linked_shop_id` (FK `shops`, nullable) + `linked_at`.
-  - `sav_shares` : `sav_case_id`, `owner_shop_id`, `partner_shop_id`, `assignment_id`, `status` (active/closed), `started_at`, `ended_at` — créée/fermée par trigger sur `sav_provider_assignments` quand le prestataire est lié.
+  - `sav_shares` : `sav_case_id`, `owner_shop_id`, `partner_shop_id`, `assignment_id`, `status`, `started_at`, `ended_at` — créée/fermée par trigger sur `sav_provider_assignments` quand le prestataire est lié.
   - `sav_share_messages` : fil inter-magasins (`share_id`, `sender_shop_id`, `sender_user_id`, `content`, `read_at`), ajouté à la publication realtime.
   - GRANTs explicites + RLS sur chaque nouvelle table.
-- Confidentialité : le partenaire ne lit jamais `sav_cases` directement. Une vue/RPC `SECURITY DEFINER` `get_shared_sav_cases()` et `get_shared_sav_case(id)` renvoie uniquement les champs autorisés (aucune colonne client, aucun prix de vente), filtrée sur les partages actifs du magasin appelant. Fonction `resolve_partner_code(code)` en `SECURITY DEFINER` pour la liaison (retourne seulement id + nom public).
-- RLS `sav_share_messages` : lecture/écriture réservées aux membres des deux magasins du partage.
-- Front : `useSharedSAVs`, `usePartnerLink`, `usePartnerDirectory` ; champ code + bandeau lié dans `SAVProvidersManager.tsx` ; section annuaire dans le dialogue de création ; entrée « SAV partenaires » dans `Sidebar.tsx` et vue dédiée dans `SAVList.tsx` ; fil de discussion dans l'onglet Prestataire de `SAVDetail.tsx` côté maître.
-- Aucune modification des SAV, types, statuts ou prestataires existants : tout est additif.
+- Confidentialité :
+  - le partenaire ne lit jamais `sav_cases` directement : RPC `SECURITY DEFINER` `get_shared_sav_cases()` / `get_shared_sav_case(id)` limitées aux champs autorisés (aucune donnée client, aucun prix de vente) et aux partages actifs du magasin appelant ; `resolve_partner_code(code)` pour la liaison.
+  - annuaire public : RPC `SECURITY DEFINER` `get_public_partner_directory()` / `get_public_partner(slug)` renvoyant uniquement les fiches publiées et les lignes tarifaires `visible_public` — accessible en `anon`, sans exposer la table.
+  - annuaire pro : RPC réservée aux utilisateurs authentifiés, ajoutant les tarifs `visible_pro` et le code partenaire.
+- TVA : réutilisation de `src/lib/vatCalculator.ts` et de la configuration `shop_billing_config` pour dériver HT/TTC et la mention d'exonération.
+- Front :
+  - hooks `useSharedSAVs`, `usePartnerLink`, `usePartnerProfile`, `usePartnerDirectory`.
+  - Réglages : onglet « Ma fiche partenaire » (identité, process, grille tarifaire, publication) ; champ code + bandeau lié + recherche annuaire dans `SAVProvidersManager.tsx`.
+  - App : entrée « SAV partenaires » dans `Sidebar.tsx`, vue dédiée dans `SAVList.tsx`, fil de discussion dans l'onglet Prestataire de `SAVDetail.tsx`.
+  - Public : pages `/partenaires` et `/partenaires/:slug`, entrée dans `LandingHeader`, bloc dédié sur la landing, SEO (titre/description, JSON-LD LocalBusiness, sitemap).
+- Aucune modification des SAV, types, statuts, prestataires ou de la logique existante : tout est additif.
+
