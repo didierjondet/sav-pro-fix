@@ -376,7 +376,15 @@ function SidebarComponent({
                       Types de SAV
                     </h3>
                     <Badge variant="secondary" className="text-xs">
-                      {Object.values(savTypeCounts).reduce((total, typeData) => total + typeData.count, 0)}
+                      {savTypes
+                        .filter(type => {
+                          if (type.show_in_sidebar === false) return false;
+                          if (settings?.hide_empty_sav_types) {
+                            return (savTypeCounts[type.type_key]?.count || 0) > 0;
+                          }
+                          return true;
+                        })
+                        .reduce((total, type) => total + (savTypeCounts[type.type_key]?.count || 0), 0)}
                     </Badge>
                   </div>
                   <div className="space-y-1">
