@@ -324,6 +324,7 @@ export type Database = {
           network_opened_at: string | null
           public_token: string
           shop_id: string | null
+          shop_refusal_reason: string | null
           status: string
           updated_at: string
         }
@@ -348,6 +349,7 @@ export type Database = {
           network_opened_at?: string | null
           public_token?: string
           shop_id?: string | null
+          shop_refusal_reason?: string | null
           status?: string
           updated_at?: string
         }
@@ -372,6 +374,7 @@ export type Database = {
           network_opened_at?: string | null
           public_token?: string
           shop_id?: string | null
+          shop_refusal_reason?: string | null
           status?: string
           updated_at?: string
         }
@@ -4783,6 +4786,10 @@ export type Database = {
         }
         Returns: string
       }
+      decline_buyback_request: {
+        Args: { p_reason?: string; p_request_id: string }
+        Returns: Json
+      }
       delete_client_tracking_message: {
         Args: {
           p_message_id: string
@@ -4841,6 +4848,18 @@ export type Database = {
       get_appointment_by_token: { Args: { _token: string }; Returns: Json }
       get_available_stock: { Args: { part_id: string }; Returns: number }
       get_buyback_request_by_token: { Args: { p_token: string }; Returns: Json }
+      get_buyback_shops: {
+        Args: { p_category?: string; p_search?: string }
+        Returns: {
+          categories: string[]
+          city: string
+          logo_url: string
+          name: string
+          postal_code: string
+          shop_id: string
+          slug: string
+        }[]
+      }
       get_current_user_role: { Args: never; Returns: string }
       get_current_user_shop_id: { Args: never; Returns: string }
       get_default_free_plan_id: { Args: never; Returns: string }
@@ -5140,6 +5159,7 @@ export type Database = {
         Returns: undefined
       }
       mask_phone_number: { Args: { phone_number: string }; Returns: string }
+      open_buyback_to_network: { Args: { p_token: string }; Returns: Json }
       recalculate_inventory_session_totals: {
         Args: { _session_id: string }
         Returns: undefined
@@ -5251,6 +5271,22 @@ export type Database = {
           p_media: Json
           p_model: string
           p_slug: string
+        }
+        Returns: string
+      }
+      submit_buyback_request_national: {
+        Args: {
+          p_answers: Json
+          p_brand: string
+          p_category: string
+          p_customer_city: string
+          p_customer_email: string
+          p_customer_name: string
+          p_customer_phone: string
+          p_customer_postal_code: string
+          p_media: Json
+          p_model: string
+          p_shop_id: string
         }
         Returns: string
       }
