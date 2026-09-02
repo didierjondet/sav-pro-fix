@@ -4926,9 +4926,11 @@ export type Database = {
           city: string
           coverage_area: string
           description: string
+          has_website: boolean
           logo_url: string
           postal_code: string
           public_name: string
+          shop_slug: string
           slug: string
           specialties: string
           specialty_tags: string[]
