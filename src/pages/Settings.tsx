@@ -926,6 +926,7 @@ export default function Settings() {
   const settingsSections = [
     { id: 'shop', label: 'Magasin', icon: Store, category: 'shop-group', visible: true },
     { id: 'partner-profile', label: 'Vitrine partenaire', icon: Handshake, category: 'shop-group', visible: isAdmin },
+    { id: 'website', label: 'Votre site internet', icon: Globe, category: 'shop-group', visible: isAdmin },
     { id: 'appearance', label: 'Apparence', icon: Monitor, category: 'shop-group', visible: true },
     { id: 'notifications', label: 'Notifications', icon: MessageSquare, category: 'shop-group', visible: true },
 
@@ -1903,6 +1904,12 @@ export default function Settings() {
             {isAdmin && (
               <TabsContent value="partner-profile" className="space-y-6">
                 <PartnerProfileTab />
+              </TabsContent>
+            )}
+
+            {isAdmin && (
+              <TabsContent value="website" className="space-y-6">
+                <ShopWebsiteTab />
               </TabsContent>
             )}
 
