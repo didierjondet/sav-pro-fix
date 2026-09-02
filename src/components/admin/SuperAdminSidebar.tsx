@@ -81,6 +81,7 @@ const menuItems = [
     group: "Analyse",
     items: [
       { id: "statistics", title: "Statistiques", icon: TrendingUp },
+      { id: "usage", title: "Usage & activation", icon: Activity },
     ]
   }
 ];
