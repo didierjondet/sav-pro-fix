@@ -91,26 +91,55 @@ export function ShopWebsiteTab() {
           <div className="flex items-center justify-between rounded-lg border p-4">
             <div>
               <p className="font-medium">Publier mon site internet</p>
-              <p className="text-sm text-muted-foreground">Votre page est accessible à tous une fois activée.</p>
+              <p className="text-sm text-muted-foreground">
+                Votre page est accessible à tous une fois activée <strong>et enregistrée</strong>.
+              </p>
             </div>
             <Switch checked={!!form.enabled} onCheckedChange={(v) => setForm({ ...form, enabled: v })} />
           </div>
 
-          {siteUrl && (
-            <div className="flex items-center gap-2 rounded-lg bg-muted p-3 text-sm">
-              <code className="flex-1 truncate">{siteUrl}</code>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => { navigator.clipboard.writeText(siteUrl); toast({ title: 'Adresse copiée' }); }}
-              >
-                <Copy className="h-4 w-4" />
-              </Button>
-              <Button size="sm" variant="ghost" asChild>
-                <a href={siteUrl} target="_blank" rel="noopener noreferrer"><ExternalLink className="h-4 w-4" /></a>
-              </Button>
+          {!shop?.slug ? (
+            <div className="rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm">
+              Aucune adresse internet n'est encore associée à votre magasin. Renseignez le nom du magasin
+              dans l'onglet « Magasin » pour générer votre adresse.
+            </div>
+          ) : (
+            <div
+              className={`rounded-lg border p-3 text-sm ${
+                config?.enabled ? 'border-primary/40 bg-primary/5' : 'bg-muted'
+              }`}
+            >
+              <p className="font-medium">
+                {config?.enabled
+                  ? 'Votre site est en ligne'
+                  : "Votre site n'est pas encore en ligne"}
+              </p>
+              <p className="text-muted-foreground text-xs mt-1">
+                {config?.enabled
+                  ? 'Vos clients peuvent y accéder directement, et l’annuaire public y renvoie.'
+                  : "Activez l’interrupteur ci-dessus puis cliquez sur « Enregistrer » en bas de page."}
+              </p>
+              {form.enabled !== !!config?.enabled && (
+                <p className="text-xs text-amber-600 mt-1">
+                  Modification non enregistrée : cliquez sur « Enregistrer ».
+                </p>
+              )}
+              <div className="flex items-center gap-2 mt-2">
+                <code className="flex-1 truncate">{siteUrl}</code>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => { navigator.clipboard.writeText(siteUrl); toast({ title: 'Adresse copiée' }); }}
+                >
+                  <Copy className="h-4 w-4" />
+                </Button>
+                <Button size="sm" variant="ghost" asChild>
+                  <a href={siteUrl} target="_blank" rel="noopener noreferrer"><ExternalLink className="h-4 w-4" /></a>
+                </Button>
+              </div>
             </div>
           )}
+
 
           <div className="space-y-2">
             <Label htmlFor="tagline">Accroche</Label>

@@ -47,7 +47,10 @@ export interface PublicPartner {
   specialty_tags: string[] | null;
   avg_delay_days: number | null;
   certifications: string | null;
+  shop_slug: string | null;
+  has_website: boolean;
 }
+
 
 /** Annuaire professionnel : uniquement pour les magasins connectés. */
 export function useProPartnerDirectory(search: string) {
@@ -68,9 +71,10 @@ export function useProPartnerDirectory(search: string) {
 }
 
 /** Annuaire public : accessible sans compte. */
-export function usePublicPartnerDirectory(search: string) {
+export function usePublicPartnerDirectory(search: string, enabled = true) {
   return useQuery({
     queryKey: ['public-partner-directory', search],
+    enabled,
     placeholderData: (prev) => prev,
     queryFn: async (): Promise<PublicPartner[]> => {
       const { data, error } = await supabase.rpc('get_public_partner_directory', {
@@ -81,6 +85,7 @@ export function usePublicPartnerDirectory(search: string) {
     },
   });
 }
+
 
 export function usePublicPartner(slug?: string) {
   return useQuery({

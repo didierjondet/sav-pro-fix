@@ -96,7 +96,13 @@ export default function PartnerPublicProfile() {
               ))}
             </div>
           </div>
+          {partner.has_website && partner.shop_slug && (
+            <Button asChild>
+              <Link to={`/${partner.shop_slug}`}>Visiter le site</Link>
+            </Button>
+          )}
         </header>
+
 
         {partner.description && (
           <Card>

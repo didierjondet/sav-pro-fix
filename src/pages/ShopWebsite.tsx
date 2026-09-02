@@ -72,23 +72,37 @@ export default function ShopWebsite() {
     );
   }
 
-  if (!data) {
+  if (!data || (data as any).status !== 'ok') {
+    const disabled = (data as any)?.status === 'disabled';
+    const partnerSlug = (data as any)?.partner_slug as string | null | undefined;
+    const shopName = (data as any)?.shop_name as string | undefined;
     return (
       <div className="min-h-screen flex items-center justify-center bg-background px-4">
         <Card className="max-w-md w-full">
           <CardContent className="py-10 text-center space-y-3">
-            <h1 className="text-xl font-semibold">Site introuvable</h1>
+            <h1 className="text-xl font-semibold">
+              {disabled ? 'Site pas encore activé' : 'Site introuvable'}
+            </h1>
             <p className="text-muted-foreground text-sm">
-              Ce professionnel n'a pas encore publié son site internet.
+              {disabled
+                ? `${shopName ?? 'Ce magasin'} n'a pas encore activé son site internet.`
+                : "Cette adresse ne correspond à aucun professionnel Fixway."}
             </p>
-            <Button asChild variant="outline">
-              <Link to="/partenaires">Voir l'annuaire des réparateurs</Link>
-            </Button>
+            {disabled && partnerSlug ? (
+              <Button asChild variant="outline">
+                <Link to={`/partenaires/${partnerSlug}`}>Voir sa fiche dans l'annuaire</Link>
+              </Button>
+            ) : (
+              <Button asChild variant="outline">
+                <Link to="/partenaires">Voir l'annuaire des réparateurs</Link>
+              </Button>
+            )}
           </CardContent>
         </Card>
       </div>
     );
   }
+
 
   const { shop, config, photos, services, partner } = data;
   const title = shop.title || `${shop.name} — Réparation et service après-vente`;
