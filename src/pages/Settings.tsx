@@ -94,6 +94,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import * as XLSX from 'xlsx';
 import { MobileAccessCard } from '@/components/settings/MobileAccessCard';
+import { SecurityTab } from '@/components/settings/SecurityTab';
 
 interface Profile {
   id: string;
@@ -944,6 +945,7 @@ export default function Settings() {
     { id: 'users', label: 'Utilisateurs', icon: Users, category: 'system-group', visible: isAdmin && !!rolePermissions.settings_users },
     { id: 'ai', label: 'IA', icon: Sparkles, category: 'system-group', visible: true },
     { id: 'import-export', label: 'Import/Export', icon: Upload, category: 'system-group', visible: !!rolePermissions.settings_import_export },
+    { id: 'security', label: 'Sécurité', icon: Shield, category: 'system-group', visible: true },
     { id: 'logs', label: 'Logs', icon: ScrollText, category: 'system-group', visible: isAdmin },
   ].filter(s => s.visible);
 
@@ -1916,11 +1918,16 @@ export default function Settings() {
               </TabsContent>
             )}
 
+            <TabsContent value="security" className="space-y-6">
+              <SecurityTab />
+            </TabsContent>
+
             {isAdmin && (
               <TabsContent value="logs" className="space-y-6">
                 <LogsManager />
               </TabsContent>
             )}
+
 
             <TabsContent value="ai" className="space-y-6">
               <Card>

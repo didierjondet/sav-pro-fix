@@ -34,6 +34,9 @@ import { ProspectsManager } from '@/components/admin/ProspectsManager';
 import { StripeOverview } from '@/components/admin/StripeOverview';
 import { useStorageUsage } from '@/hooks/useStorageUsage';
 import { Shop } from '@/hooks/useShop';
+import { UsageAnalytics } from '@/components/admin/UsageAnalytics';
+import { MFASetup } from '@/components/auth/MFASetup';
+import { useMFA } from '@/hooks/useMFA';
 
 interface SuperAdminShop extends Shop {
   subscription_menu_visible: boolean;
@@ -97,6 +100,7 @@ interface SupportTicket {
 
 export default function SuperAdmin() {
   const { user, signOut, loading: authLoading } = useAuth();
+  const { isEnabled: mfaEnabled, loading: mfaLoading, refresh: refreshMfa } = useMFA();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [activeSection, setActiveSection] = useState('dashboard');
@@ -340,12 +344,14 @@ export default function SuperAdmin() {
         return <DefaultRolePermissionsManager />;
       case 'prospects':
         return <ProspectsManager />;
+      case 'usage':
+        return <UsageAnalytics />;
       default:
         return <DashboardOverview shops={shops} profiles={profiles} activeSupportCount={activeSupportCount} />;
     }
   };
 
-  if (loading) {
+  if (loading || mfaLoading) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <div className="text-center">
@@ -355,6 +361,21 @@ export default function SuperAdmin() {
       </div>
     );
   }
+
+  // La double authentification est obligatoire pour le super admin
+  if (!mfaEnabled) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 light">
+        <div className="w-full max-w-lg space-y-4">
+          <div className="rounded-md border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
+            L'accès à la Super Administration nécessite l'activation de la double authentification.
+          </div>
+          <MFASetup onDone={() => refreshMfa()} />
+        </div>
+      </div>
+    );
+  }
+
 
   return (
     <SidebarProvider>

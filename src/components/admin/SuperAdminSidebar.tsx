@@ -31,6 +31,7 @@ import {
   ShieldCheck,
   Mail,
   UserPlus,
+  Activity,
 } from "lucide-react";
 
 interface SuperAdminSidebarProps {
@@ -81,6 +82,7 @@ const menuItems = [
     group: "Analyse",
     items: [
       { id: "statistics", title: "Statistiques", icon: TrendingUp },
+      { id: "usage", title: "Usage & activation", icon: Activity },
     ]
   }
 ];
