@@ -124,11 +124,21 @@ export default function PartnersDirectory() {
                     )}
                   </div>
 
-                  <Button asChild variant="outline" size="sm" className="mt-2">
-                    <Link to={`/partenaires/${p.slug}`}>
-                      Voir la fiche <ArrowRight className="h-4 w-4 ml-2" />
-                    </Link>
-                  </Button>
+                  <div className="mt-2 flex flex-col gap-2">
+                    {p.has_website && p.shop_slug && (
+                      <Button asChild size="sm">
+                        <Link to={`/${p.shop_slug}`}>
+                          Visiter le site <Globe className="h-4 w-4 ml-2" />
+                        </Link>
+                      </Button>
+                    )}
+                    <Button asChild variant="outline" size="sm">
+                      <Link to={`/partenaires/${p.slug}`}>
+                        Voir la fiche <ArrowRight className="h-4 w-4 ml-2" />
+                      </Link>
+                    </Button>
+                  </div>
+
                 </CardContent>
               </Card>
             ))
