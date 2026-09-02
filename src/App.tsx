@@ -180,7 +180,12 @@ const App = () => {
                   <Route path="/support" element={<Support />} />
                   <Route path="/subscription-success" element={<SubscriptionSuccess />} />
                   <Route path="/subscription" element={<Subscription />} />
+                  <Route path="/rachat" element={<BuybackManager />} />
                 </Route>
+
+                <Route path="/rachat/:token" element={<BuybackTracking />} />
+                <Route path="/:slug" element={<ShopWebsite />} />
+                <Route path="/:slug/vendre" element={<ShopWebsiteSell />} />
 
                 <Route path="*" element={<NotFound />} />
               </Routes>
