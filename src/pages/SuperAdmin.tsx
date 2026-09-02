@@ -100,6 +100,7 @@ interface SupportTicket {
 
 export default function SuperAdmin() {
   const { user, signOut, loading: authLoading } = useAuth();
+  const { isEnabled: mfaEnabled, loading: mfaLoading, refresh: refreshMfa } = useMFA();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [activeSection, setActiveSection] = useState('dashboard');
