@@ -230,6 +230,191 @@ export type Database = {
           },
         ]
       }
+      buyback_offers: {
+        Row: {
+          ai_high: number | null
+          ai_low: number | null
+          ai_mid: number | null
+          amount: number
+          conditions: string | null
+          created_at: string
+          id: string
+          is_network_offer: boolean
+          is_selected: boolean
+          message: string | null
+          request_id: string
+          selected_at: string | null
+          shop_id: string
+          status: string
+          updated_at: string
+          valid_until: string | null
+        }
+        Insert: {
+          ai_high?: number | null
+          ai_low?: number | null
+          ai_mid?: number | null
+          amount: number
+          conditions?: string | null
+          created_at?: string
+          id?: string
+          is_network_offer?: boolean
+          is_selected?: boolean
+          message?: string | null
+          request_id: string
+          selected_at?: string | null
+          shop_id: string
+          status?: string
+          updated_at?: string
+          valid_until?: string | null
+        }
+        Update: {
+          ai_high?: number | null
+          ai_low?: number | null
+          ai_mid?: number | null
+          amount?: number
+          conditions?: string | null
+          created_at?: string
+          id?: string
+          is_network_offer?: boolean
+          is_selected?: boolean
+          message?: string | null
+          request_id?: string
+          selected_at?: string | null
+          shop_id?: string
+          status?: string
+          updated_at?: string
+          valid_until?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "buyback_offers_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "buyback_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "buyback_offers_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      buyback_requests: {
+        Row: {
+          accepted_offer_id: string | null
+          answers: Json
+          brand: string | null
+          category: string
+          created_at: string
+          customer_city: string | null
+          customer_email: string | null
+          customer_name: string
+          customer_phone: string | null
+          customer_postal_code: string | null
+          id: string
+          media: Json
+          media_expires_at: string
+          model: string | null
+          network_closed_at: string | null
+          network_deadline: string | null
+          network_open: boolean
+          network_opened_at: string | null
+          public_token: string
+          shop_id: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          accepted_offer_id?: string | null
+          answers?: Json
+          brand?: string | null
+          category: string
+          created_at?: string
+          customer_city?: string | null
+          customer_email?: string | null
+          customer_name: string
+          customer_phone?: string | null
+          customer_postal_code?: string | null
+          id?: string
+          media?: Json
+          media_expires_at?: string
+          model?: string | null
+          network_closed_at?: string | null
+          network_deadline?: string | null
+          network_open?: boolean
+          network_opened_at?: string | null
+          public_token?: string
+          shop_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          accepted_offer_id?: string | null
+          answers?: Json
+          brand?: string | null
+          category?: string
+          created_at?: string
+          customer_city?: string | null
+          customer_email?: string | null
+          customer_name?: string
+          customer_phone?: string | null
+          customer_postal_code?: string | null
+          id?: string
+          media?: Json
+          media_expires_at?: string
+          model?: string | null
+          network_closed_at?: string | null
+          network_deadline?: string | null
+          network_open?: boolean
+          network_opened_at?: string | null
+          public_token?: string
+          shop_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "buyback_requests_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      buyback_settings: {
+        Row: {
+          created_at: string
+          id: boolean
+          max_offers_to_client: number
+          media_retention_days: number
+          response_delay_hours: number
+          selection_rule: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: boolean
+          max_offers_to_client?: number
+          media_retention_days?: number
+          response_delay_hours?: number
+          selection_rule?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: boolean
+          max_offers_to_client?: number
+          media_retention_days?: number
+          response_delay_hours?: number
+          selection_rule?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       carousel_items: {
         Row: {
           created_at: string | null
@@ -3334,6 +3519,109 @@ export type Database = {
         }
         Relationships: []
       }
+      shop_website_config: {
+        Row: {
+          about: string | null
+          buyback_auto_accept: boolean
+          buyback_categories: string[]
+          buyback_enabled: boolean
+          buyback_intro: string | null
+          created_at: string
+          enabled: boolean
+          hero_image_url: string | null
+          id: string
+          opening_hours: Json
+          shop_id: string
+          show_reviews: boolean
+          show_services: boolean
+          social_links: Json
+          tagline: string | null
+          updated_at: string
+        }
+        Insert: {
+          about?: string | null
+          buyback_auto_accept?: boolean
+          buyback_categories?: string[]
+          buyback_enabled?: boolean
+          buyback_intro?: string | null
+          created_at?: string
+          enabled?: boolean
+          hero_image_url?: string | null
+          id?: string
+          opening_hours?: Json
+          shop_id: string
+          show_reviews?: boolean
+          show_services?: boolean
+          social_links?: Json
+          tagline?: string | null
+          updated_at?: string
+        }
+        Update: {
+          about?: string | null
+          buyback_auto_accept?: boolean
+          buyback_categories?: string[]
+          buyback_enabled?: boolean
+          buyback_intro?: string | null
+          created_at?: string
+          enabled?: boolean
+          hero_image_url?: string | null
+          id?: string
+          opening_hours?: Json
+          shop_id?: string
+          show_reviews?: boolean
+          show_services?: boolean
+          social_links?: Json
+          tagline?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shop_website_config_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: true
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shop_website_photos: {
+        Row: {
+          caption: string | null
+          created_at: string
+          display_order: number
+          id: string
+          shop_id: string
+          updated_at: string
+          url: string
+        }
+        Insert: {
+          caption?: string | null
+          created_at?: string
+          display_order?: number
+          id?: string
+          shop_id: string
+          updated_at?: string
+          url: string
+        }
+        Update: {
+          caption?: string | null
+          created_at?: string
+          display_order?: number
+          id?: string
+          shop_id?: string
+          updated_at?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shop_website_photos_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       shop_working_hours: {
         Row: {
           break_end: string | null
@@ -4447,6 +4735,7 @@ export type Database = {
         Args: { p_action?: string; p_shop_id: string }
         Returns: Json
       }
+      close_buyback_round: { Args: { p_request_id: string }; Returns: number }
       create_profile_only: {
         Args: {
           p_email: string
@@ -4551,9 +4840,28 @@ export type Database = {
       }
       get_appointment_by_token: { Args: { _token: string }; Returns: Json }
       get_available_stock: { Args: { part_id: string }; Returns: number }
+      get_buyback_request_by_token: { Args: { p_token: string }; Returns: Json }
       get_current_user_role: { Args: never; Returns: string }
       get_current_user_shop_id: { Args: never; Returns: string }
       get_default_free_plan_id: { Args: never; Returns: string }
+      get_network_buyback_requests: {
+        Args: never
+        Returns: {
+          answers: Json
+          brand: string
+          category: string
+          created_at: string
+          customer_city: string
+          customer_postal_code: string
+          id: string
+          media: Json
+          model: string
+          my_offer_amount: number
+          network_deadline: string
+          offers_count: number
+          origin_shop_city: string
+        }[]
+      }
       get_parts_statistics: {
         Args: { p_shop_id: string }
         Returns: {
@@ -4684,6 +4992,7 @@ export type Database = {
         }[]
       }
       get_shop_last_activity: { Args: { _shop_id: string }; Returns: string }
+      get_shop_website: { Args: { p_slug: string }; Returns: Json }
       get_signup_activation_report: {
         Args: never
         Returns: {
@@ -4869,6 +5178,15 @@ export type Database = {
         }
         Returns: Json
       }
+      respond_to_buyback_offer: {
+        Args: {
+          p_action: string
+          p_offer_id: string
+          p_open_network?: boolean
+          p_token: string
+        }
+        Returns: Json
+      }
       send_client_tracking_message: {
         Args: {
           p_message: string
@@ -4919,6 +5237,34 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      submit_buyback_request: {
+        Args: {
+          p_answers: Json
+          p_brand: string
+          p_category: string
+          p_customer_city: string
+          p_customer_email: string
+          p_customer_name: string
+          p_customer_phone: string
+          p_customer_postal_code: string
+          p_media: Json
+          p_model: string
+          p_slug: string
+        }
+        Returns: string
+      }
+      submit_network_buyback_offer: {
+        Args: {
+          p_ai_high?: number
+          p_ai_low?: number
+          p_ai_mid?: number
+          p_amount: number
+          p_conditions: string
+          p_message: string
+          p_request_id: string
+        }
+        Returns: string
       }
       submit_satisfaction_survey: {
         Args: { p_comment: string; p_rating: number; p_token: string }
