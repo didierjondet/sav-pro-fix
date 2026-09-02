@@ -4235,6 +4235,108 @@ export type Database = {
         }
         Relationships: []
       }
+      usage_click_events: {
+        Row: {
+          created_at: string
+          device: string | null
+          element_label: string | null
+          id: string
+          path: string
+          shop_id: string | null
+          user_id: string | null
+          viewport_h: number | null
+          viewport_w: number | null
+          x_pct: number
+          y_pct: number
+        }
+        Insert: {
+          created_at?: string
+          device?: string | null
+          element_label?: string | null
+          id?: string
+          path: string
+          shop_id?: string | null
+          user_id?: string | null
+          viewport_h?: number | null
+          viewport_w?: number | null
+          x_pct: number
+          y_pct: number
+        }
+        Update: {
+          created_at?: string
+          device?: string | null
+          element_label?: string | null
+          id?: string
+          path?: string
+          shop_id?: string | null
+          user_id?: string | null
+          viewport_h?: number | null
+          viewport_w?: number | null
+          x_pct?: number
+          y_pct?: number
+        }
+        Relationships: []
+      }
+      usage_page_views: {
+        Row: {
+          created_at: string
+          device: string | null
+          duration_ms: number
+          id: string
+          path: string
+          role: string | null
+          session_id: string | null
+          shop_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          device?: string | null
+          duration_ms?: number
+          id?: string
+          path: string
+          role?: string | null
+          session_id?: string | null
+          shop_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          device?: string | null
+          duration_ms?: number
+          id?: string
+          path?: string
+          role?: string | null
+          session_id?: string | null
+          shop_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      user_mfa_backup_codes: {
+        Row: {
+          code_hash: string
+          created_at: string
+          id: string
+          used_at: string | null
+          user_id: string
+        }
+        Insert: {
+          code_hash: string
+          created_at?: string
+          id?: string
+          used_at?: string | null
+          user_id: string
+        }
+        Update: {
+          code_hash?: string
+          created_at?: string
+          id?: string
+          used_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       widget_configurations: {
         Row: {
           created_at: string | null
@@ -4582,6 +4684,26 @@ export type Database = {
         }[]
       }
       get_shop_last_activity: { Args: { _shop_id: string }; Returns: string }
+      get_signup_activation_report: {
+        Args: never
+        Returns: {
+          activation_status: string
+          customer_count: number
+          email: string
+          first_name: string
+          last_name: string
+          last_path: string
+          last_sign_in_at: string
+          page_views: number
+          role: string
+          sav_count: number
+          shop_id: string
+          shop_name: string
+          signed_up_at: string
+          total_seconds: number
+          user_id: string
+        }[]
+      }
       get_sms_credits_breakdown: {
         Args: { p_shop_id: string }
         Returns: {
@@ -4632,6 +4754,24 @@ export type Database = {
           message: string
           sender_name: string
           sender_type: string
+        }[]
+      }
+      get_usage_heatmap: {
+        Args: { _days?: number; _device?: string; _path: string }
+        Returns: {
+          weight: number
+          x_pct: number
+          y_pct: number
+        }[]
+      }
+      get_usage_page_stats: {
+        Args: { _days?: number }
+        Returns: {
+          avg_seconds: number
+          path: string
+          total_seconds: number
+          unique_users: number
+          views: number
         }[]
       }
       has_shop_role_permission: {
