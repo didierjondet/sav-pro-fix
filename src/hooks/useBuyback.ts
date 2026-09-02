@@ -158,12 +158,28 @@ export function useBuyback() {
     onError: (e: any) => toast({ title: 'Erreur', description: e.message, variant: 'destructive' }),
   });
 
+  const declineRequest = useMutation({
+    mutationFn: async (payload: { requestId: string; reason?: string }) => {
+      const { error } = await supabase.rpc('decline_buyback_request' as any, {
+        p_request_id: payload.requestId,
+        p_reason: payload.reason ?? null,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['buyback-requests', shopId] });
+      queryClient.invalidateQueries({ queryKey: ['buyback-offers', shopId] });
+      toast({ title: 'Demande refusée', description: 'Le client peut désormais l\'ouvrir au réseau.' });
+    },
+    onError: (e: any) => toast({ title: 'Erreur', description: e.message, variant: 'destructive' }),
+  });
+
   const getSignedMediaUrl = async (path: string) => {
     const { data } = await supabase.storage.from('buyback-media').createSignedUrl(path, 60 * 60);
     return data?.signedUrl ?? null;
   };
 
-  return { requests, offers, networkRequests, loading: isLoading, sendOffer, getSignedMediaUrl };
+  return { requests, offers, networkRequests, loading: isLoading, sendOffer, declineRequest, getSignedMediaUrl };
 }
 
 export function useBuybackAiEstimate() {
