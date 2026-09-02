@@ -34,6 +34,13 @@ export function LandingHeader({ onAuthClick, onLoginClick }: LandingHeaderProps)
             >
               Réparateurs
             </Button>
+            <Button
+              variant="ghost"
+              className="text-gray-600 hover:text-gray-900 hidden sm:flex"
+              onClick={() => navigate('/vendre')}
+            >
+              Vendre mon appareil
+            </Button>
             <Button 
               variant="ghost" 
               className="text-gray-600 hover:text-gray-900 hidden sm:flex"

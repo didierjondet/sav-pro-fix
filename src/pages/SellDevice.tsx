@@ -45,6 +45,9 @@ export default function SellDevice() {
   const allCategories = BUYBACK_CATEGORIES.map((c) => c.id);
 
   const handleSubmit = async (payload: BuybackSubmitPayload) => {
+    if (destination === 'shop' && !selectedShop) {
+      throw new Error('Sélectionnez le magasin destinataire de votre demande.');
+    }
     const { data: token, error } = await supabase.rpc('submit_buyback_request_national' as any, {
       p_shop_id: destination === 'shop' ? selectedShop?.shop_id ?? null : null,
       p_category: payload.category,
