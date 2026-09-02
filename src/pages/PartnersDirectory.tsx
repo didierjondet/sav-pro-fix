@@ -63,7 +63,13 @@ export default function PartnersDirectory() {
         </div>
 
         <section className="mt-10 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {isLoading ? (
+          {!hasSearch ? (
+            <div className="col-span-full text-center space-y-2 py-10">
+              <p className="text-sm text-muted-foreground">
+                Saisissez une ville, un code postal ou une spécialité pour afficher les réparateurs.
+              </p>
+            </div>
+          ) : isLoading ? (
             <p className="text-sm text-muted-foreground col-span-full text-center">Chargement…</p>
           ) : partners.length === 0 ? (
             <div className="col-span-full text-center space-y-3 py-8">
@@ -77,6 +83,7 @@ export default function PartnersDirectory() {
             </div>
 
           ) : (
+
             partners.map((p) => (
               <Card key={p.slug} className="flex flex-col">
                 <CardContent className="p-5 flex-1 flex flex-col gap-3">
