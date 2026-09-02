@@ -13,7 +13,9 @@ import { resolveSpecialtyTags } from '@/lib/partnerSpecialties';
 
 export default function PartnersDirectory() {
   const [search, setSearch] = useState('');
-  const { data: partners = [], isLoading } = usePublicPartnerDirectory(search);
+  const hasSearch = search.trim().length >= 2;
+  const { data: partners = [], isLoading } = usePublicPartnerDirectory(search, hasSearch);
+
 
   return (
     <div className="min-h-screen bg-background">
