@@ -12,7 +12,7 @@ import { useShopWebsite, DEFAULT_OPENING_HOURS, ShopWebsiteConfig } from '@/hook
 import { BUYBACK_CATEGORIES } from '@/lib/buyback';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { getPublicAppOrigin } from '@/lib/appOrigin';
+import { getPublicAppOrigin } from '@/utils/trackingUtils';
 import { Globe, Copy, ExternalLink, Trash2, Loader2, Recycle, ImagePlus } from 'lucide-react';
 
 export function ShopWebsiteTab() {
