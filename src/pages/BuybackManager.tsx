@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Separator } from '@/components/ui/separator';
 import { useBuyback, useBuybackAiEstimate, BuybackRequest, NetworkBuybackRequest } from '@/hooks/useBuyback';
 import { BUYBACK_STATUS_LABELS, getCategoryEmoji, getCategoryLabel } from '@/lib/buyback';
-import { Sparkles, Globe2, Loader2, Euro, ImageIcon } from 'lucide-react';
+import { Sparkles, Globe2, Loader2, Euro, ImageIcon, XCircle } from 'lucide-react';
 
 interface OfferTarget {
   id: string;
@@ -23,7 +23,7 @@ interface OfferTarget {
 }
 
 export default function BuybackManager() {
-  const { requests, offers, networkRequests, loading, sendOffer, getSignedMediaUrl } = useBuyback();
+  const { requests, offers, networkRequests, loading, sendOffer, declineRequest, getSignedMediaUrl } = useBuyback();
   const aiEstimate = useBuybackAiEstimate();
 
   const [target, setTarget] = useState<OfferTarget | null>(null);
@@ -138,10 +138,20 @@ export default function BuybackManager() {
                   {offersByRequest.has(r.id) && (
                     <Badge variant="outline"><Euro className="h-3 w-3 mr-1" />{offersByRequest.get(r.id)?.toFixed(2)}</Badge>
                   )}
+                  {['pending', 'offered'].includes(r.status) && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={declineRequest.isPending}
+                      onClick={() => declineRequest.mutate({ requestId: r.id })}
+                    >
+                      <XCircle className="h-4 w-4 mr-1" />Refuser
+                    </Button>
+                  )}
                   <Button
                     size="sm"
                     onClick={() => openOffer({ ...r, isNetwork: false })}
-                    disabled={['accepted', 'refused', 'network_closed'].includes(r.status)}
+                    disabled={['accepted', 'refused', 'refused_by_shop', 'network_closed'].includes(r.status)}
                   >
                     {offersByRequest.has(r.id) ? 'Modifier l\'offre' : 'Chiffrer'}
                   </Button>

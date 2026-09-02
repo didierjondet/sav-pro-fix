@@ -60,6 +60,20 @@ export default function BuybackTracking() {
     }
   }, [data?.network_open, data?.network_deadline, token, queryClient]);
 
+  const openNetwork = async () => {
+    setBusy(true);
+    try {
+      const { error } = await supabase.rpc('open_buyback_to_network' as any, { p_token: token });
+      if (error) throw error;
+      await queryClient.invalidateQueries({ queryKey: ['buyback-tracking', token] });
+      toast({ title: 'Votre demande est envoyée au réseau' });
+    } catch (e: any) {
+      toast({ title: 'Erreur', description: e.message, variant: 'destructive' });
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const respond = async (offerId: string, action: 'accept' | 'refuse', openNetwork = false) => {
     setBusy(true);
     try {
@@ -123,7 +137,8 @@ export default function BuybackTracking() {
               {[data.brand, data.model].filter(Boolean).join(' ') || getCategoryLabel(data.category)}
             </CardTitle>
             <p className="text-sm text-muted-foreground">
-              Demande envoyée à {data.shop?.name} le {new Date(data.created_at).toLocaleDateString('fr-FR')}
+              Demande envoyée {data.shop?.name ? `à ${data.shop.name}` : 'à tous les magasins du réseau Fixway'} le{' '}
+              {new Date(data.created_at).toLocaleDateString('fr-FR')}
             </p>
           </CardHeader>
           <CardContent className="space-y-2 text-sm">
@@ -146,6 +161,24 @@ export default function BuybackTracking() {
               <p className="text-sm text-muted-foreground">
                 Vous recevrez une notification dès que {data.shop?.name} aura chiffré votre matériel.
               </p>
+            </CardContent>
+          </Card>
+        )}
+
+        {data.status === 'refused_by_shop' && (
+          <Card className="border-destructive/40">
+            <CardContent className="py-6 text-center space-y-3">
+              <XCircle className="h-7 w-7 mx-auto text-destructive" />
+              <p className="font-medium">
+                {data.shop?.name ?? 'Le magasin'} ne souhaite pas racheter votre appareil
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Vous pouvez proposer votre matériel à l'ensemble des magasins du réseau Fixway. Vous recevrez
+                une sélection des meilleures offres ; les frais d'envoi resteront à votre charge.
+              </p>
+              <Button disabled={busy} onClick={openNetwork}>
+                <Globe2 className="h-4 w-4 mr-2" />Proposer au réseau Fixway
+              </Button>
             </CardContent>
           </Card>
         )}

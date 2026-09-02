@@ -1,31 +1,15 @@
-import { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Helmet } from 'react-helmet-async';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
-import { useToast } from '@/hooks/use-toast';
-import { BUYBACK_CATEGORIES, getQuestions } from '@/lib/buyback';
-import { Camera, Loader2, ArrowLeft, CheckCircle2 } from 'lucide-react';
+import { BuybackForm, type BuybackSubmitPayload } from '@/components/buyback/BuybackForm';
+import { Loader2, ArrowLeft } from 'lucide-react';
 
 export default function ShopWebsiteSell() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
-  const { toast } = useToast();
-
-  const [category, setCategory] = useState<string>('');
-  const [brand, setBrand] = useState('');
-  const [model, setModel] = useState('');
-  const [answers, setAnswers] = useState<Record<string, string>>({});
-  const [files, setFiles] = useState<File[]>([]);
-  const [customer, setCustomer] = useState({ name: '', email: '', phone: '', city: '', postal_code: '' });
-  const [submitting, setSubmitting] = useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey: ['shop-website', slug],
@@ -54,9 +38,12 @@ export default function ShopWebsiteSell() {
             <p className="text-sm text-muted-foreground">
               Ce professionnel ne reçoit pas de proposition de rachat pour le moment.
             </p>
-            {data?.shop?.slug && (
-              <Button asChild variant="outline"><Link to={`/${data.shop.slug}`}>Retour au site</Link></Button>
-            )}
+            <div className="flex flex-col gap-2">
+              {data?.shop?.slug && (
+                <Button asChild variant="outline"><Link to={`/${data.shop.slug}`}>Retour au site</Link></Button>
+              )}
+              <Button asChild variant="ghost"><Link to="/vendre">Proposer mon appareil à tout le réseau</Link></Button>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -64,62 +51,23 @@ export default function ShopWebsiteSell() {
   }
 
   const acceptedCategories: string[] = data.config.buyback_categories ?? [];
-  const questions = category ? getQuestions(category) : [];
 
-  const handleFiles = (list: FileList | null) => {
-    if (!list) return;
-    const next = [...files, ...Array.from(list)].slice(0, 6);
-    setFiles(next);
-  };
-
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!category) {
-      toast({ title: 'Choisissez une catégorie', variant: 'destructive' });
-      return;
-    }
-    const missing = questions.filter((q) => q.required && !answers[q.id]?.trim());
-    if (missing.length > 0) {
-      toast({ title: 'Champs manquants', description: missing[0].label, variant: 'destructive' });
-      return;
-    }
-    if (!customer.name.trim() || (!customer.email.trim() && !customer.phone.trim())) {
-      toast({ title: 'Coordonnées incomplètes', description: 'Nom et email ou téléphone requis', variant: 'destructive' });
-      return;
-    }
-
-    setSubmitting(true);
-    try {
-      const media: { path: string; type: string }[] = [];
-      const folder = `${slug}/${crypto.randomUUID()}`;
-      for (const file of files) {
-        const path = `${folder}/${Date.now()}-${file.name.replace(/[^\w.-]/g, '_')}`;
-        const { error } = await supabase.storage.from('buyback-media').upload(path, file);
-        if (error) throw error;
-        media.push({ path, type: file.type.startsWith('video') ? 'video' : 'image' });
-      }
-
-      const { data: token, error } = await supabase.rpc('submit_buyback_request' as any, {
-        p_slug: slug,
-        p_category: category,
-        p_brand: brand,
-        p_model: model,
-        p_answers: answers,
-        p_media: media,
-        p_customer_name: customer.name,
-        p_customer_email: customer.email,
-        p_customer_phone: customer.phone,
-        p_customer_city: customer.city,
-        p_customer_postal_code: customer.postal_code,
-      });
-      if (error) throw error;
-
-      navigate(`/rachat/${token}`);
-    } catch (err: any) {
-      toast({ title: 'Envoi impossible', description: err.message, variant: 'destructive' });
-    } finally {
-      setSubmitting(false);
-    }
+  const handleSubmit = async (payload: BuybackSubmitPayload) => {
+    const { data: token, error } = await supabase.rpc('submit_buyback_request' as any, {
+      p_slug: slug,
+      p_category: payload.category,
+      p_brand: payload.brand,
+      p_model: payload.model,
+      p_answers: payload.answers,
+      p_media: payload.media,
+      p_customer_name: payload.customer.name,
+      p_customer_email: payload.customer.email,
+      p_customer_phone: payload.customer.phone,
+      p_customer_city: payload.customer.city,
+      p_customer_postal_code: payload.customer.postal_code,
+    });
+    if (error) throw error;
+    navigate(`/rachat/${token}`);
   };
 
   return (
@@ -144,139 +92,17 @@ export default function ShopWebsiteSell() {
               {data.config.buyback_intro ||
                 `Décrivez votre appareil, ajoutez des photos et ${data.shop.name} vous répondra avec une offre chiffrée.`}
             </p>
+            <p className="text-xs text-muted-foreground">
+              Si {data.shop.name} refuse votre demande, vous pourrez l'ouvrir aux autres magasins du réseau.
+            </p>
           </CardHeader>
           <CardContent>
-            <form onSubmit={submit} className="space-y-6">
-              {/* Catégorie */}
-              <div className="space-y-2">
-                <Label>Que souhaitez-vous vendre ?</Label>
-                <div className="flex flex-wrap gap-2">
-                  {acceptedCategories.map((c) => {
-                    const cat = BUYBACK_CATEGORIES.find((x) => x.id === c);
-                    return (
-                      <Button
-                        key={c}
-                        type="button"
-                        size="sm"
-                        variant={category === c ? 'default' : 'outline'}
-                        onClick={() => { setCategory(c); setAnswers({}); }}
-                      >
-                        {cat ? `${cat.emoji} ${cat.label}` : c}
-                      </Button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {category && (
-                <>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-2">
-                      <Label htmlFor="brand">Marque</Label>
-                      <Input id="brand" value={brand} onChange={(e) => setBrand(e.target.value)} placeholder="Apple, Samsung…" />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="model">Modèle</Label>
-                      <Input id="model" value={model} onChange={(e) => setModel(e.target.value)} placeholder="iPhone 13, TV QLED 55…" />
-                    </div>
-                  </div>
-
-                  <div className="space-y-3">
-                    {questions.map((q) => (
-                      <div key={q.id} className="space-y-2">
-                        <Label htmlFor={q.id}>
-                          {q.label}{q.required && <span className="text-destructive"> *</span>}
-                        </Label>
-                        {q.type === 'select' ? (
-                          <Select value={answers[q.id] ?? ''} onValueChange={(v) => setAnswers((a) => ({ ...a, [q.id]: v }))}>
-                            <SelectTrigger id={q.id}><SelectValue placeholder="Choisir…" /></SelectTrigger>
-                            <SelectContent>
-                              {(q.options ?? []).map((o) => (
-                                <SelectItem key={o} value={o}>{o}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        ) : q.type === 'textarea' ? (
-                          <Textarea
-                            id={q.id}
-                            rows={3}
-                            placeholder={q.placeholder}
-                            value={answers[q.id] ?? ''}
-                            onChange={(e) => setAnswers((a) => ({ ...a, [q.id]: e.target.value }))}
-                          />
-                        ) : (
-                          <Input
-                            id={q.id}
-                            placeholder={q.placeholder}
-                            value={answers[q.id] ?? ''}
-                            onChange={(e) => setAnswers((a) => ({ ...a, [q.id]: e.target.value }))}
-                          />
-                        )}
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Médias */}
-                  <div className="space-y-2">
-                    <Label htmlFor="media">Photos ou courte vidéo (6 maximum)</Label>
-                    <div className="flex items-center gap-2">
-                      <Input
-                        id="media"
-                        type="file"
-                        accept="image/*,video/*"
-                        multiple
-                        onChange={(e) => handleFiles(e.target.files)}
-                      />
-                      <Camera className="h-4 w-4 text-muted-foreground shrink-0" />
-                    </div>
-                    {files.length > 0 && (
-                      <div className="flex flex-wrap gap-2">
-                        {files.map((f, i) => (
-                          <Badge key={i} variant="secondary" className="max-w-[180px] truncate">
-                            {f.name}
-                          </Badge>
-                        ))}
-                      </div>
-                    )}
-                    <p className="text-xs text-muted-foreground">
-                      Vos médias sont conservés de façon sécurisée puis supprimés automatiquement après 2 mois.
-                    </p>
-                  </div>
-
-                  {/* Coordonnées */}
-                  <div className="space-y-3 border-t pt-4">
-                    <p className="font-medium text-sm">Vos coordonnées</p>
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      <div className="space-y-2">
-                        <Label htmlFor="name">Nom et prénom *</Label>
-                        <Input id="name" value={customer.name} onChange={(e) => setCustomer({ ...customer, name: e.target.value })} required />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="phone">Téléphone</Label>
-                        <Input id="phone" value={customer.phone} onChange={(e) => setCustomer({ ...customer, phone: e.target.value })} />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="email">Email</Label>
-                        <Input id="email" type="email" value={customer.email} onChange={(e) => setCustomer({ ...customer, email: e.target.value })} />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="city">Ville</Label>
-                        <Input id="city" value={customer.city} onChange={(e) => setCustomer({ ...customer, city: e.target.value })} />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="cp">Code postal</Label>
-                        <Input id="cp" value={customer.postal_code} onChange={(e) => setCustomer({ ...customer, postal_code: e.target.value })} />
-                      </div>
-                    </div>
-                  </div>
-
-                  <Button type="submit" className="w-full" disabled={submitting}>
-                    {submitting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <CheckCircle2 className="h-4 w-4 mr-2" />}
-                    Envoyer ma proposition
-                  </Button>
-                </>
-              )}
-            </form>
+            <BuybackForm
+              allowedCategories={acceptedCategories}
+              storagePrefix={slug ?? 'shop'}
+              submitLabel={`Envoyer ma demande à ${data.shop.name}`}
+              onSubmit={handleSubmit}
+            />
           </CardContent>
         </Card>
       </div>

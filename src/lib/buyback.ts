@@ -131,6 +131,7 @@ export const BUYBACK_STATUS_LABELS: Record<string, string> = {
   offered: 'Offre envoyée',
   accepted: 'Offre acceptée',
   refused: 'Refusée',
+  refused_by_shop: 'Refusée par le magasin',
   network: 'Ouverte au réseau',
   network_closed: 'Offres réseau transmises',
   expired: 'Expirée',
@@ -141,3 +142,98 @@ export const SELECTION_RULES = [
   { id: 'random_top', label: 'Tirage au sort parmi les meilleures offres', description: 'Tirage aléatoire parmi les offres du haut du panier (top 30 %).' },
   { id: 'best_amounts', label: 'Les 3 meilleurs montants', description: 'Pas de hasard sur la sélection, uniquement sur l\'ordre d\'affichage.' },
 ];
+
+/* ---------------------------------------------------------------
+   Guidage photos, accessoires et points en panne (par catégorie)
+   --------------------------------------------------------------- */
+
+export interface PhotoGuide {
+  id: string;
+  label: string;
+  hint: string;
+  required?: boolean;
+}
+
+const PHOTO_COMMON: PhotoGuide[] = [
+  { id: 'ensemble', label: 'Vue d\'ensemble', hint: 'Appareil entier, posé à plat, bien éclairé, sans reflet.', required: true },
+  { id: 'defaut', label: 'Gros plan du défaut', hint: 'Cadrez la zone abîmée à 20 cm environ.', required: true },
+];
+
+export const BUYBACK_PHOTO_GUIDES: Record<string, PhotoGuide[]> = {
+  smartphone: [
+    { id: 'face_allume', label: 'Écran allumé, de face', hint: 'Appareil déverrouillé si possible, à 90° au-dessus de l\'écran.', required: true },
+    { id: 'dos', label: 'Dos de l\'appareil', hint: 'Montrez le dos entier et les objectifs photo.', required: true },
+    { id: 'tranches', label: 'Tranches / contours', hint: 'Une photo en biais pour voir les chocs sur le châssis.' },
+    { id: 'reglages', label: 'Écran des réglages', hint: 'Capture ou photo de la page « À propos » (modèle, capacité, état batterie).' },
+    ...PHOTO_COMMON.slice(1),
+  ],
+  tablette: [
+    { id: 'face_allume', label: 'Écran allumé, de face', hint: 'À 90° au-dessus de la dalle.', required: true },
+    { id: 'dos', label: 'Dos de la tablette', hint: 'Dos entier, référence visible si possible.', required: true },
+    ...PHOTO_COMMON.slice(1),
+  ],
+  ordinateur: [
+    { id: 'ouvert', label: 'Ordinateur ouvert et allumé', hint: 'Vue de face, écran affichant le bureau.', required: true },
+    { id: 'clavier', label: 'Clavier et repose-poignets', hint: 'Vue du dessus pour montrer l\'usure.' },
+    { id: 'dessous', label: 'Étiquette du dessous', hint: 'Référence / numéro de série lisibles.', required: true },
+    ...PHOTO_COMMON.slice(1),
+  ],
+  tv: [
+    { id: 'dalle_allumee', label: 'Dalle allumée', hint: 'Photo de face, dans une pièce sombre, écran affichant une image claire.', required: true },
+    { id: 'dalle_eteinte', label: 'Dalle éteinte', hint: 'Permet de voir les fissures et les rayures.', required: true },
+    { id: 'etiquette', label: 'Étiquette arrière', hint: 'Modèle exact et numéro de série.', required: true },
+    ...PHOTO_COMMON.slice(1),
+  ],
+  electromenager: [
+    { id: 'face', label: 'Appareil de face', hint: 'Appareil entier, porte fermée.', required: true },
+    { id: 'plaque', label: 'Plaque signalétique', hint: 'Souvent sur le côté, à l\'arrière ou dans l\'ouverture.', required: true },
+    ...PHOTO_COMMON.slice(1),
+  ],
+  trottinette: [
+    { id: 'profil', label: 'Vue de profil dépliée', hint: 'Trottinette / vélo entier de côté.', required: true },
+    { id: 'roues', label: 'Roues et pneus', hint: 'Gros plan sur l\'usure et l\'état des pneus.' },
+    { id: 'ecran_batterie', label: 'Écran / niveau de batterie', hint: 'Appareil allumé, affichage lisible.' },
+    ...PHOTO_COMMON.slice(1),
+  ],
+  console: [
+    { id: 'face', label: 'Console de face', hint: 'Console entière, allumée si possible.', required: true },
+    { id: 'connectique', label: 'Connectique arrière', hint: 'Ports HDMI / alimentation.' },
+    { id: 'accessoires_photo', label: 'Accessoires fournis', hint: 'Manettes, câbles, jeux posés ensemble.' },
+    ...PHOTO_COMMON.slice(1),
+  ],
+  autre: PHOTO_COMMON,
+};
+
+export function getPhotoGuides(category: string): PhotoGuide[] {
+  return BUYBACK_PHOTO_GUIDES[category] ?? BUYBACK_PHOTO_GUIDES.autre;
+}
+
+export const BUYBACK_ACCESSORIES: Record<string, string[]> = {
+  smartphone: ['Boîte d\'origine', 'Chargeur', 'Câble', 'Écouteurs', 'Coque', 'Facture'],
+  tablette: ['Boîte d\'origine', 'Chargeur', 'Câble', 'Stylet', 'Étui / clavier', 'Facture'],
+  ordinateur: ['Chargeur d\'origine', 'Boîte', 'Sacoche', 'Souris', 'Facture'],
+  tv: ['Télécommande', 'Pied / support', 'Câble d\'alimentation', 'Boîte', 'Facture'],
+  electromenager: ['Notice', 'Accessoires d\'origine', 'Tuyaux / câbles', 'Facture'],
+  trottinette: ['Chargeur', 'Clé / antivol', 'Boîte', 'Facture'],
+  console: ['Manette(s)', 'Câble HDMI', 'Alimentation', 'Jeux', 'Boîte', 'Facture'],
+  autre: ['Chargeur / alimentation', 'Boîte', 'Accessoires', 'Facture'],
+};
+
+export function getAccessories(category: string): string[] {
+  return BUYBACK_ACCESSORIES[category] ?? BUYBACK_ACCESSORIES.autre;
+}
+
+export const BUYBACK_ISSUES: Record<string, string[]> = {
+  smartphone: ['Écran cassé', 'Tactile HS', 'Batterie faible', 'Ne charge plus', 'Caméra HS', 'Son / micro HS', 'Boutons HS', 'Vitre arrière cassée', 'Désoxydation / tombé dans l\'eau', 'Ne s\'allume pas'],
+  tablette: ['Écran cassé', 'Tactile HS', 'Batterie faible', 'Ne charge plus', 'Wi-Fi HS', 'Son HS', 'Ne s\'allume pas'],
+  ordinateur: ['Écran cassé', 'Clavier HS', 'Batterie HS', 'Ne charge plus', 'Surchauffe', 'Disque HS', 'Ne démarre pas', 'Dégât liquide'],
+  tv: ['Dalle cassée', 'Lignes / taches à l\'image', 'Pas d\'image', 'Pas de son', 'Ne s\'allume pas', 'Ports HDMI HS', 'Télécommande manquante'],
+  electromenager: ['Ne s\'allume pas', 'Fuite d\'eau', 'Ne chauffe pas', 'Bruit anormal', 'Code erreur affiché', 'Programme bloqué'],
+  trottinette: ['Batterie faible', 'Ne charge plus', 'Frein HS', 'Roue / pneu HS', 'Guidon abîmé', 'Ne démarre pas'],
+  console: ['Ne s\'allume pas', 'Lecteur HS', 'Surchauffe / ventilation bruyante', 'Ports HS', 'Manette défectueuse', 'Pas d\'image'],
+  autre: ['Ne s\'allume pas', 'Panne intermittente', 'Dégât physique', 'Dégât liquide', 'Bruit anormal'],
+};
+
+export function getIssues(category: string): string[] {
+  return BUYBACK_ISSUES[category] ?? BUYBACK_ISSUES.autre;
+}
