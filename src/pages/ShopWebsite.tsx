@@ -1,296 +1,333 @@
-import { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useEffect } from 'react';
+import { useParams, Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { Helmet } from 'react-helmet-async';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { 
-  Clock,
-  Euro,
-  Phone,
-  Mail,
-  MapPin,
-  Globe,
-  Star
-} from 'lucide-react';
+import { Phone, Mail, MapPin, Clock, Star, Euro, Recycle, ExternalLink } from 'lucide-react';
+import { BUYBACK_CATEGORIES } from '@/lib/buyback';
 
-interface Shop {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  address: string;
-  logo_url: string;
-  website_enabled: boolean;
-  website_title: string;
-  website_description: string;
-  slug: string;
-}
-
-interface ShopService {
-  id: string;
-  name: string;
-  description: string;
-  price: number;
-  duration_minutes: number;
-  category: string;
-  visible: boolean;
-  display_order: number;
+interface WebsiteData {
+  shop: {
+    id: string;
+    name: string;
+    slug: string;
+    address: string | null;
+    phone: string | null;
+    email: string | null;
+    logo_url: string | null;
+    title: string | null;
+    description: string | null;
+    review_link: string | null;
+  };
+  config: {
+    tagline: string | null;
+    about: string | null;
+    hero_image_url: string | null;
+    opening_hours: { day: string; open: string; close: string; closed?: boolean }[];
+    social_links: Record<string, string>;
+    show_services: boolean;
+    show_reviews: boolean;
+    buyback_enabled: boolean;
+    buyback_categories: string[];
+    buyback_intro: string | null;
+  };
+  photos: { url: string; caption: string | null }[];
+  services: { name: string; description: string | null; price: number | null; category: string | null }[];
+  partner: {
+    specialties?: string | null;
+    specialty_tags?: string[] | null;
+    certifications?: string | null;
+    warranty_terms?: string | null;
+    avg_delay_days?: number | null;
+    city?: string | null;
+    postal_code?: string | null;
+  };
 }
 
 export default function ShopWebsite() {
   const { slug } = useParams<{ slug: string }>();
-  const [shop, setShop] = useState<Shop | null>(null);
-  const [services, setServices] = useState<ShopService[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['shop-website', slug],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('get_shop_website' as any, { p_slug: slug });
+      if (error) throw error;
+      return (data ?? null) as unknown as WebsiteData | null;
+    },
+    enabled: !!slug,
+  });
 
   useEffect(() => {
-    if (slug) {
-      fetchShopData();
-    }
+    window.scrollTo(0, 0);
   }, [slug]);
 
-  const fetchShopData = async () => {
-    try {
-      // Récupérer les données du magasin
-      const { data: shopData, error: shopError } = await supabase
-        .from('shops')
-        .select('*')
-        .eq('slug', slug)
-        .eq('website_enabled', true)
-        .maybeSingle();
-
-      if (shopError) throw shopError;
-      if (!shopData) {
-        setError('Magasin non trouvé ou site web désactivé');
-        return;
-      }
-
-      setShop(shopData);
-
-      // Récupérer les services du magasin
-      const { data: servicesData, error: servicesError } = await supabase
-        .from('shop_services')
-        .select('*')
-        .eq('shop_id', shopData.id)
-        .eq('visible', true)
-        .order('display_order', { ascending: true });
-
-      if (servicesError) throw servicesError;
-      setServices(servicesData || []);
-
-    } catch (error: any) {
-      console.error('Error fetching shop data:', error);
-      setError('Erreur lors du chargement des données');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const formatDuration = (minutes: number) => {
-    if (minutes < 60) return `${minutes} min`;
-    const hours = Math.floor(minutes / 60);
-    const remainingMinutes = minutes % 60;
-    return remainingMinutes > 0 ? `${hours}h ${remainingMinutes}min` : `${hours}h`;
-  };
-
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('fr-FR', {
-      style: 'currency',
-      currency: 'EUR'
-    }).format(price);
-  };
-
-  if (loading) {
+  if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background to-muted flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary" />
       </div>
     );
   }
 
-  if (error || !shop) {
+  if (!data) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background to-muted flex items-center justify-center">
-        <Card className="max-w-md">
-          <CardContent className="pt-6 text-center">
-            <p className="text-muted-foreground">{error || 'Magasin non trouvé'}</p>
+      <div className="min-h-screen flex items-center justify-center bg-background px-4">
+        <Card className="max-w-md w-full">
+          <CardContent className="py-10 text-center space-y-3">
+            <h1 className="text-xl font-semibold">Site introuvable</h1>
+            <p className="text-muted-foreground text-sm">
+              Ce professionnel n'a pas encore publié son site internet.
+            </p>
+            <Button asChild variant="outline">
+              <Link to="/partenaires">Voir l'annuaire des réparateurs</Link>
+            </Button>
           </CardContent>
         </Card>
       </div>
     );
   }
 
-  // Grouper les services par catégorie
-  const servicesByCategory = services.reduce((acc, service) => {
-    const category = service.category || 'Autres';
-    if (!acc[category]) acc[category] = [];
-    acc[category].push(service);
-    return acc;
-  }, {} as Record<string, ShopService[]>);
+  const { shop, config, photos, services, partner } = data;
+  const title = shop.title || `${shop.name} — Réparation et service après-vente`;
+  const description =
+    shop.description ||
+    config.tagline ||
+    `${shop.name}, réparateur${partner?.city ? ` à ${partner.city}` : ''} : diagnostic, réparation et rachat de matériel.`;
+
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'LocalBusiness',
+    name: shop.name,
+    image: shop.logo_url || undefined,
+    telephone: shop.phone || undefined,
+    email: shop.email || undefined,
+    address: {
+      '@type': 'PostalAddress',
+      streetAddress: shop.address || undefined,
+      addressLocality: partner?.city || undefined,
+      postalCode: partner?.postal_code || undefined,
+      addressCountry: 'FR',
+    },
+  };
+
+  const tags = partner?.specialty_tags ?? [];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-muted">
-      {/* Header */}
-      <header className="bg-card/80 backdrop-blur-sm border-b sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              {shop.logo_url ? (
-                <img 
-                  src={shop.logo_url} 
-                  alt={`Logo ${shop.name}`}
-                  className="h-12 w-12 object-contain rounded-lg"
-                />
-              ) : (
-                <div className="h-12 w-12 bg-primary/10 rounded-lg flex items-center justify-center">
-                  <Globe className="h-6 w-6 text-primary" />
-                </div>
-              )}
-              <div>
-                <h1 className="text-2xl font-bold text-foreground">
-                  {shop.website_title || shop.name}
-                </h1>
-                <p className="text-sm text-muted-foreground">Service de réparation</p>
+    <div className="min-h-screen bg-background">
+      <Helmet>
+        <title>{title.slice(0, 60)}</title>
+        <meta name="description" content={description.slice(0, 158)} />
+        <meta property="og:title" content={title} />
+        <meta property="og:description" content={description} />
+        <meta property="og:type" content="website" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>
+      </Helmet>
+
+      {/* En-tête */}
+      <header className="border-b bg-card">
+        <div className="max-w-5xl mx-auto px-4 py-8 flex flex-col md:flex-row md:items-center gap-6">
+          {shop.logo_url && (
+            <img
+              src={shop.logo_url}
+              alt={`Logo de ${shop.name}`}
+              loading="lazy"
+              className="h-20 w-20 rounded-xl object-contain bg-muted p-2"
+            />
+          )}
+          <div className="flex-1 min-w-0">
+            <h1 className="text-2xl md:text-3xl font-bold">{shop.name}</h1>
+            {config.tagline && <p className="text-muted-foreground mt-1">{config.tagline}</p>}
+            {tags.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mt-3">
+                {tags.map((t) => (
+                  <Badge key={t} variant="secondary">{t}</Badge>
+                ))}
               </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <Star className="h-5 w-5 text-yellow-500 fill-current" />
-              <span className="text-sm font-medium">4.9/5</span>
-            </div>
+            )}
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {shop.phone && (
+              <Button asChild>
+                <a href={`tel:${shop.phone}`}><Phone className="h-4 w-4 mr-2" />Appeler</a>
+              </Button>
+            )}
+            {shop.address && (
+              <Button asChild variant="outline">
+                <a
+                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(shop.address)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <MapPin className="h-4 w-4 mr-2" />Itinéraire
+                </a>
+              </Button>
+            )}
+            {config.buyback_enabled && (
+              <Button asChild variant="secondary">
+                <Link to={`/${shop.slug}/vendre`}>
+                  <Recycle className="h-4 w-4 mr-2" />Vendre mon matériel
+                </Link>
+              </Button>
+            )}
           </div>
         </div>
       </header>
 
-      <div className="container mx-auto px-4 py-8">
-        {/* Description */}
-        {shop.website_description && (
-          <Card className="mb-8">
-            <CardContent className="pt-6">
-              <p className="text-lg text-muted-foreground leading-relaxed">
-                {shop.website_description}
-              </p>
-            </CardContent>
-          </Card>
+      <main className="max-w-5xl mx-auto px-4 py-8 space-y-8">
+        {/* Présentation */}
+        {(config.about || partner?.specialties || partner?.certifications) && (
+          <section>
+            <Card>
+              <CardHeader><CardTitle>À propos</CardTitle></CardHeader>
+              <CardContent className="space-y-3 text-sm">
+                {config.about && <p className="whitespace-pre-line">{config.about}</p>}
+                {partner?.specialties && (
+                  <p><span className="font-medium">Spécialités : </span>{partner.specialties}</p>
+                )}
+                {partner?.certifications && (
+                  <p><span className="font-medium">Certifications : </span>{partner.certifications}</p>
+                )}
+                {partner?.warranty_terms && (
+                  <p><span className="font-medium">Garantie : </span>{partner.warranty_terms}</p>
+                )}
+                {partner?.avg_delay_days != null && (
+                  <p><span className="font-medium">Délai moyen : </span>{partner.avg_delay_days} jours</p>
+                )}
+              </CardContent>
+            </Card>
+          </section>
+        )}
+
+        {/* Galerie */}
+        {photos.length > 0 && (
+          <section>
+            <h2 className="text-lg font-semibold mb-3">En images</h2>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {photos.map((p, i) => (
+                <figure key={i} className="overflow-hidden rounded-lg border bg-muted">
+                  <img
+                    src={p.url}
+                    alt={p.caption || `${shop.name} — photo ${i + 1}`}
+                    loading="lazy"
+                    className="h-36 w-full object-cover"
+                  />
+                </figure>
+              ))}
+            </div>
+          </section>
         )}
 
         {/* Services */}
-        {Object.keys(servicesByCategory).length > 0 && (
-          <div className="mb-8">
-            <h2 className="text-3xl font-bold mb-6">Nos Services</h2>
-            <div className="space-y-8">
-              {Object.entries(servicesByCategory).map(([category, categoryServices]) => (
-                <div key={category}>
-                  <h3 className="text-xl font-semibold mb-4 text-primary">{category}</h3>
-                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    {categoryServices.map((service) => (
-                      <Card key={service.id} className="hover:shadow-lg transition-shadow">
-                        <CardHeader>
-                          <CardTitle className="flex items-center justify-between">
-                            <span className="text-lg">{service.name}</span>
-                            <Badge variant="secondary" className="font-bold">
-                              {formatPrice(service.price)}
-                            </Badge>
-                          </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          {service.description && (
-                            <p className="text-muted-foreground mb-3">
-                              {service.description}
-                            </p>
-                          )}
-                          {service.duration_minutes && (
-                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                              <Clock className="h-4 w-4" />
-                              <span>Durée: {formatDuration(service.duration_minutes)}</span>
-                            </div>
-                          )}
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                </div>
+        {config.show_services && services.length > 0 && (
+          <section>
+            <h2 className="text-lg font-semibold mb-3">Nos prestations</h2>
+            <div className="grid gap-3 md:grid-cols-2">
+              {services.map((s, i) => (
+                <Card key={i}>
+                  <CardContent className="p-4 flex items-start justify-between gap-3">
+                    <div>
+                      <p className="font-medium">{s.name}</p>
+                      {s.description && (
+                        <p className="text-sm text-muted-foreground mt-1">{s.description}</p>
+                      )}
+                    </div>
+                    {s.price != null && (
+                      <Badge variant="outline" className="shrink-0">
+                        <Euro className="h-3 w-3 mr-1" />{Number(s.price).toFixed(2)}
+                      </Badge>
+                    )}
+                  </CardContent>
+                </Card>
               ))}
             </div>
-          </div>
+          </section>
         )}
 
-        {/* Contact Info */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Phone className="h-5 w-5" />
-              Nous Contacter
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {shop.phone && (
-                <div className="flex items-center gap-3">
-                  <Phone className="h-5 w-5 text-primary" />
-                  <div>
-                    <p className="font-medium">Téléphone</p>
-                    <a href={`tel:${shop.phone}`} className="text-primary hover:underline">
-                      {shop.phone}
-                    </a>
-                  </div>
+        {/* Rachat */}
+        {config.buyback_enabled && (
+          <section>
+            <Card className="border-primary/40">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Recycle className="h-5 w-5" />Nous rachetons votre matériel cassé ou défectueux
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {config.buyback_intro && (
+                  <p className="text-sm text-muted-foreground whitespace-pre-line">{config.buyback_intro}</p>
+                )}
+                <div className="flex flex-wrap gap-2">
+                  {config.buyback_categories.map((c) => {
+                    const cat = BUYBACK_CATEGORIES.find((x) => x.id === c);
+                    return (
+                      <Badge key={c} variant="secondary">
+                        {cat ? `${cat.emoji} ${cat.label}` : c}
+                      </Badge>
+                    );
+                  })}
                 </div>
-              )}
-              
-              {shop.email && (
-                <div className="flex items-center gap-3">
-                  <Mail className="h-5 w-5 text-primary" />
-                  <div>
-                    <p className="font-medium">Email</p>
-                    <a href={`mailto:${shop.email}`} className="text-primary hover:underline">
-                      {shop.email}
-                    </a>
-                  </div>
-                </div>
-              )}
-              
-              {shop.address && (
-                <div className="flex items-center gap-3">
-                  <MapPin className="h-5 w-5 text-primary" />
-                  <div>
-                    <p className="font-medium">Adresse</p>
-                    <p className="text-muted-foreground">{shop.address}</p>
-                  </div>
-                </div>
-              )}
-            </div>
-            
-            <div className="mt-6 pt-6 border-t">
-              <Button className="w-full md:w-auto" size="lg">
-                <Phone className="h-4 w-4 mr-2" />
-                Prendre Rendez-vous
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+                <Button asChild>
+                  <Link to={`/${shop.slug}/vendre`}>Faire une proposition de vente</Link>
+                </Button>
+              </CardContent>
+            </Card>
+          </section>
+        )}
 
-      {/* Footer */}
-      <footer className="bg-card border-t mt-12">
-        <div className="container mx-auto px-4 py-8">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <div className="text-center md:text-left">
-              <p className="font-semibold">{shop.name}</p>
-              {shop.address && (
-                <p className="text-sm text-muted-foreground">{shop.address}</p>
-              )}
-              {shop.phone && (
-                <p className="text-sm text-muted-foreground">{shop.phone}</p>
-              )}
-            </div>
-            <div className="text-center md:text-right">
-              <p className="text-sm text-muted-foreground">
-                Propulsé par <span className="font-medium text-primary">FixWay Pro</span>
-              </p>
-            </div>
+        {/* Infos pratiques */}
+        <section>
+          <h2 className="text-lg font-semibold mb-3">Infos pratiques</h2>
+          <div className="grid gap-3 md:grid-cols-2">
+            <Card>
+              <CardContent className="p-4 space-y-2 text-sm">
+                {shop.address && (
+                  <p className="flex items-start gap-2"><MapPin className="h-4 w-4 mt-0.5 shrink-0" />{shop.address}</p>
+                )}
+                {shop.phone && (
+                  <p className="flex items-center gap-2"><Phone className="h-4 w-4" />
+                    <a className="hover:underline" href={`tel:${shop.phone}`}>{shop.phone}</a>
+                  </p>
+                )}
+                {shop.email && (
+                  <p className="flex items-center gap-2"><Mail className="h-4 w-4" />
+                    <a className="hover:underline" href={`mailto:${shop.email}`}>{shop.email}</a>
+                  </p>
+                )}
+                {config.show_reviews && shop.review_link && (
+                  <p className="flex items-center gap-2">
+                    <Star className="h-4 w-4" />
+                    <a className="hover:underline" href={shop.review_link} target="_blank" rel="noopener noreferrer">
+                      Laisser un avis <ExternalLink className="h-3 w-3 inline" />
+                    </a>
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <p className="flex items-center gap-2 font-medium mb-2 text-sm">
+                  <Clock className="h-4 w-4" />Horaires
+                </p>
+                <ul className="text-sm space-y-1">
+                  {(config.opening_hours ?? []).map((h) => (
+                    <li key={h.day} className="flex justify-between gap-4">
+                      <span className="text-muted-foreground">{h.day}</span>
+                      <span>{h.closed || !h.open ? 'Fermé' : `${h.open} – ${h.close}`}</span>
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
           </div>
-        </div>
+        </section>
+      </main>
+
+      <footer className="border-t py-6 text-center text-xs text-muted-foreground">
+        {shop.name} — site propulsé par Fixway
       </footer>
     </div>
   );

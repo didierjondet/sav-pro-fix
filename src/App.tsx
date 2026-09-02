@@ -39,6 +39,9 @@ import ExpensesDetails from "./pages/ExpensesDetails";
 import StatsDetailsRouter from "./pages/StatsDetailsRouter";
 import NotFound from "./pages/NotFound";
 import ShopWebsite from "./pages/ShopWebsite";
+import ShopWebsiteSell from "./pages/ShopWebsiteSell";
+import BuybackTracking from "./pages/BuybackTracking";
+import BuybackManager from "./pages/BuybackManager";
 import Features from "./pages/Features";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
@@ -180,7 +183,12 @@ const App = () => {
                   <Route path="/support" element={<Support />} />
                   <Route path="/subscription-success" element={<SubscriptionSuccess />} />
                   <Route path="/subscription" element={<Subscription />} />
+                  <Route path="/rachat" element={<BuybackManager />} />
                 </Route>
+
+                <Route path="/rachat/:token" element={<BuybackTracking />} />
+                <Route path="/:slug" element={<ShopWebsite />} />
+                <Route path="/:slug/vendre" element={<ShopWebsiteSell />} />
 
                 <Route path="*" element={<NotFound />} />
               </Routes>

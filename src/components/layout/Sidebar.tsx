@@ -3,7 +3,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-import { Handshake } from 'lucide-react';
+import { Handshake, Recycle } from 'lucide-react';
 import { useSharedSAVs } from '@/hooks/useSharedSAVs';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
@@ -46,6 +46,7 @@ const baseNavigation: NavItem[] = [
   { name: 'Stock & prestations', href: '/parts', icon: Package, group: 'management' },
   { name: 'Commandes', href: '/orders', icon: Package, group: 'management' },
   { name: 'Inventaire', href: '/inventory', icon: ClipboardList, group: 'management' },
+  { name: 'Rachat matériel', href: '/rachat', icon: Recycle, group: 'management' },
   { name: 'Rapports', href: '/reports', icon: FileBarChart, group: 'management' },
 ];
 function SidebarComponent({
