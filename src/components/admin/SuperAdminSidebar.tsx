@@ -31,6 +31,7 @@ import {
   ShieldCheck,
   Mail,
   UserPlus,
+  Activity,
 } from "lucide-react";
 
 interface SuperAdminSidebarProps {
