@@ -7,6 +7,7 @@ import { useMFA } from '@/hooks/useMFA';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { ShieldCheck } from 'lucide-react';
+import MFARecoveryDialog from './MFARecoveryDialog';
 
 export function MFAGate({ children }: { children: React.ReactNode }) {
   const { needsChallenge, loading, challengeAndVerify } = useMFA();
@@ -59,6 +60,7 @@ export function MFAGate({ children }: { children: React.ReactNode }) {
             <Button type="submit" className="w-full" disabled={busy || code.length < 6}>
               Vérifier
             </Button>
+            <MFARecoveryDialog />
             <Button type="button" variant="ghost" className="w-full" onClick={() => signOut()}>
               Se déconnecter
             </Button>
