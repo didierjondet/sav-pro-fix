@@ -233,7 +233,12 @@ export function ShopWebsiteTab() {
         </CardContent>
       </Card>
 
+      <WebsiteDirectorySection />
+
+      <WebsiteCatalogSection />
+
       <Card>
+
         <CardHeader>
           <CardTitle className="flex items-center gap-2"><Recycle className="h-5 w-5" />Rachat de matériel</CardTitle>
           <CardDescription>
