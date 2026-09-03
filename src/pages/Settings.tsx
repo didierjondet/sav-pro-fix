@@ -1055,7 +1055,8 @@ export default function Settings() {
                   </CardTitle>
                   <CardDescription>
                     Identité interne : factures, PDF et suivi client. Votre vitrine visible par les particuliers
-                    et les autres magasins Fixway se configure dans l’onglet « Vitrine partenaire ».
+                    et les autres magasins Fixway se configure dans l’onglet « Mon site internet ».
+
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
