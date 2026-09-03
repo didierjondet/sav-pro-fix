@@ -67,7 +67,6 @@ import { RolePermissionsManager } from '@/components/settings/RolePermissionsMan
 import { PartCategoriesManager } from '@/components/settings/PartCategoriesManager';
 import { SuppliersManager } from '@/components/settings/SuppliersManager';
 import { SAVProvidersManager } from '@/components/settings/SAVProvidersManager';
-import { PartnerProfileTab } from '@/components/settings/PartnerProfileTab';
 import { LoanerEquipmentManager } from '@/components/settings/loaner/LoanerEquipmentManager';
 import { SMSPackagesDisplay } from '@/components/subscription/SMSPackagesDisplay';
 import { BillingInvoices } from '@/components/billing/BillingInvoices';
@@ -926,8 +925,7 @@ export default function Settings() {
 
   const settingsSections = [
     { id: 'shop', label: 'Magasin', icon: Store, category: 'shop-group', visible: true },
-    { id: 'partner-profile', label: 'Vitrine partenaire', icon: Handshake, category: 'shop-group', visible: isAdmin },
-    { id: 'website', label: 'Votre site internet', icon: Globe, category: 'shop-group', visible: isAdmin },
+    { id: 'website', label: 'Mon site internet', icon: Globe, category: 'shop-group', visible: isAdmin },
     { id: 'appearance', label: 'Apparence', icon: Monitor, category: 'shop-group', visible: true },
     { id: 'notifications', label: 'Notifications', icon: MessageSquare, category: 'shop-group', visible: true },
 
