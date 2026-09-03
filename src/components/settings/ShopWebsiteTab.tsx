@@ -14,6 +14,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { getPublicAppOrigin } from '@/utils/trackingUtils';
 import { Globe, Copy, ExternalLink, Trash2, Loader2, Recycle, ImagePlus } from 'lucide-react';
+import { WebsiteDirectorySection } from '@/components/settings/website/WebsiteDirectorySection';
+import { WebsiteCatalogSection } from '@/components/settings/website/WebsiteCatalogSection';
+
 
 export function ShopWebsiteTab() {
   const { shop } = useShop();
