@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Phone, Mail, MapPin, Clock, Star, Euro, Recycle, ExternalLink } from 'lucide-react';
 import { BUYBACK_CATEGORIES } from '@/lib/buyback';
+import { formatPartnerPrice } from '@/lib/partnerPricing';
 
 interface WebsiteData {
   shop: {
@@ -35,7 +36,14 @@ interface WebsiteData {
     buyback_intro: string | null;
   };
   photos: { url: string; caption: string | null }[];
-  services: { name: string; description: string | null; price: number | null; category: string | null }[];
+  services: {
+    name: string;
+    description: string | null;
+    price: number | null;
+    category: string | null;
+    kind?: string | null;
+    delay_days?: number | null;
+  }[];
   partner: {
     specialties?: string | null;
     specialty_tags?: string[] | null;
@@ -44,6 +52,9 @@ interface WebsiteData {
     avg_delay_days?: number | null;
     city?: string | null;
     postal_code?: string | null;
+    prices_include_vat?: boolean;
+    vat_rate?: number;
+    vat_exempt?: boolean;
   };
 }
 
@@ -238,20 +249,33 @@ export default function ShopWebsite() {
         {/* Services */}
         {config.show_services && services.length > 0 && (
           <section>
-            <h2 className="text-lg font-semibold mb-3">Nos prestations</h2>
+            <h2 className="text-lg font-semibold mb-3">Nos tarifs et prestations</h2>
             <div className="grid gap-3 md:grid-cols-2">
               {services.map((s, i) => (
                 <Card key={i}>
                   <CardContent className="p-4 flex items-start justify-between gap-3">
                     <div>
                       <p className="font-medium">{s.name}</p>
+                      <div className="flex flex-wrap gap-2 mt-1">
+                        {s.category && (
+                          <Badge variant="secondary" className="text-xs">{s.category}</Badge>
+                        )}
+                        {s.delay_days != null && (
+                          <Badge variant="outline" className="text-xs">{s.delay_days} j</Badge>
+                        )}
+                      </div>
                       {s.description && (
                         <p className="text-sm text-muted-foreground mt-1">{s.description}</p>
                       )}
                     </div>
                     {s.price != null && (
                       <Badge variant="outline" className="shrink-0">
-                        <Euro className="h-3 w-3 mr-1" />{Number(s.price).toFixed(2)}
+                        <Euro className="h-3 w-3 mr-1" />
+                        {formatPartnerPrice(s.price, {
+                          prices_include_vat: partner?.prices_include_vat ?? true,
+                          vat_rate: Number(partner?.vat_rate ?? 20),
+                          vat_exempt: partner?.vat_exempt ?? false,
+                        }, 'ttc')}
                       </Badge>
                     )}
                   </CardContent>

@@ -1721,54 +1721,73 @@ export type Database = {
       }
       partner_price_items: {
         Row: {
+          components: Json
           created_at: string
           delay_days: number | null
           device_family: string | null
           display_order: number
           id: string
+          kind: string
           label: string
           note: string | null
+          part_id: string | null
           pro_price: number | null
           profile_id: string
           public_price: number | null
+          published: boolean
           shop_id: string
           updated_at: string
           visible_pro: boolean
           visible_public: boolean
         }
         Insert: {
+          components?: Json
           created_at?: string
           delay_days?: number | null
           device_family?: string | null
           display_order?: number
           id?: string
+          kind?: string
           label: string
           note?: string | null
+          part_id?: string | null
           pro_price?: number | null
           profile_id: string
           public_price?: number | null
+          published?: boolean
           shop_id: string
           updated_at?: string
           visible_pro?: boolean
           visible_public?: boolean
         }
         Update: {
+          components?: Json
           created_at?: string
           delay_days?: number | null
           device_family?: string | null
           display_order?: number
           id?: string
+          kind?: string
           label?: string
           note?: string | null
+          part_id?: string | null
           pro_price?: number | null
           profile_id?: string
           public_price?: number | null
+          published?: boolean
           shop_id?: string
           updated_at?: string
           visible_pro?: boolean
           visible_public?: boolean
         }
         Relationships: [
+          {
+            foreignKeyName: "partner_price_items_part_id_fkey"
+            columns: ["part_id"]
+            isOneToOne: false
+            referencedRelation: "parts"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "partner_price_items_profile_id_fkey"
             columns: ["profile_id"]

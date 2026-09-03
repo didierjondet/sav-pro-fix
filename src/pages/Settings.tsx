@@ -67,12 +67,11 @@ import { RolePermissionsManager } from '@/components/settings/RolePermissionsMan
 import { PartCategoriesManager } from '@/components/settings/PartCategoriesManager';
 import { SuppliersManager } from '@/components/settings/SuppliersManager';
 import { SAVProvidersManager } from '@/components/settings/SAVProvidersManager';
-import { PartnerProfileTab } from '@/components/settings/PartnerProfileTab';
 import { LoanerEquipmentManager } from '@/components/settings/loaner/LoanerEquipmentManager';
 import { SMSPackagesDisplay } from '@/components/subscription/SMSPackagesDisplay';
 import { BillingInvoices } from '@/components/billing/BillingInvoices';
 import { BillingVatTab } from '@/components/settings/BillingVatTab';
-import { Percent, Wrench, Handshake, Globe } from 'lucide-react';
+import { Percent, Wrench, Globe } from 'lucide-react';
 import { ShopWebsiteTab } from '@/components/settings/ShopWebsiteTab';
 import { ImportStock } from '@/components/parts/ImportStock';
 import { ImportQuotes } from '@/components/import/ImportQuotes';
@@ -926,8 +925,7 @@ export default function Settings() {
 
   const settingsSections = [
     { id: 'shop', label: 'Magasin', icon: Store, category: 'shop-group', visible: true },
-    { id: 'partner-profile', label: 'Vitrine partenaire', icon: Handshake, category: 'shop-group', visible: isAdmin },
-    { id: 'website', label: 'Votre site internet', icon: Globe, category: 'shop-group', visible: isAdmin },
+    { id: 'website', label: 'Mon site internet', icon: Globe, category: 'shop-group', visible: isAdmin },
     { id: 'appearance', label: 'Apparence', icon: Monitor, category: 'shop-group', visible: true },
     { id: 'notifications', label: 'Notifications', icon: MessageSquare, category: 'shop-group', visible: true },
 
@@ -1057,7 +1055,8 @@ export default function Settings() {
                   </CardTitle>
                   <CardDescription>
                     Identité interne : factures, PDF et suivi client. Votre vitrine visible par les particuliers
-                    et les autres magasins Fixway se configure dans l’onglet « Vitrine partenaire ».
+                    et les autres magasins Fixway se configure dans l’onglet « Mon site internet ».
+
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -1902,11 +1901,6 @@ export default function Settings() {
               </TabsContent>
             )}
 
-            {isAdmin && (
-              <TabsContent value="partner-profile" className="space-y-6">
-                <PartnerProfileTab />
-              </TabsContent>
-            )}
 
             {isAdmin && (
               <TabsContent value="website" className="space-y-6">
