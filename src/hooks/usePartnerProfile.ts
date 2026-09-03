@@ -34,6 +34,15 @@ export interface PartnerProfile {
   updated_at: string;
 }
 
+export type PriceItemKind = 'part' | 'service' | 'bundle';
+
+export interface PriceItemComponent {
+  part_id?: string | null;
+  label: string;
+  kind: 'part' | 'service';
+  price?: number | null;
+}
+
 export interface PartnerPriceItem {
   id: string;
   profile_id: string;
@@ -47,7 +56,12 @@ export interface PartnerPriceItem {
   visible_public: boolean;
   visible_pro: boolean;
   display_order: number;
+  part_id: string | null;
+  kind: PriceItemKind;
+  components: PriceItemComponent[];
+  published: boolean;
 }
+
 
 /** Fiche partenaire du magasin courant + grille tarifaire. */
 export function usePartnerProfile() {
