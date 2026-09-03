@@ -71,7 +71,7 @@ import { LoanerEquipmentManager } from '@/components/settings/loaner/LoanerEquip
 import { SMSPackagesDisplay } from '@/components/subscription/SMSPackagesDisplay';
 import { BillingInvoices } from '@/components/billing/BillingInvoices';
 import { BillingVatTab } from '@/components/settings/BillingVatTab';
-import { Percent, Wrench, Handshake, Globe } from 'lucide-react';
+import { Percent, Wrench, Globe } from 'lucide-react';
 import { ShopWebsiteTab } from '@/components/settings/ShopWebsiteTab';
 import { ImportStock } from '@/components/parts/ImportStock';
 import { ImportQuotes } from '@/components/import/ImportQuotes';
