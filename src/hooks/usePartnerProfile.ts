@@ -99,7 +99,10 @@ export function usePartnerProfile() {
         .order('display_order', { ascending: true })
         .order('label', { ascending: true });
       if (error) throw error;
-      return (data || []) as PartnerPriceItem[];
+      return (data || []).map((row: any) => ({
+        ...row,
+        components: Array.isArray(row.components) ? row.components : [],
+      })) as PartnerPriceItem[];
     },
   });
 
