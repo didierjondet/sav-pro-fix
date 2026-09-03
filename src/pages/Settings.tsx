@@ -1902,11 +1902,6 @@ export default function Settings() {
               </TabsContent>
             )}
 
-            {isAdmin && (
-              <TabsContent value="partner-profile" className="space-y-6">
-                <PartnerProfileTab />
-              </TabsContent>
-            )}
 
             {isAdmin && (
               <TabsContent value="website" className="space-y-6">
