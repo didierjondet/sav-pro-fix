@@ -5279,6 +5279,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      shop_is_publicly_visible: { Args: { _shop_id: string }; Returns: boolean }
       submit_buyback_request: {
         Args: {
           p_answers: Json
