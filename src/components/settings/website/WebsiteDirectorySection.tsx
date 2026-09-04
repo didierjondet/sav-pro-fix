@@ -255,14 +255,22 @@ export function WebsiteDirectorySection() {
           {!wantsVisibility ? (
             <div className="flex items-start gap-2 p-3 rounded-lg border bg-muted/40 text-xs text-muted-foreground">
               <EyeOff className="h-4 w-4 shrink-0 mt-0.5" />
-              <span>Aucun rôle sélectionné : vous n’apparaissez dans aucun annuaire.</span>
+              <span>
+                Aucun rôle sélectionné : vous êtes totalement invisible. Votre magasin n’apparaît dans aucun annuaire,
+                ni dans le choix de magasin lors d’une demande de rachat, votre site internet n’est plus accessible
+                (même par lien direct ou QR code) et vous ne recevez plus les demandes de rachat du réseau national.
+              </span>
             </div>
           ) : !optIn ? (
             <div className="flex items-start gap-2 p-3 rounded-lg border border-orange-300 bg-orange-50 dark:bg-orange-950/30 text-xs text-orange-800 dark:text-orange-300">
               <Info className="h-4 w-4 shrink-0 mt-0.5" />
-              <span>L’interrupteur général « Apparaître dans l’annuaire Fixway » est désactivé.</span>
+              <span>
+                L’interrupteur général « Apparaître dans l’annuaire Fixway » est désactivé : tant qu’il est coupé,
+                votre site internet, vos fiches annuaire et le rachat en ligne restent inaccessibles au public.
+              </span>
             </div>
           ) : missingFields.length > 0 ? (
+
             <div className="flex items-start gap-2 p-3 rounded-lg border border-orange-300 bg-orange-50 dark:bg-orange-950/30 text-xs text-orange-800 dark:text-orange-300">
               <Info className="h-4 w-4 shrink-0 mt-0.5" />
               <span>
