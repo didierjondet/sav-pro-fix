@@ -38,6 +38,7 @@ export interface InvoiceNotificationConfig {
 
 export function useInvoiceConfig() {
   const [config, setConfig] = useState<InvoiceConfig | null>(null);
+  const [rawConfig, setRawConfig] = useState<InvoiceConfig | null>(null);
   const [notificationConfigs, setNotificationConfigs] = useState<InvoiceNotificationConfig[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -58,6 +59,7 @@ export function useInvoiceConfig() {
         .maybeSingle();
       const hideLegal = setting?.value === true || setting?.value === 'true';
 
+      setRawConfig(data);
       setConfig(
         hideLegal
           ? {
@@ -162,6 +164,7 @@ export function useInvoiceConfig() {
 
   return {
     config,
+    rawConfig,
     notificationConfigs,
     loading,
     updateConfig,

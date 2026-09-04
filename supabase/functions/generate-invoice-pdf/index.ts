@@ -54,6 +54,22 @@ Deno.serve(async (req) => {
       throw new Error(`Failed to fetch invoice config: ${configError.message}`);
     }
 
+    // Mode discret : masquer les mentions de l'entreprise
+    const { data: whiteLabelSetting } = await supabaseClient
+      .from('app_global_settings')
+      .select('value')
+      .eq('key', 'white_label_hide_legal')
+      .maybeSingle();
+    const hideLegal = whiteLabelSetting?.value === true || whiteLabelSetting?.value === 'true';
+    if (hideLegal) {
+      const mask = (t: string | null) =>
+        t ? t.replace(/\bSASU?\s+HAPICS\b/gi, 'Didier Jondet').replace(/\bHAPICS\b/gi, 'Didier Jondet') : t;
+      config.company_name = mask(config.company_name);
+      config.header_text = mask(config.header_text);
+      config.footer_text = mask(config.footer_text);
+      config.legal_text = mask(config.legal_text);
+    }
+
     // Récupérer les données de la facture selon le type
     let invoiceData: any;
     let shopId: string;

@@ -10,7 +10,7 @@ import { Upload, Save, Eye } from 'lucide-react';
 import { toast } from 'sonner';
 
 export function InvoiceConfigManager() {
-  const { config, loading, updateConfig, uploadLogo } = useInvoiceConfig();
+  const { rawConfig: config, loading, updateConfig, uploadLogo } = useInvoiceConfig();
   const [uploading, setUploading] = useState(false);
 
   if (loading) {
