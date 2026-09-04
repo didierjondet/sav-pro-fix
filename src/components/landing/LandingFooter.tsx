@@ -3,9 +3,10 @@ import { Smartphone } from 'lucide-react';
 interface LandingFooterProps {
   onLegalClick?: (type: 'cgu_content' | 'cgv_content' | 'privacy_policy', title: string) => void;
   onAdminClick?: () => void;
+  hideLegal?: boolean;
 }
 
-export function LandingFooter({ onLegalClick, onAdminClick }: LandingFooterProps) {
+export function LandingFooter({ onLegalClick, onAdminClick, hideLegal = false }: LandingFooterProps) {
   return (
     <footer className="bg-gray-900 py-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
