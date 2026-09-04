@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { maskCompanyName, applyMask, WHITE_LABEL_SETTING_KEY } from '@/hooks/useLegalVisibility';
 
 export interface InvoiceConfig {
   id: string;
@@ -37,6 +38,7 @@ export interface InvoiceNotificationConfig {
 
 export function useInvoiceConfig() {
   const [config, setConfig] = useState<InvoiceConfig | null>(null);
+  const [rawConfig, setRawConfig] = useState<InvoiceConfig | null>(null);
   const [notificationConfigs, setNotificationConfigs] = useState<InvoiceNotificationConfig[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -49,7 +51,26 @@ export function useInvoiceConfig() {
         .single();
 
       if (error) throw error;
-      setConfig(data);
+
+      const { data: setting } = await supabase
+        .from('app_global_settings')
+        .select('value')
+        .eq('key', WHITE_LABEL_SETTING_KEY)
+        .maybeSingle();
+      const hideLegal = setting?.value === true || setting?.value === 'true';
+
+      setRawConfig(data);
+      setConfig(
+        hideLegal
+          ? {
+              ...data,
+              company_name: maskCompanyName(data.company_name),
+              header_text: applyMask(data.header_text, true),
+              footer_text: applyMask(data.footer_text, true),
+              legal_text: applyMask(data.legal_text, true),
+            }
+          : data
+      );
     } catch (error) {
       console.error('Erreur lors du chargement de la configuration:', error);
       toast.error('Impossible de charger la configuration des factures');
@@ -57,6 +78,7 @@ export function useInvoiceConfig() {
       setLoading(false);
     }
   };
+
 
   const fetchNotificationConfigs = async () => {
     try {
@@ -142,6 +164,7 @@ export function useInvoiceConfig() {
 
   return {
     config,
+    rawConfig,
     notificationConfigs,
     loading,
     updateConfig,

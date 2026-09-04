@@ -3,9 +3,10 @@ import { Smartphone } from 'lucide-react';
 interface LandingFooterProps {
   onLegalClick?: (type: 'cgu_content' | 'cgv_content' | 'privacy_policy', title: string) => void;
   onAdminClick?: () => void;
+  hideLegal?: boolean;
 }
 
-export function LandingFooter({ onLegalClick, onAdminClick }: LandingFooterProps) {
+export function LandingFooter({ onLegalClick, onAdminClick, hideLegal = false }: LandingFooterProps) {
   return (
     <footer className="bg-gray-900 py-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -34,26 +35,29 @@ export function LandingFooter({ onLegalClick, onAdminClick }: LandingFooterProps
         </div>
 
         {/* Legal links */}
-        <div className="flex flex-wrap justify-center gap-8 mb-12 text-sm">
-          <button 
-            onClick={() => onLegalClick?.('cgu_content', "Conditions Générales d'Utilisation")}
-            className="text-gray-400 hover:text-white transition-colors"
-          >
-            Conditions Générales d'Utilisation
-          </button>
-          <button 
-            onClick={() => onLegalClick?.('cgv_content', "Conditions Générales de Vente")}
-            className="text-gray-400 hover:text-white transition-colors"
-          >
-            Conditions Générales de Vente
-          </button>
-          <button 
-            onClick={() => onLegalClick?.('privacy_policy', "Politique de Confidentialité")}
-            className="text-gray-400 hover:text-white transition-colors"
-          >
-            Politique de Confidentialité
-          </button>
-        </div>
+        {!hideLegal && (
+          <div className="flex flex-wrap justify-center gap-8 mb-12 text-sm">
+            <button 
+              onClick={() => onLegalClick?.('cgu_content', "Conditions Générales d'Utilisation")}
+              className="text-gray-400 hover:text-white transition-colors"
+            >
+              Conditions Générales d'Utilisation
+            </button>
+            <button 
+              onClick={() => onLegalClick?.('cgv_content', "Conditions Générales de Vente")}
+              className="text-gray-400 hover:text-white transition-colors"
+            >
+              Conditions Générales de Vente
+            </button>
+            <button 
+              onClick={() => onLegalClick?.('privacy_policy', "Politique de Confidentialité")}
+              className="text-gray-400 hover:text-white transition-colors"
+            >
+              Politique de Confidentialité
+            </button>
+          </div>
+        )}
+        
         
         {/* Copyright */}
         <div className="text-center border-t border-gray-800 pt-8">

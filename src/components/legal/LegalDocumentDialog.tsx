@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { useLegalVisibility } from '@/hooks/useLegalVisibility';
 
 interface LegalDocumentDialogProps {
   type: 'cgu_content' | 'cgv_content' | 'privacy_policy';
@@ -11,14 +12,15 @@ interface LegalDocumentDialogProps {
 }
 
 export default function LegalDocumentDialog({ type, title, isOpen, onClose }: LegalDocumentDialogProps) {
+  const { hideLegal, mask } = useLegalVisibility();
   const [content, setContent] = useState<string>('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && !hideLegal) {
       fetchContent();
     }
-  }, [isOpen, type]);
+  }, [isOpen, type, hideLegal]);
 
   const fetchContent = async () => {
     try {
@@ -31,7 +33,7 @@ export default function LegalDocumentDialog({ type, title, isOpen, onClose }: Le
 
       if (error) throw error;
 
-      setContent(data?.[type] || 'Contenu non disponible');
+      setContent(mask(data?.[type]) || 'Contenu non disponible');
     } catch (error) {
       console.error('Error fetching legal content:', error);
       setContent('Erreur lors du chargement du contenu');
@@ -40,6 +42,7 @@ export default function LegalDocumentDialog({ type, title, isOpen, onClose }: Le
     }
   };
 
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[80vh]">
@@ -47,7 +50,11 @@ export default function LegalDocumentDialog({ type, title, isOpen, onClose }: Le
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
         <ScrollArea className="h-[60vh] w-full rounded-md border p-4">
-          {loading ? (
+          {hideLegal ? (
+            <div className="text-center py-8 text-muted-foreground">
+              Ce document n'est pas disponible.
+            </div>
+          ) : loading ? (
             <div className="text-center py-8">
               <div className="animate-pulse">Chargement...</div>
             </div>
@@ -58,6 +65,7 @@ export default function LegalDocumentDialog({ type, title, isOpen, onClose }: Le
             />
           )}
         </ScrollArea>
+
       </DialogContent>
     </Dialog>
   );

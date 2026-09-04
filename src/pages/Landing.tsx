@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import LegalDocumentDialog from '@/components/legal/LegalDocumentDialog';
 import { LandingCarousel } from '@/components/landing/LandingCarousel';
 import { useLandingContent } from '@/hooks/useLandingContent';
+import { useLegalVisibility } from '@/hooks/useLegalVisibility';
 import { HeroSection } from '@/components/landing/HeroSection';
 import { ComparisonTable } from '@/components/landing/ComparisonTable';
 import { FeaturePillars } from '@/components/landing/FeaturePillars';
@@ -43,6 +44,7 @@ export default function Landing() {
   });
   const navigate = useNavigate();
   const { content: landingContent } = useLandingContent();
+  const { hideLegal } = useLegalVisibility();
 
   // Dynamic SEO injection
   useEffect(() => {
@@ -135,7 +137,7 @@ export default function Landing() {
       <FinalCTA onAuthClick={handleAuthClick} />
 
       {/* Footer */}
-      <LandingFooter onLegalClick={handleLegalClick} onAdminClick={handleAdminClick} />
+      <LandingFooter onLegalClick={handleLegalClick} onAdminClick={handleAdminClick} hideLegal={hideLegal} />
 
       {/* Legal Document Dialog */}
       <LegalDocumentDialog 
