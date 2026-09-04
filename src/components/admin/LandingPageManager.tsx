@@ -136,7 +136,11 @@ export function LandingPageManager() {
 
   return (
     <div className="space-y-6">
+      {/* Mode discret */}
+      <LegalVisibilityToggle />
+
       {/* Section Hero */}
+
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <div className="flex items-center space-x-2">
