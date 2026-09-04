@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { useLegalVisibility } from '@/hooks/useLegalVisibility';
 
 interface LegalDocumentDialogProps {
   type: 'cgu_content' | 'cgv_content' | 'privacy_policy';
