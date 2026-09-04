@@ -49,7 +49,25 @@ export function useInvoiceConfig() {
         .single();
 
       if (error) throw error;
-      setConfig(data);
+
+      const { data: setting } = await supabase
+        .from('app_global_settings')
+        .select('value')
+        .eq('key', WHITE_LABEL_SETTING_KEY)
+        .maybeSingle();
+      const hideLegal = setting?.value === true || setting?.value === 'true';
+
+      setConfig(
+        hideLegal
+          ? {
+              ...data,
+              company_name: maskCompanyName(data.company_name),
+              header_text: applyMask(data.header_text, true),
+              footer_text: applyMask(data.footer_text, true),
+              legal_text: applyMask(data.legal_text, true),
+            }
+          : data
+      );
     } catch (error) {
       console.error('Erreur lors du chargement de la configuration:', error);
       toast.error('Impossible de charger la configuration des factures');
@@ -57,6 +75,7 @@ export function useInvoiceConfig() {
       setLoading(false);
     }
   };
+
 
   const fetchNotificationConfigs = async () => {
     try {
