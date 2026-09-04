@@ -35,26 +35,29 @@ export function LandingFooter({ onLegalClick, onAdminClick, hideLegal = false }:
         </div>
 
         {/* Legal links */}
-        <div className="flex flex-wrap justify-center gap-8 mb-12 text-sm">
-          <button 
-            onClick={() => onLegalClick?.('cgu_content', "Conditions Générales d'Utilisation")}
-            className="text-gray-400 hover:text-white transition-colors"
-          >
-            Conditions Générales d'Utilisation
-          </button>
-          <button 
-            onClick={() => onLegalClick?.('cgv_content', "Conditions Générales de Vente")}
-            className="text-gray-400 hover:text-white transition-colors"
-          >
-            Conditions Générales de Vente
-          </button>
-          <button 
-            onClick={() => onLegalClick?.('privacy_policy', "Politique de Confidentialité")}
-            className="text-gray-400 hover:text-white transition-colors"
-          >
-            Politique de Confidentialité
-          </button>
-        </div>
+        {!hideLegal && (
+          <div className="flex flex-wrap justify-center gap-8 mb-12 text-sm">
+            <button 
+              onClick={() => onLegalClick?.('cgu_content', "Conditions Générales d'Utilisation")}
+              className="text-gray-400 hover:text-white transition-colors"
+            >
+              Conditions Générales d'Utilisation
+            </button>
+            <button 
+              onClick={() => onLegalClick?.('cgv_content', "Conditions Générales de Vente")}
+              className="text-gray-400 hover:text-white transition-colors"
+            >
+              Conditions Générales de Vente
+            </button>
+            <button 
+              onClick={() => onLegalClick?.('privacy_policy', "Politique de Confidentialité")}
+              className="text-gray-400 hover:text-white transition-colors"
+            >
+              Politique de Confidentialité
+            </button>
+          </div>
+        )}
+        
         
         {/* Copyright */}
         <div className="text-center border-t border-gray-800 pt-8">
