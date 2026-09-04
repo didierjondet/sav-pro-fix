@@ -9,6 +9,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { Save, Globe, Users, Award, DollarSign, FileText, Image } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { CarouselManager } from '@/components/admin/CarouselManager';
+import { LegalVisibilityToggle } from '@/components/admin/LegalVisibilityToggle';
+
 
 interface LandingContent {
   id?: string;
