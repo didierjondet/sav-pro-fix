@@ -11,14 +11,15 @@ interface LegalDocumentDialogProps {
 }
 
 export default function LegalDocumentDialog({ type, title, isOpen, onClose }: LegalDocumentDialogProps) {
+  const { hideLegal, mask } = useLegalVisibility();
   const [content, setContent] = useState<string>('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && !hideLegal) {
       fetchContent();
     }
-  }, [isOpen, type]);
+  }, [isOpen, type, hideLegal]);
 
   const fetchContent = async () => {
     try {
@@ -31,7 +32,7 @@ export default function LegalDocumentDialog({ type, title, isOpen, onClose }: Le
 
       if (error) throw error;
 
-      setContent(data?.[type] || 'Contenu non disponible');
+      setContent(mask(data?.[type]) || 'Contenu non disponible');
     } catch (error) {
       console.error('Error fetching legal content:', error);
       setContent('Erreur lors du chargement du contenu');
@@ -39,6 +40,7 @@ export default function LegalDocumentDialog({ type, title, isOpen, onClose }: Le
       setLoading(false);
     }
   };
+
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
