@@ -50,7 +50,11 @@ export default function LegalDocumentDialog({ type, title, isOpen, onClose }: Le
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
         <ScrollArea className="h-[60vh] w-full rounded-md border p-4">
-          {loading ? (
+          {hideLegal ? (
+            <div className="text-center py-8 text-muted-foreground">
+              Ce document n'est pas disponible.
+            </div>
+          ) : loading ? (
             <div className="text-center py-8">
               <div className="animate-pulse">Chargement...</div>
             </div>
@@ -61,6 +65,7 @@ export default function LegalDocumentDialog({ type, title, isOpen, onClose }: Le
             />
           )}
         </ScrollArea>
+
       </DialogContent>
     </Dialog>
   );
