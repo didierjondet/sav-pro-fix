@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { maskCompanyName, applyMask, WHITE_LABEL_SETTING_KEY } from '@/hooks/useLegalVisibility';
 
 export interface InvoiceConfig {
   id: string;
