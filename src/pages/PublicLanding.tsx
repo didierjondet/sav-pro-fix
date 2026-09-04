@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import LegalDocumentDialog from '@/components/legal/LegalDocumentDialog';
 import { LandingCarousel } from '@/components/landing/LandingCarousel';
 import { useLandingContent } from '@/hooks/useLandingContent';
+import { useLegalVisibility } from '@/hooks/useLegalVisibility';
 import { HeroSection } from '@/components/landing/HeroSection';
 import { ComparisonTable } from '@/components/landing/ComparisonTable';
 import { FeaturePillars } from '@/components/landing/FeaturePillars';
@@ -47,6 +48,7 @@ export default function PublicLanding() {
     title: ''
   });
   const { content: landingContent } = useLandingContent();
+  const { hideLegal } = useLegalVisibility();
   const { enabled: prospectRedirectEnabled } = useProspectRedirect();
   
   // Dynamic SEO injection
@@ -157,7 +159,7 @@ export default function PublicLanding() {
       <FinalCTA onAuthClick={handleSignupClick} />
 
       {/* Footer */}
-      <LandingFooter onLegalClick={handleLegalClick} />
+      <LandingFooter onLegalClick={handleLegalClick} hideLegal={hideLegal} />
 
       {/* Legal Document Dialog */}
       <LegalDocumentDialog
