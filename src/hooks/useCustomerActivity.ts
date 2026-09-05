@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
+import type { PreviousSAVCase } from '@/hooks/useProductHistory';
+
 export interface CustomerActivity {
   id: string;
   type: 'sav' | 'quote';
@@ -12,6 +14,8 @@ export interface CustomerActivity {
   revenue: number; // Ce que le client a payé
   profit: number;  // Bénéfice du magasin
   description: string;
+  savSource?: PreviousSAVCase | null;
+  trackedProductId?: string | null;
 }
 
 export interface CustomerStats {
@@ -49,9 +53,16 @@ export function useCustomerActivity(customerId: string) {
           total_cost,
           problem_description,
           sav_type,
+          device_brand,
+          device_model,
+          device_imei,
+          sku,
+          tracked_product_id,
+          customer_id,
           taken_over,
           partial_takeover,
-          takeover_amount
+          takeover_amount,
+          customer:customers(first_name, last_name)
         `)
         .eq('customer_id', customerId)
         .order('created_at', { ascending: false });
@@ -118,6 +129,26 @@ export function useCustomerActivity(customerId: string) {
           revenue,
           profit,
           description: sav.problem_description || '',
+          trackedProductId: (sav as any).tracked_product_id || null,
+          savSource: {
+            id: sav.id,
+            case_number: sav.case_number,
+            status: sav.status,
+            sav_type: sav.sav_type,
+            device_brand: (sav as any).device_brand,
+            device_model: (sav as any).device_model,
+            device_imei: (sav as any).device_imei ?? null,
+            sku: (sav as any).sku ?? null,
+            problem_description: sav.problem_description || '',
+            repair_notes: null,
+            technician_comments: null,
+            total_cost: Number(sav.total_cost) || 0,
+            created_at: sav.created_at,
+            closure_history: null,
+            customer: (sav as any).customer || null,
+            customer_id: (sav as any).customer_id || null,
+            tracked_product_id: (sav as any).tracked_product_id || null,
+          } as any,
         } as CustomerActivity;
       });
 
