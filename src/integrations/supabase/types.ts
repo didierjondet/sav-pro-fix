@@ -5033,6 +5033,14 @@ export type Database = {
       }
       get_shop_last_activity: { Args: { _shop_id: string }; Returns: string }
       get_shop_website: { Args: { p_slug: string }; Returns: Json }
+      get_shops_config_progress: {
+        Args: { _shop_ids?: string[] }
+        Returns: {
+          done_count: number
+          shop_id: string
+          total_steps: number
+        }[]
+      }
       get_signup_activation_report: {
         Args: never
         Returns: {

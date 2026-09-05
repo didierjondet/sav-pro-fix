@@ -27,8 +27,12 @@ import {
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
+import { Progress } from '@/components/ui/progress';
 import { SMSCreditsTab } from './SMSCreditsTab';
 import { BotConversationsViewer } from './BotConversationsViewer';
+import { ShopBotArchive } from './ShopBotArchive';
+import { useShopConfigProgress } from '@/hooks/useShopConfigProgress';
+
 import {
   Crown,
   CreditCard,
@@ -47,7 +51,9 @@ import {
   Mail,
   Shield,
   Clock,
-  MapPin
+  MapPin,
+  ListChecks
+
 } from 'lucide-react';
 
 interface Shop {
@@ -106,6 +112,8 @@ export default function ShopManagementDialog({ shop, isOpen, onClose, onUpdate }
   const [customSmsLimit, setCustomSmsLimit] = useState('');
   const [customSavLimit, setCustomSavLimit] = useState('');
   const [forcedFeatures, setForcedFeatures] = useState<Record<string, boolean>>({});
+  const [smsUsage, setSmsUsage] = useState<{ used: number; total: number; remaining: number } | null>(null);
+  const { data: configProgress } = useShopConfigProgress(shop?.id);
 
   useEffect(() => {
     if (shop?.id) {
@@ -115,6 +123,44 @@ export default function ShopManagementDialog({ shop, isOpen, onClose, onUpdate }
       setForcedFeatures((shop as any).forced_features || {});
     }
   }, [shop?.id, shop?.subscription_menu_visible]);
+
+  // Consommation SMS réelle (même source que l'onglet Crédits SMS)
+  useEffect(() => {
+    let cancelled = false;
+    const fetchSmsUsage = async () => {
+      if (!shop?.id) return;
+      const { data: shopData, error } = await supabase
+        .from('shops')
+        .select('sms_credits_allocated, monthly_sms_used, admin_added_sms_credits, purchased_sms_credits')
+        .eq('id', shop.id)
+        .single();
+      if (error || !shopData || cancelled) return;
+
+      const { data: packages } = await supabase
+        .from('sms_package_purchases')
+        .select('sms_count')
+        .eq('shop_id', shop.id)
+        .eq('status', 'completed');
+      if (cancelled) return;
+
+      const purchasedTotal = packages?.reduce((sum, pkg: any) => sum + (pkg.sms_count || 0), 0) || 0;
+      const adminAdded = shopData.admin_added_sms_credits || 0;
+      const monthlyAllocated = shopData.sms_credits_allocated || 0;
+      const monthlyUsed = shopData.monthly_sms_used || 0;
+      const purchasableUsed = shopData.purchased_sms_credits || 0;
+
+      const monthlyRemaining = Math.max(0, monthlyAllocated - monthlyUsed);
+      const purchasableTotal = purchasedTotal + adminAdded;
+      const purchasableRemaining = Math.max(0, purchasableTotal - purchasableUsed);
+
+      const total = monthlyAllocated + purchasableTotal;
+      const remaining = monthlyRemaining + purchasableRemaining;
+      setSmsUsage({ used: monthlyUsed + purchasableUsed, total, remaining });
+    };
+    fetchSmsUsage();
+    return () => { cancelled = true; };
+  }, [shop?.id, loading]);
+
 
   // Sync with default plan once plans are loaded (backfill subscription_plan_id)
   useEffect(() => {
@@ -757,12 +803,13 @@ export default function ShopManagementDialog({ shop, isOpen, onClose, onUpdate }
         </DialogHeader>
 
         <Tabs defaultValue="overview" className="w-full">
-        <TabsList className="grid w-full grid-cols-7">
+        <TabsList className="grid w-full grid-cols-8">
           <TabsTrigger value="overview">Vue d'ensemble</TabsTrigger>
           <TabsTrigger value="subscription">Abonnement</TabsTrigger>
           <TabsTrigger value="sms">Crédits SMS</TabsTrigger>
           <TabsTrigger value="users">Utilisateurs</TabsTrigger>
           <TabsTrigger value="support">Support</TabsTrigger>
+          <TabsTrigger value="bot">Bot</TabsTrigger>
           <TabsTrigger value="restrictions">Restrictions</TabsTrigger>
           <TabsTrigger value="overrides">Forcer l'accès</TabsTrigger>
         </TabsList>
@@ -814,11 +861,41 @@ export default function ShopManagementDialog({ shop, isOpen, onClose, onUpdate }
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">
-                    {shop.sms_credits_used}/{shop.sms_credits_allocated}
+                    {smsUsage ? `${smsUsage.used}/${smsUsage.total}` : '—'}
                   </div>
+                  {smsUsage && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {smsUsage.remaining} restant(s)
+                    </p>
+                  )}
                 </CardContent>
               </Card>
             </div>
+
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium flex items-center gap-2">
+                  <ListChecks className="h-4 w-4" />
+                  Niveau de configuration
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-2xl font-bold">
+                    {configProgress ? `${configProgress.doneCount}/${configProgress.totalSteps}` : '—'}
+                  </span>
+                  <span className="text-sm text-muted-foreground">
+                    {configProgress ? `${configProgress.percent}% des étapes` : 'Calcul en cours…'}
+                  </span>
+                </div>
+                <Progress value={configProgress?.percent ?? 0} />
+                <p className="text-xs text-muted-foreground">
+                  Étapes : profil, infos magasin, types & statuts SAV, fournisseur, pièce, horaires,
+                  premier SAV, équipe, TVA et tutoriels.
+                </p>
+              </CardContent>
+            </Card>
+
 
             <Card>
               <CardHeader>
@@ -1075,6 +1152,11 @@ export default function ShopManagementDialog({ shop, isOpen, onClose, onUpdate }
           <TabsContent value="support" className="space-y-4">
             <BotConversationsViewer shopId={shop.id} shopName={shop.name} />
           </TabsContent>
+
+          <TabsContent value="bot" className="space-y-4">
+            <ShopBotArchive shopId={shop.id} shopName={shop.name} />
+          </TabsContent>
+
 
           <TabsContent value="restrictions" className="space-y-4">
             <Card>

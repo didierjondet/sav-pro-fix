@@ -44,6 +44,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import ShopManagementDialog from '@/components/admin/ShopManagementDialog';
+import { useShopsConfigProgress } from '@/hooks/useShopConfigProgress';
 
 interface Shop {
   id: string;
@@ -144,6 +145,9 @@ export function ShopsManagement({ shops, onUpdate }: ShopsManagementProps) {
     const dateB = new Date(b.created_at).getTime();
     return sortOrder === 'newest' ? dateB - dateA : dateA - dateB;
   });
+
+  const { data: configProgressMap } = useShopsConfigProgress(sortedShops.map((s) => s.id));
+
 
   const createShop = async () => {
     // Validations
@@ -563,6 +567,21 @@ export function ShopsManagement({ shops, onUpdate }: ShopsManagementProps) {
                           <LogIn className="h-3 w-3 mr-1" />
                           {shop.total_logins ?? 0} connexion(s)
                         </Badge>
+                        {configProgressMap?.[shop.id] && (
+                          <Badge
+                            variant="outline"
+                            className={
+                              configProgressMap[shop.id].percent < 40
+                                ? 'border-red-600 text-red-700'
+                                : configProgressMap[shop.id].percent < 80
+                                  ? 'border-amber-600 text-amber-700'
+                                  : 'border-emerald-600 text-emerald-700'
+                            }
+                          >
+                            Config. {configProgressMap[shop.id].doneCount}/{configProgressMap[shop.id].totalSteps}
+                          </Badge>
+                        )}
+
                       </div>
                       
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm mb-2">
