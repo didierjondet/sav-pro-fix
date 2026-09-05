@@ -40,6 +40,8 @@ import { SecurityCodesSection, SecurityCodes } from './SecurityCodesSection';
 import { AITextReformulator } from './AITextReformulator';
 import { LoanerSection, EMPTY_LOANER_SELECTION, type LoanerSelection } from '@/components/loaner/LoanerSection';
 import { useLoanerLoans } from '@/hooks/useLoanerLoans';
+import { useSAVProviders } from '@/hooks/useSAVProviders';
+
 
 interface CustomerInfo {
   firstName: string;
@@ -136,6 +138,8 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
   const [debouncedFirstName, setDebouncedFirstName] = useState('');
   const [debouncedLastName, setDebouncedLastName] = useState('');
   const [technicianInitials, setTechnicianInitials] = useState('');
+  const [selectedProviderId, setSelectedProviderId] = useState<string>('none');
+
   const [loanerSelection, setLoanerSelection] = useState<LoanerSelection>(EMPTY_LOANER_SELECTION);
   const loanerTouchedRef = React.useRef(false);
   const handleLoanerChange = (v: LoanerSelection) => {
@@ -151,6 +155,9 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
   const { user } = useAuth();
   const { profile } = useProfile();
   const { createCase } = useSAVCases();
+  const { providers } = useSAVProviders();
+  const activeProviders = providers.filter((p) => p.is_active);
+
   const { createCustomer } = useCustomers();
   const { customers: allCustomers } = useAllCustomers();
   const { parts } = useParts();
@@ -364,6 +371,21 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
         }
       }
 
+      if (selectedProviderId && selectedProviderId !== 'none' && newCase?.id && profile?.shop_id) {
+        try {
+          await supabase.from('sav_provider_assignments').insert({
+            shop_id: profile.shop_id,
+            sav_case_id: newCase.id,
+            provider_id: selectedProviderId,
+            sent_at: new Date().toISOString(),
+          });
+        } catch (err) {
+          console.error('Erreur attribution prestataire:', err);
+        }
+      }
+
+
+
 
 
       if (selectedParts.length > 0) {
@@ -435,6 +457,8 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
     setSelectedParts([]);
     setDepositAmount(0);
     setTechnicianInitials('');
+    setSelectedProviderId('none');
+
     setLoanerSelection(EMPTY_LOANER_SELECTION);
     setShowPrintDialog(false);
     setCreatedSAVCase(null);
@@ -583,7 +607,29 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
                 </SelectContent>
               </Select>
             </div>
+            {activeProviders.length > 0 && (
+              <div>
+                <Label className="text-sm font-medium">Prestataire (optionnel)</Label>
+                <Select value={selectedProviderId} onValueChange={setSelectedProviderId}>
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder="Aucun prestataire" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Aucun prestataire</SelectItem>
+                    {activeProviders.map((provider) => (
+                      <SelectItem key={provider.id} value={provider.id}>
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 rounded-full" style={{ backgroundColor: provider.color }} />
+                          {provider.name}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
+
         );
 
       case 'client':
