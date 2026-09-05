@@ -129,6 +129,26 @@ export function useCustomerActivity(customerId: string) {
           revenue,
           profit,
           description: sav.problem_description || '',
+          trackedProductId: (sav as any).tracked_product_id || null,
+          savSource: {
+            id: sav.id,
+            case_number: sav.case_number,
+            status: sav.status,
+            sav_type: sav.sav_type,
+            device_brand: (sav as any).device_brand,
+            device_model: (sav as any).device_model,
+            device_imei: (sav as any).device_imei ?? null,
+            sku: (sav as any).sku ?? null,
+            problem_description: sav.problem_description || '',
+            repair_notes: null,
+            technician_comments: null,
+            total_cost: Number(sav.total_cost) || 0,
+            created_at: sav.created_at,
+            closure_history: null,
+            customer: (sav as any).customer || null,
+            customer_id: (sav as any).customer_id || null,
+            tracked_product_id: (sav as any).tracked_product_id || null,
+          } as any,
         } as CustomerActivity;
       });
 
