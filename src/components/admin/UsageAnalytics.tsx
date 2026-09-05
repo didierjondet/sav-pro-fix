@@ -289,29 +289,57 @@ export function UsageAnalytics() {
               ) : heat.length === 0 ? (
                 <p className="text-sm text-muted-foreground">Aucun clic enregistré sur cette page pour la période.</p>
               ) : (
-                <div className="relative w-full rounded-md border bg-muted/30 overflow-hidden" style={{ aspectRatio: '16 / 10' }}>
-                  {heat.map((h, i) => {
-                    const intensity = Number(h.weight) / maxWeight;
-                    return (
-                      <div
-                        key={i}
-                        className="absolute rounded-full pointer-events-none"
-                        style={{
-                          left: `${h.x_pct}%`,
-                          top: `${h.y_pct}%`,
-                          transform: 'translate(-50%, -50%)',
-                          width: `${18 + intensity * 34}px`,
-                          height: `${18 + intensity * 34}px`,
-                          background: `radial-gradient(circle, hsla(${45 - intensity * 45}, 95%, 55%, ${0.25 + intensity * 0.5}) 0%, transparent 70%)`,
-                        }}
-                      />
-                    );
-                  })}
-                  <div className="absolute bottom-2 right-2 text-xs text-muted-foreground bg-background/80 rounded px-2 py-1">
-                    {heat.reduce((s, h) => s + Number(h.weight), 0)} clics
+                <div className="space-y-4">
+                  <div
+                    className="relative w-full max-w-3xl mx-auto rounded-md border bg-muted/30 overflow-hidden"
+                    style={{ aspectRatio: heatDevice === 'mobile' ? '9 / 16' : '16 / 10' }}
+                  >
+                    {heat.map((h, i) => {
+                      const intensity = Number(h.weight) / maxWeight;
+                      return (
+                        <div
+                          key={i}
+                          className="absolute rounded-full pointer-events-none"
+                          style={{
+                            left: `${h.x_pct}%`,
+                            top: `${h.y_pct}%`,
+                            transform: 'translate(-50%, -50%)',
+                            width: `${24 + intensity * 46}px`,
+                            height: `${24 + intensity * 46}px`,
+                            background: `radial-gradient(circle, hsla(${50 - intensity * 50}, 95%, 55%, ${0.35 + intensity * 0.5}) 0%, transparent 70%)`,
+                          }}
+                        />
+                      );
+                    })}
+                    <div className="absolute bottom-2 right-2 text-xs text-muted-foreground bg-background/80 rounded px-2 py-1">
+                      {heat.reduce((s, h) => s + Number(h.weight), 0)} clics
+                    </div>
                   </div>
+
+                  {heatLabels.length > 0 && (
+                    <div>
+                      <p className="text-sm font-medium mb-2">Éléments les plus cliqués</p>
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Bouton / lien</TableHead>
+                            <TableHead className="text-right">Clics</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {heatLabels.map((l, i) => (
+                            <TableRow key={`${l.element_label}-${i}`}>
+                              <TableCell className="text-sm">{l.element_label}</TableCell>
+                              <TableCell className="text-right">{Number(l.clicks)}</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  )}
                 </div>
               )}
+
             </CardContent>
           </Card>
         </TabsContent>
