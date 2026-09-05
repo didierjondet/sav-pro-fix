@@ -94,6 +94,34 @@ export function UsageAnalytics() {
     enabled: !!heatPath,
   });
 
+  const { data: heatLabels = [] } = useQuery({
+    queryKey: ['usage-click-labels', heatPath, days, heatDevice],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('get_usage_click_labels' as any, {
+        _path: heatPath,
+        _days: Number(days),
+        _device: heatDevice === 'all' ? null : heatDevice,
+      });
+      if (error) throw error;
+      return (data ?? []) as { element_label: string; clicks: number }[];
+    },
+    enabled: !!heatPath,
+  });
+
+  const { data: health } = useQuery({
+    queryKey: ['usage-tracking-health'],
+    refetchInterval: 60000,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('get_usage_tracking_health' as any);
+      if (error) throw error;
+      return ((data ?? [])[0] ?? null) as
+        | { page_views_24h: number; clicks_24h: number; last_page_view: string | null; last_click: string | null }
+        | null;
+    },
+  });
+
+
+
   const funnel = useMemo(() => {
     const total = activation.length;
     const signedIn = activation.filter((a) => a.last_sign_in_at).length;
