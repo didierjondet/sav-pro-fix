@@ -803,6 +803,14 @@ export default function SAVList() {
                                 {getVisitCount(savCase.id)}
                               </span>
                             )}
+                            {isFinalStatus(savCase.status) && !isCancelledStatus(savCase.status) && (
+                              <NewSAVFromProductButton
+                                sourceCase={savCase as any}
+                                trackedProductId={(savCase as any).tracked_product_id || null}
+                                label="Nouveau SAV"
+                                className="h-6 px-2 text-[10px]"
+                              />
+                            )}
                           </div>
                         </div>
                       </CardContent>
