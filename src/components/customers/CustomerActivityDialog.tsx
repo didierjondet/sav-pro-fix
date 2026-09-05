@@ -204,6 +204,15 @@ export function CustomerActivityDialog({ customer, open, onOpenChange }: Custome
                             </span>
                           </div>
                         </div>
+
+                        {activity.type === 'sav' && activity.savSource && (
+                          <div className="flex justify-end mt-3">
+                            <NewSAVFromProductButton
+                              sourceCase={activity.savSource}
+                              trackedProductId={activity.trackedProductId}
+                            />
+                          </div>
+                        )}
                       </CardContent>
                     </Card>
                   ))}
