@@ -361,7 +361,9 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
           });
         } catch (err) {
           console.error('Erreur création prêt matériel:', err);
+        }
       }
+
 
       // Attribuer à un prestataire si sélectionné
       if (selectedProviderId && selectedProviderId !== 'none' && newCase?.id && profile?.shop_id) {
