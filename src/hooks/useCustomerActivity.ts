@@ -53,9 +53,16 @@ export function useCustomerActivity(customerId: string) {
           total_cost,
           problem_description,
           sav_type,
+          device_brand,
+          device_model,
+          device_imei,
+          sku,
+          tracked_product_id,
+          customer_id,
           taken_over,
           partial_takeover,
-          takeover_amount
+          takeover_amount,
+          customer:customers(first_name, last_name)
         `)
         .eq('customer_id', customerId)
         .order('created_at', { ascending: false });
