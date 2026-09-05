@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
+import type { PreviousSAVCase } from '@/hooks/useProductHistory';
+
 export interface CustomerActivity {
   id: string;
   type: 'sav' | 'quote';
@@ -12,6 +14,8 @@ export interface CustomerActivity {
   revenue: number; // Ce que le client a payé
   profit: number;  // Bénéfice du magasin
   description: string;
+  savSource?: PreviousSAVCase | null;
+  trackedProductId?: string | null;
 }
 
 export interface CustomerStats {
