@@ -5,11 +5,9 @@ import { Sidebar } from './Sidebar';
 import InactivityWarningBanner from './InactivityWarningBanner';
 import ShopCreationPolicyDialog from '@/components/onboarding/ShopCreationPolicyDialog';
 import MFAGate from '@/components/auth/MFAGate';
-import { useUsageTracking } from '@/hooks/useUsageTracking';
 
 export default function AppLayout() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  useUsageTracking();
   const handleMenuClick = useCallback(() => {
     setIsMobileMenuOpen((v) => !v);
   }, []);

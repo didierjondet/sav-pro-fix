@@ -60,6 +60,7 @@ import SAVLogs from "./pages/SAVLogs";
 import Inventory from "./pages/Inventory";
 import HelpBot from "./components/help/HelpBot";
 import AppLayout from "./components/layout/AppLayout";
+import UsageTracker from "./components/analytics/UsageTracker";
 import MobileSAVLookup from "./pages/MobileSAVLookup";
 import MobileInventory from "./pages/MobileInventory";
 import PartnersDirectory from "./pages/PartnersDirectory";
@@ -133,6 +134,7 @@ const App = () => {
                   <Toaster />
                   <Sonner />
                   <BrowserRouter>
+              <UsageTracker />
               <Routes>
                 <Route path="/" element={<Landing />} />
                 <Route path="/auth" element={<Auth />} />

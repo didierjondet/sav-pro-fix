@@ -94,6 +94,34 @@ export function UsageAnalytics() {
     enabled: !!heatPath,
   });
 
+  const { data: heatLabels = [] } = useQuery({
+    queryKey: ['usage-click-labels', heatPath, days, heatDevice],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('get_usage_click_labels' as any, {
+        _path: heatPath,
+        _days: Number(days),
+        _device: heatDevice === 'all' ? null : heatDevice,
+      });
+      if (error) throw error;
+      return (data ?? []) as { element_label: string; clicks: number }[];
+    },
+    enabled: !!heatPath,
+  });
+
+  const { data: health } = useQuery({
+    queryKey: ['usage-tracking-health'],
+    refetchInterval: 60000,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('get_usage_tracking_health' as any);
+      if (error) throw error;
+      return ((data ?? [])[0] ?? null) as
+        | { page_views_24h: number; clicks_24h: number; last_page_view: string | null; last_click: string | null }
+        | null;
+    },
+  });
+
+
+
   const funnel = useMemo(() => {
     const total = activation.length;
     const signedIn = activation.filter((a) => a.last_sign_in_at).length;
@@ -152,6 +180,27 @@ export function UsageAnalytics() {
           </SelectContent>
         </Select>
       </div>
+
+      <div className="rounded-lg border bg-muted/40 px-3 py-2 text-xs text-muted-foreground flex flex-wrap gap-x-4 gap-y-1">
+        <span>
+          Mesure en cours :{' '}
+          <strong className="text-foreground">{Number(health?.page_views_24h ?? 0)}</strong> pages vues et{' '}
+          <strong className="text-foreground">{Number(health?.clicks_24h ?? 0)}</strong> clics sur 24 h
+        </span>
+        <span>
+          Dernier événement :{' '}
+          {health?.last_page_view || health?.last_click
+            ? new Date(
+                Math.max(
+                  health?.last_page_view ? new Date(health.last_page_view).getTime() : 0,
+                  health?.last_click ? new Date(health.last_click).getTime() : 0
+                )
+              ).toLocaleString('fr-FR')
+            : 'aucun pour le moment'}
+        </span>
+      </div>
+
+
 
       <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
         {[
@@ -261,29 +310,57 @@ export function UsageAnalytics() {
               ) : heat.length === 0 ? (
                 <p className="text-sm text-muted-foreground">Aucun clic enregistré sur cette page pour la période.</p>
               ) : (
-                <div className="relative w-full rounded-md border bg-muted/30 overflow-hidden" style={{ aspectRatio: '16 / 10' }}>
-                  {heat.map((h, i) => {
-                    const intensity = Number(h.weight) / maxWeight;
-                    return (
-                      <div
-                        key={i}
-                        className="absolute rounded-full pointer-events-none"
-                        style={{
-                          left: `${h.x_pct}%`,
-                          top: `${h.y_pct}%`,
-                          transform: 'translate(-50%, -50%)',
-                          width: `${18 + intensity * 34}px`,
-                          height: `${18 + intensity * 34}px`,
-                          background: `radial-gradient(circle, hsla(${45 - intensity * 45}, 95%, 55%, ${0.25 + intensity * 0.5}) 0%, transparent 70%)`,
-                        }}
-                      />
-                    );
-                  })}
-                  <div className="absolute bottom-2 right-2 text-xs text-muted-foreground bg-background/80 rounded px-2 py-1">
-                    {heat.reduce((s, h) => s + Number(h.weight), 0)} clics
+                <div className="space-y-4">
+                  <div
+                    className="relative w-full max-w-3xl mx-auto rounded-md border bg-muted/30 overflow-hidden"
+                    style={{ aspectRatio: heatDevice === 'mobile' ? '9 / 16' : '16 / 10' }}
+                  >
+                    {heat.map((h, i) => {
+                      const intensity = Number(h.weight) / maxWeight;
+                      return (
+                        <div
+                          key={i}
+                          className="absolute rounded-full pointer-events-none"
+                          style={{
+                            left: `${h.x_pct}%`,
+                            top: `${h.y_pct}%`,
+                            transform: 'translate(-50%, -50%)',
+                            width: `${24 + intensity * 46}px`,
+                            height: `${24 + intensity * 46}px`,
+                            background: `radial-gradient(circle, hsla(${50 - intensity * 50}, 95%, 55%, ${0.35 + intensity * 0.5}) 0%, transparent 70%)`,
+                          }}
+                        />
+                      );
+                    })}
+                    <div className="absolute bottom-2 right-2 text-xs text-muted-foreground bg-background/80 rounded px-2 py-1">
+                      {heat.reduce((s, h) => s + Number(h.weight), 0)} clics
+                    </div>
                   </div>
+
+                  {heatLabels.length > 0 && (
+                    <div>
+                      <p className="text-sm font-medium mb-2">Éléments les plus cliqués</p>
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Bouton / lien</TableHead>
+                            <TableHead className="text-right">Clics</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {heatLabels.map((l, i) => (
+                            <TableRow key={`${l.element_label}-${i}`}>
+                              <TableCell className="text-sm">{l.element_label}</TableCell>
+                              <TableCell className="text-right">{Number(l.clicks)}</TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  )}
                 </div>
               )}
+
             </CardContent>
           </Card>
         </TabsContent>
