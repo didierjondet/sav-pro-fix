@@ -160,6 +160,9 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
   const { user } = useAuth();
   const { profile } = useProfile();
   const { createCase } = useSAVCases();
+  const { providers } = useSAVProviders();
+  const activeProviders = providers.filter((p) => p.is_active);
+
   const { createCustomer } = useCustomers();
   const { parts } = useParts();
   const { checkLimits } = useSubscription();
