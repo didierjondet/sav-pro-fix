@@ -33,6 +33,7 @@ import { SAVStatusDropdown } from '@/components/sav/SAVStatusDropdown';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { SAVWizardDialog } from '@/components/sav/SAVWizardDialog';
+import { NewSAVFromProductButton } from '@/components/sav/NewSAVFromProductButton';
 import { 
   Eye,
   Clock,
@@ -970,6 +971,13 @@ export default function SAVList() {
                             variant="outline"
                             size="sm"
                           />
+                          {isFinalStatus(savCase.status) && !isCancelledStatus(savCase.status) && (
+                            <NewSAVFromProductButton
+                              sourceCase={savCase as any}
+                              trackedProductId={(savCase as any).tracked_product_id || null}
+                              label="Nouveau SAV"
+                            />
+                          )}
                           <Button 
                             variant="outline" 
                             size="sm"
