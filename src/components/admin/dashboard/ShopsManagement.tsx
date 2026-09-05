@@ -145,6 +145,9 @@ export function ShopsManagement({ shops, onUpdate }: ShopsManagementProps) {
     return sortOrder === 'newest' ? dateB - dateA : dateA - dateB;
   });
 
+  const { data: configProgressMap } = useShopsConfigProgress(sortedShops.map((s) => s.id));
+
+
   const createShop = async () => {
     // Validations
     if (!newShop.name.trim()) {
