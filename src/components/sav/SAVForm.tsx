@@ -122,6 +122,8 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
   const [depositAmount, setDepositAmount] = useState<number>(0);
   const [loading, setLoading] = useState(false);
   const [technicianInitials, setTechnicianInitials] = useState('');
+  const [selectedProviderId, setSelectedProviderId] = useState<string>('none');
+
   const { settings: shopSettings } = useShopSettings();
   const collectInitials = shopSettings?.collect_technician_initials ?? false;
   const [searchTerm, setSearchTerm] = useState('');
