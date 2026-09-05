@@ -151,6 +151,9 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
   const { user } = useAuth();
   const { profile } = useProfile();
   const { createCase } = useSAVCases();
+  const { providers } = useSAVProviders();
+  const activeProviders = providers.filter((p) => p.is_active);
+
   const { createCustomer } = useCustomers();
   const { customers: allCustomers } = useAllCustomers();
   const { parts } = useParts();
