@@ -112,6 +112,8 @@ export default function ShopManagementDialog({ shop, isOpen, onClose, onUpdate }
   const [customSmsLimit, setCustomSmsLimit] = useState('');
   const [customSavLimit, setCustomSavLimit] = useState('');
   const [forcedFeatures, setForcedFeatures] = useState<Record<string, boolean>>({});
+  const [smsUsage, setSmsUsage] = useState<{ used: number; total: number; remaining: number } | null>(null);
+  const { data: configProgress } = useShopConfigProgress(shop?.id);
 
   useEffect(() => {
     if (shop?.id) {
@@ -121,6 +123,44 @@ export default function ShopManagementDialog({ shop, isOpen, onClose, onUpdate }
       setForcedFeatures((shop as any).forced_features || {});
     }
   }, [shop?.id, shop?.subscription_menu_visible]);
+
+  // Consommation SMS réelle (même source que l'onglet Crédits SMS)
+  useEffect(() => {
+    let cancelled = false;
+    const fetchSmsUsage = async () => {
+      if (!shop?.id) return;
+      const { data: shopData, error } = await supabase
+        .from('shops')
+        .select('sms_credits_allocated, monthly_sms_used, admin_added_sms_credits, purchased_sms_credits')
+        .eq('id', shop.id)
+        .single();
+      if (error || !shopData || cancelled) return;
+
+      const { data: packages } = await supabase
+        .from('sms_package_purchases')
+        .select('sms_count')
+        .eq('shop_id', shop.id)
+        .eq('status', 'completed');
+      if (cancelled) return;
+
+      const purchasedTotal = packages?.reduce((sum, pkg: any) => sum + (pkg.sms_count || 0), 0) || 0;
+      const adminAdded = shopData.admin_added_sms_credits || 0;
+      const monthlyAllocated = shopData.sms_credits_allocated || 0;
+      const monthlyUsed = shopData.monthly_sms_used || 0;
+      const purchasableUsed = shopData.purchased_sms_credits || 0;
+
+      const monthlyRemaining = Math.max(0, monthlyAllocated - monthlyUsed);
+      const purchasableTotal = purchasedTotal + adminAdded;
+      const purchasableRemaining = Math.max(0, purchasableTotal - purchasableUsed);
+
+      const total = monthlyAllocated + purchasableTotal;
+      const remaining = monthlyRemaining + purchasableRemaining;
+      setSmsUsage({ used: monthlyUsed + purchasableUsed, total, remaining });
+    };
+    fetchSmsUsage();
+    return () => { cancelled = true; };
+  }, [shop?.id, loading]);
+
 
   // Sync with default plan once plans are loaded (backfill subscription_plan_id)
   useEffect(() => {
