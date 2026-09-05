@@ -51,7 +51,9 @@ import {
   Mail,
   Shield,
   Clock,
-  MapPin
+  MapPin,
+  ListChecks
+
 } from 'lucide-react';
 
 interface Shop {
