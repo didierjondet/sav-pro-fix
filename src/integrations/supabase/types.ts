@@ -5105,6 +5105,13 @@ export type Database = {
           sender_type: string
         }[]
       }
+      get_usage_click_labels: {
+        Args: { _days?: number; _device?: string; _path: string }
+        Returns: {
+          clicks: number
+          element_label: string
+        }[]
+      }
       get_usage_heatmap: {
         Args: { _days?: number; _device?: string; _path: string }
         Returns: {
@@ -5121,6 +5128,15 @@ export type Database = {
           total_seconds: number
           unique_users: number
           views: number
+        }[]
+      }
+      get_usage_tracking_health: {
+        Args: never
+        Returns: {
+          clicks_24h: number
+          last_click: string
+          last_page_view: string
+          page_views_24h: number
         }[]
       }
       has_shop_role_permission: {
@@ -5181,6 +5197,7 @@ export type Database = {
       }
       mask_phone_number: { Args: { phone_number: string }; Returns: string }
       open_buyback_to_network: { Args: { p_token: string }; Returns: Json }
+      purge_old_usage_events: { Args: never; Returns: undefined }
       recalculate_inventory_session_totals: {
         Args: { _session_id: string }
         Returns: undefined
@@ -5197,6 +5214,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      record_usage_events: { Args: { _events: Json }; Returns: undefined }
       reset_monthly_counters: { Args: never; Returns: undefined }
       reset_monthly_sms_credits: { Args: never; Returns: undefined }
       resolve_partner_code: {
