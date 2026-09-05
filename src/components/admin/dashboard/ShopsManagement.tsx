@@ -44,6 +44,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import ShopManagementDialog from '@/components/admin/ShopManagementDialog';
+import { useShopsConfigProgress } from '@/hooks/useShopConfigProgress';
 
 interface Shop {
   id: string;
