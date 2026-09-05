@@ -27,8 +27,12 @@ import {
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
+import { Progress } from '@/components/ui/progress';
 import { SMSCreditsTab } from './SMSCreditsTab';
 import { BotConversationsViewer } from './BotConversationsViewer';
+import { ShopBotArchive } from './ShopBotArchive';
+import { useShopConfigProgress } from '@/hooks/useShopConfigProgress';
+
 import {
   Crown,
   CreditCard,
