@@ -133,6 +133,7 @@ const App = () => {
                   <Toaster />
                   <Sonner />
                   <BrowserRouter>
+              <UsageTracker />
               <Routes>
                 <Route path="/" element={<Landing />} />
                 <Route path="/auth" element={<Auth />} />
