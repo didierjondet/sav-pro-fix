@@ -583,7 +583,29 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
                 </SelectContent>
               </Select>
             </div>
+            {activeProviders.length > 0 && (
+              <div>
+                <Label className="text-sm font-medium">Prestataire (optionnel)</Label>
+                <Select value={selectedProviderId} onValueChange={setSelectedProviderId}>
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder="Aucun prestataire" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Aucun prestataire</SelectItem>
+                    {activeProviders.map((provider) => (
+                      <SelectItem key={provider.id} value={provider.id}>
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 rounded-full" style={{ backgroundColor: provider.color }} />
+                          {provider.name}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
+
         );
 
       case 'client':
