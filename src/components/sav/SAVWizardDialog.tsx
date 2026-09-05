@@ -364,6 +364,21 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
         }
       }
 
+      if (selectedProviderId && selectedProviderId !== 'none' && newCase?.id && profile?.shop_id) {
+        try {
+          await supabase.from('sav_provider_assignments').insert({
+            shop_id: profile.shop_id,
+            sav_case_id: newCase.id,
+            provider_id: selectedProviderId,
+            sent_at: new Date().toISOString(),
+          });
+        } catch (err) {
+          console.error('Erreur attribution prestataire:', err);
+        }
+      }
+
+
+
 
 
       if (selectedParts.length > 0) {
