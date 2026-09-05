@@ -757,12 +757,13 @@ export default function ShopManagementDialog({ shop, isOpen, onClose, onUpdate }
         </DialogHeader>
 
         <Tabs defaultValue="overview" className="w-full">
-        <TabsList className="grid w-full grid-cols-7">
+        <TabsList className="grid w-full grid-cols-8">
           <TabsTrigger value="overview">Vue d'ensemble</TabsTrigger>
           <TabsTrigger value="subscription">Abonnement</TabsTrigger>
           <TabsTrigger value="sms">Crédits SMS</TabsTrigger>
           <TabsTrigger value="users">Utilisateurs</TabsTrigger>
           <TabsTrigger value="support">Support</TabsTrigger>
+          <TabsTrigger value="bot">Bot</TabsTrigger>
           <TabsTrigger value="restrictions">Restrictions</TabsTrigger>
           <TabsTrigger value="overrides">Forcer l'accès</TabsTrigger>
         </TabsList>
@@ -814,11 +815,41 @@ export default function ShopManagementDialog({ shop, isOpen, onClose, onUpdate }
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">
-                    {shop.sms_credits_used}/{shop.sms_credits_allocated}
+                    {smsUsage ? `${smsUsage.used}/${smsUsage.total}` : '—'}
                   </div>
+                  {smsUsage && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {smsUsage.remaining} restant(s)
+                    </p>
+                  )}
                 </CardContent>
               </Card>
             </div>
+
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium flex items-center gap-2">
+                  <ListChecks className="h-4 w-4" />
+                  Niveau de configuration
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-2xl font-bold">
+                    {configProgress ? `${configProgress.doneCount}/${configProgress.totalSteps}` : '—'}
+                  </span>
+                  <span className="text-sm text-muted-foreground">
+                    {configProgress ? `${configProgress.percent}% des étapes` : 'Calcul en cours…'}
+                  </span>
+                </div>
+                <Progress value={configProgress?.percent ?? 0} />
+                <p className="text-xs text-muted-foreground">
+                  Étapes : profil, infos magasin, types & statuts SAV, fournisseur, pièce, horaires,
+                  premier SAV, équipe, TVA et tutoriels.
+                </p>
+              </CardContent>
+            </Card>
+
 
             <Card>
               <CardHeader>
