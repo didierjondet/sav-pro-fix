@@ -181,6 +181,27 @@ export function UsageAnalytics() {
         </Select>
       </div>
 
+      <div className="rounded-lg border bg-muted/40 px-3 py-2 text-xs text-muted-foreground flex flex-wrap gap-x-4 gap-y-1">
+        <span>
+          Mesure en cours :{' '}
+          <strong className="text-foreground">{Number(health?.page_views_24h ?? 0)}</strong> pages vues et{' '}
+          <strong className="text-foreground">{Number(health?.clicks_24h ?? 0)}</strong> clics sur 24 h
+        </span>
+        <span>
+          Dernier événement :{' '}
+          {health?.last_page_view || health?.last_click
+            ? new Date(
+                Math.max(
+                  health?.last_page_view ? new Date(health.last_page_view).getTime() : 0,
+                  health?.last_click ? new Date(health.last_click).getTime() : 0
+                )
+              ).toLocaleString('fr-FR')
+            : 'aucun pour le moment'}
+        </span>
+      </div>
+
+
+
       <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
         {[
           { label: 'Inscrits', value: funnel.total },
