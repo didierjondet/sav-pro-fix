@@ -457,6 +457,8 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
     setSelectedParts([]);
     setDepositAmount(0);
     setTechnicianInitials('');
+    setSelectedProviderId('none');
+
     setLoanerSelection(EMPTY_LOANER_SELECTION);
     setShowPrintDialog(false);
     setCreatedSAVCase(null);
