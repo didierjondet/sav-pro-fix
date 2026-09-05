@@ -20,6 +20,7 @@ import {
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Link } from 'react-router-dom';
+import { NewSAVFromProductButton } from '@/components/sav/NewSAVFromProductButton';
 
 interface CustomerActivityDialogProps {
   customer: Customer | null;
