@@ -361,8 +361,23 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
           });
         } catch (err) {
           console.error('Erreur création prêt matériel:', err);
+      }
+
+      // Attribuer à un prestataire si sélectionné
+      if (selectedProviderId && selectedProviderId !== 'none' && newCase?.id && profile?.shop_id) {
+        try {
+          await supabase.from('sav_provider_assignments').insert({
+            shop_id: profile.shop_id,
+            sav_case_id: newCase.id,
+            provider_id: selectedProviderId,
+            sent_at: new Date().toISOString(),
+          });
+        } catch (err) {
+          console.error('Erreur attribution prestataire:', err);
         }
       }
+
+
 
         // Sauvegarder les pièces sélectionnées avec leurs remises
         if (selectedParts.length > 0) {
