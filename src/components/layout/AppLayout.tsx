@@ -4,7 +4,9 @@ import Header from './Header';
 import { Sidebar } from './Sidebar';
 import InactivityWarningBanner from './InactivityWarningBanner';
 import ShopCreationPolicyDialog from '@/components/onboarding/ShopCreationPolicyDialog';
+import UpdateAvailableDialog from './UpdateAvailableDialog';
 import MFAGate from '@/components/auth/MFAGate';
+
 
 export default function AppLayout() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -20,6 +22,8 @@ export default function AppLayout() {
       <div className="flex h-screen overflow-hidden flex-col">
         <InactivityWarningBanner />
         <ShopCreationPolicyDialog />
+        <UpdateAvailableDialog />
+
         <div className="flex flex-1 overflow-hidden">
           <Sidebar isOpen={isMobileMenuOpen} onClose={handleCloseMobileMenu} />
           <div className="flex-1 flex flex-col overflow-hidden">
