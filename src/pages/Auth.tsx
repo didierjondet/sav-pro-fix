@@ -150,9 +150,10 @@ export default function Auth() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: 'https://sav-pro-fix.lovable.app/dashboard'
+        redirectTo: `${window.location.origin}/auth/callback`
       }
     });
+
     if (error) {
       toast({
         title: "Erreur",

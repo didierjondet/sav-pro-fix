@@ -17,7 +17,9 @@ import { unlockAudio } from "@/hooks/useNotificationSound";
 import { DelayNotificationProvider } from "@/components/layout/DelayNotificationProvider";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
+import AuthCallback from "./pages/AuthCallback";
 import ResetPassword from "./pages/ResetPassword";
+
 import Settings from "./pages/Settings";
 import SAVList from "./pages/SAVList";
 import NewSAV from "./pages/NewSAV";
