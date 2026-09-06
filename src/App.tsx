@@ -140,7 +140,9 @@ const App = () => {
               <Routes>
                 <Route path="/" element={<Landing />} />
                 <Route path="/auth" element={<Auth />} />
+                <Route path="/auth/callback" element={<AuthCallback />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
+
                 <Route path="/track/:slug" element={<TrackSAV />} />
                 <Route path="/quote/:id" element={<QuotePublic />} />
                 <Route path="/satisfaction/:token" element={<Satisfaction />} />
