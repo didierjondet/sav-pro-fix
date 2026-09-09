@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -42,12 +42,18 @@ export function SAVDiagnosticTab({ savCase }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const savContext = {
-    problem_description: savCase.problem_description,
+  const [problemText, setProblemText] = useState<string>(savCase.problem_description || '');
+
+  useEffect(() => {
+    setProblemText(savCase.problem_description || '');
+  }, [savCase.id, savCase.problem_description]);
+
+  const savContext = useMemo(() => ({
+    problem_description: problemText,
     device_brand: savCase.device_brand,
     device_model: savCase.device_model,
     sav_type: savCase.sav_type,
-  };
+  }), [problemText, savCase.device_brand, savCase.device_model, savCase.sav_type]);
 
   const loadMessages = async () => {
     const { data } = await supabase
