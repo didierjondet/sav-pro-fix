@@ -1,25 +1,25 @@
-# Connexion Google : 404 uniquement dans l'éditeur Lovable
+# Rendre la panne décrite modifiable dans l'onglet Diagnostic
 
-## Diagnostic confirmé
+## Constat
 
-- En production (fixway.fr / sav-pro-fix.lovable.app), la connexion Google fonctionne : rien à craindre en publiant, le correctif précédent n'a pas cassé la production.
-- Dans l'éditeur Lovable, la prévisualisation tourne sous le domaine `lovable.dev`. L'adresse de retour envoyée à Google est calculée avec l'adresse du site en cours (`window.location.origin`) : elle devient donc `https://lovable.dev/...`, une page qui n'existe pas chez Lovable → **404 Lovable** (et non une 404 de votre application).
-- Ce n'est ni le mode bêta, ni Google, ni Supabase : c'est uniquement le contexte « éditeur Lovable ».
+Dans l'onglet Diagnostic d'un SAV, la zone « Panne décrite » reprend la description du dossier
+mais elle est affichée en lecture seule : c'est un simple texte, non modifiable.
 
-## Correction prévue
+## Ce qui sera fait
 
-1. **Adresse de retour intelligente dans `src/pages/Auth.tsx`** (bouton « Continuer avec Google ») :
-   - Si l'application tourne dans l'éditeur Lovable (domaine `lovable.dev`), le retour se fait vers l'adresse de production `https://sav-pro-fix.lovable.app/auth/callback` — comportement identique à l'ancienne version qui fonctionnait : vous êtes redirigé vers le site publié, connecté.
-   - Sinon (fixway.fr, logicielsav.com, sav-pro-fix.lovable.app, aperçu direct), on garde l'adresse du site en cours, comme actuellement.
-2. **Aucun changement côté production** : le comportement sur fixway.fr reste strictement identique.
-3. **Aucun changement de base de données ni de configuration serveur.**
+- La zone « Panne décrite » devient une zone de saisie modifiable, pré-remplie avec la description du dossier.
+- Le texte saisi sert uniquement au diagnostic IA (analyse initiale, régénération et discussion) :
+  **le dossier SAV n'est pas modifié**, la description d'origine reste intacte partout ailleurs.
+- Un petit bouton « Rétablir la description d'origine » permet de revenir au texte du dossier.
+- Une mention discrète précise que cette modification sert seulement à l'analyse IA.
+- Le bouton « Générer le diagnostic » se base sur le texte affiché ; il reste bloqué si la zone est vide.
+- Aucun autre élément de l'onglet ne change (photos/vidéos, analyse, discussion).
 
 ## Détails techniques
 
-- Détection simple : `window.location.hostname.endsWith('lovable.dev')` → `redirectTo = 'https://sav-pro-fix.lovable.app/auth/callback'`, sinon `redirectTo = ${window.location.origin}/auth/callback`.
-- Même logique appliquée au lien « mot de passe oublié » (`reset-password`) qui utilise le même calcul d'origine, pour éviter le même piège dans l'éditeur.
-- Vérification après modification : build OK, puis test du flux dans l'aperçu (le clic doit partir vers Google puis revenir sur le site de production connecté).
-
-## Limite connue
-
-Dans l'éditeur Lovable, le retour de Google vous amènera sur le site de **production** (connecté), pas dans la prévisualisation — c'est une contrainte technique de Lovable (la prévisualisation n'a pas d'adresse publique stable autorisée pour le retour Google). Pour tester la connexion Google « dans l'éditeur », il faudra utiliser la connexion par email, ou tester Google directement sur fixway.fr.
+- Fichier : `src/components/sav/SAVDiagnosticTab.tsx` uniquement.
+- Nouvel état local `problemText` initialisé depuis `savCase.problem_description`, resynchronisé
+  si le dossier change (`useEffect` sur `savCase.id` / `savCase.problem_description`).
+- `savContext.problem_description` alimenté par `problemText` (mémoïsé) pour les modes `initial` et `chat`.
+- Remplacement du bloc statique par un `Textarea` ; validation de `generateInitial` sur `problemText`.
+- Aucune écriture en base, aucune modification de la fonction edge.
