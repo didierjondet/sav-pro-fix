@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -42,12 +42,18 @@ export function SAVDiagnosticTab({ savCase }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const savContext = {
-    problem_description: savCase.problem_description,
+  const [problemText, setProblemText] = useState<string>(savCase.problem_description || '');
+
+  useEffect(() => {
+    setProblemText(savCase.problem_description || '');
+  }, [savCase.id, savCase.problem_description]);
+
+  const savContext = useMemo(() => ({
+    problem_description: problemText,
     device_brand: savCase.device_brand,
     device_model: savCase.device_model,
     sav_type: savCase.sav_type,
-  };
+  }), [problemText, savCase.device_brand, savCase.device_model, savCase.sav_type]);
 
   const loadMessages = async () => {
     const { data } = await supabase
@@ -129,7 +135,7 @@ export function SAVDiagnosticTab({ savCase }: Props) {
   };
 
   const generateInitial = async () => {
-    if (!savCase.problem_description || savCase.problem_description.trim() === '') {
+    if (!problemText || problemText.trim() === '') {
       toast({
         title: 'Description manquante',
         description: 'Renseignez la description du problème avant de lancer le diagnostic IA.',
@@ -318,9 +324,31 @@ export function SAVDiagnosticTab({ savCase }: Props) {
           </p>
         </CardHeader>
         <CardContent className="space-y-3">
-          <div className="p-3 bg-muted rounded-md text-sm">
-            <p className="text-xs uppercase text-muted-foreground mb-1">Panne décrite</p>
-            <p className="whitespace-pre-wrap">{savCase.problem_description || '—'}</p>
+          <div className="p-3 bg-muted rounded-md text-sm space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-xs uppercase text-muted-foreground">Panne décrite</p>
+              {problemText !== (savCase.problem_description || '') && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 text-xs"
+                  onClick={() => setProblemText(savCase.problem_description || '')}
+                >
+                  Rétablir la description d'origine
+                </Button>
+              )}
+            </div>
+            <Textarea
+              value={problemText}
+              onChange={(e) => setProblemText(e.target.value)}
+              rows={3}
+              placeholder="Décrivez la panne pour l'analyse IA..."
+              className="bg-background"
+            />
+            <p className="text-xs text-muted-foreground">
+              Ce texte sert uniquement à l'analyse IA : le dossier SAV n'est pas modifié.
+            </p>
           </div>
 
           {MediaPicker}
