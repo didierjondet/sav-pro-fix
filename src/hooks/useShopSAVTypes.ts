@@ -97,7 +97,8 @@ export function useShopSAVTypes() {
   // Fonction pour obtenir les informations d'un type
   const getTypeInfo = (typeKey: string) => {
     // Chercher d'abord dans les types personnalisés du magasin
-    const customType = types.find(t => t.type_key === typeKey);
+    // On cherche aussi dans les types archivés pour conserver l'historique lisible
+    const customType = allTypes.find(t => t.type_key === typeKey);
     if (customType) {
       return {
         label: customType.type_label,
