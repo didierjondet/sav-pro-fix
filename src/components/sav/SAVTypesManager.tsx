@@ -7,8 +7,9 @@ import { NumberInput } from "@/components/ui/number-input";
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Edit, Trash2, Plus, Info, Clock, Users, Sidebar, AlertTriangle, BarChart3, TrendingDown, TrendingUp, Star, PackageOpen } from 'lucide-react';
+import { Edit, Trash2, Plus, Info, Clock, Users, Sidebar, AlertTriangle, BarChart3, TrendingDown, TrendingUp, Star, PackageOpen, Archive, ArchiveRestore } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useProfile } from '@/hooks/useProfile';
@@ -64,7 +65,27 @@ export default function SAVTypesManager({ types, loading, onRefresh }: SAVTypesM
     show_satisfaction_survey: true,
     loaner_enabled: false,
   });
+  const [tab, setTab] = useState<'active' | 'archived'>('active');
+  const [archivedTypes, setArchivedTypes] = useState<SAVType[]>([]);
 
+  const fetchArchivedTypes = React.useCallback(async () => {
+    if (!profile?.shop_id) return;
+    const { data, error } = await supabase
+      .from('shop_sav_types')
+      .select('*')
+      .eq('shop_id', profile.shop_id)
+      .eq('is_active', false)
+      .order('display_order', { ascending: true });
+    if (error) {
+      console.error('Error fetching archived SAV types:', error);
+      return;
+    }
+    setArchivedTypes((data || []) as SAVType[]);
+  }, [profile?.shop_id]);
+
+  React.useEffect(() => {
+    fetchArchivedTypes();
+  }, [fetchArchivedTypes, types]);
 
 
   const resetForm = () => {
@@ -281,6 +302,156 @@ export default function SAVTypesManager({ types, loading, onRefresh }: SAVTypesM
       });
     }
   };
+
+  const setArchived = async (type: SAVType, archived: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('shop_sav_types')
+        .update({ is_active: !archived })
+        .eq('id', type.id);
+
+      if (error) throw error;
+
+      toast({
+        title: archived ? "Type archivé" : "Type réactivé",
+        description: archived
+          ? `"${type.type_label}" n'apparaîtra plus dans les choix. L'historique des SAV est conservé.`
+          : `"${type.type_label}" est de nouveau disponible.`,
+      });
+
+      await fetchArchivedTypes();
+      onRefresh();
+    } catch (error: any) {
+      console.error('Error archiving SAV type:', error);
+      toast({
+        title: "Erreur",
+        description: error.message || "Impossible de modifier l'archivage du type de SAV.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const renderTypeRow = (type: SAVType, archived: boolean) => (
+    <div
+      key={type.id}
+      className={`flex items-center justify-between p-4 border rounded-lg ${archived ? 'opacity-60' : ''}`}
+    >
+      <div className="flex items-center space-x-3 flex-1">
+        <div
+          className="w-4 h-4 rounded-full border"
+          style={{ backgroundColor: type.type_color }}
+        />
+        <div className="flex-1">
+          <div className="flex items-center space-x-2">
+            <span className="font-medium">{type.type_label}</span>
+            {type.is_default && (
+              <Badge variant="secondary" className="text-xs">Défaut</Badge>
+            )}
+            {archived && (
+              <Badge variant="outline" className="text-xs">Archivé</Badge>
+            )}
+          </div>
+          <div className="flex items-center flex-wrap gap-3 mt-2">
+            <div className="flex items-center space-x-1 text-xs">
+              <Users className="w-3 h-3" />
+              <span className={type.show_customer_info ? "text-green-600" : "text-red-600"}>
+                {type.show_customer_info ? "Client obligatoire" : "Sans client"}
+              </span>
+            </div>
+            {type.max_processing_days && (
+              <div className="flex items-center space-x-1 text-xs text-muted-foreground">
+                <Clock className="w-3 h-3" />
+                <span>{type.max_processing_days}j max</span>
+              </div>
+            )}
+            <div className="flex items-center space-x-1 text-xs">
+              <Clock className="w-3 h-3" />
+              <span className={type.pause_timer ? "text-orange-600" : "text-green-600"}>
+                {type.pause_timer ? "Timer suspendu" : "Timer actif"}
+              </span>
+            </div>
+            <div className="flex items-center space-x-1 text-xs">
+              <Sidebar className="w-3 h-3" />
+              <span className={type.show_in_sidebar ? "text-green-600" : "text-muted-foreground"}>
+                {type.show_in_sidebar ? "Visible sidebar" : "Masqué sidebar"}
+              </span>
+            </div>
+            {type.exclude_purchase_costs && (
+              <div className="flex items-center space-x-1 text-xs">
+                <TrendingDown className="w-3 h-3" />
+                <span className="text-orange-600">Coûts exclus</span>
+              </div>
+            )}
+            {type.exclude_sales_revenue && (
+              <div className="flex items-center space-x-1 text-xs">
+                <TrendingUp className="w-3 h-3" />
+                <span className="text-orange-600">Revenus exclus</span>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="flex items-center space-x-2">
+        {!archived && (
+          <Button variant="ghost" size="sm" onClick={() => openEditDialog(type)}>
+            <Edit className="w-4 h-4" />
+          </Button>
+        )}
+
+        {archived ? (
+          <Button variant="ghost" size="sm" onClick={() => setArchived(type, false)} title="Réactiver">
+            <ArchiveRestore className="w-4 h-4" />
+          </Button>
+        ) : (
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="ghost" size="sm" title="Archiver">
+                <Archive className="w-4 h-4" />
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Archiver le type de SAV</AlertDialogTitle>
+                <AlertDialogDescription>
+                  "{type.type_label}" disparaîtra de tous les choix (création de SAV, barre latérale, filtres).
+                  Les dossiers existants gardent ce type et restent consultables. Vous pourrez le réactiver
+                  depuis l'onglet « Archivés ».
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Annuler</AlertDialogCancel>
+                <AlertDialogAction onClick={() => setArchived(type, true)}>Archiver</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        )}
+
+        {!type.is_default && (
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="ghost" size="sm" title="Supprimer">
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Supprimer le type de SAV</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Êtes-vous sûr de vouloir supprimer le type "{type.type_label}" ?
+                  Cette action est irréversible. Si des SAV utilisent ce type, préférez l'archivage.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Annuler</AlertDialogCancel>
+                <AlertDialogAction onClick={() => handleDelete(type)}>Supprimer</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        )}
+      </div>
+    </div>
+  );
 
   if (loading) {
     return (
@@ -562,114 +733,33 @@ export default function SAVTypesManager({ types, loading, onRefresh }: SAVTypesM
           </div>
         </div>
         
-        <div className="space-y-4">
-          {types.length === 0 ? (
-            <div className="text-center py-8">
-              <p className="text-muted-foreground">Aucun type de SAV configuré</p>
-            </div>
-          ) : (
-            types.map((type) => (
-              <div
-                key={type.id}
-                className="flex items-center justify-between p-4 border rounded-lg"
-              >
-                <div className="flex items-center space-x-3 flex-1">
-                  <div
-                    className="w-4 h-4 rounded-full border"
-                    style={{ backgroundColor: type.type_color }}
-                  />
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-2">
-                      <span className="font-medium">{type.type_label}</span>
-                      {type.is_default && (
-                        <Badge variant="secondary" className="text-xs">
-                          Défaut
-                        </Badge>
-                      )}
-                    </div>
-                    <div className="flex items-center space-x-3 mt-2">
-                      <div className="flex items-center space-x-1 text-xs">
-                        <Users className="w-3 h-3" />
-                        <span className={type.show_customer_info ? "text-green-600" : "text-red-600"}>
-                          {type.show_customer_info ? "Client obligatoire" : "Sans client"}
-                        </span>
-                      </div>
-                      {type.max_processing_days && (
-                        <div className="flex items-center space-x-1 text-xs text-muted-foreground">
-                          <Clock className="w-3 h-3" />
-                          <span>{type.max_processing_days}j max</span>
-                        </div>
-                      )}
-                      <div className="flex items-center space-x-1 text-xs">
-                        <Clock className="w-3 h-3" />
-                        <span className={type.pause_timer ? "text-orange-600" : "text-green-600"}>
-                          {type.pause_timer ? "Timer suspendu" : "Timer actif"}
-                        </span>
-                      </div>
-                      <div className="flex items-center space-x-1 text-xs">
-                        <Sidebar className="w-3 h-3" />
-                        <span className={type.show_in_sidebar ? "text-green-600" : "text-muted-foreground"}>
-                          {type.show_in_sidebar ? "Visible sidebar" : "Masqué sidebar"}
-                        </span>
-                      </div>
-                      {type.exclude_purchase_costs && (
-                        <div className="flex items-center space-x-1 text-xs">
-                          <TrendingDown className="w-3 h-3" />
-                          <span className="text-orange-600">
-                            Coûts exclus
-                          </span>
-                        </div>
-                      )}
-                      {type.exclude_sales_revenue && (
-                        <div className="flex items-center space-x-1 text-xs">
-                          <TrendingUp className="w-3 h-3" />
-                          <span className="text-orange-600">
-                            Revenus exclus
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="flex items-center space-x-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => openEditDialog(type)}
-                  >
-                    <Edit className="w-4 h-4" />
-                  </Button>
-                  
-                  {!type.is_default && (
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="sm">
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Supprimer le type de SAV</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Êtes-vous sûr de vouloir supprimer le type "{type.type_label}" ?
-                            Cette action est irréversible.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Annuler</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => handleDelete(type)}>
-                            Supprimer
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  )}
-                </div>
+        <Tabs value={tab} onValueChange={(v) => setTab(v as 'active' | 'archived')} className="w-full">
+          <TabsList className="mb-4">
+            <TabsTrigger value="active">Actifs ({types.length})</TabsTrigger>
+            <TabsTrigger value="archived">Archivés ({archivedTypes.length})</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="active" className="space-y-4 mt-0">
+            {types.length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-muted-foreground">Aucun type de SAV configuré</p>
               </div>
-            ))
-          )}
-        </div>
+            ) : (
+              types.map((type) => renderTypeRow(type, false))
+            )}
+          </TabsContent>
+
+          <TabsContent value="archived" className="space-y-4 mt-0">
+            {archivedTypes.length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-muted-foreground">Aucun type de SAV archivé</p>
+              </div>
+            ) : (
+              archivedTypes.map((type) => renderTypeRow(type, true))
+            )}
+          </TabsContent>
+        </Tabs>
+
         
         <div className="mt-6 p-4 bg-muted/30 rounded-lg">
           <div className="flex items-start space-x-2">
