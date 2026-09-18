@@ -768,6 +768,7 @@ export default function SAVTypesManager({ types, loading, onRefresh }: SAVTypesM
               <p><strong>Types de SAV :</strong></p>
               <ul className="list-disc list-inside space-y-1 ml-4">
                 <li>Les types par défaut ne peuvent pas être supprimés</li>
+                <li>Archiver un type le retire de tous les choix sans toucher aux dossiers existants (réactivable dans l'onglet « Archivés »)</li>
                 <li>La clé d'un type ne peut pas être modifiée après création</li>
                 <li>Les couleurs sont utilisées dans l'interface pour identifier visuellement les types</li>
                 <li>L'ordre d'affichage peut être modifié en réorganisant les types</li>
