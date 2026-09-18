@@ -46,7 +46,6 @@ export function useShopSAVTypes() {
       const { data, error } = await supabase
         .from('shop_sav_types')
         .select('*, alert_days, require_unlock_pattern, exclude_from_stats')
-        .eq('is_active', true)
         .order('display_order', { ascending: true });
 
       if (error) throw error;
@@ -57,7 +56,7 @@ export function useShopSAVTypes() {
     }
   };
 
-  const { data: types = [], isLoading: loading, refetch } = useQuery({
+  const { data: allTypes = [], isLoading: loading, refetch } = useQuery({
     queryKey: ['shop-sav-types', user?.id],
     queryFn: fetchTypes,
     enabled: !!user,
@@ -65,6 +64,10 @@ export function useShopSAVTypes() {
     gcTime: 10 * 60 * 1000,
     placeholderData: (prev) => prev,
   });
+
+  // Types utilisables (non archivés)
+  const types = allTypes.filter((t) => t.is_active);
+
 
   useEffect(() => {
     if (!user) return;
