@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -65,8 +65,8 @@ export function useShopSAVTypes() {
     placeholderData: (prev) => prev,
   });
 
-  // Types utilisables (non archivés)
-  const types = allTypes.filter((t) => t.is_active);
+  // Types utilisables (non archivés) — mémoïsé pour garder une référence stable
+  const types = useMemo(() => allTypes.filter((t) => t.is_active), [allTypes]);
 
 
   useEffect(() => {
@@ -95,7 +95,7 @@ export function useShopSAVTypes() {
   }, [user, queryClient]);
 
   // Fonction pour obtenir les informations d'un type
-  const getTypeInfo = (typeKey: string) => {
+  const getTypeInfo = useCallback((typeKey: string) => {
     // Chercher d'abord dans les types personnalisés du magasin
     // On cherche aussi dans les types archivés pour conserver l'historique lisible
     const customType = allTypes.find(t => t.type_key === typeKey);
@@ -132,10 +132,10 @@ export function useShopSAVTypes() {
       show_satisfaction_survey: true,
       loaner_enabled: false,
     };
-  };
+  }, [allTypes]);
 
   // Fonction pour obtenir tous les types disponibles (personnalisés + par défaut)
-  const getAllTypes = () => {
+  const getAllTypes = useCallback(() => {
     if (types.length > 0) {
       // Retourner tous les types personnalisés du magasin
       return types.map(type => ({
@@ -151,17 +151,17 @@ export function useShopSAVTypes() {
       label: config.label,
       color: config.color
     }));
-  };
+  }, [types]);
 
   // Fonction pour obtenir le style CSS pour un type
-  const getTypeStyle = (typeKey: string) => {
+  const getTypeStyle = useCallback((typeKey: string) => {
     const typeInfo = getTypeInfo(typeKey);
     return {
       backgroundColor: `${typeInfo.color}20`, // 20% d'opacité pour le fond
       color: typeInfo.color,
       borderColor: typeInfo.color
     };
-  };
+  }, [getTypeInfo]);
 
   return {
     types,

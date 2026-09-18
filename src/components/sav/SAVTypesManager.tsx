@@ -85,7 +85,7 @@ export default function SAVTypesManager({ types, loading, onRefresh }: SAVTypesM
 
   React.useEffect(() => {
     fetchArchivedTypes();
-  }, [fetchArchivedTypes, types]);
+  }, [fetchArchivedTypes, types.length]);
 
 
   const resetForm = () => {
