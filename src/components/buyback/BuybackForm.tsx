@@ -80,6 +80,7 @@ export function BuybackForm({ allowedCategories, storagePrefix, submitLabel, ext
 
   const resetCategory = (c: string) => {
     setCategory(c);
+    setHasIssue('');
     setAnswers({});
     setIssues([]);
     setAccessories([]);
