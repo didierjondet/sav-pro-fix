@@ -41,6 +41,7 @@ export function BuybackForm({ allowedCategories, storagePrefix, submitLabel, ext
   const { toast } = useToast();
 
   const [category, setCategory] = useState('');
+  const [hasIssue, setHasIssue] = useState<'' | 'yes' | 'no'>('');
   const [brand, setBrand] = useState('');
   const [model, setModel] = useState('');
   const [answers, setAnswers] = useState<Record<string, string>>({});
@@ -57,10 +58,19 @@ export function BuybackForm({ allowedCategories, storagePrefix, submitLabel, ext
   const [aiLoading, setAiLoading] = useState(false);
   const [aiDone, setAiDone] = useState(false);
 
-  const baseQuestions = useMemo(() => (category ? getQuestions(category) : []), [category]);
+  const baseQuestions = useMemo(
+    () =>
+      category
+        ? getQuestions(category).filter((q) => q.id !== 'panne' || hasIssue === 'yes')
+        : [],
+    [category, hasIssue],
+  );
   const photoGuides = useMemo(
-    () => (category ? [...getPhotoGuides(category), ...aiPhotos] : []),
-    [category, aiPhotos],
+    () =>
+      category
+        ? [...getPhotoGuides(category), ...aiPhotos].filter((g) => g.id !== 'defaut' || hasIssue === 'yes')
+        : [],
+    [category, aiPhotos, hasIssue],
   );
   const issueList = useMemo(
     () => (category ? Array.from(new Set([...getIssues(category), ...aiIssues])) : []),
@@ -70,6 +80,7 @@ export function BuybackForm({ allowedCategories, storagePrefix, submitLabel, ext
 
   const resetCategory = (c: string) => {
     setCategory(c);
+    setHasIssue('');
     setAnswers({});
     setIssues([]);
     setAccessories([]);
@@ -147,6 +158,10 @@ export function BuybackForm({ allowedCategories, storagePrefix, submitLabel, ext
       toast({ title: 'Choisissez une catégorie', variant: 'destructive' });
       return;
     }
+    if (!hasIssue) {
+      toast({ title: 'Précisez si l\'appareil a une panne ou un défaut', variant: 'destructive' });
+      return;
+    }
     const missing = [...baseQuestions, ...aiQuestions].filter((q) => q.required && !answers[q.id]?.trim());
     if (missing.length > 0) {
       toast({ title: 'Complétez les champs obligatoires', description: missing[0].label, variant: 'destructive' });
@@ -181,7 +196,8 @@ export function BuybackForm({ allowedCategories, storagePrefix, submitLabel, ext
 
       const finalAnswers: Record<string, string> = {
         ...answers,
-        points_en_panne: issues.join(', '),
+        appareil_en_panne: hasIssue === 'yes' ? 'Oui' : 'Non, appareil fonctionnel',
+        points_en_panne: hasIssue === 'yes' ? issues.join(', ') : '',
         accessoires_fournis: accessories.join(', '),
         nb_accessoires: String(accessories.length),
       };
@@ -219,6 +235,43 @@ export function BuybackForm({ allowedCategories, storagePrefix, submitLabel, ext
 
       {category && (
         <>
+          {/* Panne ou non : question clé en premier */}
+          <div className="space-y-2 rounded-lg border bg-muted/40 p-3">
+            <Label>
+              L'appareil a-t-il une panne ou un défaut ? <span className="text-destructive">*</span>
+            </Label>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                size="sm"
+                variant={hasIssue === 'yes' ? 'default' : 'outline'}
+                onClick={() => setHasIssue('yes')}
+              >
+                Oui, il a une panne / un défaut
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant={hasIssue === 'no' ? 'default' : 'outline'}
+                onClick={() => {
+                  setHasIssue('no');
+                  setIssues([]);
+                  setAnswers((a) => {
+                    const { panne, ...rest } = a;
+                    return rest;
+                  });
+                }}
+              >
+                Non, il fonctionne
+              </Button>
+            </div>
+            {hasIssue === 'no' && (
+              <p className="text-xs text-muted-foreground">
+                Parfait : aucune description de panne ne vous sera demandée.
+              </p>
+            )}
+          </div>
+
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label htmlFor="brand">Marque</Label>
@@ -258,18 +311,20 @@ export function BuybackForm({ allowedCategories, storagePrefix, submitLabel, ext
             </div>
           )}
 
-          {/* Points en panne */}
-          <div className="space-y-2">
-            <Label>Points en panne ou qui posent problème</Label>
-            <div className="grid gap-2 sm:grid-cols-2">
-              {issueList.map((issue) => (
-                <label key={issue} className="flex items-center gap-2 text-sm cursor-pointer">
-                  <Checkbox checked={issues.includes(issue)} onCheckedChange={() => toggle(issues, setIssues, issue)} />
-                  {issue}
-                </label>
-              ))}
+          {/* Points en panne : uniquement si l'appareil est en panne */}
+          {hasIssue === 'yes' && (
+            <div className="space-y-2">
+              <Label>Points en panne ou qui posent problème</Label>
+              <div className="grid gap-2 sm:grid-cols-2">
+                {issueList.map((issue) => (
+                  <label key={issue} className="flex items-center gap-2 text-sm cursor-pointer">
+                    <Checkbox checked={issues.includes(issue)} onCheckedChange={() => toggle(issues, setIssues, issue)} />
+                    {issue}
+                  </label>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Accessoires */}
           <div className="space-y-2">
