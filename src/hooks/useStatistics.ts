@@ -185,8 +185,7 @@ export function useStatistics(
         .from('sav_cases')
         .select(`
           *,
-          customer:customers(*),
-          sav_parts(*, part:parts(*))
+          sav_parts(quantity, unit_price, purchase_price, custom_part_name, part:parts(name, selling_price, purchase_price))
         `)
         .eq('shop_id', shop.id)
         .gte('created_at', start.toISOString())
