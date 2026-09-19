@@ -203,7 +203,7 @@ const App = () => {
               </TooltipProvider>
             </LimitDialogProvider>
           </DelayNotificationProvider>
-        </RealtimeProvider>
+
       </ShopProvider>
     </AuthProvider>
     </ThemeProvider>
