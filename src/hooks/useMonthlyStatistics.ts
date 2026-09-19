@@ -62,8 +62,8 @@ export function useMonthlyStatistics(year: number) {
         const { data: savCases, error: savError } = await supabase
           .from('sav_cases')
           .select(`
-            *,
-            sav_parts(*, parts(*))
+            id, created_at, sav_type, status, taken_over, partial_takeover, takeover_amount, total_cost,
+            sav_parts(quantity, purchase_price, unit_price, parts(purchase_price, selling_price))
           `)
           .eq('shop_id', shop.id)
           .in('status', metricsStatusKeys)
@@ -157,21 +157,10 @@ export function useMonthlyStatistics(year: number) {
           monthlyData[monthIndex].revenue += Number(quote.total_amount) || 0;
         });
 
-        // Récupérer tous les SAV terminés pour calculer les retards
-        const { data: allClosedSavCases, error: closedSavError } = await supabase
-          .from('sav_cases')
-          .select('*')
-          .eq('shop_id', shop.id)
-          .in('status', Array.from(new Set([...metricsStatusKeys, 'delivered'])))
-          .gte('created_at', yearStart.toISOString())
-          .lte('created_at', yearEnd.toISOString());
+        // Note: le calcul des retards par mois est géré ailleurs (useMonthlyLateRate).
+        // L'ancienne requête "tous les SAV clôturés" était chargée puis jamais
+        // utilisée : elle est supprimée.
 
-        if (closedSavError) throw closedSavError;
-
-        // Calculer les SAV en retard par mois
-        // Note: Le calcul des retards est maintenant géré par les types SAV dynamiques
-        // Cette fonctionnalité nécessiterait une jointure avec shop_sav_types
-        // Pour l'instant, on garde les compteurs à zéro pour éviter les erreurs
 
         // Calculer les profits
         monthlyData.forEach(month => {
