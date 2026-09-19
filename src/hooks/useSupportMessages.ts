@@ -42,14 +42,18 @@ export function useSupportMessages(ticketId?: string) {
 
     if (!ticketId) return;
 
-    // REALTIME DÉSACTIVÉ - Polling toutes les 30s pour performance
-    console.log('📨 [SupportMessages] Polling activé - 30s');
-    const pollInterval = setInterval(() => {
-      fetchMessages();
-    }, 30000);
+    // Temps réel ciblé sur le ticket ouvert (remplace le polling 30s)
+    const channel = supabase
+      .channel(`support-messages-${ticketId}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'support_messages', filter: `ticket_id=eq.${ticketId}` },
+        () => { fetchMessages(); }
+      )
+      .subscribe();
 
     return () => {
-      clearInterval(pollInterval);
+      supabase.removeChannel(channel);
     };
   }, [ticketId]);
 
