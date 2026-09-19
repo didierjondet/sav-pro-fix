@@ -107,6 +107,7 @@ export function WebsiteDirectorySection() {
     if (!shop) return;
     const address = ((shop as any).address || '') as string;
     const match = address.match(/(\d{5})\s+([^\n,]+)/);
+    setDirty(true);
     setForm((f) => ({
       ...f,
       public_name: (shop as any).name || f.public_name,
@@ -381,8 +382,7 @@ export function WebsiteDirectorySection() {
             <div>
               <Label htmlFor="pp_delay">Délai moyen (jours)</Label>
               <NumberInput id="pp_delay" min="0" max="365" value={form.avg_delay_days ?? ''}
-                onChange={(e) => setForm({
-                  ...form,
+                onChange={(e) => update({
                   avg_delay_days: e.target.value === '' ? undefined : parseInt(e.target.value, 10),
                 })} placeholder="5" />
             </div>
@@ -516,8 +516,13 @@ export function WebsiteDirectorySection() {
             )}
           </div>
 
-          <div className="flex justify-end">
-            <Button onClick={submit} disabled={saving || !form.public_name.trim()}>
+          <div className="flex items-center justify-end gap-3">
+            {dirty && (
+              <span className="text-xs text-orange-600 dark:text-orange-400 flex items-center gap-1">
+                <Info className="h-3.5 w-3.5" /> Modifications non enregistrées
+              </span>
+            )}
+            <Button onClick={submit} disabled={saving || !form.public_name.trim() || !dirty}>
               <Save className="h-4 w-4 mr-2" /> Enregistrer ces informations
             </Button>
           </div>
