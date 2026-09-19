@@ -311,18 +311,20 @@ export function BuybackForm({ allowedCategories, storagePrefix, submitLabel, ext
             </div>
           )}
 
-          {/* Points en panne */}
-          <div className="space-y-2">
-            <Label>Points en panne ou qui posent problème</Label>
-            <div className="grid gap-2 sm:grid-cols-2">
-              {issueList.map((issue) => (
-                <label key={issue} className="flex items-center gap-2 text-sm cursor-pointer">
-                  <Checkbox checked={issues.includes(issue)} onCheckedChange={() => toggle(issues, setIssues, issue)} />
-                  {issue}
-                </label>
-              ))}
+          {/* Points en panne : uniquement si l'appareil est en panne */}
+          {hasIssue === 'yes' && (
+            <div className="space-y-2">
+              <Label>Points en panne ou qui posent problème</Label>
+              <div className="grid gap-2 sm:grid-cols-2">
+                {issueList.map((issue) => (
+                  <label key={issue} className="flex items-center gap-2 text-sm cursor-pointer">
+                    <Checkbox checked={issues.includes(issue)} onCheckedChange={() => toggle(issues, setIssues, issue)} />
+                    {issue}
+                  </label>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Accessoires */}
           <div className="space-y-2">
