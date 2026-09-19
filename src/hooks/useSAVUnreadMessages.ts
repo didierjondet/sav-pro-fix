@@ -54,8 +54,6 @@ export function useSAVUnreadMessages() {
       const allFinalStatuses = [...new Set([...defaultFinalStatuses, ...customFinalStatuses])];
       const statusesString = allFinalStatuses.map(s => `"${s}"`).join(',');
 
-      console.log('🚫 Final statuses to exclude:', allFinalStatuses);
-
       // Get all SAV cases that have client messages and are not in final status
       const { data: savCases, error: savError } = await supabase
         .from('sav_cases')
@@ -71,12 +69,9 @@ export function useSAVUnreadMessages() {
         .eq('shop_id', profile.shop_id)
         .not('status', 'in', `(${statusesString})`);
 
-      console.log('🏪 All open SAV cases:', { savCases, savError });
-
       if (savError) throw savError;
 
       if (!savCases || savCases.length === 0) {
-        console.log('❌ No open SAV cases found');
         return [];
       }
 
@@ -93,8 +88,6 @@ export function useSAVUnreadMessages() {
         .eq('sender_type', 'client')
         .in('sav_case_id', savCaseIds);
 
-      console.log('💬 Client messages query result:', { clientMessages, msgError });
-
       if (msgError) throw msgError;
 
       // Get unique SAV case IDs that have client messages
@@ -103,7 +96,6 @@ export function useSAVUnreadMessages() {
       console.log('📋 SAV case IDs with client messages:', savCaseIdsWithClientMessages);
 
       if (savCaseIdsWithClientMessages.length === 0) {
-        console.log('❌ No SAV cases with client messages found');
         return [];
       }
 
@@ -151,7 +143,6 @@ export function useSAVUnreadMessages() {
           return b.awaiting_reply ? 1 : (a.awaiting_reply ? -1 : 0);
         });
 
-      console.log('📊 Final open conversations list:', combined);
       return combined;
     } catch (error: any) {
       console.error('❌ Error fetching open conversations:', error);
@@ -172,8 +163,6 @@ export function useSAVUnreadMessages() {
     if (!savCaseId) return;
     
     try {
-      console.log('🧹 Closing conversation for SAV:', savCaseId);
-      
       // Marquer tous les messages comme lus par le magasin
       const { error } = await supabase
         .from('sav_messages')
@@ -184,8 +173,6 @@ export function useSAVUnreadMessages() {
       if (error) {
         console.error('Error marking messages as read:', error);
       } else {
-        console.log('✅ All messages marked as read for SAV:', savCaseId);
-        
         // Déclencher un événement personnalisé pour fermer la discussion ouverte
         window.dispatchEvent(new CustomEvent('sav-conversation-close', { 
           detail: { savCaseId } 
