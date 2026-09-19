@@ -133,27 +133,11 @@ export function useStatistics(
     if (!shop?.id) return;
 
     const fetchStatistics = async () => {
+      // On garde l'affichage précédent pendant le recalcul (pas de remise à zéro
+      // qui provoquait un écran vide entre deux périodes).
       setLoading(true);
-      // Reset des données pour éviter d'afficher des valeurs calculées
-      // sur la période précédente pendant le recalcul.
-      setData({
-        revenue: 0,
-        expenses: 0,
-        profit: 0,
-        savStats: { total: 0, averageTime: 0, averageProcessingDays: 0, lateRate: 0, lateCount: 0, closedInPeriodCount: 0 },
-        partsStats: { totalUsed: 0, averageCost: 0 },
-        takeoverStats: { amount: 0, count: 0 },
-        revenueChart: [],
-        savCountChart: [],
-        completedSavChart: [],
-        lateRateChart: [],
-        profitabilityChart: [],
-        topParts: [],
-        topDevices: [],
-        savStatusDistribution: [],
-        revenueByProductCategory: []
-      });
       try {
+
       const { start, end } = getDateRange();
 
       // Récupérer les types SAV avec leurs délais configurés et exclusions granulaires
@@ -201,8 +185,7 @@ export function useStatistics(
         .from('sav_cases')
         .select(`
           *,
-          customer:customers(*),
-          sav_parts(*, part:parts(*))
+          sav_parts(quantity, unit_price, purchase_price, custom_part_name, part:parts(name, selling_price, purchase_price))
         `)
         .eq('shop_id', shop.id)
         .gte('created_at', start.toISOString())

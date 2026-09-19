@@ -92,14 +92,31 @@ export function useMessaging({ savCaseId, trackingSlug, userType }: UseMessaging
     }
   }, []); // stable - uses refs
 
-  // Polling setup
+  // Mise à jour : temps réel côté magasin, sondage allégé côté client public
   useEffect(() => {
     fetchMessages();
 
     if (!savCaseId && !trackingSlug) return;
 
-    console.log('📨 [Messaging] Polling activé - 30s');
-    const pollInterval = setInterval(fetchMessages, 30000);
+    if (savCaseId) {
+      const channel = supabase
+        .channel(`messaging-${savCaseId}`)
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'sav_messages', filter: `sav_case_id=eq.${savCaseId}` },
+          () => { fetchMessages(); }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
+
+    // Page publique de suivi : pas de session temps réel, sondage 60s
+    const pollInterval = setInterval(() => {
+      if (document.visibilityState === 'visible') fetchMessages();
+    }, 60000);
 
     return () => {
       clearInterval(pollInterval);

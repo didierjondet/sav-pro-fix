@@ -6,7 +6,7 @@ export function useSAVCaseUnreadCount(savCaseId?: string) {
   return useQuery({
     queryKey: ['sav-case-unread', savCaseId],
     enabled: !!savCaseId,
-    refetchInterval: 15000,
+    staleTime: 60 * 1000,
     queryFn: async () => {
       const { count } = await supabase
         .from('sav_messages')
@@ -24,7 +24,7 @@ export function useSAVCaseHasActiveLoan(savCaseId?: string) {
   return useQuery({
     queryKey: ['sav-case-active-loan', savCaseId],
     enabled: !!savCaseId,
-    refetchInterval: 30000,
+    staleTime: 5 * 60 * 1000,
     queryFn: async () => {
       const { count } = await supabase
         .from('loaner_loans' as any)

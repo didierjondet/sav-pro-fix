@@ -97,12 +97,10 @@ export function useSAVCases() {
       
       return mappedData || [];
     } catch (error: any) {
-      toast({
-        title: "Erreur",
-        description: "Impossible de charger les dossiers SAV",
-        variant: "destructive",
-      });
-      return [];
+      // Ne jamais renvoyer une liste vide sur erreur : cela effacerait les
+      // données déjà affichées. On propage pour conserver le cache précédent.
+      console.error('Erreur chargement SAV:', error);
+      throw error;
     }
   };
 
@@ -112,15 +110,10 @@ export function useSAVCases() {
     enabled: !!user,
     refetchOnMount: true,
     placeholderData: (prev) => prev,
-    staleTime: 1 * 60 * 1000, // 1 minute - réduit pour synchronisation
-    gcTime: 5 * 60 * 1000, // 5 minutes - réduit pour libérer mémoire
-    refetchInterval: (data) => {
-      // Si sur page /new-sav, ne pas recharger automatiquement
-      if (window.location.pathname === '/sav/new') return false;
-      // Si page visible, recharger toutes les 2 minutes
-      // Si page cachée, ne pas recharger (économise ressources)
-      return document.visibilityState === 'visible' ? 2 * 60 * 1000 : false;
-    },
+    staleTime: 2 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+    retry: 2,
+    retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 8000),
   });
 
   // Listener Realtime déplacé vers RealtimeProvider global pour être actif partout

@@ -283,7 +283,7 @@ export function useSAVCaseActiveProvider(savCaseId?: string) {
   return useQuery({
     queryKey: ['sav-case-active-provider', savCaseId],
     enabled: !!savCaseId,
-    refetchInterval: 30000,
+    staleTime: 5 * 60 * 1000,
     queryFn: async (): Promise<SAVProviderAssignment | null> => {
       const { data } = await supabase
         .from('sav_provider_assignments')

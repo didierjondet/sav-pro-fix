@@ -25,8 +25,6 @@ export function useSAVUnreadMessages() {
     if (!user) return [];
 
     try {
-      console.log('🔍 Fetching open client conversations for user:', user.id);
-      
       // Get user's shop_id
       const { data: profile } = await supabase
         .from('profiles')
@@ -34,10 +32,7 @@ export function useSAVUnreadMessages() {
         .eq('user_id', user.id)
         .single();
 
-      console.log('👤 User profile:', profile);
-
       if (!profile?.shop_id) {
-        console.log('❌ No shop_id found for user');
         return [];
       }
 
@@ -48,6 +43,7 @@ export function useSAVUnreadMessages() {
         .eq('shop_id', profile.shop_id)
         .eq('is_active', true);
 
+
       // Construire la liste des statuts finaux à exclure
       const defaultFinalStatuses = ['ready', 'delivered', 'cancelled', 'closed', 'completed'];
       const customFinalStatuses = (shopStatuses || [])
@@ -57,8 +53,6 @@ export function useSAVUnreadMessages() {
       // Fusionner et dédupliquer
       const allFinalStatuses = [...new Set([...defaultFinalStatuses, ...customFinalStatuses])];
       const statusesString = allFinalStatuses.map(s => `"${s}"`).join(',');
-
-      console.log('🚫 Final statuses to exclude:', allFinalStatuses);
 
       // Get all SAV cases that have client messages and are not in final status
       const { data: savCases, error: savError } = await supabase
@@ -75,12 +69,9 @@ export function useSAVUnreadMessages() {
         .eq('shop_id', profile.shop_id)
         .not('status', 'in', `(${statusesString})`);
 
-      console.log('🏪 All open SAV cases:', { savCases, savError });
-
       if (savError) throw savError;
 
       if (!savCases || savCases.length === 0) {
-        console.log('❌ No open SAV cases found');
         return [];
       }
 
@@ -97,17 +88,12 @@ export function useSAVUnreadMessages() {
         .eq('sender_type', 'client')
         .in('sav_case_id', savCaseIds);
 
-      console.log('💬 Client messages query result:', { clientMessages, msgError });
-
       if (msgError) throw msgError;
 
       // Get unique SAV case IDs that have client messages
       const savCaseIdsWithClientMessages = [...new Set((clientMessages || []).map(msg => msg.sav_case_id))];
-      
-      console.log('📋 SAV case IDs with client messages:', savCaseIdsWithClientMessages);
 
       if (savCaseIdsWithClientMessages.length === 0) {
-        console.log('❌ No SAV cases with client messages found');
         return [];
       }
 
@@ -155,7 +141,6 @@ export function useSAVUnreadMessages() {
           return b.awaiting_reply ? 1 : (a.awaiting_reply ? -1 : 0);
         });
 
-      console.log('📊 Final open conversations list:', combined);
       return combined;
     } catch (error: any) {
       console.error('❌ Error fetching open conversations:', error);
@@ -167,17 +152,15 @@ export function useSAVUnreadMessages() {
     queryKey: ['sav-unread-messages', user?.id],
     queryFn: fetchUnreadMessages,
     enabled: !!user,
-    staleTime: 5 * 1000, // 5 secondes pour refresh rapide
-    gcTime: 5 * 60 * 1000, // 5 minutes
-    refetchInterval: 10 * 1000, // Refetch automatique toutes les 10 secondes
+    placeholderData: (prev) => prev,
+    staleTime: 60 * 1000,
+    gcTime: 15 * 60 * 1000,
   });
 
   const handleSAVClosed = useCallback(async (savCaseId: string) => {
     if (!savCaseId) return;
     
     try {
-      console.log('🧹 Closing conversation for SAV:', savCaseId);
-      
       // Marquer tous les messages comme lus par le magasin
       const { error } = await supabase
         .from('sav_messages')
@@ -188,8 +171,6 @@ export function useSAVUnreadMessages() {
       if (error) {
         console.error('Error marking messages as read:', error);
       } else {
-        console.log('✅ All messages marked as read for SAV:', savCaseId);
-        
         // Déclencher un événement personnalisé pour fermer la discussion ouverte
         window.dispatchEvent(new CustomEvent('sav-conversation-close', { 
           detail: { savCaseId } 
@@ -206,14 +187,20 @@ export function useSAVUnreadMessages() {
   useEffect(() => {
     if (!user) return;
 
-    // REALTIME DÉSACTIVÉ - Polling toutes les 60s pour performance
-    console.log('📨 [SAVUnread] Polling activé - 60s');
-    const pollInterval = setInterval(() => {
-      queryClient.invalidateQueries({ queryKey: ['sav-unread-messages'] });
-    }, 60000);
+    // Temps réel : on ne recalcule que lorsqu'un message change réellement
+    const channel = supabase
+      .channel('sav-unread-messages')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'sav_messages' },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ['sav-unread-messages'] });
+        }
+      )
+      .subscribe();
 
     return () => {
-      clearInterval(pollInterval);
+      supabase.removeChannel(channel);
     };
   }, [user, queryClient]);
 

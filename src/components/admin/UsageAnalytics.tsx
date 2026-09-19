@@ -110,7 +110,7 @@ export function UsageAnalytics() {
 
   const { data: health } = useQuery({
     queryKey: ['usage-tracking-health'],
-    refetchInterval: 60000,
+    refetchInterval: 5 * 60 * 1000,
     queryFn: async () => {
       const { data, error } = await supabase.rpc('get_usage_tracking_health' as any);
       if (error) throw error;
