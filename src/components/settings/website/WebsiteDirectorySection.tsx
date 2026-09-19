@@ -195,6 +195,7 @@ export function WebsiteDirectorySection() {
         specialty_tags: tags,
         specialties: tags.length > 0 ? tags.join(', ') : (form.specialties || null),
       } as any);
+      setDirty(false);
     } finally {
       setSaving(false);
     }
