@@ -158,6 +158,10 @@ export function BuybackForm({ allowedCategories, storagePrefix, submitLabel, ext
       toast({ title: 'Choisissez une catégorie', variant: 'destructive' });
       return;
     }
+    if (!hasIssue) {
+      toast({ title: 'Précisez si l\'appareil a une panne ou un défaut', variant: 'destructive' });
+      return;
+    }
     const missing = [...baseQuestions, ...aiQuestions].filter((q) => q.required && !answers[q.id]?.trim());
     if (missing.length > 0) {
       toast({ title: 'Complétez les champs obligatoires', description: missing[0].label, variant: 'destructive' });
