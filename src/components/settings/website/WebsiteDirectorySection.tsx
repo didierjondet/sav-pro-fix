@@ -53,6 +53,13 @@ export function WebsiteDirectorySection() {
   });
   const [tags, setTags] = useState<string[]>([]);
   const [customTag, setCustomTag] = useState('');
+  const [dirty, setDirty] = useState(false);
+
+  /** Modifie le formulaire et marque des changements non enregistrés. */
+  const update = (patch: Partial<typeof form>) => {
+    setDirty(true);
+    setForm((f) => ({ ...f, ...patch }));
+  };
 
   useEffect(() => {
     if (partnerProfile) {
