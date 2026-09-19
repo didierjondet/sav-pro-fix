@@ -92,8 +92,6 @@ export function useSAVUnreadMessages() {
 
       // Get unique SAV case IDs that have client messages
       const savCaseIdsWithClientMessages = [...new Set((clientMessages || []).map(msg => msg.sav_case_id))];
-      
-      console.log('📋 SAV case IDs with client messages:', savCaseIdsWithClientMessages);
 
       if (savCaseIdsWithClientMessages.length === 0) {
         return [];
@@ -154,9 +152,9 @@ export function useSAVUnreadMessages() {
     queryKey: ['sav-unread-messages', user?.id],
     queryFn: fetchUnreadMessages,
     enabled: !!user,
-    staleTime: 5 * 1000, // 5 secondes pour refresh rapide
-    gcTime: 5 * 60 * 1000, // 5 minutes
-    refetchInterval: 10 * 1000, // Refetch automatique toutes les 10 secondes
+    placeholderData: (prev) => prev,
+    staleTime: 60 * 1000,
+    gcTime: 15 * 60 * 1000,
   });
 
   const handleSAVClosed = useCallback(async (savCaseId: string) => {
