@@ -87,6 +87,7 @@ export function WebsiteDirectorySection() {
         visible_pro: (partnerProfile as any).visible_pro ?? false,
       });
       setTags(resolveSpecialtyTags((partnerProfile as any).specialty_tags, partnerProfile.specialties));
+      setDirty(false);
     } else if (shop?.name) {
       setForm((f) => ({ ...f, public_name: f.public_name || shop.name }));
     }
