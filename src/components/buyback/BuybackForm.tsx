@@ -196,7 +196,8 @@ export function BuybackForm({ allowedCategories, storagePrefix, submitLabel, ext
 
       const finalAnswers: Record<string, string> = {
         ...answers,
-        points_en_panne: issues.join(', '),
+        appareil_en_panne: hasIssue === 'yes' ? 'Oui' : 'Non, appareil fonctionnel',
+        points_en_panne: hasIssue === 'yes' ? issues.join(', ') : '',
         accessoires_fournis: accessories.join(', '),
         nb_accessoires: String(accessories.length),
       };
