@@ -58,10 +58,19 @@ export function BuybackForm({ allowedCategories, storagePrefix, submitLabel, ext
   const [aiLoading, setAiLoading] = useState(false);
   const [aiDone, setAiDone] = useState(false);
 
-  const baseQuestions = useMemo(() => (category ? getQuestions(category) : []), [category]);
+  const baseQuestions = useMemo(
+    () =>
+      category
+        ? getQuestions(category).filter((q) => q.id !== 'panne' || hasIssue === 'yes')
+        : [],
+    [category, hasIssue],
+  );
   const photoGuides = useMemo(
-    () => (category ? [...getPhotoGuides(category), ...aiPhotos] : []),
-    [category, aiPhotos],
+    () =>
+      category
+        ? [...getPhotoGuides(category), ...aiPhotos].filter((g) => g.id !== 'defaut' || hasIssue === 'yes')
+        : [],
+    [category, aiPhotos, hasIssue],
   );
   const issueList = useMemo(
     () => (category ? Array.from(new Set([...getIssues(category), ...aiIssues])) : []),
