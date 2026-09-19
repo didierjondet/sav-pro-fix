@@ -53,6 +53,13 @@ export function WebsiteDirectorySection() {
   });
   const [tags, setTags] = useState<string[]>([]);
   const [customTag, setCustomTag] = useState('');
+  const [dirty, setDirty] = useState(false);
+
+  /** Modifie le formulaire et marque des changements non enregistrés. */
+  const update = (patch: Partial<typeof form>) => {
+    setDirty(true);
+    setForm((f) => ({ ...f, ...patch }));
+  };
 
   useEffect(() => {
     if (partnerProfile) {
@@ -80,6 +87,7 @@ export function WebsiteDirectorySection() {
         visible_pro: (partnerProfile as any).visible_pro ?? false,
       });
       setTags(resolveSpecialtyTags((partnerProfile as any).specialty_tags, partnerProfile.specialties));
+      setDirty(false);
     } else if (shop?.name) {
       setForm((f) => ({ ...f, public_name: f.public_name || shop.name }));
     }
@@ -99,6 +107,7 @@ export function WebsiteDirectorySection() {
     if (!shop) return;
     const address = ((shop as any).address || '') as string;
     const match = address.match(/(\d{5})\s+([^\n,]+)/);
+    setDirty(true);
     setForm((f) => ({
       ...f,
       public_name: (shop as any).name || f.public_name,
@@ -137,6 +146,27 @@ export function WebsiteDirectorySection() {
     refetchShop();
   };
 
+  /** Interrupteurs de visibilité : enregistrement immédiat en base. */
+  const toggleVisibility = async (field: 'visible_public' | 'visible_pro', value: boolean) => {
+    const next = { ...form, [field]: value };
+    setForm(next);
+    setSaving(true);
+    try {
+      await saveProfile({
+        public_name: next.public_name.trim() || shop?.name || 'Mon atelier',
+        is_published: next.visible_public || next.visible_pro,
+        visible_public: next.visible_public,
+        visible_pro: next.visible_pro,
+        specialty_tags: tags,
+        specialties: tags.length > 0 ? tags.join(', ') : (next.specialties || null),
+      } as any);
+    } catch {
+      // Erreur déjà signalée par saveProfile : on garde l'état local pour réessai.
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const submit = async () => {
     if (!form.public_name.trim()) return;
     setSaving(true);
@@ -166,6 +196,7 @@ export function WebsiteDirectorySection() {
         specialty_tags: tags,
         specialties: tags.length > 0 ? tags.join(', ') : (form.specialties || null),
       } as any);
+      setDirty(false);
     } finally {
       setSaving(false);
     }
@@ -235,8 +266,8 @@ export function WebsiteDirectorySection() {
                 Votre site et vos tarifs publics apparaissent dans l’annuaire grand public fixway.fr/partenaires
               </p>
             </div>
-            <Switch checked={form.visible_public}
-              onCheckedChange={(v) => setForm({ ...form, visible_public: v })} />
+            <Switch checked={form.visible_public} disabled={saving}
+              onCheckedChange={(v) => toggleVisibility('visible_public', v)} />
           </div>
 
           <div className="flex items-center justify-between p-4 border rounded-lg">
@@ -248,8 +279,8 @@ export function WebsiteDirectorySection() {
                 Vous apparaissez dans l’annuaire professionnel avec vos tarifs pro et pouvez recevoir des SAV délégués
               </p>
             </div>
-            <Switch checked={form.visible_pro}
-              onCheckedChange={(v) => setForm({ ...form, visible_pro: v })} />
+            <Switch checked={form.visible_pro} disabled={saving}
+              onCheckedChange={(v) => toggleVisibility('visible_pro', v)} />
           </div>
 
           {!wantsVisibility ? (
@@ -323,60 +354,59 @@ export function WebsiteDirectorySection() {
             <div>
               <Label htmlFor="pp_name">Nom public</Label>
               <Input id="pp_name" value={form.public_name}
-                onChange={(e) => setForm({ ...form, public_name: e.target.value })}
+                onChange={(e) => update({ public_name: e.target.value })}
                 placeholder="ex: Atelier Micro-Soudure Pro" />
             </div>
             <div>
               <Label htmlFor="pp_logo">Logo (URL)</Label>
               <Input id="pp_logo" value={form.logo_url}
-                onChange={(e) => setForm({ ...form, logo_url: e.target.value })}
+                onChange={(e) => update({ logo_url: e.target.value })}
                 placeholder="https://…" />
             </div>
             <div>
               <Label htmlFor="pp_cp">Code postal</Label>
               <Input id="pp_cp" value={form.postal_code}
-                onChange={(e) => setForm({ ...form, postal_code: e.target.value })} placeholder="75011" />
+                onChange={(e) => update({ postal_code: e.target.value })} placeholder="75011" />
             </div>
             <div>
               <Label htmlFor="pp_city">Ville</Label>
               <Input id="pp_city" value={form.city}
-                onChange={(e) => setForm({ ...form, city: e.target.value })} placeholder="Paris" />
+                onChange={(e) => update({ city: e.target.value })} placeholder="Paris" />
             </div>
             <div>
               <Label htmlFor="pp_area">Zone d’intervention</Label>
               <Input id="pp_area" value={form.coverage_area}
-                onChange={(e) => setForm({ ...form, coverage_area: e.target.value })}
+                onChange={(e) => update({ coverage_area: e.target.value })}
                 placeholder="ex: France entière (envoi colis)" />
             </div>
             <div>
               <Label htmlFor="pp_delay">Délai moyen (jours)</Label>
               <NumberInput id="pp_delay" min="0" max="365" value={form.avg_delay_days ?? ''}
-                onChange={(e) => setForm({
-                  ...form,
+                onChange={(e) => update({
                   avg_delay_days: e.target.value === '' ? undefined : parseInt(e.target.value, 10),
                 })} placeholder="5" />
             </div>
             <div>
               <Label htmlFor="pp_phone">Téléphone public</Label>
               <Input id="pp_phone" value={form.public_phone}
-                onChange={(e) => setForm({ ...form, public_phone: e.target.value })} />
+                onChange={(e) => update({ public_phone: e.target.value })} />
             </div>
             <div>
               <Label htmlFor="pp_email">Email public</Label>
               <Input id="pp_email" type="email" value={form.public_email}
-                onChange={(e) => setForm({ ...form, public_email: e.target.value })} />
+                onChange={(e) => update({ public_email: e.target.value })} />
             </div>
             <div className="md:col-span-2">
               <Label htmlFor="pp_site">Autre site web (facultatif)</Label>
               <Input id="pp_site" value={form.website_url}
-                onChange={(e) => setForm({ ...form, website_url: e.target.value })} placeholder="https://…" />
+                onChange={(e) => update({ website_url: e.target.value })} placeholder="https://…" />
             </div>
           </div>
 
           <div>
             <Label htmlFor="pp_desc">Présentation</Label>
             <Textarea id="pp_desc" rows={4} value={form.description}
-              onChange={(e) => setForm({ ...form, description: e.target.value })}
+              onChange={(e) => update({ description: e.target.value })}
               placeholder="Votre activité, votre expérience, vos équipements…" />
           </div>
 
@@ -424,31 +454,31 @@ export function WebsiteDirectorySection() {
             <div>
               <Label htmlFor="pp_cert">Certifications</Label>
               <Input id="pp_cert" value={form.certifications}
-                onChange={(e) => setForm({ ...form, certifications: e.target.value })}
+                onChange={(e) => update({ certifications: e.target.value })}
                 placeholder="ex: QualiRépar, IPC-7711" />
             </div>
             <div>
               <Label htmlFor="pp_ship">Modes d’envoi</Label>
               <Input id="pp_ship" value={form.shipping_modes}
-                onChange={(e) => setForm({ ...form, shipping_modes: e.target.value })}
+                onChange={(e) => update({ shipping_modes: e.target.value })}
                 placeholder="Dépôt, colis suivi, coursier" />
             </div>
             <div>
               <Label htmlFor="pp_war">Garanties</Label>
               <Input id="pp_war" value={form.warranty_terms}
-                onChange={(e) => setForm({ ...form, warranty_terms: e.target.value })}
+                onChange={(e) => update({ warranty_terms: e.target.value })}
                 placeholder="ex: 6 mois pièces et main d’œuvre" />
             </div>
             <div>
               <Label htmlFor="pp_ret">Conditions de retour</Label>
               <Input id="pp_ret" value={form.return_policy}
-                onChange={(e) => setForm({ ...form, return_policy: e.target.value })}
+                onChange={(e) => update({ return_policy: e.target.value })}
                 placeholder="ex: retour sous 48h après réparation" />
             </div>
             <div>
               <Label htmlFor="pp_fail">Politique en cas d’échec</Label>
               <Input id="pp_fail" value={form.failure_policy}
-                onChange={(e) => setForm({ ...form, failure_policy: e.target.value })}
+                onChange={(e) => update({ failure_policy: e.target.value })}
                 placeholder="ex: pas de réparation, pas de frais" />
             </div>
           </div>
@@ -464,7 +494,7 @@ export function WebsiteDirectorySection() {
                 </p>
               </div>
               <Switch checked={form.vat_exempt}
-                onCheckedChange={(v) => setForm({ ...form, vat_exempt: v })} />
+                onCheckedChange={(v) => update({ vat_exempt: v })} />
             </div>
 
             {!form.vat_exempt && (
@@ -475,19 +505,24 @@ export function WebsiteDirectorySection() {
                     <p className="text-xs text-muted-foreground">Sinon les prix saisis sont considérés HT</p>
                   </div>
                   <Switch checked={form.prices_include_vat}
-                    onCheckedChange={(v) => setForm({ ...form, prices_include_vat: v })} />
+                    onCheckedChange={(v) => update({ prices_include_vat: v })} />
                 </div>
                 <div>
                   <Label htmlFor="pp_vat">Taux de TVA (%)</Label>
                   <NumberInput id="pp_vat" min="0" max="30" value={form.vat_rate}
-                    onChange={(e) => setForm({ ...form, vat_rate: parseFloat(e.target.value) || 0 })} />
+                    onChange={(e) => update({ vat_rate: parseFloat(e.target.value) || 0 })} />
                 </div>
               </div>
             )}
           </div>
 
-          <div className="flex justify-end">
-            <Button onClick={submit} disabled={saving || !form.public_name.trim()}>
+          <div className="flex items-center justify-end gap-3">
+            {dirty && (
+              <span className="text-xs text-orange-600 dark:text-orange-400 flex items-center gap-1">
+                <Info className="h-3.5 w-3.5" /> Modifications non enregistrées
+              </span>
+            )}
+            <Button onClick={submit} disabled={saving || !form.public_name.trim() || !dirty}>
               <Save className="h-4 w-4 mr-2" /> Enregistrer ces informations
             </Button>
           </div>
