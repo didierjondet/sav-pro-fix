@@ -931,10 +931,10 @@ export default function Settings() {
 
     { id: 'sav-types', label: 'Types de SAV', icon: Package, category: 'sav-group', visible: true },
     { id: 'sav-statuses', label: 'Statuts SAV', icon: Tag, category: 'sav-group', visible: true },
-    { id: 'sav-providers', label: 'Prestataires techniques', icon: Wrench, category: 'sav-group', visible: isAdmin },
     { id: 'loaners', label: 'Matériel de prêt', icon: PackageOpen, category: 'sav-group', visible: isAdmin },
 
     { id: 'part-categories', label: 'Catégories pièces', icon: Tag, category: 'stock-group', visible: !!rolePermissions.settings_part_categories },
+    { id: 'sav-providers', label: 'Prestataires techniques', icon: Wrench, category: 'stock-group', visible: isAdmin },
     { id: 'suppliers', label: 'Fournisseurs', icon: Truck, category: 'stock-group', visible: isAdmin },
 
     { id: 'subscription', label: 'Abonnement', icon: CreditCard, category: 'billing-group', visible: !!rolePermissions.settings_subscription },
