@@ -25,8 +25,6 @@ export function useSAVUnreadMessages() {
     if (!user) return [];
 
     try {
-      console.log('🔍 Fetching open client conversations for user:', user.id);
-      
       // Get user's shop_id
       const { data: profile } = await supabase
         .from('profiles')
@@ -34,10 +32,7 @@ export function useSAVUnreadMessages() {
         .eq('user_id', user.id)
         .single();
 
-      console.log('👤 User profile:', profile);
-
       if (!profile?.shop_id) {
-        console.log('❌ No shop_id found for user');
         return [];
       }
 
@@ -47,6 +42,7 @@ export function useSAVUnreadMessages() {
         .select('status_key, is_final_status')
         .eq('shop_id', profile.shop_id)
         .eq('is_active', true);
+
 
       // Construire la liste des statuts finaux à exclure
       const defaultFinalStatuses = ['ready', 'delivered', 'cancelled', 'closed', 'completed'];
