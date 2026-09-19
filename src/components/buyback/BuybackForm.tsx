@@ -41,6 +41,7 @@ export function BuybackForm({ allowedCategories, storagePrefix, submitLabel, ext
   const { toast } = useToast();
 
   const [category, setCategory] = useState('');
+  const [hasIssue, setHasIssue] = useState<'' | 'yes' | 'no'>('');
   const [brand, setBrand] = useState('');
   const [model, setModel] = useState('');
   const [answers, setAnswers] = useState<Record<string, string>>({});
