@@ -145,6 +145,27 @@ export function WebsiteDirectorySection() {
     refetchShop();
   };
 
+  /** Interrupteurs de visibilité : enregistrement immédiat en base. */
+  const toggleVisibility = async (field: 'visible_public' | 'visible_pro', value: boolean) => {
+    const next = { ...form, [field]: value };
+    setForm(next);
+    setSaving(true);
+    try {
+      await saveProfile({
+        public_name: next.public_name.trim() || shop?.name || 'Mon atelier',
+        is_published: next.visible_public || next.visible_pro,
+        visible_public: next.visible_public,
+        visible_pro: next.visible_pro,
+        specialty_tags: tags,
+        specialties: tags.length > 0 ? tags.join(', ') : (next.specialties || null),
+      } as any);
+    } catch {
+      // Erreur déjà signalée par saveProfile : on garde l'état local pour réessai.
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const submit = async () => {
     if (!form.public_name.trim()) return;
     setSaving(true);
