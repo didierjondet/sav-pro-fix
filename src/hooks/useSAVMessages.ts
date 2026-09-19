@@ -52,14 +52,18 @@ export function useSAVMessages(savCaseId?: string) {
 
     if (!savCaseId) return;
 
-    // REALTIME DÉSACTIVÉ - Polling toutes les 30s pour performance
-    console.log('📨 [SAVMessages] Polling activé - 30s');
-    const pollInterval = setInterval(() => {
-      fetchMessages();
-    }, 30000);
+    // Temps réel ciblé sur la conversation ouverte (remplace le polling 30s)
+    const channel = supabase
+      .channel(`sav-messages-${savCaseId}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'sav_messages', filter: `sav_case_id=eq.${savCaseId}` },
+        () => { fetchMessages(); }
+      )
+      .subscribe();
 
     return () => {
-      clearInterval(pollInterval);
+      supabase.removeChannel(channel);
     };
   }, [savCaseId]);
 
