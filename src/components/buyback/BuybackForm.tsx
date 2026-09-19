@@ -235,6 +235,43 @@ export function BuybackForm({ allowedCategories, storagePrefix, submitLabel, ext
 
       {category && (
         <>
+          {/* Panne ou non : question clé en premier */}
+          <div className="space-y-2 rounded-lg border bg-muted/40 p-3">
+            <Label>
+              L'appareil a-t-il une panne ou un défaut ? <span className="text-destructive">*</span>
+            </Label>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                size="sm"
+                variant={hasIssue === 'yes' ? 'default' : 'outline'}
+                onClick={() => setHasIssue('yes')}
+              >
+                Oui, il a une panne / un défaut
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant={hasIssue === 'no' ? 'default' : 'outline'}
+                onClick={() => {
+                  setHasIssue('no');
+                  setIssues([]);
+                  setAnswers((a) => {
+                    const { panne, ...rest } = a;
+                    return rest;
+                  });
+                }}
+              >
+                Non, il fonctionne
+              </Button>
+            </div>
+            {hasIssue === 'no' && (
+              <p className="text-xs text-muted-foreground">
+                Parfait : aucune description de panne ne vous sera demandée.
+              </p>
+            )}
+          </div>
+
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label htmlFor="brand">Marque</Label>
