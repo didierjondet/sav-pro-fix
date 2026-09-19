@@ -187,14 +187,20 @@ export function useSAVUnreadMessages() {
   useEffect(() => {
     if (!user) return;
 
-    // REALTIME DÉSACTIVÉ - Polling toutes les 60s pour performance
-    console.log('📨 [SAVUnread] Polling activé - 60s');
-    const pollInterval = setInterval(() => {
-      queryClient.invalidateQueries({ queryKey: ['sav-unread-messages'] });
-    }, 60000);
+    // Temps réel : on ne recalcule que lorsqu'un message change réellement
+    const channel = supabase
+      .channel('sav-unread-messages')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'sav_messages' },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ['sav-unread-messages'] });
+        }
+      )
+      .subscribe();
 
     return () => {
-      clearInterval(pollInterval);
+      supabase.removeChannel(channel);
     };
   }, [user, queryClient]);
 
