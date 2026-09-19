@@ -10,7 +10,6 @@ import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ShopProvider } from "@/contexts/ShopContext";
 import { LimitDialogProvider } from "@/contexts/LimitDialogContext";
-import { RealtimeProvider } from "@/contexts/RealtimeContext";
 import { useEffect } from "react";
 import { unlockAudio } from "@/hooks/useNotificationSound";
 
@@ -129,7 +128,6 @@ const App = () => {
     <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
       <AuthProvider>
         <ShopProvider>
-          <RealtimeProvider>
             <DelayNotificationProvider>
               <LimitDialogProvider>
                 <TooltipProvider>
