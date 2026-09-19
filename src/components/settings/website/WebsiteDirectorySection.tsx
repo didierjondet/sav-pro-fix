@@ -265,8 +265,8 @@ export function WebsiteDirectorySection() {
                 Votre site et vos tarifs publics apparaissent dans l’annuaire grand public fixway.fr/partenaires
               </p>
             </div>
-            <Switch checked={form.visible_public}
-              onCheckedChange={(v) => setForm({ ...form, visible_public: v })} />
+            <Switch checked={form.visible_public} disabled={saving}
+              onCheckedChange={(v) => toggleVisibility('visible_public', v)} />
           </div>
 
           <div className="flex items-center justify-between p-4 border rounded-lg">
@@ -278,8 +278,8 @@ export function WebsiteDirectorySection() {
                 Vous apparaissez dans l’annuaire professionnel avec vos tarifs pro et pouvez recevoir des SAV délégués
               </p>
             </div>
-            <Switch checked={form.visible_pro}
-              onCheckedChange={(v) => setForm({ ...form, visible_pro: v })} />
+            <Switch checked={form.visible_pro} disabled={saving}
+              onCheckedChange={(v) => toggleVisibility('visible_pro', v)} />
           </div>
 
           {!wantsVisibility ? (
