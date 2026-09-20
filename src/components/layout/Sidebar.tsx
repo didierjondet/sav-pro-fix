@@ -88,6 +88,7 @@ function SidebarComponent({
   const {
     rolePermissions
   } = useRolePermissions();
+  const buybackPendingCount = useBuybackPendingCount();
   const {
     pendingCount: pendingAppointmentsCount
   } = usePendingAppointments();
