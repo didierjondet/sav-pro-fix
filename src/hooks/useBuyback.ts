@@ -182,6 +182,41 @@ export function useBuyback() {
   return { requests, offers, networkRequests, loading: isLoading, sendOffer, declineRequest, getSignedMediaUrl };
 }
 
+/** Nombre de demandes de rachat à traiter : demandes privées en attente + cotations réseau sans offre du magasin */
+export function useBuybackPendingCount() {
+  const { shop } = useShop();
+  const shopId = shop?.id;
+
+  const { data: pendingPrivate = 0 } = useQuery({
+    queryKey: ['buyback-pending-count', shopId],
+    queryFn: async () => {
+      if (!shopId) return 0;
+      const { count, error } = await supabase
+        .from('buyback_requests')
+        .select('id', { count: 'exact', head: true })
+        .eq('shop_id', shopId)
+        .eq('status', 'pending');
+      if (error) throw error;
+      return count ?? 0;
+    },
+    enabled: !!shopId,
+    placeholderData: (prev) => prev,
+  });
+
+  const { data: pendingNetwork = 0 } = useQuery({
+    queryKey: ['buyback-network-pending-count', shopId],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('get_network_buyback_requests' as any);
+      if (error) throw error;
+      return ((data ?? []) as unknown as NetworkBuybackRequest[]).filter((r) => r.my_offer_amount == null).length;
+    },
+    enabled: !!shopId,
+    placeholderData: (prev) => prev,
+  });
+
+  return pendingPrivate + pendingNetwork;
+}
+
 export function useBuybackAiEstimate() {
   const { toast } = useToast();
 
