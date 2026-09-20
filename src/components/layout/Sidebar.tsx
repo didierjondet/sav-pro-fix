@@ -305,6 +305,7 @@ function SidebarComponent({
                       {item.href === '/quotes' && quoteCounts.clientAccepted > 0 && <Badge className="ml-1 text-xs bg-green-600 text-white hover:bg-green-700" title="Acceptés par le client">{quoteCounts.clientAccepted}</Badge>}
                       {item.href === '/quotes' && quoteCounts.rejected > 0 && <Badge className="ml-1 text-xs bg-orange-500 text-white hover:bg-orange-600" title="Refusés par le client">{quoteCounts.rejected}</Badge>}
                       {item.href === '/agenda' && pendingAppointmentsCount > 0 && <Badge variant="secondary" className="ml-auto text-xs bg-orange-500 text-white">{pendingAppointmentsCount}</Badge>}
+                      {item.href === '/rachat' && buybackPendingCount > 0 && <Badge variant="destructive" className="ml-auto text-xs" title="Demandes de rachat à traiter">{buybackPendingCount}</Badge>}
                     </Button>
                   </div>;
               })}
