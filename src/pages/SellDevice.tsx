@@ -1,55 +1,21 @@
-import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
 import { Helmet } from 'react-helmet-async';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
 import { BuybackForm, type BuybackSubmitPayload } from '@/components/buyback/BuybackForm';
 import { BUYBACK_CATEGORIES } from '@/lib/buyback';
 import { LandingHeader } from '@/components/landing/LandingHeader';
-import { ArrowLeft, MapPin, Store, Globe2, Search } from 'lucide-react';
-
-interface BuybackShop {
-  shop_id: string;
-  slug: string;
-  name: string;
-  city: string;
-  postal_code: string;
-  logo_url: string | null;
-  categories: string[];
-}
+import { ArrowLeft } from 'lucide-react';
 
 export default function SellDevice() {
   const navigate = useNavigate();
-  const [destination, setDestination] = useState<'network' | 'shop'>('network');
-  const [selectedShop, setSelectedShop] = useState<BuybackShop | null>(null);
-  const [search, setSearch] = useState('');
-
-  const { data: shops = [] } = useQuery({
-    queryKey: ['buyback-shops', search],
-    queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_buyback_shops' as any, {
-        p_category: null,
-        p_search: search || null,
-      });
-      if (error) throw error;
-      return (data ?? []) as unknown as BuybackShop[];
-    },
-    staleTime: 60_000,
-  });
 
   const allCategories = BUYBACK_CATEGORIES.map((c) => c.id);
 
   const handleSubmit = async (payload: BuybackSubmitPayload) => {
-    if (destination === 'shop' && !selectedShop) {
-      throw new Error('Sélectionnez le magasin destinataire de votre demande.');
-    }
     const { data: token, error } = await supabase.rpc('submit_buyback_request_national' as any, {
-      p_shop_id: destination === 'shop' ? selectedShop?.shop_id ?? null : null,
+      p_shop_id: payload.shopId,
       p_category: payload.category,
       p_brand: payload.brand,
       p_model: payload.model,
