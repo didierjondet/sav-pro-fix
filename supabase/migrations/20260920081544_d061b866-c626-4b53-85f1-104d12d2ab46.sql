@@ -1,0 +1,2 @@
+REVOKE EXECUTE ON FUNCTION public.buyback_upsert_customer(text, text, text, text, text) FROM anon, authenticated, public;
+REVOKE EXECUTE ON FUNCTION public.buyback_link_shop_customer(uuid, uuid) FROM anon, authenticated, public;
