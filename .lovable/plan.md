@@ -13,21 +13,23 @@ Mise à jour en temps réel (même mécanisme que les autres compteurs du menu).
 
 ## 2. Compte client automatique à la fin de la cotation
 
-Le particulier n'a pas de mot de passe : son « compte » est sa demande, retrouvée par le lien/QR déjà en place.
+Le compte est créé à la fin du formulaire, avec les coordonnées saisies à l'étape 6 : ce n'est pas un simple formulaire d'envoi, c'est bien la création (ou la reconnaissance) du compte vendeur. Pas de mot de passe : l'accès se fait par le lien personnel envoyé par SMS/e-mail, qui donne accès à toutes ses cotations.
 
 Deux niveaux, pour éviter de casser la base clients des magasins :
 
-- **Répertoire national des vendeurs** (nouvelle table) : une fiche unique par personne, reconnue par téléphone + e-mail, qui regroupe toutes ses cotations passées, quel que soit le magasin. Elle n'appartient à aucun magasin.
-- **Fiche client du magasin** (base `customers` existante) : créée automatiquement dans le magasin concerné, pour qu'il puisse rappeler ou envoyer sa cotation avec les outils habituels (SMS, messagerie, SAV, devis).
+- **Compte vendeur national** (nouvelle table) : une fiche unique par personne, reconnue par téléphone (et e-mail), qui regroupe toutes ses cotations, quel que soit le magasin. Elle n'appartient à aucun magasin.
+- **Fiche client du magasin** (base `customers` existante) : créée dans chaque magasin concerné, pour qu'il puisse rappeler ou envoyer sa cotation avec les outils habituels (SMS, messagerie, SAV, devis).
 
-Règles d'attribution :
+Un client n'est donc jamais « attaché » définitivement à un magasin : il est rattaché à une cotation. Concrètement :
 
-- cotation envoyée à un magasin précis → fiche client créée immédiatement dans ce magasin ;
-- cotation nationale → aucune fiche magasin au départ ; la fiche est créée chez chaque magasin au moment où il chiffre l'appareil, puis le magasin retenu garde la relation ;
-- offre refusée / demande rouverte au réseau → l'ancienne fiche magasin reste (historique), une nouvelle est créée chez le nouveau magasin ;
-- si la personne revient plus tard, sa fiche nationale est retrouvée (téléphone ou e-mail) : ses coordonnées sont pré-remplies et ses cotations précédentes visibles côté magasin.
+- cotation envoyée à un magasin précis → fiche client créée dans ce magasin, rattachée au compte national ;
+- cotation nationale → aucune fiche magasin au départ ; elle est créée chez chaque magasin au moment où il chiffre l'appareil ;
+- **nouvelle cotation plus tard chez un autre magasin** → le compte national est retrouvé grâce au téléphone, les coordonnées sont pré-remplies, et une nouvelle fiche client est créée chez ce second magasin. Les deux magasins gardent chacun leur fiche et leur historique, sans se voir mutuellement ;
+- offre refusée / demande rouverte au réseau → l'ancienne fiche magasin reste (historique), une nouvelle est créée chez le magasin suivant ;
+- si le client revient chez un magasin qu'il connaît déjà, sa fiche existante est réutilisée (pas de doublon), avec l'historique complet de ses cotations chez ce magasin.
 
 Côté magasin, la demande de rachat affiche un lien direct vers la fiche client et son historique.
+
 
 ## 3. Formulaire de cotation entièrement refait
 
