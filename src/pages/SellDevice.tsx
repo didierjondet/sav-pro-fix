@@ -60,80 +60,9 @@ export default function SellDevice() {
             <BuybackForm
               allowedCategories={allCategories}
               storagePrefix="national"
-              submitLabel={destination === 'shop' ? 'Envoyer au magasin choisi' : 'Envoyer à toute la France'}
+              submitLabel="Envoyer ma demande de cotation"
+              allowDestinationChoice
               onSubmit={handleSubmit}
-              extraStep={
-                <div className="space-y-3 border-t pt-4">
-                  <Label>À qui envoyer votre demande ?</Label>
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <button
-                      type="button"
-                      onClick={() => setDestination('network')}
-                      className={`rounded-lg border p-3 text-left transition ${destination === 'network' ? 'border-primary ring-1 ring-primary' : ''}`}
-                    >
-                      <p className="font-medium text-sm flex items-center gap-2">
-                        <Globe2 className="h-4 w-4" />Toute la France
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Les magasins du réseau chiffrent votre appareil, vous recevez les meilleures offres.
-                      </p>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setDestination('shop')}
-                      className={`rounded-lg border p-3 text-left transition ${destination === 'shop' ? 'border-primary ring-1 ring-primary' : ''}`}
-                    >
-                      <p className="font-medium text-sm flex items-center gap-2">
-                        <Store className="h-4 w-4" />Un magasin précis
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Si le magasin refuse, vous pourrez ouvrir la demande à tout le réseau.
-                      </p>
-                    </button>
-                  </div>
-
-                  {destination === 'shop' && (
-                    <div className="space-y-2">
-                      <div className="relative">
-                        <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                        <Input
-                          className="pl-9"
-                          placeholder="Nom du magasin, ville ou code postal"
-                          value={search}
-                          onChange={(e) => setSearch(e.target.value)}
-                        />
-                      </div>
-                      <div className="max-h-64 overflow-y-auto space-y-2">
-                        {shops.length === 0 && (
-                          <p className="text-sm text-muted-foreground">Aucun magasin trouvé pour cette recherche.</p>
-                        )}
-                        {shops.map((s) => (
-                          <button
-                            key={s.shop_id}
-                            type="button"
-                            onClick={() => setSelectedShop(s)}
-                            className={`w-full rounded-lg border p-3 text-left flex items-center gap-3 transition ${
-                              selectedShop?.shop_id === s.shop_id ? 'border-primary ring-1 ring-primary' : ''
-                            }`}
-                          >
-                            <div className="flex-1 min-w-0">
-                              <p className="font-medium text-sm truncate">{s.name}</p>
-                              <p className="text-xs text-muted-foreground flex items-center gap-1">
-                                <MapPin className="h-3 w-3" />
-                                {[s.postal_code, s.city].filter(Boolean).join(' ') || 'Adresse non précisée'}
-                              </p>
-                            </div>
-                            {selectedShop?.shop_id === s.shop_id && <Badge>Choisi</Badge>}
-                          </button>
-                        ))}
-                      </div>
-                      {!selectedShop && (
-                        <p className="text-xs text-destructive">Sélectionnez un magasin pour continuer.</p>
-                      )}
-                    </div>
-                  )}
-                </div>
-              }
             />
           </CardContent>
         </Card>
