@@ -40,9 +40,10 @@ Le formulaire actuel est remplacé par un parcours linéaire en 6 étapes, une s
 3. **Photos** — 3 à 4 photos avec consignes de prise de vue illustrées, prise directe par l'appareil photo du téléphone ou choix dans la galerie, aperçu et suppression possibles.
 4. **Analyse IA** — l'IA examine les photos et l'état déclaré, puis affiche en clair l'état général qu'elle constate (écran, châssis, usure, doutes). Le client peut corriger.
 5. **Questions adaptées** — questions générées pour le modèle exact (capacité, batterie, verrouillage du compte, accessoires, symptômes…), courtes et enchaînées ; obligatoires uniquement quand c'est déterminant pour chiffrer.
-6. **Destination puis coordonnées** — envoi à toute la France ou à un magasin choisi (recherche par nom/ville/code postal, magasins invisibles exclus), puis nom, prénom, téléphone, e-mail, ville/code postal, et envoi.
+6. **Destination puis compte** — envoi à toute la France ou à un magasin choisi (recherche par nom/ville/code postal, magasins invisibles exclus), puis nom, prénom, téléphone, e-mail, ville/code postal : c'est la création du compte vendeur. Si le téléphone est déjà connu, les champs sont pré-remplis et le compte existant est réutilisé.
 
-À l'envoi : création de la demande, de la fiche nationale, de la fiche magasin le cas échéant, et redirection vers la page de suivi existante.
+À l'envoi : création (ou reconnaissance) du compte vendeur, création de la demande, création de la fiche client chez le magasin destinataire le cas échéant, et redirection vers la page de suivi, qui liste aussi les cotations précédentes du compte.
+
 
 ## Détails techniques
 
