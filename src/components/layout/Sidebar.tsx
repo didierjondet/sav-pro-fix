@@ -22,6 +22,7 @@ import { usePendingAppointments } from '@/hooks/usePendingAppointments';
 import { MessageSquare, Package, Users, BarChart3, FileText, Settings, X, Plus, Shield, CreditCard, HelpCircle, Info, FileBarChart, Calendar, ClipboardList } from 'lucide-react';
 import { useSAVProviders, useActiveProviderAssignments } from '@/hooks/useSAVProviders';
 import { useQuotes } from '@/hooks/useQuotes';
+import { useBuybackPendingCount } from '@/hooks/useBuyback';
 interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
