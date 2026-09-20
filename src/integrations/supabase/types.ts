@@ -230,6 +230,45 @@ export type Database = {
           },
         ]
       }
+      buyback_customers: {
+        Row: {
+          city: string | null
+          created_at: string
+          email: string | null
+          email_norm: string | null
+          full_name: string
+          id: string
+          phone: string | null
+          phone_norm: string | null
+          postal_code: string | null
+          updated_at: string
+        }
+        Insert: {
+          city?: string | null
+          created_at?: string
+          email?: string | null
+          email_norm?: string | null
+          full_name: string
+          id?: string
+          phone?: string | null
+          phone_norm?: string | null
+          postal_code?: string | null
+          updated_at?: string
+        }
+        Update: {
+          city?: string | null
+          created_at?: string
+          email?: string | null
+          email_norm?: string | null
+          full_name?: string
+          id?: string
+          phone?: string | null
+          phone_norm?: string | null
+          postal_code?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       buyback_offers: {
         Row: {
           ai_high: number | null
@@ -307,6 +346,7 @@ export type Database = {
           accepted_offer_id: string | null
           answers: Json
           brand: string | null
+          buyback_customer_id: string | null
           category: string
           created_at: string
           customer_city: string | null
@@ -332,6 +372,7 @@ export type Database = {
           accepted_offer_id?: string | null
           answers?: Json
           brand?: string | null
+          buyback_customer_id?: string | null
           category: string
           created_at?: string
           customer_city?: string | null
@@ -357,6 +398,7 @@ export type Database = {
           accepted_offer_id?: string | null
           answers?: Json
           brand?: string | null
+          buyback_customer_id?: string | null
           category?: string
           created_at?: string
           customer_city?: string | null
@@ -379,6 +421,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "buyback_requests_buyback_customer_id_fkey"
+            columns: ["buyback_customer_id"]
+            isOneToOne: false
+            referencedRelation: "buyback_customers"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "buyback_requests_shop_id_fkey"
             columns: ["shop_id"]
@@ -522,6 +571,7 @@ export type Database = {
       customers: {
         Row: {
           address: string | null
+          buyback_customer_id: string | null
           created_at: string
           email: string | null
           first_name: string
@@ -533,6 +583,7 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          buyback_customer_id?: string | null
           created_at?: string
           email?: string | null
           first_name: string
@@ -544,6 +595,7 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          buyback_customer_id?: string | null
           created_at?: string
           email?: string | null
           first_name?: string
@@ -554,6 +606,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "customers_buyback_customer_id_fkey"
+            columns: ["buyback_customer_id"]
+            isOneToOne: false
+            referencedRelation: "buyback_customers"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "customers_shop_id_fkey"
             columns: ["shop_id"]
@@ -4744,6 +4803,21 @@ export type Database = {
             }
             Returns: string
           }
+      buyback_link_shop_customer: {
+        Args: { p_buyback_customer_id: string; p_shop_id: string }
+        Returns: string
+      }
+      buyback_normalize_phone: { Args: { p_phone: string }; Returns: string }
+      buyback_upsert_customer: {
+        Args: {
+          p_city: string
+          p_email: string
+          p_name: string
+          p_phone: string
+          p_postal_code: string
+        }
+        Returns: string
+      }
       calculate_shop_storage_usage: {
         Args: { p_shop_id: string }
         Returns: number
@@ -4866,6 +4940,7 @@ export type Database = {
       }
       get_appointment_by_token: { Args: { _token: string }; Returns: Json }
       get_available_stock: { Args: { part_id: string }; Returns: number }
+      get_buyback_customer_history: { Args: { p_token: string }; Returns: Json }
       get_buyback_request_by_token: { Args: { p_token: string }; Returns: Json }
       get_buyback_shops: {
         Args: { p_category?: string; p_search?: string }
