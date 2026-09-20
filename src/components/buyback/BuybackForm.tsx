@@ -115,10 +115,13 @@ export function BuybackForm({
     () => (category ? getQuestions(category).filter((q) => q.id !== 'panne' || hasIssue) : []),
     [category, hasIssue],
   );
-  const photoGuides = useMemo(
-    () => (category ? getPhotoGuides(category).filter((g) => g.id !== 'defaut' || hasIssue).slice(0, 4) : []),
-    [category, hasIssue],
-  );
+  const photoGuides = useMemo(() => {
+    if (!category) return [];
+    const all = getPhotoGuides(category);
+    const defaut = hasIssue ? all.filter((g) => g.id === 'defaut') : [];
+    const others = all.filter((g) => g.id !== 'defaut');
+    return [...others.slice(0, defaut.length ? 3 : 4), ...defaut];
+  }, [category, hasIssue]);
   const issueList = useMemo(
     () => (category ? Array.from(new Set([...getIssues(category), ...aiIssues])) : []),
     [category, aiIssues],
