@@ -47,9 +47,11 @@ Le formulaire actuel est remplacé par un parcours linéaire en 6 étapes, une s
 
 ## Détails techniques
 
-- Nouvelle table `buyback_customers` (nom, téléphone, e-mail, ville, CP, clé de rapprochement normalisée) + `buyback_requests.buyback_customer_id` et `customers.buyback_customer_id`, avec GRANT et RLS (lecture magasin uniquement via ses demandes, écriture par fonction `SECURITY DEFINER`).
-- RPC `submit_buyback_request` / `submit_buyback_request_national` étendues : rapprochement ou création de la fiche nationale, création de la fiche `customers` du magasin destinataire, dédoublonnage par téléphone normalisé.
+- Nouvelle table `buyback_customers` (nom, téléphone, e-mail, ville, CP, téléphone normalisé unique) + `buyback_requests.buyback_customer_id` et `customers.buyback_customer_id`, avec GRANT et RLS (lecture magasin uniquement via ses demandes, écriture par fonction `SECURITY DEFINER`).
+- Relation many-to-many de fait : un `buyback_customers` peut avoir N lignes `customers` (une par magasin), contrainte d'unicité `(shop_id, buyback_customer_id)` pour éviter les doublons quand le client revient.
+- RPC `submit_buyback_request` / `submit_buyback_request_national` étendues : rapprochement par téléphone normalisé ou création du compte vendeur, puis création/réutilisation de la fiche `customers` du magasin destinataire.
 - Création de la fiche magasin aussi au moment de `submit_network_buyback_offer`.
+
 - Pastille : hook `useBuybackBadges` (demandes `pending` du magasin + demandes réseau sans offre du magasin), branché dans `Sidebar.tsx` sur `/rachat`.
 - Formulaire : `BuybackForm.tsx` réécrit en assistant par étapes ; `src/lib/buyback.ts` conservé pour les catégories et les questions de repli.
 - Analyse photo : nouvelle fonction `buyback-ai-vision` (modèle multimodal via Lovable AI) qui reçoit les images et renvoie l'état constaté ; `buyback-ai-guide` conservée pour les questions par modèle. Échec IA = étape sautée, jamais bloquante.
