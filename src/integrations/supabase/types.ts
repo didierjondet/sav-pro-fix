@@ -238,6 +238,8 @@ export type Database = {
           email_norm: string | null
           full_name: string
           id: string
+          marketing_consent: boolean
+          marketing_consent_at: string | null
           phone: string | null
           phone_norm: string | null
           postal_code: string | null
@@ -250,6 +252,8 @@ export type Database = {
           email_norm?: string | null
           full_name: string
           id?: string
+          marketing_consent?: boolean
+          marketing_consent_at?: string | null
           phone?: string | null
           phone_norm?: string | null
           postal_code?: string | null
@@ -262,6 +266,8 @@ export type Database = {
           email_norm?: string | null
           full_name?: string
           id?: string
+          marketing_consent?: boolean
+          marketing_consent_at?: string | null
           phone?: string | null
           phone_norm?: string | null
           postal_code?: string | null
@@ -4808,16 +4814,28 @@ export type Database = {
         Returns: string
       }
       buyback_normalize_phone: { Args: { p_phone: string }; Returns: string }
-      buyback_upsert_customer: {
-        Args: {
-          p_city: string
-          p_email: string
-          p_name: string
-          p_phone: string
-          p_postal_code: string
-        }
-        Returns: string
-      }
+      buyback_upsert_customer:
+        | {
+            Args: {
+              p_city: string
+              p_email: string
+              p_name: string
+              p_phone: string
+              p_postal_code: string
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              p_city: string
+              p_email: string
+              p_marketing_consent?: boolean
+              p_name: string
+              p_phone: string
+              p_postal_code: string
+            }
+            Returns: string
+          }
       calculate_shop_storage_usage: {
         Args: { p_shop_id: string }
         Returns: number
@@ -5381,38 +5399,74 @@ export type Database = {
         }
       }
       shop_is_publicly_visible: { Args: { _shop_id: string }; Returns: boolean }
-      submit_buyback_request: {
-        Args: {
-          p_answers: Json
-          p_brand: string
-          p_category: string
-          p_customer_city: string
-          p_customer_email: string
-          p_customer_name: string
-          p_customer_phone: string
-          p_customer_postal_code: string
-          p_media: Json
-          p_model: string
-          p_slug: string
-        }
-        Returns: string
-      }
-      submit_buyback_request_national: {
-        Args: {
-          p_answers: Json
-          p_brand: string
-          p_category: string
-          p_customer_city: string
-          p_customer_email: string
-          p_customer_name: string
-          p_customer_phone: string
-          p_customer_postal_code: string
-          p_media: Json
-          p_model: string
-          p_shop_id: string
-        }
-        Returns: string
-      }
+      submit_buyback_request:
+        | {
+            Args: {
+              p_answers: Json
+              p_brand: string
+              p_category: string
+              p_customer_city: string
+              p_customer_email: string
+              p_customer_name: string
+              p_customer_phone: string
+              p_customer_postal_code: string
+              p_media: Json
+              p_model: string
+              p_slug: string
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              p_answers: Json
+              p_brand: string
+              p_category: string
+              p_customer_city: string
+              p_customer_email: string
+              p_customer_name: string
+              p_customer_phone: string
+              p_customer_postal_code: string
+              p_marketing_consent?: boolean
+              p_media: Json
+              p_model: string
+              p_slug: string
+            }
+            Returns: string
+          }
+      submit_buyback_request_national:
+        | {
+            Args: {
+              p_answers: Json
+              p_brand: string
+              p_category: string
+              p_customer_city: string
+              p_customer_email: string
+              p_customer_name: string
+              p_customer_phone: string
+              p_customer_postal_code: string
+              p_media: Json
+              p_model: string
+              p_shop_id: string
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              p_answers: Json
+              p_brand: string
+              p_category: string
+              p_customer_city: string
+              p_customer_email: string
+              p_customer_name: string
+              p_customer_phone: string
+              p_customer_postal_code: string
+              p_marketing_consent?: boolean
+              p_media: Json
+              p_model: string
+              p_shop_id: string
+            }
+            Returns: string
+          }
       submit_network_buyback_offer: {
         Args: {
           p_ai_high?: number
