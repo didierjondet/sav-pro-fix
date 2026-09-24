@@ -128,6 +128,19 @@ export default function Reports() {
 
     });
 
+    if (data.quotes.length > 0) {
+      const quoteSheet = data.quotes.map(quote => ({
+        'N° devis': quote.quote_number,
+        'Date': format(new Date(quote.created_at), 'dd/MM/yyyy', { locale: fr }),
+        'CA HT (€)': Number(quote.revenue.toFixed(2)),
+        'TVA (€)': Number(quote.vat_collected.toFixed(2)),
+        'CA TTC (€)': Number(quote.revenue_ttc.toFixed(2)),
+        'Marge HT (€)': Number(quote.margin.toFixed(2)),
+      }));
+      const quoteWs = XLSX.utils.json_to_sheet(quoteSheet);
+      XLSX.utils.book_append_sheet(wb, quoteWs, 'Devis acceptés');
+    }
+
     // Suppliers sheet
     if (includeSuppliers && supplierReport.rows.length > 0) {
       const supplierSheet = supplierReport.rows.map(r => ({
@@ -160,6 +173,7 @@ export default function Reports() {
     // Create synthesis sheet
     const synthesisData = [
       { 'Métrique': 'Nombre total de SAV', 'Valeur': data.totals.count },
+      { 'Métrique': 'Devis acceptés non transformés', 'Valeur': data.quoteTotals.count },
       { 'Métrique': 'Chiffre d\'affaires HT', 'Valeur': `${data.totals.revenue.toFixed(2)} €` },
       { 'Métrique': 'TVA collectée', 'Valeur': `${data.totals.vat_collected.toFixed(2)} €` },
       { 'Métrique': 'Chiffre d\'affaires TTC', 'Valeur': `${data.totals.revenue_ttc.toFixed(2)} €` },
@@ -335,11 +349,11 @@ export default function Reports() {
               <p className="text-muted-foreground">Analyse détaillée de vos SAV</p>
             </div>
             <div className="flex gap-2">
-              <Button onClick={exportToPDF} disabled={loading || data.items.length === 0} variant="outline">
+              <Button onClick={exportToPDF} disabled={loading || (data.items.length === 0 && data.quotes.length === 0)} variant="outline">
                 <FileText className="mr-2 h-4 w-4" />
                 Exporter PDF
               </Button>
-              <Button onClick={exportToExcel} disabled={loading || data.items.length === 0}>
+              <Button onClick={exportToExcel} disabled={loading || (data.items.length === 0 && data.quotes.length === 0)}>
                 <FileSpreadsheet className="mr-2 h-4 w-4" />
                 Exporter Excel
               </Button>
@@ -643,6 +657,52 @@ export default function Reports() {
             <SupplierPerformanceSection reportData={data} dateRange={dateRange} />
           )}
 
+          {!loading && data.quotes.length > 0 && (
+            <Card>
+              <CardHeader className="py-3">
+                <div className="flex items-center justify-between gap-3">
+                  <CardTitle className="text-lg">Devis acceptés non transformés</CardTitle>
+                  <Badge variant="secondary">{data.quotes.length} devis</Badge>
+                </div>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>N° devis</TableHead>
+                        <TableHead>Date</TableHead>
+                        <TableHead className="text-right">CA HT</TableHead>
+                        <TableHead className="text-right">TVA</TableHead>
+                        <TableHead className="text-right">CA TTC</TableHead>
+                        <TableHead className="text-right">Marge HT</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {data.quotes.map(quote => (
+                        <TableRow key={quote.id}>
+                          <TableCell className="font-medium">{quote.quote_number}</TableCell>
+                          <TableCell>{format(new Date(quote.created_at), 'dd/MM/yyyy', { locale: fr })}</TableCell>
+                          <TableCell className="text-right">{formatCurrency(quote.revenue)}</TableCell>
+                          <TableCell className="text-right text-amber-600">{formatCurrency(quote.vat_collected)}</TableCell>
+                          <TableCell className="text-right text-muted-foreground">{formatCurrency(quote.revenue_ttc)}</TableCell>
+                          <TableCell className="text-right text-green-600">{formatCurrency(quote.margin)}</TableCell>
+                        </TableRow>
+                      ))}
+                      <TableRow className="bg-muted/50 font-medium">
+                        <TableCell colSpan={2}>Sous-total devis</TableCell>
+                        <TableCell className="text-right">{formatCurrency(data.quoteTotals.revenue)}</TableCell>
+                        <TableCell className="text-right text-amber-600">{formatCurrency(data.quoteTotals.vat_collected)}</TableCell>
+                        <TableCell className="text-right text-muted-foreground">{formatCurrency(data.quoteTotals.revenue_ttc)}</TableCell>
+                        <TableCell className="text-right text-green-600">{formatCurrency(data.quoteTotals.margin)}</TableCell>
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Data table grouped by type */}
           {loading ? (
             <Card>
@@ -650,7 +710,7 @@ export default function Reports() {
                 Chargement des données...
               </CardContent>
             </Card>
-          ) : data.items.length === 0 ? (
+          ) : data.items.length === 0 && data.quotes.length === 0 ? (
             <Card>
               <CardContent className="py-6 text-center text-muted-foreground">
                 Aucun SAV trouvé pour les critères sélectionnés
@@ -811,12 +871,12 @@ export default function Reports() {
           )}
 
           {/* Total bar */}
-          {data.items.length > 0 && (
+          {(data.items.length > 0 || data.quotes.length > 0) && (
             <Card className="bg-muted">
               <CardContent className="py-4">
                 <div className="flex flex-wrap items-center justify-between gap-4">
                   <div className="font-medium">
-                    TOTAL GÉNÉRAL ({data.totals.count} SAV)
+                    TOTAL GÉNÉRAL ({data.totals.count} SAV + {data.quoteTotals.count} devis)
                   </div>
                   <div className="flex flex-wrap gap-6 text-sm">
                     <div>
