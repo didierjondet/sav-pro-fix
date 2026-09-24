@@ -453,6 +453,7 @@ export const SAVPrintButton = React.forwardRef<SAVPrintButtonRef, SAVPrintButton
     ${loanerBlock}
     ${closureHistoryBlock}
     ${attachmentsBlock}
+    <div class="footer">En confiant votre appareil pour diagnostic ou réparation, vous acceptez de recevoir par SMS les informations de suivi de votre dossier, ainsi que d'éventuelles offres de rachat (4 envois par an au maximum). Vous pouvez vous y opposer à tout moment auprès du magasin.</div>
   </div>
   <div class="cut-line">
     <span class="scissors">✂</span>
