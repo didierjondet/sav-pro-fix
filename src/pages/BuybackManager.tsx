@@ -10,7 +10,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Separator } from '@/components/ui/separator';
 import { useBuyback, useBuybackAiEstimate, BuybackRequest, NetworkBuybackRequest } from '@/hooks/useBuyback';
 import { BUYBACK_STATUS_LABELS, getCategoryEmoji, getCategoryLabel } from '@/lib/buyback';
-import { Sparkles, Globe2, Loader2, Euro, ImageIcon, XCircle } from 'lucide-react';
+import { useShop } from '@/hooks/useShop';
+import { useSMS } from '@/hooks/useSMS';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { Sparkles, Globe2, Loader2, Euro, ImageIcon, XCircle, Eye, MessageSquare, Mail, Phone, MapPin, ShieldCheck } from 'lucide-react';
 
 interface OfferTarget {
   id: string;
@@ -20,6 +24,10 @@ interface OfferTarget {
   answers: Record<string, string>;
   media: { path: string; type: string }[];
   isNetwork: boolean;
+  customerName?: string | null;
+  customerPhone?: string | null;
+  customerEmail?: string | null;
+  publicToken?: string | null;
 }
 
 export default function BuybackManager() {
@@ -32,6 +40,11 @@ export default function BuybackManager() {
   const [conditions, setConditions] = useState('');
   const [ai, setAi] = useState<{ low: number; mid: number; high: number; rationale: string } | null>(null);
   const [mediaUrls, setMediaUrls] = useState<{ url: string; type: string }[]>([]);
+  const [contact, setContact] = useState<BuybackRequest | null>(null);
+  const [sending, setSending] = useState<'sms' | 'email' | null>(null);
+  const { shop } = useShop();
+  const { sendSMS } = useSMS();
+  const { toast } = useToast();
 
   const offersByRequest = useMemo(() => {
     const map = new Map<string, number>();
@@ -63,6 +76,85 @@ export default function BuybackManager() {
     });
     setAi(result);
     if (!amount) setAmount(String(result.mid));
+  };
+
+  const offerText = () => {
+    if (!target) return '';
+    const device = [target.brand, target.model].filter(Boolean).join(' ') || getCategoryLabel(target.category);
+    const link = target.publicToken ? `${window.location.origin}/rachat/${target.publicToken}` : '';
+    return [
+      `Bonjour${target.customerName ? ` ${target.customerName}` : ''},`,
+      `${shop?.name ?? 'Votre magasin'} vous propose ${Number(amount || 0).toFixed(2)} € pour le rachat de votre ${device}.`,
+      message.trim(),
+      conditions.trim() ? `Conditions : ${conditions.trim()}` : '',
+      'Offre valable 7 jours.',
+      link ? `Voir et accepter l'offre : ${link}` : '',
+    ]
+      .filter(Boolean)
+      .join('\n');
+  };
+
+  const saveOffer = async () => {
+    if (!target) return;
+    await sendOffer.mutateAsync({
+      requestId: target.id,
+      amount: Number(amount),
+      message,
+      conditions,
+      isNetwork: target.isNetwork,
+      ai: ai ? { low: ai.low, mid: ai.mid, high: ai.high } : undefined,
+    });
+  };
+
+  const sendBySms = async () => {
+    if (!target?.customerPhone) return;
+    setSending('sms');
+    try {
+      await saveOffer();
+      const ok = await sendSMS({
+        toNumber: target.customerPhone,
+        message: offerText(),
+        type: 'manual',
+        recordId: target.id,
+      });
+      if (ok) {
+        toast({ title: 'Cotation envoyée par SMS' });
+        setTarget(null);
+      }
+    } catch (e: any) {
+      toast({ title: 'Envoi impossible', description: e.message, variant: 'destructive' });
+    } finally {
+      setSending(null);
+    }
+  };
+
+  const sendByEmail = async () => {
+    if (!target?.customerEmail) return;
+    setSending('email');
+    try {
+      await saveOffer();
+      const html = `<div style="font-family:Arial,sans-serif;font-size:14px;line-height:1.6">${offerText()
+        .split('\n')
+        .map((l) => `<p>${l}</p>`)
+        .join('')}</div>`;
+      const { data, error } = await supabase.functions.invoke('send-app-email', {
+        body: {
+          to: target.customerEmail,
+          subject: `Votre offre de rachat — ${shop?.name ?? 'Fixway'}`,
+          html,
+          context: 'buyback_offer',
+          shopId: shop?.id ?? null,
+        },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      toast({ title: 'Cotation envoyée par e-mail' });
+      setTarget(null);
+    } catch (e: any) {
+      toast({ title: 'Envoi impossible', description: e.message, variant: 'destructive' });
+    } finally {
+      setSending(null);
+    }
   };
 
   const submit = async () => {
@@ -126,9 +218,11 @@ export default function BuybackManager() {
                     {getCategoryEmoji(r.category)} {[r.brand, r.model].filter(Boolean).join(' ') || getCategoryLabel(r.category)}
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    {r.customer_name} · {r.customer_phone || r.customer_email} ·{' '}
-                    {new Date(r.created_at).toLocaleDateString('fr-FR')}
+                    Demande du {new Date(r.created_at).toLocaleDateString('fr-FR')}
                   </p>
+                  <Button size="sm" variant="ghost" className="h-7 px-2 -ml-2" onClick={() => setContact(r)}>
+                    <Eye className="h-4 w-4 mr-1" />Voir les coordonnées du client
+                  </Button>
                   {renderAnswers(r.answers)}
                 </div>
                 <div className="flex items-center gap-2">
@@ -150,7 +244,16 @@ export default function BuybackManager() {
                   )}
                   <Button
                     size="sm"
-                    onClick={() => openOffer({ ...r, isNetwork: false })}
+                    onClick={() =>
+                      openOffer({
+                        ...r,
+                        isNetwork: false,
+                        customerName: r.customer_name,
+                        customerPhone: r.customer_phone,
+                        customerEmail: r.customer_email,
+                        publicToken: r.public_token,
+                      })
+                    }
                     disabled={['accepted', 'refused', 'refused_by_shop', 'network_closed'].includes(r.status)}
                   >
                     {offersByRequest.has(r.id) ? 'Modifier l\'offre' : 'Chiffrer'}
@@ -305,12 +408,77 @@ export default function BuybackManager() {
             </div>
           )}
 
+          <DialogFooter className="flex-col gap-2 sm:flex-col sm:space-x-0">
+            {target && !target.isNetwork && (
+              <div className="grid grid-cols-2 gap-2 w-full">
+                <Button
+                  variant="outline"
+                  onClick={sendBySms}
+                  disabled={!target.customerPhone || !amount || Number(amount) <= 0 || !!sending}
+                >
+                  {sending === 'sms' ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <MessageSquare className="h-4 w-4 mr-2" />}
+                  Envoyer par SMS
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={sendByEmail}
+                  disabled={!target.customerEmail || !amount || Number(amount) <= 0 || !!sending}
+                >
+                  {sending === 'email' ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Mail className="h-4 w-4 mr-2" />}
+                  Envoyer par e-mail
+                </Button>
+              </div>
+            )}
+            {target?.isNetwork && (
+              <p className="text-xs text-muted-foreground w-full">
+                Les coordonnées du client vous seront communiquées s'il retient votre offre.
+              </p>
+            )}
+            <div className="flex gap-2 w-full">
+              <Button variant="ghost" className="flex-1" onClick={() => setTarget(null)}>Annuler</Button>
+              <Button className="flex-1" onClick={submit} disabled={!amount || Number(amount) <= 0 || sendOffer.isPending || !!sending}>
+                {sendOffer.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                Enregistrer l'offre
+              </Button>
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!contact} onOpenChange={(o) => !o && setContact(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Coordonnées du client</DialogTitle>
+          </DialogHeader>
+          {contact && (
+            <div className="space-y-2 text-sm">
+              <p className="font-medium">{contact.customer_name}</p>
+              {contact.customer_phone && (
+                <a href={`tel:${contact.customer_phone}`} className="flex items-center gap-2 text-primary">
+                  <Phone className="h-4 w-4" />{contact.customer_phone}
+                </a>
+              )}
+              {contact.customer_email && (
+                <a href={`mailto:${contact.customer_email}`} className="flex items-center gap-2 text-primary break-all">
+                  <Mail className="h-4 w-4" />{contact.customer_email}
+                </a>
+              )}
+              {(contact.customer_postal_code || contact.customer_city) && (
+                <p className="flex items-center gap-2 text-muted-foreground">
+                  <MapPin className="h-4 w-4" />
+                  {[contact.customer_postal_code, contact.customer_city].filter(Boolean).join(' ')}
+                </p>
+              )}
+              <p className="flex items-center gap-2 text-xs text-muted-foreground pt-2 border-t">
+                <ShieldCheck className="h-4 w-4" />
+                {contact.buyback_customers?.marketing_consent
+                  ? 'Accepte de recevoir des offres de rachat (4 par an maximum).'
+                  : "N'a pas accepté de recevoir d'offres de rachat : contact uniquement pour cette cotation."}
+              </p>
+            </div>
+          )}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setTarget(null)}>Annuler</Button>
-            <Button onClick={submit} disabled={!amount || Number(amount) <= 0 || sendOffer.isPending}>
-              {sendOffer.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              Envoyer l'offre
-            </Button>
+            <Button variant="outline" onClick={() => setContact(null)}>Fermer</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
