@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { useShop } from '@/hooks/useShop';
 import { format, subDays, subMonths, startOfDay, endOfDay } from 'date-fns';
+import { computeCaseFinance, fetchFinanceContext } from '@/lib/savFinance';
 
 function useQuery() {
   const { search } = useLocation();
