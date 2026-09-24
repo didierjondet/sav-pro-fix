@@ -30,6 +30,8 @@ export interface BuybackSubmitPayload {
   answers: Record<string, string>;
   media: { path: string; type: string; slot?: string }[];
   customer: { name: string; email: string; phone: string; city: string; postal_code: string };
+  /** Le client accepte de recevoir des offres de rachat (4 par an maximum) */
+  marketingConsent: boolean;
   /** Magasin destinataire choisi (null = toute la France) */
   shopId: string | null;
 }
@@ -59,6 +61,16 @@ const WORKING_STATES = [
   { id: 'ko', label: 'Il ne fonctionne pas', hint: 'Il ne s\'allume plus ou est inutilisable.' },
 ];
 
+/** Normalise un libellé pour comparer deux questions (accents, ponctuation, pluriels simples) */
+function normalizeLabel(value: string) {
+  return value
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+}
+
 export function BuybackForm({
   allowedCategories,
   storagePrefix,
@@ -81,6 +93,7 @@ export function BuybackForm({
   const [issues, setIssues] = useState<string[]>([]);
   const [accessories, setAccessories] = useState<string[]>([]);
   const [customer, setCustomer] = useState({ name: '', email: '', phone: '', city: '', postal_code: '' });
+  const [marketingConsent, setMarketingConsent] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   const [destination, setDestination] = useState<'network' | 'shop'>('network');
@@ -112,9 +125,36 @@ export function BuybackForm({
   });
 
   const baseQuestions = useMemo(
-    () => (category ? getQuestions(category).filter((q) => q.id !== 'panne' || hasIssue) : []),
+    () => (category ? getQuestions(category).filter((q) => q.id !== 'panne') : []),
+    [category],
+  );
+  const panneQuestion = useMemo(
+    () => (hasIssue && category ? getQuestions(category).find((q) => q.id === 'panne') ?? null : null),
     [category, hasIssue],
   );
+
+  /** Questions IA réellement nouvelles : on écarte tout ce qui a déjà été demandé */
+  const extraQuestions = useMemo(() => {
+    const known = new Set<string>();
+    baseQuestions.forEach((q) => {
+      known.add(normalizeLabel(q.id));
+      known.add(normalizeLabel(q.label));
+    });
+    ['etat_fonctionnement', 'allumage', 'panne', 'accessoires', 'marque', 'modele', 'etat general'].forEach((k) =>
+      known.add(normalizeLabel(k)),
+    );
+    Object.keys(answers).forEach((k) => known.add(normalizeLabel(k)));
+    const seen = new Set<string>();
+    return aiQuestions.filter((q) => {
+      const id = normalizeLabel(q.id.replace(/^ia_/, ''));
+      const label = normalizeLabel(q.label);
+      if (known.has(id) || known.has(label) || seen.has(id) || seen.has(label)) return false;
+      if ([...known].some((k) => k.length > 4 && (label.includes(k) || k.includes(label)))) return false;
+      seen.add(id);
+      seen.add(label);
+      return true;
+    });
+  }, [aiQuestions, baseQuestions, answers]);
   const photoGuides = useMemo(() => {
     if (!category) return [];
     const all = getPhotoGuides(category);
@@ -223,7 +263,8 @@ export function BuybackForm({
       return;
     }
     if (step === 5) {
-      const missing = [...baseQuestions, ...aiQuestions].filter((q) => q.required && !answers[q.id]?.trim());
+      const required = [...baseQuestions, ...extraQuestions, ...(panneQuestion ? [panneQuestion] : [])];
+      const missing = required.filter((q) => q.required && !answers[q.id]?.trim());
       if (missing.length > 0) {
         toast({ title: 'Complétez les champs obligatoires', description: missing[0].label, variant: 'destructive' });
         return;
@@ -266,6 +307,7 @@ export function BuybackForm({
         answers: finalAnswers,
         media,
         customer,
+        marketingConsent,
         shopId: allowDestinationChoice && destination === 'shop' ? selectedShop?.shop_id ?? null : null,
       });
     } catch (err: any) {
@@ -496,14 +538,19 @@ export function BuybackForm({
               <Loader2 className="h-4 w-4 animate-spin" />Préparation des questions adaptées à votre {brand} {model}…
             </p>
           )}
+          <div className="rounded-lg bg-muted/60 p-3 text-xs text-muted-foreground space-y-0.5">
+            <p><strong>Appareil :</strong> {[brand, model].filter(Boolean).join(' ') || '—'}</p>
+            <p><strong>État déclaré :</strong> {WORKING_STATES.find((w) => w.id === workingState)?.label}</p>
+            <p>Ces informations sont déjà enregistrées, elles ne vous seront plus redemandées.</p>
+          </div>
           <div className="space-y-3">{baseQuestions.map(renderQuestion)}</div>
-          {aiQuestions.length > 0 && (
+          {extraQuestions.length > 0 && (
             <div className="space-y-3 rounded-lg border border-primary/30 p-3">
               <p className="text-sm font-medium flex items-center gap-2">
                 <Sparkles className="h-4 w-4 text-primary" />
                 Précisions sur votre {[brand, model].filter(Boolean).join(' ')}
               </p>
-              {aiQuestions.map(renderQuestion)}
+              {extraQuestions.map(renderQuestion)}
             </div>
           )}
           {hasIssue && (
@@ -519,6 +566,7 @@ export function BuybackForm({
               </div>
             </div>
           )}
+          {panneQuestion && renderQuestion(panneQuestion)}
           <div className="space-y-2">
             <Label>Accessoires fournis</Label>
             <div className="grid gap-2 sm:grid-cols-2">
@@ -631,6 +679,18 @@ export function BuybackForm({
                 <Input id="postal" value={customer.postal_code} onChange={(e) => setCustomer({ ...customer, postal_code: e.target.value })} />
               </div>
             </div>
+
+            <label className="flex items-start gap-2 text-xs text-muted-foreground cursor-pointer">
+              <Checkbox
+                className="mt-0.5"
+                checked={marketingConsent}
+                onCheckedChange={(v) => setMarketingConsent(v === true)}
+              />
+              <span>
+                J'autorise Fixway et les magasins du réseau à m'envoyer des offres de rachat par SMS et/ou e-mail,
+                dans la limite de 4 envois par an. Vous pouvez changer d'avis à tout moment.
+              </span>
+            </label>
           </div>
         </div>
       )}

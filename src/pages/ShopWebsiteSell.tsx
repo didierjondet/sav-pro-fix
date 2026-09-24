@@ -65,6 +65,7 @@ export default function ShopWebsiteSell() {
       p_customer_phone: payload.customer.phone,
       p_customer_city: payload.customer.city,
       p_customer_postal_code: payload.customer.postal_code,
+      p_marketing_consent: payload.marketingConsent,
     });
     if (error) throw error;
     navigate(`/rachat/${token}`);
