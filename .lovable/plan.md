@@ -1,7 +1,7 @@
 # Chiffres incohérents Tableau de bord / Rapports (Easycash Agde)
 
 ## Constat (vérifié en base, septembre 2026)
-- Aucune valeur perdue : les SAV restent rattachés à leur type. Les 2 types archivés (Estally, Slim) n'ont que 3 dossiers « en attente » à 0 €. La piste « types supprimés » n'explique pas l'écart.
+- Aucune valeur perdue : les SAV restent rattachés à leur type. Agde a 12 types archivés, qui regroupent 140 dossiers sur l'historique (environ 4 530 €, surtout Estally 2 654 € et Slim 1 220 €). Pour septembre, ils ne pèsent presque rien : 3 dossiers à 0 €. Ils n'expliquent donc pas l'écart de ce mois, mais ils doivent rester comptés pour les mois passés.
 - Ce mois-ci : 18 SAV clients clôturés (2 538,94 € de total), 8 externes clôturés (309,99 €), 43 internes clôturés (2 880,90 € de coût).
 - Le Tableau de bord et les Rapports ne comptent pas de la même façon. Au moins 5 calculs séparés existent (widgets du tableau de bord, page Rapports, statistiques mensuelles, détail CA/dépenses, assistant du jour, super admin). Ils diffèrent sur :
   - les statuts retenus (clôturés seulement ou tous) ;
