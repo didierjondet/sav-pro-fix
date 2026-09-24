@@ -23,9 +23,9 @@
 3. **Brancher tous les écrans sur cette règle** : widgets du tableau de bord, Rapports, pages de détail CA/dépenses, comparaison mensuelle, assistant du jour et statistiques super admin.
 4. **Vérification** : mêmes chiffres pour Agde sur le tableau de bord et dans les Rapports, pour le même mois.
 
-## Questions à trancher après l'audit
-- Faut-il ajouter au CA les devis acceptés non transformés en SAV ?
-- Le mois retenu pour un SAV : date de création ou date de clôture ?
+## Règles validées
+- Devis acceptés : comptés uniquement s'ils n'ont pas été transformés en SAV.
+- Période : c'est toujours le filtre de dates choisi qui décide (filtre de la page Rapports, réglage de chaque widget). Le calcul commun reçoit cette période et ne fixe aucune date lui-même.
 
 ## Détails techniques
 - Nouveau module `src/lib/savFinance.ts` : `computeSavFinance(cases, types, statuses, vatRate)`, fonction pure avec tests.
