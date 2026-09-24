@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useShop } from './useShop';
-import { startOfDay, endOfDay, subDays, startOfMonth, endOfMonth } from 'date-fns';
+import { startOfMonth, endOfMonth } from 'date-fns';
+import { computeCaseFinance, computeQuoteRevenue, fetchCountedQuotes, fetchFinanceContext, FINANCE_PARTS_SELECT } from '@/lib/savFinance';
 
 export interface SAVPartsCost {
   takeover_cost: number;     // Coût prise en charge (SAV client taken_over = true)
@@ -35,118 +36,40 @@ export function useSAVPartsCosts() {
       const start = startOfMonth(now);
       const end = endOfMonth(now);
 
-      // Statuts à inclure dans le CA (configurable par magasin)
-      const { data: statusCfg } = await supabase
-        .from('shop_sav_statuses')
-        .select('status_key, include_in_metrics')
+      // Règle commune (src/lib/savFinance.ts)
+      const ctx = await fetchFinanceContext(shop.id);
+
+      const { data: cases, error: casesError } = await supabase
+        .from('sav_cases')
+        .select(`id, sav_type, status, taken_over, partial_takeover, takeover_amount, ${FINANCE_PARTS_SELECT}`)
         .eq('shop_id', shop.id)
-        .eq('is_active', true);
-      const metricsKeysRaw = (statusCfg || []).filter(s => s.include_in_metrics).map(s => s.status_key);
-      const metricsStatusKeys = metricsKeysRaw.length > 0 ? metricsKeysRaw : ['ready', 'pret_et_cloture'];
+        .gte('created_at', start.toISOString())
+        .lte('created_at', end.toISOString());
+      if (casesError) throw casesError;
 
-      // Récupérer la config de facturation pour intégrer la MO si activée
-      const { data: billingCfg } = await supabase
-        .from('shop_billing_config' as any)
-        .select('*')
-        .eq('shop_id', shop.id)
-        .maybeSingle();
-      const cfg: any = billingCfg || { labor_billing_enabled: false, labor_mode: 'flat', labor_hourly_rate: 0 };
-
-      // Récupérer les coûts des pièces pour TOUS les SAV de la période (pas seulement les prêts)
-      const { data: partsData, error: partsError } = await supabase
-        .from('sav_parts')
-        .select(`
-          quantity,
-          unit_price,
-          purchase_price,
-          time_minutes,
-          parts:part_id(time_minutes, labor_cost),
-          sav_cases!inner(id, sav_type, status, taken_over, partial_takeover, takeover_amount, total_cost, shop_id, created_at)
-        `)
-        .eq('sav_cases.shop_id', shop.id)
-        .gte('sav_cases.created_at', start.toISOString())
-        .lte('sav_cases.created_at', end.toISOString());
-
-      if (partsError) throw partsError;
-
-      // Calculer les coûts par catégorie
       let takeover_cost = 0;
       let internal_cost = 0;
       let client_cost = 0;
       let external_cost = 0;
       let monthly_revenue = 0;
 
-      if (partsData) {
-        partsData.forEach((item: any) => {
-          const qty = Number(item.quantity) || 0;
-          const purchase = Number(item.purchase_price) || 0;
-          const selling = Number(item.unit_price) || 0;
+      (cases || []).forEach((c: any) => {
+        const f = computeCaseFinance(c, ctx);
+        if (!f.counted) return;
+        monthly_revenue += f.revenueHT;
+        const takeoverShare = f.rawRevenueTTC > 0 ? Math.min(1, f.takeoverTTC / f.rawRevenueTTC) : (c.taken_over ? 1 : 0);
+        const takenCost = f.cost * takeoverShare;
+        const rest = f.cost - takenCost;
+        takeover_cost += takenCost;
+        if (c.sav_type === 'internal') internal_cost += rest;
+        else if (c.sav_type === 'external') external_cost += rest;
+        else client_cost += rest;
+      });
 
-          // MO HT par unité selon config
-          let laborUnit = 0;
-          if (cfg.labor_billing_enabled) {
-            const partLabor = Number(item.parts?.labor_cost) || 0;
-            const minutes = Number(item.time_minutes) || Number(item.parts?.time_minutes) || 0;
-            if (cfg.labor_mode === 'flat') laborUnit = partLabor;
-            else laborUnit = partLabor > 0 ? partLabor : (minutes / 60) * (Number(cfg.labor_hourly_rate) || 0);
-          }
-
-          const partCost = purchase * qty;
-          const partRevenue = (selling + laborUnit) * qty;
-          const savCase = item.sav_cases;
-
-          // Calculer les coûts selon le type de SAV et la prise en charge
-          if (savCase.sav_type === 'client') {
-            if (savCase.taken_over) {
-              takeover_cost += partCost; // totalement pris en charge
-            } else if (savCase.partial_takeover && savCase.takeover_amount) {
-              const denom = Number(savCase.total_cost) || 1;
-              const rawRatio = Number(savCase.takeover_amount) / denom;
-              const ratio = Math.min(1, Math.max(0, rawRatio));
-              takeover_cost += partCost * ratio;
-              client_cost += partCost * (1 - ratio);
-            } else {
-              client_cost += partCost; // à la charge du client
-            }
-          } else if (savCase.sav_type === 'internal') {
-            internal_cost += partCost;
-          } else if (savCase.sav_type === 'external') {
-            external_cost += partCost;
-          }
-
-          // Calcul du CA uniquement pour les SAV prêts et non internes
-          if (metricsStatusKeys.includes(savCase.status) && savCase.sav_type !== 'internal') {
-            let revenuePart = partRevenue;
-            if (savCase.partial_takeover && savCase.takeover_amount) {
-              // Prise en charge partielle : calculer la part payée par le client
-              const totalRevenue = Number(savCase.total_cost) || 1;
-              const takeoverAmt = Number(savCase.takeover_amount) || 0;
-              const clientPaysRatio = Math.max(0, 1 - (takeoverAmt / totalRevenue));
-              revenuePart = partRevenue * clientPaysRatio;
-            } else if (savCase.taken_over) {
-              // Prise en charge totale : le client ne paie rien
-              revenuePart = 0;
-            }
-            monthly_revenue += revenuePart;
-          }
-        });
-      }
-
-      // Le CA a été calculé ci-dessus à partir des pièces et des règles de prise en charge
-      // Ajouter les devis acceptés de la période au CA
-      const { data: quotesData, error: quotesError } = await supabase
-        .from('quotes')
-        .select('total_amount, shop_id, created_at')
-        .eq('status', 'accepted')
-        .eq('shop_id', shop.id)
-        .gte('created_at', start.toISOString())
-        .lte('created_at', end.toISOString());
-
-      if (quotesError) throw quotesError;
-
-      if (quotesData) {
-        monthly_revenue += quotesData.reduce((acc, quote) => acc + (Number(quote.total_amount) || 0), 0);
-      }
+      const quotes = await fetchCountedQuotes(shop.id, start, end);
+      quotes.forEach((q: any) => {
+        monthly_revenue += computeQuoteRevenue(q, ctx.billing).revenueHT;
+      });
 
       setCosts({
         takeover_cost,
