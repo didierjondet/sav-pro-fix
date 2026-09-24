@@ -165,6 +165,7 @@ export function useShopSAVTypes() {
 
   return {
     types,
+    allTypes,
     loading,
     getTypeInfo,
     getAllTypes,
