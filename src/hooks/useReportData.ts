@@ -37,6 +37,7 @@ export interface ReportSAVItem {
   technician_comments: string | null;
   revenue_ratio: number;       // ratio TTC appliqué (prise en charge)
   purchase_cost_excluded: boolean;
+  counted: boolean;            // inclus dans les totaux (statut « inclus dans les statistiques »)
 }
 
 export interface ReportTotals {
@@ -73,7 +74,8 @@ export function useReportData({
   selectedStatuses
 }: UseReportDataParams) {
   const { shop } = useShop();
-  const { types: savTypes, getTypeInfo } = useShopSAVTypes();
+  const { types: savTypes, allTypes, getTypeInfo } = useShopSAVTypes();
+  const { statuses: statusRules } = useShopSAVStatuses();
   const { config: billing } = useBillingConfig();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -152,34 +154,15 @@ export function useReportData({
   }, [shop?.id, dateRange.start, dateRange.end, selectedTypes, selectedStatuses]);
 
   const reportData = useMemo<ReportData>(() => {
+    // Règle commune (src/lib/savFinance.ts) — types actifs ET archivés
+    const ctx = {
+      types: allTypes as any,
+      metricsStatusKeys: getMetricsStatusKeys(statusRules),
+      billing,
+    };
     const items: ReportSAVItem[] = rawData.map(sav => {
       const parts = sav.sav_parts || [];
-      const typeInfo = getTypeInfo(sav.sav_type);
-
-      let purchase_cost = parts.reduce((sum: number, p: any) =>
-        sum + ((p.purchase_price || 0) * (p.quantity || 1)), 0);
-
-      const rawSellingTTC = parts.reduce((sum: number, p: any) =>
-        sum + ((p.unit_price || 0) * (p.quantity || 1)), 0);
-      const rawSellingHT = parts.reduce((sum: number, p: any) => {
-        const { ht } = splitTtcHt(p.unit_price || 0, billing);
-        return sum + ht * (p.quantity || 1);
-      }, 0);
-
-      let sellingTTC = rawSellingTTC;
-      if (sav.taken_over && !sav.partial_takeover) {
-        sellingTTC = 0;
-      } else if (sav.partial_takeover && sav.takeover_amount) {
-        sellingTTC = Math.max(0, sellingTTC - (Number(sav.takeover_amount) || 0));
-      }
-
-      if (typeInfo.exclude_purchase_costs) purchase_cost = 0;
-      if (typeInfo.exclude_sales_revenue) sellingTTC = 0;
-
-      const revenue_ratio = rawSellingTTC > 0 ? sellingTTC / rawSellingTTC : 0;
-      const sellingHT = rawSellingHT * revenue_ratio;
-      const vat_collected = Math.max(0, sellingTTC - sellingHT);
-      const margin = sellingHT - purchase_cost;
+      const f = computeCaseFinance(sav, ctx);
 
       const customer = sav.customer;
       const customer_name = customer
@@ -211,15 +194,16 @@ export function useReportData({
         device_model: sav.device_model,
         sku: sav.sku,
         device_imei: sav.device_imei,
-        purchase_cost,
-        selling_price: sellingTTC,
-        selling_price_ht: sellingHT,
-        vat_collected,
-        margin,
+        purchase_cost: f.cost,
+        selling_price: f.revenueTTC,
+        selling_price_ht: f.revenueHT,
+        vat_collected: f.vat,
+        margin: f.margin,
         parts: mappedParts,
         technician_comments: sav.technician_comments || null,
-        revenue_ratio,
-        purchase_cost_excluded: !!typeInfo.exclude_purchase_costs
+        revenue_ratio: f.revenueRatio,
+        purchase_cost_excluded: f.costExcluded,
+        counted: f.counted,
       };
     });
 
@@ -229,33 +213,29 @@ export function useReportData({
     const emptyTotals = (): ReportTotals => ({
       revenue: 0, revenue_ttc: 0, vat_collected: 0, costs: 0, margin: 0, count: 0,
     });
+    const add = (acc: ReportTotals, item: ReportSAVItem) => {
+      acc.count += 1;
+      if (!item.counted) return; // seuls les statuts « inclus dans les statistiques » comptent
+      acc.revenue += item.selling_price_ht;
+      acc.revenue_ttc += item.selling_price;
+      acc.vat_collected += item.vat_collected;
+      acc.costs += item.purchase_cost;
+      acc.margin += item.margin;
+    };
 
+    const totals = emptyTotals();
     items.forEach(item => {
       if (!groupedByType[item.sav_type]) {
         groupedByType[item.sav_type] = [];
         subtotals[item.sav_type] = emptyTotals();
       }
       groupedByType[item.sav_type].push(item);
-      const s = subtotals[item.sav_type];
-      s.revenue += item.selling_price_ht;
-      s.revenue_ttc += item.selling_price;
-      s.vat_collected += item.vat_collected;
-      s.costs += item.purchase_cost;
-      s.margin += item.margin;
-      s.count += 1;
+      add(subtotals[item.sav_type], item);
+      add(totals, item);
     });
 
-    const totals = items.reduce((acc, item) => ({
-      revenue: acc.revenue + item.selling_price_ht,
-      revenue_ttc: acc.revenue_ttc + item.selling_price,
-      vat_collected: acc.vat_collected + item.vat_collected,
-      costs: acc.costs + item.purchase_cost,
-      margin: acc.margin + item.margin,
-      count: acc.count + 1
-    }), emptyTotals());
-
     return { items, groupedByType, totals, subtotals };
-  }, [rawData, getTypeInfo, billing]);
+  }, [rawData, allTypes, statusRules, billing]);
 
   return {
     data: reportData,
