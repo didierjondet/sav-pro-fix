@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useShop } from './useShop';
-import { startOfYear, endOfYear, startOfMonth, endOfMonth, format, addMonths } from 'date-fns';
+import { startOfYear, endOfYear } from 'date-fns';
+import { computeCaseFinance, computeQuoteRevenue, fetchCountedQuotes, fetchFinanceContext, FINANCE_PARTS_SELECT } from '@/lib/savFinance';
 
 export interface MonthlyData {
   month: number;
@@ -31,130 +32,44 @@ export function useMonthlyStatistics(year: number) {
         const yearStart = startOfYear(new Date(year, 0, 1));
         const yearEnd = endOfYear(new Date(year, 0, 1));
 
-        // Statuts à inclure dans les métriques (configurable par magasin)
-        const { data: statusCfg } = await supabase
-          .from('shop_sav_statuses')
-          .select('status_key, include_in_metrics')
-          .eq('shop_id', shop.id)
-          .eq('is_active', true);
-        const metricsKeysRaw = (statusCfg || []).filter(s => s.include_in_metrics).map(s => s.status_key);
-        const metricsStatusKeys = metricsKeysRaw.length > 0 ? metricsKeysRaw : ['ready', 'pret_et_cloture'];
+        // Règle commune (src/lib/savFinance.ts)
+        const ctx = await fetchFinanceContext(shop.id);
 
-        // Initialiser les données pour tous les mois
         const monthlyData: MonthlyData[] = [];
         for (let i = 0; i < 12; i++) {
           monthlyData.push({
-            month: i + 1,
-            revenue: 0,
-            costs: 0,
-            profit: 0,
-            savCount: 0,
-            takeover_cost: 0,
-            client_cost: 0,
-            external_cost: 0,
-            overdue_client: 0,
-            overdue_internal: 0,
-            overdue_external: 0
+            month: i + 1, revenue: 0, costs: 0, profit: 0, savCount: 0,
+            takeover_cost: 0, client_cost: 0, external_cost: 0,
+            overdue_client: 0, overdue_internal: 0, overdue_external: 0,
           });
         }
 
-        // Récupérer les SAV de l'année
         const { data: savCases, error: savError } = await supabase
           .from('sav_cases')
-          .select(`
-            id, created_at, sav_type, status, taken_over, partial_takeover, takeover_amount, total_cost,
-            sav_parts(quantity, purchase_price, unit_price, parts(purchase_price, selling_price))
-          `)
+          .select(`id, created_at, sav_type, status, taken_over, partial_takeover, takeover_amount, ${FINANCE_PARTS_SELECT}`)
           .eq('shop_id', shop.id)
-          .in('status', metricsStatusKeys)
+          .in('status', ctx.metricsStatusKeys)
           .gte('created_at', yearStart.toISOString())
           .lte('created_at', yearEnd.toISOString());
-
         if (savError) throw savError;
 
-        // Traiter chaque SAV
         (savCases || []).forEach((savCase: any) => {
-          const monthIndex = new Date(savCase.created_at).getMonth();
-          
-          let caseCost = 0;
-          let caseRevenue = 0;
-          let takeover_cost = 0;
-          let client_cost = 0;
-          let external_cost = 0;
-
-          // Calculer les coûts des pièces
-          (savCase.sav_parts || []).forEach((savPart: any) => {
-            const qty = Number(savPart.quantity) || 0;
-            // Utiliser le purchase_price stocké dans sav_parts en priorité, sinon fallback sur le catalogue
-            const purchase = Number(savPart.purchase_price ?? savPart.parts?.purchase_price) || 0;
-            const selling = Number(savPart.parts?.selling_price) || 0;
-            const unit = Number(savPart.unit_price ?? selling) || 0;
-
-            const partCost = purchase * qty;
-            const partRevenue = unit * qty;
-
-            caseCost += partCost;
-            caseRevenue += partRevenue;
-
-            // Calculer les coûts par type
-            if (savCase.sav_type === 'client') {
-              if (savCase.taken_over) {
-                takeover_cost += partCost;
-              } else if (savCase.partial_takeover && savCase.takeover_amount) {
-                const denom = Number(savCase.total_cost) || 1;
-                const rawRatio = Number(savCase.takeover_amount) / denom;
-                const ratio = Math.min(1, Math.max(0, rawRatio));
-                takeover_cost += partCost * ratio;
-                client_cost += partCost * (1 - ratio);
-              } else {
-                client_cost += partCost;
-              }
-            } else if (savCase.sav_type === 'external') {
-              external_cost += partCost;
-            }
-          });
-
-          // Ajuster le revenu selon la prise en charge
-          if (savCase.partial_takeover && savCase.takeover_amount) {
-            // Prise en charge partielle : le client paie la différence
-            const takeoverAmt = Number(savCase.takeover_amount) || 0;
-            caseRevenue = Math.max(0, caseRevenue - takeoverAmt);
-          } else if (savCase.taken_over) {
-            // Prise en charge totale : le client ne paie rien
-            caseRevenue = 0;
-          }
-
-          // Ajouter aux données mensuelles
-          if (savCase.sav_type !== 'internal') {
-            // SAV externes et clients : comptabiliser revenu ET coûts
-            monthlyData[monthIndex].revenue += caseRevenue;
-            monthlyData[monthIndex].costs += caseCost;
-            monthlyData[monthIndex].savCount += 1;
-            monthlyData[monthIndex].takeover_cost += takeover_cost;
-            monthlyData[monthIndex].client_cost += client_cost;
-            monthlyData[monthIndex].external_cost += external_cost;
-          } else {
-            // SAV internes : SEULEMENT les coûts (prix d'achat), PAS de revenu
-            monthlyData[monthIndex].costs += caseCost;
-            // Note: ne pas incrémenter savCount pour les SAV internes
-          }
+          const f = computeCaseFinance(savCase, ctx);
+          if (!f.counted) return;
+          const m = monthlyData[new Date(savCase.created_at).getMonth()];
+          m.revenue += f.revenueHT;
+          m.costs += f.cost;
+          if (!f.revenueExcluded) m.savCount += 1;
+          const share = f.rawRevenueTTC > 0 ? Math.min(1, f.takeoverTTC / f.rawRevenueTTC) : (savCase.taken_over ? 1 : 0);
+          m.takeover_cost += f.cost * share;
+          if (savCase.sav_type === 'external') m.external_cost += f.cost * (1 - share);
+          else if (savCase.sav_type !== 'internal') m.client_cost += f.cost * (1 - share);
         });
 
-        // Récupérer les devis acceptés de l'année
-        const { data: quotesData, error: quotesError } = await supabase
-          .from('quotes')
-          .select('total_amount, created_at')
-          .eq('status', 'accepted')
-          .eq('shop_id', shop.id)
-          .gte('created_at', yearStart.toISOString())
-          .lte('created_at', yearEnd.toISOString());
-
-        if (quotesError) throw quotesError;
-
-        // Ajouter les revenus des devis aux données mensuelles
-        (quotesData || []).forEach((quote: any) => {
+        const quotesData = await fetchCountedQuotes(shop.id, yearStart, yearEnd);
+        quotesData.forEach((quote: any) => {
           const monthIndex = new Date(quote.created_at).getMonth();
-          monthlyData[monthIndex].revenue += Number(quote.total_amount) || 0;
+          monthlyData[monthIndex].revenue += computeQuoteRevenue(quote, ctx.billing).revenueHT;
         });
 
         // Note: le calcul des retards par mois est géré ailleurs (useMonthlyLateRate).

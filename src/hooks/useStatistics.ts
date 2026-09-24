@@ -5,6 +5,7 @@ import { format, subDays, subMonths, startOfDay, endOfDay, startOfMonth } from '
 import { useQueryClient } from '@tanstack/react-query';
 import { getClosureDate, isClosedLate, getMaxProcessingDays, filterClosedForLateRate, computeLateRateForPeriod, getRangeForPeriod, LatePeriodKey } from '@/lib/lateRate';
 import { categorizeDevice, normalizeText, type ProductCategory } from '@/lib/deviceCategorization';
+import { computeCaseFinance, computeQuoteRevenue, fetchCountedQuotes, fetchFinanceContext } from '@/lib/savFinance';
 
 // Cache localStorage pour éviter de rappeler l'IA sur les mêmes SAV.
 const AI_CATEGORY_CACHE_KEY = 'fixway_sav_category_cache_v1';
@@ -140,14 +141,14 @@ export function useStatistics(
 
       const { start, end } = getDateRange();
 
-      // Récupérer les types SAV avec leurs délais configurés et exclusions granulaires
+      // Types SAV (actifs ET archivés : l'historique reste compté)
       const { data: shopSavTypes, error: typesError } = await supabase
         .from('shop_sav_types')
         .select('type_key, max_processing_days, exclude_from_stats, exclude_purchase_costs, exclude_sales_revenue')
-        .eq('shop_id', shop.id)
-        .eq('is_active', true);
+        .eq('shop_id', shop.id);
 
       if (typesError) throw typesError;
+      const financeCtx = await fetchFinanceContext(shop.id);
 
       // Calculer les listes de types exclus (séparément pour coûts et revenus)
       const excludeFromPurchaseCosts = (shopSavTypes || [])
@@ -361,36 +362,13 @@ export function useStatistics(
         });
 
         readySavCases.forEach((savCase: any) => {
-          // Calculer le coût total des pièces avec exclusions granulaires
-          let caseCost = 0;
-          let caseRevenue = 0;
-          
-          // Vérifier si ce type exclut les coûts ou revenus
-          const excludeCosts = excludeFromPurchaseCosts.includes(savCase.sav_type);
-          const excludeRevenue = excludeFromSalesRevenue.includes(savCase.sav_type);
-
-          savCase.sav_parts?.forEach((savPart: any) => {
-            const partCost = (savPart.purchase_price ?? savPart.part?.purchase_price ?? 0) * savPart.quantity;
-            const partRevenue = (savPart.unit_price || savPart.part?.selling_price || 0) * savPart.quantity;
-            if (!excludeCosts) caseCost += partCost;
-            if (!excludeRevenue) caseRevenue += partRevenue;
-          });
-
-          // Calculer les prises en charge (seulement si revenus non exclus)
-          if (!excludeRevenue) {
-            if (savCase.partial_takeover && savCase.takeover_amount) {
-              takeoverAmount += Number(savCase.takeover_amount) || 0;
-              takeoverCount++;
-              const rawRatio = Number(savCase.takeover_amount) / (Number(savCase.total_cost) || 1);
-              const takeoverRatio = Math.min(1, Math.max(0, rawRatio));
-              caseRevenue = caseCost + (caseRevenue - caseCost) * (1 - takeoverRatio);
-            } else if (savCase.taken_over) {
-              // Prise en charge totale : le magasin absorbe tout le coût
-              // Le montant pris en charge = prix de vente original (ce que le client aurait payé)
-              takeoverAmount += caseRevenue;
-              takeoverCount++;
-              caseRevenue = 0; // Le client ne paie rien, donc CA = 0
-            }
+          // Règle commune (src/lib/savFinance.ts) : CA HT, coût HT, prise en charge
+          const f = computeCaseFinance(savCase, financeCtx);
+          const caseCost = f.cost;
+          const caseRevenue = f.revenueHT;
+          if (!f.revenueExcluded && (savCase.taken_over || (savCase.partial_takeover && savCase.takeover_amount))) {
+            takeoverAmount += f.takeoverTTC;
+            takeoverCount++;
           }
 
           totalRevenue += caseRevenue;
@@ -583,6 +561,16 @@ export function useStatistics(
         }
 
 
+
+        // Devis acceptés non transformés en SAV (même période)
+        try {
+          const quotes = await fetchCountedQuotes(shop.id, start, end);
+          quotes.forEach((q: any) => {
+            totalRevenue += computeQuoteRevenue(q, financeCtx.billing).revenueHT;
+          });
+        } catch (e) {
+          console.warn('[stats] devis ignorés:', e);
+        }
 
         setData({
           revenue: totalRevenue,

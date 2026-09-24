@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { useShop } from '@/hooks/useShop';
 import { format, subDays, subMonths, startOfDay, endOfDay } from 'date-fns';
+import { computeCaseFinance, fetchFinanceContext } from '@/lib/savFinance';
 
 function useQuery() {
   const { search } = useLocation();
@@ -41,47 +42,29 @@ export default function RevenueDetails() {
     const fetchData = async () => {
       setLoading(true);
       const { start, end } = getDateRange();
-      const { data: statusCfg } = await supabase
-        .from('shop_sav_statuses')
-        .select('status_key, include_in_metrics')
-        .eq('shop_id', shop.id)
-        .eq('is_active', true);
-      const metricsKeysRaw = (statusCfg || []).filter(s => s.include_in_metrics).map(s => s.status_key);
-      const metricsStatusKeys = metricsKeysRaw.length > 0 ? metricsKeysRaw : ['ready', 'pret_et_cloture'];
+      // Règle commune (src/lib/savFinance.ts)
+      const ctx = await fetchFinanceContext(shop.id);
       const { data, error } = await supabase
         .from('sav_cases')
         .select('*, customer:customers(*), sav_parts(*, part:parts(*))')
         .eq('shop_id', shop.id)
-        .in('status', metricsStatusKeys)
-        .neq('sav_type', 'internal')
+        .in('status', ctx.metricsStatusKeys)
         .gte('created_at', start.toISOString())
         .lte('created_at', end.toISOString())
         .order('created_at', { ascending: false });
       if (error) { console.error(error); setLoading(false); return; }
-      const list = (data || []).map((c: any) => {
-        // coûts & revenus calculés comme dans useStatistics
-        let cost = 0; let revenue = 0;
-        (c.sav_parts || []).forEach((sp: any) => {
-          const partCost = (Number(sp.part?.purchase_price) || 0) * (sp.quantity || 0);
-          const partRevenue = (Number(sp.unit_price ?? sp.part?.selling_price) || 0) * (sp.quantity || 0);
-          cost += partCost; revenue += partRevenue;
-        });
-        if (c.partial_takeover && c.takeover_amount) {
-          const rawRatio = Number(c.takeover_amount) / (Number(c.total_cost) || 1);
-          const ratio = Math.min(1, Math.max(0, rawRatio));
-          revenue = cost + (revenue - cost) * (1 - ratio);
-        } else if (c.taken_over) {
-          revenue = cost;
-        }
-        return {
+      const list = (data || []).flatMap((c: any) => {
+        const f = computeCaseFinance(c, ctx);
+        if (!f.counted || f.revenueExcluded) return [];
+        return [{
           id: c.id,
           date: format(new Date(c.created_at), 'dd/MM/yyyy'),
           case_number: c.case_number,
           customer: c.customer ? `${c.customer.first_name} ${c.customer.last_name}` : 'Client',
-          cost,
-          revenue,
-          profit: revenue - cost,
-        };
+          cost: f.cost,
+          revenue: f.revenueHT,
+          profit: f.margin,
+        }];
       });
       setRows(list);
       setLoading(false);
