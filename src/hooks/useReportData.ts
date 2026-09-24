@@ -4,6 +4,8 @@ import { useShop } from './useShop';
 import { useShopSAVTypes } from './useShopSAVTypes';
 import { useBillingConfig } from './useBillingConfig';
 import { splitTtcHt } from '@/lib/vatCalculator';
+import { useShopSAVStatuses } from './useShopSAVStatuses';
+import { computeCaseFinance, getMetricsStatusKeys } from '@/lib/savFinance';
 import { startOfMonth, endOfMonth, subMonths, format } from 'date-fns';
 
 export interface ReportPartItem {
@@ -127,7 +129,7 @@ export function useReportData({
               unit_price,
               purchase_price,
               custom_part_name,
-              part:parts(name, supplier_id, supplier:suppliers(id, name))
+              part:parts(name, selling_price, purchase_price, supplier_id, supplier:suppliers(id, name))
             )
           `)
           .eq('shop_id', shop.id)
