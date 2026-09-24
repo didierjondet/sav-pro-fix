@@ -259,6 +259,16 @@ export const useCustomWidgetData = ({ metrics, filters, groupBy }: UseCustomWidg
           }
         });
 
+        // Devis acceptés non transformés en SAV
+        const countedQuotes = await fetchCountedQuotes(shop.id, startDate, endDate);
+        countedQuotes.forEach((q: any) => {
+          const r = computeQuoteRevenue(q, financeCtx.billing).revenueHT;
+          const mi = new Date(q.created_at).getMonth();
+          monthlyData[mi].monthly_revenue += r;
+          monthlyData[mi].monthly_margin += r;
+          totalRevenue += r;
+        });
+
         // Calculer les métriques agrégées
         const aggregateData = {
           total_revenue: totalRevenue,
