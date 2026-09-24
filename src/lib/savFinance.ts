@@ -131,6 +131,9 @@ export function computeCaseFinance(c: FinanceCase, ctx: FinanceContext): CaseFin
 }
 
 export interface FinanceQuote {
+  id?: string;
+  quote_number?: string | null;
+  created_at?: string;
   total_amount?: number | null;
   status?: string | null;
   sav_case_id?: string | null;
@@ -176,7 +179,7 @@ export const FINANCE_PARTS_SELECT =
 export async function fetchCountedQuotes(shopId: string, start: Date, end: Date) {
   const { data, error } = await supabase
     .from('quotes')
-    .select('total_amount, status, sav_case_id, created_at')
+    .select('id, quote_number, total_amount, status, sav_case_id, created_at')
     .eq('shop_id', shopId)
     .eq('status', 'accepted')
     .is('sav_case_id', null)

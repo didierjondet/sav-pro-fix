@@ -5,7 +5,7 @@ import { useShopSAVTypes } from './useShopSAVTypes';
 import { useBillingConfig } from './useBillingConfig';
 import { splitTtcHt } from '@/lib/vatCalculator';
 import { useShopSAVStatuses } from './useShopSAVStatuses';
-import { computeCaseFinance, getMetricsStatusKeys } from '@/lib/savFinance';
+import { computeCaseFinance, computeQuoteRevenue, fetchCountedQuotes, getMetricsStatusKeys } from '@/lib/savFinance';
 import { startOfMonth, endOfMonth, subMonths, format } from 'date-fns';
 
 export interface ReportPartItem {
@@ -51,10 +51,22 @@ export interface ReportTotals {
   count: number;
 }
 
+export interface ReportQuoteItem {
+  id: string;
+  quote_number: string;
+  created_at: string;
+  revenue: number;
+  revenue_ttc: number;
+  vat_collected: number;
+  margin: number;
+}
+
 export interface ReportData {
   items: ReportSAVItem[];
+  quotes: ReportQuoteItem[];
   groupedByType: Record<string, ReportSAVItem[]>;
   totals: ReportTotals;
+  quoteTotals: ReportTotals;
   subtotals: Record<string, ReportTotals>;
 }
 
@@ -82,6 +94,7 @@ export function useReportData({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [rawData, setRawData] = useState<any[]>([]);
+  const [rawQuotes, setRawQuotes] = useState<any[]>([]);
 
   const dateRange = useMemo(() => {
     const now = new Date();
@@ -140,10 +153,14 @@ export function useReportData({
         if (selectedTypes.length > 0) query = query.in('sav_type', selectedTypes);
         if (selectedStatuses.length > 0) query = query.in('status', selectedStatuses);
 
-        const { data, error: fetchError } = await query;
+        const [{ data, error: fetchError }, quotes] = await Promise.all([
+          query,
+          fetchCountedQuotes(shop.id, dateRange.start, dateRange.end),
+        ]);
         if (fetchError) throw fetchError;
 
         setRawData(data || []);
+        setRawQuotes(quotes);
       } catch (err: any) {
         console.error('Error fetching report data:', err);
         setError(err.message);
@@ -236,8 +253,33 @@ export function useReportData({
       add(totals, item);
     });
 
-    return { items, groupedByType, totals, subtotals };
-  }, [rawData, allTypes, statusRules, billing]);
+    const quoteTotals = emptyTotals();
+    const quotes: ReportQuoteItem[] = rawQuotes.map(quote => {
+      const revenue = computeQuoteRevenue(quote, billing);
+      const vat = Math.max(0, revenue.revenueTTC - revenue.revenueHT);
+      quoteTotals.revenue += revenue.revenueHT;
+      quoteTotals.revenue_ttc += revenue.revenueTTC;
+      quoteTotals.vat_collected += vat;
+      quoteTotals.margin += revenue.revenueHT;
+      quoteTotals.count += 1;
+      return {
+        id: quote.id,
+        quote_number: quote.quote_number || 'Devis',
+        created_at: quote.created_at,
+        revenue: revenue.revenueHT,
+        revenue_ttc: revenue.revenueTTC,
+        vat_collected: vat,
+        margin: revenue.revenueHT,
+      };
+    });
+
+    totals.revenue += quoteTotals.revenue;
+    totals.revenue_ttc += quoteTotals.revenue_ttc;
+    totals.vat_collected += quoteTotals.vat_collected;
+    totals.margin += quoteTotals.margin;
+
+    return { items, quotes, groupedByType, totals, quoteTotals, subtotals };
+  }, [rawData, rawQuotes, allTypes, statusRules, billing]);
 
   return {
     data: reportData,
