@@ -21,6 +21,7 @@ export interface BuybackRequest {
   network_open: boolean;
   network_deadline: string | null;
   created_at: string;
+  buyback_customers?: { marketing_consent: boolean } | null;
 }
 
 export interface BuybackOffer {
@@ -64,7 +65,7 @@ export function useBuyback() {
       if (!shopId) return [];
       const { data, error } = await supabase
         .from('buyback_requests')
-        .select('*')
+        .select('*, buyback_customers(marketing_consent)')
         .eq('shop_id', shopId)
         .order('created_at', { ascending: false });
       if (error) throw error;
