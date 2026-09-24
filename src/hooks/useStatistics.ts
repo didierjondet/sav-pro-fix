@@ -5,6 +5,7 @@ import { format, subDays, subMonths, startOfDay, endOfDay, startOfMonth } from '
 import { useQueryClient } from '@tanstack/react-query';
 import { getClosureDate, isClosedLate, getMaxProcessingDays, filterClosedForLateRate, computeLateRateForPeriod, getRangeForPeriod, LatePeriodKey } from '@/lib/lateRate';
 import { categorizeDevice, normalizeText, type ProductCategory } from '@/lib/deviceCategorization';
+import { computeCaseFinance, computeQuoteRevenue, fetchCountedQuotes, fetchFinanceContext } from '@/lib/savFinance';
 
 // Cache localStorage pour éviter de rappeler l'IA sur les mêmes SAV.
 const AI_CATEGORY_CACHE_KEY = 'fixway_sav_category_cache_v1';
@@ -560,6 +561,16 @@ export function useStatistics(
         }
 
 
+
+        // Devis acceptés non transformés en SAV (même période)
+        try {
+          const quotes = await fetchCountedQuotes(shop.id, start, end);
+          quotes.forEach((q: any) => {
+            totalRevenue += computeQuoteRevenue(q, financeCtx.billing).revenueHT;
+          });
+        } catch (e) {
+          console.warn('[stats] devis ignorés:', e);
+        }
 
         setData({
           revenue: totalRevenue,
