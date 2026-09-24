@@ -1,3 +1,4 @@
+import { computeCaseFinance, computeQuoteRevenue, fetchCountedQuotes, fetchFinanceContext } from '@/lib/savFinance';
 import { useState, useEffect } from 'react';
 import { useShop } from '@/contexts/ShopContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -126,10 +127,10 @@ export const useCustomWidgetData = ({ metrics, filters, groupBy }: UseCustomWidg
         const { data: shopSavTypes, error: typesError } = await supabase
           .from('shop_sav_types')
           .select('type_key, max_processing_days, exclude_from_stats, exclude_purchase_costs, exclude_sales_revenue')
-          .eq('shop_id', shop.id)
-          .eq('is_active', true);
+          .eq('shop_id', shop.id);
 
         if (typesError) throw typesError;
+        const financeCtx = await fetchFinanceContext(shop.id);
 
         // Calculer les listes de types exclus (séparément pour coûts et revenus)
         const excludeFromPurchaseCosts = (shopSavTypes || [])
@@ -208,76 +209,20 @@ export const useCustomWidgetData = ({ metrics, filters, groupBy }: UseCustomWidg
           // Compter les SAV
           monthlyData[monthIndex].monthly_sav_count++;
 
-          // Calculer les coûts et revenus des pièces avec exclusions granulaires
-          let savCost = 0;
-          let savRevenue = 0;
-          
-          // Vérifier si ce type exclut les coûts ou revenus
-          const excludeCosts = excludeFromPurchaseCosts.includes(sav.sav_type);
-          const excludeRevenue = excludeFromSalesRevenue.includes(sav.sav_type);
-          
+          // Règle commune (src/lib/savFinance.ts)
           sav.sav_parts?.forEach((savPart: any) => {
-            const qty = Number(savPart.quantity) || 0;
-            const purchase = Number(savPart.part?.purchase_price) || 0;
-            const selling = Number(savPart.part?.selling_price) || 0;
-            const unit = Number(savPart.unit_price ?? selling) || 0;
-            
-            const partCost = purchase * qty;
-            const partRevenue = unit * qty;
-            
-            // Ajouter les coûts seulement si non exclus
-            if (!excludeCosts) {
-              savCost += partCost;
-            }
-            
-            // Ajouter les revenus seulement si non exclus
-            if (!excludeRevenue) {
-              savRevenue += partRevenue;
-            }
-            
-            // Comptabiliser l'usage des pièces (seulement si identifiables)
             const partKey = savPart.part?.name || savPart.custom_part_name;
-            if (partKey) {
-              partsUsage[partKey] = (partsUsage[partKey] || 0) + qty;
-            }
+            if (partKey) partsUsage[partKey] = (partsUsage[partKey] || 0) + (Number(savPart.quantity) || 0);
           });
-          
-          // Ajouter les coûts mensuels (seulement si non exclus)
-          if (!excludeCosts) {
-            monthlyData[monthIndex].monthly_costs += savCost;
-          }
-
-          // Calculer le revenu (uniquement pour les SAV ready, hors types exclus des revenus)
-          if (metricsStatusKeys.includes(sav.status) && !excludeRevenue) {
-            // Ajuster le revenu selon la prise en charge
-            if (sav.partial_takeover && sav.takeover_amount) {
-              const denom = Number(sav.total_cost) || 1;
-              const rawRatio = Number(sav.takeover_amount) / denom;
-              const ratio = Math.min(1, Math.max(0, rawRatio));
-              savRevenue = savCost + (savRevenue - savCost) * (1 - ratio);
-            } else if (sav.taken_over) {
-              savRevenue = savCost;
-            }
-            
-            monthlyData[monthIndex].monthly_revenue += savRevenue;
-            totalRevenue += savRevenue;
-
-            // Calculer la marge (uniquement si ni coûts ni revenus exclus)
-            if (!excludeCosts) {
-              monthlyData[monthIndex].monthly_margin += savRevenue - savCost;
-            }
-
-            // Revenu par type
-            if (sav.sav_type === 'client') {
-              monthlyData[monthIndex].monthly_client_revenue += savRevenue;
-            } else if (sav.sav_type === 'external') {
-              monthlyData[monthIndex].monthly_external_revenue += savRevenue;
-            }
-
-            // Prises en charge
-            if (sav.takeover_amount) {
-              takeoverAmount += Number(sav.takeover_amount) || 0;
-            }
+          const f = computeCaseFinance(sav, financeCtx);
+          if (f.counted) {
+            monthlyData[monthIndex].monthly_costs += f.cost;
+            monthlyData[monthIndex].monthly_revenue += f.revenueHT;
+            monthlyData[monthIndex].monthly_margin += f.margin;
+            totalRevenue += f.revenueHT;
+            if (sav.sav_type === 'client') monthlyData[monthIndex].monthly_client_revenue += f.revenueHT;
+            else if (sav.sav_type === 'external') monthlyData[monthIndex].monthly_external_revenue += f.revenueHT;
+            takeoverAmount += f.takeoverTTC;
           }
 
           // Temps moyen basé sur les temps des pièces
