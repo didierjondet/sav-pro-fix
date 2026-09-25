@@ -242,6 +242,19 @@ export function BuybackForm({
     return media;
   };
 
+  /** Sauvegarde la saisie avant de quitter la page (Google / e-mail de confirmation) */
+  const saveDraft = async () => {
+    const media = await uploadPhotos();
+    localStorage.setItem(
+      draftKey,
+      JSON.stringify({
+        savedAt: Date.now(),
+        workingState, category, brand, model, uploaded: media, answers, issues, accessories,
+        vision, visionNote, aiQuestions, destination, selectedShop,
+      }),
+    );
+  };
+
   const runVision = async (paths: string[]) => {
     setVisionLoading(true);
     try {
