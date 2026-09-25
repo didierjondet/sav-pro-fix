@@ -1,5 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { ParticulierAuthPanel } from './ParticulierAuthPanel';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -79,8 +81,9 @@ export function BuybackForm({
   onSubmit,
 }: Props) {
   const { toast } = useToast();
+  const { user } = useAuth();
 
-  const totalSteps = 6;
+  const totalSteps = 7;
   const [step, setStep] = useState(1);
 
   const [workingState, setWorkingState] = useState('');
@@ -109,6 +112,60 @@ export function BuybackForm({
   const [aiLoading, setAiLoading] = useState(false);
 
   const hasIssue = workingState !== 'ok';
+  const draftKey = `fixway_buyback_draft_${storagePrefix}`;
+
+  /** Reprise de la saisie après connexion Google ou confirmation d'e-mail */
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(draftKey);
+      if (!raw) return;
+      const d = JSON.parse(raw);
+      if (Date.now() - (d.savedAt ?? 0) > 7 * 24 * 3600 * 1000) {
+        localStorage.removeItem(draftKey);
+        return;
+      }
+      setWorkingState(d.workingState ?? '');
+      setCategory(d.category ?? '');
+      setBrand(d.brand ?? '');
+      setModel(d.model ?? '');
+      setUploaded(d.uploaded ?? []);
+      setAnswers(d.answers ?? {});
+      setIssues(d.issues ?? []);
+      setAccessories(d.accessories ?? []);
+      setVision(d.vision ?? null);
+      setVisionNote(d.visionNote ?? '');
+      setAiQuestions(d.aiQuestions ?? []);
+      setDestination(d.destination ?? 'network');
+      setSelectedShop(d.selectedShop ?? null);
+      setStep(7);
+    } catch {
+      localStorage.removeItem(draftKey);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  /** Pré-remplissage des coordonnées depuis le compte (ou le profil Google) */
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase.rpc('get_my_buyback_account' as any);
+      if (cancelled) return;
+      const p = (data as any)?.profile;
+      const meta = user.user_metadata ?? {};
+      setCustomer((c) => ({
+        name: c.name || p?.full_name || meta.full_name || meta.name || '',
+        email: user.email ?? c.email,
+        phone: c.phone || p?.phone || '',
+        city: c.city || p?.city || '',
+        postal_code: c.postal_code || p?.postal_code || '',
+      }));
+      if (p?.marketing_consent) setMarketingConsent(true);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
 
   const { data: shops = [] } = useQuery({
     queryKey: ['buyback-shops', shopSearch],
@@ -242,9 +299,11 @@ export function BuybackForm({
       }
     }
     if (step === 3) {
-      const missing = photoGuides.find((g) => g.required && !photos[g.id]);
-      if (missing) {
-        toast({ title: 'Photo manquante', description: missing.label, variant: 'destructive' });
+      // Photos facultatives : sans photo, on passe directement aux questions
+      if (Object.keys(photos).length === 0 && uploaded.length === 0) {
+        setVision(null);
+        setStep(5);
+        if (aiQuestions.length === 0 && !aiLoading) runAiGuide();
         return;
       }
       setStep(4);
@@ -270,11 +329,24 @@ export function BuybackForm({
         return;
       }
     }
+    if (step === 6 && allowDestinationChoice && destination === 'shop' && !selectedShop) {
+      toast({ title: 'Choisissez le magasin destinataire', variant: 'destructive' });
+      return;
+    }
     setStep((s) => Math.min(totalSteps, s + 1));
+  };
+
+  const goBack = () => {
+    if (step === 5 && uploaded.length === 0 && Object.keys(photos).length === 0) {
+      setStep(3);
+      return;
+    }
+    setStep((s) => Math.max(1, s - 1));
   };
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!user) return;
     if (allowDestinationChoice && destination === 'shop' && !selectedShop) {
       toast({ title: 'Choisissez le magasin destinataire', variant: 'destructive' });
       return;
@@ -306,10 +378,11 @@ export function BuybackForm({
         model,
         answers: finalAnswers,
         media,
-        customer,
+        customer: { ...customer, email: user.email ?? customer.email },
         marketingConsent,
         shopId: allowDestinationChoice && destination === 'shop' ? selectedShop?.shop_id ?? null : null,
       });
+      localStorage.removeItem(draftKey);
     } catch (err: any) {
       toast({ title: 'Envoi impossible', description: err.message, variant: 'destructive' });
     } finally {
@@ -354,10 +427,11 @@ export function BuybackForm({
   const stepTitles = [
     'Votre appareil fonctionne-t-il ?',
     'Quel appareil souhaitez-vous vendre ?',
-    'Ajoutez les photos',
+    'Photos (facultatif)',
     'Analyse de vos photos',
     'Quelques précisions',
-    allowDestinationChoice ? 'Destinataire et coordonnées' : 'Vos coordonnées',
+    'Où envoyer votre demande ?',
+    'Votre compte Fixway',
   ];
 
   return (
@@ -429,20 +503,20 @@ export function BuybackForm({
         </div>
       )}
 
-      {/* 3. Photos */}
+      {/* 3. Photos (facultatives) */}
       {step === 3 && (
         <div className="space-y-3">
-          <p className="text-sm text-muted-foreground flex items-center gap-2">
-            <Camera className="h-4 w-4" />
+          <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm font-medium flex items-center gap-2">
+            <Camera className="h-4 w-4 text-primary shrink-0" />
+            Pour améliorer la justesse du prix, vous pouvez ajouter des photos (facultatif).
+          </div>
+          <p className="text-xs text-muted-foreground">
             Prenez les photos directement ou choisissez-les dans votre galerie.
           </p>
           <div className="grid gap-3 sm:grid-cols-2">
             {photoGuides.map((g: PhotoGuide) => (
               <div key={g.id} className="rounded-lg border p-3 space-y-2">
-                <p className="text-sm font-medium">
-                  {g.label}
-                  {g.required && <span className="text-destructive"> *</span>}
-                </p>
+                <p className="text-sm font-medium">{g.label}</p>
                 <p className="text-xs text-muted-foreground">{g.hint}</p>
                 <Input
                   type="file"
@@ -581,7 +655,7 @@ export function BuybackForm({
         </div>
       )}
 
-      {/* 6. Destination + compte */}
+      {/* 6. Destination de l'offre */}
       {step === 6 && (
         <div className="space-y-5">
           {allowDestinationChoice && (
@@ -649,63 +723,72 @@ export function BuybackForm({
               )}
             </div>
           )}
+          {!allowDestinationChoice && (
+            <p className="text-sm text-muted-foreground">
+              Votre demande sera envoyée à ce magasin. S'il la refuse, vous pourrez l'ouvrir à tout le réseau.
+            </p>
+          )}
+        </div>
+      )}
 
-          <div className="space-y-3 border-t pt-4">
-            <div>
-              <p className="font-medium text-sm">Votre compte vendeur</p>
-              <p className="text-xs text-muted-foreground">
-                Pas de mot de passe : vous recevrez un lien personnel pour suivre toutes vos cotations.
+      {/* 7. Compte particulier */}
+      {step === 7 && (
+        <div className="space-y-4">
+          {!user ? (
+            <>
+              <p className="text-sm text-muted-foreground">
+                Créez votre espace Fixway pour recevoir les offres, discuter avec les magasins et retrouver
+                vos cotations quand vous le souhaitez.
               </p>
+              <ParticulierAuthPanel returnPath={window.location.pathname} beforeRedirect={saveDraft} />
+            </>
+          ) : (
+            <div className="space-y-3">
+              <p className="text-sm">
+                Connecté : <strong>{user.email}</strong>
+              </p>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Nom et prénom *</Label>
+                  <Input id="name" value={customer.name} onChange={(e) => setCustomer({ ...customer, name: e.target.value })} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="phone">Téléphone *</Label>
+                  <Input id="phone" value={customer.phone} onChange={(e) => setCustomer({ ...customer, phone: e.target.value })} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="city">Ville</Label>
+                  <Input id="city" value={customer.city} onChange={(e) => setCustomer({ ...customer, city: e.target.value })} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="postal">Code postal</Label>
+                  <Input id="postal" value={customer.postal_code} onChange={(e) => setCustomer({ ...customer, postal_code: e.target.value })} />
+                </div>
+              </div>
+              <label className="flex items-start gap-2 text-xs text-muted-foreground cursor-pointer">
+                <Checkbox className="mt-0.5" checked={marketingConsent} onCheckedChange={(v) => setMarketingConsent(v === true)} />
+                <span>
+                  J'autorise Fixway et les magasins du réseau à m'envoyer des offres de rachat par SMS et/ou e-mail,
+                  dans la limite de 4 envois par an. Vous pouvez changer d'avis à tout moment dans votre espace.
+                </span>
+              </label>
             </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="name">Nom et prénom *</Label>
-                <Input id="name" value={customer.name} onChange={(e) => setCustomer({ ...customer, name: e.target.value })} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="phone">Téléphone *</Label>
-                <Input id="phone" value={customer.phone} onChange={(e) => setCustomer({ ...customer, phone: e.target.value })} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" value={customer.email} onChange={(e) => setCustomer({ ...customer, email: e.target.value })} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="city">Ville</Label>
-                <Input id="city" value={customer.city} onChange={(e) => setCustomer({ ...customer, city: e.target.value })} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="postal">Code postal</Label>
-                <Input id="postal" value={customer.postal_code} onChange={(e) => setCustomer({ ...customer, postal_code: e.target.value })} />
-              </div>
-            </div>
-
-            <label className="flex items-start gap-2 text-xs text-muted-foreground cursor-pointer">
-              <Checkbox
-                className="mt-0.5"
-                checked={marketingConsent}
-                onCheckedChange={(v) => setMarketingConsent(v === true)}
-              />
-              <span>
-                J'autorise Fixway et les magasins du réseau à m'envoyer des offres de rachat par SMS et/ou e-mail,
-                dans la limite de 4 envois par an. Vous pouvez changer d'avis à tout moment.
-              </span>
-            </label>
-          </div>
+          )}
         </div>
       )}
 
       <div className="flex items-center gap-2 pt-2">
         {step > 1 && (
-          <Button type="button" variant="outline" onClick={() => setStep((s) => s - 1)} disabled={submitting || visionLoading}>
+          <Button type="button" variant="outline" onClick={goBack} disabled={submitting || visionLoading}>
             <ArrowLeft className="h-4 w-4 mr-1" />Retour
           </Button>
         )}
         {step < totalSteps ? (
           <Button type="button" className="flex-1" onClick={goNext} disabled={visionLoading}>
-            Continuer<ArrowRight className="h-4 w-4 ml-1" />
+            {step === 3 && Object.keys(photos).length === 0 ? 'Continuer sans photo' : 'Continuer'}
+            <ArrowRight className="h-4 w-4 ml-1" />
           </Button>
-        ) : (
+        ) : user ? (
           <Button type="submit" className="flex-1" disabled={submitting}>
             {submitting ? (
               <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Envoi…</>
@@ -713,7 +796,7 @@ export function BuybackForm({
               <><Check className="h-4 w-4 mr-2" />{submitLabel ?? 'Envoyer ma demande'}</>
             )}
           </Button>
-        )}
+        ) : null}
       </div>
     </form>
   );
