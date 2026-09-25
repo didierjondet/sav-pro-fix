@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Helmet } from 'react-helmet-async';
 import { supabase } from '@/integrations/supabase/client';
@@ -130,6 +130,11 @@ export default function BuybackTracking() {
       </Helmet>
 
       <div className="max-w-2xl mx-auto space-y-4">
+        <div className="flex justify-end">
+          <Button variant="outline" size="sm" asChild>
+            <Link to="/mon-espace">Mon espace Fixway</Link>
+          </Button>
+        </div>
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">

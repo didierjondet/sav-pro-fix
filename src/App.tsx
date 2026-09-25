@@ -42,6 +42,7 @@ import NotFound from "./pages/NotFound";
 import ShopWebsite from "./pages/ShopWebsite";
 import ShopWebsiteSell from "./pages/ShopWebsiteSell";
 import SellDevice from "./pages/SellDevice";
+import MonEspace from "./pages/MonEspace";
 import BuybackTracking from "./pages/BuybackTracking";
 import BuybackManager from "./pages/BuybackManager";
 import Features from "./pages/Features";
@@ -155,6 +156,7 @@ const App = () => {
                 <Route path="/contact" element={<Contact />} />
                 <Route path="/partenaires" element={<PartnersDirectory />} />
                 <Route path="/vendre" element={<SellDevice />} />
+                <Route path="/mon-espace" element={<MonEspace />} />
                 <Route path="/partenaires/:slug" element={<PartnerPublicProfile />} />
                 <Route path="/shop/:slug" element={<ShopWebsite />} />
 

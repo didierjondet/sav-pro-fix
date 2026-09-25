@@ -15,6 +15,7 @@ import { useSMS } from '@/hooks/useSMS';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Sparkles, Globe2, Loader2, Euro, ImageIcon, XCircle, Eye, MessageSquare, Mail, Phone, MapPin, ShieldCheck } from 'lucide-react';
+import { BuybackMessageThread } from '@/components/buyback/BuybackMessageThread';
 
 interface OfferTarget {
   id: string;
@@ -81,14 +82,14 @@ export default function BuybackManager() {
   const offerText = () => {
     if (!target) return '';
     const device = [target.brand, target.model].filter(Boolean).join(' ') || getCategoryLabel(target.category);
-    const link = target.publicToken ? `${window.location.origin}/rachat/${target.publicToken}` : '';
+    const link = `${window.location.origin}/mon-espace`;
     return [
       `Bonjour${target.customerName ? ` ${target.customerName}` : ''},`,
       `${shop?.name ?? 'Votre magasin'} vous propose ${Number(amount || 0).toFixed(2)} € pour le rachat de votre ${device}.`,
       message.trim(),
       conditions.trim() ? `Conditions : ${conditions.trim()}` : '',
       'Offre valable 7 jours.',
-      link ? `Voir et accepter l'offre : ${link}` : '',
+      `Retrouvez et acceptez l'offre dans votre espace Fixway : ${link}`,
     ]
       .filter(Boolean)
       .join('\n');
@@ -446,9 +447,9 @@ export default function BuybackManager() {
       </Dialog>
 
       <Dialog open={!!contact} onOpenChange={(o) => !o && setContact(null)}>
-        <DialogContent className="max-w-sm">
+        <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Coordonnées du client</DialogTitle>
+            <DialogTitle>Coordonnées et messages du client</DialogTitle>
           </DialogHeader>
           {contact && (
             <div className="space-y-2 text-sm">
@@ -475,6 +476,12 @@ export default function BuybackManager() {
                   ? 'Accepte de recevoir des offres de rachat (4 par an maximum).'
                   : "N'a pas accepté de recevoir d'offres de rachat : contact uniquement pour cette cotation."}
               </p>
+            </div>
+          )}
+          {contact && shop?.id && (
+            <div className="space-y-2 pt-2 border-t">
+              <p className="text-sm font-medium flex items-center gap-2"><MessageSquare className="h-4 w-4" />Messages avec le client</p>
+              <BuybackMessageThread requestId={contact.id} shopId={shop.id} as="shop" />
             </div>
           )}
           <DialogFooter>
