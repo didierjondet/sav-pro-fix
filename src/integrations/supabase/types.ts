@@ -244,6 +244,7 @@ export type Database = {
           phone_norm: string | null
           postal_code: string | null
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           city?: string | null
@@ -258,6 +259,7 @@ export type Database = {
           phone_norm?: string | null
           postal_code?: string | null
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           city?: string | null
@@ -272,8 +274,54 @@ export type Database = {
           phone_norm?: string | null
           postal_code?: string | null
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
+      }
+      buyback_messages: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          request_id: string
+          sender: string
+          sender_user_id: string | null
+          shop_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          request_id: string
+          sender: string
+          sender_user_id?: string | null
+          shop_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          request_id?: string
+          sender?: string
+          sender_user_id?: string | null
+          shop_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "buyback_messages_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "buyback_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "buyback_messages_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       buyback_offers: {
         Row: {
@@ -4809,6 +4857,7 @@ export type Database = {
             }
             Returns: string
           }
+      buyback_attach_user: { Args: { p_bc_id: string }; Returns: undefined }
       buyback_link_shop_customer: {
         Args: { p_buyback_customer_id: string; p_shop_id: string }
         Returns: string
@@ -4909,6 +4958,7 @@ export type Database = {
         }
         Returns: string
       }
+      delete_my_buyback_account: { Args: never; Returns: undefined }
       ensure_super_admin_profile: { Args: never; Returns: undefined }
       execute_custom_widget_query: {
         Args: {
@@ -4975,6 +5025,7 @@ export type Database = {
       get_current_user_role: { Args: never; Returns: string }
       get_current_user_shop_id: { Args: never; Returns: string }
       get_default_free_plan_id: { Args: never; Returns: string }
+      get_my_buyback_account: { Args: never; Returns: Json }
       get_network_buyback_requests: {
         Args: never
         Returns: {
@@ -5260,6 +5311,10 @@ export type Database = {
         Args: { p_shop_id: string; p_status: string }
         Returns: boolean
       }
+      is_my_buyback_request: {
+        Args: { p_request_id: string }
+        Returns: boolean
+      }
       is_shop_admin: { Args: { check_user_id?: string }; Returns: boolean }
       is_super_admin: { Args: { check_user_id?: string }; Returns: boolean }
       list_ghost_reserved_parts: {
@@ -5484,6 +5539,16 @@ export type Database = {
         Returns: Json
       }
       unaccent_fallback: { Args: { input: string }; Returns: string }
+      update_my_buyback_profile: {
+        Args: {
+          p_city: string
+          p_full_name: string
+          p_marketing_consent: boolean
+          p_phone: string
+          p_postal_code: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       appointment_status:
