@@ -45,9 +45,14 @@ export default function SellDevice() {
       <LandingHeader />
 
       <div className="max-w-3xl mx-auto px-4 py-6 space-y-4">
-        <Button variant="ghost" size="sm" asChild>
-          <Link to="/"><ArrowLeft className="h-4 w-4 mr-1" />Retour</Link>
-        </Button>
+        <div className="flex items-center justify-between">
+          <Button variant="ghost" size="sm" asChild>
+            <Link to="/"><ArrowLeft className="h-4 w-4 mr-1" />Retour</Link>
+          </Button>
+          <Button variant="outline" size="sm" asChild>
+            <Link to="/mon-espace">Se connecter à mon espace</Link>
+          </Button>
+        </div>
 
         <Card>
           <CardHeader>
