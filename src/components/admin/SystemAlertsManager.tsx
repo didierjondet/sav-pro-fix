@@ -17,6 +17,7 @@ export function SystemAlertsManager() {
   const { fetchTwilioBalance } = useTwilioCredits();
   const [editingAlert, setEditingAlert] = useState<string | null>(null);
   const [formData, setFormData] = useState<any>({});
+  const [inactivityDays, setInactivityDays] = useState<number | null>(null);
 
   const smsAlert = alerts.find(alert => alert.alert_type === 'sms_credits');
   const inactivityAlert = alerts.find(alert => alert.alert_type === 'inactive_shop_cleanup');
@@ -288,8 +289,30 @@ export function SystemAlertsManager() {
               </CardHeader>
               <CardContent className="space-y-3">
                 <p className="text-sm text-muted-foreground">
-                  Lorsque cette fonctionnalité est activée, les boutiques sans aucune activité depuis {inactivityAlert.threshold_value || 60} jours sont automatiquement supprimées, après un avertissement email + SMS envoyé 7 jours avant.
+                  Lorsque cette fonctionnalité est activée, les boutiques sans aucune activité depuis {inactivityAlert.threshold_value || 90} jours sont automatiquement supprimées, après un avertissement email + SMS envoyé 7 jours avant.
                 </p>
+                <div className="flex items-end gap-2">
+                  <div className="space-y-1">
+                    <Label htmlFor="inactivity-days">Délai d'inactivité avant suppression (jours)</Label>
+                    <NumberInput
+                      id="inactivity-days"
+                      className="w-32"
+                      value={inactivityDays ?? inactivityAlert.threshold_value ?? 90}
+                      onChange={(e) => setInactivityDays(parseInt(e.target.value) || 0)}
+                    />
+                  </div>
+                  <Button
+                    size="sm"
+                    disabled={!inactivityDays || inactivityDays < 14 || inactivityDays === inactivityAlert.threshold_value}
+                    onClick={async () => {
+                      await updateAlert(inactivityAlert.id, { threshold_value: inactivityDays });
+                      setInactivityDays(null);
+                    }}
+                  >
+                    Enregistrer
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">Minimum 14 jours. 90 jours ≈ 3 mois.</p>
                 <div className="flex items-center justify-between">
                   <Label htmlFor="inactivity-toggle" className="flex flex-col">
                     <span>Activer la suppression automatique</span>

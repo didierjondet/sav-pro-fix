@@ -5,7 +5,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const INACTIVITY_DAYS = 60;
+const INACTIVITY_DAYS = 90;
 const WARNING_DAYS_BEFORE = 7;
 
 Deno.serve(async (req) => {
