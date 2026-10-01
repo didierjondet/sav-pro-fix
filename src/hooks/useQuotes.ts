@@ -102,6 +102,7 @@ export function useQuotes() {
     enabled: !!user,
     staleTime: 2 * 60 * 1000, // 2 minutes - données dynamiques
     gcTime: 10 * 60 * 1000, // 10 minutes
+    refetchOnMount: true, // toujours recharger à l'arrivée sur la page pour voir les acceptations client
   });
 
   useEffect(() => {

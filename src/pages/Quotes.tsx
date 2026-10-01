@@ -120,10 +120,12 @@ export default function Quotes() {
     // Inclure les devis acceptés (par magasin ou par client via SMS) en attente de transformation
     const isAccepted = quote.status === 'accepted' || quote.status === 'sms_accepted';
     const isNotCompleted = quote.status !== 'completed' && quote.status !== 'archived';
+    // Exclure les devis déjà transformés en SAV
+    const notConverted = !(quote as any).sav_case_id;
     const matchesSearch = quote.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          quote.quote_number.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    return isAccepted && isNotCompleted && matchesSearch;
+
+    return isAccepted && isNotCompleted && notConverted && matchesSearch;
   });
 
   const rejectedQuotes = quotes.filter(quote => 
@@ -561,6 +563,14 @@ export default function Quotes() {
         title: 'Conversion réussie',
         description: `Devis ${quoteToConvert.quote_number} converti en ${typeInfo.label}.${cleanQuote.customer_phone ? ' SMS de suivi envoyé.' : ''}`,
       });
+
+      // Lancer l'impression du devis comme pour les autres devis
+      try {
+        generateQuotePDF(cleanQuote as any, shop);
+      } catch (printError) {
+        console.error('Erreur impression du devis après conversion:', printError);
+      }
+
       setQuoteToConvert(null);
       setSelectedSAVType('');
     } catch (error: any) {

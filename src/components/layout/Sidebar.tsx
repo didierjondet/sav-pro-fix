@@ -122,10 +122,12 @@ function SidebarComponent({
     if (!inactiveStatuses.includes(q.status)) {
       acc.inProgress++;
     }
+    // Ne compter les devis acceptés que s'ils ne sont pas déjà transformés en SAV
+    const notConverted = !(q as any).sav_case_id;
     if (q.status === 'sms_accepted') {
-      acc.clientAccepted++;
+      if (notConverted) acc.clientAccepted++;
     } else if (q.status === 'accepted') {
-      acc.accepted++;
+      if (notConverted) acc.accepted++;
     } else if (q.status === 'rejected') {
       acc.rejected++;
     }
