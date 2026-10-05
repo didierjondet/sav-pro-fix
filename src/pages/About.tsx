@@ -1,6 +1,5 @@
-import { useState } from 'react';
-import Header from '@/components/layout/Header';
-import { Sidebar } from '@/components/layout/Sidebar';
+import { Link } from 'react-router-dom';
+import { LandingFooter } from '@/components/landing/LandingFooter';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { 
@@ -9,13 +8,13 @@ import {
   Award, 
   Lightbulb,
   ArrowRight,
+  ArrowLeft,
   CheckCircle,
   Smartphone,
   Building2
 } from 'lucide-react';
 
 function About() {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // SEO
   if (typeof document !== 'undefined') {
@@ -57,11 +56,17 @@ function About() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="flex h-screen">
-        <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <Header onMenuClick={() => setSidebarOpen(true)} isMobileMenuOpen={sidebarOpen} />
-          <main className="flex-1 overflow-y-auto">
+      <header className="border-b bg-card">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
+          <Link to="/" className="text-xl font-black text-foreground">
+            Fixway<span className="text-primary">Pro</span>
+          </Link>
+          <Link to="/" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+            <ArrowLeft className="h-4 w-4" /> Accueil
+          </Link>
+        </div>
+      </header>
+          <main>
             {/* Hero Section */}
             <section className="bg-gradient-to-r from-primary/10 to-secondary/10 py-16">
               <div className="max-w-7xl mx-auto px-6">
@@ -302,8 +307,7 @@ function About() {
               </div>
             </section>
           </main>
-        </div>
-      </div>
+          <LandingFooter />
     </div>
   );
 }
