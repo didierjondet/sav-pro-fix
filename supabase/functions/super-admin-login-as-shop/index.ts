@@ -110,7 +110,7 @@ Deno.serve(async (req) => {
       type: "magiclink",
       email: targetUser.user.email!,
       options: {
-        redirectTo: "https://sav-pro-fix.lovable.app/dashboard",
+        redirectTo: "https://fixway.fr/dashboard",
       },
     });
 
@@ -127,7 +127,7 @@ Deno.serve(async (req) => {
 
     // The generateLink returns properties including hashed_token
     // We need to construct the verification URL
-    const verificationUrl = `${supabaseUrl}/auth/v1/verify?token=${linkData.properties.hashed_token}&type=magiclink&redirect_to=https://sav-pro-fix.lovable.app/dashboard`;
+    const verificationUrl = `${supabaseUrl}/auth/v1/verify?token=${linkData.properties.hashed_token}&type=magiclink&redirect_to=https://fixway.fr/dashboard`;
 
     return new Response(
       JSON.stringify({
