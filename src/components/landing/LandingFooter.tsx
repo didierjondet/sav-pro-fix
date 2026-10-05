@@ -1,4 +1,5 @@
 import { Smartphone } from 'lucide-react';
+import { LEGAL_LINKS } from '@/lib/legalInfo';
 
 interface LandingFooterProps {
   onLegalClick?: (type: 'cgu_content' | 'cgv_content' | 'privacy_policy', title: string) => void;
@@ -35,34 +36,16 @@ export function LandingFooter({ onLegalClick, onAdminClick, hideLegal = false }:
         </div>
 
         {/* Legal links */}
-        {!hideLegal && (
-          <div className="flex flex-wrap justify-center gap-8 mb-12 text-sm">
-            <button 
-              onClick={() => onLegalClick?.('cgu_content', "Conditions Générales d'Utilisation")}
-              className="text-gray-400 hover:text-white transition-colors"
-            >
-              Conditions Générales d'Utilisation
-            </button>
-            <button 
-              onClick={() => onLegalClick?.('cgv_content', "Conditions Générales de Vente")}
-              className="text-gray-400 hover:text-white transition-colors"
-            >
-              Conditions Générales de Vente
-            </button>
-            <button 
-              onClick={() => onLegalClick?.('privacy_policy', "Politique de Confidentialité")}
-              className="text-gray-400 hover:text-white transition-colors"
-            >
-              Politique de Confidentialité
-            </button>
-          </div>
-        )}
-        
-        
+        <div className="flex flex-wrap justify-center gap-8 mb-12 text-sm">
+          {LEGAL_LINKS.map((l) => (
+            <a key={l.to} href={l.to} className="text-gray-400 hover:text-white transition-colors">{l.label}</a>
+          ))}
+        </div>
+
         {/* Copyright */}
         <div className="text-center border-t border-gray-800 pt-8">
           <p className="text-gray-500">
-            &copy; {new Date().getFullYear()} FixwayPro. Tous droits réservés.
+            &copy; {new Date().getFullYear()} FixwayPro, un service de SAS HAPICS. Tous droits réservés.
           </p>
           {onAdminClick && (
             <button 
