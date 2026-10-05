@@ -68,6 +68,11 @@ import MobileInventory from "./pages/MobileInventory";
 import PartnersDirectory from "./pages/PartnersDirectory";
 import PartnerPublicProfile from "./pages/PartnerPublicProfile";
 import SharedSAVList from "./pages/SharedSAVList";
+import MentionsLegales from "./pages/legal/MentionsLegales";
+import CGU from "./pages/legal/CGU";
+import CGV from "./pages/legal/CGV";
+import Confidentialite from "./pages/legal/Confidentialite";
+import Cookies from "./pages/legal/Cookies";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -154,6 +159,11 @@ const App = () => {
                 <Route path="/features" element={<Features />} />
                 <Route path="/about" element={<About />} />
                 <Route path="/contact" element={<Contact />} />
+                <Route path="/mentions-legales" element={<MentionsLegales />} />
+                <Route path="/cgu" element={<CGU />} />
+                <Route path="/cgv" element={<CGV />} />
+                <Route path="/confidentialite" element={<Confidentialite />} />
+                <Route path="/cookies" element={<Cookies />} />
                 <Route path="/partenaires" element={<PartnersDirectory />} />
                 <Route path="/vendre" element={<SellDevice />} />
                 <Route path="/mon-espace" element={<MonEspace />} />

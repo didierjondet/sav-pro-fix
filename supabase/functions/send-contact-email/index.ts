@@ -18,9 +18,8 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
     const { planName, clientEmail, clientName, message, toEmail } = await req.json();
 
-    if (!toEmail) {
-      throw new Error("toEmail manquant");
-    }
+    // Destinataire fixé côté serveur (le paramètre toEmail fourni est ignoré)
+    void toEmail;
 
     const html = `
       <h1>Nouvelle demande de contact</h1>
@@ -34,7 +33,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
     // Délégation à send-app-email (qui gère le routage Brevo / Resend / fallback)
     const { data, error } = await supabaseClient.functions.invoke('send-app-email', {
       body: {
-        to: toEmail,
+        to: 'dpmockup@gmail.com',
         subject: `Demande de contact pour le plan ${planName || ''}`.trim(),
         html,
         context: 'contact_form',

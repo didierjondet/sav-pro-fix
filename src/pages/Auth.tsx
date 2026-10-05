@@ -319,6 +319,9 @@ export default function Auth() {
           </Tabs>
         </CardContent>
       </Card>
+      <p className="mt-4 text-center text-xs text-muted-foreground">
+        En continuant, vous acceptez les <a href="/cgu" className="underline">conditions d'utilisation</a> et la <a href="/confidentialite" className="underline">politique de confidentialité</a>.
+      </p>
       </div>
       <ProspectDialog
         isOpen={prospectDialogOpen}
