@@ -9,6 +9,13 @@ export function getAuthBaseUrl(): string {
   return AUTH_BASE_URL;
 }
 
+/** Vrai si la page tourne sur un domaine Lovable (aperçu, sous-domaine technique). */
+export function isLovableHost(): boolean {
+  if (typeof window === 'undefined') return false;
+  const h = window.location.hostname;
+  return /(^|\.)lovable\.(app|dev)$/.test(h) || h.endsWith('lovableproject.com');
+}
+
 /** Construit une URL de retour sûre ; seuls les chemins internes sont acceptés. */
 export function authRedirectUrl(path: string): string {
   const safe = path.startsWith('/') && !path.startsWith('//') ? path : '/';
