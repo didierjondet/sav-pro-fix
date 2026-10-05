@@ -1,4 +1,4 @@
-import { authRedirectUrl } from '@/lib/authRedirect';
+import { authRedirectUrl, isLovableHost } from '@/lib/authRedirect';
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -38,6 +38,10 @@ export function ParticulierAuthPanel({ returnPath, beforeRedirect, defaultTab = 
   const redirectUrl = authRedirectUrl(returnPath);
 
   const google = async () => {
+    if (isLovableHost()) {
+      window.location.href = authRedirectUrl(returnPath);
+      return;
+    }
     setLoading(true);
     try {
       await beforeRedirect?.();
@@ -120,7 +124,7 @@ export function ParticulierAuthPanel({ returnPath, beforeRedirect, defaultTab = 
   return (
     <div className="space-y-4">
       <Button type="button" variant="outline" className="w-full" onClick={google} disabled={loading}>
-        <GoogleIcon />Continuer avec Google
+        <GoogleIcon />{isLovableHost() ? 'Continuer avec Google sur fixway.fr' : 'Continuer avec Google'}
       </Button>
       <div className="flex items-center gap-3 text-xs text-muted-foreground">
         <div className="h-px flex-1 bg-border" />ou<div className="h-px flex-1 bg-border" />
