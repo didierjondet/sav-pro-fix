@@ -89,7 +89,8 @@ Deno.serve(async (req: Request): Promise<Response> => {
     }
 
     // Create signup URL with invitation token
-    const baseUrl = req.headers.get('origin') || 'https://fixway.fr';
+    const reqOrigin = req.headers.get('origin') || '';
+    const baseUrl = /^https://(www.)?(fixway.fr|logicielsav.com)$/.test(reqOrigin) ? reqOrigin : 'https://fixway.fr';
     const signupUrl = `${baseUrl}/auth?invite_token=${inviteData.invite_token}&email=${encodeURIComponent(email)}`;
 
     // Récupérer le nom de l'inviteur pour personnaliser l'email
