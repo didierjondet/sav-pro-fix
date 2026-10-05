@@ -150,6 +150,9 @@ export function ParticulierAuthPanel({ returnPath, beforeRedirect, defaultTab = 
           </button>
         </TabsContent>
       </Tabs>
+      <p className="text-xs text-muted-foreground">
+        En créant un compte, vous acceptez les <a href="/cgu" target="_blank" rel="noreferrer" className="underline">conditions d'utilisation</a> et la <a href="/confidentialite" target="_blank" rel="noreferrer" className="underline">politique de confidentialité</a>.
+      </p>
     </div>
   );
 }
