@@ -1,3 +1,4 @@
+import { authRedirectUrl } from '@/lib/authRedirect';
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -95,7 +96,7 @@ export default function Auth() {
     const {
       error
     } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`
+      redirectTo: authRedirectUrl('/reset-password')
     });
     if (error) {
       toast({
@@ -126,7 +127,7 @@ export default function Auth() {
       type: 'signup',
       email: email,
       options: {
-        emailRedirectTo: 'https://sav-pro-fix.lovable.app/auth'
+        emailRedirectTo: authRedirectUrl('/auth')
       }
     });
     if (error) {
@@ -150,7 +151,7 @@ export default function Auth() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`
+        redirectTo: authRedirectUrl('/auth/callback')
       }
     });
 

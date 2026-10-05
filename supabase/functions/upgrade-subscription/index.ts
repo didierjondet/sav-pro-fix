@@ -81,7 +81,7 @@ Deno.serve(async (req) => {
       limit: 1,
     });
 
-    const origin = req.headers.get("origin") || "https://sav-pro-fix.lovable.app";
+    const origin = req.headers.get("origin") || "https://fixway.fr";
 
     if (subscriptions.data.length === 0) {
       // Pas d'abonnement - créer nouveau checkout

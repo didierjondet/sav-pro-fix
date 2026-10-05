@@ -1,3 +1,4 @@
+import { authRedirectUrl } from '@/lib/authRedirect';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -129,7 +130,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       email,
       password,
       options: {
-        emailRedirectTo: 'https://sav-pro-fix.lovable.app/'
+        emailRedirectTo: authRedirectUrl('/auth/callback')
       }
     });
     return { error };

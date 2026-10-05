@@ -1,3 +1,4 @@
+import { authRedirectUrl } from '@/lib/authRedirect';
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -34,7 +35,7 @@ export function ParticulierAuthPanel({ returnPath, beforeRedirect, defaultTab = 
   const [loading, setLoading] = useState(false);
   const [info, setInfo] = useState('');
 
-  const redirectUrl = `${window.location.origin}${returnPath}`;
+  const redirectUrl = authRedirectUrl(returnPath);
 
   const google = async () => {
     setLoading(true);
@@ -93,7 +94,7 @@ export function ParticulierAuthPanel({ returnPath, beforeRedirect, defaultTab = 
       return;
     }
     const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-      redirectTo: `${window.location.origin}/reset-password`,
+      redirectTo: authRedirectUrl('/reset-password'),
     });
     if (error) toast({ title: 'Envoi impossible', description: error.message, variant: 'destructive' });
     else setInfo('Un e-mail pour choisir un nouveau mot de passe vient de vous être envoyé.');
