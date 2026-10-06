@@ -33,7 +33,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
     // Délégation à send-app-email (qui gère le routage Brevo / Resend / fallback)
     const { data, error } = await supabaseClient.functions.invoke('send-app-email', {
       body: {
-        to: 'dpmockup@gmail.com',
+        to: 'fixwaypro@gmail.com',
         subject: `Demande de contact pour le plan ${planName || ''}`.trim(),
         html,
         context: 'contact_form',
