@@ -10,7 +10,7 @@ export const LEGAL = {
   vat: 'FR54803138577',
   ape: '58.29A (Édition de logiciels système et de réseau)',
   director: 'Christophe Jondet',
-  email: 'dpmockup@gmail.com',
+  email: 'fixwaypro@gmail.com',
   site: 'https://fixway.fr',
   updatedAt: '6 octobre 2026',
 } as const;

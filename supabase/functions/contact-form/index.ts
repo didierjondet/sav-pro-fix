@@ -7,7 +7,7 @@ const corsHeaders = {
 };
 
 // Destinataire fixé côté serveur : le formulaire ne peut écrire qu'à Fixway.
-const CONTACT_TO = 'dpmockup@gmail.com';
+const CONTACT_TO = 'fixwaypro@gmail.com';
 
 const Body = z.object({
   name: z.string().trim().min(1).max(100),
