@@ -1,4 +1,7 @@
 import { useState, useEffect } from 'react';
+import { ControllerTestDialog } from '@/components/sav/controller/ControllerTestDialog';
+import type { ControllerReport } from '@/lib/controllerTest';
+import { Gamepad2 } from 'lucide-react';
 import React from 'react';
 import { multiWordSearch } from '@/utils/searchUtils';
 import { Button } from '@/components/ui/button';
