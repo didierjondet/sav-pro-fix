@@ -1,1 +1,0 @@
-ALTER TABLE public.sav_cases ADD COLUMN IF NOT EXISTS controller_test jsonb;
