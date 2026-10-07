@@ -2487,6 +2487,7 @@ export type Database = {
           attachments: Json | null
           case_number: string
           closure_history: Json | null
+          controller_test: Json | null
           created_at: string
           customer_id: string | null
           deposit_amount: number | null
@@ -2528,6 +2529,7 @@ export type Database = {
           attachments?: Json | null
           case_number: string
           closure_history?: Json | null
+          controller_test?: Json | null
           created_at?: string
           customer_id?: string | null
           deposit_amount?: number | null
@@ -2569,6 +2571,7 @@ export type Database = {
           attachments?: Json | null
           case_number?: string
           closure_history?: Json | null
+          controller_test?: Json | null
           created_at?: string
           customer_id?: string | null
           deposit_amount?: number | null
