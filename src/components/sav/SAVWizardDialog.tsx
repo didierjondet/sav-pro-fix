@@ -1,4 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
+import { ControllerTestDialog } from '@/components/sav/controller/ControllerTestDialog';
+import type { ControllerReport } from '@/lib/controllerTest';
+import { Gamepad2 } from 'lucide-react';
 import React from 'react';
 import { multiWordSearch } from '@/utils/searchUtils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -110,6 +113,8 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
 
   const [currentStep, setCurrentStep] = useState(0);
   const [savType, setSavType] = useState(defaultType);
+  const [controllerOpen, setControllerOpen] = useState(false);
+  const [controllerReport, setControllerReport] = useState<ControllerReport | null>(null);
   const [selectedStatus, setSelectedStatus] = useState(defaultStatus);
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({
@@ -335,6 +340,7 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
         device_imei: deviceInfo.imei || null, device_color: deviceInfo.color || null,
         device_grade: deviceInfo.grade || null, sku: deviceInfo.sku || null,
         problem_description: deviceInfo.problemDescription,
+        ...(controllerReport ? { controller_test: controllerReport } : {}),
         total_time_minutes: 0, total_cost: finalCost, deposit_amount: depositAmount,
         status: selectedStatus as any, shop_id: profile?.shop_id,
         attachments: deviceInfo.attachments || [], accessories,
@@ -588,6 +594,17 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
                   ))}
                 </SelectContent>
               </Select>
+              <Button type="button" variant="outline" size="sm" className="mt-2" onClick={() => setControllerOpen(true)}>
+                <Gamepad2 className="h-4 w-4 mr-1" /> {controllerReport ? 'Refaire le test manette' : 'Tester une manette'}
+              </Button>
+              <ControllerTestDialog
+                open={controllerOpen}
+                onOpenChange={setControllerOpen}
+                onComplete={(r) => {
+                  setControllerReport(r.report);
+                  setDeviceInfo((d) => ({ ...d, brand: r.brand || d.brand, model: r.model || d.model, problemDescription: r.problemDescription }));
+                }}
+              />
             </div>
             <div>
               <Label className="text-sm font-medium">Statut initial</Label>

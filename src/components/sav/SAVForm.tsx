@@ -1,4 +1,7 @@
 import { useState, useEffect } from 'react';
+import { ControllerTestDialog } from '@/components/sav/controller/ControllerTestDialog';
+import type { ControllerReport } from '@/lib/controllerTest';
+import { Gamepad2 } from 'lucide-react';
 import React from 'react';
 import { multiWordSearch } from '@/utils/searchUtils';
 import { Button } from '@/components/ui/button';
@@ -90,6 +93,8 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
   const defaultStatus = getAllStatuses()[0]?.value || 'pending';
   
   const [savType, setSavType] = useState<string>(defaultType);
+  const [controllerOpen, setControllerOpen] = useState(false);
+  const [controllerReport, setControllerReport] = useState<ControllerReport | null>(null);
   
   // Obtenir les paramètres du type SAV sélectionné
   const currentTypeInfo = getTypeInfo(savType);
@@ -317,6 +322,7 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
         device_grade: deviceInfo.grade || null,
         sku: deviceInfo.sku || null,
         problem_description: deviceInfo.problemDescription,
+        ...(controllerReport ? { controller_test: controllerReport } : {}),
         total_time_minutes: totalTimeMinutes,
         total_cost: totalCost,
         deposit_amount: depositAmount,
@@ -559,6 +565,17 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
                   ))}
                 </SelectContent>
               </Select>
+              <Button type="button" variant="outline" size="sm" className="mt-2" onClick={() => setControllerOpen(true)}>
+                <Gamepad2 className="h-4 w-4 mr-1" /> {controllerReport ? 'Refaire le test manette' : 'Tester une manette'}
+              </Button>
+              <ControllerTestDialog
+                open={controllerOpen}
+                onOpenChange={setControllerOpen}
+                onComplete={(r) => {
+                  setControllerReport(r.report);
+                  setDeviceInfo((d) => ({ ...d, brand: r.brand || d.brand, model: r.model || d.model, problemDescription: r.problemDescription }));
+                }}
+              />
             </div>
             
             <div>
