@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { buildControllerSummary, computeDrift, detectModel, evaluateStick, type ControllerReport } from '../src/lib/controllerTest';
+import { buildControllerSummary, buildUntestedList, computeDrift, detectModel, evaluateStick, type ControllerReport } from '../src/lib/controllerTest';
 
 const base = (): ControllerReport => ({
   model: 'xbox', gamepadId: 'Xbox (045e)', tested_at: '',
@@ -21,6 +21,11 @@ describe('test manette', () => {
     const s = buildControllerSummary(base());
     expect(s).toContain('Bouton X ne répond pas');
     expect(s).toContain('Joystick gauche : dérive de 12 % vers le haut');
+  });
+  test('bouton non appuyé = non testé, pas une panne', () => {
+    const r = base(); r.buttons.north = 'untested';
+    expect(buildControllerSummary(r)).not.toContain('Bouton Y ne répond pas');
+    expect(buildUntestedList(r)).toContain('Bouton Y');
   });
   test('détection modèle', () => {
     expect(detectModel('DualSense Wireless Controller (Vendor: 054c Product: 0ce6)')).toBe('ps5');
