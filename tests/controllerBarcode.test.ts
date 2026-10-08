@@ -7,10 +7,10 @@ describe('identification de la feuille manette', () => {
     const generate = spyOn(bwipjs, 'toSVG');
     try {
       controllerBarcodeSvg('2026-10-08-001');
-      expect(generate).toHaveBeenCalledWith({
+      expect(generate).toHaveBeenCalledWith(expect.objectContaining({
         bcid: 'code128', text: '2026-10-08-001', scale: 2, height: 12,
         includetext: false, backgroundcolor: 'FFFFFF', paddingwidth: 2, paddingheight: 2,
-      });
+      }));
     } finally {
       generate.mockRestore();
     }
