@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { renderToStaticMarkup } from 'react-dom/server';
+import { printControllerSheet, stickTrailSvg } from '@/lib/controllerPrint';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -11,7 +11,7 @@ import { Gamepad2, Printer, Check } from 'lucide-react';
 import { ControllerDiagram } from './ControllerDiagram';
 import {
   type ControllerModel, type ControllerReport, type ItemStatus,
-  buttonsForModel, buildControllerSummary, computeDrift, detectModel, evaluateStick,
+  buttonsForModel, buildControllerSummary, buildUntestedList, compactTrail, computeDrift, detectModel, evaluateStick,
   MANUAL_CHECKS, MODEL_LABELS, TRIGGER_MIN_TRAVEL, buttonLabel, summaryToText,
 } from '@/lib/controllerTest';
 
@@ -137,10 +137,11 @@ export function ControllerTestDialog({ open, onOpenChange, onComplete }: Props) 
   const report: ControllerReport = useMemo(() => {
     const btn: Record<string, ItemStatus> = {};
     list.forEach((b) => { if (b.key !== 'l2' && b.key !== 'r2') btn[b.key] = buttons[b.key] ?? 'untested'; });
-    const trig = (k: 'l2' | 'r2') => ({ max: triggers[k], status: triggerOverride[k] ?? (triggers[k] >= TRIGGER_MIN_TRAVEL ? 'ok' : 'defect') as ItemStatus });
+    const trig = (k: 'l2' | 'r2') => ({ max: triggers[k], status: triggerOverride[k] ?? (triggers[k] < 0.05 ? 'untested' : triggers[k] >= TRIGGER_MIN_TRAVEL ? 'ok' : 'defect') as ItemStatus });
     const stick = (k: 'left' | 'right') => {
       const d = drift?.[k] ?? { driftX: 0, driftY: 0 };
-      return { ...d, maxRadius: Math.min(1, maxR[k]), status: stickOverride[k] ?? evaluateStick(d, maxR[k]) };
+      const auto: ItemStatus = !drift && maxR[k] < 0.3 ? 'untested' : evaluateStick(d, drift ? maxR[k] : 1);
+      return { ...d, maxRadius: Math.min(1, maxR[k]), status: stickOverride[k] ?? auto, trail: compactTrail(trail.current[k]) };
     };
     const man: Record<string, { status: ItemStatus; note?: string }> = {};
     MANUAL_CHECKS[model].forEach((m) => { man[m] = manual[m] ?? { status: 'untested' }; });
@@ -152,27 +153,13 @@ export function ControllerTestDialog({ open, onOpenChange, onComplete }: Props) 
   }, [list, buttons, triggers, triggerOverride, drift, maxR, stickOverride, model, manual, vibration, notes, padId]);
 
   const summary = useMemo(() => buildControllerSummary(report), [report]);
+  const untested = useMemo(() => buildUntestedList(report), [report]);
   const diagramStatuses = useMemo(() => ({
     ...report.buttons, l2: report.triggers.l2.status, r2: report.triggers.r2.status,
     stick_left: report.sticks.left.status, stick_right: report.sticks.right.status,
   }), [report]);
 
-  const print = () => {
-    const svg = renderToStaticMarkup(<ControllerDiagram model={model} statuses={diagramStatuses} />)
-      .split('hsl(var(--destructive))').join('#dc2626').split('hsl(var(--primary) / 0.25)').join('#bbf7d0')
-      .split('hsl(var(--warning, 38 92% 50%))').join('#f59e0b').split('hsl(var(--muted))').join('#e5e7eb')
-      .split('hsl(var(--card))').join('#fff').split('hsl(var(--border))').join('#999')
-      .split('hsl(var(--foreground) / 0.4)').join('#555').split('hsl(var(--foreground))').join('#111');
-    const esc = (s: string) => s.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]!));
-    const html = `<!doctype html><html><head><meta charset="utf-8"><title>Test manette</title><style>body{font-family:sans-serif;font-size:12px;margin:16mm}h1{font-size:16px}svg{width:100%;max-width:520px}li{margin:2px 0}.leg span{display:inline-block;width:10px;height:10px;margin:0 4px 0 12px}</style></head><body>
-<h1>Rapport de test manette — ${esc(MODEL_LABELS[model].brand)} ${esc(MODEL_LABELS[model].model)}</h1>
-<p>${new Date().toLocaleString('fr-FR')}</p>${svg}
-<p class="leg"><span style="background:#dc2626"></span>Défaut<span style="background:#f59e0b"></span>Intermittent<span style="background:#bbf7d0"></span>OK<span style="background:#e5e7eb"></span>Non testé</p>
-<h2 style="font-size:14px">Pannes constatées</h2><ul>${summary.length ? summary.map((s) => `<li>${esc(s)}</li>`).join('') : '<li>Aucun défaut détecté</li>'}</ul>
-${notes ? `<p><b>Note :</b> ${esc(notes)}</p>` : ''}<script>window.onload=()=>window.print()</script></body></html>`;
-    const w = window.open(URL.createObjectURL(new Blob([html], { type: 'text/html' })), '_blank');
-    if (!w) alert('Autorisez les fenêtres pop-up pour imprimer.');
-  };
+  const print = () => printControllerSheet(report);
 
   const finish = () => {
     onComplete({
@@ -317,6 +304,19 @@ ${notes ? `<p><b>Note :</b> ${esc(notes)}</p>` : ''}<script>window.onload=()=>wi
               {summary.length ? (
                 <ul className="list-disc pl-5 text-sm space-y-1">{summary.map((s) => <li key={s}>{s}</li>)}</ul>
               ) : <p className="text-sm text-muted-foreground">Aucun défaut détecté.</p>}
+              <h3 className="font-medium">Fonctions non testées</h3>
+              {untested.length ? (
+                <ul className="list-disc pl-5 text-sm space-y-1 text-muted-foreground">{untested.map((s) => <li key={s}>{s}</li>)}</ul>
+              ) : <p className="text-sm text-muted-foreground">Tout a été testé.</p>}
+              <h3 className="font-medium">Débattement des joysticks</h3>
+              <div className="flex gap-4 flex-wrap">
+                {(['left', 'right'] as const).map((k) => (
+                  <div key={k} className="text-center text-xs text-muted-foreground">
+                    <div dangerouslySetInnerHTML={{ __html: stickTrailSvg(report.sticks[k].trail, { x: report.sticks[k].driftX, y: report.sticks[k].driftY }, { bg: 'hsl(var(--muted))', border: 'hsl(var(--border))', line: 'hsl(var(--primary))', dot: 'hsl(var(--destructive))' }) }} />
+                    {k === 'left' ? 'Gauche' : 'Droit'}
+                  </div>
+                ))}
+              </div>
               <div>
                 <Label>Remarque de l'opérateur</Label>
                 <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} />

@@ -18,12 +18,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { QrCode, ExternalLink, ArrowLeft, Copy, Share, Save, Lock, User, Mail, Phone, MapPin, CheckCircle, X, MessageSquare, Edit, Clock, CalendarPlus, ScrollText, AlertCircle } from 'lucide-react';
+import { Printer } from 'lucide-react';
 import { SMSButton } from '@/components/sav/SMSButton';
 import { ProblemDescriptionDisplay } from '@/components/sav/ProblemDescriptionHighlight';
 import { useNavigate } from 'react-router-dom';
 import { SAVPartsEditor } from '@/components/sav/SAVPartsEditor';
 import { SAVPartsRequirements } from '@/components/sav/SAVPartsRequirements';
 import { SAVPrintButton } from '@/components/sav/SAVPrint';
+import { printControllerSheet } from '@/lib/controllerPrint';
 import { ReviewRequestButton } from '@/components/sav/ReviewRequestButton';
 import { SAVDocuments } from '@/components/sav/SAVDocuments';
 import { PatternLock } from '@/components/sav/PatternLock';
@@ -893,6 +895,11 @@ export default function SAVDetail() {
                     Imprimez le récapitulatif du dossier (à remettre au client lors du dépôt).
                   </p>
                   <SAVPrintButton savCase={savCase} />
+{(savCase as any).controller_test && (
+  <Button variant="outline" size="sm" onClick={() => printControllerSheet((savCase as any).controller_test, { caseNumber: savCase.case_number, trackingSlug: savCase.tracking_slug, imei: savCase.device_imei, sku: savCase.sku })}>
+    <Printer className="h-4 w-4 mr-2" /> Feuille test manette
+  </Button>
+)}
                 </CardContent>
               </Card>
 
@@ -1536,6 +1543,11 @@ export default function SAVDetail() {
                   Imprimez le récapitulatif du dossier (à remettre au client lors du dépôt).
                 </p>
                 <SAVPrintButton savCase={savCase} />
+{(savCase as any).controller_test && (
+  <Button variant="outline" size="sm" onClick={() => printControllerSheet((savCase as any).controller_test, { caseNumber: savCase.case_number, trackingSlug: savCase.tracking_slug, imei: savCase.device_imei, sku: savCase.sku })}>
+    <Printer className="h-4 w-4 mr-2" /> Feuille test manette
+  </Button>
+)}
               </CardContent>
             </Card>
 

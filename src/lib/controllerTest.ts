@@ -74,6 +74,16 @@ export interface StickResult {
   driftY: number;
   maxRadius: number; // rayon max atteint 0..1+
   status: ItemStatus;
+  trail?: [number, number][]; // débattement parcouru (échantillonné)
+}
+
+/** Réduit un tracé à ~max points arrondis à 2 décimales (stockage léger). */
+export function compactTrail(points: { x: number; y: number }[], max = 120): [number, number][] {
+  if (points.length === 0) return [];
+  const step = Math.max(1, Math.ceil(points.length / max));
+  const out: [number, number][] = [];
+  for (let i = 0; i < points.length; i += step) out.push([Math.round(points[i].x * 100) / 100, Math.round(points[i].y * 100) / 100]);
+  return out;
 }
 
 export function computeDrift(samples: { x: number; y: number }[]) {
@@ -113,7 +123,7 @@ export function buildControllerSummary(r: ControllerReport): string[] {
   const out: string[] = [];
   for (const [key, st] of Object.entries(r.buttons)) {
     if (key === 'l2' || key === 'r2') continue;
-    if (st === 'defect' || st === 'untested') out.push(`Bouton ${buttonLabel(r.model, key)} ne répond pas`);
+    if (st === 'defect') out.push(`Bouton ${buttonLabel(r.model, key)} ne répond pas`);
     else if (st === 'intermittent') out.push(`Bouton ${buttonLabel(r.model, key)} intermittent`);
   }
   (['l2', 'r2'] as const).forEach((k) => {
@@ -124,6 +134,7 @@ export function buildControllerSummary(r: ControllerReport): string[] {
   (['left', 'right'] as const).forEach((k) => {
     const s = r.sticks[k];
     const name = k === 'left' ? 'Joystick gauche' : 'Joystick droit';
+    if (s.status === 'untested') return;
     const mag = Math.hypot(s.driftX, s.driftY);
     if (mag >= DRIFT_THRESHOLD) out.push(`${name} : dérive de ${Math.round(mag * 100)} % vers ${driftDirection(s.driftX, s.driftY)}`);
     if (s.maxRadius < 0.9) out.push(`${name} : amplitude limitée (${Math.round(s.maxRadius * 100)} %)`);
@@ -140,9 +151,25 @@ export function buildControllerSummary(r: ControllerReport): string[] {
   return out;
 }
 
+/** Fonctions laissées sans test (distinctes des pannes). */
+export function buildUntestedList(r: ControllerReport): string[] {
+  const out: string[] = [];
+  for (const [key, st] of Object.entries(r.buttons)) {
+    if (key === 'l2' || key === 'r2') continue;
+    if (st === 'untested') out.push(`Bouton ${buttonLabel(r.model, key)}`);
+  }
+  (['l2', 'r2'] as const).forEach((k) => { if (r.triggers[k].status === 'untested') out.push(`Gâchette ${buttonLabel(r.model, k)}`); });
+  (['left', 'right'] as const).forEach((k) => { if (r.sticks[k].status === 'untested') out.push(k === 'left' ? 'Joystick gauche' : 'Joystick droit'); });
+  if (r.vibration === 'untested') out.push('Vibrations');
+  for (const [label, m] of Object.entries(r.manual)) if (m.status === 'untested') out.push(label);
+  return out;
+}
+
 export function summaryToText(r: ControllerReport): string {
   const lines = buildControllerSummary(r);
   const head = 'Test manette effectué :';
   const body = lines.length ? lines.map((l) => `- ${l}`).join('\n') : '- Aucun défaut détecté lors des tests';
-  return `${head}\n${body}${r.notes ? `\nNote : ${r.notes}` : ''}`;
+  const untested = buildUntestedList(r);
+  const nt = untested.length ? `\nNon testé : ${untested.join(', ')}` : '';
+  return `${head}\n${body}${nt}${r.notes ? `\nNote : ${r.notes}` : ''}`;
 }
