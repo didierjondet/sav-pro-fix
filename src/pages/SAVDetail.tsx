@@ -28,7 +28,7 @@ import { ReviewRequestButton } from '@/components/sav/ReviewRequestButton';
 import { SAVDocuments } from '@/components/sav/SAVDocuments';
 import { PatternLock } from '@/components/sav/PatternLock';
 import { SecurityCodesDisplay } from '@/components/sav/SecurityCodesDisplay';
-import { generateShortTrackingUrl } from '@/utils/trackingUtils';
+import { getPublicAppOrigin } from '@/utils/trackingUtils';
 import { generateSAVRestitutionPDF } from '@/utils/pdfGenerator';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -215,7 +215,7 @@ export default function SAVDetail() {
   }, [id]);
   const generateTrackingUrl = () => {
     if (!savCase?.tracking_slug) return '';
-    return generateShortTrackingUrl(savCase.tracking_slug);
+    return `${getPublicAppOrigin()}/track/${savCase.tracking_slug}`;
   };
   const generateQRCode = async () => {
     const url = generateTrackingUrl();
@@ -711,10 +711,6 @@ export default function SAVDetail() {
                     onBlur={() => { if (technicianComments !== lastSavedTechRef.current) saveTechnicianComments({ silent: true }); }}
                     rows={4}
                   />
-                  <Button onClick={() => saveTechnicianComments()} disabled={savingTechnicianComments} size="sm" variant="outline">
-                    <Save className="h-4 w-4 mr-2" />
-                    {savingTechnicianComments ? 'Sauvegarde...' : 'Enregistrer maintenant'}
-                  </Button>
                 </CardContent>
               </Card>
 
@@ -749,10 +745,6 @@ export default function SAVDetail() {
                     onBlur={() => { if (privateComments !== lastSavedPrivRef.current) savePrivateComments({ silent: true }); }}
                     rows={4}
                   />
-                  <Button onClick={() => savePrivateComments()} disabled={savingComments} size="sm" variant="outline">
-                    <Save className="h-4 w-4 mr-2" />
-                    {savingComments ? 'Sauvegarde...' : 'Enregistrer maintenant'}
-                  </Button>
                 </CardContent>
               </Card>
 
@@ -1359,10 +1351,6 @@ export default function SAVDetail() {
                     rows={4}
                   />
                 </div>
-                <Button onClick={() => saveTechnicianComments()} disabled={savingTechnicianComments} size="sm" variant="outline">
-                  <Save className="h-4 w-4 mr-2" />
-                  {savingTechnicianComments ? 'Sauvegarde...' : 'Enregistrer maintenant'}
-                </Button>
               </CardContent>
             </Card>
 
@@ -1399,10 +1387,6 @@ export default function SAVDetail() {
                     rows={4}
                   />
                 </div>
-                <Button onClick={() => savePrivateComments()} disabled={savingComments} size="sm" variant="outline">
-                  <Save className="h-4 w-4 mr-2" />
-                  {savingComments ? 'Sauvegarde...' : 'Enregistrer maintenant'}
-                </Button>
               </CardContent>
             </Card>
 

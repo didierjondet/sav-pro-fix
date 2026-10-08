@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { generateShortTrackingUrl, generateFullTrackingUrl } from '@/utils/trackingUtils';
@@ -32,6 +32,7 @@ interface SAVStatusManagerProps {
     taken_over?: boolean;
     partial_takeover?: boolean;
     takeover_amount?: number;
+    private_comments?: string;
     shop_id: string;
     customer?: {
       first_name: string;
@@ -45,7 +46,21 @@ interface SAVStatusManagerProps {
 
 export function SAVStatusManager({ savCase, onStatusUpdated }: SAVStatusManagerProps) {
   const [selectedStatus, setSelectedStatus] = useState(savCase.status);
-  const [notes, setNotes] = useState('');
+  const [notes, setNotes] = useState(savCase.private_comments || '');
+  const lastSavedNotesRef = useRef(savCase.private_comments || '');
+  const lastSavedTakeoverRef = useRef(`${savCase.taken_over || false}|${savCase.partial_takeover || false}|${savCase.takeover_amount || 0}`);
+  const [notesState, setNotesState] = useState<'idle' | 'dirty' | 'saving' | 'saved' | 'error'>('idle');
+  const [notesSavedAt, setNotesSavedAt] = useState<Date | null>(null);
+
+  const saveNotes = async () => {
+    const value = notes;
+    if (value === lastSavedNotesRef.current) return;
+    setNotesState('saving');
+    const { error } = await supabase.from('sav_cases').update({ private_comments: value }).eq('id', savCase.id);
+    if (error) { setNotesState('error'); return; }
+    lastSavedNotesRef.current = value;
+    setNotesState('saved'); setNotesSavedAt(new Date());
+  };
   const [updating, setUpdating] = useState(false);
   
   // États pour la prise en charge
@@ -73,12 +88,12 @@ export function SAVStatusManager({ savCase, onStatusUpdated }: SAVStatusManagerP
 
   const handleUpdateStatus = async (sendSMS = false) => {
     // Logique normale pour les changements de statut (sauf passage à "ready")
-    if (selectedStatus === savCase.status && !notes.trim()) return;
+    if (selectedStatus === savCase.status) return;
     
     setUpdating(true);
     
     try {
-      await updateCaseStatus(savCase.id, selectedStatus as any, notes.trim() || undefined);
+      await updateCaseStatus(savCase.id, selectedStatus as any, undefined);
       
       toast({
         title: "Statut mis à jour",
@@ -91,7 +106,6 @@ export function SAVStatusManager({ savCase, onStatusUpdated }: SAVStatusManagerP
         await sendAutomaticReviewRequest();
       }
       
-      setNotes('');
       onStatusUpdated?.();
     } catch (error: any) {
       toast({
@@ -109,7 +123,7 @@ export function SAVStatusManager({ savCase, onStatusUpdated }: SAVStatusManagerP
     setUpdating(true);
     
     try {
-      await updateCaseStatus(savCase.id, finalStatus as any, notes.trim() || undefined);
+      await updateCaseStatus(savCase.id, finalStatus as any, undefined);
       
       // Envoi automatique de demande d'avis si c'est activé et que le type nécessite des infos client
       const typeInfo = getTypeInfo(savCase.sav_type);
@@ -117,7 +131,6 @@ export function SAVStatusManager({ savCase, onStatusUpdated }: SAVStatusManagerP
         await sendAutomaticReviewRequest();
       }
       
-      setNotes('');
       setSelectedStatus(finalStatus);
       onStatusUpdated?.();
     } catch (error: any) {
@@ -219,7 +232,7 @@ L'équipe ${shopData.name || 'de réparation'}`;
   };
 
   const handleStatusChangeRequest = async () => {
-    if (selectedStatus === savCase.status && !notes.trim()) return;
+    if (selectedStatus === savCase.status) return;
     
     // Vérifier si c'est un statut "prêt" avec les statuts personnalisés
     if (isReadyStatus(selectedStatus) && !isReadyStatus(savCase.status)) {
@@ -232,17 +245,12 @@ L'équipe ${shopData.name || 'de réparation'}`;
   };
 
   // Fonction pour mettre à jour la prise en charge
-  const updateTakeover = async () => {
+  const updateTakeover = async (silent = false) => {
     if (savCase.sav_type === 'internal') return;
     
     // Validation: notes privées obligatoires si prise en charge appliquée
     const numericTakeoverAmount = fullTakeover ? savCase.total_cost : (partialTakeover ? parseFloat(takeoverAmount) || 0 : 0);
     if ((partialTakeover || fullTakeover) && numericTakeoverAmount > 0 && !notes.trim()) {
-      toast({
-        title: "Notes privées requises",
-        description: "Veuillez ajouter des notes privées pour justifier la prise en charge",
-        variant: "destructive",
-      });
       return;
     }
     
@@ -252,17 +260,13 @@ L'équipe ${shopData.name || 'de réparation'}`;
       const previousTakenOver = savCase.taken_over || false;
       const newTakeoverAmount = fullTakeover ? savCase.total_cost : (partialTakeover ? numericTakeoverAmount : 0);
       
-      // Mise à jour des données du SAV avec les notes privées
       const updateData: any = {
         taken_over: fullTakeover,
         partial_takeover: partialTakeover,
-        takeover_amount: newTakeoverAmount
+        takeover_amount: newTakeoverAmount,
+        private_comments: notes,
       };
-      
-      // Ajouter les notes privées si elles existent ou si une prise en charge est appliquée
-      if (notes.trim() || ((partialTakeover || fullTakeover) && numericTakeoverAmount > 0)) {
-        updateData.private_comments = notes;
-      }
+      lastSavedNotesRef.current = notes;
       
       const { error } = await supabase
         .from('sav_cases')
@@ -313,10 +317,11 @@ L'équipe ${shopData.name || 'de réparation'}`;
           }]);
       }
 
-      toast({
+      if (!silent) toast({
         title: "Succès",
         description: "Prise en charge mise à jour avec succès",
       });
+      setNotesState('saved'); setNotesSavedAt(new Date());
 
       onStatusUpdated?.();
     } catch (error: any) {
@@ -330,10 +335,31 @@ L'équipe ${shopData.name || 'de réparation'}`;
     }
   };
 
-  const hasChanges = selectedStatus !== savCase.status || notes.trim();
-  const hasTakeoverChanges = fullTakeover !== (savCase.taken_over || false) || 
-                            partialTakeover !== (savCase.partial_takeover || false) || 
-                            parseFloat(takeoverAmount) !== (savCase.takeover_amount || 0);
+  const hasChanges = selectedStatus !== savCase.status;
+
+  // Enregistrement automatique de la note privée
+  useEffect(() => {
+    if (notes === lastSavedNotesRef.current) return;
+    setNotesState('dirty');
+    const t = setTimeout(() => { saveNotes(); }, 1200);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [notes]);
+
+  // Enregistrement automatique de la prise en charge
+  const takeoverKey = `${fullTakeover}|${partialTakeover}|${parseFloat(takeoverAmount) || 0}`;
+  useEffect(() => {
+    if (savCase.sav_type === 'internal') return;
+    if (takeoverKey === lastSavedTakeoverRef.current) return;
+    const amount = fullTakeover ? savCase.total_cost : (partialTakeover ? parseFloat(takeoverAmount) || 0 : 0);
+    if ((fullTakeover || partialTakeover) && amount > 0 && !notes.trim()) return;
+    const t = setTimeout(() => {
+      lastSavedTakeoverRef.current = takeoverKey;
+      updateTakeover(true);
+    }, 1200);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [takeoverKey, notes]);
 
   // Calculer le montant à payer par le client
   const clientAmount = fullTakeover ? 0 :
@@ -503,6 +529,7 @@ L'équipe ${shopData.name || 'de réparation'}`;
                       : "Ajoutez des notes privées sur le changement de statut..."}
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
+                    onBlur={() => { saveNotes(); }}
                     rows={3}
                     className={`mt-1 ${((partialTakeover && parseFloat(takeoverAmount || '0') > 0) || fullTakeover) && !notes.trim() ? 'border-destructive' : ''}`}
                     required={((partialTakeover && parseFloat(takeoverAmount || '0') > 0) || fullTakeover)}
@@ -512,17 +539,14 @@ L'équipe ${shopData.name || 'de réparation'}`;
                       Notes obligatoires pour justifier la prise en charge
                     </p>
                   )}
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {notesState === 'dirty' && 'Modifications non enregistrées'}
+                    {notesState === 'saving' && 'Enregistrement…'}
+                    {notesState === 'saved' && notesSavedAt && `Enregistré à ${notesSavedAt.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`}
+                    {notesState === 'error' && <span className="text-destructive">Échec de l'enregistrement</span>}
+                  </p>
                 </div>
 
-                <Button
-                  onClick={updateTakeover}
-                  disabled={!hasTakeoverChanges || updatingTakeover || (partialTakeover && parseFloat(takeoverAmount) > 0 && !notes.trim())}
-                  variant="outline"
-                  className="w-full"
-                >
-                  <Save className="h-4 w-4 mr-2" />
-                  {updatingTakeover ? 'Mise à jour...' : 'Sauvegarder prise en charge'}
-                </Button>
               </div>
             </div>
           </>
