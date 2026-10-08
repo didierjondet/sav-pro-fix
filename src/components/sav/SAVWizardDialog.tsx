@@ -602,7 +602,7 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
                 onOpenChange={setControllerOpen}
                 onComplete={(r) => {
                   setControllerReport(r.report);
-                  setDeviceInfo((d) => ({ ...d, brand: r.brand || d.brand, model: r.model || d.model, problemDescription: r.problemDescription }));
+                  setDeviceInfo((d) => ({ ...d, brand: r.brand || d.brand, model: r.model || d.model, imei: d.imei || r.serial || '', problemDescription: r.problemDescription }));
                 }}
               />
             </div>

@@ -14,12 +14,14 @@ import {
   buttonsForModel, buildControllerSummary, buildUntestedList, compactTrail, computeDrift, detectModel, evaluateStick,
   MANUAL_CHECKS, MODEL_LABELS, TRIGGER_MIN_TRAVEL, buttonLabel, summaryToText,
 } from '@/lib/controllerTest';
+import { hidSupported, readControllerIdentity } from '@/lib/controllerHid';
 
 export interface ControllerTestResult {
   report: ControllerReport;
   brand: string;
   model: string;
   problemDescription: string;
+  serial?: string;
 }
 
 interface Props {
@@ -134,6 +136,16 @@ export function ControllerTestDialog({ open, onOpenChange, onComplete }: Props) 
     } catch { /* non supporté */ }
   };
 
+  const [serial, setSerial] = useState<{ serial: string; firmware?: string } | null>(null);
+  const [serialMsg, setSerialMsg] = useState('');
+  const [reading, setReading] = useState(false);
+  const readSerial = async () => {
+    setReading(true); setSerialMsg('');
+    const r = await readControllerIdentity();
+    setReading(false);
+    if (r) setSerial(r); else setSerialMsg("Numéro non lisible pour cette manette (Xbox ou navigateur non compatible) : saisissez-le à la main dans le SAV.");
+  };
+
   const report: ControllerReport = useMemo(() => {
     const btn: Record<string, ItemStatus> = {};
     list.forEach((b) => { if (b.key !== 'l2' && b.key !== 'r2') btn[b.key] = buttons[b.key] ?? 'untested'; });
@@ -149,8 +161,9 @@ export function ControllerTestDialog({ open, onOpenChange, onComplete }: Props) 
       model, gamepadId: padId, tested_at: new Date().toISOString(), buttons: btn,
       triggers: { l2: trig('l2'), r2: trig('r2') }, sticks: { left: stick('left'), right: stick('right') },
       vibration, manual: man, notes: notes.trim() || undefined,
+      serial: serial?.serial, firmware: serial?.firmware,
     };
-  }, [list, buttons, triggers, triggerOverride, drift, maxR, stickOverride, model, manual, vibration, notes, padId]);
+  }, [serial, list, buttons, triggers, triggerOverride, drift, maxR, stickOverride, model, manual, vibration, notes, padId]);
 
   const summary = useMemo(() => buildControllerSummary(report), [report]);
   const untested = useMemo(() => buildUntestedList(report), [report]);
@@ -164,7 +177,7 @@ export function ControllerTestDialog({ open, onOpenChange, onComplete }: Props) 
   const finish = () => {
     onComplete({
       report, brand: MODEL_LABELS[model].brand, model: MODEL_LABELS[model].model,
-      problemDescription: summaryToText(report),
+      problemDescription: summaryToText(report), serial: serial?.serial,
     });
     onOpenChange(false);
   };
@@ -211,6 +224,13 @@ export function ControllerTestDialog({ open, onOpenChange, onComplete }: Props) 
             <div className={`p-4 rounded-md border text-sm ${connected ? 'border-primary' : 'border-dashed'}`}>
               {connected ? <span className="flex items-center gap-2"><Check className="h-4 w-4 text-primary" /> Manette détectée : {padId}</span> : 'En attente de la manette…'}
             </div>
+            {hidSupported() && (
+              <div className="space-y-1">
+                <Button type="button" variant="outline" size="sm" onClick={readSerial} disabled={reading}>{reading ? 'Lecture…' : 'Lire le n° de série'}</Button>
+                {serial && <p className="text-sm"><Check className="inline h-4 w-4 text-primary" /> N° lu : <b>{serial.serial}</b>{serial.firmware ? ` (logiciel ${serial.firmware})` : ''}</p>}
+                {serialMsg && <p className="text-sm text-muted-foreground">{serialMsg}</p>}
+              </div>
+            )}
             {connected && (
               <div className="max-w-xs">
                 <Label>Modèle</Label>

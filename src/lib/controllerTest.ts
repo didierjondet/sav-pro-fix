@@ -117,6 +117,8 @@ export interface ControllerReport {
   vibration: ItemStatus;
   manual: Record<string, { status: ItemStatus; note?: string }>;
   notes?: string;
+  serial?: string;
+  firmware?: string;
 }
 
 export function buildControllerSummary(r: ControllerReport): string[] {
