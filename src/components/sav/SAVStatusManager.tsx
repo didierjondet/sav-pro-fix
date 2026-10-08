@@ -232,17 +232,12 @@ L'équipe ${shopData.name || 'de réparation'}`;
   };
 
   // Fonction pour mettre à jour la prise en charge
-  const updateTakeover = async () => {
+  const updateTakeover = async (silent = false) => {
     if (savCase.sav_type === 'internal') return;
     
     // Validation: notes privées obligatoires si prise en charge appliquée
     const numericTakeoverAmount = fullTakeover ? savCase.total_cost : (partialTakeover ? parseFloat(takeoverAmount) || 0 : 0);
     if ((partialTakeover || fullTakeover) && numericTakeoverAmount > 0 && !notes.trim()) {
-      toast({
-        title: "Notes privées requises",
-        description: "Veuillez ajouter des notes privées pour justifier la prise en charge",
-        variant: "destructive",
-      });
       return;
     }
     
@@ -252,17 +247,13 @@ L'équipe ${shopData.name || 'de réparation'}`;
       const previousTakenOver = savCase.taken_over || false;
       const newTakeoverAmount = fullTakeover ? savCase.total_cost : (partialTakeover ? numericTakeoverAmount : 0);
       
-      // Mise à jour des données du SAV avec les notes privées
       const updateData: any = {
         taken_over: fullTakeover,
         partial_takeover: partialTakeover,
-        takeover_amount: newTakeoverAmount
+        takeover_amount: newTakeoverAmount,
+        private_comments: notes,
       };
-      
-      // Ajouter les notes privées si elles existent ou si une prise en charge est appliquée
-      if (notes.trim() || ((partialTakeover || fullTakeover) && numericTakeoverAmount > 0)) {
-        updateData.private_comments = notes;
-      }
+      lastSavedNotesRef.current = notes;
       
       const { error } = await supabase
         .from('sav_cases')
@@ -330,10 +321,31 @@ L'équipe ${shopData.name || 'de réparation'}`;
     }
   };
 
-  const hasChanges = selectedStatus !== savCase.status || notes.trim();
-  const hasTakeoverChanges = fullTakeover !== (savCase.taken_over || false) || 
-                            partialTakeover !== (savCase.partial_takeover || false) || 
-                            parseFloat(takeoverAmount) !== (savCase.takeover_amount || 0);
+  const hasChanges = selectedStatus !== savCase.status;
+
+  // Enregistrement automatique de la note privée
+  useEffect(() => {
+    if (notes === lastSavedNotesRef.current) return;
+    setNotesState('dirty');
+    const t = setTimeout(() => { saveNotes(); }, 1200);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [notes]);
+
+  // Enregistrement automatique de la prise en charge
+  const takeoverKey = `${fullTakeover}|${partialTakeover}|${parseFloat(takeoverAmount) || 0}`;
+  useEffect(() => {
+    if (savCase.sav_type === 'internal') return;
+    if (takeoverKey === lastSavedTakeoverRef.current) return;
+    const amount = fullTakeover ? savCase.total_cost : (partialTakeover ? parseFloat(takeoverAmount) || 0 : 0);
+    if ((fullTakeover || partialTakeover) && amount > 0 && !notes.trim()) return;
+    const t = setTimeout(() => {
+      lastSavedTakeoverRef.current = takeoverKey;
+      updateTakeover(true);
+    }, 1200);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [takeoverKey, notes]);
 
   // Calculer le montant à payer par le client
   const clientAmount = fullTakeover ? 0 :
