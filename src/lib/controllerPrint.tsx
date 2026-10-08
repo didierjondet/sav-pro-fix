@@ -1,7 +1,7 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { ControllerDiagram } from '@/components/sav/controller/ControllerDiagram';
 import { MODEL_LABELS, buildControllerSummary, buildUntestedList, type ControllerReport } from '@/lib/controllerTest';
-import { generateShortTrackingUrl } from '@/utils/trackingUtils';
+import bwipjs from 'bwip-js/browser';
 
 export interface ControllerSheetInfo {
   caseNumber?: string | null;
@@ -10,7 +10,16 @@ export interface ControllerSheetInfo {
   sku?: string | null;
 }
 
-const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]!));
+const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c] ?? c));
+
+/** Même Code 128 et même numéro de dossier que les impressions SAV. */
+export function controllerBarcodeSvg(caseNumber?: string | null): string {
+  if (!caseNumber) return '';
+  return bwipjs.toSVG({
+    bcid: 'code128', text: caseNumber, scale: 2, height: 12,
+    includetext: false, backgroundcolor: 'FFFFFF', paddingwidth: 2, paddingheight: 2,
+  });
+}
 
 /** SVG du débattement d'un joystick (cercle de référence, tracé, point de repos). */
 export function stickTrailSvg(trail: [number, number][] = [], drift = { x: 0, y: 0 }, colors = { bg: '#f3f4f6', border: '#999', line: '#2563eb', dot: '#dc2626' }) {
@@ -37,8 +46,7 @@ export function printControllerSheet(report: ControllerReport, info: ControllerS
     .split('hsl(var(--foreground) / 0.4)').join('#555').split('hsl(var(--foreground))').join('#111');
   const summary = buildControllerSummary(report);
   const untested = buildUntestedList(report);
-  const tracking = info.trackingSlug ? generateShortTrackingUrl(info.trackingSlug) : '';
-  const qr = tracking ? `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(tracking)}` : '';
+  const barcode = controllerBarcodeSvg(info.caseNumber);
   const label = MODEL_LABELS[report.model];
   const stick = (k: 'left' | 'right') => {
     const s = report.sticks[k];
@@ -48,7 +56,7 @@ export function printControllerSheet(report: ControllerReport, info: ControllerS
 body{font-family:sans-serif;font-size:12px;margin:12mm}
 .head{display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #111;padding-bottom:8px;margin-bottom:8px}
 .num{font-size:30px;font-weight:bold}.meta{font-size:13px;margin-top:4px}
-.head img{width:110px;height:110px}
+.barcode{flex:0 0 auto;margin-left:12px}.barcode svg{display:block;width:240px;max-width:65mm;height:auto}
 .diag{width:100%;max-width:480px}.sticks{display:flex;gap:24px;justify-content:center}.stick{text-align:center;font-size:11px}
 .cols{display:flex;gap:24px}.cols>div{flex:1}h2{font-size:14px;margin:10px 0 4px}li{margin:2px 0}
 .leg span{display:inline-block;width:10px;height:10px;margin:0 4px 0 12px}
@@ -59,7 +67,7 @@ body{font-family:sans-serif;font-size:12px;margin:12mm}
 ${info.imei ? `<div class="meta"><b>N° de série / IMEI :</b> ${esc(info.imei)}</div>` : ''}
 ${info.sku ? `<div class="meta"><b>SKU :</b> ${esc(info.sku)}</div>` : ''}
 <div class="meta">Test du ${new Date(report.tested_at || Date.now()).toLocaleString('fr-FR')}</div>
-</div>${qr ? `<img src="${qr}" alt="QR"/>` : ''}</div>
+</div>${barcode ? `<div class="barcode">${barcode}</div>` : ''}</div>
 <div style="text-align:center"><div class="diag" style="margin:auto">${svg}</div></div>
 <p class="leg"><span style="background:#dc2626"></span>Défaut<span style="background:#f59e0b"></span>Intermittent<span style="background:#bbf7d0"></span>OK<span style="background:#e5e7eb"></span>Non testé</p>
 <h2>Débattement des joysticks</h2><div class="sticks">${stick('left')}${stick('right')}</div>

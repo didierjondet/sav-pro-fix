@@ -1,3 +1,4 @@
 - Legal identity (company, address, contact e-mail) lives only in `src/lib/legalInfo.ts`; legal pages and contact use it — single source avoids divergent mentions.
 - Contact form posts to the `contact-form` edge function, whose recipient is fixed server-side — prevents use as an open mail relay.
 - Auth/e-mail redirects go through `src/lib/authRedirect.ts` (Fixway domains only) — never send users to a Lovable host.
+- Controller-sheet identification is generated locally with bwip-js using the SAV print Code 128 options and case number — keeps scanning compatible without a network dependency.
