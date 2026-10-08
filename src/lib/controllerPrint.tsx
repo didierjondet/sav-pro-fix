@@ -64,7 +64,7 @@ body{font-family:sans-serif;font-size:12px;margin:12mm}
 <div class="head"><div>
 <div class="num">${info.caseNumber ? `SAV N° ${esc(info.caseNumber)}` : 'SAV en cours de création'}</div>
 <div class="meta">${esc(`${label.brand} ${label.model}`.trim())}</div>
-${info.imei ? `<div class="meta"><b>N° de série / IMEI :</b> ${esc(info.imei)}</div>` : ''}
+${(info.imei || report.serial) ? `<div class="meta"><b>N° de série / IMEI :</b> ${esc(info.imei || report.serial || '')}</div>` : ''}${report.firmware ? `<div class="meta"><b>Logiciel manette :</b> ${esc(report.firmware)}</div>` : ''}
 ${info.sku ? `<div class="meta"><b>SKU :</b> ${esc(info.sku)}</div>` : ''}
 <div class="meta">Test du ${new Date(report.tested_at || Date.now()).toLocaleString('fr-FR')}</div>
 </div>${barcode ? `<div class="barcode">${barcode}</div>` : ''}</div>
