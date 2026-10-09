@@ -1200,6 +1200,7 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
         onCancel={handlePrintCancel}
         savCaseNumber={createdSAVCase?.case_number || ''}
         savCase={createdSAVCase}
+        controllerReport={controllerReport}
         requireUnlockPattern={currentTypeInfo.require_unlock_pattern}
         hasUnlockMethod={
           unlockPattern.length > 0 ||

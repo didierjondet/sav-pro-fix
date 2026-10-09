@@ -895,13 +895,21 @@ export default function SAVDetail() {
                     Imprimez le récapitulatif du dossier (à remettre au client lors du dépôt).
                   </p>
                   <SAVPrintButton savCase={savCase} />
-{(savCase as any).controller_test && (
-  <Button variant="outline" size="sm" onClick={() => printControllerSheet((savCase as any).controller_test, { caseNumber: savCase.case_number, trackingSlug: savCase.tracking_slug, imei: savCase.device_imei, sku: savCase.sku })}>
-    <Printer className="h-4 w-4 mr-2" /> Feuille test manette
-  </Button>
-)}
                 </CardContent>
               </Card>
+{(savCase as any).controller_test && (
+  <Card className="border-accent bg-accent/10">
+    <CardHeader className="pb-3">
+      <CardTitle className="text-base flex items-center gap-2"><Gamepad2 className="h-5 w-5 text-accent" /> Test manette</CardTitle>
+    </CardHeader>
+    <CardContent className="space-y-2">
+      <p className="text-sm text-muted-foreground">Feuille graphique du test : pannes, fonctions non testées, débattement et stabilité des joysticks.</p>
+      <Button variant="outline" size="sm" onClick={() => printControllerSheet((savCase as any).controller_test, { caseNumber: savCase.case_number, trackingSlug: savCase.tracking_slug, imei: savCase.device_imei, sku: savCase.sku })}>
+        <Printer className="h-4 w-4 mr-2" /> Feuille test manette
+      </Button>
+    </CardContent>
+  </Card>
+)}
 
               {isReadyStatus(savCase.status) && (
                 <Card>
@@ -1543,13 +1551,21 @@ export default function SAVDetail() {
                   Imprimez le récapitulatif du dossier (à remettre au client lors du dépôt).
                 </p>
                 <SAVPrintButton savCase={savCase} />
-{(savCase as any).controller_test && (
-  <Button variant="outline" size="sm" onClick={() => printControllerSheet((savCase as any).controller_test, { caseNumber: savCase.case_number, trackingSlug: savCase.tracking_slug, imei: savCase.device_imei, sku: savCase.sku })}>
-    <Printer className="h-4 w-4 mr-2" /> Feuille test manette
-  </Button>
-)}
               </CardContent>
             </Card>
+{(savCase as any).controller_test && (
+  <Card className="border-accent bg-accent/10">
+    <CardHeader className="pb-3">
+      <CardTitle className="text-base flex items-center gap-2"><Gamepad2 className="h-5 w-5 text-accent" /> Test manette</CardTitle>
+    </CardHeader>
+    <CardContent className="space-y-2">
+      <p className="text-sm text-muted-foreground">Feuille graphique du test : pannes, fonctions non testées, débattement et stabilité des joysticks.</p>
+      <Button variant="outline" size="sm" onClick={() => printControllerSheet((savCase as any).controller_test, { caseNumber: savCase.case_number, trackingSlug: savCase.tracking_slug, imei: savCase.device_imei, sku: savCase.sku })}>
+        <Printer className="h-4 w-4 mr-2" /> Feuille test manette
+      </Button>
+    </CardContent>
+  </Card>
+)}
 
             {isReadyStatus(savCase.status) && (
               <Card>

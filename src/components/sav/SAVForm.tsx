@@ -1310,6 +1310,7 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
         <div style={{ display: 'none' }}>
           <SAVPrintButton 
             savCase={createdSAVCase}
+            controllerReport={controllerReport}
             ref={printButtonRef}
           />
         </div>
