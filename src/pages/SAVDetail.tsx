@@ -904,8 +904,8 @@ export default function SAVDetail() {
     </CardHeader>
     <CardContent className="space-y-2">
       <p className="text-sm text-muted-foreground">Feuille graphique du test : pannes, fonctions non testées, débattement et stabilité des joysticks.</p>
-      <Button variant="outline" size="sm" onClick={() => printControllerSheet((savCase as any).controller_test, { caseNumber: savCase.case_number, trackingSlug: savCase.tracking_slug, imei: savCase.device_imei, sku: savCase.sku })}>
-        <Printer className="h-4 w-4 mr-2" /> Feuille test manette
+      <Button variant="outline" size="sm" className="border-warning bg-warning text-warning-foreground hover:bg-warning/80 hover:text-warning-foreground" onClick={() => printControllerSheet((savCase as any).controller_test, { caseNumber: savCase.case_number, trackingSlug: savCase.tracking_slug, imei: savCase.device_imei, sku: savCase.sku })}>
+        <Gamepad2 className="h-4 w-4 mr-2" /> Feuille test manette
       </Button>
     </CardContent>
   </Card>
@@ -1560,8 +1560,8 @@ export default function SAVDetail() {
     </CardHeader>
     <CardContent className="space-y-2">
       <p className="text-sm text-muted-foreground">Feuille graphique du test : pannes, fonctions non testées, débattement et stabilité des joysticks.</p>
-      <Button variant="outline" size="sm" onClick={() => printControllerSheet((savCase as any).controller_test, { caseNumber: savCase.case_number, trackingSlug: savCase.tracking_slug, imei: savCase.device_imei, sku: savCase.sku })}>
-        <Printer className="h-4 w-4 mr-2" /> Feuille test manette
+      <Button variant="outline" size="sm" className="border-warning bg-warning text-warning-foreground hover:bg-warning/80 hover:text-warning-foreground" onClick={() => printControllerSheet((savCase as any).controller_test, { caseNumber: savCase.case_number, trackingSlug: savCase.tracking_slug, imei: savCase.device_imei, sku: savCase.sku })}>
+        <Gamepad2 className="h-4 w-4 mr-2" /> Feuille test manette
       </Button>
     </CardContent>
   </Card>
