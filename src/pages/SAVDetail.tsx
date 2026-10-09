@@ -898,9 +898,9 @@ export default function SAVDetail() {
                 </CardContent>
               </Card>
 {(savCase as any).controller_test && (
-  <Card className="border-accent bg-accent/10">
+  <Card className="border-warning bg-warning/10">
     <CardHeader className="pb-3">
-      <CardTitle className="text-base flex items-center gap-2"><Gamepad2 className="h-5 w-5 text-accent" /> Test manette</CardTitle>
+      <CardTitle className="text-base flex items-center gap-2"><Gamepad2 className="h-5 w-5 text-warning" /> Test manette</CardTitle>
     </CardHeader>
     <CardContent className="space-y-2">
       <p className="text-sm text-muted-foreground">Feuille graphique du test : pannes, fonctions non testées, débattement et stabilité des joysticks.</p>
@@ -1554,9 +1554,9 @@ export default function SAVDetail() {
               </CardContent>
             </Card>
 {(savCase as any).controller_test && (
-  <Card className="border-accent bg-accent/10">
+  <Card className="border-warning bg-warning/10">
     <CardHeader className="pb-3">
-      <CardTitle className="text-base flex items-center gap-2"><Gamepad2 className="h-5 w-5 text-accent" /> Test manette</CardTitle>
+      <CardTitle className="text-base flex items-center gap-2"><Gamepad2 className="h-5 w-5 text-warning" /> Test manette</CardTitle>
     </CardHeader>
     <CardContent className="space-y-2">
       <p className="text-sm text-muted-foreground">Feuille graphique du test : pannes, fonctions non testées, débattement et stabilité des joysticks.</p>

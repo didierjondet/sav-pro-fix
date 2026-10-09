@@ -1310,7 +1310,6 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
         <div style={{ display: 'none' }}>
           <SAVPrintButton 
             savCase={createdSAVCase}
-            controllerReport={controllerReport}
             ref={printButtonRef}
           />
         </div>
@@ -1323,6 +1322,7 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
         onConfirm={handlePrintConfirm}
         onCancel={handlePrintCancel}
         savCaseNumber={createdSAVCase?.case_number || ''}
+        controllerReport={controllerReport}
         savCase={createdSAVCase}
         requireUnlockPattern={currentTypeInfo.require_unlock_pattern}
         hasUnlockMethod={

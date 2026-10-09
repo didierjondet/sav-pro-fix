@@ -296,7 +296,7 @@ export function PrintConfirmDialog({
             </div>
           )}
           {controllerReport && (
-            <div className="flex items-center gap-2 rounded-md border border-accent bg-accent/10 p-3">
+            <div className="flex items-center gap-2 rounded-md border border-warning bg-warning/10 p-3">
               <Checkbox id="print-controller" checked={printController} onCheckedChange={(v) => setPrintController(v === true)} />
               <label htmlFor="print-controller" className="text-sm cursor-pointer">Imprimer aussi la feuille test manette</label>
             </div>
