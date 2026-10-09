@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { printControllerSheet, stickTrailSvg } from '@/lib/controllerPrint';
+import { stickTrailSvg } from '@/lib/controllerPrint';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
-import { Gamepad2, Printer, Check } from 'lucide-react';
+import { Gamepad2, Check } from 'lucide-react';
 import { ControllerDiagram } from './ControllerDiagram';
 import {
   type ControllerModel, type ControllerReport, type ItemStatus,

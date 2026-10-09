@@ -8,6 +8,8 @@ import { useState } from 'react';
 import { useShopSettings } from '@/hooks/useShopSettings';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
+import { printControllerSheet } from '@/lib/controllerPrint';
+import type { ControllerReport } from '@/lib/controllerTest';
 
 interface PrintConfirmDialogProps {
   isOpen: boolean;
@@ -33,6 +35,8 @@ interface PrintConfirmDialogProps {
    * Doit retourner le SAV créé (avec tracking_slug, case_number, customer) ou null en cas d'échec.
    */
   onPersistBeforeAction?: () => Promise<any | null>;
+  /** Rapport de test manette : propose d'imprimer la feuille avec le vrai n° SAV */
+  controllerReport?: ControllerReport | null;
 }
 
 export function PrintConfirmDialog({ 
@@ -51,7 +55,9 @@ export function PrintConfirmDialog({
   onNoUnlockCodeChange,
   onGoToCodesStep,
   onPersistBeforeAction,
+  controllerReport,
 }: PrintConfirmDialogProps) {
+  const [printController, setPrintController] = useState(true);
   const [sendingSMS, setSendingSMS] = useState(false);
   const [persisting, setPersisting] = useState(false);
   const [warningAcknowledged, setWarningAcknowledged] = useState(false);
@@ -84,6 +90,7 @@ export function PrintConfirmDialog({
 
   const handleConfirm = async () => {
     if (!validateBeforeAction()) return;
+    let activeCase: any = savCase;
     if (onPersistBeforeAction) {
       setPersisting(true);
       try {
@@ -92,11 +99,18 @@ export function PrintConfirmDialog({
           setPersisting(false);
           return;
         }
+        activeCase = persisted;
       } finally {
         setPersisting(false);
       }
     }
     onConfirm();
+    if (controllerReport && printController) {
+      printControllerSheet(controllerReport, {
+        caseNumber: activeCase?.case_number || savCaseNumber, trackingSlug: activeCase?.tracking_slug,
+        imei: activeCase?.device_imei, sku: activeCase?.sku,
+      });
+    }
     onClose();
   };
 
@@ -279,6 +293,12 @@ export function PrintConfirmDialog({
                   </div>
                 </div>
               </div>
+            </div>
+          )}
+          {controllerReport && (
+            <div className="flex items-center gap-2 rounded-md border border-accent bg-accent/10 p-3">
+              <Checkbox id="print-controller" checked={printController} onCheckedChange={(v) => setPrintController(v === true)} />
+              <label htmlFor="print-controller" className="text-sm cursor-pointer">Imprimer aussi la feuille test manette</label>
             </div>
           )}
         </div>
