@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { printControllerSheet, stickTrailSvg } from '@/lib/controllerPrint';
+import { stickTrailSvg } from '@/lib/controllerPrint';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -7,12 +7,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
-import { Gamepad2, Printer, Check } from 'lucide-react';
+import { Gamepad2, Check } from 'lucide-react';
 import { ControllerDiagram } from './ControllerDiagram';
 import {
   type ControllerModel, type ControllerReport, type ItemStatus,
   buttonsForModel, buildControllerSummary, buildUntestedList, compactTrail, computeDrift, detectModel, evaluateStick,
-  MANUAL_CHECKS, MODEL_LABELS, TRIGGER_MIN_TRAVEL, buttonLabel, summaryToText,
+  MANUAL_CHECKS, MODEL_LABELS, TRIGGER_MIN_TRAVEL, buttonLabel, summaryToText, computeStability, STABILITY_THRESHOLD,
 } from '@/lib/controllerTest';
 import { hidSupported, readControllerIdentity } from '@/lib/controllerHid';
 
@@ -58,7 +58,7 @@ export function ControllerTestDialog({ open, onOpenChange, onComplete }: Props) 
   const [triggerOverride, setTriggerOverride] = useState<Record<string, ItemStatus>>({});
   const [axes, setAxes] = useState({ lx: 0, ly: 0, rx: 0, ry: 0 });
   const [maxR, setMaxR] = useState({ left: 0, right: 0 });
-  const [drift, setDrift] = useState<{ left: { driftX: number; driftY: number }; right: { driftX: number; driftY: number } } | null>(null);
+  const [drift, setDrift] = useState<{ left: { driftX: number; driftY: number; stability?: number }; right: { driftX: number; driftY: number; stability?: number } } | null>(null);
   const [stickOverride, setStickOverride] = useState<Record<string, ItemStatus>>({});
   const [measuring, setMeasuring] = useState(false);
   const [vibration, setVibration] = useState<ItemStatus>('untested');
@@ -123,7 +123,7 @@ export function ControllerTestDialog({ open, onOpenChange, onComplete }: Props) 
     setMeasuring(true);
     setTimeout(() => {
       const s = samples.current!; samples.current = null;
-      setDrift({ left: computeDrift(s.l), right: computeDrift(s.r) });
+      setDrift({ left: { ...computeDrift(s.l), stability: computeStability(s.l) }, right: { ...computeDrift(s.r), stability: computeStability(s.r) } });
       setMeasuring(false);
     }, 2000);
   };
@@ -151,9 +151,11 @@ export function ControllerTestDialog({ open, onOpenChange, onComplete }: Props) 
     list.forEach((b) => { if (b.key !== 'l2' && b.key !== 'r2') btn[b.key] = buttons[b.key] ?? 'untested'; });
     const trig = (k: 'l2' | 'r2') => ({ max: triggers[k], status: triggerOverride[k] ?? (triggers[k] < 0.05 ? 'untested' : triggers[k] >= TRIGGER_MIN_TRAVEL ? 'ok' : 'defect') as ItemStatus });
     const stick = (k: 'left' | 'right') => {
-      const d = drift?.[k] ?? { driftX: 0, driftY: 0 };
-      const auto: ItemStatus = !drift && maxR[k] < 0.3 ? 'untested' : evaluateStick(d, drift ? maxR[k] : 1);
-      return { ...d, maxRadius: Math.min(1, maxR[k]), status: stickOverride[k] ?? auto, trail: compactTrail(trail.current[k]) };
+      const raw = drift?.[k];
+      const d = raw ? { driftX: raw.driftX, driftY: raw.driftY } : { driftX: 0, driftY: 0 };
+      let auto: ItemStatus = !drift && maxR[k] < 0.3 ? 'untested' : evaluateStick(d, drift ? maxR[k] : 1);
+      if (auto === 'ok' && raw?.stability != null && raw.stability < STABILITY_THRESHOLD) auto = 'defect';
+      return { ...d, stability: raw?.stability, maxRadius: Math.min(1, maxR[k]), status: stickOverride[k] ?? auto, trail: compactTrail(trail.current[k]) };
     };
     const man: Record<string, { status: ItemStatus; note?: string }> = {};
     MANUAL_CHECKS[model].forEach((m) => { man[m] = manual[m] ?? { status: 'untested' }; });
@@ -172,7 +174,6 @@ export function ControllerTestDialog({ open, onOpenChange, onComplete }: Props) 
     stick_left: report.sticks.left.status, stick_right: report.sticks.right.status,
   }), [report]);
 
-  const print = () => printControllerSheet(report);
 
   const finish = () => {
     onComplete({
@@ -194,7 +195,7 @@ export function ControllerTestDialog({ open, onOpenChange, onComplete }: Props) 
       </svg>
       <span className="text-xs text-muted-foreground">
         {side === 'left' ? 'Gauche' : 'Droit'} · amplitude {Math.round(Math.min(1, maxR[side]) * 100)} %
-        {drift && ` · dérive ${Math.round(Math.hypot(drift[side].driftX, drift[side].driftY) * 100)} %`}
+        {drift && ` · dérive ${Math.round(Math.hypot(drift[side].driftX, drift[side].driftY) * 100)} % · stabilité ${drift[side].stability ?? 100} %`}
       </span>
       <StatusPicker value={report.sticks[side].status} onChange={(v) => setStickOverride((o) => ({ ...o, [side]: v }))} />
     </div>
@@ -350,7 +351,6 @@ export function ControllerTestDialog({ open, onOpenChange, onComplete }: Props) 
             {step === 0 ? 'Annuler' : 'Précédent'}
           </Button>
           <div className="flex gap-2">
-            {step === 6 && <Button type="button" variant="outline" onClick={print}><Printer className="h-4 w-4 mr-1" /> Imprimer</Button>}
             {step < 6
               ? <Button type="button" disabled={!connected} onClick={() => setStep(step + 1)}>Suivant</Button>
               : <Button type="button" onClick={finish}>Valider et revenir au SAV</Button>}

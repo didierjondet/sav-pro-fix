@@ -50,7 +50,7 @@ export function printControllerSheet(report: ControllerReport, info: ControllerS
   const label = MODEL_LABELS[report.model];
   const stick = (k: 'left' | 'right') => {
     const s = report.sticks[k];
-    return `<div class="stick">${stickTrailSvg(s.trail, { x: s.driftX, y: s.driftY })}<div>${k === 'left' ? 'Joystick gauche' : 'Joystick droit'} · amplitude ${Math.round(Math.min(1, s.maxRadius) * 100)} % · dérive ${Math.round(Math.hypot(s.driftX, s.driftY) * 100)} %</div></div>`;
+    return `<div class="stick">${stickTrailSvg(s.trail, { x: s.driftX, y: s.driftY })}<div>${k === 'left' ? 'Joystick gauche' : 'Joystick droit'} · amplitude ${Math.round(Math.min(1, s.maxRadius) * 100)} % · dérive ${Math.round(Math.hypot(s.driftX, s.driftY) * 100)} %${s.stability != null ? ` · stabilité ${s.stability} %` : ''}</div></div>`;
   };
   const html = `<!doctype html><html><head><meta charset="utf-8"><title>Test manette ${esc(info.caseNumber || '')}</title><style>
 body{font-family:sans-serif;font-size:12px;margin:12mm}

@@ -32,3 +32,16 @@ describe('test manette', () => {
     expect(detectModel('Xbox 360 Controller (XInput STANDARD GAMEPAD)')).toBe('xbox');
   });
 });
+
+import { computeStability, STABILITY_THRESHOLD } from '../src/lib/controllerTest';
+describe('stabilité joystick', () => {
+  test('stick immobile = 100 %', () => {
+    expect(computeStability([{ x: 0.02, y: 0 }, { x: 0.02, y: 0 }, { x: 0.02, y: 0 }])).toBe(100);
+  });
+  test('écart moyen de 1 % = 90 %, signalé sous le seuil de 90', () => {
+    expect(computeStability([{ x: 0.01, y: 0 }, { x: -0.01, y: 0 }])).toBe(90);
+    expect(STABILITY_THRESHOLD).toBe(90);
+    const r = base(); r.sticks.right.stability = 82;
+    expect(buildControllerSummary(r)).toContain('Joystick droit : instable (stabilité 82 %)');
+  });
+});

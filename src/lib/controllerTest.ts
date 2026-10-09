@@ -75,6 +75,7 @@ export interface StickResult {
   maxRadius: number; // rayon max atteint 0..1+
   status: ItemStatus;
   trail?: [number, number][]; // débattement parcouru (échantillonné)
+  stability?: number; // 0..100, 100 = immobile au repos
 }
 
 /** Réduit un tracé à ~max points arrondis à 2 décimales (stockage léger). */
@@ -91,6 +92,16 @@ export function computeDrift(samples: { x: number; y: number }[]) {
   const driftX = samples.reduce((a, s) => a + s.x, 0) / samples.length;
   const driftY = samples.reduce((a, s) => a + s.y, 0) / samples.length;
   return { driftX, driftY, magnitude: Math.hypot(driftX, driftY) };
+}
+
+export const STABILITY_THRESHOLD = 90;
+
+/** Stabilité au repos : 100 − (distance moyenne au point de repos × 1000), bornée 0..100. */
+export function computeStability(samples: { x: number; y: number }[]): number {
+  if (samples.length < 2) return 100;
+  const { driftX, driftY } = computeDrift(samples);
+  const dev = samples.reduce((a, s) => a + Math.hypot(s.x - driftX, s.y - driftY), 0) / samples.length;
+  return Math.max(0, Math.min(100, Math.round(100 - dev * 1000)));
 }
 
 export function driftDirection(x: number, y: number) {
@@ -140,6 +151,7 @@ export function buildControllerSummary(r: ControllerReport): string[] {
     const mag = Math.hypot(s.driftX, s.driftY);
     if (mag >= DRIFT_THRESHOLD) out.push(`${name} : dérive de ${Math.round(mag * 100)} % vers ${driftDirection(s.driftX, s.driftY)}`);
     if (s.maxRadius < 0.9) out.push(`${name} : amplitude limitée (${Math.round(s.maxRadius * 100)} %)`);
+    if (s.stability != null && s.stability < STABILITY_THRESHOLD) out.push(`${name} : instable (stabilité ${s.stability} %)`);
     if (s.status === 'intermittent') out.push(`${name} : comportement intermittent`);
     if (s.status === 'defect' && mag < DRIFT_THRESHOLD && s.maxRadius >= 0.9) out.push(`${name} : défaut constaté`);
   });
