@@ -1,4 +1,4 @@
-import { Package, PhoneOff, AlertTriangle, Star, TrendingUp } from 'lucide-react';
+import { Package, PhoneOff, AlertTriangle, Star, TrendingUp, Gamepad2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 
 const pillars = [
@@ -66,6 +66,19 @@ const pillars = [
     color: "bg-indigo-500",
     lightColor: "bg-indigo-50",
     textColor: "text-indigo-600"
+  },
+  {
+    icon: Gamepad2,
+    title: "Test de manettes intégré",
+    description: "Diagnostiquez toutes les manettes de jeu directement dans le SAV",
+    features: [
+      "Test guidé toutes marques : boutons, gâchettes, joysticks, dérive, vibrations",
+      "Feuille PDF illustrée des points défectueux et non testés",
+      "Récupération automatique du numéro unique (PlayStation, Switch)"
+    ],
+    color: "bg-rose-500",
+    lightColor: "bg-rose-50",
+    textColor: "text-rose-600"
   }
 ];
 
@@ -75,7 +88,7 @@ export function FeaturePillars() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
           <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
-            Les <span className="text-blue-600">5 piliers</span> de votre rentabilité
+            Les <span className="text-blue-600">6 piliers</span> de votre rentabilité
           </h2>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
             Chaque fonctionnalité a été pensée pour résoudre un problème concret 
@@ -87,7 +100,7 @@ export function FeaturePillars() {
           {pillars.map((pillar, index) => (
             <Card 
               key={index}
-              className={`group relative overflow-hidden border-0 shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 ${index === 4 ? 'md:col-span-2 lg:col-span-1' : ''}`}
+              className={`group relative overflow-hidden border-0 shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-2`}
             >
               {/* Top gradient bar */}
               <div className={`h-2 ${pillar.color}`} />
