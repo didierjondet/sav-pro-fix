@@ -180,6 +180,7 @@ export function SMSPackagesManager() {
       setDialogOpen(false);
       resetForm();
       fetchPackages();
+      await syncToStripe(editingPackage.id);
     } catch (error: any) {
       toast({
         title: "Erreur",

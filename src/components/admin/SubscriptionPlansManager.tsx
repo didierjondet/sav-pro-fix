@@ -229,6 +229,7 @@ export default function SubscriptionPlansManager() {
         title: "Succès",
         description: "Plan d'abonnement créé avec succès",
       });
+      if (data?.id) await syncPlanToStripe(data.id);
     } catch (error: any) {
       console.error('Create plan error:', error);
       toast({
