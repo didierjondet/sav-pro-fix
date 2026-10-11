@@ -1,6 +1,8 @@
 import { useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { useBillingConfig } from '@/hooks/useBillingConfig';
 import { useParts } from '@/hooks/useParts';
+import { useProfile } from '@/hooks/useProfile';
 import { computeLineTotals, regimeLabel } from '@/lib/vatCalculator';
 
 export interface BillingLineInput {
