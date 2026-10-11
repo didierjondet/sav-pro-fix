@@ -73,6 +73,7 @@ Appelle ces outils dès que la question porte sur des données réelles du magas
 - \`generate_printable_report\` — rapport HTML imprimable A4. Types : \`non_repairability\`, \`diagnostic\`, \`sav_summary\`, \`stock_audit\`, \`data_report\`. Pour toute demande de PDF/rapport/export : utilise \`data_report\` avec \`title\` + \`sections\` (titre + texte ou tableau).
 
 ## Règles d'usage des outils
+0. **RÈGLE D'OR** : avant toute réponse portant sur des données du magasin (historiques, SAV, clients, pièces, devis, chiffres), tu DOIS appeler l'outil correspondant. Tu n'as JAMAIS le droit de répondre « je ne sais pas », « je n'ai pas accès » ou de donner une réponse générique sans avoir essayé au moins un outil. Si le premier outil ne renvoie rien, essaie un autre angle (recherche plus large, autre filtre) avant de conclure.
 1. Question chiffrée / liste / fiche / "combien" / "quels" → appelle l'outil, ne devine pas.
 2. Question réservations/stock fantôme → TOUJOURS \`audit_part_reservations\` d'abord, puis \`list_savs_for_ghost_reserved_parts\` si on parle de SAV concernés. Ne te limite jamais à un seul résultat : énumère tout ce que renvoie l'outil.
 3. Avant de chiffrer une réparation : \`search_parts\` pour le prix réel boutique.
@@ -105,6 +106,21 @@ Quand l'utilisateur décrit une panne :
 
 ## Couverture logiciel Fixway
 SAV (création, statuts/types perso, pièces, remises, clôture, QR tracking), messagerie interne, codes sécurité, stock + commandes + fournisseurs, devis (manuels + SMS public), clients, agenda, statistiques (widgets DnD), SMS, import/export, paramètres, rôles, abonnement, notifications realtime, mini-site + SEO.
+
+## Orientation dans les paramètres Fixway
+Pour toute question « comment faire / où régler / comment désactiver », cite le chemin EXACT dans le logiciel au lieu d'une réponse vague. Exemples :
+- Main d'œuvre ajoutée automatiquement aux devis → **Paramètres → Facturation → TVA & MO → « Activer la facturation main d'œuvre »** (interrupteur à désactiver, réservé aux admins).
+- TVA / taux → Paramètres → Facturation → TVA & MO.
+- Types de SAV → Paramètres → SAV → Types de SAV. Statuts → Paramètres → SAV → Statuts.
+- Prestataires techniques → Paramètres → Stock & partenaires.
+- Site internet / annuaire → Paramètres → Site internet.
+- Crédits SMS → Paramètres → Facturation → Crédits SMS.
+Si le réglage est réservé aux admins, précise-le (« demande à l'admin de ton magasin »).
+
+## Parler à un humain
+- Si l'utilisateur demande explicitement un humain / à être rappelé / un contact commercial, OU si après avoir utilisé tes outils tu ne parviens pas à résoudre son problème : propose le transfert à un humain (« Je peux te faire rappeler par un humain, tu veux ? »).
+- S'il accepte : collecte son **nom**, son **numéro de téléphone** et le **motif** (résumé court), puis appelle l'outil \`request_human_callback\`. Confirme ensuite qu'il sera rappelé.
+- N'appelle jamais \`request_human_callback\` sans avoir le nom ET le téléphone.
 
 ## Règles d'escalade
 Préfixe \`[ESCALATE]\` UNIQUEMENT pour les sujets hors logiciel ET hors réparation hi-tech. Diagnostic / procédure réparation = JAMAIS hors périmètre.`
@@ -476,6 +492,22 @@ const TOOL_DEFS = [
   {
     type: 'function',
     function: {
+      name: 'request_human_callback',
+      description: 'Demande de rappel par un humain. Crée un ticket support et envoie un SMS d\'alerte au Super Admin. À appeler UNIQUEMENT après avoir collecté nom + téléphone + motif.',
+      parameters: {
+        type: 'object',
+        properties: {
+          contact_name: { type: 'string', description: 'Nom de la personne à rappeler' },
+          contact_phone: { type: 'string', description: 'Numéro de téléphone pour le rappel' },
+          reason: { type: 'string', description: 'Motif résumé de la demande' },
+        },
+        required: ['contact_name', 'contact_phone', 'reason'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
       name: 'recalculate_part_reservations',
       description: 'ACTION ADMIN uniquement. Recalcule reserved_quantity de toutes les pièces de la boutique à partir des SAV ouverts. À proposer si des unités fantômes sont détectées.',
       parameters: { type: 'object', properties: {} },
@@ -529,10 +561,54 @@ const clamp = (n: any, def: number, max: number) => {
   return Math.min(Math.floor(v), max)
 }
 
-async function runTool(name: string, args: any, supa: any, shopId: string): Promise<any> {
+async function runTool(name: string, args: any, supa: any, shopId: string, userContext?: any): Promise<any> {
   args = args || {}
   try {
     switch (name) {
+      case 'request_human_callback': {
+        const contactName = String(args.contact_name || '').trim()
+        const contactPhone = String(args.contact_phone || '').trim()
+        const reason = String(args.reason || '').trim()
+        if (!contactName || !contactPhone) {
+          return { ok: false, error: 'Nom et téléphone obligatoires pour une demande de rappel.' }
+        }
+        // Ticket support
+        const { data: shopRow } = await supa.from('shops').select('name').eq('id', shopId).maybeSingle()
+        const shopName = shopRow?.name || userContext?.shopName || ''
+        if (userContext?.userId && shopId) {
+          const { error: ticketErr } = await supa.from('support_tickets').insert({
+            shop_id: shopId,
+            created_by: userContext.userId,
+            subject: `Demande de rappel (Fixy) — ${contactName}`,
+            description: `Via Fixy. Contact : ${contactName} — ${contactPhone}.\nMotif : ${reason || 'non précisé'}`,
+            priority: 'high',
+            status: 'open',
+          })
+          if (ticketErr) console.error('[help-bot] ticket insert error:', ticketErr.message)
+        }
+        // SMS d'alerte Super Admin (non bloquant)
+        try {
+          const baseUrl = Deno.env.get('SUPABASE_URL')!
+          await fetch(`${baseUrl}/functions/v1/notify-super-admin`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'apikey': Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+              'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!}`,
+            },
+            body: JSON.stringify({
+              kind: 'human_request',
+              contact_name: contactName,
+              contact_phone: contactPhone,
+              reason,
+              shop_name: shopName,
+            }),
+          })
+        } catch (smsErr) {
+          console.error('[help-bot] notify-super-admin error:', smsErr)
+        }
+        return { ok: true, message: 'Demande de rappel enregistrée et transmise. Un humain rappellera ce numéro.' }
+      }
       case 'search_sav_cases': {
         const limit = clamp(args.limit, 50, 200)
         let q = supa.from('sav_cases')
@@ -1455,7 +1531,7 @@ async function buildCompactContext(supa: any, shopId: string): Promise<string> {
 // attachments: [{ name, mime_type, data_base64 }]
 async function callAIWithTools(
   aiConfig: any, systemPrompt: string, history: any[], userMessage: string,
-  supa: any, shopId: string, attachments: any[] = []
+  supa: any, shopId: string, attachments: any[] = [], userContext?: any
 ): Promise<{ text: string; reports: any[] }> {
   const MAX_TURNS = 6
   const reports: any[] = []
@@ -1512,7 +1588,7 @@ async function callAIWithTools(
       contents.push({ role: 'model', parts })
       const responsesParts: any[] = []
       for (const fc of fnCalls) {
-        const raw = await runTool(fc.name, fc.args || {}, supa, shopId)
+        const raw = await runTool(fc.name, fc.args || {}, supa, shopId, userContext)
         const result = collect(fc.name, raw)
         console.log(`[help-bot] gemini tool=${fc.name} ok`)
         responsesParts.push({ functionResponse: { name: fc.name, response: { result } } })
@@ -1565,7 +1641,7 @@ async function callAIWithTools(
     for (const tc of msg.tool_calls) {
       let args = {}
       try { args = JSON.parse(tc.function.arguments || '{}') } catch {}
-      const raw = await runTool(tc.function.name, args, supa, shopId)
+      const raw = await runTool(tc.function.name, args, supa, shopId, userContext)
       const result = collect(tc.function.name, raw)
       console.log(`[help-bot] tool=${tc.function.name} ok`)
       messages.push({
@@ -1626,7 +1702,7 @@ Deno.serve(async (req) => {
 
     let result: { text: string; reports: any[] }
     try {
-      result = await callAIWithTools(aiConfig, fullSystem, chatHistory, message, supa, shopId || '', safeAttachments)
+      result = await callAIWithTools(aiConfig, fullSystem, chatHistory, message, supa, shopId || '', safeAttachments, userContext)
     } catch (e: any) {
       console.error('[help-bot] AI call failed:', e)
       const status = e?.status

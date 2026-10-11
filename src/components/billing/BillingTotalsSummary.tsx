@@ -1,6 +1,8 @@
 import { useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { useBillingConfig } from '@/hooks/useBillingConfig';
 import { useParts } from '@/hooks/useParts';
+import { useProfile } from '@/hooks/useProfile';
 import { computeLineTotals, regimeLabel } from '@/lib/vatCalculator';
 
 export interface BillingLineInput {
@@ -28,6 +30,8 @@ interface Props {
 export function BillingTotalsSummary({ lines, discountTotal = 0 }: Props) {
   const { config } = useBillingConfig();
   const { parts } = useParts();
+  const { profile } = useProfile();
+  const isAdmin = profile?.role === 'admin' || profile?.role === 'super_admin';
 
   const totals = useMemo(() => {
     let partsHT = 0, partsTTC = 0, laborHT = 0, vatParts = 0, vatLabor = 0;
@@ -69,10 +73,23 @@ export function BillingTotalsSummary({ lines, discountTotal = 0 }: Props) {
       </div>
 
       {showLabor && (
-        <div className="flex justify-between">
-          <span>{config.labor_label} (HT)</span>
-          <span>{totals.laborHT.toFixed(2)} €</span>
-        </div>
+        <>
+          <div className="flex justify-between">
+            <span>{config.labor_label} (HT)</span>
+            <span>{totals.laborHT.toFixed(2)} €</span>
+          </div>
+          <p className="text-[11px] text-muted-foreground italic">
+            Main d'œuvre ajoutée automatiquement.
+            {isAdmin && (
+              <>
+                {' '}
+                <Link to="/settings?tab=billing-vat" className="underline hover:text-foreground">
+                  Modifier dans Paramètres → TVA &amp; MO
+                </Link>
+              </>
+            )}
+          </p>
+        </>
       )}
 
       {showVatDetail && (
