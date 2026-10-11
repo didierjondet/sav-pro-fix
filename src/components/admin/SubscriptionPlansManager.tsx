@@ -183,6 +183,18 @@ export default function SubscriptionPlansManager() {
     });
   };
 
+  const syncPlanToStripe = async (planId: string) => {
+    const { syncStripeProduct } = await import('@/lib/stripeSync');
+    const result = await syncStripeProduct('plan', planId);
+    if (!result.ok) {
+      toast({
+        title: "Réplication Stripe échouée",
+        description: `Le plan est enregistré, mais la réplication Stripe a échoué : ${result.message}`,
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleCreatePlan = async () => {
     try {
       console.log('Creating plan with data:', formData);
@@ -327,6 +339,7 @@ export default function SubscriptionPlansManager() {
           title: "Succès",
           description: "Plan d'abonnement mis à jour avec succès",
         });
+        await syncPlanToStripe(editingPlan.id);
       }
     } catch (error: any) {
       console.error('Update plan error:', error);
