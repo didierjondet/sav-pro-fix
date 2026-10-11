@@ -90,10 +90,28 @@ Deno.serve(async (req) => {
     // 3. Message
     let message: string
     if (body.kind === 'new_shop') {
-      message = `FIXWAY - Nouveau magasin inscrit : ${body.shop_name || '?'}.`
-        + (body.owner_name ? ` Contact : ${body.owner_name}.` : '')
-        + (body.owner_email ? ` Email : ${body.owner_email}.` : '')
-        + (body.owner_phone ? ` Tel : ${body.owner_phone}.` : '')
+      if (!body.shop_id) {
+        return new Response(JSON.stringify({ error: 'shop_id requis' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      const { data: shop } = await supabase
+        .from('shops')
+        .select('name, email, phone')
+        .eq('id', body.shop_id)
+        .maybeSingle()
+      const { data: owner } = await supabase
+        .from('profiles')
+        .select('first_name, last_name, phone')
+        .eq('shop_id', body.shop_id)
+        .order('created_at', { ascending: true })
+        .limit(1)
+        .maybeSingle()
+      const ownerName = [owner?.first_name, owner?.last_name].filter(Boolean).join(' ')
+      message = `FIXWAY - Nouveau magasin inscrit : ${shop?.name || '?'}.`
+        + (ownerName ? ` Contact : ${ownerName}.` : '')
+        + (shop?.email ? ` Email : ${shop.email}.` : '')
+        + (owner?.phone || shop?.phone ? ` Tel : ${owner?.phone || shop?.phone}.` : '')
     } else {
       if (!body.contact_phone || !body.contact_name) {
         return new Response(JSON.stringify({ error: 'contact_name et contact_phone requis' }), {
