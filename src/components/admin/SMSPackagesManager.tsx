@@ -107,11 +107,25 @@ export function SMSPackagesManager() {
     setEditingPackage(null);
   };
 
+  const syncToStripe = async (packageId: string) => {
+    const { syncStripeProduct } = await import('@/lib/stripeSync');
+    const result = await syncStripeProduct('sms_package', packageId);
+    if (!result.ok) {
+      toast({
+        title: "Réplication Stripe échouée",
+        description: `Le pack est enregistré, mais la réplication Stripe a échoué : ${result.message}`,
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleCreatePackage = async () => {
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('sms_packages')
-        .insert([formData]);
+        .insert([formData])
+        .select()
+        .single();
 
       if (error) throw error;
 
@@ -123,6 +137,7 @@ export function SMSPackagesManager() {
       setDialogOpen(false);
       resetForm();
       fetchPackages();
+      if (data?.id) await syncToStripe(data.id);
     } catch (error: any) {
       toast({
         title: "Erreur",
@@ -165,6 +180,7 @@ export function SMSPackagesManager() {
       setDialogOpen(false);
       resetForm();
       fetchPackages();
+      await syncToStripe(editingPackage.id);
     } catch (error: any) {
       toast({
         title: "Erreur",

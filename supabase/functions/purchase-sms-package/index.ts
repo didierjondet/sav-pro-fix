@@ -82,11 +82,11 @@ Deno.serve(async (req) => {
     logStep("Creating checkout session");
 
     const origin = req.headers.get("origin") || "https://your-domain.com";
-    const session = await stripe.checkout.sessions.create({
-      customer: customerId,
-      customer_email: customerId ? undefined : user.email,
-      line_items: [
-        {
+    // Utiliser le prix Stripe répliqué depuis le Super Admin si disponible,
+    // sinon repli sur un prix créé à la volée
+    const lineItem = packageData.stripe_price_id
+      ? { price: packageData.stripe_price_id, quantity: 1 }
+      : {
           price_data: {
             currency: "eur",
             product_data: {
@@ -96,8 +96,12 @@ Deno.serve(async (req) => {
             unit_amount: packageData.price_cents,
           },
           quantity: 1,
-        },
-      ],
+        };
+
+    const session = await stripe.checkout.sessions.create({
+      customer: customerId,
+      customer_email: customerId ? undefined : user.email,
+      line_items: [lineItem],
       mode: "payment",
       success_url: `${origin}/settings?tab=sms&success=true`,
       cancel_url: `${origin}/settings?tab=sms&cancelled=true`,
