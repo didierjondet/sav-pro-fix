@@ -115,6 +115,9 @@ export function useHelpBot() {
       shopComplete,
       role: profile?.role || 'unknown',
       shopName: shop?.name || '',
+      userId: profile?.user_id || undefined,
+      userName: [profile?.first_name, profile?.last_name].filter(Boolean).join(' ') || undefined,
+      userPhone: profile?.phone || undefined,
     };
   }, [profile, shop]);
 
