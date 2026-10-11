@@ -30,6 +30,8 @@ interface Props {
 export function BillingTotalsSummary({ lines, discountTotal = 0 }: Props) {
   const { config } = useBillingConfig();
   const { parts } = useParts();
+  const { profile } = useProfile();
+  const isAdmin = profile?.role === 'admin' || profile?.role === 'super_admin';
 
   const totals = useMemo(() => {
     let partsHT = 0, partsTTC = 0, laborHT = 0, vatParts = 0, vatLabor = 0;
