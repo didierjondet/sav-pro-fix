@@ -561,10 +561,54 @@ const clamp = (n: any, def: number, max: number) => {
   return Math.min(Math.floor(v), max)
 }
 
-async function runTool(name: string, args: any, supa: any, shopId: string): Promise<any> {
+async function runTool(name: string, args: any, supa: any, shopId: string, userContext?: any): Promise<any> {
   args = args || {}
   try {
     switch (name) {
+      case 'request_human_callback': {
+        const contactName = String(args.contact_name || '').trim()
+        const contactPhone = String(args.contact_phone || '').trim()
+        const reason = String(args.reason || '').trim()
+        if (!contactName || !contactPhone) {
+          return { ok: false, error: 'Nom et téléphone obligatoires pour une demande de rappel.' }
+        }
+        // Ticket support
+        const { data: shopRow } = await supa.from('shops').select('name').eq('id', shopId).maybeSingle()
+        const shopName = shopRow?.name || userContext?.shopName || ''
+        if (userContext?.userId && shopId) {
+          const { error: ticketErr } = await supa.from('support_tickets').insert({
+            shop_id: shopId,
+            created_by: userContext.userId,
+            subject: `Demande de rappel (Fixy) — ${contactName}`,
+            description: `Via Fixy. Contact : ${contactName} — ${contactPhone}.\nMotif : ${reason || 'non précisé'}`,
+            priority: 'high',
+            status: 'open',
+          })
+          if (ticketErr) console.error('[help-bot] ticket insert error:', ticketErr.message)
+        }
+        // SMS d'alerte Super Admin (non bloquant)
+        try {
+          const baseUrl = Deno.env.get('SUPABASE_URL')!
+          await fetch(`${baseUrl}/functions/v1/notify-super-admin`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'apikey': Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+              'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!}`,
+            },
+            body: JSON.stringify({
+              kind: 'human_request',
+              contact_name: contactName,
+              contact_phone: contactPhone,
+              reason,
+              shop_name: shopName,
+            }),
+          })
+        } catch (smsErr) {
+          console.error('[help-bot] notify-super-admin error:', smsErr)
+        }
+        return { ok: true, message: 'Demande de rappel enregistrée et transmise. Un humain rappellera ce numéro.' }
+      }
       case 'search_sav_cases': {
         const limit = clamp(args.limit, 50, 200)
         let q = supa.from('sav_cases')
