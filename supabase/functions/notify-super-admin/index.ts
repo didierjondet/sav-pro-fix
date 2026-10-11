@@ -33,7 +33,7 @@ async function decryptConfig(encryptedData: string): Promise<Record<string, stri
 }
 
 type Body =
-  | { kind: 'new_shop'; shop_name: string; owner_name?: string; owner_email?: string; owner_phone?: string }
+  | { kind: 'new_shop'; shop_id: string }
   | { kind: 'human_request'; contact_name: string; contact_phone: string; reason: string; shop_name?: string }
 
 Deno.serve(async (req) => {
