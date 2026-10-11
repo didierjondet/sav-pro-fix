@@ -73,10 +73,23 @@ export function BillingTotalsSummary({ lines, discountTotal = 0 }: Props) {
       </div>
 
       {showLabor && (
-        <div className="flex justify-between">
-          <span>{config.labor_label} (HT)</span>
-          <span>{totals.laborHT.toFixed(2)} €</span>
-        </div>
+        <>
+          <div className="flex justify-between">
+            <span>{config.labor_label} (HT)</span>
+            <span>{totals.laborHT.toFixed(2)} €</span>
+          </div>
+          <p className="text-[11px] text-muted-foreground italic">
+            Main d'œuvre ajoutée automatiquement.
+            {isAdmin && (
+              <>
+                {' '}
+                <Link to="/settings?tab=billing-vat" className="underline hover:text-foreground">
+                  Modifier dans Paramètres → TVA &amp; MO
+                </Link>
+              </>
+            )}
+          </p>
+        </>
       )}
 
       {showVatDetail && (
