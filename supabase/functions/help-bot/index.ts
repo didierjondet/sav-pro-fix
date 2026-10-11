@@ -492,6 +492,22 @@ const TOOL_DEFS = [
   {
     type: 'function',
     function: {
+      name: 'request_human_callback',
+      description: 'Demande de rappel par un humain. Crée un ticket support et envoie un SMS d\'alerte au Super Admin. À appeler UNIQUEMENT après avoir collecté nom + téléphone + motif.',
+      parameters: {
+        type: 'object',
+        properties: {
+          contact_name: { type: 'string', description: 'Nom de la personne à rappeler' },
+          contact_phone: { type: 'string', description: 'Numéro de téléphone pour le rappel' },
+          reason: { type: 'string', description: 'Motif résumé de la demande' },
+        },
+        required: ['contact_name', 'contact_phone', 'reason'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
       name: 'recalculate_part_reservations',
       description: 'ACTION ADMIN uniquement. Recalcule reserved_quantity de toutes les pièces de la boutique à partir des SAV ouverts. À proposer si des unités fantômes sont détectées.',
       parameters: { type: 'object', properties: {} },
