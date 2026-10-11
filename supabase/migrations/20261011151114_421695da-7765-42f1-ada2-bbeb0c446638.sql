@@ -1,0 +1,1 @@
+ALTER TABLE public.sms_packages ADD COLUMN IF NOT EXISTS stripe_price_id text;
