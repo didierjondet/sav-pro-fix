@@ -1531,7 +1531,7 @@ async function buildCompactContext(supa: any, shopId: string): Promise<string> {
 // attachments: [{ name, mime_type, data_base64 }]
 async function callAIWithTools(
   aiConfig: any, systemPrompt: string, history: any[], userMessage: string,
-  supa: any, shopId: string, attachments: any[] = []
+  supa: any, shopId: string, attachments: any[] = [], userContext?: any
 ): Promise<{ text: string; reports: any[] }> {
   const MAX_TURNS = 6
   const reports: any[] = []
@@ -1588,7 +1588,7 @@ async function callAIWithTools(
       contents.push({ role: 'model', parts })
       const responsesParts: any[] = []
       for (const fc of fnCalls) {
-        const raw = await runTool(fc.name, fc.args || {}, supa, shopId)
+        const raw = await runTool(fc.name, fc.args || {}, supa, shopId, userContext)
         const result = collect(fc.name, raw)
         console.log(`[help-bot] gemini tool=${fc.name} ok`)
         responsesParts.push({ functionResponse: { name: fc.name, response: { result } } })
@@ -1641,7 +1641,7 @@ async function callAIWithTools(
     for (const tc of msg.tool_calls) {
       let args = {}
       try { args = JSON.parse(tc.function.arguments || '{}') } catch {}
-      const raw = await runTool(tc.function.name, args, supa, shopId)
+      const raw = await runTool(tc.function.name, args, supa, shopId, userContext)
       const result = collect(tc.function.name, raw)
       console.log(`[help-bot] tool=${tc.function.name} ok`)
       messages.push({
@@ -1702,7 +1702,7 @@ Deno.serve(async (req) => {
 
     let result: { text: string; reports: any[] }
     try {
-      result = await callAIWithTools(aiConfig, fullSystem, chatHistory, message, supa, shopId || '', safeAttachments)
+      result = await callAIWithTools(aiConfig, fullSystem, chatHistory, message, supa, shopId || '', safeAttachments, userContext)
     } catch (e: any) {
       console.error('[help-bot] AI call failed:', e)
       const status = e?.status
