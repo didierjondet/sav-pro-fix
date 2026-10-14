@@ -1,3 +1,4 @@
+import type { MobileSavPayload } from '@/lib/mobileSav';
 import { useState, useEffect } from 'react';
 import { ControllerTestDialog } from '@/components/sav/controller/ControllerTestDialog';
 import type { ControllerReport } from '@/lib/controllerTest';
@@ -83,9 +84,11 @@ interface SelectedPart {
 
 interface SAVFormProps {
   onSuccess?: () => void;
+  /** Informations saisies sur smartphone, pour pré-remplir le formulaire */
+  initialDeviceData?: Partial<MobileSavPayload> | null;
 }
 
-export function SAVForm({ onSuccess }: SAVFormProps) {
+export function SAVForm({ onSuccess, initialDeviceData }: SAVFormProps) {
   // Utiliser le premier type et statut disponible comme défaut
   const { getAllStatuses, getStatusInfo } = useShopSAVStatuses();
   const { getAllTypes, getTypeInfo } = useShopSAVTypes();
@@ -148,6 +151,23 @@ export function SAVForm({ onSuccess }: SAVFormProps) {
   const [savLimits, setSavLimits] = useState<{ allowed: boolean; reason: string; action: string | null }>({ allowed: true, reason: '', action: null });
   const [loanerSelection, setLoanerSelection] = useState<LoanerSelection>(EMPTY_LOANER_SELECTION);
   const loanerTouchedRef = React.useRef(false);
+
+  // Pré-remplissage depuis la saisie smartphone
+  React.useEffect(() => {
+    if (!initialDeviceData) return;
+    const p = initialDeviceData;
+    setDeviceInfo((prev: any) => ({
+      ...prev,
+      brand: p.brand || prev.brand, model: p.model || prev.model,
+      imei: p.imei || prev.imei, sku: p.sku || prev.sku,
+      color: p.color || prev.color, grade: p.grade || prev.grade,
+      problemDescription: p.problem || prev.problemDescription,
+      attachments: Array.isArray(p.photos) && p.photos.length ? p.photos : prev.attachments,
+    }));
+    if (p.accessories) setAccessories((prev: any) => ({ ...prev, ...p.accessories }));
+    if (p.unlock_code) setSecurityCodes((prev) => ({ ...prev, unlock_code: p.unlock_code! }));
+    if (p.no_code) setNoUnlockCode(true);
+  }, [initialDeviceData]);
   const setLoanerSelectionTouched = (v: LoanerSelection | ((p: LoanerSelection) => LoanerSelection)) => {
     loanerTouchedRef.current = true;
     setLoanerSelection(v as any);
