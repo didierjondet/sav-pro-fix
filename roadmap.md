@@ -1,6 +1,6 @@
 # Roadmap
 
-- [ ] Impression SAV : magasin seul sans client, bandeaux client/magasin distincts, reformulation de panne ultra-concise (plan approuvé).
+- [x] Impression SAV : magasin seul sans client, bandeaux client/magasin distincts, reformulation de panne ultra-concise ; tests et exemples imprimés vérifiés, IA déployée (parcours connecté non vérifiable sur ce projet).
 
 - [x] Remplacer les anciennes adresses officielles de contact Fixway par fixwaypro@gmail.com sur le site et les formulaires, sans changer les comptes de connexion.
 
