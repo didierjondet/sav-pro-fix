@@ -11,3 +11,5 @@
 - [x] Stripe : fonction sync-stripe-product (Super Admin → Stripe, temps réel)
 - [x] Stripe : purchase-sms-package utilise stripe_price_id
 - [x] Stripe : appel de la réplication depuis SubscriptionPlansManager et gestionnaire packs SMS
+
+- [x] Saisie d'un SAV depuis le smartphone (QR, formulaire mobile, lecture IA des codes, impression sur ordinateur)
