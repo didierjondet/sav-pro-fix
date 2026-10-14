@@ -33,6 +33,7 @@ import { SAVStatusDropdown } from '@/components/sav/SAVStatusDropdown';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { SAVWizardDialog } from '@/components/sav/SAVWizardDialog';
+import { NewSAVModeDialog } from '@/components/sav/NewSAVModeDialog';
 import { NewSAVFromProductButton } from '@/components/sav/NewSAVFromProductButton';
 import { 
   Eye,
@@ -117,6 +118,7 @@ export default function SAVList() {
   const [qrCodeCase, setQrCodeCase] = useState(null);
   const [showPrintDialog, setShowPrintDialog] = useState(false);
   const [showWizard, setShowWizard] = useState(false);
+  const [showModeDialog, setShowModeDialog] = useState(false);
   const [viewMode, setViewMode] = useState<'standard' | 'compact'>(() => {
     // La vue est liée au mode simplifié : simplifié → compact, normal → standard
     const isSimplified = localStorage.getItem('fixway_simplified_view') === 'true';
@@ -272,6 +274,12 @@ export default function SAVList() {
 
   const handleNewSAV = () => {
     if (checkAndShowLimitDialog('sav')) {
+      setShowModeDialog(true);
+    }
+  };
+
+  const openComputerFlow = () => {
+    {
       const isSimplified = localStorage.getItem('fixway_simplified_view') === 'true';
       if (isSimplified) {
         setShowWizard(true);
@@ -1036,6 +1044,7 @@ export default function SAVList() {
         availableTypes={availablePrintTypes}
 
       />
+      <NewSAVModeDialog open={showModeDialog} onOpenChange={setShowModeDialog} onComputer={openComputerFlow} />
       <SAVWizardDialog
         open={showWizard}
         onOpenChange={setShowWizard}
