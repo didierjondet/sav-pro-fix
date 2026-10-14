@@ -284,7 +284,7 @@ export default function SAVList() {
       if (isSimplified) {
         setShowWizard(true);
       } else {
-        navigate('/sav/new');
+        navigate('/sav/new', { state: { mode: 'computer' } });
       }
     }
   };
