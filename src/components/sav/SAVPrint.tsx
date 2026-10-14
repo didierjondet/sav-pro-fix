@@ -10,6 +10,9 @@ import { Printer, Scissors } from "lucide-react";
 import { generateShortTrackingUrl } from '@/utils/trackingUtils';
 import { fetchBillingConfig, aggregateTotals, buildVatHtmlBlock } from '@/utils/pdfVatHelpers';
 import bwipjs from 'bwip-js/browser';
+import { getSAVPrintCopies } from '@/lib/savPrintCopies';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { UserRound, Store } from 'lucide-react';
 
 interface SAVPrintButtonRef {
   print: (override?: SAVPrintButtonProps['savCase']) => Promise<void>;
@@ -39,6 +42,12 @@ export const SAVPrintButton = React.forwardRef<SAVPrintButtonRef, SAVPrintButton
   const handlePrint = async (override?: typeof savCaseProp) => {
     if (printing) return;
     const savCase = override ?? savCaseProp;
+    const hasClientCopy = getSAVPrintCopies(savCase.customer_id).includes('client');
+    const theme = getComputedStyle(document.documentElement);
+    const printTokens = ['--print-client', '--print-client-foreground', '--print-shop', '--print-shop-foreground']
+      .map(token => `${token}:${theme.getPropertyValue(token)};`).join('');
+    const clientIcon = renderToStaticMarkup(<UserRound aria-hidden="true" />);
+    const shopIcon = renderToStaticMarkup(<Store aria-hidden="true" />);
     setPrinting(true);
 
     // Ouvrir la fenêtre SYNCHRONEMENT, avant tout await, pour préserver le geste utilisateur
@@ -374,10 +383,18 @@ export const SAVPrintButton = React.forwardRef<SAVPrintButtonRef, SAVPrintButton
   <meta charset="utf-8" />
   <title>Impression Dossier SAV ${savCase.case_number}</title>
   <style>
+    :root { ${printTokens} }
     @page { size: A4 landscape; margin: 0.8cm; }
     body { font-family: Arial, sans-serif; font-size: 10px; color: #111; }
     .dual-content { display: flex; flex-direction: row; gap: 12px; width: 100%; align-items: stretch; }
     .content-block { width: calc(50% - 18px); page-break-inside: avoid; break-inside: avoid; }
+    .single-content { justify-content: flex-start; }
+    .copy-banner { display:flex; align-items:center; gap:8px; border:2px solid currentColor; padding:8px 10px; margin-bottom:8px; }
+    .copy-banner svg { width:26px; height:26px; flex-shrink:0; }
+    .copy-banner strong { display:block; font-size:20px; line-height:1.1; }
+    .copy-banner span { display:block; font-size:10px; font-weight:700; margin-top:3px; }
+    .copy-client { background:hsl(var(--print-client)); color:hsl(var(--print-client-foreground)); }
+    .copy-shop { background:hsl(var(--print-shop)); color:hsl(var(--print-shop-foreground)); border-style:double; border-width:4px; padding:6px 8px; }
     .header { display:flex; align-items:flex-start; justify-content:space-between; gap: 8px; margin-bottom: 12px; }
     .header-qr { text-align:center; flex-shrink:0; }
     .header-qr img { border:1px solid #ddd; padding:2px; width: 55px; height: 55px; }
@@ -432,14 +449,15 @@ export const SAVPrintButton = React.forwardRef<SAVPrintButtonRef, SAVPrintButton
   </style>
 </head>
 <body>
-<div class="dual-content">
+<div class="dual-content ${hasClientCopy ? '' : 'single-content'}">
+  ${hasClientCopy ? `
   <div class="content-block">
+    <div class="copy-banner copy-client">${clientIcon}<div><strong>CLIENT</strong><span>À REMETTRE AU CLIENT</span></div></div>
     ${shopHeader}
     <div class="header">
       <div class="header-left">
         <div class="title">Dossier SAV N° ${savCase.case_number}</div>
         ${caseBarcodeImg}
-        <div class="sav-type">Exemplaire client</div>
         <div class="meta">Créé le ${(savCase.created_at ? new Date(savCase.created_at).toLocaleDateString() : "")} · Statut: ${getStatusLabel(savCase.status)}</div>
       </div>
       ${qrHeaderBlock}
@@ -458,13 +476,15 @@ export const SAVPrintButton = React.forwardRef<SAVPrintButtonRef, SAVPrintButton
   <div class="cut-line">
     <span class="scissors">✂</span>
   </div>
+  ` : ''}
   <div class="content-block">
+    <div class="copy-banner copy-shop">${shopIcon}<div><strong>MAGASIN</strong><span>À CONSERVER</span></div></div>
     ${shopHeader}
     <div class="header">
       <div class="header-left">
         <div class="title">Dossier SAV N° ${savCase.case_number}</div>
         ${caseBarcodeImg}
-        <div class="sav-type">${getTypeInfo(savCase.sav_type).label}${providerName ? ` · Prestataire : ${providerName}` : ''} <span style="font-weight:400;">(exemplaire magasin)</span></div>
+        <div class="sav-type">${getTypeInfo(savCase.sav_type).label}${providerName ? ` · Prestataire : ${providerName}` : ''}</div>
         <div class="meta">Créé le ${(savCase.created_at ? new Date(savCase.created_at).toLocaleDateString() : "")} · Statut: ${getStatusLabel(savCase.status)}</div>
       </div>
       ${qrHeaderBlock}
