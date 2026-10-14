@@ -50,6 +50,20 @@ export interface MobileSavPayload {
   unlock_code: string; no_code: boolean;
 }
 
+export type MobileCodePhotoTarget = 'all' | 'imei' | 'sku';
+
+/** Une photo ciblée ne remplace jamais le code de l'autre champ. */
+export function mobileCodePhotoPatch(
+  codes: { imei?: string | null; serial?: string | null; sku?: string | null },
+  target: MobileCodePhotoTarget,
+): Partial<Pick<MobileSavPayload, 'imei' | 'sku'>> {
+  const patch: Partial<Pick<MobileSavPayload, 'imei' | 'sku'>> = {};
+  const identity = codes.imei || codes.serial;
+  if (target !== 'sku' && identity) patch.imei = identity;
+  if (target !== 'imei' && codes.sku) patch.sku = codes.sku;
+  return patch;
+}
+
 const PAYLOAD_KEYS: (keyof MobileSavPayload)[] = ['brand', 'model', 'imei', 'sku', 'color', 'grade', 'photos', 'problem', 'accessories', 'unlock_code', 'no_code'];
 
 /** Ne garde que les champs autorisés du payload mobile. */

@@ -10,7 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Progress } from '@/components/ui/progress';
 import { AITextReformulator } from '@/components/sav/AITextReformulator';
-import { isValidImei, type MobileSavPayload } from '@/lib/mobileSav';
+import { isValidImei, mobileCodePhotoPatch, type MobileCodePhotoTarget, type MobileSavPayload } from '@/lib/mobileSav';
 
 const COLORS = [
   { value: 'black', label: 'Noir', color: 'hsl(0 0% 0%)' },
@@ -69,6 +69,7 @@ export default function MobileSAVWizard() {
   const [uploading, setUploading] = useState(false);
   const [sending, setSending] = useState(false);
   const ocrInput = useRef<HTMLInputElement>(null);
+  const ocrTarget = useRef<MobileCodePhotoTarget>('all');
   const photoInput = useRef<HTMLInputElement>(null);
   const set = (patch: Partial<Draft>) => setD((p) => ({ ...p, ...patch }));
 
@@ -89,16 +90,21 @@ export default function MobileSAVWizard() {
     go(step + 1);
   };
 
-  const runOcr = async (file: File) => {
+  const chooseCodePhoto = (target: MobileCodePhotoTarget) => {
+    ocrTarget.current = target;
+    ocrInput.current?.click();
+  };
+
+  const runOcr = async (file: File, target: MobileCodePhotoTarget) => {
     setOcrLoading(true);
     try {
       const image = await fileToDataUrl(file);
       const { data, error } = await supabase.functions.invoke('ai-read-device-codes', { body: { image, token } });
       if (error || data?.error) throw new Error(data?.error || 'Lecture impossible, saisissez le code à la main.');
-      const patch: Partial<Draft> = {};
-      if (data.imei) patch.imei = data.imei; else if (data.serial) patch.imei = data.serial;
-      if (data.sku) patch.sku = data.sku;
-      if (!patch.imei && !patch.sku) throw new Error('Aucun code lisible sur la photo.');
+      const patch = mobileCodePhotoPatch(data, target);
+      if (!patch.imei && !patch.sku) throw new Error(target === 'imei'
+        ? 'Aucun IMEI ou numéro de série lisible sur la photo.'
+        : target === 'sku' ? 'Aucun SKU ou référence lisible sur la photo.' : 'Aucun code lisible sur la photo.');
       set(patch);
       toast({ title: 'Codes lus', description: 'Vérifiez-les avant de continuer.' });
     } catch (e: any) {
@@ -185,20 +191,30 @@ export default function MobileSAVWizard() {
         {step === 1 && (
           <div className="space-y-4">
             <input ref={ocrInput} type="file" accept="image/*" capture="environment" className="hidden"
-              onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; if (f) runOcr(f); }} />
-            <Button className={`w-full ${big}`} onClick={() => ocrInput.current?.click()} disabled={ocrLoading}>
+              onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; if (f) runOcr(f, ocrTarget.current); }} />
+            <Button className={`w-full ${big}`} onClick={() => chooseCodePhoto('all')} disabled={ocrLoading}>
               {ocrLoading ? <Loader2 className="h-5 w-5 mr-2 animate-spin" /> : <Camera className="h-5 w-5 mr-2" />}
               {ocrLoading ? 'Lecture en cours…' : "Photographier l'étiquette"}
             </Button>
             <p className="text-xs text-muted-foreground text-center">L'IA lit les codes de la photo. Vérifiez-les ensuite.</p>
             <div className="space-y-1.5">
-              <Label className="text-base">IMEI ou n° de série</Label>
-              <Input className={`${big} font-mono`} autoCapitalize="characters" value={d.imei} onChange={(e) => set({ imei: e.target.value.toUpperCase().replace(/\s/g, '') })} />
+              <Label htmlFor="mobile-imei" className="text-base">IMEI ou n° de série</Label>
+              <div className="relative">
+                <Input id="mobile-imei" className={`${big} font-mono pr-14`} autoCapitalize="characters" value={d.imei} onChange={(e) => set({ imei: e.target.value.toUpperCase().replace(/\s/g, '') })} />
+                <Button type="button" variant="ghost" size="icon" className="absolute right-1 top-1 h-12 w-12 text-primary" aria-label="Photographier l’IMEI ou le numéro de série" title="Photographier l’IMEI ou le numéro de série" onClick={() => chooseCodePhoto('imei')} disabled={ocrLoading}>
+                  {ocrLoading && ocrTarget.current === 'imei' ? <Loader2 className="h-5 w-5 animate-spin" /> : <Camera className="h-5 w-5" />}
+                </Button>
+              </div>
               {d.imei && imeiDigits && !isValidImei(d.imei) && <p className="text-xs text-destructive">Cet IMEI semble incorrect (15 chiffres attendus) — vérifiez.</p>}
             </div>
             <div className="space-y-1.5">
-              <Label className="text-base">SKU / référence</Label>
-              <Input className={`${big} font-mono`} autoCapitalize="characters" value={d.sku} onChange={(e) => set({ sku: e.target.value.toUpperCase() })} />
+              <Label htmlFor="mobile-sku" className="text-base">SKU / référence</Label>
+              <div className="relative">
+                <Input id="mobile-sku" className={`${big} font-mono pr-14`} autoCapitalize="characters" value={d.sku} onChange={(e) => set({ sku: e.target.value.toUpperCase() })} />
+                <Button type="button" variant="ghost" size="icon" className="absolute right-1 top-1 h-12 w-12 text-primary" aria-label="Photographier le SKU ou la référence" title="Photographier le SKU ou la référence" onClick={() => chooseCodePhoto('sku')} disabled={ocrLoading}>
+                  {ocrLoading && ocrTarget.current === 'sku' ? <Loader2 className="h-5 w-5 animate-spin" /> : <Camera className="h-5 w-5" />}
+                </Button>
+              </div>
             </div>
           </div>
         )}
