@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import bwipjs from 'bwip-js/browser';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -8,20 +7,20 @@ import { supabase } from '@/integrations/supabase/client';
 import { useProfile } from '@/hooks/useProfile';
 import { useToast } from '@/hooks/use-toast';
 import { getPublicAppOrigin } from '@/utils/trackingUtils';
+import { sanitizeMobilePayload, type MobileSavPayload } from '@/lib/mobileSav';
 
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  /** Ouvre le parcours habituel sur ordinateur */
-  onComputer: () => void;
+  /** Ouvre le parcours habituel sur ordinateur, éventuellement pré-rempli par le smartphone */
+  onComputer: (mobilePayload?: Partial<MobileSavPayload>) => void;
 }
 
-type Session = { id: string; token: string; status: string; sav_case_id: string | null; expires_at: string };
+type Session = { id: string; token: string; status: string; payload?: any; expires_at: string };
 
 export function NewSAVModeDialog({ open, onOpenChange, onComputer }: Props) {
   const { profile } = useProfile();
   const { toast } = useToast();
-  const navigate = useNavigate();
   const [session, setSession] = useState<Session | null>(null);
   const [creating, setCreating] = useState(false);
 
@@ -39,12 +38,18 @@ export function NewSAVModeDialog({ open, onOpenChange, onComputer }: Props) {
   }, [session?.id]);
 
   useEffect(() => {
-    if (session?.status === 'submitted' && session.sav_case_id) {
-      const id = session.sav_case_id;
+    if (session?.status !== 'submitted') return;
+    (async () => {
+      let payload = session.payload;
+      if (!payload) {
+        const { data } = await supabase.from('mobile_sav_sessions' as any).select('payload').eq('id', session.id).maybeSingle();
+        payload = (data as any)?.payload;
+      }
       onOpenChange(false);
-      navigate(`/sav/${id}?from=mobile`);
-    }
-  }, [session?.status, session?.sav_case_id, navigate, onOpenChange]);
+      onComputer(sanitizeMobilePayload(payload));
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.status]);
 
   const url = session ? `${getPublicAppOrigin()}/m/sav/nouveau/${session.token}` : '';
   const qrSvg = useMemo(() => {
@@ -58,7 +63,7 @@ export function NewSAVModeDialog({ open, onOpenChange, onComputer }: Props) {
     const { data, error } = await supabase
       .from('mobile_sav_sessions' as any)
       .insert({ shop_id: profile.shop_id } as any)
-      .select('id, token, status, sav_case_id, expires_at')
+      .select('id, token, status, payload, expires_at')
       .single();
     setCreating(false);
     if (error || !data) {
@@ -70,7 +75,7 @@ export function NewSAVModeDialog({ open, onOpenChange, onComputer }: Props) {
 
   const statusLabel =
     session?.status === 'connected' ? 'Téléphone connecté — saisie en cours…'
-    : session?.status === 'submitted' ? 'SAV créé !'
+    : session?.status === 'submitted' ? 'Informations reçues !'
     : 'En attente du scan…';
 
   return (
@@ -105,8 +110,8 @@ export function NewSAVModeDialog({ open, onOpenChange, onComputer }: Props) {
               {statusLabel}
             </div>
             <p className="text-xs text-muted-foreground text-center">
-              Lien à usage unique, valable 15 minutes. Votre téléphone doit être connecté à votre compte Fixway.
-              Une fois le SAV validé sur le téléphone, il s'ouvrira ici pour l'impression.
+              Lien à usage unique, valable 15 minutes, sans connexion sur le téléphone.
+              Dès l'envoi, le formulaire s'ouvre ici pré-rempli : vous terminez (type, client, pièces) et imprimez.
             </p>
             <Button variant="ghost" size="sm" onClick={() => setSession(null)}>
               <ArrowLeft className="h-4 w-4 mr-1" /> Retour
