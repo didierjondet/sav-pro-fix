@@ -1657,6 +1657,42 @@ export type Database = {
         }
         Relationships: []
       }
+      mobile_sav_sessions: {
+        Row: {
+          created_at: string
+          created_by: string
+          expires_at: string
+          id: string
+          sav_case_id: string | null
+          shop_id: string
+          status: string
+          token: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string
+          expires_at?: string
+          id?: string
+          sav_case_id?: string | null
+          shop_id: string
+          status?: string
+          token?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          expires_at?: string
+          id?: string
+          sav_case_id?: string | null
+          shop_id?: string
+          status?: string
+          token?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           created_at: string
