@@ -19,8 +19,9 @@ const SCHEMA = {
 const PROMPT = `Lis l'étiquette / l'écran photographié d'un appareil électronique et extrais exactement :
 - imei : IMEI (15 chiffres) s'il est visible, sinon null (si deux IMEI, prends IMEI1)
 - serial : numéro de série (S/N, Serial No.) s'il est visible, sinon null
-- sku : référence produit / SKU / Model No. / EAN s'il est visible, sinon null
-Recopie caractère par caractère sans espaces, en majuscules. N'invente rien.`;
+- sku : référence produit / SKU / Model No. / EAN s'il est visible, sinon null.
+  Si un code-barres (EAN, UPC, Code 128…) ou un QR code est visible : prends le numéro imprimé sous/à côté s'il existe ; sinon décode le code-barres ou le QR code et utilise sa valeur (pour un QR contenant une URL ou plusieurs champs, garde uniquement la référence/SKU/EAN).
+Recopie caractère par caractère sans espaces, en majuscules. N'invente rien : si le code n'est pas décodable avec certitude, mets null.`;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
