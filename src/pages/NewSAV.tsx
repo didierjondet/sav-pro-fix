@@ -1,7 +1,13 @@
 import { useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { SAVForm } from '@/components/sav/SAVForm';
+import { NewSAVModeDialog } from '@/components/sav/NewSAVModeDialog';
 
 export default function NewSAV() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [chooseMode, setChooseMode] = useState((location.state as any)?.mode !== 'computer');
+
   const handleSuccess = () => {
     window.location.href = '/sav';
   };
@@ -16,6 +22,11 @@ export default function NewSAV() {
 
               <SAVForm onSuccess={handleSuccess} />
             </div>
+            <NewSAVModeDialog
+              open={chooseMode}
+              onOpenChange={(v) => { if (!v) setChooseMode(false); }}
+              onComputer={() => { setChooseMode(false); navigate('/sav/new', { replace: true, state: { mode: 'computer' } }); }}
+            />
           </main>
   );
 }

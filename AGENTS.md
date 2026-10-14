@@ -3,3 +3,4 @@
 - Auth/e-mail redirects go through `src/lib/authRedirect.ts` (Fixway domains only) — never send users to a Lovable host.
 - Controller-sheet identification is generated locally with bwip-js using the SAV print Code 128 options and case number — keeps scanning compatible without a network dependency.
 - Intake print destinations are selected by getSAVPrintCopies from the persisted customer_id — creation and reprint share a testable rule independent of customer contact details.
+- Smartphone SAV intake (/m/sav/nouveau/:token) pairs with the desktop via one-time mobile_sav_sessions rows and creates cases through useSAVCases.createCase like the desktop — keeps numbering, stock and history rules identical.

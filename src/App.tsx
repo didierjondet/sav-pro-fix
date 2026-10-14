@@ -64,6 +64,7 @@ import HelpBot from "./components/help/HelpBot";
 import AppLayout from "./components/layout/AppLayout";
 import UsageTracker from "./components/analytics/UsageTracker";
 import MobileSAVLookup from "./pages/MobileSAVLookup";
+import MobileSAVWizard from "./pages/MobileSAVWizard";
 import MobileInventory from "./pages/MobileInventory";
 import PartnersDirectory from "./pages/PartnersDirectory";
 import PartnerPublicProfile from "./pages/PartnerPublicProfile";
@@ -153,6 +154,7 @@ const App = () => {
                 <Route path="/rdv/:token" element={<AppointmentConfirm />} />
                 <Route path="/test" element={<TestLanding />} />
                 <Route path="/m/sav" element={<MobileSAVLookup />} />
+                <Route path="/m/sav/nouveau/:token" element={<MobileSAVWizard />} />
                 <Route path="/m/inventaire" element={<MobileInventory />} />
                 <Route path="/super-admin" element={<SuperAdmin />} />
                 <Route path="/landing" element={<Landing />} />
