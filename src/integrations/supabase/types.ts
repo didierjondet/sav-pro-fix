@@ -1663,6 +1663,7 @@ export type Database = {
           created_by: string
           expires_at: string
           id: string
+          payload: Json | null
           sav_case_id: string | null
           shop_id: string
           status: string
@@ -1674,6 +1675,7 @@ export type Database = {
           created_by?: string
           expires_at?: string
           id?: string
+          payload?: Json | null
           sav_case_id?: string | null
           shop_id: string
           status?: string
@@ -1685,6 +1687,7 @@ export type Database = {
           created_by?: string
           expires_at?: string
           id?: string
+          payload?: Json | null
           sav_case_id?: string | null
           shop_id?: string
           status?: string
@@ -5391,6 +5394,11 @@ export type Database = {
         Returns: undefined
       }
       mask_phone_number: { Args: { phone_number: string }; Returns: string }
+      mobile_sav_open: { Args: { p_token: string }; Returns: Json }
+      mobile_sav_submit: {
+        Args: { p_payload: Json; p_token: string }
+        Returns: Json
+      }
       open_buyback_to_network: { Args: { p_token: string }; Returns: Json }
       purge_old_usage_events: { Args: never; Returns: undefined }
       recalculate_inventory_session_totals: {

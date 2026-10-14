@@ -34,6 +34,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { SAVWizardDialog } from '@/components/sav/SAVWizardDialog';
 import { NewSAVModeDialog } from '@/components/sav/NewSAVModeDialog';
+import type { MobileSavPayload } from '@/lib/mobileSav';
 import { NewSAVFromProductButton } from '@/components/sav/NewSAVFromProductButton';
 import { 
   Eye,
@@ -119,6 +120,7 @@ export default function SAVList() {
   const [showPrintDialog, setShowPrintDialog] = useState(false);
   const [showWizard, setShowWizard] = useState(false);
   const [showModeDialog, setShowModeDialog] = useState(false);
+  const [wizardPrefill, setWizardPrefill] = useState<Partial<MobileSavPayload> | null>(null);
   const [viewMode, setViewMode] = useState<'standard' | 'compact'>(() => {
     // La vue est liée au mode simplifié : simplifié → compact, normal → standard
     const isSimplified = localStorage.getItem('fixway_simplified_view') === 'true';
@@ -278,14 +280,13 @@ export default function SAVList() {
     }
   };
 
-  const openComputerFlow = () => {
-    {
-      const isSimplified = localStorage.getItem('fixway_simplified_view') === 'true';
-      if (isSimplified) {
-        setShowWizard(true);
-      } else {
-        navigate('/sav/new', { state: { mode: 'computer' } });
-      }
+  const openComputerFlow = (mobilePayload?: Partial<MobileSavPayload>) => {
+    const isSimplified = localStorage.getItem('fixway_simplified_view') === 'true';
+    if (isSimplified) {
+      setWizardPrefill(mobilePayload || null);
+      setShowWizard(true);
+    } else {
+      navigate('/sav/new', { state: { mode: 'computer', mobilePayload: mobilePayload || null } });
     }
   };
 
@@ -1047,7 +1048,8 @@ export default function SAVList() {
       <NewSAVModeDialog open={showModeDialog} onOpenChange={setShowModeDialog} onComputer={openComputerFlow} />
       <SAVWizardDialog
         open={showWizard}
-        onOpenChange={setShowWizard}
+        onOpenChange={(v) => { setShowWizard(v); if (!v) setWizardPrefill(null); }}
+        initialDeviceData={wizardPrefill}
         onSuccess={() => refetch()}
       />
     </>

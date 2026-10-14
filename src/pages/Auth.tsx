@@ -32,14 +32,9 @@ export default function Auth() {
     toast
   } = useToast();
   const navigate = useNavigate();
-  // Retour autorisé uniquement vers les pages mobiles internes (/m/...)
-  const postLoginPath = (() => {
-    const r = new URLSearchParams(window.location.search).get('redirect') || '';
-    return /^\/m\/[\w\-/]*$/.test(r) ? r : '/dashboard';
-  })();
   useEffect(() => {
     if (user) {
-      navigate(postLoginPath);
+      navigate('/dashboard');
     }
   }, [user, navigate]);
   const handleSignIn = async (e: React.FormEvent) => {
@@ -64,7 +59,7 @@ export default function Auth() {
         title: "Connexion réussie",
         description: "Vous êtes maintenant connecté."
       });
-      navigate(postLoginPath);
+      navigate('/dashboard');
     }
     setLoading(false);
   };

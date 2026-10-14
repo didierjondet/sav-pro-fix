@@ -41,3 +41,21 @@ export function filterPartsForDevice<T extends { name: string; reference?: strin
     return hay.includes(b);
   });
 }
+
+/** Informations que le téléphone peut transmettre (aucune donnée magasin). */
+export interface MobileSavPayload {
+  brand: string; model: string; imei: string; sku: string;
+  color: string; grade: string; photos: string[]; problem: string;
+  accessories: { charger: boolean; case: boolean; screen_protector: boolean; other: string };
+  unlock_code: string; no_code: boolean;
+}
+
+const PAYLOAD_KEYS: (keyof MobileSavPayload)[] = ['brand', 'model', 'imei', 'sku', 'color', 'grade', 'photos', 'problem', 'accessories', 'unlock_code', 'no_code'];
+
+/** Ne garde que les champs autorisés du payload mobile. */
+export function sanitizeMobilePayload(raw: any): Partial<MobileSavPayload> {
+  const out: any = {};
+  if (!raw || typeof raw !== 'object') return out;
+  for (const k of PAYLOAD_KEYS) if (k in raw) out[k] = raw[k];
+  return out;
+}

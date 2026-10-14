@@ -1,3 +1,4 @@
+import type { MobileSavPayload } from '@/lib/mobileSav';
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { ControllerTestDialog } from '@/components/sav/controller/ControllerTestDialog';
 import type { ControllerReport } from '@/lib/controllerTest';
@@ -71,6 +72,8 @@ interface SAVWizardDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess?: () => void;
+  /** Informations saisies sur smartphone, pour pré-remplir l'assistant */
+  initialDeviceData?: Partial<MobileSavPayload> | null;
 }
 
 const STEPS = [
@@ -105,7 +108,7 @@ const GRADE_OPTIONS = [
   { value: 'D', label: 'Grade D', description: 'Mauvais état', color: 'bg-red-500' },
 ];
 
-export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDialogProps) {
+export function SAVWizardDialog({ open, onOpenChange, onSuccess, initialDeviceData }: SAVWizardDialogProps) {
   const { getAllStatuses } = useShopSAVStatuses();
   const { getAllTypes, getTypeInfo } = useShopSAVTypes();
   const defaultType = getAllTypes()[0]?.value || 'internal';
@@ -147,6 +150,23 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess }: SAVWizardDial
 
   const [loanerSelection, setLoanerSelection] = useState<LoanerSelection>(EMPTY_LOANER_SELECTION);
   const loanerTouchedRef = React.useRef(false);
+
+  // Pré-remplissage depuis la saisie smartphone
+  React.useEffect(() => {
+    if (!initialDeviceData) return;
+    const p = initialDeviceData;
+    setDeviceInfo((prev: any) => ({
+      ...prev,
+      brand: p.brand || prev.brand, model: p.model || prev.model,
+      imei: p.imei || prev.imei, sku: p.sku || prev.sku,
+      color: p.color || prev.color, grade: p.grade || prev.grade,
+      problemDescription: p.problem || prev.problemDescription,
+      attachments: Array.isArray(p.photos) && p.photos.length ? p.photos : prev.attachments,
+    }));
+    if (p.accessories) setAccessories((prev: any) => ({ ...prev, ...p.accessories }));
+    if (p.unlock_code) setSecurityCodes((prev) => ({ ...prev, unlock_code: p.unlock_code! }));
+    if (p.no_code) setNoUnlockCode(true);
+  }, [initialDeviceData]);
   const handleLoanerChange = (v: LoanerSelection) => {
     loanerTouchedRef.current = true;
     setLoanerSelection(v);

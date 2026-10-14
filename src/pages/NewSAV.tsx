@@ -6,6 +6,7 @@ import { NewSAVModeDialog } from '@/components/sav/NewSAVModeDialog';
 export default function NewSAV() {
   const location = useLocation();
   const navigate = useNavigate();
+  const mobilePayload = (location.state as any)?.mobilePayload || null;
   const [chooseMode, setChooseMode] = useState((location.state as any)?.mode !== 'computer');
 
   const handleSuccess = () => {
@@ -20,12 +21,12 @@ export default function NewSAV() {
                 <p className="text-muted-foreground">Créez un nouveau dossier de service après-vente</p>
               </div>
 
-              <SAVForm onSuccess={handleSuccess} />
+              <SAVForm key={mobilePayload ? 'mobile' : 'desktop'} onSuccess={handleSuccess} initialDeviceData={mobilePayload} />
             </div>
             <NewSAVModeDialog
               open={chooseMode}
               onOpenChange={(v) => { if (!v) setChooseMode(false); }}
-              onComputer={() => { setChooseMode(false); navigate('/sav/new', { replace: true, state: { mode: 'computer' } }); }}
+              onComputer={(payload) => { setChooseMode(false); navigate('/sav/new', { replace: true, state: { mode: 'computer', mobilePayload: payload || null } }); }}
             />
           </main>
   );

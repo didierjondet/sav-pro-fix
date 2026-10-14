@@ -1,5 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { getValidMobileSession } from "../_shared/mobileSavSession.ts";
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -24,14 +25,21 @@ Recopie caractère par caractère sans espaces, en majuscules. N'invente rien.`;
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   try {
-    const auth = req.headers.get("Authorization") || "";
-    const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, {
-      global: { headers: { Authorization: auth } },
-    });
-    const { data: claims, error: authErr } = await sb.auth.getClaims(auth.replace("Bearer ", ""));
-    if (authErr || !claims?.claims?.sub) return json({ error: "Non authentifié" }, 401);
-
     const body = await req.json().catch(() => null);
+    // Accès : utilisateur connecté OU lien mobile valide
+    let allowed = false;
+    if (body?.token) {
+      allowed = !!(await getValidMobileSession(body.token));
+    } else {
+      const auth = req.headers.get("Authorization") || "";
+      const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, {
+        global: { headers: { Authorization: auth } },
+      });
+      const { data: claims, error: authErr } = await sb.auth.getClaims(auth.replace("Bearer ", ""));
+      allowed = !authErr && !!claims?.claims?.sub && claims.claims.role === "authenticated";
+    }
+    if (!allowed) return json({ error: "Lien expiré ou accès refusé" }, 401);
+
     const image = body?.image;
     if (typeof image !== "string" || !image.startsWith("data:image/") || image.length > 8_000_000) {
       return json({ error: "Image invalide" }, 400);
