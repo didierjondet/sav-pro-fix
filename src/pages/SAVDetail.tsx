@@ -25,6 +25,7 @@ import { useNavigate } from 'react-router-dom';
 import { SAVPartsEditor } from '@/components/sav/SAVPartsEditor';
 import { SAVPartsRequirements } from '@/components/sav/SAVPartsRequirements';
 import { SAVPrintButton } from '@/components/sav/SAVPrint';
+import { MobileCreatedPrintDialog } from '@/components/sav/MobileCreatedPrintDialog';
 import { printControllerSheet } from '@/lib/controllerPrint';
 import { ReviewRequestButton } from '@/components/sav/ReviewRequestButton';
 import { SAVDocuments } from '@/components/sav/SAVDocuments';
@@ -979,6 +980,7 @@ export default function SAVDetail() {
 
           </Tabs>
         </div>
+      <MobileCreatedPrintDialog savCase={savCase} />
       </main>
     );
   }
@@ -1633,6 +1635,7 @@ export default function SAVDetail() {
           </TabsContent>
         </Tabs>
       </div>
+      <MobileCreatedPrintDialog savCase={savCase} />
     </main>
   );
 }
