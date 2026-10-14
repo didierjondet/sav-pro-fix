@@ -473,7 +473,7 @@ export default function MobileSAVWizard() {
               </label>
             ))}
             <Input className={big} placeholder="Autre accessoire" value={d.accessories.other} onChange={(e) => set({ accessories: { ...d.accessories, other: e.target.value } })} />
-            <SecurityCodesSection codes={d.codes} onChange={(codes) => set({ codes })} noCode={d.noCode} onNoCodeChange={(noCode) => set({ noCode })} />
+            <SecurityCodesSection stepNumber={1} codes={d.codes} onChange={(codes) => set({ codes })} noCode={d.noCode} onNoCodeChange={(noCode) => set({ noCode })} />
           </div>
         )}
 
