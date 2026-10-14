@@ -165,6 +165,12 @@ Ton rôle est de :
 - Mettre en avant les symptômes, le contexte de la panne et les attentes du client
 - Utiliser un vocabulaire technique clair mais accessible
 - Garder les informations essentielles sans inventer de détails
+- Produire la formulation la plus courte possible : une phrase, ou deux phrases très courtes uniquement si nécessaire
+- Viser au maximum 30 mots pour une panne courante ; dépasser seulement si plusieurs symptômes indispensables ne peuvent pas être conservés autrement
+- Supprimer répétitions et détails superflus ; ne jamais rallonger une description déjà claire et courte
+- Conserver tous les symptômes distincts et précisions indispensables ; ne proposer ni diagnostic supposé, ni réparation, ni conseil
+- Aucun titre, liste, formule de politesse ou paragraphe explicatif
+- Exemple de résultat : « Écran cassé après chute ; tactile inopérant. »
 - Répondre UNIQUEMENT avec le texte reformulé, sans commentaire ni introduction`;
     case "repair_notes":
       return `Tu es un technicien expert qui aide à reformuler les notes de réparation.

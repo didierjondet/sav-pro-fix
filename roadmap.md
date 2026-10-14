@@ -1,5 +1,7 @@
 # Roadmap
 
+- [ ] Impression SAV : magasin seul sans client, bandeaux client/magasin distincts, reformulation de panne ultra-concise (plan approuvé).
+
 - [x] Remplacer les anciennes adresses officielles de contact Fixway par fixwaypro@gmail.com sur le site et les formulaires, sans changer les comptes de connexion.
 
 - [ ] Parcours devis : temps réel (publication quotes), statut/pastille acceptés, impression à la transformation en SAV (plan approuvé, en cours)

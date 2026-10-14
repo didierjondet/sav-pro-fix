@@ -38,6 +38,11 @@
     --warning-foreground: 222.2 84% 4.9%;
     --info: 197 37% 50%;
     --info-foreground: 210 40% 98%;
+    /* Paper destinations remain independent of the screen theme. */
+    --print-client: 210 90% 92%;
+    --print-client-foreground: 215 80% 28%;
+    --print-shop: 43 90% 85%;
+    --print-shop-foreground: 30 80% 22%;
     
     /* Gradients */
     --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)));
