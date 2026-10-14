@@ -28,3 +28,9 @@ describe('mobile SAV', () => {
     expect(filterPartsForDevice(parts, 'APPLE', 'IPHONE 12').map((p) => p.name)).toEqual(['Ecran iPhone 12']);
   });
 });
+
+import { sanitizeMobilePayload } from '../src/lib/mobileSav';
+test('payload mobile : champs non autorisés ignorés', () => {
+  const p = sanitizeMobilePayload({ brand: 'APPLE', customer_id: 'x', shop_id: 'y', parts: [1] });
+  expect(p).toEqual({ brand: 'APPLE' });
+});
