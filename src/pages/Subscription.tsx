@@ -161,14 +161,14 @@ export default function Subscription() {
     return 'text-green-500';
   };
   if (loading || plansLoading) {
-    return <main className="p-6">
+    return <main className="min-h-0 flex-1 overflow-y-auto p-6">
             <div className="flex items-center justify-center h-64">
               <Loader2 className="h-8 w-8 animate-spin" />
             </div>
           </main>;
   }
   const currentPlan = getCurrentPlan();
-  return <main className="p-6 space-y-6">
+  return <main className="min-h-0 flex-1 overflow-y-auto p-6 space-y-6">
           <div className="flex justify-between items-center">
             <div>
               <h1 className="text-3xl font-bold">Abonnement MySAV</h1>
