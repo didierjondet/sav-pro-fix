@@ -1,3 +1,4 @@
+import { ProductFamilyBadgeEditor } from '@/components/sav/ProductFamilyChips';
 import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { SAVMessaging } from '@/components/sav/SAVMessaging';
@@ -479,6 +480,7 @@ export default function SAVDetail() {
                 {[savCase.device_brand, savCase.device_model].filter(Boolean).join(' — ')}
               </span>
             )}
+            <ProductFamilyBadgeEditor savCaseId={savCase.id} value={(savCase as any).product_family_id} />
             {(customerFullName || savCase.customer?.phone) && (
               <span className="ml-auto text-sm font-medium truncate max-w-[240px]">
                 {customerFullName}{savCase.customer?.phone ? ` · ${savCase.customer.phone}` : ''}
@@ -1060,6 +1062,7 @@ export default function SAVDetail() {
               {[savCase.device_brand, savCase.device_model].filter(Boolean).join(' — ')}
             </span>
           )}
+          <ProductFamilyBadgeEditor savCaseId={savCase.id} value={(savCase as any).product_family_id} />
 
           <div className="ml-auto flex items-center gap-2">
             {customerFullNameStd && (
