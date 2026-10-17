@@ -1,3 +1,4 @@
+import { ProductFamilyPicker } from '@/components/sav/ProductFamilyChips';
 import type { MobileSavPayload } from '@/lib/mobileSav';
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { ControllerTestDialog } from '@/components/sav/controller/ControllerTestDialog';
@@ -123,6 +124,7 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess, initialDeviceDa
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({
     firstName: '', lastName: '', email: '', phone: '', address: '',
   });
+  const [productFamilyId, setProductFamilyId] = useState<string | null>(null);
   const [deviceInfo, setDeviceInfo] = useState({
     brand: '', model: '', imei: '', sku: '', color: '', grade: '',
     problemDescription: '', attachments: [] as string[],
@@ -357,6 +359,7 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess, initialDeviceDa
         sav_type: savType, customer_id: customerId,
         device_brand: deviceInfo.brand ? deviceInfo.brand.toUpperCase().trim() : null,
         device_model: deviceInfo.model ? deviceInfo.model.toUpperCase().trim() : null,
+        product_family_id: productFamilyId,
         device_imei: deviceInfo.imei || null, device_color: deviceInfo.color || null,
         device_grade: deviceInfo.grade || null, sku: deviceInfo.sku || null,
         problem_description: deviceInfo.problemDescription,
@@ -475,6 +478,7 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess, initialDeviceDa
     setSelectedStatus(defaultStatus);
     setSelectedCustomer(null);
     setCustomerInfo({ firstName: '', lastName: '', email: '', phone: '', address: '' });
+    setProductFamilyId(null);
     setDeviceInfo({ brand: '', model: '', imei: '', sku: '', color: '', grade: '', problemDescription: '', attachments: [] });
     setAccessories({ charger: false, case: false, screen_protector: false, other: '' });
     setUnlockPattern([]);
@@ -767,6 +771,7 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess, initialDeviceDa
                 <Input value={deviceInfo.model} onChange={(e) => setDeviceInfo({ ...deviceInfo, model: e.target.value })} />
               </div>
             </div>
+            <ProductFamilyPicker brand={deviceInfo.brand} model={deviceInfo.model} problemDescription={deviceInfo.problemDescription} value={productFamilyId} onChange={setProductFamilyId} />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <Label>IMEI</Label>

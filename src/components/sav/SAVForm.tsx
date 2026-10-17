@@ -1,3 +1,4 @@
+import { ProductFamilyPicker } from '@/components/sav/ProductFamilyChips';
 import type { MobileSavPayload } from '@/lib/mobileSav';
 import { useState, useEffect } from 'react';
 import { ControllerTestDialog } from '@/components/sav/controller/ControllerTestDialog';
@@ -132,6 +133,7 @@ export function SAVForm({ onSuccess, initialDeviceData }: SAVFormProps) {
   const [depositAmount, setDepositAmount] = useState<number>(0);
   const [loading, setLoading] = useState(false);
   const [technicianInitials, setTechnicianInitials] = useState('');
+  const [productFamilyId, setProductFamilyId] = useState<string | null>(null);
   const [selectedProviderId, setSelectedProviderId] = useState<string>('none');
 
   const { settings: shopSettings } = useShopSettings();
@@ -337,6 +339,7 @@ export function SAVForm({ onSuccess, initialDeviceData }: SAVFormProps) {
         customer_id: customerId,
         device_brand: deviceInfo.brand ? deviceInfo.brand.toUpperCase().trim() : null,
         device_model: deviceInfo.model ? deviceInfo.model.toUpperCase().trim() : null,
+        product_family_id: productFamilyId,
         device_imei: deviceInfo.imei || null,
         device_color: deviceInfo.color || null,
         device_grade: deviceInfo.grade || null,
@@ -496,6 +499,7 @@ export function SAVForm({ onSuccess, initialDeviceData }: SAVFormProps) {
         phone: '',
         address: '',
       });
+      setProductFamilyId(null);
       setDeviceInfo({
         brand: '',
         model: '',
@@ -761,6 +765,13 @@ export function SAVForm({ onSuccess, initialDeviceData }: SAVFormProps) {
               />
             </div>
           </div>
+          <ProductFamilyPicker
+            brand={deviceInfo.brand}
+            model={deviceInfo.model}
+            problemDescription={deviceInfo.problemDescription}
+            value={productFamilyId}
+            onChange={setProductFamilyId}
+          />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="imei">IMEI</Label>
