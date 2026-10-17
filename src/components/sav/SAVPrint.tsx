@@ -395,6 +395,7 @@ export const SAVPrintButton = React.forwardRef<SAVPrintButtonRef, SAVPrintButton
     .content-block { width: calc(50% - 18px); page-break-inside: avoid; break-inside: avoid; }
     .single-content { justify-content: flex-start; }
     .copy-banner { display:flex; align-items:center; gap:8px; border:2px solid currentColor; padding:8px 10px; margin-bottom:8px; }
+    .intake-initials { display:inline-block; margin-left:8px; padding:2px 8px; border:2px solid #111; border-radius:4px; font-size:12px; font-weight:800; letter-spacing:1px; }
     .copy-banner svg { width:26px; height:26px; flex-shrink:0; }
     .copy-banner strong { display:block; font-size:20px; line-height:1.1; }
     .copy-banner span { display:block; font-size:10px; font-weight:700; margin-top:3px; }
@@ -463,7 +464,7 @@ export const SAVPrintButton = React.forwardRef<SAVPrintButtonRef, SAVPrintButton
       <div class="header-left">
         <div class="title">Dossier SAV N° ${savCase.case_number}</div>
         ${caseBarcodeImg}
-        <div class="meta">Créé le ${(savCase.created_at ? new Date(savCase.created_at).toLocaleDateString() : "")} · Statut: ${getStatusLabel(savCase.status)}</div>
+        <div class="meta">Créé le ${(savCase.created_at ? new Date(savCase.created_at).toLocaleDateString() : "")} · Statut: ${getStatusLabel(savCase.status)} ${intakeInitialsBadge}</div>
       </div>
       ${qrHeaderBlock}
     </div>
@@ -490,7 +491,7 @@ export const SAVPrintButton = React.forwardRef<SAVPrintButtonRef, SAVPrintButton
         <div class="title">Dossier SAV N° ${savCase.case_number}</div>
         ${caseBarcodeImg}
         <div class="sav-type">${getTypeInfo(savCase.sav_type).label}${providerName ? ` · Prestataire : ${providerName}` : ''}</div>
-        <div class="meta">Créé le ${(savCase.created_at ? new Date(savCase.created_at).toLocaleDateString() : "")} · Statut: ${getStatusLabel(savCase.status)}</div>
+        <div class="meta">Créé le ${(savCase.created_at ? new Date(savCase.created_at).toLocaleDateString() : "")} · Statut: ${getStatusLabel(savCase.status)} ${intakeInitialsBadge}</div>
       </div>
       ${qrHeaderBlock}
     </div>
