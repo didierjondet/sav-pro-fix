@@ -3,6 +3,8 @@ import { Sparkles, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useProductFamilies, type ProductFamily } from '@/hooks/useProductFamilies';
 import { matchFamilyForDevice, findOtherFamily } from '@/lib/productFamilies';
 
@@ -95,5 +97,38 @@ export function ProductFamilyPicker({ brand, model, problemDescription, value, o
         ))}
       </div>
     </div>
+  );
+}
+
+/** Pastille modifiable depuis le dossier SAV (enregistrement automatique). */
+export function ProductFamilyBadgeEditor({ savCaseId, value }: { savCaseId: string; value: string | null | undefined }) {
+  const { families, activeFamilies } = useProductFamilies();
+  const [current, setCurrent] = useState<string | null>(value ?? null);
+  const [open, setOpen] = useState(false);
+  useEffect(() => { setCurrent(value ?? null); }, [value]);
+  if (!activeFamilies.length) return null;
+  const fam = families.find((f) => f.id === current);
+  const pick = async (id: string | null) => {
+    setCurrent(id); setOpen(false);
+    const { error } = await (supabase as any).from('sav_cases').update({ product_family_id: id }).eq('id', savCaseId);
+    if (error) { toast.error('Famille non enregistrée'); setCurrent(value ?? null); }
+  };
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button type="button" title="Famille de produit">
+          {fam ? <FamilyChip small family={fam} /> : (
+            <span className="rounded-full border border-dashed px-2 py-0.5 text-[11px] text-muted-foreground">+ Famille</span>
+          )}
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-72">
+        <div className="flex flex-wrap gap-2">
+          {activeFamilies.map((f) => (
+            <FamilyChip key={f.id} family={f} active={current === f.id} onClick={() => pick(current === f.id ? null : f.id)} />
+          ))}
+        </div>
+      </PopoverContent>
+    </Popover>
   );
 }
