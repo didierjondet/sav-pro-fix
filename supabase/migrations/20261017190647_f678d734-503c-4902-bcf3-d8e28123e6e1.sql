@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.add_default_product_families_to_new_shop() FROM PUBLIC, anon, authenticated;
