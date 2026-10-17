@@ -307,7 +307,7 @@ export default function SAVList() {
   };
 
   // Calculer les informations de délai et appliquer filtres et tri
-  const filteredAndSortedCases = useMemo(() => {
+  const casesForFamilyCounts = useMemo(() => {
     // 1. Ajouter les informations de délai
     const casesWithDelay = cases.map((case_) => ({
       ...case_,
@@ -394,7 +394,7 @@ export default function SAVList() {
         return a.delayInfo.totalRemainingHours - b.delayInfo.totalRemainingHours;
       }
     });
-  }, [cases, shop, filterType, statusFilter, colorFilter, gradeFilter, sortOrder, searchTerm, types, getAllTypes, isReadyStatus, providerFilter, providerByCaseId, familyIds]);
+  }, [casesForFamilyCounts, sortOrder, familyIds]);
 
   const initialPrintTypes = useMemo(() => {
     if (filterType === 'shop') return ['client', 'external'];
@@ -726,14 +726,14 @@ export default function SAVList() {
                       onClick={() => setFamilyIds([])}
                       className={cn("rounded-full border px-3 py-1 text-xs font-medium", familyIds.length === 0 ? "bg-primary text-primary-foreground" : "ring-2 ring-orange-400 bg-orange-50 text-foreground")}
                     >
-                      Toutes
+                      Toutes <span className="opacity-75">({casesForFamilyCounts.length})</span>
                     </button>
                     {activeFamilies.map((f) => (
                       <FamilyChip
                         key={f.id}
                         family={f}
                         active={familyIds.includes(f.id)}
-                        count={cases.filter((c: any) => c.product_family_id === f.id).length}
+                        count={familyCounts.get(f.id) ?? 0}
                         onClick={() => setFamilyIds((ids) => ids.includes(f.id) ? ids.filter((x) => x !== f.id) : [...ids, f.id])}
                       />
                     ))}
