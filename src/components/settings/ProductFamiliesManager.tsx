@@ -30,11 +30,15 @@ export function ProductFamiliesManager() {
     if (!shop?.id || !activeFamilies.length) return;
     setClassifying(true);
     try {
-      const { data, error } = await (supabase as any)
-        .from('sav_cases').select('id, device_brand, device_model, problem_description')
-        .eq('shop_id', shop.id).is('product_family_id', null).limit(1000);
-      if (error) throw error;
-      const rows = (data ?? []) as any[];
+      const rows: any[] = [];
+      for (let from = 0; ; from += 1000) {
+        const { data, error } = await (supabase as any)
+          .from('sav_cases').select('id, device_brand, device_model, problem_description')
+          .eq('shop_id', shop.id).is('product_family_id', null).order('id').range(from, from + 999);
+        if (error) throw error;
+        rows.push(...(data ?? []));
+        if (!data || data.length < 1000) break;
+      }
       const assign = new Map<string, string>();
       const unknown: any[] = [];
       for (const r of rows) {
@@ -42,12 +46,16 @@ export function ProductFamiliesManager() {
         if (familyId) assign.set(r.id, familyId); else unknown.push(r);
       }
       const fams = activeFamilies.map((f) => ({ id: f.id, name: f.name }));
+      const other = findOtherFamily(activeFamilies);
       for (let i = 0; i < unknown.length; i += 40) {
         const batch = unknown.slice(i, i + 40);
-        const { data: res } = await supabase.functions.invoke('classify-sav-category', {
-          body: { families: fams, items: batch.map((r) => ({ id: r.id, brand: r.device_brand, model: r.device_model, problem_description: r.problem_description })) },
-        });
-        const other = findOtherFamily(activeFamilies);
+        let res: any = null;
+        try {
+          const r = await supabase.functions.invoke('classify-sav-category', {
+            body: { families: fams, items: batch.map((r) => ({ id: r.id, brand: r.device_brand, model: r.device_model, problem_description: r.problem_description })) },
+          });
+          res = r.data;
+        } catch { /* lot ignoré : repli sur « Autres » */ }
         for (const r of batch) {
           const id = res?.results?.[r.id] ?? other;
           if (id) assign.set(r.id, id);
