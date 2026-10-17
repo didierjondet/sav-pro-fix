@@ -60,6 +60,9 @@ import {
 import { useSAVAppointments } from '@/hooks/useSAVAppointments';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
+import { FamilyChip } from '@/components/sav/ProductFamilyChips';
+import { useProductFamilies } from '@/hooks/useProductFamilies';
+
 const STORAGE_KEY = 'fixway_sav_filters';
 
 const DEFAULT_FILTERS = {
@@ -114,6 +117,9 @@ export default function SAVList() {
   const [colorFilter, setColorFilter] = useState(saved?.colorFilter ?? DEFAULT_FILTERS.colorFilter);
   const [gradeFilter, setGradeFilter] = useState(saved?.gradeFilter ?? DEFAULT_FILTERS.gradeFilter);
   const [sortOrder, setSortOrder] = useState(saved?.sortOrder ?? DEFAULT_FILTERS.sortOrder);
+  const [familyIds, setFamilyIds] = useState<string[]>(Array.isArray(saved?.familyIds) ? saved.familyIds : []);
+  const { families: productFamilies, activeFamilies } = useProductFamilies();
+  const familyById = useMemo(() => new Map(productFamilies.map((f) => [f.id, f])), [productFamilies]);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(saved?.itemsPerPage ?? DEFAULT_FILTERS.itemsPerPage);
   const [qrCodeCase, setQrCodeCase] = useState(null);
@@ -215,9 +221,10 @@ export default function SAVList() {
       gradeFilter,
       sortOrder,
       itemsPerPage,
+      familyIds,
       savedDate: today,
     }));
-  }, [filterType, statusFilter, colorFilter, gradeFilter, sortOrder, itemsPerPage]);
+  }, [filterType, statusFilter, colorFilter, gradeFilter, sortOrder, itemsPerPage, familyIds]);
 
   const resetFilters = useCallback(() => {
     setFilterType(DEFAULT_FILTERS.filterType);
@@ -226,6 +233,7 @@ export default function SAVList() {
     setGradeFilter(DEFAULT_FILTERS.gradeFilter);
     setSortOrder(DEFAULT_FILTERS.sortOrder);
     setItemsPerPage(DEFAULT_FILTERS.itemsPerPage);
+    setFamilyIds([]);
     localStorage.removeItem(STORAGE_KEY);
     toast.success('Filtres réinitialisés');
   }, []);
@@ -341,6 +349,11 @@ export default function SAVList() {
       filtered = filtered.filter(case_ => case_.device_grade === gradeFilter);
     }
 
+    // 5b. Filtrer par famille de produit
+    if (familyIds.length > 0) {
+      filtered = filtered.filter(case_ => familyIds.includes((case_ as any).product_family_id));
+    }
+
     // 6. Filtrer par recherche
     const filteredBySearch = filtered.filter(case_ =>
       multiWordSearch(
@@ -370,7 +383,7 @@ export default function SAVList() {
         return a.delayInfo.totalRemainingHours - b.delayInfo.totalRemainingHours;
       }
     });
-  }, [cases, shop, filterType, statusFilter, colorFilter, gradeFilter, sortOrder, searchTerm, types, getAllTypes, isReadyStatus, providerFilter, providerByCaseId]);
+  }, [cases, shop, filterType, statusFilter, colorFilter, gradeFilter, sortOrder, searchTerm, types, getAllTypes, isReadyStatus, providerFilter, providerByCaseId, familyIds]);
 
   const initialPrintTypes = useMemo(() => {
     if (filterType === 'shop') return ['client', 'external'];
@@ -499,7 +512,7 @@ export default function SAVList() {
   // Réinitialiser la page quand les filtres changent
   useMemo(() => {
     setCurrentPage(1);
-  }, [searchTerm, filterType, statusFilter, colorFilter, gradeFilter, sortOrder]);
+  }, [searchTerm, filterType, statusFilter, colorFilter, gradeFilter, sortOrder, familyIds]);
 
   if (loading) {
     return (
@@ -695,6 +708,26 @@ export default function SAVList() {
                     </span>
                   </div>
                 </div>
+                {activeFamilies.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-2 pt-3">
+                    <button
+                      type="button"
+                      onClick={() => setFamilyIds([])}
+                      className={cn("rounded-full border px-3 py-1 text-xs font-medium", familyIds.length === 0 ? "bg-primary text-primary-foreground" : "ring-2 ring-orange-400 bg-orange-50 text-foreground")}
+                    >
+                      Toutes
+                    </button>
+                    {activeFamilies.map((f) => (
+                      <FamilyChip
+                        key={f.id}
+                        family={f}
+                        active={familyIds.includes(f.id)}
+                        count={cases.filter((c: any) => c.product_family_id === f.id).length}
+                        onClick={() => setFamilyIds((ids) => ids.includes(f.id) ? ids.filter((x) => x !== f.id) : [...ids, f.id])}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
 
           <div className={viewMode === 'compact' ? "grid grid-cols-1 md:grid-cols-2 gap-3" : "grid gap-4"}>
@@ -781,6 +814,7 @@ export default function SAVList() {
                         <div className="flex items-center gap-2 mb-1.5 text-xs text-muted-foreground">
                           <Package className="h-3 w-3 shrink-0" />
                           <span className="truncate">{savCase.device_brand} {savCase.device_model}</span>
+                          {familyById.get((savCase as any).product_family_id) && <FamilyChip small family={familyById.get((savCase as any).product_family_id)!} />}
                           <span className="text-xs text-muted-foreground shrink-0 ml-auto">
                             N° {savCase.case_number}
                           </span>
@@ -911,6 +945,7 @@ export default function SAVList() {
                           <div className="flex items-center gap-1.5">
                             <Package className="h-4 w-4 shrink-0" />
                             <span>{savCase.device_brand} {savCase.device_model}</span>
+                            {familyById.get((savCase as any).product_family_id) && <FamilyChip small family={familyById.get((savCase as any).product_family_id)!} />}
                           </div>
                           {savCase.device_imei && (
                             <div className="flex items-center gap-1.5">
