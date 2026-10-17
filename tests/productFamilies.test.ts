@@ -23,3 +23,11 @@ describe('matchFamilyForDevice', () => {
     expect(matchFamilyForDevice(fams, 'BOSCH', 'PERCEUSE').familyId).toBeNull();
   });
 });
+
+import { matchFamilyForDevice as mf } from '../src/lib/productFamilies';
+describe('famille nommée « Smartphone »', () => {
+  const fams = [{ id: 'sp', name: 'Smartphone' }, { id: 'tab', name: 'Tablettes' }, { id: 'o', name: 'Autres' }];
+  it.each([['APPLE', 'IPHONE 11'], ['APPLE', '13 PRO MAX'], ['SAMSUNG', 'A51']])('%s %s → Smartphone', (b, m) => {
+    expect(mf(fams, b, m).familyId).toBe('sp');
+  });
+});
