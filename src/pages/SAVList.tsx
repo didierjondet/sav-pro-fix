@@ -307,7 +307,7 @@ export default function SAVList() {
   };
 
   // Calculer les informations de délai et appliquer filtres et tri
-  const filteredAndSortedCases = useMemo(() => {
+  const casesForFamilyCounts = useMemo(() => {
     // 1. Ajouter les informations de délai
     const casesWithDelay = cases.map((case_) => ({
       ...case_,
@@ -349,13 +349,8 @@ export default function SAVList() {
       filtered = filtered.filter(case_ => case_.device_grade === gradeFilter);
     }
 
-    // 5b. Filtrer par famille de produit
-    if (familyIds.length > 0) {
-      filtered = filtered.filter(case_ => familyIds.includes((case_ as any).product_family_id));
-    }
-
     // 6. Filtrer par recherche
-    const filteredBySearch = filtered.filter(case_ =>
+    return filtered.filter(case_ =>
       multiWordSearch(
         searchTerm, 
         case_.customer?.first_name, 
@@ -369,6 +364,22 @@ export default function SAVList() {
         case_.repair_notes
       )
     );
+  }, [cases, shop, filterType, statusFilter, colorFilter, gradeFilter, searchTerm, types, getAllTypes, isReadyStatus, providerFilter, providerByCaseId]);
+
+  // Compteurs des pastilles : tous les filtres actifs sauf la famille elle-même
+  const familyCounts = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const c of casesForFamilyCounts as any[]) {
+      if (c.product_family_id) m.set(c.product_family_id, (m.get(c.product_family_id) ?? 0) + 1);
+    }
+    return m;
+  }, [casesForFamilyCounts]);
+
+  const filteredAndSortedCases = useMemo(() => {
+    // 5b. Filtrer par famille de produit
+    const filteredBySearch = familyIds.length > 0
+      ? casesForFamilyCounts.filter(case_ => familyIds.includes((case_ as any).product_family_id))
+      : [...casesForFamilyCounts];
 
     // 5. Appliquer le tri
     return filteredBySearch.sort((a, b) => {
@@ -383,7 +394,7 @@ export default function SAVList() {
         return a.delayInfo.totalRemainingHours - b.delayInfo.totalRemainingHours;
       }
     });
-  }, [cases, shop, filterType, statusFilter, colorFilter, gradeFilter, sortOrder, searchTerm, types, getAllTypes, isReadyStatus, providerFilter, providerByCaseId, familyIds]);
+  }, [casesForFamilyCounts, sortOrder, familyIds]);
 
   const initialPrintTypes = useMemo(() => {
     if (filterType === 'shop') return ['client', 'external'];
@@ -715,14 +726,14 @@ export default function SAVList() {
                       onClick={() => setFamilyIds([])}
                       className={cn("rounded-full border px-3 py-1 text-xs font-medium", familyIds.length === 0 ? "bg-primary text-primary-foreground" : "ring-2 ring-orange-400 bg-orange-50 text-foreground")}
                     >
-                      Toutes
+                      Toutes <span className="opacity-75">({casesForFamilyCounts.length})</span>
                     </button>
                     {activeFamilies.map((f) => (
                       <FamilyChip
                         key={f.id}
                         family={f}
                         active={familyIds.includes(f.id)}
-                        count={cases.filter((c: any) => c.product_family_id === f.id).length}
+                        count={familyCounts.get(f.id) ?? 0}
                         onClick={() => setFamilyIds((ids) => ids.includes(f.id) ? ids.filter((x) => x !== f.id) : [...ids, f.id])}
                       />
                     ))}
