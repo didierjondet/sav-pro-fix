@@ -65,6 +65,7 @@ import { multiWordSearch } from '@/utils/searchUtils';
 import { MenuConfigurationTab } from '@/components/settings/MenuConfigurationTab';
 import { RolePermissionsManager } from '@/components/settings/RolePermissionsManager';
 import { PartCategoriesManager } from '@/components/settings/PartCategoriesManager';
+import { ProductFamiliesManager } from '@/components/settings/ProductFamiliesManager';
 import { SuppliersManager } from '@/components/settings/SuppliersManager';
 import { SAVProvidersManager } from '@/components/settings/SAVProvidersManager';
 import { LoanerEquipmentManager } from '@/components/settings/loaner/LoanerEquipmentManager';
@@ -931,6 +932,7 @@ export default function Settings() {
 
     { id: 'sav-types', label: 'Types de SAV', icon: Package, category: 'sav-group', visible: true },
     { id: 'sav-statuses', label: 'Statuts SAV', icon: Tag, category: 'sav-group', visible: true },
+    { id: 'product-families', label: 'Familles de produits', icon: Tag, category: 'sav-group', visible: true },
     { id: 'loaners', label: 'Matériel de prêt', icon: PackageOpen, category: 'sav-group', visible: isAdmin },
 
     { id: 'part-categories', label: 'Catégories pièces', icon: Tag, category: 'stock-group', visible: !!rolePermissions.settings_part_categories },
@@ -1888,6 +1890,10 @@ export default function Settings() {
               </TabsContent>}
 
 
+
+            <TabsContent value="product-families" className="space-y-6">
+              <ProductFamiliesManager />
+            </TabsContent>
 
             {rolePermissions.settings_part_categories && (
               <TabsContent value="part-categories" className="space-y-6">
