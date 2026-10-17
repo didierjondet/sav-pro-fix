@@ -4,3 +4,4 @@
 - Controller-sheet identification is generated locally with bwip-js using the SAV print Code 128 options and case number — keeps scanning compatible without a network dependency.
 - Intake print destinations are selected by getSAVPrintCopies from the persisted customer_id — creation and reprint share a testable rule independent of customer contact details.
 - Smartphone SAV intake (/m/sav/nouveau/:token) needs no login: the phone only deposits device data into a one-time mobile_sav_sessions row via token-checked RPCs/edge functions, and the logged-in desktop finishes creation in the usual SAVForm/SAVWizardDialog (prefilled) — phone never reads shop data, all creation rules stay in one place.
+- Product family chips (sav_cases.product_family_id → product_families per shop) are suggested by matchFamilyForDevice in src/lib/productFamilies.ts first, then classify-sav-category with the shop's families — one local rule shared by forms, backfill and tests.
