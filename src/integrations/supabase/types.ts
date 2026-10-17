@@ -2154,6 +2154,50 @@ export type Database = {
           },
         ]
       }
+      product_families: {
+        Row: {
+          color: string | null
+          created_at: string
+          display_order: number
+          icon: string | null
+          id: string
+          is_active: boolean
+          name: string
+          shop_id: string
+          updated_at: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          display_order?: number
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          shop_id: string
+          updated_at?: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          display_order?: number
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          shop_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_families_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
@@ -2541,6 +2585,7 @@ export type Database = {
           partial_takeover: boolean | null
           private_comments: string | null
           problem_description: string | null
+          product_family_id: string | null
           repair_notes: string | null
           sav_type: string
           security_codes: Json | null
@@ -2583,6 +2628,7 @@ export type Database = {
           partial_takeover?: boolean | null
           private_comments?: string | null
           problem_description?: string | null
+          product_family_id?: string | null
           repair_notes?: string | null
           sav_type: string
           security_codes?: Json | null
@@ -2625,6 +2671,7 @@ export type Database = {
           partial_takeover?: boolean | null
           private_comments?: string | null
           problem_description?: string | null
+          product_family_id?: string | null
           repair_notes?: string | null
           sav_type?: string
           security_codes?: Json | null
@@ -2651,6 +2698,13 @@ export type Database = {
             columns: ["customer_id"]
             isOneToOne: false
             referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sav_cases_product_family_id_fkey"
+            columns: ["product_family_id"]
+            isOneToOne: false
+            referencedRelation: "product_families"
             referencedColumns: ["id"]
           },
           {
