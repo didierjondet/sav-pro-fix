@@ -349,13 +349,8 @@ export default function SAVList() {
       filtered = filtered.filter(case_ => case_.device_grade === gradeFilter);
     }
 
-    // 5b. Filtrer par famille de produit
-    if (familyIds.length > 0) {
-      filtered = filtered.filter(case_ => familyIds.includes((case_ as any).product_family_id));
-    }
-
     // 6. Filtrer par recherche
-    const filteredBySearch = filtered.filter(case_ =>
+    return filtered.filter(case_ =>
       multiWordSearch(
         searchTerm, 
         case_.customer?.first_name, 
@@ -369,6 +364,22 @@ export default function SAVList() {
         case_.repair_notes
       )
     );
+  }, [cases, shop, filterType, statusFilter, colorFilter, gradeFilter, searchTerm, types, getAllTypes, isReadyStatus, providerFilter, providerByCaseId]);
+
+  // Compteurs des pastilles : tous les filtres actifs sauf la famille elle-même
+  const familyCounts = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const c of casesForFamilyCounts as any[]) {
+      if (c.product_family_id) m.set(c.product_family_id, (m.get(c.product_family_id) ?? 0) + 1);
+    }
+    return m;
+  }, [casesForFamilyCounts]);
+
+  const filteredAndSortedCases = useMemo(() => {
+    // 5b. Filtrer par famille de produit
+    const filteredBySearch = familyIds.length > 0
+      ? casesForFamilyCounts.filter(case_ => familyIds.includes((case_ as any).product_family_id))
+      : [...casesForFamilyCounts];
 
     // 5. Appliquer le tri
     return filteredBySearch.sort((a, b) => {
