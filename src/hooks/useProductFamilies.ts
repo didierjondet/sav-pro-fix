@@ -27,6 +27,7 @@ export function useProductFamilies(options: { seed?: boolean } = {}) {
   const query = useQuery({
     queryKey: ['product-families', shopId],
     enabled: !!shopId,
+    refetchOnMount: true,
     placeholderData: (prev: ProductFamily[] | undefined) => prev,
     queryFn: async (): Promise<ProductFamily[]> => {
       const { data, error } = await db.from('product_families').select('*').eq('shop_id', shopId).order('display_order');
