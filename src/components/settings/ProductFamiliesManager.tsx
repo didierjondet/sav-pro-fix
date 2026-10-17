@@ -65,7 +65,7 @@ export function ProductFamiliesManager() {
       assign.forEach((fid, cid) => byFamily.set(fid, [...(byFamily.get(fid) ?? []), cid]));
       for (const [fid, ids] of byFamily) {
         for (let i = 0; i < ids.length; i += 200) {
-          await (supabase as any).from('sav_cases').update({ product_family_id: fid }).in('id', ids.slice(i, i + 200));
+          await (supabase as any).from('sav_cases').update({ product_family_id: fid }).in('id', ids.slice(i, i + 200)).is('product_family_id', null);
         }
       }
       toast.success(`${assign.size} SAV classé(s)`);
