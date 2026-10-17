@@ -377,6 +377,11 @@ export const SAVPrintButton = React.forwardRef<SAVPrintButtonRef, SAVPrintButton
         : "";
 
 
+      const intakeInitials = (savCase as any).taken_over_by as string | null | undefined;
+      const intakeInitialsBadge = intakeInitials
+        ? `<span class="intake-initials">Pris par : ${escapeHtml(intakeInitials)}</span>`
+        : '';
+
       const html = `<!DOCTYPE html>
 <html>
 <head>
