@@ -76,22 +76,40 @@ async function classifyFamilies(items: Item[], families: { id: string; name: str
   const key = Deno.env.get("LOVABLE_API_KEY");
   if (!key) throw new Error("LOVABLE_API_KEY manquant");
   const body = JSON.stringify({
-    model: "google/gemini-3.6-flash",
-    messages: [
-      { role: "system", content: "Tu classes des appareils en atelier SAV dans UNE des familles de produits du magasin, d'après marque, modèle et panne. Si rien ne correspond, choisis la famille la plus générique (ex: Autres). Réponds uniquement en JSON." },
-      { role: "user", content: `Familles disponibles : ${JSON.stringify(families)}\nRéponds {"results":[{"id":"<id SAV>","family_id":"<id famille>"}]}\nSAV : ${JSON.stringify(items)}` },
-    ],
-    response_format: { type: "json_object" },
+    model: "openai/gpt-6-astra",
+    stream: true,
+    store: false,
+    reasoning: { effort: "low" },
+    instructions: "Tu classes des appareils en atelier SAV dans UNE des familles de produits du magasin, d'apres marque, modele et panne. Si rien ne correspond, choisis la famille la plus generique (ex: Autres). Reponds en JSON.",
+    input: `Familles disponibles : ${JSON.stringify(families)}\nSAV : ${JSON.stringify(items)}`,
+    text: { format: { type: "json_schema", name: "families", strict: true, schema: {
+      type: "object", additionalProperties: false, required: ["results"],
+      properties: { results: { type: "array", items: { type: "object", additionalProperties: false, required: ["id", "family_id"],
+        properties: { id: { type: "string" }, family_id: { type: "string" } } } } },
+    } } },
   });
-  const doFetch = () => fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-    method: "POST", headers: { "Content-Type": "application/json", "Lovable-API-Key": key }, body,
+  const doFetch = () => fetch("https://ai.gateway.lovable.dev/v1/responses", {
+    method: "POST", headers: { "Content-Type": "application/json", "Lovable-API-Key": key, "X-Lovable-AIG-SDK": "fetch" }, body,
   });
   let res = await doFetch();
   if (res.status === 429 || res.status === 503) { await new Promise((r) => setTimeout(r, 2000)); res = await doFetch(); }
-  if (!res.ok) throw new Error(`Gateway ${res.status}`);
-  const json = await res.json();
-  const content = json?.choices?.[0]?.message?.content ?? "{}";
-  const parsed = typeof content === "string" ? JSON.parse(content) : content;
+  if (!res.ok || !res.body) throw new Error(`Gateway ${res.status}`);
+  const reader = res.body.getReader();
+  const dec = new TextDecoder();
+  let buf = "", text = "";
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buf += dec.decode(value, { stream: true });
+    const lines = buf.split("\n"); buf = lines.pop() ?? "";
+    for (const line of lines) {
+      if (!line.startsWith("data:")) continue;
+      const d = line.slice(5).trim();
+      if (!d || d === "[DONE]") continue;
+      try { const ev = JSON.parse(d); if (ev.type === "response.output_text.delta") text += ev.delta ?? ""; } catch { /* ignore */ }
+    }
+  }
+  const parsed = JSON.parse(text || "{}");
   const ids = new Set(families.map((f) => f.id));
   const out: Record<string, string> = {};
   for (const r of parsed?.results ?? []) if (r?.id && ids.has(r.family_id)) out[String(r.id)] = r.family_id;
