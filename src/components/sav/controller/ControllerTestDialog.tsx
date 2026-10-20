@@ -128,6 +128,51 @@ export function ControllerTestDialog({ open, onOpenChange, onComplete }: Props) 
     }, 2000);
   };
 
+  const [pending, setPending] = useState<{ keys: string[]; to: number } | null>(null);
+  const pendingLabel = (k: string) => k === 'stick_left' ? 'Joystick gauche' : k === 'stick_right' ? 'Joystick droit' : buttonLabel(model, k);
+  const missingFor = (s: number): string[] => {
+    if (s === 1) return list.filter((b) => b.key !== 'l2' && b.key !== 'r2' && (buttons[b.key] ?? 'untested') === 'untested').map((b) => b.key);
+    if (s === 2) return (['l2', 'r2'] as const).filter((k) => report.triggers[k].status === 'untested');
+    if (s === 3) return (['left', 'right'] as const).filter((k) => report.sticks[k].status === 'untested').map((k) => `stick_${k}`);
+    return [];
+  };
+  const goTo = (n: number) => {
+    if (n > step) { const keys = missingFor(step); if (keys.length) { setPending({ keys, to: n }); return; } }
+    setPending(null); setStep(n);
+  };
+  const goNext = () => goTo(step + 1);
+  const resolvePending = (defect: boolean) => {
+    if (!pending) return;
+    if (defect) {
+      const btn: Record<string, ItemStatus> = {}, trig: Record<string, ItemStatus> = {}, st: Record<string, ItemStatus> = {};
+      pending.keys.forEach((k) => {
+        if (k === 'l2' || k === 'r2') trig[k] = 'defect';
+        else if (k.startsWith('stick_')) st[k.slice(6)] = 'defect';
+        else btn[k] = 'defect';
+      });
+      setButtons((p) => ({ ...p, ...btn })); setTriggerOverride((o) => ({ ...o, ...trig })); setStickOverride((o) => ({ ...o, ...st } as any));
+    }
+    const to = pending.to; setPending(null); setStep(to);
+  };
+  // Gâchettes remises à zéro à l'entrée de l'étape
+  useEffect(() => { if (step === 2) { setTriggers({ l2: 0, r2: 0 }); setTriggerOverride({}); } }, [step]);
+
+  const playTone = async () => {
+    try {
+      const ctx = new AudioContext();
+      const md: any = navigator.mediaDevices;
+      if (typeof (ctx as any).setSinkId === 'function' && md?.selectAudioOutput) {
+        try { const dev = await md.selectAudioOutput(); await (ctx as any).setSinkId(dev.deviceId); } catch { /* sortie par défaut */ }
+      } else {
+        alert("Ce navigateur ne permet pas de choisir la sortie audio : le son sera joué sur la sortie par défaut. Branchez la manette en USB et sélectionnez-la comme sortie audio de l'ordinateur.");
+      }
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.frequency.value = 880; g.gain.value = 0.3; o.connect(g).connect(ctx.destination);
+      o.start(); o.frequency.setValueAtTime(660, ctx.currentTime + 0.4); o.stop(ctx.currentTime + 1.2);
+      o.onended = () => ctx.close();
+    } catch { alert('Lecture du son impossible sur ce navigateur.'); }
+  };
+
   const vibrate = async (strong: boolean) => {
     const pad = padIndex !== null ? navigator.getGamepads()[padIndex] : null;
     const act: any = (pad as any)?.vibrationActuator;
@@ -211,7 +256,7 @@ export function ControllerTestDialog({ open, onOpenChange, onComplete }: Props) 
         </DialogHeader>
         <div className="flex flex-wrap gap-1 mb-2">
           {STEPS.map((s, i) => (
-            <button key={s} type="button" disabled={!connected && i > 0} onClick={() => setStep(i)}
+            <button key={s} type="button" disabled={!connected && i > 0} onClick={() => goTo(i)}
               className={`text-xs px-2 py-1 rounded ${i === step ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
               {i + 1}. {s}
             </button>
@@ -254,10 +299,13 @@ export function ControllerTestDialog({ open, onOpenChange, onComplete }: Props) 
           <div className="grid md:grid-cols-2 gap-4">
             <ControllerDiagram model={model} statuses={diagramStatuses} pressed={pressed} className="w-full" />
             <div className="space-y-1 max-h-[55vh] overflow-y-auto pr-1">
-              <p className="text-xs text-muted-foreground mb-2">Appuyez sur chaque bouton : il passe en OK automatiquement. Marquez manuellement les défauts.</p>
+              <p className="text-xs text-muted-foreground mb-2">Appuyez sur chaque bouton : il passe en OK automatiquement. S'il ne réagit pas, cliquez « Ne réagit pas » : il passe en rouge.</p>
               {list.filter((b) => b.key !== 'l2' && b.key !== 'r2').map((b) => (
                 <div key={b.key} className={`flex items-center justify-between gap-2 rounded px-2 py-1 ${pressed[b.key] ? 'bg-primary/10' : ''}`}>
-                  <span className="text-sm">{buttonLabel(model, b.key)}</span>
+                  <span className={`text-sm ${buttons[b.key] === 'defect' ? 'text-destructive font-semibold' : ''}`}>{buttonLabel(model, b.key)}</span>
+                  {(buttons[b.key] ?? 'untested') === 'untested' && (
+                    <Button type="button" size="sm" variant="destructive" className="h-7 px-2 text-xs ml-auto" onClick={() => setButtons((p) => ({ ...p, [b.key]: 'defect' }))}>Ne réagit pas</Button>
+                  )}
                   <StatusPicker value={buttons[b.key] ?? 'untested'} onChange={(v) => setButtons((p) => ({ ...p, [b.key]: v }))} />
                 </div>
               ))}
@@ -310,6 +358,7 @@ export function ControllerTestDialog({ open, onOpenChange, onComplete }: Props) 
             {MANUAL_CHECKS[model].map((m) => (
               <div key={m} className="flex flex-wrap items-center gap-2 border-b pb-2">
                 <span className="text-sm flex-1 min-w-40">{m}</span>
+                {m === 'Haut-parleur' && <Button type="button" size="sm" variant="outline" onClick={playTone}>Jouer un son</Button>}
                 <StatusPicker value={manual[m]?.status ?? 'untested'} onChange={(v) => setManual((p) => ({ ...p, [m]: { ...p[m], status: v } }))} />
                 <Input className="w-48 h-8" placeholder="Note" value={manual[m]?.note ?? ''} onChange={(e) => setManual((p) => ({ ...p, [m]: { status: p[m]?.status ?? 'untested', note: e.target.value } }))} />
               </div>
@@ -346,13 +395,24 @@ export function ControllerTestDialog({ open, onOpenChange, onComplete }: Props) 
           </div>
         )}
 
+        {pending && (
+          <div className="rounded-md border border-destructive bg-destructive/10 p-3 space-y-2">
+            <p className="text-sm font-semibold text-destructive">Ces éléments n'ont pas réagi : défaut ou non testé ?</p>
+            <ul className="list-disc pl-5 text-sm">{pending.keys.map((k) => <li key={k}>{pendingLabel(k)}</li>)}</ul>
+            <div className="flex flex-wrap gap-2">
+              <Button type="button" size="sm" variant="destructive" onClick={() => resolvePending(true)}>Marquer en défaut</Button>
+              <Button type="button" size="sm" variant="outline" onClick={() => resolvePending(false)}>Laisser non testé</Button>
+            </div>
+          </div>
+        )}
+
         <div className="flex flex-wrap justify-between gap-2 pt-4 border-t">
           <Button type="button" variant="outline" onClick={() => (step === 0 ? onOpenChange(false) : setStep(step - 1))}>
             {step === 0 ? 'Annuler' : 'Précédent'}
           </Button>
           <div className="flex gap-2">
             {step < 6
-              ? <Button type="button" disabled={!connected} onClick={() => setStep(step + 1)}>Suivant</Button>
+              ? <Button type="button" disabled={!connected} onClick={goNext}>Suivant</Button>
               : <Button type="button" onClick={finish}>Valider et revenir au SAV</Button>}
           </div>
         </div>

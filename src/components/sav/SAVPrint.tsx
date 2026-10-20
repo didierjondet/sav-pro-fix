@@ -11,6 +11,7 @@ import { generateShortTrackingUrl } from '@/utils/trackingUtils';
 import { fetchBillingConfig, aggregateTotals, buildVatHtmlBlock } from '@/utils/pdfVatHelpers';
 import bwipjs from 'bwip-js/browser';
 import { getSAVPrintCopies } from '@/lib/savPrintCopies';
+import { controllerSheetSection } from '@/lib/controllerPrint';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { UserRound, Store } from 'lucide-react';
 
@@ -513,6 +514,7 @@ export const SAVPrintButton = React.forwardRef<SAVPrintButtonRef, SAVPrintButton
     
   </div>
 </div>
+${(savCase as any).controller_test ? `<div style="page-break-before:always;break-before:page;padding:6mm">${controllerSheetSection((savCase as any).controller_test, { caseNumber: savCase.case_number, imei: savCase.device_imei, sku: (savCase as any).sku })}</div>` : ''}
 </body>
 </html>`;
 
