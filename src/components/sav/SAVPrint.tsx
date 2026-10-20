@@ -11,6 +11,7 @@ import { generateShortTrackingUrl } from '@/utils/trackingUtils';
 import { fetchBillingConfig, aggregateTotals, buildVatHtmlBlock } from '@/utils/pdfVatHelpers';
 import bwipjs from 'bwip-js/browser';
 import { getSAVPrintCopies } from '@/lib/savPrintCopies';
+import { controllerSheetSection } from '@/lib/controllerPrint';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { UserRound, Store } from 'lucide-react';
 
@@ -248,6 +249,9 @@ export const SAVPrintButton = React.forwardRef<SAVPrintButtonRef, SAVPrintButton
           </div>
         </div>`;
 
+      const bannerCustomer = savCase.customer_id && savCase.customer
+        ? `<div class="copy-cust"><b>${savCase.customer.first_name || ''} ${savCase.customer.last_name || ''}</b>${savCase.customer.phone ? `<i>${savCase.customer.phone}</i>` : ''}</div>`
+        : '';
       const customerBlock = savCase.customer
         ? `
         <div class="block">
@@ -398,6 +402,9 @@ export const SAVPrintButton = React.forwardRef<SAVPrintButtonRef, SAVPrintButton
     .intake-initials { display:inline-block; margin-left:8px; padding:2px 8px; border:2px solid #111; border-radius:4px; font-size:12px; font-weight:800; letter-spacing:1px; }
     .copy-banner svg { width:26px; height:26px; flex-shrink:0; }
     .copy-banner strong { display:block; font-size:20px; line-height:1.1; }
+    .copy-banner .copy-cust { margin-left:auto; text-align:right; }
+    .copy-banner .copy-cust b { display:block; font-size:18px; line-height:1.1; }
+    .copy-banner .copy-cust i { display:block; font-style:normal; font-size:17px; font-weight:800; margin-top:2px; }
     .copy-banner span { display:block; font-size:10px; font-weight:700; margin-top:3px; }
     .copy-client { background:hsl(var(--print-client)); color:hsl(var(--print-client-foreground)); }
     .copy-shop { background:hsl(var(--print-shop)); color:hsl(var(--print-shop-foreground)); border-style:double; border-width:4px; padding:6px 8px; }
@@ -458,7 +465,7 @@ export const SAVPrintButton = React.forwardRef<SAVPrintButtonRef, SAVPrintButton
 <div class="dual-content ${hasClientCopy ? '' : 'single-content'}">
   ${hasClientCopy ? `
   <div class="content-block">
-    <div class="copy-banner copy-client">${clientIcon}<div><strong>CLIENT</strong><span>À REMETTRE AU CLIENT</span></div></div>
+    <div class="copy-banner copy-client">${clientIcon}<div><strong>EXEMPLAIRE CLIENT</strong><span>À REMETTRE AU CLIENT</span></div>${bannerCustomer}</div>
     ${shopHeader}
     <div class="header">
       <div class="header-left">
@@ -484,7 +491,7 @@ export const SAVPrintButton = React.forwardRef<SAVPrintButtonRef, SAVPrintButton
   </div>
   ` : ''}
   <div class="content-block">
-    <div class="copy-banner copy-shop">${shopIcon}<div><strong>MAGASIN</strong><span>À CONSERVER</span></div></div>
+    <div class="copy-banner copy-shop">${shopIcon}<div><strong>EXEMPLAIRE MAGASIN</strong><span>À CONSERVER</span></div>${bannerCustomer}</div>
     ${shopHeader}
     <div class="header">
       <div class="header-left">
@@ -507,6 +514,7 @@ export const SAVPrintButton = React.forwardRef<SAVPrintButtonRef, SAVPrintButton
     
   </div>
 </div>
+${(savCase as any).controller_test ? `<div style="page-break-before:always;break-before:page;padding:6mm">${controllerSheetSection((savCase as any).controller_test, { caseNumber: savCase.case_number, imei: savCase.device_imei, sku: (savCase as any).sku })}</div>` : ''}
 </body>
 </html>`;
 

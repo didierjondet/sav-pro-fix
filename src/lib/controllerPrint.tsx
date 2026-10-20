@@ -33,7 +33,8 @@ ${trail.length > 1 ? `<polyline points="${pts}" fill="none" stroke="${colors.lin
 </svg>`;
 }
 
-export function printControllerSheet(report: ControllerReport, info: ControllerSheetInfo = {}) {
+/** Section HTML autonome (CSS préfixé .ctl) réutilisable dans d'autres impressions. */
+export function controllerSheetSection(report: ControllerReport, info: ControllerSheetInfo = {}): string {
   const statuses = {
     ...report.buttons, l2: report.triggers.l2.status, r2: report.triggers.r2.status,
     stick_left: report.sticks.left.status, stick_right: report.sticks.right.status,
@@ -52,16 +53,15 @@ export function printControllerSheet(report: ControllerReport, info: ControllerS
     const s = report.sticks[k];
     return `<div class="stick">${stickTrailSvg(s.trail, { x: s.driftX, y: s.driftY })}<div>${k === 'left' ? 'Joystick gauche' : 'Joystick droit'} · amplitude ${Math.round(Math.min(1, s.maxRadius) * 100)} % · dérive ${Math.round(Math.hypot(s.driftX, s.driftY) * 100)} %${s.stability != null ? ` · stabilité ${s.stability} %` : ''}</div></div>`;
   };
-  const html = `<!doctype html><html><head><meta charset="utf-8"><title>Test manette ${esc(info.caseNumber || '')}</title><style>
-body{font-family:sans-serif;font-size:12px;margin:12mm}
-.head{display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #111;padding-bottom:8px;margin-bottom:8px}
-.num{font-size:30px;font-weight:bold}.meta{font-size:13px;margin-top:4px}
-.barcode{flex:0 0 auto;margin-left:12px}.barcode svg{display:block;width:240px;max-width:65mm;height:auto}
-.diag{width:100%;max-width:480px}.sticks{display:flex;gap:24px;justify-content:center}.stick{text-align:center;font-size:11px}
-.cols{display:flex;gap:24px}.cols>div{flex:1}h2{font-size:14px;margin:10px 0 4px}li{margin:2px 0}
-.leg span{display:inline-block;width:10px;height:10px;margin:0 4px 0 12px}
-</style></head><body>
-<div class="head"><div>
+  return `<style>
+.ctl{font-family:sans-serif;font-size:12px}
+.ctl .head{display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #111;padding-bottom:8px;margin-bottom:8px}
+.ctl .num{font-size:30px;font-weight:bold}.ctl .meta{font-size:13px;margin-top:4px}
+.ctl .barcode{flex:0 0 auto;margin-left:12px}.ctl .barcode svg{display:block;width:240px;max-width:65mm;height:auto}
+.ctl .diag{width:100%;max-width:480px}.ctl .sticks{display:flex;gap:24px;justify-content:center}.ctl .stick{text-align:center;font-size:11px}
+.ctl .cols{display:flex;gap:24px}.ctl .cols>div{flex:1}.ctl h2{font-size:14px;margin:10px 0 4px}.ctl li{margin:2px 0}
+.ctl .leg span{display:inline-block;width:10px;height:10px;margin:0 4px 0 12px}
+</style><div class="ctl"><div class="head"><div>
 <div class="num">${info.caseNumber ? `SAV N° ${esc(info.caseNumber)}` : 'SAV en cours de création'}</div>
 <div class="meta">${esc(`${label.brand} ${label.model}`.trim())}</div>
 ${(info.imei || report.serial) ? `<div class="meta"><b>N° de série / IMEI :</b> ${esc(info.imei || report.serial || '')}</div>` : ''}${report.firmware ? `<div class="meta"><b>Logiciel manette :</b> ${esc(report.firmware)}</div>` : ''}
@@ -74,6 +74,11 @@ ${info.sku ? `<div class="meta"><b>SKU :</b> ${esc(info.sku)}</div>` : ''}
 <div class="cols"><div><h2>Pannes constatées</h2><ul>${summary.length ? summary.map((s) => `<li>${esc(s)}</li>`).join('') : '<li>Aucun défaut détecté</li>'}</ul></div>
 <div><h2>Fonctions non testées</h2><ul>${untested.length ? untested.map((s) => `<li>${esc(s)}</li>`).join('') : '<li>Tout a été testé</li>'}</ul></div></div>
 ${report.notes ? `<p><b>Note :</b> ${esc(report.notes)}</p>` : ''}
+</div>`;
+}
+
+export function printControllerSheet(report: ControllerReport, info: ControllerSheetInfo = {}) {
+  const html = `<!doctype html><html><head><meta charset="utf-8"><title>Test manette ${esc(info.caseNumber || '')}</title><style>body{margin:12mm}</style></head><body>${controllerSheetSection(report, info)}
 <script>window.onload=()=>setTimeout(()=>window.print(),300)</script></body></html>`;
   const w = window.open(URL.createObjectURL(new Blob([html], { type: 'text/html' })), '_blank');
   if (!w) alert('Autorisez les fenêtres pop-up pour imprimer.');
