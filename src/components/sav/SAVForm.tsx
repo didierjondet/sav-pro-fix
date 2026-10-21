@@ -665,6 +665,7 @@ export function SAVForm({ onSuccess, initialDeviceData }: SAVFormProps) {
               customerInfo={customerInfo}
               setCustomerInfo={setCustomerInfo}
               onCustomerSelected={setSelectedCustomer}
+              onCustomerCleared={() => setSelectedCustomer(null)}
             />
             
             {/* Champs supplémentaires visibles seulement si pas de client sélectionné */}
