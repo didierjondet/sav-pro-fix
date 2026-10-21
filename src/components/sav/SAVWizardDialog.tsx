@@ -680,6 +680,7 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess, initialDeviceDa
               customerInfo={customerInfo}
               setCustomerInfo={setCustomerInfo}
               onCustomerSelected={setSelectedCustomer}
+              onCustomerCleared={() => setSelectedCustomer(null)}
             />
             {!selectedCustomer && (
               <>

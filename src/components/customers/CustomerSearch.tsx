@@ -20,9 +20,10 @@ interface CustomerSearchProps {
   customerInfo: CustomerInfo;
   setCustomerInfo: (info: CustomerInfo) => void;
   onCustomerSelected?: (customer: Customer) => void;
+  onCustomerCleared?: () => void;
 }
 
-export function CustomerSearch({ customerInfo, setCustomerInfo, onCustomerSelected }: CustomerSearchProps) {
+export function CustomerSearch({ customerInfo, setCustomerInfo, onCustomerSelected, onCustomerCleared }: CustomerSearchProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [showResults, setShowResults] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
@@ -66,6 +67,7 @@ export function CustomerSearch({ customerInfo, setCustomerInfo, onCustomerSelect
 
   const clearSelection = () => {
     setSelectedCustomer(null);
+    onCustomerCleared?.();
     setCustomerInfo({
       firstName: '',
       lastName: '',
@@ -78,6 +80,7 @@ export function CustomerSearch({ customerInfo, setCustomerInfo, onCustomerSelect
 
   const createNewCustomer = () => {
     setSelectedCustomer(null);
+    onCustomerCleared?.();
     const names = searchTerm.split(' ');
     setCustomerInfo({
       firstName: names[0] || '',
