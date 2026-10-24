@@ -45,3 +45,20 @@ describe('stabilité joystick', () => {
     expect(buildControllerSummary(r)).toContain('Joystick droit : instable (stabilité 82 %)');
   });
 });
+
+import { stickDriftText } from '../src/lib/controllerTest';
+import { buildLightbarReport } from '../src/lib/controllerHid';
+describe('corrections 24/10', () => {
+  test('dérive non mesurée affichée comme telle', () => {
+    expect(stickDriftText({ driftX: 0, driftY: 0, maxRadius: 1, status: 'ok', drift_measured: false })).toBe('dérive (drift) : non mesurée');
+  });
+  test('dérive mesurée avec direction', () => {
+    expect(stickDriftText({ driftX: 0, driftY: -0.12, maxRadius: 1, status: 'defect', drift_measured: true })).toBe('dérive (drift) : 12 % vers le haut');
+  });
+  test('LED : octets RGB DS4 et DualSense', () => {
+    const ds4 = buildLightbarReport(0x09cc, 1, 2, 3);
+    expect(ds4.reportId).toBe(0x05); expect([...ds4.data.slice(5, 8)]).toEqual([1, 2, 3]);
+    const ds = buildLightbarReport(0x0ce6, 4, 5, 6);
+    expect(ds.reportId).toBe(0x02); expect([...ds.data.slice(44, 47)]).toEqual([4, 5, 6]);
+  });
+});
