@@ -122,3 +122,9 @@ export async function setLightbar(r: number, g: number, b: number): Promise<bool
     return false;
   }
 }
+
+/** Ferme et oublie la manette gardée en mémoire pour la LED. */
+export function resetHidDevices() {
+  try { ledDevice?.close?.(); } catch { /* */ }
+  ledDevice = null;
+}
