@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Progress } from '@/components/ui/progress';
 import { Gamepad2, Check } from 'lucide-react';
 import { ControllerDiagram } from './ControllerDiagram';
+import { SpeakerTest, MicTest, LedTest } from './ControllerAudioLed';
 import {
   type ControllerModel, type ControllerReport, type ItemStatus,
   buttonsForModel, buildControllerSummary, buildUntestedList, compactTrail, computeDrift, detectModel, evaluateStick,
@@ -32,7 +33,7 @@ interface Props {
 
 const STEPS = ['Connexion', 'Boutons', 'Gâchettes', 'Joysticks', 'Vibrations', 'Vérifications', 'Résumé'];
 const STATUS_BTNS: { v: ItemStatus; label: string }[] = [
-  { v: 'ok', label: 'OK' }, { v: 'intermittent', label: 'Intermittent' }, { v: 'defect', label: 'Défaut' },
+  { v: 'ok', label: 'OK' }, { v: 'intermittent', label: 'Intermittent' }, { v: 'defect', label: 'Défaut' }, { v: 'untested', label: 'Pas testé' },
 ];
 
 function StatusPicker({ value, onChange }: { value: ItemStatus; onChange: (v: ItemStatus) => void }) {
@@ -200,7 +201,7 @@ export function ControllerTestDialog({ open, onOpenChange, onComplete }: Props) 
       const d = raw ? { driftX: raw.driftX, driftY: raw.driftY } : { driftX: 0, driftY: 0 };
       let auto: ItemStatus = !drift && maxR[k] < 0.3 ? 'untested' : evaluateStick(d, drift ? maxR[k] : 1);
       if (auto === 'ok' && raw?.stability != null && raw.stability < STABILITY_THRESHOLD) auto = 'defect';
-      return { ...d, stability: raw?.stability, maxRadius: Math.min(1, maxR[k]), status: stickOverride[k] ?? auto, trail: compactTrail(trail.current[k]) };
+      return { ...d, stability: raw?.stability, maxRadius: Math.min(1, maxR[k]), status: stickOverride[k] ?? auto, drift_measured: !!raw, trail: compactTrail(trail.current[k]) };
     };
     const man: Record<string, { status: ItemStatus; note?: string }> = {};
     MANUAL_CHECKS[model].forEach((m) => { man[m] = manual[m] ?? { status: 'untested' }; });
@@ -228,8 +229,8 @@ export function ControllerTestDialog({ open, onOpenChange, onComplete }: Props) 
     onOpenChange(false);
   };
 
-  const Stick = ({ side, x, y }: { side: 'left' | 'right'; x: number; y: number }) => (
-    <div className="flex flex-col items-center gap-1">
+  const renderStick = (side: 'left' | 'right', x: number, y: number) => (
+    <div key={side} className="flex flex-col items-center gap-1">
       <svg viewBox="-110 -110 220 220" className="w-40 h-40">
         <circle r="100" fill="hsl(var(--muted))" stroke="hsl(var(--border))" />
         <circle r={100 * 0.08} fill="none" stroke="hsl(var(--border))" strokeDasharray="3 3" />
@@ -240,7 +241,7 @@ export function ControllerTestDialog({ open, onOpenChange, onComplete }: Props) 
       </svg>
       <span className="text-xs text-muted-foreground">
         {side === 'left' ? 'Gauche' : 'Droit'} · amplitude {Math.round(Math.min(1, maxR[side]) * 100)} %
-        {drift && ` · dérive ${Math.round(Math.hypot(drift[side].driftX, drift[side].driftY) * 100)} % · stabilité ${drift[side].stability ?? 100} %`}
+        {drift && ` · dérive (drift) ${Math.round(Math.hypot(drift[side].driftX, drift[side].driftY) * 100)} % · stabilité ${drift[side].stability ?? 100} %`}
       </span>
       <StatusPicker value={report.sticks[side].status} onChange={(v) => setStickOverride((o) => ({ ...o, [side]: v }))} />
     </div>
@@ -329,14 +330,14 @@ export function ControllerTestDialog({ open, onOpenChange, onComplete }: Props) 
 
         {step === 3 && (
           <div className="space-y-4">
-            <p className="text-sm">1. Lâchez les deux joysticks puis cliquez sur « Mesurer la dérive » (2 s). 2. Faites des cercles complets avec chaque stick.</p>
+            <p className="text-sm">1. Lâchez les deux joysticks puis cliquez sur « Mesurer la dérive (drift) » (2 s). 2. Faites des cercles complets avec chaque stick.</p>
             <div className="flex gap-2">
-              <Button type="button" onClick={measureDrift} disabled={measuring}>{measuring ? 'Mesure…' : 'Mesurer la dérive'}</Button>
+              <Button type="button" onClick={measureDrift} disabled={measuring}>{measuring ? 'Mesure…' : 'Mesurer la dérive (drift)'}</Button>
               <Button type="button" variant="outline" onClick={() => { setMaxR({ left: 0, right: 0 }); trail.current = { left: [], right: [] }; }}>Effacer les cercles</Button>
             </div>
             <div className="flex flex-wrap justify-around gap-6">
-              <Stick side="left" x={axes.lx} y={axes.ly} />
-              <Stick side="right" x={axes.rx} y={axes.ry} />
+              {renderStick('left', axes.lx, axes.ly)}
+              {renderStick('right', axes.rx, axes.ry)}
             </div>
           </div>
         )}
@@ -358,7 +359,9 @@ export function ControllerTestDialog({ open, onOpenChange, onComplete }: Props) 
             {MANUAL_CHECKS[model].map((m) => (
               <div key={m} className="flex flex-wrap items-center gap-2 border-b pb-2">
                 <span className="text-sm flex-1 min-w-40">{m}</span>
-                {m === 'Haut-parleur' && <Button type="button" size="sm" variant="outline" onClick={playTone}>Jouer un son</Button>}
+                {m === 'Haut-parleur' && <SpeakerTest />}
+                {m === 'Micro' && <MicTest />}
+                {/LED/.test(m) && <LedTest />}
                 <StatusPicker value={manual[m]?.status ?? 'untested'} onChange={(v) => setManual((p) => ({ ...p, [m]: { ...p[m], status: v } }))} />
                 <Input className="w-48 h-8" placeholder="Note" value={manual[m]?.note ?? ''} onChange={(e) => setManual((p) => ({ ...p, [m]: { status: p[m]?.status ?? 'untested', note: e.target.value } }))} />
               </div>
