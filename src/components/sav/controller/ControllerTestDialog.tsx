@@ -15,7 +15,7 @@ import {
   buttonsForModel, buildControllerSummary, buildUntestedList, compactTrail, computeDrift, detectModel, evaluateStick,
   MANUAL_CHECKS, MODEL_LABELS, TRIGGER_MIN_TRAVEL, buttonLabel, summaryToText, computeStability, STABILITY_THRESHOLD,
 } from '@/lib/controllerTest';
-import { hidSupported, readControllerIdentity } from '@/lib/controllerHid';
+import { hidSupported, readControllerIdentity, resetHidDevices } from '@/lib/controllerHid';
 
 export interface ControllerTestResult {
   report: ControllerReport;
@@ -233,11 +233,31 @@ export function ControllerTestDialog({ open, onOpenChange, onComplete }: Props) 
 
   const connected = padIndex !== null;
 
+  const resetAll = (ask = true) => {
+    const hasData = Object.keys(buttons).length > 0 || drift !== null || Object.keys(manual).length > 0 || vibration !== 'untested' || serial !== null;
+    if (ask && hasData && !window.confirm('Effacer la manette détectée et tous les résultats du test ?')) return;
+    setStep(0); setPadIndex(null); setPadId(''); setModel('generic'); setButtons({}); setPressed({}); setTriggers({ l2: 0, r2: 0 });
+    setTriggerOverride({}); setAxes({ lx: 0, ly: 0, rx: 0, ry: 0 }); setMaxR({ left: 0, right: 0 }); setDrift(null); setStickOverride({});
+    setMeasuring(false); setVibration('untested'); setManual({}); setNotes(''); setPending(null); setSerial(null); setSerialMsg('');
+    samples.current = null; trail.current = { left: [], right: [] };
+    resetHidDevices();
+  };
+
+  // Manette suivie débranchée : retour en attente
+  useEffect(() => {
+    if (!open) return;
+    const onDisc = (e: GamepadEvent) => { if (e.gamepad.index === padIndex) { setPadIndex(null); setPadId(''); setPressed({}); } };
+    window.addEventListener('gamepaddisconnected', onDisc);
+    return () => window.removeEventListener('gamepaddisconnected', onDisc);
+  }, [open, padIndex]);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[95vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2"><Gamepad2 className="h-5 w-5" /> Test de manette — {STEPS[step]}</DialogTitle>
+          <DialogTitle className="flex items-center gap-2"><Gamepad2 className="h-5 w-5" /> Test de manette — {STEPS[step]}
+            <Button type="button" variant="destructive" size="sm" className="ml-auto mr-6" onClick={() => resetAll()}>Remettre à zéro</Button>
+          </DialogTitle>
         </DialogHeader>
         <div className="flex flex-wrap gap-1 mb-2">
           {STEPS.map((s, i) => (
@@ -255,6 +275,7 @@ export function ControllerTestDialog({ open, onOpenChange, onComplete }: Props) 
             <div className={`p-4 rounded-md border text-sm ${connected ? 'border-primary' : 'border-dashed'}`}>
               {connected ? <span className="flex items-center gap-2"><Check className="h-4 w-4 text-primary" /> Manette détectée : {padId}</span> : 'En attente de la manette…'}
             </div>
+            {!connected && <p className="text-xs text-muted-foreground">Manette non détectée ? Débranchez-la, rebranchez-la, appuyez sur un bouton, ou cliquez sur « Remettre à zéro ».</p>}
             {hidSupported() && (
               <div className="space-y-1">
                 <Button type="button" variant="outline" size="sm" onClick={readSerial} disabled={reading}>{reading ? 'Lecture…' : 'Lire le n° de série'}</Button>
