@@ -76,6 +76,7 @@ export interface StickResult {
   status: ItemStatus;
   trail?: [number, number][]; // débattement parcouru (échantillonné)
   stability?: number; // 0..100, 100 = immobile au repos
+  drift_measured?: boolean; // false = mesure de dérive non faite
 }
 
 /** Réduit un tracé à ~max points arrondis à 2 décimales (stockage léger). */
@@ -109,6 +110,13 @@ export function driftDirection(x: number, y: number) {
   if (Math.abs(y) >= DRIFT_THRESHOLD / 2) parts.push(y < 0 ? 'le haut' : 'le bas');
   if (Math.abs(x) >= DRIFT_THRESHOLD / 2) parts.push(x < 0 ? 'la gauche' : 'la droite');
   return parts.join(' et ') || 'le centre';
+}
+
+/** Texte imprimable de la dérive d'un stick (« non mesurée » si la mesure n'a pas été faite). */
+export function stickDriftText(s: StickResult): string {
+  if (s.drift_measured === false) return 'dérive (drift) : non mesurée';
+  const mag = Math.hypot(s.driftX, s.driftY);
+  return `dérive (drift) : ${Math.round(mag * 100)} %${mag >= DRIFT_THRESHOLD / 2 ? ` vers ${driftDirection(s.driftX, s.driftY)}` : ''}`;
 }
 
 export function evaluateStick(drift: { driftX: number; driftY: number }, maxRadius: number): ItemStatus {
@@ -149,7 +157,7 @@ export function buildControllerSummary(r: ControllerReport): string[] {
     const name = k === 'left' ? 'Joystick gauche' : 'Joystick droit';
     if (s.status === 'untested') return;
     const mag = Math.hypot(s.driftX, s.driftY);
-    if (mag >= DRIFT_THRESHOLD) out.push(`${name} : dérive de ${Math.round(mag * 100)} % vers ${driftDirection(s.driftX, s.driftY)}`);
+    if (mag >= DRIFT_THRESHOLD) out.push(`${name} : dérive (drift) de ${Math.round(mag * 100)} % vers ${driftDirection(s.driftX, s.driftY)}`);
     if (s.maxRadius < 0.9) out.push(`${name} : amplitude limitée (${Math.round(s.maxRadius * 100)} %)`);
     if (s.stability != null && s.stability < STABILITY_THRESHOLD) out.push(`${name} : instable (stabilité ${s.stability} %)`);
     if (s.status === 'intermittent') out.push(`${name} : comportement intermittent`);

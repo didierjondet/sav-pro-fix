@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { ControllerDiagram } from '@/components/sav/controller/ControllerDiagram';
-import { MODEL_LABELS, buildControllerSummary, buildUntestedList, type ControllerReport } from '@/lib/controllerTest';
+import { MODEL_LABELS, stickDriftText, buildControllerSummary, buildUntestedList, type ControllerReport } from '@/lib/controllerTest';
 import bwipjs from 'bwip-js/browser';
 
 export interface ControllerSheetInfo {
@@ -51,7 +51,7 @@ export function controllerSheetSection(report: ControllerReport, info: Controlle
   const label = MODEL_LABELS[report.model];
   const stick = (k: 'left' | 'right') => {
     const s = report.sticks[k];
-    return `<div class="stick">${stickTrailSvg(s.trail, { x: s.driftX, y: s.driftY })}<div>${k === 'left' ? 'Joystick gauche' : 'Joystick droit'} · amplitude ${Math.round(Math.min(1, s.maxRadius) * 100)} % · dérive ${Math.round(Math.hypot(s.driftX, s.driftY) * 100)} %${s.stability != null ? ` · stabilité ${s.stability} %` : ''}</div></div>`;
+    return `<div class="stick">${stickTrailSvg(s.trail, { x: s.driftX, y: s.driftY })}<div>${k === 'left' ? 'Joystick gauche' : 'Joystick droit'} · amplitude ${Math.round(Math.min(1, s.maxRadius) * 100)} % · ${stickDriftText(s)}${s.stability != null ? ` · stabilité ${s.stability} %` : ''}</div></div>`;
   };
   return `<style>
 .ctl{font-family:sans-serif;font-size:12px}

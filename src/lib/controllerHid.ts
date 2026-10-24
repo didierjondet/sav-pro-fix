@@ -85,3 +85,40 @@ export async function readControllerIdentity(): Promise<HidIdentity | null> {
     return null;
   }
 }
+
+/** Rapport de sortie USB pour la barre lumineuse (DS4 : 0x05, DualSense : 0x02). Sans l'octet d'id. */
+export function buildLightbarReport(productId: number, r: number, g: number, b: number): { reportId: number; data: Uint8Array } {
+  const isDualSense = productId === 0x0ce6 || productId === 0x0df2;
+  if (isDualSense) {
+    const data = new Uint8Array(47);
+    data[1] = 0x04; // autorise le contrôle de la barre
+    data[38] = 0x02; // configuration barre
+    data[41] = 0x02; // désactive l'animation par défaut
+    data[44] = r; data[45] = g; data[46] = b;
+    return { reportId: 0x02, data };
+  }
+  const data = new Uint8Array(31);
+  data[0] = 0x07; // rumble + LED
+  data[5] = r; data[6] = g; data[7] = b;
+  return { reportId: 0x05, data };
+}
+
+let ledDevice: any = null;
+/** Allume la barre lumineuse d'une manette Sony branchée en USB. false si impossible. */
+export async function setLightbar(r: number, g: number, b: number): Promise<boolean> {
+  if (!hidSupported()) return false;
+  try {
+    if (!ledDevice) {
+      const devices = await (navigator as any).hid.requestDevice({ filters: [{ vendorId: 0x054c }] });
+      ledDevice = devices?.[0] ?? null;
+      if (!ledDevice) return false;
+    }
+    if (!ledDevice.opened) await ledDevice.open();
+    const { reportId, data } = buildLightbarReport(ledDevice.productId, r, g, b);
+    await ledDevice.sendReport(reportId, data);
+    return true;
+  } catch {
+    ledDevice = null;
+    return false;
+  }
+}
