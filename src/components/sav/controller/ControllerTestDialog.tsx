@@ -158,22 +158,6 @@ export function ControllerTestDialog({ open, onOpenChange, onComplete }: Props) 
   // Gâchettes remises à zéro à l'entrée de l'étape
   useEffect(() => { if (step === 2) { setTriggers({ l2: 0, r2: 0 }); setTriggerOverride({}); } }, [step]);
 
-  const playTone = async () => {
-    try {
-      const ctx = new AudioContext();
-      const md: any = navigator.mediaDevices;
-      if (typeof (ctx as any).setSinkId === 'function' && md?.selectAudioOutput) {
-        try { const dev = await md.selectAudioOutput(); await (ctx as any).setSinkId(dev.deviceId); } catch { /* sortie par défaut */ }
-      } else {
-        alert("Ce navigateur ne permet pas de choisir la sortie audio : le son sera joué sur la sortie par défaut. Branchez la manette en USB et sélectionnez-la comme sortie audio de l'ordinateur.");
-      }
-      const o = ctx.createOscillator(), g = ctx.createGain();
-      o.frequency.value = 880; g.gain.value = 0.3; o.connect(g).connect(ctx.destination);
-      o.start(); o.frequency.setValueAtTime(660, ctx.currentTime + 0.4); o.stop(ctx.currentTime + 1.2);
-      o.onended = () => ctx.close();
-    } catch { alert('Lecture du son impossible sur ce navigateur.'); }
-  };
-
   const vibrate = async (strong: boolean) => {
     const pad = padIndex !== null ? navigator.getGamepads()[padIndex] : null;
     const act: any = (pad as any)?.vibrationActuator;

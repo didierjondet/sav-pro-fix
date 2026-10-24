@@ -20,7 +20,7 @@ describe('test manette', () => {
   test('résumé lisible', () => {
     const s = buildControllerSummary(base());
     expect(s).toContain('Bouton X ne répond pas');
-    expect(s).toContain('Joystick gauche : dérive de 12 % vers le haut');
+    expect(s).toContain('Joystick gauche : dérive (drift) de 12 % vers le haut');
   });
   test('bouton non appuyé = non testé, pas une panne', () => {
     const r = base(); r.buttons.north = 'untested';

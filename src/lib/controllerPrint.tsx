@@ -1,6 +1,6 @@
 import { stickDriftText, renderToStaticMarkup } from 'react-dom/server';
 import { ControllerDiagram } from '@/components/sav/controller/ControllerDiagram';
-import { MODEL_LABELS, buildControllerSummary, buildUntestedList, type ControllerReport } from '@/lib/controllerTest';
+import { MODEL_LABELS, stickDriftText, buildControllerSummary, buildUntestedList, type ControllerReport } from '@/lib/controllerTest';
 import bwipjs from 'bwip-js/browser';
 
 export interface ControllerSheetInfo {
