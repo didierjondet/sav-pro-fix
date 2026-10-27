@@ -848,10 +848,7 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess, initialDeviceDa
                 rows={5}
               />
             </div>
-            <div className="flex justify-end">
-              <PhoneUploadButton onFiles={(paths) => setDeviceInfo((prev) => ({ ...prev, attachments: mergeAttachments(prev.attachments || [], paths) }))} />
-            </div>
-            <FileUpload files={deviceInfo.attachments}
+            <FileUpload action={<PhoneUploadButton onFiles={(paths) => setDeviceInfo((prev) => ({ ...prev, attachments: mergeAttachments(prev.attachments || [], paths) }))} />} files={deviceInfo.attachments}
               onFilesChange={(files) => setDeviceInfo({ ...deviceInfo, attachments: files })}
               partId="wizard-device" label="Photos de l'appareil" />
           </div>
