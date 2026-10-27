@@ -31,7 +31,7 @@ export default function MobileSAVDocuments() {
       const idx = items.length;
       const check = checkMobileUpload(f.type, f.size);
       const preview = f.type.startsWith('image/') ? URL.createObjectURL(f) : undefined;
-      if (!check.ok) { setItems((p) => [...p, { name: f.name, preview, status: 'error', error: check.error }]); continue; }
+      if (check.ok === false) { setItems((p) => [...p, { name: f.name, preview, status: 'error', error: check.error }]); continue; }
       let pos = 0;
       setItems((p) => { pos = p.length; return [...p, { name: f.name, preview, status: 'sending' }]; });
       const { data, error } = await supabase.functions.invoke('mobile-sav-upload', { body: { file: await toDataUrl(f), token, append: true } });
