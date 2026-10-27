@@ -77,6 +77,7 @@ export default {
 				sm: 'calc(var(--radius) - 4px)'
 			},
 			keyframes: {
+				'wiggle': { '0%, 84%, 100%': { transform: 'rotate(0deg)' }, '88%': { transform: 'rotate(-4deg)' }, '92%': { transform: 'rotate(4deg)' }, '96%': { transform: 'rotate(-2deg)' } },
 				'accordion-down': {
 					from: {
 						height: '0'
@@ -193,6 +194,7 @@ export default {
 			}
 		},
 		animation: {
+			'wiggle': 'wiggle 2.5s ease-in-out infinite',
 			'accordion-down': 'accordion-down 0.2s ease-out',
 			'accordion-up': 'accordion-up 0.2s ease-out',
 			'pulse-border': 'pulse-border 1.5s ease-in-out 3',

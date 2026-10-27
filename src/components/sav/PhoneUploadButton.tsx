@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import bwipjs from 'bwip-js/browser';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -18,6 +18,8 @@ export function PhoneUploadButton({ onFiles }: { onFiles: (paths: string[]) => v
   const [session, setSession] = useState<Session | null>(null);
   const [received, setReceived] = useState(0);
   const [creating, setCreating] = useState(false);
+  const onFilesRef = useRef(onFiles);
+  onFilesRef.current = onFiles;
 
   useEffect(() => {
     if (!session?.id) return;
@@ -28,11 +30,11 @@ export function PhoneUploadButton({ onFiles }: { onFiles: (paths: string[]) => v
           const row = p.new as any;
           setSession((prev) => (prev ? { ...prev, status: row.status } : prev));
           const photos: string[] = Array.isArray(row?.payload?.photos) ? row.payload.photos : [];
-          if (photos.length) { setReceived(photos.length); onFiles(photos); }
+          if (photos.length) { setReceived(photos.length); onFilesRef.current(photos); }
         })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [session?.id, onFiles]);
+  }, [session?.id]);
 
   const start = async () => {
     setOpen(true);

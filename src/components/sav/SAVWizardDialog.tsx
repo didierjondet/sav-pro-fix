@@ -30,6 +30,8 @@ import { useProfile } from '@/hooks/useProfile';
 import { useSubscription } from '@/hooks/useSubscription';
 import { CustomerSearch } from '@/components/customers/CustomerSearch';
 import { FileUpload } from '@/components/parts/FileUpload';
+import { PhoneUploadButton } from '@/components/sav/PhoneUploadButton';
+import { mergeAttachments } from '@/lib/mobileDocs';
 import { useLimitDialogContext } from '@/contexts/LimitDialogContext';
 import { useToast } from '@/hooks/use-toast';
 import { PrintConfirmDialog } from '@/components/dialogs/PrintConfirmDialog';
@@ -845,6 +847,9 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess, initialDeviceDa
                 placeholder="Décrivez le problème rencontré..."
                 rows={5}
               />
+            </div>
+            <div className="flex justify-end">
+              <PhoneUploadButton onFiles={(paths) => setDeviceInfo((prev) => ({ ...prev, attachments: mergeAttachments(prev.attachments || [], paths) }))} />
             </div>
             <FileUpload files={deviceInfo.attachments}
               onFilesChange={(files) => setDeviceInfo({ ...deviceInfo, attachments: files })}
