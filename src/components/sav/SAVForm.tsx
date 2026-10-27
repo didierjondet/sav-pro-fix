@@ -907,10 +907,7 @@ export function SAVForm({ onSuccess, initialDeviceData }: SAVFormProps) {
             />
           </ProblemDescriptionField>
           
-          <div className="flex justify-end">
-            <PhoneUploadButton onFiles={(paths) => setDeviceInfo((prev) => ({ ...prev, attachments: mergeAttachments(prev.attachments || [], paths) }))} />
-          </div>
-          <FileUpload
+          <FileUpload action={<PhoneUploadButton onFiles={(paths) => setDeviceInfo((prev) => ({ ...prev, attachments: mergeAttachments(prev.attachments || [], paths) }))} />}
             files={deviceInfo.attachments}
             onFilesChange={(files) => setDeviceInfo({ ...deviceInfo, attachments: files })}
             partId="device-info"

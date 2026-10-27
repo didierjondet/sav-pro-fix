@@ -13,9 +13,11 @@ interface FileUploadProps {
   onFilesChange: (files: string[]) => void;
   partId: string;
   label?: string;
+  /** Action affichée dans la zone d'envoi (ex. envoi depuis le téléphone) */
+  action?: React.ReactNode;
 }
 
-export function FileUpload({ files, onFilesChange, partId, label = "Joindre des fichiers" }: FileUploadProps) {
+export function FileUpload({ files, onFilesChange, partId, label = "Joindre des fichiers", action }: FileUploadProps) {
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -175,6 +177,7 @@ export function FileUpload({ files, onFilesChange, partId, label = "Joindre des 
       {/* Zone d'upload */}
       <Card className="border-dashed border-2 border-muted-foreground/25">
         <CardContent className="p-4">
+          {action && <div className="flex justify-center pb-3 mb-3 border-b border-dashed">{action}</div>}
           <div className="flex flex-col items-center justify-center space-y-2">
             <Upload className="h-6 w-6 text-muted-foreground" />
             <div className="text-sm text-muted-foreground text-center">
