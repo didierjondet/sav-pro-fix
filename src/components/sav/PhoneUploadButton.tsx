@@ -67,7 +67,7 @@ export function PhoneUploadButton({ onFiles }: { onFiles: (paths: string[]) => v
   return (
     <>
       <button type="button" onClick={start} title="Envoyer des photos ou PDF depuis le téléphone"
-        className="relative flex items-center gap-3 rounded-full bg-destructive px-4 py-2 text-destructive-foreground shadow-lg hover:opacity-90 motion-safe:animate-wiggle">
+        className="relative isolate flex items-center gap-3 rounded-full bg-destructive px-4 py-2 text-destructive-foreground shadow-lg hover:opacity-90 motion-safe:animate-wiggle">
         <span className="absolute -inset-1 rounded-full bg-destructive/40 motion-safe:animate-ping -z-10" />
         <span className="relative flex h-9 w-9 items-center justify-center rounded-full bg-destructive-foreground/20">
           <Smartphone className="h-5 w-5" />
