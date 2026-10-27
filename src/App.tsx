@@ -65,6 +65,7 @@ import AppLayout from "./components/layout/AppLayout";
 import UsageTracker from "./components/analytics/UsageTracker";
 import MobileSAVLookup from "./pages/MobileSAVLookup";
 import MobileSAVWizard from "./pages/MobileSAVWizard";
+import MobileSAVDocuments from "./pages/MobileSAVDocuments";
 import MobileInventory from "./pages/MobileInventory";
 import PartnersDirectory from "./pages/PartnersDirectory";
 import PartnerPublicProfile from "./pages/PartnerPublicProfile";
@@ -155,6 +156,7 @@ const App = () => {
                 <Route path="/test" element={<TestLanding />} />
                 <Route path="/m/sav" element={<MobileSAVLookup />} />
                 <Route path="/m/sav/nouveau/:token" element={<MobileSAVWizard />} />
+                <Route path="/m/sav/documents/:token" element={<MobileSAVDocuments />} />
                 <Route path="/m/inventaire" element={<MobileInventory />} />
                 <Route path="/super-admin" element={<SuperAdmin />} />
                 <Route path="/landing" element={<Landing />} />

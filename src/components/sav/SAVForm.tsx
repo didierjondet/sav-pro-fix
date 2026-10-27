@@ -24,6 +24,8 @@ import { useSubscription } from '@/hooks/useSubscription';
 import { Badge } from '@/components/ui/badge';
 import { CustomerSearch } from '@/components/customers/CustomerSearch';
 import { FileUpload } from '@/components/parts/FileUpload';
+import { PhoneUploadButton } from '@/components/sav/PhoneUploadButton';
+import { mergeAttachments } from '@/lib/mobileDocs';
 import { LimitAlert } from '@/components/subscription/LimitAlert';
 import { useLimitDialogContext } from '@/contexts/LimitDialogContext';
 import { useToast } from '@/hooks/use-toast';
@@ -905,6 +907,9 @@ export function SAVForm({ onSuccess, initialDeviceData }: SAVFormProps) {
             />
           </ProblemDescriptionField>
           
+          <div className="flex justify-end">
+            <PhoneUploadButton onFiles={(paths) => setDeviceInfo((prev) => ({ ...prev, attachments: mergeAttachments(prev.attachments || [], paths) }))} />
+          </div>
           <FileUpload
             files={deviceInfo.attachments}
             onFilesChange={(files) => setDeviceInfo({ ...deviceInfo, attachments: files })}
