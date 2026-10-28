@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useShop } from '@/contexts/ShopContext';
@@ -68,6 +69,19 @@ export function useLoanerLoans(savCaseId?: string) {
     queryClient.invalidateQueries({ queryKey: ['loaner-loans-history', shopId] });
     queryClient.invalidateQueries({ queryKey: ['loaner-equipment', shopId] });
   };
+
+  // Retour validé depuis un téléphone (QR du document de restitution) : mise à jour en direct
+  useEffect(() => {
+    if (!shopId || !savCaseId) return;
+    const channel = supabase
+      .channel(`loaner-loans-${savCaseId}-${Math.random().toString(36).slice(2)}`)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'loaner_loans', filter: `sav_case_id=eq.${savCaseId}` }, () => {
+        queryClient.invalidateQueries({ queryKey: ['loaner-loans', shopId] });
+        queryClient.invalidateQueries({ queryKey: ['loaner-equipment', shopId] });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [shopId, savCaseId, queryClient]);
 
 
   const createLoan = useMutation({
