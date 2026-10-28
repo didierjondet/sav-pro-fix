@@ -1549,6 +1549,7 @@ export type Database = {
           notes: string | null
           return_condition: string | null
           return_photos: Json
+          return_token: string
           returned_at: string | null
           sav_case_id: string | null
           shop_id: string
@@ -1567,6 +1568,7 @@ export type Database = {
           notes?: string | null
           return_condition?: string | null
           return_photos?: Json
+          return_token?: string
           returned_at?: string | null
           sav_case_id?: string | null
           shop_id: string
@@ -1585,6 +1587,7 @@ export type Database = {
           notes?: string | null
           return_condition?: string | null
           return_photos?: Json
+          return_token?: string
           returned_at?: string | null
           sav_case_id?: string | null
           shop_id?: string
@@ -5442,6 +5445,17 @@ export type Database = {
           sav_type: string
           status: string
         }[]
+      }
+      loaner_return_open: { Args: { p_token: string }; Returns: Json }
+      loaner_return_shop: { Args: { p_token: string }; Returns: string }
+      loaner_return_submit: {
+        Args: {
+          p_condition: string
+          p_notes: string
+          p_photos: string[]
+          p_token: string
+        }
+        Returns: Json
       }
       mark_tracking_messages_read: {
         Args: { p_tracking_slug: string }
