@@ -5,6 +5,7 @@ import { Camera, X, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useShop } from '@/contexts/ShopContext';
 import { useToast } from '@/hooks/use-toast';
+import { signLoanerPhoto, loanerPhotoLocation } from '@/lib/loanerPhotos';
 
 interface Props {
   value: string[];
@@ -30,10 +31,8 @@ export function LoanerConditionPhotos({ value, onChange, max = 6, disabled }: Pr
           next[path] = signed[path];
           continue;
         }
-        const { data } = await supabase.storage
-          .from('loaner-photos')
-          .createSignedUrl(path, 3600);
-        if (data?.signedUrl) next[path] = data.signedUrl;
+        const url = await signLoanerPhoto(path);
+        if (url) next[path] = url;
       }
       if (!cancelled) setSigned(next);
     })();
@@ -74,7 +73,8 @@ export function LoanerConditionPhotos({ value, onChange, max = 6, disabled }: Pr
   };
 
   const handleRemove = async (path: string) => {
-    await supabase.storage.from('loaner-photos').remove([path]);
+    const loc = loanerPhotoLocation(path);
+    await supabase.storage.from(loc.bucket).remove([loc.path]);
     onChange(value.filter((p) => p !== path));
   };
 

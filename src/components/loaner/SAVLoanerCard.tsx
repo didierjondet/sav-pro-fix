@@ -12,6 +12,8 @@ import { LOANER_CATEGORIES } from '@/hooks/useLoanerEquipment';
 import { LoanerPickerDialog } from './LoanerPickerDialog';
 import { LoanerConditionPhotos } from '@/components/settings/loaner/LoanerConditionPhotos';
 
+import { PhoneUploadButton } from '@/components/sav/PhoneUploadButton';
+import { PHONE_PHOTO_PREFIX, isImagePath } from '@/lib/loanerPhotos';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
@@ -267,7 +269,14 @@ export function SAVLoanerCard({ savCaseId, customerId }: Props) {
                 onChange={(e) => setReturnNotes(e.target.value)}
               />
             </div>
-            <LoanerConditionPhotos value={returnPhotos} onChange={setReturnPhotos} />
+            <PhoneUploadButton
+              onFiles={(paths) => {
+                const incoming = paths.filter(isImagePath).map((p) => PHONE_PHOTO_PREFIX + p);
+                setReturnPhotos((prev) => Array.from(new Set([...prev, ...incoming])));
+              }}
+            />
+            <LoanerConditionPhotos value={returnPhotos} onChange={setReturnPhotos} max={12} />
+            <p className="text-xs text-muted-foreground">Ces photos serviront de référence pour le prochain prêt de ce matériel.</p>
           </div>
 
           <DialogFooter>

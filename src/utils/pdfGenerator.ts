@@ -1,3 +1,4 @@
+import { signLoanerPhoto, isImagePath } from '@/lib/loanerPhotos';
 import { supabase } from '@/integrations/supabase/client';
 import { Quote } from '@/hooks/useQuotes';
 import { Shop } from '@/hooks/useShop';
@@ -387,14 +388,47 @@ export const generateSAVRestitutionPDF = async (savCase: SAVCase, shop?: Shop, o
 
   // Récupérer le prêt de matériel lié au SAV (le plus récent)
   let loanerSectionHtml = '';
+  let loanerAlertHtml = '';
   try {
     const { data: loanRows } = await supabase
       .from('loaner_loans' as any)
-      .select('loaned_at, returned_at, loan_condition, return_condition, notes, return_photos, equipment:loaner_equipment(name, brand, model, imei, serial_number, color, category)')
+      .select('loaned_at, returned_at, expected_return_at, deposit_amount, loan_condition, return_condition, notes, return_photos, equipment:loaner_equipment(name, brand, model, imei, serial_number, color, category, condition_photos, photo_url)')
       .eq('sav_case_id', savCase.id)
-      .order('loaned_at', { ascending: false })
-      .limit(1);
-    const loan: any = loanRows?.[0];
+      .order('loaned_at', { ascending: false });
+    const allLoans: any[] = (loanRows as any[]) || [];
+    const activeLoans = allLoans.filter((l) => !l.returned_at);
+    if (activeLoans.length) {
+      const esc = (v: any) => String(v ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' } as any)[c]);
+      const rows = await Promise.all(activeLoans.map(async (l) => {
+        const eq = l.equipment || {};
+        const paths: string[] = [...(Array.isArray(eq.condition_photos) ? eq.condition_photos : []), ...(eq.photo_url ? [eq.photo_url] : [])].filter(isImagePath).slice(0, 3);
+        const urls = (await Promise.all(paths.map((p) => signLoanerPhoto(p)))).filter(Boolean) as string[];
+        const desc = [eq.brand, eq.model].filter(Boolean).join(' ');
+        const ids = [eq.imei ? `IMEI : ${esc(eq.imei)}` : null, eq.serial_number ? `N° série : ${esc(eq.serial_number)}` : null].filter(Boolean).join(' &nbsp;·&nbsp; ');
+        const overdue = l.expected_return_at && new Date(l.expected_return_at) < new Date();
+        const deposit = l.deposit_amount != null && Number(l.deposit_amount) > 0
+          ? `<div style="font-size: 15px; font-weight: bold; color: #b91c1c;">Caution : ${Number(l.deposit_amount).toFixed(2).replace('.', ',')} €</div>`
+          : `<div style="font-size: 11px; color: #555;">Aucune caution</div>`;
+        return `
+          <div style="display: flex; gap: 10px; align-items: flex-start; padding: 6px 0; border-top: 1px dashed #fca5a5;">
+            <div style="flex: 1; font-size: 11px; line-height: 1.4;">
+              <div style="font-size: 13px;">Nous attendons le retour de : <strong>${esc(eq.name || 'Matériel')}${desc ? ` — ${esc(desc)}` : ''}${eq.color ? ` (${esc(eq.color)})` : ''}</strong></div>
+              ${ids ? `<div style="font-family: monospace; font-size: 12px; font-weight: bold;">${ids}</div>` : ''}
+              <div>Prêté le ${new Date(l.loaned_at).toLocaleDateString('fr-FR')}${l.expected_return_at ? ` — <span style="${overdue ? 'color: #b91c1c; font-weight: bold;' : ''}">retour prévu le ${new Date(l.expected_return_at).toLocaleDateString('fr-FR')}${overdue ? ' (dépassé)' : ''}</span>` : ''}</div>
+              ${deposit}
+              ${l.loan_condition ? `<div><strong>État au prêt :</strong> ${esc(l.loan_condition)}</div>` : ''}
+              ${l.notes ? `<div><strong>Notes :</strong> ${esc(l.notes)}</div>` : ''}
+            </div>
+            ${urls.length ? `<div style="display: flex; gap: 4px;">${urls.map((u) => `<img src="${u}" style="width: 70px; height: 70px; object-fit: cover; border: 1px solid #fca5a5; border-radius: 3px;" />`).join('')}</div>` : ''}
+          </div>`;
+      }));
+      loanerAlertHtml = `
+        <div class="loaner-alert keep-together" style="border: 3px solid #b91c1c; background: #fef2f2; border-radius: 6px; padding: 8px 12px; margin: 10px 0;">
+          <div style="font-size: 16px; font-weight: bold; color: #b91c1c; text-transform: uppercase; text-align: center; letter-spacing: 1px; margin-bottom: 4px;">⚠ Matériel de prêt à récupérer</div>
+          ${rows.join('')}
+        </div>`;
+    }
+    const loan: any = activeLoans.length ? null : allLoans[0];
     if (loan) {
       const eq = loan.equipment || {};
       const eqLine = [eq.brand, eq.model].filter(Boolean).join(' ') || '—';
@@ -408,8 +442,7 @@ export const generateSAVRestitutionPDF = async (savCase: SAVCase, shop?: Shop, o
       if (photoPaths.length > 0) {
         const signed = await Promise.all(
           photoPaths.map(async (p) => {
-            const { data } = await supabase.storage.from('loaner-photos').createSignedUrl(p, 3600);
-            return data?.signedUrl || null;
+            return signLoanerPhoto(p);
           })
         );
         const valid = signed.filter(Boolean) as string[];
@@ -699,7 +732,9 @@ export const generateSAVRestitutionPDF = async (savCase: SAVCase, shop?: Shop, o
           @media print {
             body { margin: 0; padding: 6px 10px; font-size: 10px; }
             .no-print { display: none; }
-            .photos-block { page-break-inside: avoid; }
+            .photos-block, .loaner-alert, .keep-together, .signature-section, table, tr, .info-grid, .discount-info { page-break-inside: avoid; break-inside: avoid; }
+            h3, h4 { page-break-after: avoid; break-after: avoid; }
+            p, li { orphans: 3; widows: 3; }
           }
         </style>
       </head>
@@ -779,6 +814,8 @@ export const generateSAVRestitutionPDF = async (savCase: SAVCase, shop?: Shop, o
             </div>
           ` : ''}
         </div>
+
+        ${loanerAlertHtml}
 
         <div class="parts-section">
           <h3 class="section-title">Détail de l'intervention</h3>
