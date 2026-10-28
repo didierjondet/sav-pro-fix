@@ -28,3 +28,21 @@ Quand le SAV a un ou plusieurs prêts pas encore rendus au moment de la clôture
 - CSS print : `break-inside: avoid` sur `.loaner-alert`, sections, tableaux, `.signature-section` ; `break-after: avoid` sur les titres `h4`.
 - Couleurs via styles du document imprimé (comme le reste du PDF).
 - Aucun changement de base de données.
+
+---
+
+# Ajout : photos au retour d'un prêt (ordinateur ou téléphone)
+
+## Ce qui change
+- Dans la fenêtre « Marquer rendu » d'un prêt (onglet Prêt matériel du SAV) :
+  - on garde l'ajout de photos depuis l'ordinateur ;
+  - on ajoute **le même bouton rouge qui bouge « Photos / PDF depuis mon téléphone »**, avec la même fenêtre QR code et les miniatures qui arrivent en direct (même composant que dans le nouveau SAV, aucune connexion sur le téléphone).
+- Une fois le prêt marqué rendu, ces photos deviennent **les photos d'état de référence du matériel** : elles remplacent les anciennes sur la fiche du matériel et s'affichent au prochain prêt (et dans le grand encadré rouge de la feuille de clôture ci-dessus).
+- Les photos restent aussi rattachées au retour de ce prêt (historique).
+
+## Détails techniques
+- `PhoneUploadButton` : réutilisé tel quel (prop `onFiles`), apparence inchangée ailleurs.
+- `SAVLoanerCard.tsx` : bouton ajouté dans la fenêtre de retour ; chemins reçus ajoutés à `returnPhotos`. Les fichiers téléphone vivent dans le stockage des documents SAV, ceux de l'ordinateur dans celui des prêts : chaque chemin garde son origine pour l'affichage (URL signée sur le bon espace).
+- `useLoanerLoans.returnLoan` : après enregistrement, met à jour `loaner_equipment.condition_photos` avec les photos du retour (si au moins une).
+- Ajout des deux tâches dans roadmap.md au démarrage.
+- Aucun changement de structure de base de données.
