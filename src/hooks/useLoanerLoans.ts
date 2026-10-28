@@ -97,9 +97,18 @@ export function useLoanerLoans(savCaseId?: string) {
         .update(payload)
         .eq('id', id);
       if (error) throw error;
+      // Les photos du retour deviennent la référence d'état pour le prochain prêt
+      if (return_photos && return_photos.length) {
+        const { data: row } = await supabase.from('loaner_loans' as any).select('equipment_id').eq('id', id).maybeSingle();
+        const equipmentId = (row as any)?.equipment_id;
+        if (equipmentId) {
+          await supabase.from('loaner_equipment' as any).update({ condition_photos: return_photos }).eq('id', equipmentId);
+        }
+      }
     },
     onSuccess: () => {
       invalidate();
+      qc.invalidateQueries({ queryKey: ['loaner-equipment'] });
       toast({ title: 'Matériel rendu' });
     },
     onError: (e: any) => toast({ title: 'Erreur', description: e.message, variant: 'destructive' }),
