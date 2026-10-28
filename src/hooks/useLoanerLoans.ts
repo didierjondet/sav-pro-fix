@@ -108,7 +108,6 @@ export function useLoanerLoans(savCaseId?: string) {
     },
     onSuccess: () => {
       invalidate();
-      qc.invalidateQueries({ queryKey: ['loaner-equipment'] });
       toast({ title: 'Matériel rendu' });
     },
     onError: (e: any) => toast({ title: 'Erreur', description: e.message, variant: 'destructive' }),

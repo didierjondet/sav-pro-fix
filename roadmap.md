@@ -13,3 +13,5 @@
 - [x] Stripe : appel de la réplication depuis SubscriptionPlansManager et gestionnaire packs SMS
 
 - [x] Saisie d'un SAV depuis le smartphone (QR, formulaire mobile, lecture IA des codes, impression sur ordinateur)
+- [x] Feuille de clôture : grand encadré rouge prêt non rendu (matériel, caution, photos) + coupures de page propres
+- [x] Retour de prêt : photos ordi + téléphone (bouton rouge QR), servant de référence au prêt suivant
