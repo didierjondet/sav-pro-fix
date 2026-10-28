@@ -1,3 +1,5 @@
+import bwipjs from 'bwip-js/browser';
+import { getPublicAppOrigin } from '@/utils/trackingUtils';
 import { supabase } from '@/integrations/supabase/client';
 
 /** Photos envoyées depuis le téléphone : stockées avec les documents SAV, préfixées « sav: ». */
@@ -17,3 +19,11 @@ export async function signLoanerPhoto(path: string, expires = 3600): Promise<str
 }
 
 export const isImagePath = (p: string) => /\.(jpe?g|png|webp|gif|heic)$/i.test(p);
+
+export const loanerReturnUrl = (token: string) => `${getPublicAppOrigin()}/pret/retour/${encodeURIComponent(token)}`;
+
+/** QR (SVG, généré localement) menant à la page publique de retour du prêt. */
+export function loanerReturnQrSvg(token: string): string {
+  const svg = bwipjs.toSVG({ bcid: 'qrcode', text: loanerReturnUrl(token), scale: 2, padding: 0 } as any);
+  return svg.replace('<svg ', '<svg style="width:80px;height:80px" ');
+}

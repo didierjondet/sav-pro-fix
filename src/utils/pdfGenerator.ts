@@ -1,4 +1,4 @@
-import { signLoanerPhoto, isImagePath } from '@/lib/loanerPhotos';
+import { signLoanerPhoto, isImagePath, loanerReturnQrSvg } from '@/lib/loanerPhotos';
 import { supabase } from '@/integrations/supabase/client';
 import { Quote } from '@/hooks/useQuotes';
 import { Shop } from '@/hooks/useShop';
@@ -392,7 +392,7 @@ export const generateSAVRestitutionPDF = async (savCase: SAVCase, shop?: Shop, o
   try {
     const { data: loanRows } = await supabase
       .from('loaner_loans' as any)
-      .select('loaned_at, returned_at, expected_return_at, deposit_amount, loan_condition, return_condition, notes, return_photos, equipment:loaner_equipment(name, brand, model, imei, serial_number, color, category, condition_photos, photo_url)')
+      .select('loaned_at, returned_at, return_token, expected_return_at, deposit_amount, loan_condition, return_condition, notes, return_photos, equipment:loaner_equipment(name, brand, model, imei, serial_number, color, category, condition_photos, photo_url)')
       .eq('sav_case_id', savCase.id)
       .order('loaned_at', { ascending: false });
     const allLoans: any[] = (loanRows as any[]) || [];
@@ -419,6 +419,7 @@ export const generateSAVRestitutionPDF = async (savCase: SAVCase, shop?: Shop, o
               ${l.loan_condition ? `<div><strong>État au prêt :</strong> ${esc(l.loan_condition)}</div>` : ''}
               ${l.notes ? `<div><strong>Notes :</strong> ${esc(l.notes)}</div>` : ''}
             </div>
+            ${l.return_token ? `<div style="text-align: center; font-size: 8px; color: #b91c1c; font-weight: bold; width: 84px;">${loanerReturnQrSvg(l.return_token)}<div>Scanner au retour du matériel</div></div>` : ''}
             ${urls.length ? `<div style="display: flex; gap: 4px;">${urls.map((u) => `<img src="${u}" style="width: 70px; height: 70px; object-fit: cover; border: 1px solid #fca5a5; border-radius: 3px;" />`).join('')}</div>` : ''}
           </div>`;
       }));
