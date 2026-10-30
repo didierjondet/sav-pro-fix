@@ -72,7 +72,8 @@ import { LoanerEquipmentManager } from '@/components/settings/loaner/LoanerEquip
 import { SMSPackagesDisplay } from '@/components/subscription/SMSPackagesDisplay';
 import { BillingInvoices } from '@/components/billing/BillingInvoices';
 import { BillingVatTab } from '@/components/settings/BillingVatTab';
-import { Percent, Wrench, Globe } from 'lucide-react';
+import { Percent, Wrench, Globe, MapPin } from 'lucide-react';
+import { StorageZonesManager } from '@/components/parts/zones/StorageZonesManager';
 import { ShopWebsiteTab } from '@/components/settings/ShopWebsiteTab';
 import { ImportStock } from '@/components/parts/ImportStock';
 import { ImportQuotes } from '@/components/import/ImportQuotes';
@@ -936,6 +937,7 @@ export default function Settings() {
     { id: 'loaners', label: 'Matériel de prêt', icon: PackageOpen, category: 'sav-group', visible: isAdmin },
 
     { id: 'part-categories', label: 'Catégories pièces', icon: Tag, category: 'stock-group', visible: !!rolePermissions.settings_part_categories },
+    { id: 'storage-zones', label: 'Zones de stockage', icon: MapPin, category: 'stock-group', visible: true },
     { id: 'sav-providers', label: 'Prestataires techniques', icon: Wrench, category: 'stock-group', visible: isAdmin },
     { id: 'suppliers', label: 'Fournisseurs', icon: Truck, category: 'stock-group', visible: isAdmin },
 
@@ -1893,6 +1895,10 @@ export default function Settings() {
 
             <TabsContent value="product-families" className="space-y-6">
               <ProductFamiliesManager />
+            </TabsContent>
+
+            <TabsContent value="storage-zones" className="space-y-6">
+              <StorageZonesManager />
             </TabsContent>
 
             {rolePermissions.settings_part_categories && (

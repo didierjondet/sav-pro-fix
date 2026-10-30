@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.begin_inventory_session(text, text, text, uuid[], uuid[], boolean) FROM PUBLIC, anon;

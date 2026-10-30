@@ -10,6 +10,8 @@ import { NumberInput } from '@/components/ui/number-input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useParts, Part } from '@/hooks/useParts';
 import { usePartCategories } from '@/hooks/usePartCategories';
+import { useStorageZones } from '@/hooks/useStorageZones';
+import { StorageZonePicker } from '@/components/parts/zones/StorageZonePicker';
 import { useSuppliersDirectory } from '@/hooks/useSuppliersDirectory';
 import { PartForm } from '@/components/parts/PartForm';
 import { StockAdjustment } from '@/components/parts/StockAdjustment';
@@ -75,6 +77,8 @@ export default function Parts() {
 
   const { parts, loading, statistics, createPart, updatePart, deletePart, adjustStock, findSimilarParts, refetch } = useParts();
   const { categories } = usePartCategories();
+  const { zones } = useStorageZones();
+  const [zoneFilter, setZoneFilter] = useState<string>('all');
   const { suppliers } = useSuppliersDirectory();
   const { lastInventoryByPart } = useLastInventoryByPart();
   const navigate = useNavigate();
@@ -123,6 +127,9 @@ export default function Parts() {
         list = list.filter((p) => p.category_id === categoryFilter);
       }
     }
+    if (zoneFilter !== 'all') {
+      list = list.filter((p) => (zoneFilter === 'none' ? !(p as any).storage_zone_id : (p as any).storage_zone_id === zoneFilter));
+    }
     if (supplierFilter !== 'all') {
       if (supplierFilter === 'none') {
         list = list.filter((p) => !(p as any).supplier_id);
@@ -141,7 +148,7 @@ export default function Parts() {
       });
     }
     return ranked;
-  }, [parts, searchTerm, categoryFilter, supplierFilter, typeFilter, aiOrderIds]);
+  }, [parts, searchTerm, categoryFilter, zoneFilter, supplierFilter, typeFilter, aiOrderIds]);
 
   // Pagination après filtrage
   const displayedParts = filteredParts;
@@ -394,6 +401,18 @@ export default function Parts() {
                         ))}
                       </SelectContent>
                     </Select>
+                    <Select value={zoneFilter} onValueChange={setZoneFilter}>
+                      <SelectTrigger className="sm:w-48">
+                        <SelectValue placeholder="Toutes les zones" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Toutes les zones</SelectItem>
+                        <SelectItem value="none">Sans zone</SelectItem>
+                        {zones.map((z) => (
+                          <SelectItem key={z.id} value={z.id}>{z.code} — {z.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <Select value={supplierFilter} onValueChange={setSupplierFilter}>
                       <SelectTrigger className="sm:w-56">
                         <SelectValue placeholder="Tous les fournisseurs" />
@@ -505,6 +524,15 @@ export default function Parts() {
                                         ))}
                                       </SelectContent>
                                     </Select>
+                                    {!(part as any).is_service && (
+                                      <StorageZonePicker
+                                        compact
+                                        value={(part as any).storage_zone_id ?? null}
+                                        onChange={async (zoneId) => {
+                                          await updatePart(part.id, { storage_zone_id: zoneId } as any);
+                                        }}
+                                      />
+                                    )}
                                     {(part.reserved_quantity || 0) > 0 && (
                                       <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-300">
                                         Réservé: {part.reserved_quantity}

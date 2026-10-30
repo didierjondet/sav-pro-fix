@@ -18,6 +18,7 @@ import { cn } from '@/lib/utils';
 import { useBillingConfig } from '@/hooks/useBillingConfig';
 import { Plus } from 'lucide-react';
 import { PartBarcode } from './PartBarcode';
+import { StorageZonePicker } from './zones/StorageZonePicker';
 
 const PART_COLORS = [
   { value: 'black', label: 'Noir', color: '#000000' },
@@ -53,6 +54,7 @@ export function PartForm({ initialData, onSubmit, onCancel, isEdit = false, find
   const [photoUrl, setPhotoUrl] = useState<string | null>(initialData?.photo_url || null);
   const [selectedColor, setSelectedColor] = useState<string | null>((initialData as any)?.color || null);
   const [categoryId, setCategoryId] = useState<string | null>((initialData as any)?.category_id || null);
+  const [zoneId, setZoneId] = useState<string | null>((initialData as any)?.storage_zone_id || null);
   const [isService, setIsService] = useState<boolean>((initialData as any)?.is_service ?? defaultIsService);
   const [supplierId, setSupplierId] = useState<string | null>((initialData as any)?.supplier_id ?? null);
   const [supplierFormOpen, setSupplierFormOpen] = useState(false);
@@ -129,6 +131,7 @@ export function PartForm({ initialData, onSubmit, onCancel, isEdit = false, find
         photo_url: photoUrl,
         color: selectedColor,
         category_id: categoryId,
+        storage_zone_id: isService ? null : zoneId,
         supplier_id: supplierId,
         is_service: isService,
       };
@@ -283,6 +286,15 @@ export function PartForm({ initialData, onSubmit, onCancel, isEdit = false, find
               </p>
             )}
           </div>
+
+          {/* Zone de stockage */}
+          {!isService && (
+            <div>
+              <Label className="mb-1.5 block">Zone de stockage</Label>
+              <StorageZonePicker value={zoneId} onChange={setZoneId} />
+            </div>
+          )}
+
 
           {/* Sélecteur de couleur */}
           {!isService && (
