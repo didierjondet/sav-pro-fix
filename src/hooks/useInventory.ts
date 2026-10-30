@@ -199,7 +199,7 @@ export function useInventory() {
     });
   };
 
-  const createSession = async ({ name, mode, notes, categoryIds }: { name: string; mode: InventoryMode; notes?: string; categoryIds?: string[] }) => {
+  const createSession = async ({ name, mode, notes, categoryIds, zoneIds, includeNoZone }: { name: string; mode: InventoryMode; notes?: string; categoryIds?: string[]; zoneIds?: string[]; includeNoZone?: boolean }) => {
     try {
       const params: Record<string, unknown> = {
         _name: name,
@@ -209,6 +209,8 @@ export function useInventory() {
       if (categoryIds && categoryIds.length > 0) {
         params._category_ids = categoryIds;
       }
+      if (zoneIds && zoneIds.length > 0) params._zone_ids = zoneIds;
+      if (includeNoZone) params._include_no_zone = true;
       const { data, error } = await inventoryRpc('begin_inventory_session', params);
 
       if (error) throw error;

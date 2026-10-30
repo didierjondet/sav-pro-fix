@@ -73,6 +73,7 @@ export function InventoryManager({ canApplyStock }: { canApplyStock: boolean }) 
   } = useInventory();
   const { toast } = useToast();
   const { categories } = usePartCategories();
+  const { zones } = useStorageZones();
 
   // ----- Tabs state -----
   const [activeTab, setActiveTab] = useState<string>('general');
@@ -142,6 +143,9 @@ export function InventoryManager({ canApplyStock }: { canApplyStock: boolean }) 
   const [createMode, setCreateMode] = useState<InventoryMode>('assisted');
   const [createNotes, setCreateNotes] = useState('');
   const [createCategoryIds, setCreateCategoryIds] = useState<string[]>([]);
+  const [createScope, setCreateScope] = useState<'category' | 'zone'>('category');
+  const [createZoneIds, setCreateZoneIds] = useState<string[]>([]);
+  const [createNoZone, setCreateNoZone] = useState(false);
   const [scanCodes, setScanCodes] = useState('');
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [confirmApplyOpen, setConfirmApplyOpen] = useState(false);
@@ -162,11 +166,15 @@ export function InventoryManager({ canApplyStock }: { canApplyStock: boolean }) 
         mode: createMode,
         notes: createNotes,
         categoryIds: createCategoryIds.length > 0 ? createCategoryIds : undefined,
+        zoneIds: createScope === 'zone' ? createZoneIds : undefined,
+        includeNoZone: createScope === 'zone' && createNoZone,
       });
       setCreateName('');
       setCreateNotes('');
       setCreateMode('assisted');
       setCreateCategoryIds([]);
+      setCreateZoneIds([]);
+      setCreateNoZone(false);
       setCreateOpen(false);
       if (newId) openSession(newId);
     } finally {
@@ -465,6 +473,49 @@ export function InventoryManager({ canApplyStock }: { canApplyStock: boolean }) 
               </Select>
             </div>
             <div className="space-y-2">
+              <Label>Périmètre</Label>
+              <div className="grid grid-cols-2 gap-2">
+                <Button type="button" size="sm" variant={createScope === 'category' ? 'default' : 'outline'} onClick={() => { setCreateScope('category'); setCreateZoneIds([]); setCreateNoZone(false); }}>
+                  <Layers className="h-4 w-4" />Par catégorie
+                </Button>
+                <Button type="button" size="sm" variant={createScope === 'zone' ? 'default' : 'outline'} onClick={() => { setCreateScope('zone'); setCreateCategoryIds([]); }}>
+                  <MapPin className="h-4 w-4" />Par zone
+                </Button>
+              </div>
+            </div>
+            {createScope === 'zone' ? (
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2"><MapPin className="h-4 w-4" />Zones</Label>
+              {zones.length === 0 ? (
+                <div className="rounded-md border border-dashed p-3 text-xs text-muted-foreground">
+                  Aucune zone. Créez-en dans Paramètres → Zones de stockage.
+                </div>
+              ) : (
+                <div className="space-y-2 max-h-40 overflow-y-auto rounded-md border p-3">
+                  <label className="flex items-center gap-2 text-sm">
+                    <Checkbox checked={createZoneIds.length === 0 && !createNoZone} onCheckedChange={() => { setCreateZoneIds([]); setCreateNoZone(false); }} />
+                    <span className="font-medium">Toutes</span>
+                  </label>
+                  {zones.map((z) => (
+                    <label key={z.id} className="flex items-center gap-2 text-sm">
+                      <Checkbox
+                        checked={createZoneIds.includes(z.id)}
+                        onCheckedChange={() => setCreateZoneIds((prev) => prev.includes(z.id) ? prev.filter((x) => x !== z.id) : [...prev, z.id])}
+                      />
+                      <span className="inline-block h-3 w-3 rounded-full border" style={{ backgroundColor: z.color }} />
+                      <span className="font-mono font-semibold">{z.code}</span> {z.name}
+                      <span className="ml-auto text-xs text-muted-foreground">{z.part_count ?? 0}</span>
+                    </label>
+                  ))}
+                  <label className="flex items-center gap-2 text-sm">
+                    <Checkbox checked={createNoZone} onCheckedChange={() => setCreateNoZone((v) => !v)} />
+                    <span className="italic">Pièces sans zone</span>
+                  </label>
+                </div>
+              )}
+            </div>
+            ) : (
+            <div className="space-y-2">
               <Label className="flex items-center gap-2"><Layers className="h-4 w-4" />Catégories</Label>
               {categories.length === 0 ? (
                 <div className="rounded-md border border-dashed p-3 text-xs text-muted-foreground">
@@ -492,6 +543,7 @@ export function InventoryManager({ canApplyStock }: { canApplyStock: boolean }) 
                 </div>
               )}
             </div>
+            )}
             <div className="space-y-2">
               <Label htmlFor="inventory-notes">Notes</Label>
               <Textarea id="inventory-notes" value={createNotes} onChange={(e) => setCreateNotes(e.target.value)} rows={3} />
