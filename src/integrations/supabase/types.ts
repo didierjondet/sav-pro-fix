@@ -1184,6 +1184,7 @@ export type Database = {
           total_items: number
           updated_at: string
           variance_total_cost: number
+          zone_filter: Json | null
         }
         Insert: {
           applied_at?: string | null
@@ -1210,6 +1211,7 @@ export type Database = {
           total_items?: number
           updated_at?: string
           variance_total_cost?: number
+          zone_filter?: Json | null
         }
         Update: {
           applied_at?: string | null
@@ -1236,6 +1238,7 @@ export type Database = {
           total_items?: number
           updated_at?: string
           variance_total_cost?: number
+          zone_filter?: Json | null
         }
         Relationships: [
           {
@@ -2080,6 +2083,7 @@ export type Database = {
           selling_price: number | null
           shop_id: string | null
           sku: string | null
+          storage_zone_id: string | null
           supplier: string | null
           supplier_id: string | null
           time_minutes: number
@@ -2104,6 +2108,7 @@ export type Database = {
           selling_price?: number | null
           shop_id?: string | null
           sku?: string | null
+          storage_zone_id?: string | null
           supplier?: string | null
           supplier_id?: string | null
           time_minutes?: number
@@ -2128,6 +2133,7 @@ export type Database = {
           selling_price?: number | null
           shop_id?: string | null
           sku?: string | null
+          storage_zone_id?: string | null
           supplier?: string | null
           supplier_id?: string | null
           time_minutes?: number
@@ -2146,6 +2152,13 @@ export type Database = {
             columns: ["shop_id"]
             isOneToOne: false
             referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "parts_storage_zone_id_fkey"
+            columns: ["storage_zone_id"]
+            isOneToOne: false
+            referencedRelation: "storage_zones"
             referencedColumns: ["id"]
           },
           {
@@ -4304,6 +4317,60 @@ export type Database = {
         }
         Relationships: []
       }
+      storage_zones: {
+        Row: {
+          code: string
+          color: string
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          parent_id: string | null
+          shop_id: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          color?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          parent_id?: string | null
+          shop_id: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          color?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          parent_id?: string | null
+          shop_id?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "storage_zones_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "storage_zones"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "storage_zones_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subscribers: {
         Row: {
           active_sav_count: number | null
@@ -4942,20 +5009,17 @@ export type Database = {
           sku: string
         }[]
       }
-      begin_inventory_session:
-        | {
-            Args: { _mode?: string; _name: string; _notes?: string }
-            Returns: string
-          }
-        | {
-            Args: {
-              _category_ids?: string[]
-              _mode?: string
-              _name: string
-              _notes?: string
-            }
-            Returns: string
-          }
+      begin_inventory_session: {
+        Args: {
+          _category_ids?: string[]
+          _include_no_zone?: boolean
+          _mode?: string
+          _name: string
+          _notes?: string
+          _zone_ids?: string[]
+        }
+        Returns: string
+      }
       buyback_attach_user: { Args: { p_bc_id: string }; Returns: undefined }
       buyback_link_shop_customer: {
         Args: { p_buyback_customer_id: string; p_shop_id: string }
