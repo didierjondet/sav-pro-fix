@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { computeUncoveredSavNeeds } from './orderNeeds';
+import { computeUncoveredSavNeeds } from '../src/lib/orderNeeds';
 
 const mk = (sav: string, date: string, stock: number, is_final = false) => ({
   part_id: 'p1', sav_case_id: sav, quantity: 1, physical_stock: stock, case_created_at: date, is_final,
