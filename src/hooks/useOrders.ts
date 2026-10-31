@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Part } from '@/hooks/useParts';
+import { computeUncoveredSavNeeds } from '@/lib/orderNeeds';
 
 export interface OrderItem {
   id: string;
@@ -91,7 +92,18 @@ export function useOrders() {
         return;
       }
 
-      // Récupérer les pièces utilisées dans les SAV en cours
+      // Statuts finaux du magasin (intégrés + personnalisés)
+      const { data: shopStatuses } = await supabase
+        .from('shop_sav_statuses')
+        .select('status_key, is_final_status')
+        .eq('shop_id', profile.shop_id);
+      const finalStatuses = new Set<string>(['ready', 'delivered', 'cancelled']);
+      (shopStatuses || []).forEach((s: any) => {
+        if (s.is_final_status) finalStatuses.add(s.status_key);
+        else finalStatuses.delete(s.status_key);
+      });
+
+      // Récupérer les pièces utilisées dans les SAV (tous statuts, filtrés ensuite)
       const { data: savParts, error: savError } = await supabase
         .from('sav_parts')
         .select(`
@@ -109,7 +121,8 @@ export function useOrders() {
           )
         `)
         .eq('parts.shop_id', profile.shop_id)
-        .in('sav_cases.status', ['pending', 'in_progress', 'parts_to_order', 'parts_ordered', 'testing']);
+        .not('sav_cases.status', 'in', `(${Array.from(finalStatuses).join(',')})`)
+        .limit(5000);
 
       if (savError) throw savError;
 
@@ -120,8 +133,6 @@ export function useOrders() {
         .eq('shop_id', profile.shop_id)
         .eq('is_active', true);
 
-      if (savError) throw savError;
-
       // Récupérer les items déjà commandés pour éviter les doublons
       const { data: existingOrders } = await supabase
         .from('order_items')
@@ -130,19 +141,24 @@ export function useOrders() {
         .eq('ordered', true)
         .eq('shop_id', profile.shop_id);
 
-      const formattedSavParts = savParts?.filter(item => {
-        // Ne montrer que les pièces dont le stock physique est insuffisant
-        const physicalStock = item.parts.quantity || 0;
-        if (physicalStock >= item.quantity) return false;
+      // Répartition du stock physique entre tous les SAV ouverts (du plus ancien au plus récent)
+      const needs = computeUncoveredSavNeeds(
+        (savParts || []).filter((i: any) => i.part_id).map((i: any) => ({
+          ...i,
+          physical_stock: i.parts?.quantity || 0,
+          case_created_at: i.sav_cases?.created_at || '',
+          is_final: finalStatuses.has(i.sav_cases?.status),
+        }))
+      );
 
-        // Vérifier si cette combinaison part_id + sav_case_id n'a pas déjà été commandée
+      const formattedSavParts = needs.filter(({ item }: any) => {
         const alreadyOrdered = existingOrders?.some(order => 
           order.part_id === item.part_id && 
           order.sav_case_id === item.sav_case_id &&
           order.ordered === true
         );
         return !alreadyOrdered;
-      }).map(item => {
+      }).map(({ item, missing }: any) => {
         // Trouver les informations du type SAV
         const savType = savTypes?.find(t => t.type_key === item.sav_cases?.sav_type);
         
@@ -151,7 +167,7 @@ export function useOrders() {
           part_id: item.part_id,
           part_name: item.parts.name,
           part_reference: item.parts.reference,
-          quantity_needed: item.quantity,
+          quantity_needed: missing,
           sav_case_id: item.sav_case_id,
           reason: 'sav_stock_zero' as const,
           priority: 'high' as const,
@@ -167,7 +183,7 @@ export function useOrders() {
           sav_type_color: savType?.type_color || '#6b7280',
           sav_type_label: savType?.type_label || 'SAV'
         };
-      }) || [];
+      });
 
       setPartsNeededForSAV(formattedSavParts);
     } catch (error: any) {
@@ -341,6 +357,28 @@ export function useOrders() {
     };
     
     loadData();
+
+    // Mise à jour en direct : stock, pièces SAV, commandes
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const refresh = () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        Promise.all([fetchOrderItems(), fetchPartsNeededForSAV(), fetchPartsNeededForQuotes(), fetchPartsNeedingRestock()]);
+      }, 400);
+    };
+    const channel = supabase
+      .channel(`orders-live-${Math.random().toString(36).slice(2)}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'parts' }, refresh)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'sav_parts' }, refresh)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'order_items' }, refresh)
+      .subscribe();
+    const onVisible = () => { if (document.visibilityState === 'visible') refresh(); };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener('visibilitychange', onVisible);
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const addToOrder = async (orderData: Omit<OrderItem, 'id' | 'created_at' | 'updated_at' | 'shop_id' | 'ordered'>) => {
