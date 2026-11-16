@@ -32,12 +32,13 @@ Bouton « Passer à ma vraie boutique » → fenêtre de confirmation :
 - Puis le bot reprend avec une configuration allégée : seules les étapes encore utiles restent (coordonnées du magasin, horaires, équipe, SMS).
 - Proposition automatique après quelques jours ou dès que l'utilisateur crée son premier vrai SAV.
 
-## Points à valider
-- Ce mode découverte remplace-t-il l'avertissement rouge « boutique supprimée si inactive » au démarrage (repoussé après le passage à la vraie boutique) ?
+## 5. Avertissement rouge repoussé
+L'avertissement « boutique supprimée si inactive » ne s'affiche plus pendant le mode découverte : il apparaît seulement après le passage à la vraie boutique.
 
 ## Détails techniques
 - `useOnboardingProgress` : staleTime 0, refetch au focus/ouverture, invalidation `onboarding-counts` dans les mutations statuts/types/pièces/fournisseurs/horaires/membres ; détection des statuts sur tout changement (pas seulement `is_default=false`). Rond cliquable → `markStepSeen` / retrait.
 - Nom unique : RPC `is_shop_name_available` (révoquer anon) avec délai de frappe dans `ShopNamePromptDialog`, `ProfileSetup`, `ShopManagementDialog` ; erreur 23505 traduite ; `src/lib/shopName.ts` + test.
 - Colonnes `shops.activity_type`, `shops.demo_mode`; colonne `is_demo` sur customers, sav_cases, quotes, appointments, parts, suppliers.
 - Modèles par métier dans `src/lib/activityTemplates.ts` (testé) ; RPC `seed_demo_shop(activity)` et `exit_demo_mode(keep_parts, keep_suppliers)` SECURITY DEFINER limitées à l'admin du magasin.
+- `ShopCreationPolicyDialog` masqué tant que `shops.demo_mode` est vrai.
 - Exclusion `is_demo` dans `savFinance.ts` et blocage des envois SMS/e-mail pour clients démo.
