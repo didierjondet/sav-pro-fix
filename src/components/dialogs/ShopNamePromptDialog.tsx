@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { isShopNameAvailable, isDuplicateShopNameError, isPlaceholderShopName, DUPLICATE_SHOP_NAME_MESSAGE } from '@/lib/shopName';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,14 +19,31 @@ export function ShopNamePromptDialog({ shopId, onSaved }: ShopNamePromptDialogPr
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
-  const isValid = name.trim().length >= 2 && name.trim().toLowerCase() !== 'mon magasin';
+  const [taken, setTaken] = useState(false);
+  const [checking, setChecking] = useState(false);
+  useEffect(() => {
+    const n = name.trim();
+    setTaken(false);
+    if (n.length < 2 || isPlaceholderShopName(n)) return;
+    setChecking(true);
+    const t = setTimeout(async () => {
+      const ok = await isShopNameAvailable(n, shopId);
+      setTaken(!ok);
+      setChecking(false);
+    }, 350);
+    return () => { clearTimeout(t); setChecking(false); };
+  }, [name, shopId]);
+  const isValid = name.trim().length >= 2 && !isPlaceholderShopName(name) && !taken && !checking;
 
   const handleSave = async () => {
     if (!isValid) return;
     setLoading(true);
     try {
       const { error } = await supabase.from('shops').update({ name: name.trim() }).eq('id', shopId);
-      if (error) throw error;
+      if (error) {
+        if (isDuplicateShopNameError(error)) { setTaken(true); throw new Error(DUPLICATE_SHOP_NAME_MESSAGE); }
+        throw error;
+      }
       toast({ title: 'Nom enregistré', description: 'Le nom de votre magasin a été mis à jour.' });
       setOpen(false);
       onSaved();
@@ -57,6 +75,7 @@ export function ShopNamePromptDialog({ shopId, onSaved }: ShopNamePromptDialogPr
             placeholder="Ex: TechRepair Paris"
             onKeyDown={(e) => e.key === 'Enter' && isValid && handleSave()}
           />
+          {taken && <p className="text-sm text-destructive">{DUPLICATE_SHOP_NAME_MESSAGE}</p>}
         </div>
         <DialogFooter>
           <Button onClick={handleSave} disabled={!isValid || loading}>
