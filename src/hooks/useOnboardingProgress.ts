@@ -37,6 +37,8 @@ export function useOnboardingProgress() {
     staleTime: 0,
     refetchOnWindowFocus: true,
     refetchOnMount: true,
+    // Catch-all for writes made outside react-query mutations (direct supabase calls).
+    refetchInterval: 8_000,
     queryFn: async () => {
       if (!shopId) return null;
       const [savTypes, customStatuses, parts, savCases, workingHours, members, suppliersRes] = await Promise.all([
