@@ -1,3 +1,4 @@
+// @ts-ignore bun test runner types are not installed
 import { describe, it, expect } from 'bun:test';
 import { pickActivationPrompt } from './activationFeedback';
 const now = new Date('2026-11-16T10:00:00Z');
