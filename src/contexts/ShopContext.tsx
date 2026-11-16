@@ -1,3 +1,4 @@
+import { isDuplicateShopNameError, DUPLICATE_SHOP_NAME_MESSAGE } from '@/lib/shopName';
 import React, { createContext, useContext } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -140,7 +141,7 @@ export function ShopProvider({ children }: { children: React.ReactNode }) {
         .update(updates)
         .eq('id', shopId);
 
-      if (error) throw error;
+      if (error) throw (isDuplicateShopNameError(error) ? new Error(DUPLICATE_SHOP_NAME_MESSAGE) : error);
 
       queryClient.invalidateQueries({ queryKey: ['shop'] });
 

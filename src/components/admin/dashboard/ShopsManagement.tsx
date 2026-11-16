@@ -1,3 +1,4 @@
+import { isDuplicateShopNameError, DUPLICATE_SHOP_NAME_MESSAGE } from '@/lib/shopName';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -249,7 +250,7 @@ export function ShopsManagement({ shops, onUpdate }: ShopsManagementProps) {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) throw (isDuplicateShopNameError(error) ? new Error(DUPLICATE_SHOP_NAME_MESSAGE) : error);
 
       onUpdate();
       setIsEditShopOpen(false);
