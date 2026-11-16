@@ -630,6 +630,7 @@ export type Database = {
           email: string | null
           first_name: string
           id: string
+          is_demo: boolean
           last_name: string
           phone: string | null
           shop_id: string | null
@@ -642,6 +643,7 @@ export type Database = {
           email?: string | null
           first_name: string
           id?: string
+          is_demo?: boolean
           last_name: string
           phone?: string | null
           shop_id?: string | null
@@ -654,6 +656,7 @@ export type Database = {
           email?: string | null
           first_name?: string
           id?: string
+          is_demo?: boolean
           last_name?: string
           phone?: string | null
           shop_id?: string | null
@@ -2107,6 +2110,7 @@ export type Database = {
           color: string | null
           created_at: string
           id: string
+          is_demo: boolean
           is_service: boolean
           labor_cost: number | null
           min_stock: number | null
@@ -2132,6 +2136,7 @@ export type Database = {
           color?: string | null
           created_at?: string
           id?: string
+          is_demo?: boolean
           is_service?: boolean
           labor_cost?: number | null
           min_stock?: number | null
@@ -2157,6 +2162,7 @@ export type Database = {
           color?: string | null
           created_at?: string
           id?: string
+          is_demo?: boolean
           is_service?: boolean
           labor_cost?: number | null
           min_stock?: number | null
@@ -2636,6 +2642,7 @@ export type Database = {
           device_model: string | null
           discount_info: Json | null
           id: string
+          is_demo: boolean
           partial_takeover: boolean | null
           private_comments: string | null
           problem_description: string | null
@@ -2679,6 +2686,7 @@ export type Database = {
           device_model?: string | null
           discount_info?: Json | null
           id?: string
+          is_demo?: boolean
           partial_takeover?: boolean | null
           private_comments?: string | null
           problem_description?: string | null
@@ -2722,6 +2730,7 @@ export type Database = {
           device_model?: string | null
           discount_info?: Json | null
           id?: string
+          is_demo?: boolean
           partial_takeover?: boolean | null
           private_comments?: string | null
           problem_description?: string | null
@@ -3957,6 +3966,7 @@ export type Database = {
       shops: {
         Row: {
           active_sav_count: number | null
+          activity_type: string | null
           address: string | null
           admin_added_sms_credits: number | null
           ai_market_prices_enabled: boolean | null
@@ -3970,6 +3980,8 @@ export type Database = {
           custom_sav_limit: number | null
           custom_sms_limit: number | null
           custom_status_sms_message: string | null
+          demo_mode: boolean
+          demo_started_at: string | null
           email: string | null
           forced_features: Json | null
           hide_empty_sav_providers: boolean
@@ -4020,6 +4032,7 @@ export type Database = {
         }
         Insert: {
           active_sav_count?: number | null
+          activity_type?: string | null
           address?: string | null
           admin_added_sms_credits?: number | null
           ai_market_prices_enabled?: boolean | null
@@ -4033,6 +4046,8 @@ export type Database = {
           custom_sav_limit?: number | null
           custom_sms_limit?: number | null
           custom_status_sms_message?: string | null
+          demo_mode?: boolean
+          demo_started_at?: string | null
           email?: string | null
           forced_features?: Json | null
           hide_empty_sav_providers?: boolean
@@ -4083,6 +4098,7 @@ export type Database = {
         }
         Update: {
           active_sav_count?: number | null
+          activity_type?: string | null
           address?: string | null
           admin_added_sms_credits?: number | null
           ai_market_prices_enabled?: boolean | null
@@ -4096,6 +4112,8 @@ export type Database = {
           custom_sav_limit?: number | null
           custom_sms_limit?: number | null
           custom_status_sms_message?: string | null
+          demo_mode?: boolean
+          demo_started_at?: string | null
           email?: string | null
           forced_features?: Json | null
           hide_empty_sav_providers?: boolean
@@ -4588,6 +4606,7 @@ export type Database = {
           email: string | null
           id: string
           is_active: boolean
+          is_demo: boolean
           name: string
           notes: string | null
           phone: string | null
@@ -4602,6 +4621,7 @@ export type Database = {
           email?: string | null
           id?: string
           is_active?: boolean
+          is_demo?: boolean
           name: string
           notes?: string | null
           phone?: string | null
@@ -4616,6 +4636,7 @@ export type Database = {
           email?: string | null
           id?: string
           is_active?: boolean
+          is_demo?: boolean
           name?: string
           notes?: string | null
           phone?: string | null
@@ -5172,6 +5193,10 @@ export type Database = {
         }
         Returns: Json
       }
+      exit_demo_mode: {
+        Args: { _keep_parts?: boolean; _keep_suppliers?: boolean }
+        Returns: Json
+      }
       find_or_create_tracked_product: {
         Args: {
           p_brand: string
@@ -5642,6 +5667,7 @@ export type Database = {
         }
         Returns: Json
       }
+      seed_demo_shop: { Args: { _activity: string }; Returns: Json }
       send_client_tracking_message: {
         Args: {
           p_message: string
