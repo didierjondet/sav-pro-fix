@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'bun:test';
 import { buildFunnel, FunnelShop } from './activationFunnel';
 const base: FunnelShop = { shop_id: 'a', shop_name: 'A', created_at: '2026-11-01', owner_email: null, customers: 0, savs: 0, quotes: 0, sms: 0, last_sign_in_at: null, returned_d1: false, returned_d7: false, subscribed: false, tier: null };
 describe('buildFunnel', () => {

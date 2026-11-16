@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'bun:test';
 import { pickActivationPrompt } from './activationFeedback';
 const now = new Date('2026-11-16T10:00:00Z');
 const days = (n: number) => new Date(now.getTime() - n * 86400000).toISOString();
