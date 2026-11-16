@@ -5,6 +5,7 @@ import { Sidebar } from './Sidebar';
 import InactivityWarningBanner from './InactivityWarningBanner';
 import ShopCreationPolicyDialog from '@/components/onboarding/ShopCreationPolicyDialog';
 import UpdateAvailableDialog from './UpdateAvailableDialog';
+import ActivationFeedbackDialog from '@/components/onboarding/ActivationFeedbackDialog';
 import MFAGate from '@/components/auth/MFAGate';
 
 
@@ -23,6 +24,7 @@ export default function AppLayout() {
         <InactivityWarningBanner />
         <ShopCreationPolicyDialog />
         <UpdateAvailableDialog />
+        <ActivationFeedbackDialog />
 
         <div className="flex flex-1 overflow-hidden">
           <Sidebar isOpen={isMobileMenuOpen} onClose={handleCloseMobileMenu} />

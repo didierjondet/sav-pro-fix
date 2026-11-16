@@ -1766,6 +1766,44 @@ export type Database = {
           },
         ]
       }
+      onboarding_feedback: {
+        Row: {
+          answers: Json
+          comment: string | null
+          created_at: string
+          id: string
+          kind: string
+          shop_id: string | null
+          user_id: string
+        }
+        Insert: {
+          answers?: Json
+          comment?: string | null
+          created_at?: string
+          id?: string
+          kind: string
+          shop_id?: string | null
+          user_id?: string
+        }
+        Update: {
+          answers?: Json
+          comment?: string | null
+          created_at?: string
+          id?: string
+          kind?: string
+          shop_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "onboarding_feedback_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       order_items: {
         Row: {
           created_at: string
@@ -5159,6 +5197,24 @@ export type Database = {
       generate_tracking_slug: {
         Args: { customer_name: string }
         Returns: string
+      }
+      get_activation_funnel: {
+        Args: never
+        Returns: {
+          created_at: string
+          customers: number
+          last_sign_in_at: string
+          owner_email: string
+          quotes: number
+          returned_d1: boolean
+          returned_d7: boolean
+          savs: number
+          shop_id: string
+          shop_name: string
+          sms: number
+          subscribed: boolean
+          tier: string
+        }[]
       }
       get_all_shops_storage_usage: {
         Args: never

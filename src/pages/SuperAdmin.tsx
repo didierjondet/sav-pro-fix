@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { ActivationStats } from '@/components/admin/ActivationStats';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -344,6 +345,8 @@ export default function SuperAdmin() {
         return <DefaultRolePermissionsManager />;
       case 'prospects':
         return <ProspectsManager />;
+      case 'activation':
+        return <ActivationStats />;
       case 'usage':
         return <UsageAnalytics />;
       default:

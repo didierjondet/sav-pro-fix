@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "events": {
+    "project.onboarding_feedback_submitted": {
+      "event_schema_version": 1,
+      "description": "A new shop answered the signup questionnaire or the 'what blocks you' question.",
+      "privacy": {
+        "contains_pii": false,
+        "purpose": "product_analytics"
+      },
+      "properties_schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}
