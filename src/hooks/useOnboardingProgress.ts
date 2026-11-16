@@ -34,7 +34,9 @@ export function useOnboardingProgress() {
   const { data: counts } = useQuery({
     queryKey: ['onboarding-counts', shopId],
     enabled: !!shopId,
-    staleTime: 60_000,
+    staleTime: 0,
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
     queryFn: async () => {
       if (!shopId) return null;
       const [savTypes, customStatuses, parts, savCases, workingHours, members, suppliersRes] = await Promise.all([
@@ -204,7 +206,25 @@ export function useOnboardingProgress() {
         manual: true,
       },
     ];
-  }, [profile, shop, counts, stepsSeen]);
+  }, [profile, shop, counts, stepsSeen]).map(s =>
+    s.status === 'pending' && stepsSeen.includes(s.id) ? { ...s, status: 'done' as const } : s
+  );
+
+  // Re-check auto-detected steps after any successful write anywhere in the app
+  // (statuses, types, parts, suppliers, hours, members…), so the bot never needs a reload.
+  useEffect(() => {
+    if (!shopId) return;
+    let t: ReturnType<typeof setTimeout> | undefined;
+    const unsub = queryClient.getMutationCache().subscribe((ev: any) => {
+      if (ev?.type === 'updated' && ev.mutation?.state?.status === 'success') {
+        clearTimeout(t);
+        t = setTimeout(() => queryClient.invalidateQueries({ queryKey: ['onboarding-counts', shopId] }), 400);
+      }
+    });
+    const onInvalidate = () => queryClient.invalidateQueries({ queryKey: ['onboarding-counts', shopId] });
+    window.addEventListener('fixway:onboarding-refresh', onInvalidate);
+    return () => { unsub(); clearTimeout(t); window.removeEventListener('fixway:onboarding-refresh', onInvalidate); };
+  }, [shopId, queryClient]);
 
   const totalSteps = steps.length;
   const doneCount = steps.filter(s => s.status === 'done').length;
@@ -234,6 +254,17 @@ export function useOnboardingProgress() {
     mutationFn: async (stepId: string) => {
       if (!shopId) return;
       const newSteps = Array.from(new Set([...stepsSeen, stepId]));
+      await supabase
+        .from('shop_onboarding_progress' as any)
+        .upsert({ shop_id: shopId, steps_seen: newSteps as any }, { onConflict: 'shop_id' });
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['onboarding-progress', shopId] }),
+  });
+
+  const unmarkStep = useMutation({
+    mutationFn: async (stepId: string) => {
+      if (!shopId) return;
+      const newSteps = stepsSeen.filter(x => x !== stepId);
       await supabase
         .from('shop_onboarding_progress' as any)
         .upsert({ shop_id: shopId, steps_seen: newSteps as any }, { onConflict: 'shop_id' });
@@ -272,6 +303,9 @@ export function useOnboardingProgress() {
     isOnboardingExpired,
     isDismissed,
     markStepSeen: markStepSeen.mutate,
+    unmarkStep: unmarkStep.mutate,
+    stepsSeen,
+    refreshCounts: () => queryClient.invalidateQueries({ queryKey: ['onboarding-counts', shopId] }),
     dismissTemporarily: dismissTemporarily.mutate,
     restartOnboarding: restartOnboarding.mutate,
   };
