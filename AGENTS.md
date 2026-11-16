@@ -7,3 +7,5 @@
 - Product family chips (sav_cases.product_family_id → product_families per shop) are suggested by matchFamilyForDevice in src/lib/productFamilies.ts first, then classify-sav-category with the shop's families — one local rule shared by forms, backfill and tests.
 - Loaner return QR (/pret/retour/:token) needs no login: anon token-gated RPCs loaner_return_open/submit only touch that loan — the restitution sheet stays in the shop, so the printed token is the credential.
 - Activation questionnaire answers live in onboarding_feedback (kind signup|blocker); which prompt shows is decided by pickActivationPrompt in src/lib/activationFeedback.ts — one testable rule, read back per shop in Super Admin via get_activation_funnel.
+- Discovery mode: sample rows carry `is_demo` and are created/erased only by RPCs `seed_demo_shop`/`exit_demo_mode`; `shops.demo_mode` hides the inactivity policy dialog — one reversible switch, real data never touched.
+- Shop names are unique by `shop_name_key` (case/accents/spaces ignored, placeholder « Mon magasin » exempt); client mirror in `src/lib/shopName.ts` — DB index is the final guard.
