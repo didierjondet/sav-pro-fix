@@ -5535,6 +5535,10 @@ export type Database = {
         Returns: boolean
       }
       is_shop_admin: { Args: { check_user_id?: string }; Returns: boolean }
+      is_shop_name_available: {
+        Args: { _exclude_shop_id?: string; _name: string }
+        Returns: boolean
+      }
       is_super_admin: { Args: { check_user_id?: string }; Returns: boolean }
       list_ghost_reserved_parts: {
         Args: { p_shop_id: string }
@@ -5587,6 +5591,7 @@ export type Database = {
         Args: { p_payload: Json; p_token: string }
         Returns: Json
       }
+      normalize_shop_name: { Args: { _name: string }; Returns: string }
       open_buyback_to_network: { Args: { p_token: string }; Returns: Json }
       purge_old_usage_events: { Args: never; Returns: undefined }
       recalculate_inventory_session_totals: {
@@ -5689,6 +5694,7 @@ export type Database = {
         }
       }
       shop_is_publicly_visible: { Args: { _shop_id: string }; Returns: boolean }
+      shop_name_key: { Args: { _name: string }; Returns: string }
       submit_buyback_request:
         | {
             Args: {
