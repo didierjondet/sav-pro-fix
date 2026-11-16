@@ -13,7 +13,7 @@ import { SIGNUP_QUESTIONS, BLOCKER_REASONS, pickActivationPrompt } from '@/lib/a
 
 const SNOOZE_KEY = 'fixway_activation_feedback_snooze';
 
-function Choice({ options, value, onChange }: { options: { value: string; label: string }[]; value?: string; onChange: (v: string) => void }) {
+function Choice({ options, value, onChange }: { options: readonly { value: string; label: string }[]; value?: string; onChange: (v: string) => void }) {
   return (
     <div className="flex flex-wrap gap-2">
       {options.map((o) => (
