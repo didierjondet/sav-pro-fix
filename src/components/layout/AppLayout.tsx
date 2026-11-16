@@ -6,6 +6,7 @@ import InactivityWarningBanner from './InactivityWarningBanner';
 import ShopCreationPolicyDialog from '@/components/onboarding/ShopCreationPolicyDialog';
 import UpdateAvailableDialog from './UpdateAvailableDialog';
 import ActivationFeedbackDialog from '@/components/onboarding/ActivationFeedbackDialog';
+import DemoModeBanner from '@/components/onboarding/DemoModeBanner';
 import MFAGate from '@/components/auth/MFAGate';
 
 
@@ -21,6 +22,7 @@ export default function AppLayout() {
   return (
     <MFAGate>
       <div className="flex h-screen overflow-hidden flex-col">
+        <DemoModeBanner />
         <InactivityWarningBanner />
         <ShopCreationPolicyDialog />
         <UpdateAvailableDialog />

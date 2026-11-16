@@ -80,7 +80,7 @@ export function useOnboardingProgress() {
 
   const stepsSeen: string[] = (progress?.steps_seen as any) || [];
 
-  const steps: OnboardingStep[] = useMemo(() => {
+  const steps: OnboardingStep[] = useMemo((): OnboardingStep[] => {
     const profileComplete = !!(profile?.first_name && profile?.last_name && profile?.phone);
     const shopComplete = !!(shop?.name && shop.name !== 'Mon Magasin' && shop?.email);
     const shopExtended = !!(shop?.phone && shop?.address);
@@ -208,7 +208,7 @@ export function useOnboardingProgress() {
         manual: true,
       },
     ];
-  }, [profile, shop, counts, stepsSeen]).map(s =>
+  }, [profile, shop, counts, stepsSeen]).map((s): OnboardingStep =>
     s.status === 'pending' && stepsSeen.includes(s.id) ? { ...s, status: 'done' as const } : s
   );
 

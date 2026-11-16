@@ -15,6 +15,8 @@ export default function ShopCreationPolicyDialog() {
 
   useEffect(() => {
     if (!shop || !user) return;
+    // Postponed while the shop is in discovery mode (sample data).
+    if ((shop as any).demo_mode) { setOpen(false); return; }
     if (!shop.inactivity_policy_acknowledged_at) setOpen(true);
   }, [shop, user]);
 
