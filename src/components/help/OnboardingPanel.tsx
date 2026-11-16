@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronDown, ChevronUp, CheckCircle2, Circle, Rocket, ArrowRight, HelpCircle, PartyPopper, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -21,7 +21,17 @@ const OnboardingPanel: React.FC<Props> = ({ onAskHelp, onClose, defaultExpanded 
     pendingCount,
     isFullyConfigured,
     markStepSeen,
+    unmarkStep,
+    stepsSeen,
+    refreshCounts,
   } = useOnboardingProgress();
+
+  useEffect(() => { refreshCounts(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const toggleStep = (step: OnboardingStep) => {
+    if (step.status === 'pending') markStepSeen(step.id);
+    else if (stepsSeen.includes(step.id)) unmarkStep(step.id);
+  };
 
   const [expanded, setExpanded] = useState(defaultExpanded ?? !isFullyConfigured);
 
@@ -69,11 +79,19 @@ const OnboardingPanel: React.FC<Props> = ({ onAskHelp, onClose, defaultExpanded 
             {steps.map(step => (
               <li key={step.id} className="p-3 space-y-2">
                 <div className="flex items-start gap-2">
-                  {step.status === 'done' ? (
-                    <CheckCircle2 className="h-4 w-4 text-success shrink-0 mt-0.5" />
-                  ) : (
-                    <Circle className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
-                  )}
+                  <button
+                    type="button"
+                    onClick={() => toggleStep(step)}
+                    className="shrink-0 mt-0.5 rounded-full hover:scale-110 transition-transform"
+                    title={step.status === 'done' ? (stepsSeen.includes(step.id) ? 'Décocher cette étape' : 'Étape validée') : 'Marquer comme fait'}
+                    aria-label={step.status === 'done' ? 'Décocher cette étape' : 'Marquer comme fait'}
+                  >
+                    {step.status === 'done' ? (
+                      <CheckCircle2 className="h-4 w-4 text-success" />
+                    ) : (
+                      <Circle className="h-4 w-4 text-muted-foreground" />
+                    )}
+                  </button>
                   <div className="flex-1 min-w-0">
                     <p className={`text-sm font-medium ${step.status === 'done' ? 'text-muted-foreground line-through' : 'text-foreground'}`}>
                       {step.label}
