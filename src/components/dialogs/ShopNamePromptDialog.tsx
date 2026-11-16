@@ -6,7 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Store } from 'lucide-react';
+import { Store, Sparkles } from 'lucide-react';
+import { SHOP_ACTIVITIES, type ShopActivity } from '@/lib/activityTemplates';
 
 interface ShopNamePromptDialogProps {
   shopId: string;
@@ -17,6 +18,7 @@ export function ShopNamePromptDialog({ shopId, onSaved }: ShopNamePromptDialogPr
   const [open, setOpen] = useState(true);
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
+  const [step, setStep] = useState<'name' | 'activity'>('name');
   const { toast } = useToast();
 
   const [taken, setTaken] = useState(false);
@@ -44,7 +46,23 @@ export function ShopNamePromptDialog({ shopId, onSaved }: ShopNamePromptDialogPr
         if (isDuplicateShopNameError(error)) { setTaken(true); throw new Error(DUPLICATE_SHOP_NAME_MESSAGE); }
         throw error;
       }
-      toast({ title: 'Nom enregistré', description: 'Le nom de votre magasin a été mis à jour.' });
+      toast({ title: 'Nom enregistré', description: 'Choisissez maintenant votre activité.' });
+      setStep('activity');
+    } catch (e: any) {
+      toast({ title: 'Erreur', description: e.message, variant: 'destructive' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const chooseActivity = async (activity: ShopActivity) => {
+    setLoading(true);
+    try {
+      const { data, error } = await (supabase.rpc as any)('seed_demo_shop', { _activity: activity });
+      if (error) throw error;
+      if (data?.demo) {
+        toast({ title: 'Mode découverte activé', description: 'Votre magasin est prêt avec des exemples fictifs. Explorez librement !' });
+      }
       setOpen(false);
       onSaved();
     } catch (e: any) {
@@ -53,6 +71,47 @@ export function ShopNamePromptDialog({ shopId, onSaved }: ShopNamePromptDialogPr
       setLoading(false);
     }
   };
+
+  if (step === 'activity') {
+    return (
+      <Dialog open={open} onOpenChange={() => {}}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-primary" />
+              Quelle est votre activité ?
+            </DialogTitle>
+            <DialogDescription>
+              Nous préparons votre magasin avec des statuts, types de SAV et des exemples fictifs (clients, SAV en cours…) adaptés à votre métier.
+              C'est <strong>temporaire</strong> : quand vous serez prêt, un bouton effacera les exemples pour passer à votre vraie boutique.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {SHOP_ACTIVITIES.map(a => (
+              <button
+                key={a.key}
+                type="button"
+                disabled={loading}
+                onClick={() => chooseActivity(a.key)}
+                className="flex items-center gap-3 rounded-lg border border-border p-3 text-left hover:border-primary hover:bg-primary/5 transition-colors disabled:opacity-50"
+              >
+                <span className="text-2xl">{a.emoji}</span>
+                <span>
+                  <span className="block text-sm font-medium text-foreground">{a.label}</span>
+                  <span className="block text-xs text-muted-foreground">{a.example}</span>
+                </span>
+              </button>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" disabled={loading} onClick={() => chooseActivity('none')}>
+              Je préfère partir de zéro
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
