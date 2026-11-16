@@ -34,6 +34,10 @@
 ### 4. Relancer
 - E-mails automatiques : J+1 (aide pour le premier SAV), J+3 (question sur la raison), J+7 (rappel des bénéfices), envoyés seulement si l'étape n'est pas faite.
 
+### 5. Super Admin : données et statistiques
+- Toutes les réponses au questionnaire (inscription et départ) enregistrées et consultables par magasin dans le Super Admin (fiche magasin + liste filtrable, export).
+- Nouvelle page « Statistiques d'inscription » : inscriptions par semaine/mois, taux de passage à chaque étape (magasin créé, 1er client, 1er SAV, retour J+1/J+7, abonnement), taux de transformation en abonnement, répartition des réponses au questionnaire (raisons de départ, volume de SAV, outil actuel).
+
 ## Ordre conseillé
 1. Mesure + entonnoir Super Admin (pour avoir des preuves).
 2. Questionnaire de raison + relances.
