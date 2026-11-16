@@ -16,3 +16,7 @@
 - [x] Feuille de clôture : grand encadré rouge prêt non rendu (matériel, caution, photos) + coupures de page propres
 - [x] Retour de prêt : photos ordi + téléphone (bouton rouge QR), servant de référence au prêt suivant
 - [x] QR de retour de prêt sur le document de restitution (page publique /pret/retour/:token, sans connexion)
+- [x] Questionnaire d'accueil + « qu'est-ce qui vous bloque » enregistrés par magasin
+- [x] Super Admin : page Inscriptions & conversion (entonnoir, réponses, export)
+- [ ] Relances e-mail J+1/J+3/J+7 — bloqué : clé du fournisseur d'e-mail (Brevo refusée 401)
+- [ ] Démarrage simplifié (SAV d'exemple, vue simplifiée par défaut) — à valider avec l'utilisateur
