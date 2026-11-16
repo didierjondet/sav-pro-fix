@@ -146,6 +146,12 @@ Deno.serve(async (req) => {
     if (shopError || !shop) throw new Error('Shop non trouvé');
 
     const formattedNumber = formatPhoneNumber(toNumber);
+    // Discovery-mode sample customers use 0600000xxx: never send, never debit credits.
+    if (/^\+?(33)?0?600000\d{3}$/.test(formattedNumber.replace(/\s/g, ''))) {
+      return new Response(JSON.stringify({ success: true, skipped: 'demo_customer', message: 'Client d\'exemple : aucun SMS envoyé' }), {
+        status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
     console.log(`📱 SMS to ${formattedNumber} via multi-provider routing`);
 
     // === Vérification des crédits SMS de la boutique AVANT envoi ===
