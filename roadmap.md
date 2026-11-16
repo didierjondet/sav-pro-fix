@@ -20,3 +20,8 @@
 - [x] Super Admin : page Inscriptions & conversion (entonnoir, réponses, export)
 - [ ] Relances e-mail J+1/J+3/J+7 — bloqué : clé du fournisseur d'e-mail (Brevo refusée 401)
 - [ ] Démarrage simplifié (SAV d'exemple, vue simplifiée par défaut) — à valider avec l'utilisateur
+- [x] Nom de magasin unique (base + écrans)
+- [x] Étapes du bot mises à jour en direct + validation manuelle par le rond
+- [x] Choix d'activité à la création + mode découverte (exemples fictifs) + passage à la vraie boutique
+- [x] Avertissement rouge d'inactivité repoussé après le mode découverte
+- [ ] Devis et rendez-vous d'exemple dans le mode découverte (à faire si souhaité)
