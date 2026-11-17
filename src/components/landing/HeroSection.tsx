@@ -27,7 +27,7 @@ export function HeroSection({ onAuthClick }: HeroSectionProps) {
           
           {/* Main headline - SEO optimized h1 */}
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-white mb-6 leading-tight">
-            Logiciel SAV gratuit pour réparateurs<br />
+            Logiciel Gestion SAV gratuit pour réparateurs<br />
             <span className="text-amber-400">smartphones, consoles & high-tech</span><br />
             <span className="text-white/80 text-3xl sm:text-4xl lg:text-5xl">Gérez vos réparations simplement.</span>
           </h1>
