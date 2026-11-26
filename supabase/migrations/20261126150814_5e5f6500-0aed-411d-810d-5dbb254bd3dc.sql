@@ -40,7 +40,6 @@ CREATE POLICY "diag read own shop" ON public.device_diagnostics FOR SELECT TO au
   USING (shop_id = public.get_current_user_shop_id());
 CREATE POLICY "diag delete own shop" ON public.device_diagnostics FOR DELETE TO authenticated
   USING (shop_id = public.get_current_user_shop_id());
--- manual link to a SAV of the same shop
 CREATE POLICY "diag link own shop" ON public.device_diagnostics FOR UPDATE TO authenticated
   USING (shop_id = public.get_current_user_shop_id())
   WITH CHECK (shop_id = public.get_current_user_shop_id()

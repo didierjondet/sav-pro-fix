@@ -756,6 +756,134 @@ export type Database = {
         }
         Relationships: []
       }
+      device_diagnostics: {
+        Row: {
+          brand: string | null
+          created_at: string
+          customer_name: string | null
+          customer_ticket: string | null
+          fail_count: number | null
+          failed_tests: string[]
+          grade: string | null
+          id: string
+          imei: string | null
+          model: string | null
+          os: string | null
+          pass_count: number | null
+          payload: Json
+          platform: string | null
+          public_token: string
+          sav_case_id: string | null
+          score: number | null
+          serial: string | null
+          shop_id: string
+          technician: string | null
+          updated_at: string
+        }
+        Insert: {
+          brand?: string | null
+          created_at?: string
+          customer_name?: string | null
+          customer_ticket?: string | null
+          fail_count?: number | null
+          failed_tests?: string[]
+          grade?: string | null
+          id: string
+          imei?: string | null
+          model?: string | null
+          os?: string | null
+          pass_count?: number | null
+          payload?: Json
+          platform?: string | null
+          public_token: string
+          sav_case_id?: string | null
+          score?: number | null
+          serial?: string | null
+          shop_id: string
+          technician?: string | null
+          updated_at?: string
+        }
+        Update: {
+          brand?: string | null
+          created_at?: string
+          customer_name?: string | null
+          customer_ticket?: string | null
+          fail_count?: number | null
+          failed_tests?: string[]
+          grade?: string | null
+          id?: string
+          imei?: string | null
+          model?: string | null
+          os?: string | null
+          pass_count?: number | null
+          payload?: Json
+          platform?: string | null
+          public_token?: string
+          sav_case_id?: string | null
+          score?: number | null
+          serial?: string | null
+          shop_id?: string
+          technician?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "device_diagnostics_sav_case_id_fkey"
+            columns: ["sav_case_id"]
+            isOneToOne: false
+            referencedRelation: "sav_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "device_diagnostics_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      diagnostic_api_keys: {
+        Row: {
+          created_at: string
+          id: string
+          key_hash: string
+          key_prefix: string
+          last_used_at: string | null
+          name: string
+          revoked_at: string | null
+          shop_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          key_hash: string
+          key_prefix: string
+          last_used_at?: string | null
+          name: string
+          revoked_at?: string | null
+          shop_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          key_hash?: string
+          key_prefix?: string
+          last_used_at?: string | null
+          name?: string
+          revoked_at?: string | null
+          shop_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "diagnostic_api_keys_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_send_logs: {
         Row: {
           context: string | null
@@ -5324,6 +5452,7 @@ export type Database = {
           warranty_terms: string
         }[]
       }
+      get_public_diagnostic: { Args: { p_token: string }; Returns: Json }
       get_public_partner: { Args: { _slug: string }; Returns: Json }
       get_public_partner_directory: {
         Args: { _search?: string }
