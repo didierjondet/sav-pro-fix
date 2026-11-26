@@ -40,13 +40,13 @@ const baseNavigation: NavItem[] = [
   { name: 'Dossiers SAV', href: '/sav', icon: FileText, group: 'work' },
   { name: 'SAV partenaires', href: '/sav-partenaires', icon: Handshake, group: 'work' },
   { name: 'Devis', href: '/quotes', icon: FileText, group: 'work' },
+  { name: 'Tests', href: '/tests', icon: FlaskConical, group: 'work' },
   { name: 'Clients', href: '/customers', icon: Users, group: 'work' },
   { name: 'Agenda', href: '/agenda', icon: Calendar, group: 'work' },
   { name: 'Chat clients', href: '/client-chats', icon: MessageSquare, group: 'work' },
   // Bloc « Gestion »
   { name: 'Stock & prestations', href: '/parts', icon: Package, group: 'management' },
   { name: 'Commandes', href: '/orders', icon: Package, group: 'management' },
-  { name: 'Tests', href: '/tests', icon: FlaskConical, group: 'management' },
   { name: 'Inventaire', href: '/inventory', icon: ClipboardList, group: 'management' },
   { name: 'Rachat matériel', href: '/rachat', icon: Recycle, group: 'management' },
   { name: 'Rapports', href: '/reports', icon: FileBarChart, group: 'management' },
@@ -113,7 +113,7 @@ function SidebarComponent({
     return () => window.removeEventListener('simplifiedViewChanged', handler);
   }, []);
 
-  const simplifiedPaths = ['/sav', '/sav-partenaires', '/quotes', '/agenda', '/client-chats'];
+  const simplifiedPaths = ['/sav', '/sav-partenaires', '/quotes', '/tests', '/agenda', '/client-chats'];
   const openConversationsCount = (savWithUnreadMessages || []).length;
   const {
     quotes
