@@ -10,3 +10,4 @@
 - Discovery mode: sample rows carry `is_demo` and are created/erased only by RPCs `seed_demo_shop`/`exit_demo_mode`; `shops.demo_mode` hides the inactivity policy dialog — one reversible switch, real data never touched.
 - Shop names are unique by `shop_name_key` (case/accents/spaces ignored, placeholder « Mon magasin » exempt); client mirror in `src/lib/shopName.ts` — DB index is the final guard.
 - DiagStation ingest: rapports via edge function diagnostics-ingest (clé API hashée SHA-256 par magasin), page publique /diag/:token via RPC get_public_diagnostic sans données client — pas d'accès anon aux tables.
+- Page Tests (/tests) groups controller tests (table controller_tests, linked to SAV via sav_case_id) and DiagStation reports; controller test is no longer launched from SAV creation forms — one place to test before deciding to open a SAV.

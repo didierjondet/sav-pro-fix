@@ -57,6 +57,7 @@ import QuotePublic from "./pages/QuotePublic";
 import Satisfaction from "./pages/Satisfaction";
 import Reports from "./pages/Reports";
 
+import Tests from './pages/Tests';
 import Agenda from "./pages/Agenda";
 import AppointmentConfirm from "./pages/AppointmentConfirm";
 import SAVLogs from "./pages/SAVLogs";
@@ -197,6 +198,7 @@ const App = () => {
                   <Route path="/statistics" element={<Statistics />} />
                   <Route path="/reports" element={<Reports />} />
                   <Route path="/agenda" element={<Agenda />} />
+                  <Route path="/tests" element={<Tests />} />
                   <Route path="/statistics/revenue" element={<RevenueDetails />} />
                   <Route path="/statistics/revenue/*" element={<RevenueDetails />} />
                   <Route path="/statistics/expenses" element={<ExpensesDetails />} />

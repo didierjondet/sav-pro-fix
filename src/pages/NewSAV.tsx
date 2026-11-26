@@ -7,6 +7,7 @@ export default function NewSAV() {
   const location = useLocation();
   const navigate = useNavigate();
   const mobilePayload = (location.state as any)?.mobilePayload || null;
+  const controllerTest = (location.state as any)?.controllerTest || null;
   const [chooseMode, setChooseMode] = useState((location.state as any)?.mode !== 'computer');
 
   const handleSuccess = () => {
@@ -21,12 +22,12 @@ export default function NewSAV() {
                 <p className="text-muted-foreground">Créez un nouveau dossier de service après-vente</p>
               </div>
 
-              <SAVForm key={mobilePayload ? 'mobile' : 'desktop'} onSuccess={handleSuccess} initialDeviceData={mobilePayload} />
+              <SAVForm key={mobilePayload ? 'mobile' : 'desktop'} onSuccess={handleSuccess} initialDeviceData={mobilePayload} initialControllerTest={controllerTest} />
             </div>
             <NewSAVModeDialog
               open={chooseMode}
               onOpenChange={(v) => { if (!v) setChooseMode(false); }}
-              onComputer={(payload) => { setChooseMode(false); navigate('/sav/new', { replace: true, state: { mode: 'computer', mobilePayload: payload || null } }); }}
+              onComputer={(payload) => { setChooseMode(false); navigate('/sav/new', { replace: true, state: { mode: 'computer', mobilePayload: payload || null, controllerTest } }); }}
             />
           </main>
   );

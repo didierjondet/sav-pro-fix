@@ -1,7 +1,6 @@
 import { ProductFamilyPicker } from '@/components/sav/ProductFamilyChips';
 import type { MobileSavPayload } from '@/lib/mobileSav';
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { ControllerTestDialog } from '@/components/sav/controller/ControllerTestDialog';
 import type { ControllerReport } from '@/lib/controllerTest';
 import { Gamepad2 } from 'lucide-react';
 import React from 'react';
@@ -620,17 +619,6 @@ export function SAVWizardDialog({ open, onOpenChange, onSuccess, initialDeviceDa
                   ))}
                 </SelectContent>
               </Select>
-              <Button type="button" variant="outline" size="sm" className="mt-2" onClick={() => setControllerOpen(true)}>
-                <Gamepad2 className="h-4 w-4 mr-1" /> {controllerReport ? 'Refaire le test manette' : 'Tester une manette'}
-              </Button>
-              <ControllerTestDialog
-                open={controllerOpen}
-                onOpenChange={setControllerOpen}
-                onComplete={(r) => {
-                  setControllerReport(r.report);
-                  setDeviceInfo((d) => ({ ...d, brand: r.brand || d.brand, model: r.model || d.model, imei: d.imei || r.serial || '', problemDescription: r.problemDescription }));
-                }}
-              />
             </div>
             <div>
               <Label className="text-sm font-medium">Statut initial</Label>

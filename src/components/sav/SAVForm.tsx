@@ -1,7 +1,6 @@
 import { ProductFamilyPicker } from '@/components/sav/ProductFamilyChips';
 import type { MobileSavPayload } from '@/lib/mobileSav';
 import { useState, useEffect } from 'react';
-import { ControllerTestDialog } from '@/components/sav/controller/ControllerTestDialog';
 import type { ControllerReport } from '@/lib/controllerTest';
 import { Gamepad2 } from 'lucide-react';
 import React from 'react';
@@ -89,9 +88,11 @@ interface SAVFormProps {
   onSuccess?: () => void;
   /** Informations saisies sur smartphone, pour pré-remplir le formulaire */
   initialDeviceData?: Partial<MobileSavPayload> | null;
+  /** Test manette sauvegardé (page Tests) à transformer en SAV */
+  initialControllerTest?: { id: string; report: ControllerReport; brand?: string | null; model?: string | null; serial?: string | null; problemDescription?: string } | null;
 }
 
-export function SAVForm({ onSuccess, initialDeviceData }: SAVFormProps) {
+export function SAVForm({ onSuccess, initialDeviceData, initialControllerTest }: SAVFormProps) {
   // Utiliser le premier type et statut disponible comme défaut
   const { getAllStatuses, getStatusInfo } = useShopSAVStatuses();
   const { getAllTypes, getTypeInfo } = useShopSAVTypes();
@@ -172,6 +173,14 @@ export function SAVForm({ onSuccess, initialDeviceData }: SAVFormProps) {
     if (p.unlock_code) setSecurityCodes((prev) => ({ ...prev, unlock_code: p.unlock_code! }));
     if (p.no_code) setNoUnlockCode(true);
   }, [initialDeviceData]);
+
+  // Pré-remplissage depuis un test manette sauvegardé
+  React.useEffect(() => {
+    if (!initialControllerTest) return;
+    const t = initialControllerTest;
+    setControllerReport(t.report);
+    setDeviceInfo((d: any) => ({ ...d, brand: t.brand || d.brand, model: t.model || d.model, imei: d.imei || t.serial || '', problemDescription: t.problemDescription || d.problemDescription }));
+  }, [initialControllerTest]);
   const setLoanerSelectionTouched = (v: LoanerSelection | ((p: LoanerSelection) => LoanerSelection)) => {
     loanerTouchedRef.current = true;
     setLoanerSelection(v as any);
@@ -368,6 +377,9 @@ export function SAVForm({ onSuccess, initialDeviceData }: SAVFormProps) {
       });
       
       if (caseError) throw caseError;
+      if (initialControllerTest?.id && newCase?.id) {
+        await (supabase as any).from('controller_tests').update({ sav_case_id: newCase.id }).eq('id', initialControllerTest.id);
+      }
 
       // Enrichir les données du SAV avec les informations du client pour le SMS
       const enrichedCase = {
@@ -591,17 +603,6 @@ export function SAVForm({ onSuccess, initialDeviceData }: SAVFormProps) {
                   ))}
                 </SelectContent>
               </Select>
-              <Button type="button" variant="outline" size="sm" className="mt-2" onClick={() => setControllerOpen(true)}>
-                <Gamepad2 className="h-4 w-4 mr-1" /> {controllerReport ? 'Refaire le test manette' : 'Tester une manette'}
-              </Button>
-              <ControllerTestDialog
-                open={controllerOpen}
-                onOpenChange={setControllerOpen}
-                onComplete={(r) => {
-                  setControllerReport(r.report);
-                  setDeviceInfo((d) => ({ ...d, brand: r.brand || d.brand, model: r.model || d.model, imei: d.imei || r.serial || '', problemDescription: r.problemDescription }));
-                }}
-              />
             </div>
             
             <div>

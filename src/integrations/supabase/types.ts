@@ -560,6 +560,57 @@ export type Database = {
         }
         Relationships: []
       }
+      controller_tests: {
+        Row: {
+          brand: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          model: string | null
+          report: Json
+          sav_case_id: string | null
+          serial: string | null
+          shop_id: string
+        }
+        Insert: {
+          brand?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          model?: string | null
+          report: Json
+          sav_case_id?: string | null
+          serial?: string | null
+          shop_id: string
+        }
+        Update: {
+          brand?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          model?: string | null
+          report?: Json
+          sav_case_id?: string | null
+          serial?: string | null
+          shop_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "controller_tests_sav_case_id_fkey"
+            columns: ["sav_case_id"]
+            isOneToOne: false
+            referencedRelation: "sav_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "controller_tests_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       custom_widgets: {
         Row: {
           ai_interpretation: Json
