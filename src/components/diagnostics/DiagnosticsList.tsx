@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useShop } from '@/contexts/ShopContext';
 import { useToast } from '@/hooks/use-toast';
@@ -15,10 +16,19 @@ export function DiagnosticsList() {
   const [q, setQ] = useState('');
   const [links, setLinks] = useState<Record<string, string>>({});
   const db = supabase as any;
+  const navigate = useNavigate();
+
+  const toSAV = (r: any) => {
+    const failed: string[] = Array.isArray(r.failed_tests) ? r.failed_tests : [];
+    const lines = [`Diagnostic DiagStation du ${new Date(r.created_at).toLocaleDateString('fr-FR')} — note ${r.grade ?? '–'}${r.score != null ? `, score ${r.score}` : ''} (${r.pass_count ?? 0} OK, ${r.fail_count ?? 0} en échec)`];
+    if (failed.length) lines.push(`Tests en échec : ${failed.join(', ')}`);
+    lines.push(`Rapport : ${diagPublicUrl(r.public_token)}`);
+    navigate('/sav/new', { state: { diagnostic: { id: r.id, brand: r.brand, model: r.model, imei: r.imei, serial: r.serial, problemDescription: lines.join('\n') } } });
+  };
 
   const load = async () => {
     if (!shop?.id) return;
-    let query = db.from('device_diagnostics').select('id, public_token, brand, model, imei, serial, grade, fail_count, created_at, sav_case_id, sav_cases(case_number)')
+    let query = db.from('device_diagnostics').select('id, public_token, brand, model, imei, serial, grade, score, pass_count, fail_count, failed_tests, created_at, sav_case_id, sav_cases(case_number)')
       .eq('shop_id', shop.id).order('created_at', { ascending: false }).limit(50);
     const s = q.trim().replace(/[,()%]/g, '');
     if (s) query = query.or(`imei.ilike.%${s}%,serial.ilike.%${s}%`);
@@ -52,7 +62,7 @@ export function DiagnosticsList() {
                 <p className="text-xs text-muted-foreground">{new Date(r.created_at).toLocaleDateString('fr-FR')} · {r.fail_count ?? 0} défaut(s) · {r.imei || r.serial || ''}</p>
               </div>
               {r.sav_cases?.case_number ? <span className="text-xs">SAV {r.sav_cases.case_number}</span> : (
-                <div className="flex gap-1"><Input className="h-8 w-36 text-xs" placeholder="N° de SAV" value={links[r.id] ?? ''} onChange={(e) => setLinks({ ...links, [r.id]: e.target.value })} /><Button size="sm" variant="outline" onClick={() => link(r.id)}>Rattacher</Button></div>
+                <div className="flex gap-1"><Input className="h-8 w-36 text-xs" placeholder="N° de SAV" value={links[r.id] ?? ''} onChange={(e) => setLinks({ ...links, [r.id]: e.target.value })} /><Button size="sm" variant="outline" onClick={() => link(r.id)}>Rattacher</Button><Button size="sm" onClick={() => toSAV(r)}>Transformer en SAV</Button></div>
               )}
               <a className="text-xs text-primary underline" href={diagPublicUrl(r.public_token)} target="_blank" rel="noreferrer">Voir le rapport</a>
             </div>

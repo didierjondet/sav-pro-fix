@@ -90,9 +90,10 @@ interface SAVFormProps {
   initialDeviceData?: Partial<MobileSavPayload> | null;
   /** Test manette sauvegardé (page Tests) à transformer en SAV */
   initialControllerTest?: { id: string; report: ControllerReport; brand?: string | null; model?: string | null; serial?: string | null; problemDescription?: string } | null;
+  initialDiagnostic?: { id: string; brand?: string | null; model?: string | null; imei?: string | null; serial?: string | null; problemDescription?: string } | null;
 }
 
-export function SAVForm({ onSuccess, initialDeviceData, initialControllerTest }: SAVFormProps) {
+export function SAVForm({ onSuccess, initialDeviceData, initialControllerTest, initialDiagnostic }: SAVFormProps) {
   // Utiliser le premier type et statut disponible comme défaut
   const { getAllStatuses, getStatusInfo } = useShopSAVStatuses();
   const { getAllTypes, getTypeInfo } = useShopSAVTypes();
@@ -181,6 +182,13 @@ export function SAVForm({ onSuccess, initialDeviceData, initialControllerTest }:
     setControllerReport(t.report);
     setDeviceInfo((d: any) => ({ ...d, brand: t.brand || d.brand, model: t.model || d.model, imei: d.imei || t.serial || '', problemDescription: t.problemDescription || d.problemDescription }));
   }, [initialControllerTest]);
+
+  // Pré-remplissage depuis un diagnostic DiagStation
+  React.useEffect(() => {
+    if (!initialDiagnostic) return;
+    const t = initialDiagnostic;
+    setDeviceInfo((d: any) => ({ ...d, brand: t.brand || d.brand, model: t.model || d.model, imei: d.imei || t.imei || t.serial || '', problemDescription: t.problemDescription || d.problemDescription }));
+  }, [initialDiagnostic]);
   const setLoanerSelectionTouched = (v: LoanerSelection | ((p: LoanerSelection) => LoanerSelection)) => {
     loanerTouchedRef.current = true;
     setLoanerSelection(v as any);
@@ -379,6 +387,9 @@ export function SAVForm({ onSuccess, initialDeviceData, initialControllerTest }:
       if (caseError) throw caseError;
       if (initialControllerTest?.id && newCase?.id) {
         await (supabase as any).from('controller_tests').update({ sav_case_id: newCase.id }).eq('id', initialControllerTest.id);
+      }
+      if (initialDiagnostic?.id && newCase?.id) {
+        await (supabase as any).from('device_diagnostics').update({ sav_case_id: newCase.id }).eq('id', initialDiagnostic.id);
       }
 
       // Enrichir les données du SAV avec les informations du client pour le SMS

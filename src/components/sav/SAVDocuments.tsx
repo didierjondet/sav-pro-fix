@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { FileText, Image, Download, Eye, Upload, Trash2, FileIcon, Paperclip, Printer } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { diagPublicUrl } from '@/lib/diagnostics';
 
 interface Attachment {
   [key: string]: any;
@@ -27,6 +28,12 @@ export function SAVDocuments({ savCaseId, attachments, onAttachmentsUpdate }: SA
   const [uploading, setUploading] = useState(false);
   const [thumbnails, setThumbnails] = useState<Record<string, string>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [diags, setDiags] = useState<any[]>([]);
+  useEffect(() => {
+    if (!savCaseId) return;
+    (supabase as any).from('device_diagnostics').select('id, public_token, brand, model, grade, fail_count, created_at').eq('sav_case_id', savCaseId).order('created_at', { ascending: false })
+      .then(({ data }: any) => setDiags(data ?? []));
+  }, [savCaseId]);
 
   // Normaliser les attachments pour gérer l'ancien format (string) et le nouveau (objet)
   const normalizedAttachments: Attachment[] = attachments
@@ -446,6 +453,17 @@ export function SAVDocuments({ savCaseId, attachments, onAttachmentsUpdate }: SA
           />
         </div>
 
+        {diags.length > 0 && (
+          <div className="mb-4 rounded-md border divide-y">
+            {diags.map((d) => (
+              <div key={d.id} className="flex flex-wrap items-center gap-2 p-2 text-sm">
+                <FileText className="h-4 w-4 text-primary" />
+                <span className="flex-1">Diagnostic DiagStation · {[d.brand, d.model].filter(Boolean).join(' ')} · note {d.grade ?? '–'} · {d.fail_count ?? 0} défaut(s) · {new Date(d.created_at).toLocaleDateString('fr-FR')}</span>
+                <a className="text-xs text-primary underline" href={diagPublicUrl(d.public_token)} target="_blank" rel="noreferrer">Voir le rapport</a>
+              </div>
+            ))}
+          </div>
+        )}
         {/* Liste des documents */}
         {normalizedAttachments.length > 0 ? (
           <div className="space-y-2">
