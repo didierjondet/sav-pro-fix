@@ -46,6 +46,7 @@ import { ProductRecurrenceBadge } from '@/components/sav/ProductRecurrenceBadge'
 import { ProductHistoryBanner } from '@/components/sav/ProductHistoryBanner';
 import { SAVCodesTab } from '@/components/sav/SAVCodesTab';
 import { SAVDiagnosticTab } from '@/components/sav/SAVDiagnosticTab';
+import { SAVDiagnosticReports } from '@/components/diagnostics/SAVDiagnosticReports';
 import { useSAVCaseUnreadCount, useSAVCaseHasActiveLoan } from '@/hooks/useSAVCaseIndicators';
 import { SAVProviderTab } from '@/components/sav/SAVProviderTab';
 import { useSAVCaseActiveProvider, useSAVProviders } from '@/hooks/useSAVProviders';
@@ -874,6 +875,7 @@ export default function SAVDetail() {
 
             {/* Onglet Diagnostic IA */}
             <TabsContent value="diagnostic" className="space-y-4">
+              <SAVDiagnosticReports savCaseId={savCase.id} />
               <SAVDiagnosticTab savCase={savCase} />
             </TabsContent>
 
@@ -1531,7 +1533,8 @@ export default function SAVDetail() {
 
           {/* Onglet Diagnostic IA */}
           <TabsContent value="diagnostic" className="space-y-4">
-            <SAVDiagnosticTab savCase={savCase} />
+            <SAVDiagnosticReports savCaseId={savCase.id} />
+              <SAVDiagnosticTab savCase={savCase} />
           </TabsContent>
 
           {/* Onglet Prêt matériel */}

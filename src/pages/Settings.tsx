@@ -69,6 +69,7 @@ import { ProductFamiliesManager } from '@/components/settings/ProductFamiliesMan
 import { SuppliersManager } from '@/components/settings/SuppliersManager';
 import { SAVProvidersManager } from '@/components/settings/SAVProvidersManager';
 import { LoanerEquipmentManager } from '@/components/settings/loaner/LoanerEquipmentManager';
+import { DiagStationSettings } from '@/components/diagnostics/DiagStationSettings';
 import { SMSPackagesDisplay } from '@/components/subscription/SMSPackagesDisplay';
 import { BillingInvoices } from '@/components/billing/BillingInvoices';
 import { BillingVatTab } from '@/components/settings/BillingVatTab';
@@ -935,6 +936,7 @@ export default function Settings() {
     { id: 'sav-statuses', label: 'Statuts SAV', icon: Tag, category: 'sav-group', visible: true },
     { id: 'product-families', label: 'Familles de produits', icon: Tag, category: 'sav-group', visible: true },
     { id: 'loaners', label: 'Matériel de prêt', icon: PackageOpen, category: 'sav-group', visible: isAdmin },
+    { id: 'diagstation', label: 'DiagStation', icon: Wrench, category: 'sav-group', visible: true },
 
     { id: 'part-categories', label: 'Catégories pièces', icon: Tag, category: 'stock-group', visible: !!rolePermissions.settings_part_categories },
     { id: 'storage-zones', label: 'Zones de stockage', icon: MapPin, category: 'stock-group', visible: true },
@@ -1931,6 +1933,10 @@ export default function Settings() {
                 <LoanerEquipmentManager />
               </TabsContent>
             )}
+
+            <TabsContent value="diagstation" className="space-y-6">
+              <DiagStationSettings />
+            </TabsContent>
 
             <TabsContent value="security" className="space-y-6">
               <SecurityTab />

@@ -9,3 +9,4 @@
 - Activation questionnaire answers live in onboarding_feedback (kind signup|blocker); which prompt shows is decided by pickActivationPrompt in src/lib/activationFeedback.ts — one testable rule, read back per shop in Super Admin via get_activation_funnel.
 - Discovery mode: sample rows carry `is_demo` and are created/erased only by RPCs `seed_demo_shop`/`exit_demo_mode`; `shops.demo_mode` hides the inactivity policy dialog — one reversible switch, real data never touched.
 - Shop names are unique by `shop_name_key` (case/accents/spaces ignored, placeholder « Mon magasin » exempt); client mirror in `src/lib/shopName.ts` — DB index is the final guard.
+- DiagStation ingest: rapports via edge function diagnostics-ingest (clé API hashée SHA-256 par magasin), page publique /diag/:token via RPC get_public_diagnostic sans données client — pas d'accès anon aux tables.

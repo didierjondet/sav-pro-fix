@@ -24,6 +24,7 @@ import SAVList from "./pages/SAVList";
 import NewSAV from "./pages/NewSAV";
 import SAVDetail from "./pages/SAVDetail";
 import TrackSAV from "./pages/TrackSAV";
+import PublicDiagnostic from "./pages/PublicDiagnostic";
 import SimpleTrack from "./pages/SimpleTrack";
 import Parts from "./pages/Parts";
 import Quotes from "./pages/Quotes";
@@ -151,6 +152,7 @@ const App = () => {
                 <Route path="/reset-password" element={<ResetPassword />} />
 
                 <Route path="/track/:slug" element={<TrackSAV />} />
+                <Route path="/diag/:token" element={<PublicDiagnostic />} />
                 <Route path="/quote/:id" element={<QuotePublic />} />
                 <Route path="/satisfaction/:token" element={<Satisfaction />} />
                 <Route path="/rdv/:token" element={<AppointmentConfirm />} />
