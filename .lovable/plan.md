@@ -13,3 +13,9 @@ Il apparaîtra alors dans le menu de statut d'un SAV, les filtres de la liste, l
 ## Détails techniques
 - Migration : INSERT dans `shop_sav_statuses` (status_key `parts_to_order`, display_order = celui de `parts_ordered`, décalage des suivants) pour chaque shop sans cette clé ; mise à jour de `add_default_sav_statuses_to_new_shop`.
 - `SAVStatusesManager.tsx` : bloquer la suppression/renommage de clé pour les clés système (`pending`, `parts_to_order`, `parts_ordered`, `parts_received`, `ready`…) utilisées par le code.
+
+## À appliquer aussi : DiagStation (brouillon accepté)
+Migration en attente `20261126121500_diagstation.sql` :
+- Table des clés de connexion DiagStation par magasin (chaque magasin ne voit que ses clés).
+- Table des rapports de diagnostic (appareil, IMEI/série, note, tests échoués, lien vers un SAV du même magasin).
+- Page publique de rapport par lien sécurisé, sans coordonnées client.
