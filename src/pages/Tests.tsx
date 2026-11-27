@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Gamepad2, Printer, FileText, Trash2, Smartphone, ExternalLink } from 'lucide-react';
 import { ControllerTestDialog, type ControllerTestResult } from '@/components/sav/controller/ControllerTestDialog';
 import { DiagnosticsList } from '@/components/diagnostics/DiagnosticsList';
+import { DiagStationDownloads } from '@/components/diagnostics/DiagStationDownloads';
 import { printControllerSheet } from '@/lib/controllerPrint';
 import { buildControllerSummary, summaryToText, type ControllerReport } from '@/lib/controllerTest';
 
@@ -104,7 +105,10 @@ export default function Tests() {
               );
             })}
           </TabsContent>
-          <TabsContent value="diags"><DiagnosticsList /></TabsContent>
+          <TabsContent value="diags" className="space-y-4">
+            <DiagStationDownloads />
+            <DiagnosticsList />
+          </TabsContent>
         </Tabs>
       </div>
       <ControllerTestDialog open={testOpen} onOpenChange={setTestOpen} onComplete={(r) => setPending(r)} />
